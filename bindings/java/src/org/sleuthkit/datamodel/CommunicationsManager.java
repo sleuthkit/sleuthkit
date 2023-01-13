@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -196,11 +197,17 @@ public final class CommunicationsManager {
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
+		Account.Type accountType = new Account.Type(accountTypeName, displayName);
+		// check if already in map
+		if (this.accountTypeToTypeIdMap.containsKey(accountType)) {
+			return accountType;
+		}
+		
 		CaseDbTransaction transaction = this.db.beginTransaction();
 		try {
-			org.sleuthkit.datamodel.Account.Type accountType = addAccountType(accountTypeName, displayName, transaction);
+			org.sleuthkit.datamodel.Account.Type retAccountType = addAccountType(accountTypeName, displayName, transaction);
 			transaction.commit();
-			return accountType;
+			return retAccountType;
 		} catch (TskCoreException ex) {
 			transaction.rollback();
 			throw ex;
@@ -229,40 +236,49 @@ public final class CommunicationsManager {
 			return accountType;
 		}
 
-		Statement s = null;
-		ResultSet rs = null;
 		try {
-			s = trans.getConnection().createStatement();
-			rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
-			if (!rs.next()) {
-				rs.close();
-
-				s.execute("INSERT INTO account_types (type_name, display_name) VALUES ( '" + accountTypeName + "', '" + displayName + "')"); //NON-NLS
-
-				// Read back the typeID
-				rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
-				rs.next();
-
-				int typeID = rs.getInt("account_type_id");
-				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-
-				this.accountTypeToTypeIdMap.put(accountType, typeID);
-				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
-
-				return accountType;
-			} else {
-				int typeID = rs.getInt("account_type_id");
-
-				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-				this.accountTypeToTypeIdMap.put(accountType, typeID);
-
-				return accountType;
+			PreparedStatement initialSelectStmt = trans.getConnection().getPreparedStatement(
+					"SELECT * FROM account_types WHERE type_name = ?", 
+					Statement.RETURN_GENERATED_KEYS
+			);
+			initialSelectStmt.clearParameters();
+			initialSelectStmt.setString(1, accountTypeName);
+			
+			// try to get cached account type
+			try (ResultSet initialSelectRs = initialSelectStmt.executeQuery()) {
+				if (initialSelectRs.next()) {
+					int typeID = initialSelectRs.getInt("account_type_id");
+					accountType = new Account.Type(initialSelectRs.getString("type_name"), initialSelectRs.getString("display_name"));
+					this.accountTypeToTypeIdMap.put(accountType, typeID);
+					return accountType;
+				}
 			}
+
+			// if not in database, insert
+			PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(
+				"INSERT INTO account_types (type_name, display_name) VALUES (?, ?)",
+				Statement.RETURN_GENERATED_KEYS
+			);
+
+			insertStmt.clearParameters();
+			insertStmt.setString(1, accountTypeName);				
+			insertStmt.setString(2, displayName);
+				
+			int affectedRows = insertStmt.executeUpdate();
+			if (affectedRows > 0) {
+				try (ResultSet insertRsKeys = insertStmt.getGeneratedKeys()) {
+					if (insertRsKeys.next()) {
+						int accountTypeId = insertRsKeys.getInt(1);
+						this.accountTypeToTypeIdMap.put(accountType, accountTypeId);
+						this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
+						return accountType;
+					}
+				}
+			}
+			
+			throw new SQLException(MessageFormat.format("Account with type name: {0} and display name: {1} could not be created", accountTypeName, displayName));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding account type", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
 		}
 	}
 
@@ -436,15 +452,23 @@ public final class CommunicationsManager {
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, CaseDbConnection caseDbConnection) throws TskCoreException, InvalidAccountIDException {
-		try (Statement s = caseDbConnection.createStatement();
-				ResultSet rs = s.executeQuery("SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
-						+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'")) {
-
-			if (rs.next()) {
-				return new Account(rs.getInt("account_id"), accountType,
-						rs.getString("account_unique_identifier"));
-			} else {
-				return null;
+		try {
+			PreparedStatement stmt = caseDbConnection.getPreparedStatement(
+					"SELECT * FROM accounts WHERE account_type_id = ? AND account_unique_identifier = ?", 
+					Statement.NO_GENERATED_KEYS
+			);
+		
+			stmt.clearParameters();
+			stmt.setInt(1, getAccountTypeId(accountType));
+			stmt.setString(2, normalizeAccountID(accountType, accountUniqueID));
+			
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) {
+					return new Account(rs.getInt("account_id"), accountType,
+							rs.getString("account_unique_identifier"));
+				} else {
+					return null;
+				}				
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding an account", ex);
@@ -452,17 +476,21 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Adds attachments to a message. NOTE: Does not post the created artifacts.
+	 * Adds attachments to a message. 
+	 * 
+	 * NOTE: Does not post the created artifacts.
 	 *
-	 * @param message     Message artifact.
-	 * @param attachments Attachments to add to the message.
-	 * @param moduleName  The name of the module for attributes.
-	 * @param transaction The case db transaction.
+	 * @param message         Message artifact.
+	 * @param dataSourceObjId The data source object id.
+	 * @param attachments     Attachments to add to the message.
+	 * @param moduleName      The name of the module for attributes.
+	 * @param transaction     The case db transaction.
 	 *
 	 * @throws TskCoreException If there is an error in adding attachments
 	 */
 	@Beta
-	public List<BlackboardArtifact> addAttachments(BlackboardArtifact message, MessageAttachments attachments, String moduleName, CaseDbTransaction transaction) throws TskCoreException {
+	public List<BlackboardArtifact> addAttachments(BlackboardArtifact message, long dataSourceObjId, MessageAttachments attachments, String moduleName,
+			CaseDbTransaction transaction) throws TskCoreException {
 		// Create attribute 
 		BlackboardAttribute blackboardAttribute = BlackboardJsonAttrUtil.toAttribute(ATTACHMENTS_ATTR_TYPE, moduleName, attachments);
 		message.addAttribute(blackboardAttribute);
@@ -473,8 +501,7 @@ public final class CommunicationsManager {
 		for (MessageAttachments.FileAttachment fileAttachment : fileAttachments) {
 			long attachedFileObjId = fileAttachment.getObjectId();
 			if (attachedFileObjId >= 0) {
-				AbstractFile attachedFile = message.getSleuthkitCase().getAbstractFileById(attachedFileObjId, transaction.getConnection());
-				DataArtifact artifact = associateAttachmentWithMessage(message, attachedFile, moduleName, transaction);
+				DataArtifact artifact = associateAttachmentWithMessage(message, attachedFileObjId, dataSourceObjId, moduleName, transaction);
 				assocObjectArtifacts.add(artifact);
 			}
 		}
@@ -486,20 +513,30 @@ public final class CommunicationsManager {
 	 * Creates a TSK_ASSOCIATED_OBJECT artifact between the attachment file and
 	 * the message.
 	 *
-	 * @param message     Message artifact.
-	 * @param attachments Attachment file.
-	 * @param moduleName  The name of the module.
-	 * @param transaction The case database transaction.
+	 * @param message         Message artifact.
+	 * @param parentContentId The parent content id.
+	 * @param dataSourceObjId The data source object id.
+	 * @param moduleName      The name of the module.
+	 * @param transaction     The case database transaction.
 	 *
 	 * @return TSK_ASSOCIATED_OBJECT artifact.
 	 *
 	 * @throws TskCoreException If there is an error creating the
 	 *                          TSK_ASSOCIATED_OBJECT artifact.
 	 */
-	private DataArtifact associateAttachmentWithMessage(BlackboardArtifact message, AbstractFile attachedFile, String moduleName, CaseDbTransaction transaction) throws TskCoreException {
+	private DataArtifact associateAttachmentWithMessage(BlackboardArtifact message, long parentContentId, long dataSourceObjId,
+			String moduleName, CaseDbTransaction transaction) throws TskCoreException {
+
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, moduleName, message.getArtifactID()));
-		return newDataArtifact(attachedFile, ASSOCIATED_OBJ_TYPE, attributes, transaction);
+
+		return getSleuthkitCase().getBlackboard().newDataArtifact(
+				ASSOCIATED_OBJ_TYPE,
+				parentContentId,
+				dataSourceObjId,
+				attributes,
+				null,
+				transaction);
 	}
 
 	/**
@@ -513,7 +550,9 @@ public final class CommunicationsManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private DataArtifact newDataArtifact(Content content, BlackboardArtifact.Type artType, Collection<BlackboardAttribute> attributes, CaseDbTransaction trans) throws TskCoreException {
+	private DataArtifact newDataArtifact(Content content, BlackboardArtifact.Type artType, 
+			Collection<BlackboardAttribute> attributes, CaseDbTransaction trans) throws TskCoreException {
+		
 		Long dataSourceObjId;
 		if (content instanceof AbstractFile) {
 			dataSourceObjId = ((AbstractFile) content).getDataSourceObjectId();
@@ -533,6 +572,7 @@ public final class CommunicationsManager {
 				trans);
 	}
 
+	
 	/**
 	 * Adds relationships between the sender and each of the recipient account
 	 * instances and between all recipient account instances. All account
@@ -692,9 +732,7 @@ public final class CommunicationsManager {
 	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID, CaseDbTransaction trans) throws TskCoreException, InvalidAccountIDException {
 		Account account = getAccount(accountType, accountUniqueID, trans.getConnection());
 		if (null == account) {
-			String query = " INTO accounts (account_type_id, account_unique_identifier) "
-					+ "VALUES ( " + getAccountTypeId(accountType) + ", '"
-					+ normalizeAccountID(accountType, accountUniqueID) + "'" + ")";
+			String query = " INTO accounts (account_type_id, account_unique_identifier) VALUES (?, ?)";
 			switch (db.getDatabaseType()) {
 				case POSTGRESQL:
 					query = "INSERT " + query + " ON CONFLICT DO NOTHING"; //NON-NLS
@@ -706,19 +744,27 @@ public final class CommunicationsManager {
 					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
 			}
 
-			Statement s = null;
-			ResultSet rs = null;
 			try {
-				s = trans.getConnection().createStatement();
-
-				s.execute(query);
-
-				account = getAccount(accountType, accountUniqueID, trans.getConnection());
+				PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+				insertStmt.clearParameters();
+				insertStmt.setInt(1, getAccountTypeId(accountType));
+				String accountUniqueIdentifier = normalizeAccountID(accountType, accountUniqueID);
+				insertStmt.setString(2, accountUniqueIdentifier);
+				if (insertStmt.executeUpdate() > 0) {
+					try (ResultSet rs = insertStmt.getGeneratedKeys()) {
+						if (rs.next()) {
+							return new Account(
+									rs.getInt(1), 
+									accountType,
+									accountUniqueIdentifier
+							);
+						}
+					}
+				} 
+				
+				return null;
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error adding an account", ex);
-			} finally {
-				closeResultSet(rs);
-				closeStatement(s);
 			}
 		}
 
@@ -808,12 +854,10 @@ public final class CommunicationsManager {
 				+ " AND attr_account_type.value_text = ?"
 				+ " AND artifacts.obj_id = ?";
 
-		PreparedStatement pStatement = null;
-		ResultSet rs = null;
-
 		try {
-			pStatement = transaction.getConnection().prepareStatement(queryStr, Statement.RETURN_GENERATED_KEYS);
-
+			PreparedStatement pStatement = transaction.getConnection().getPreparedStatement(queryStr, Statement.NO_GENERATED_KEYS);
+			pStatement.clearParameters();
+			
 			int paramIdx = 0;
 			pStatement.setInt(++paramIdx, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID());
 			pStatement.setString(++paramIdx, accountUniqueID);
@@ -822,16 +866,17 @@ public final class CommunicationsManager {
 			pStatement.setString(++paramIdx, accountType.getTypeName());
 			pStatement.setLong(++paramIdx, sourceFile.getId());
 
-			rs = pStatement.executeQuery();
-			if (rs.next()) {
-				BlackboardArtifact.Type bbartType = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+			try (ResultSet rs = pStatement.executeQuery()) {
+				if (rs.next()) {
+					BlackboardArtifact.Type bbartType = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+							rs.getString("type_name"), rs.getString("display_name"),
+							BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
 
-				accountArtifact = new DataArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")), rs.getLong("os_account_obj_id"), false);
+					accountArtifact = new DataArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+							rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
+							bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
+							BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")), rs.getLong("os_account_obj_id"), false);
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account", ex);

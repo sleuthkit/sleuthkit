@@ -1106,7 +1106,21 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		List<BlackboardArtifact> attachmentArts = Collections.emptyList();
 		CaseDbTransaction transaction = getSleuthkitCase().beginTransaction();
 		try {
-			attachmentArts = getSleuthkitCase().getCommunicationsManager().addAttachments(message, attachments, getModuleName(), transaction);
+			Long dataSourceObjId = message.getDataSourceObjectID();
+			if (dataSourceObjId == null) {
+				Content parent = message.getParent();
+				if (parent instanceof AbstractFile) {
+					dataSourceObjId = ((AbstractFile) parent).getDataSourceObjectId();
+				} else if (parent instanceof DataSource) {
+					dataSourceObjId = parent.getId();
+				} else if (parent != null) {
+					Content parentDs = parent.getDataSource();
+					if (parentDs != null) {
+						dataSourceObjId = parentDs.getId();
+					}
+				}
+			}
+			attachmentArts = getSleuthkitCase().getCommunicationsManager().addAttachments(message, dataSourceObjId, attachments, getModuleName(), transaction);
 			transaction.commit();
 		} catch (TskCoreException ex) {
 			transaction.rollback();
