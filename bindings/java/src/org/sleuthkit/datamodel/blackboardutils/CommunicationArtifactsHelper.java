@@ -77,7 +77,6 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardAttribute.Type ATTACHMENTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS);
 	private static final BlackboardArtifact.Type ASSOCIATED_OBJ_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
 
-	
 	/**
 	 * Enum for message read status
 	 */
@@ -153,7 +152,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * application account and a device account should be used instead.
 	 *
 	 * NOTE: This constructor should not be used when using transactions.
-	 * 
+	 *
 	 * @param caseDb       The case database.
 	 * @param moduleName   The name of the module creating the artifacts.
 	 * @param srcContent   The source/parent content of the artifacts.
@@ -942,7 +941,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		BlackboardArtifact callLogArt = null;
 		CaseDbTransaction transaction = getSleuthkitCase().beginTransaction();
 		try {
-			callLogArt = addCalllog(direction, callerId, calleeIdsList, startDateTime, endDateTime, mediaType, otherAttributesList, transaction);
+			callLogArt = addCalllog(direction, callerId, calleeIdsList, startDateTime, endDateTime, mediaType, transaction, otherAttributesList);
 			transaction.commit();
 		} catch (TskCoreException | BlackboardException ex) {
 			transaction.rollback();
@@ -974,6 +973,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	 * @param startDateTime       Start date/time, 0 if not available.
 	 * @param endDateTime         End date/time, 0 if not available.
 	 * @param mediaType           Call media type, UNKNOWN if not available.
+	 * @param trans               The case database transaction.
 	 * @param otherAttributesList other attributes, can be an empty list
 	 *
 	 * @return Call log artifact.
@@ -986,8 +986,8 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			Collection<String> calleeIdsList,
 			long startDateTime, long endDateTime,
 			CallMediaType mediaType,
-			Collection<BlackboardAttribute> otherAttributesList,
-			CaseDbTransaction trans) throws TskCoreException, BlackboardException {
+			CaseDbTransaction trans,
+			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		// Either caller id or a callee id must be provided.
 		if (StringUtils.isEmpty(callerId) && (isEffectivelyEmpty(calleeIdsList))) {
@@ -1125,7 +1125,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 					}
 				}
 			}
-			
+
 			// if null, substitute 0
 			dataSourceObjId = dataSourceObjId == null ? 0L : dataSourceObjId;
 			attachmentArts = addAttachments(message, dataSourceObjId, attachments, getModuleName(), transaction);
@@ -1148,10 +1148,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 	}
 
-	
 	/**
-	 * Adds attachments to a message. 
-	 * 
+	 * Adds attachments to a message.
+	 *
 	 * NOTE: Does not post the created artifacts.
 	 *
 	 * @param message         Message artifact.
@@ -1211,7 +1210,7 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 				null,
 				transaction);
 	}
-	
+
 	/**
 	 * Converts a list of ids into a single comma separated string.
 	 */
