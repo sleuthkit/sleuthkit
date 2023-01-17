@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.blackboardutils;
 
+import com.google.common.annotations.Beta;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,6 +45,7 @@ import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskCoreException;
 import org.sleuthkit.datamodel.TskDataException;
+import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
 import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 
 /**
@@ -72,6 +74,9 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardArtifact.Type CONTACT_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_CONTACT);
 	private static final BlackboardArtifact.Type MESSAGE_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_MESSAGE);
 	private static final BlackboardArtifact.Type CALLOG_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_CALLLOG);
+	private static final BlackboardAttribute.Type ATTACHMENTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS);
+	private static final BlackboardArtifact.Type ASSOCIATED_OBJ_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
+
 	
 	/**
 	 * Enum for message read status
@@ -1120,7 +1125,10 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 					}
 				}
 			}
-			attachmentArts = getSleuthkitCase().getCommunicationsManager().addAttachments(message, dataSourceObjId, attachments, getModuleName(), transaction);
+			
+			// if null, substitute 0
+			dataSourceObjId = dataSourceObjId == null ? 0L : dataSourceObjId;
+			attachmentArts = addAttachments(message, dataSourceObjId, attachments, getModuleName(), transaction);
 			transaction.commit();
 		} catch (TskCoreException ex) {
 			transaction.rollback();
@@ -1140,6 +1148,70 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		}
 	}
 
+	
+	/**
+	 * Adds attachments to a message. 
+	 * 
+	 * NOTE: Does not post the created artifacts.
+	 *
+	 * @param message         Message artifact.
+	 * @param dataSourceObjId The data source object id.
+	 * @param attachments     Attachments to add to the message.
+	 * @param moduleName      The name of the module for attributes.
+	 * @param transaction     The case db transaction.
+	 *
+	 * @throws TskCoreException If there is an error in adding attachments
+	 */
+	public List<BlackboardArtifact> addAttachments(BlackboardArtifact message, long dataSourceObjId, MessageAttachments attachments, String moduleName,
+			CaseDbTransaction transaction) throws TskCoreException {
+		// Create attribute 
+		BlackboardAttribute blackboardAttribute = BlackboardJsonAttrUtil.toAttribute(ATTACHMENTS_ATTR_TYPE, moduleName, attachments);
+		message.addAttribute(blackboardAttribute);
+
+		// Associate each attachment file with the message.
+		List<BlackboardArtifact> assocObjectArtifacts = new ArrayList<>();
+		Collection<MessageAttachments.FileAttachment> fileAttachments = attachments.getFileAttachments();
+		for (MessageAttachments.FileAttachment fileAttachment : fileAttachments) {
+			long attachedFileObjId = fileAttachment.getObjectId();
+			if (attachedFileObjId >= 0) {
+				DataArtifact artifact = associateAttachmentWithMessage(message, attachedFileObjId, dataSourceObjId, moduleName, transaction);
+				assocObjectArtifacts.add(artifact);
+			}
+		}
+
+		return assocObjectArtifacts;
+	}
+
+	/**
+	 * Creates a TSK_ASSOCIATED_OBJECT artifact between the attachment file and
+	 * the message.
+	 *
+	 * @param message         Message artifact.
+	 * @param parentContentId The parent content id.
+	 * @param dataSourceObjId The data source object id.
+	 * @param moduleName      The name of the module.
+	 * @param transaction     The case database transaction.
+	 *
+	 * @return TSK_ASSOCIATED_OBJECT artifact.
+	 *
+	 * @throws TskCoreException If there is an error creating the
+	 *                          TSK_ASSOCIATED_OBJECT artifact.
+	 */
+	private DataArtifact associateAttachmentWithMessage(BlackboardArtifact message, long parentContentId, long dataSourceObjId,
+			String moduleName, CaseDbTransaction transaction) throws TskCoreException {
+
+		Collection<BlackboardAttribute> attributes = new ArrayList<>();
+		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, moduleName, message.getArtifactID()));
+
+		return getSleuthkitCase().getBlackboard().newDataArtifact(
+				ASSOCIATED_OBJ_TYPE,
+				parentContentId,
+				dataSourceObjId,
+				attributes,
+				null,
+				transaction);
+	}
+	
 	/**
 	 * Converts a list of ids into a single comma separated string.
 	 */
