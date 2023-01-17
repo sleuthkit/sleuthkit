@@ -69,9 +69,6 @@ public final class CommunicationsManager {
 	));
 	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR = CommManagerSqlStringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 
-	private static final BlackboardAttribute.Type ATTACHMENTS_ATTR_TYPE = new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ATTACHMENTS);
-	private static final BlackboardArtifact.Type ASSOCIATED_OBJ_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_ASSOCIATED_OBJECT);
-
 	/**
 	 * Construct a CommunicationsManager for the given SleuthkitCase.
 	 *
@@ -473,70 +470,6 @@ public final class CommunicationsManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding an account", ex);
 		}
-	}
-
-	/**
-	 * Adds attachments to a message. 
-	 * 
-	 * NOTE: Does not post the created artifacts.
-	 *
-	 * @param message         Message artifact.
-	 * @param dataSourceObjId The data source object id.
-	 * @param attachments     Attachments to add to the message.
-	 * @param moduleName      The name of the module for attributes.
-	 * @param transaction     The case db transaction.
-	 *
-	 * @throws TskCoreException If there is an error in adding attachments
-	 */
-	@Beta
-	public List<BlackboardArtifact> addAttachments(BlackboardArtifact message, long dataSourceObjId, MessageAttachments attachments, String moduleName,
-			CaseDbTransaction transaction) throws TskCoreException {
-		// Create attribute 
-		BlackboardAttribute blackboardAttribute = BlackboardJsonAttrUtil.toAttribute(ATTACHMENTS_ATTR_TYPE, moduleName, attachments);
-		message.addAttribute(blackboardAttribute);
-
-		// Associate each attachment file with the message.
-		List<BlackboardArtifact> assocObjectArtifacts = new ArrayList<>();
-		Collection<MessageAttachments.FileAttachment> fileAttachments = attachments.getFileAttachments();
-		for (MessageAttachments.FileAttachment fileAttachment : fileAttachments) {
-			long attachedFileObjId = fileAttachment.getObjectId();
-			if (attachedFileObjId >= 0) {
-				DataArtifact artifact = associateAttachmentWithMessage(message, attachedFileObjId, dataSourceObjId, moduleName, transaction);
-				assocObjectArtifacts.add(artifact);
-			}
-		}
-
-		return assocObjectArtifacts;
-	}
-
-	/**
-	 * Creates a TSK_ASSOCIATED_OBJECT artifact between the attachment file and
-	 * the message.
-	 *
-	 * @param message         Message artifact.
-	 * @param parentContentId The parent content id.
-	 * @param dataSourceObjId The data source object id.
-	 * @param moduleName      The name of the module.
-	 * @param transaction     The case database transaction.
-	 *
-	 * @return TSK_ASSOCIATED_OBJECT artifact.
-	 *
-	 * @throws TskCoreException If there is an error creating the
-	 *                          TSK_ASSOCIATED_OBJECT artifact.
-	 */
-	private DataArtifact associateAttachmentWithMessage(BlackboardArtifact message, long parentContentId, long dataSourceObjId,
-			String moduleName, CaseDbTransaction transaction) throws TskCoreException {
-
-		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ASSOCIATED_ARTIFACT, moduleName, message.getArtifactID()));
-
-		return getSleuthkitCase().getBlackboard().newDataArtifact(
-				ASSOCIATED_OBJ_TYPE,
-				parentContentId,
-				dataSourceObjId,
-				attributes,
-				null,
-				transaction);
 	}
 
 	/**
