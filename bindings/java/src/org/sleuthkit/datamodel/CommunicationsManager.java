@@ -18,12 +18,15 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +42,8 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeResultSet;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
+import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
+import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 
 /**
  * Provides an API to create Accounts and communications/relationships between
@@ -190,50 +195,87 @@ public final class CommunicationsManager {
 	// NOTE: Full name given for Type for doxygen linking
 	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
 		Account.Type accountType = new Account.Type(accountTypeName, displayName);
+		// check if already in map
+		if (this.accountTypeToTypeIdMap.containsKey(accountType)) {
+			return accountType;
+		}
+		
+		CaseDbTransaction transaction = this.db.beginTransaction();
+		try {
+			org.sleuthkit.datamodel.Account.Type retAccountType = addAccountType(accountTypeName, displayName, transaction);
+			transaction.commit();
+			return retAccountType;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+
+	/**
+	 * Add a custom account type that is not already defined in Account.Type.
+	 * Will not allow duplicates and will return existing type if the name is
+	 * already defined.
+	 *
+	 * @param accountTypeName account type that must be unique
+	 * @param displayName     account type display name
+	 * @param trans			        The case database transaction
+	 *
+	 * @return Account.Type
+	 *
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	// NOTE: Full name given for Type for doxygen linking
+	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName, CaseDbTransaction trans) throws TskCoreException {
+		Account.Type accountType = new Account.Type(accountTypeName, displayName);
 
 		// check if already in map
 		if (this.accountTypeToTypeIdMap.containsKey(accountType)) {
 			return accountType;
 		}
 
-		CaseDbTransaction trans = db.beginTransaction();
-		Statement s = null;
-		ResultSet rs = null;
 		try {
-			s = trans.getConnection().createStatement();
-			rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
-			if (!rs.next()) {
-				rs.close();
-
-				s.execute("INSERT INTO account_types (type_name, display_name) VALUES ( '" + accountTypeName + "', '" + displayName + "')"); //NON-NLS
-
-				// Read back the typeID
-				rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
-				rs.next();
-
-				int typeID = rs.getInt("account_type_id");
-				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-
-				this.accountTypeToTypeIdMap.put(accountType, typeID);
-				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
-
-				trans.commit();
-
-				return accountType;
-			} else {
-				int typeID = rs.getInt("account_type_id");
-
-				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-				this.accountTypeToTypeIdMap.put(accountType, typeID);
-
-				return accountType;
+			PreparedStatement initialSelectStmt = trans.getConnection().getPreparedStatement(
+					"SELECT * FROM account_types WHERE type_name = ?", 
+					Statement.RETURN_GENERATED_KEYS
+			);
+			initialSelectStmt.clearParameters();
+			initialSelectStmt.setString(1, accountTypeName);
+			
+			// try to get cached account type
+			try (ResultSet initialSelectRs = initialSelectStmt.executeQuery()) {
+				if (initialSelectRs.next()) {
+					int typeID = initialSelectRs.getInt("account_type_id");
+					accountType = new Account.Type(initialSelectRs.getString("type_name"), initialSelectRs.getString("display_name"));
+					this.accountTypeToTypeIdMap.put(accountType, typeID);
+					return accountType;
+				}
 			}
+
+			// if not in database, insert
+			PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(
+				"INSERT INTO account_types (type_name, display_name) VALUES (?, ?)",
+				Statement.RETURN_GENERATED_KEYS
+			);
+
+			insertStmt.clearParameters();
+			insertStmt.setString(1, accountTypeName);				
+			insertStmt.setString(2, displayName);
+				
+			int affectedRows = insertStmt.executeUpdate();
+			if (affectedRows > 0) {
+				try (ResultSet insertRsKeys = insertStmt.getGeneratedKeys()) {
+					if (insertRsKeys.next()) {
+						int accountTypeId = insertRsKeys.getInt(1);
+						this.accountTypeToTypeIdMap.put(accountType, accountTypeId);
+						this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
+						return accountType;
+					}
+				}
+			}
+			
+			throw new SQLException(MessageFormat.format("Account with type name: {0} and display name: {1} could not be created", accountTypeName, displayName));
 		} catch (SQLException ex) {
-			trans.rollback();
 			throw new TskCoreException("Error adding account type", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
 		}
 	}
 
@@ -248,7 +290,8 @@ public final class CommunicationsManager {
 	 *                        address).
 	 * @param moduleName      The module creating the account.
 	 * @param sourceFile      The source file the account was found in.
-	 * @param attributes      List of blackboard attributes to add to the data artifact (may be empty or null).
+	 * @param attributes      List of blackboard attributes to add to the data
+	 *                        artifact (may be empty or null).
 	 * @param ingestJobId     The ingest job in which the analysis that found
 	 *                        the account was performed, may be null.
 	 *
@@ -260,11 +303,64 @@ public final class CommunicationsManager {
 	 *                                   ID is not valid for the account type.
 	 */
 	// NOTE: Full name given for Type for doxygen linking
-	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, 
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID,
 			String moduleName, Content sourceFile, List<BlackboardAttribute> attributes, Long ingestJobId) throws TskCoreException, InvalidAccountIDException {
+		CaseDbTransaction transaction = this.db.beginTransaction();
+		AccountFileInstance accountFileInstance = null;
+		try {
+			accountFileInstance = createAccountFileInstance(accountType, accountUniqueID, moduleName,
+					sourceFile, attributes, ingestJobId, transaction);
+
+			transaction.commit();
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+
+		if (accountFileInstance != null) {
+			BlackboardArtifact accountArtifact = accountFileInstance.getArtifact();
+			try {
+				this.db.getBlackboard().postArtifact(accountArtifact, moduleName, ingestJobId);
+			} catch (BlackboardException ex) {
+				LOGGER.log(Level.SEVERE, String.format("Error posting new account artifact to the blackboard (object ID = %d)", accountArtifact.getId()), ex);
+			}
+		}
+
+		return accountFileInstance;
+	}
+
+	/**
+	 * Records that an account was used in a specific file. Behind the scenes,
+	 * it will create a case-specific Account object if it does not already
+	 * exist, and it will create the needed database entries (which currently
+	 * includes making a TSK_ACCOUNT data artifact). NOTE: Does not post the
+	 * created artifact.
+	 *
+	 * @param accountType     The account type.
+	 * @param accountUniqueID The unique account identifier (such as an email
+	 *                        address).
+	 * @param moduleName      The module creating the account.
+	 * @param sourceFile      The source file the account was found in.
+	 * @param attributes      List of blackboard attributes to add to the data
+	 *                        artifact (may be empty or null).
+	 * @param ingestJobId     The ingest job in which the analysis that found
+	 *                        the account was performed, may be null.
+	 * @param transaction     The case db transaction
+	 *
+	 * @return	An AccountFileInstance object.
+	 *
+	 * @throws TskCoreException          The exception is thrown if there is an
+	 *                                   issue updating the case database.
+	 * @throws InvalidAccountIDException The exception is thrown if the account
+	 *                                   ID is not valid for the account type.
+	 */
+	// NOTE: Full name given for Type for doxygen linking
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType,
+			String accountUniqueID, String moduleName, Content sourceFile, List<BlackboardAttribute> attributes,
+			Long ingestJobId, CaseDbTransaction transaction) throws TskCoreException, InvalidAccountIDException {
 
 		// make or get the Account (unique at the case-level)
-		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
+		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID), transaction);
 
 		/*
 		 * make or get the artifact. Will not create one if it already exists
@@ -272,7 +368,7 @@ public final class CommunicationsManager {
 		 * address multiple times. Only one artifact is created for each email
 		 * message in that PST.
 		 */
-		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, attributes, ingestJobId);
+		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile, attributes, ingestJobId, transaction);
 
 		// The account instance map was unused so we have removed it from the database, 
 		// but we expect we may need it so I am preserving this method comment and usage here.
@@ -327,26 +423,89 @@ public final class CommunicationsManager {
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID) throws TskCoreException, InvalidAccountIDException {
-		Account account = null;
-		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, "SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
-						+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'");) { //NON-NLS
-
-			if (rs.next()) {
-				account = new Account(rs.getInt("account_id"), accountType,
-						rs.getString("account_unique_identifier"));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting account type id", ex);
+		this.db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection conn = this.db.getConnection()) {
+			return getAccount(accountType, accountUniqueID, conn);
+		} catch (TskCoreException ex) {
+			throw ex;
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
-
-		return account;
 	}
 
+	/**
+	 * Get the Account with the given account type and account ID.
+	 *
+	 * @param accountType     account type
+	 * @param accountUniqueID unique account identifier (such as an email
+	 *                        address)
+	 * @param trans			        The case db transaction
+	 *
+	 * @return Account, returns NULL is no matching account found
+	 *
+	 * @throws TskCoreException          If a critical error occurs within TSK
+	 *                                   core.
+	 * @throws InvalidAccountIDException If the account identifier is not valid.
+	 */
+	// NOTE: Full name given for Type for doxygen linking
+	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, CaseDbConnection caseDbConnection) throws TskCoreException, InvalidAccountIDException {
+		try {
+			PreparedStatement stmt = caseDbConnection.getPreparedStatement(
+					"SELECT * FROM accounts WHERE account_type_id = ? AND account_unique_identifier = ?", 
+					Statement.NO_GENERATED_KEYS
+			);
+		
+			stmt.clearParameters();
+			stmt.setInt(1, getAccountTypeId(accountType));
+			stmt.setString(2, normalizeAccountID(accountType, accountUniqueID));
+			
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) {
+					return new Account(rs.getInt("account_id"), accountType,
+							rs.getString("account_unique_identifier"));
+				} else {
+					return null;
+				}				
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding an account", ex);
+		}
+	}
+
+	/**
+	 * Creates data artifact in transaction.
+	 *
+	 * @param content    The content with which to associate the artifact.
+	 * @param attributes The attributes.
+	 * @param trans      The case db transaction.
+	 *
+	 * @return The created artifact.
+	 *
+	 * @throws TskCoreException
+	 */
+	private DataArtifact newDataArtifact(Content content, BlackboardArtifact.Type artType, 
+			Collection<BlackboardAttribute> attributes, CaseDbTransaction trans) throws TskCoreException {
+		
+		Long dataSourceObjId;
+		if (content instanceof AbstractFile) {
+			dataSourceObjId = ((AbstractFile) content).getDataSourceObjectId();
+		} else if (content instanceof DataSource) {
+			dataSourceObjId = content.getId();
+		} else {
+			// can be null for anything else
+			dataSourceObjId = null;
+		}
+
+		return getSleuthkitCase().getBlackboard().newDataArtifact(
+				artType,
+				content.getId(),
+				dataSourceObjId,
+				attributes,
+				null,
+				trans);
+	}
+
+	
 	/**
 	 * Adds relationships between the sender and each of the recipient account
 	 * instances and between all recipient account instances. All account
@@ -371,7 +530,46 @@ public final class CommunicationsManager {
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
-			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
+			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType,
+			long dateTime) throws TskCoreException, TskDataException {
+
+		CaseDbTransaction transaction = this.db.beginTransaction();
+		try {
+			addRelationships(sender, recipients, sourceArtifact, relationshipType, dateTime, transaction);
+			transaction.commit();
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw ex;
+		}
+	}
+
+	/**
+	 * Adds relationships between the sender and each of the recipient account
+	 * instances and between all recipient account instances. All account
+	 * instances must be from the same data source.
+	 *
+	 * @param sender           Sender account, may be null.
+	 * @param recipients       List of recipients, may be empty.
+	 * @param sourceArtifact   Artifact that relationships were derived from.
+	 * @param relationshipType The type of relationships to be created.
+	 * @param dateTime         Date of communications/relationship, as epoch
+	 *                         seconds.
+	 * @param trans			         The database transaction. NOTE: Does not post the
+	 *                         created artifact.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @throws org.sleuthkit.datamodel.TskDataException If the all the accounts
+	 *                                                  and the relationship are
+	 *                                                  not from the same data
+	 *                                                  source, or if the
+	 *                                                  sourceArtifact and
+	 *                                                  relationshipType are not
+	 *                                                  compatible.
+	 */
+	// NOTE: Full name given for Type for doxygen linking
+	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
+			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime,
+			CaseDbTransaction trans) throws TskCoreException, TskDataException {
 
 		if (sourceArtifact.getDataSourceObjectID() == null) {
 			throw new TskDataException("Source Artifact does not have a valid data source.");
@@ -420,7 +618,6 @@ public final class CommunicationsManager {
 				throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
 		}
 
-		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			SleuthkitCase.CaseDbConnection connection = trans.getConnection();
 			PreparedStatement preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
@@ -445,19 +642,18 @@ public final class CommunicationsManager {
 					connection.executeUpdate(preparedStatement);
 				}
 			}
-			trans.commit();
 		} catch (SQLException ex) {
-			trans.rollback();
 			throw new TskCoreException("Error adding accounts relationship", ex);
 		}
 	}
 
 	/**
-	 * Get the Account for the given account type and account ID. Create an a
-	 * new account if one doesn't exist
+	 * Get the Account for the given account type and account ID. Create a new
+	 * account if one doesn't exist
 	 *
 	 * @param accountType     account type
 	 * @param accountUniqueID unique account identifier
+	 * @param trans           The case database transaction
 	 *
 	 * @return A matching account, either existing or newly created.
 	 *
@@ -466,12 +662,10 @@ public final class CommunicationsManager {
 	 * @throws InvalidAccountIDException If the account identifier is not valid.
 	 *
 	 */
-	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException, InvalidAccountIDException {
-		Account account = getAccount(accountType, accountUniqueID);
+	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID, CaseDbTransaction trans) throws TskCoreException, InvalidAccountIDException {
+		Account account = getAccount(accountType, accountUniqueID, trans.getConnection());
 		if (null == account) {
-			String query = " INTO accounts (account_type_id, account_unique_identifier) "
-					+ "VALUES ( " + getAccountTypeId(accountType) + ", '"
-					+ normalizeAccountID(accountType, accountUniqueID) + "'" + ")";
+			String query = " INTO accounts (account_type_id, account_unique_identifier) VALUES (?, ?)";
 			switch (db.getDatabaseType()) {
 				case POSTGRESQL:
 					query = "INSERT " + query + " ON CONFLICT DO NOTHING"; //NON-NLS
@@ -483,22 +677,27 @@ public final class CommunicationsManager {
 					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
 			}
 
-			CaseDbTransaction trans = db.beginTransaction();
-			Statement s = null;
-			ResultSet rs = null;
 			try {
-				s = trans.getConnection().createStatement();
-
-				s.execute(query);
-
-				trans.commit();
-				account = getAccount(accountType, accountUniqueID);
+				PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+				insertStmt.clearParameters();
+				insertStmt.setInt(1, getAccountTypeId(accountType));
+				String accountUniqueIdentifier = normalizeAccountID(accountType, accountUniqueID);
+				insertStmt.setString(2, accountUniqueIdentifier);
+				if (insertStmt.executeUpdate() > 0) {
+					try (ResultSet rs = insertStmt.getGeneratedKeys()) {
+						if (rs.next()) {
+							return new Account(
+									rs.getInt(1), 
+									accountType,
+									accountUniqueIdentifier
+							);
+						}
+					}
+				} 
+				
+				return null;
 			} catch (SQLException ex) {
-				trans.rollback();
 				throw new TskCoreException("Error adding an account", ex);
-			} finally {
-				closeResultSet(rs);
-				closeStatement(s);
 			}
 		}
 
@@ -516,22 +715,24 @@ public final class CommunicationsManager {
 	 * @param moduleName      The name of the module that found the account
 	 *                        instance.
 	 * @param sourceFile      The file in which the account instance was found.
-	 * @param originalAttrs   List of blackboard attributes to add to the data artifact (may be empty or null).
+	 * @param originalAttrs   List of blackboard attributes to add to the data
+	 *                        artifact (may be empty or null).
 	 * @param ingestJobId     The ingest job in which the analysis that found
 	 *                        the account was performed, may be null.
+	 * @param trans           The case db transaction.
 	 *
 	 * @return The account artifact.
 	 *
 	 * @throws TskCoreException If there is an error querying or updating the
 	 *                          case database.
 	 */
-	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, 
-			Content sourceFile, List<BlackboardAttribute> originalAttrs, Long ingestJobId) throws TskCoreException {
+	private BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName,
+			Content sourceFile, List<BlackboardAttribute> originalAttrs, Long ingestJobId, CaseDbTransaction trans) throws TskCoreException {
 		if (sourceFile == null) {
 			throw new TskCoreException("Source file not provided.");
 		}
 
-		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
+		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile, trans);
 		if (accountArtifact == null) {
 			List<BlackboardAttribute> attributes = new ArrayList<>();
 			attributes.add(new BlackboardAttribute(BlackboardAttribute.Type.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()));
@@ -540,13 +741,7 @@ public final class CommunicationsManager {
 				attributes.addAll(originalAttrs);
 			}
 
-			accountArtifact = sourceFile.newDataArtifact(ACCOUNT_TYPE, attributes);
-
-			try {
-				db.getBlackboard().postArtifact(accountArtifact, moduleName, ingestJobId);
-			} catch (BlackboardException ex) {
-				LOGGER.log(Level.SEVERE, String.format("Error posting new account artifact to the blackboard (object ID = %d)", accountArtifact.getId()), ex);
-			}
+			accountArtifact = newDataArtifact(sourceFile, ACCOUNT_TYPE, attributes, trans);
 		}
 		return accountArtifact;
 	}
@@ -557,14 +752,15 @@ public final class CommunicationsManager {
 	 *
 	 * @param accountType     account type
 	 * @param accountUniqueID Unique account ID (such as email address)
-	 * @param sourceFile		    Source file (for the artifact)
+	 * @param sourceFile	     Source file (for the artifact)
+	 * @param trans			        Case DB transaction
 	 *
 	 * @return blackboard artifact, returns NULL is no matching account found
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	private BlackboardArtifact getAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, Content sourceFile) throws TskCoreException {
+	private BlackboardArtifact getAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, Content sourceFile, CaseDbTransaction transaction) throws TskCoreException {
 		BlackboardArtifact accountArtifact = null;
 
 		String queryStr = "SELECT artifacts.artifact_id AS artifact_id,"
@@ -573,36 +769,50 @@ public final class CommunicationsManager {
 				+ " artifacts.data_source_obj_id AS data_source_obj_id,"
 				+ " artifacts.artifact_type_id AS artifact_type_id,"
 				+ " artifacts.review_status_id AS review_status_id,"
+				+ " artifact_types.type_name AS type_name,"
+				+ " artifact_types.display_name AS display_name,"
+				+ " artifact_types.category_type AS category_type,"
 				+ " tsk_data_artifacts.os_account_obj_id AS os_account_obj_id"
 				+ " FROM blackboard_artifacts AS artifacts"
 				+ "	JOIN blackboard_attributes AS attr_account_type"
 				+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
 				+ " JOIN blackboard_attributes AS attr_account_id"
 				+ "		ON artifacts.artifact_id = attr_account_id.artifact_id"
-				+ "		AND attr_account_id.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID()
-				+ "	    AND attr_account_id.value_text = '" + accountUniqueID + "'"
+				+ "		AND attr_account_id.attribute_type_id = ?"
+				+ "	    AND attr_account_id.value_text = ?"
 				+ " LEFT JOIN tsk_data_artifacts ON tsk_data_artifacts.artifact_obj_id = artifacts.artifact_obj_id"
-				+ " WHERE artifacts.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()
-				+ " AND attr_account_type.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
-				+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"
-				+ " AND artifacts.obj_id = " + sourceFile.getId(); //NON-NLS
+				+ " LEFT JOIN blackboard_artifact_types AS artifact_types ON artifact_types.artifact_type_id = artifacts.artifact_type_id"
+				+ " WHERE artifacts.artifact_type_id = ?"
+				+ " AND attr_account_type.attribute_type_id = ?"
+				+ " AND attr_account_type.value_text = ?"
+				+ " AND artifacts.obj_id = ?";
 
-		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryStr);) { //NON-NLS
-			if (rs.next()) {
-				BlackboardArtifact.Type bbartType = db.getBlackboard().getArtifactType(rs.getInt("artifact_type_id"));
+		try {
+			PreparedStatement pStatement = transaction.getConnection().getPreparedStatement(queryStr, Statement.NO_GENERATED_KEYS);
+			pStatement.clearParameters();
+			
+			int paramIdx = 0;
+			pStatement.setInt(++paramIdx, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID());
+			pStatement.setString(++paramIdx, accountUniqueID);
+			pStatement.setInt(++paramIdx, BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID());
+			pStatement.setInt(++paramIdx, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID());
+			pStatement.setString(++paramIdx, accountType.getTypeName());
+			pStatement.setLong(++paramIdx, sourceFile.getId());
 
-				accountArtifact = new DataArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
-						rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
-						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")), rs.getLong("os_account_obj_id"), false);
+			try (ResultSet rs = pStatement.executeQuery()) {
+				if (rs.next()) {
+					BlackboardArtifact.Type bbartType = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+							rs.getString("type_name"), rs.getString("display_name"),
+							BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+
+					accountArtifact = new DataArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+							rs.getObject("data_source_obj_id") != null ? rs.getLong("data_source_obj_id") : null,
+							bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
+							BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")), rs.getLong("os_account_obj_id"), false);
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account", ex);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
 		}
 
 		return accountArtifact;

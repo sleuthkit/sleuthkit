@@ -269,7 +269,7 @@ public class CommunicationsManagerTest {
 				AbstractFile sourceContent_1 = rootDirectory_1;	// Let the root dorectory be the source for all artifacts
 
 				// Create a Device account for Device1
-				deviceAccount_1 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1);
+				deviceAccount_1 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1, null, null);
 				ds1DeviceAccount = new AccountDeviceInstance(deviceAccount_1.getAccount(), DS1_DEVICEID);
 
 				// Create some email message artifacts
@@ -318,7 +318,7 @@ public class CommunicationsManagerTest {
 				AbstractFile sourceContent_2 = rootDirectory_2;	// Let the root directory be the source for all artifacts
 
 				// Create a Device accocunt for Device1
-				deviceAccount_2 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS2_DEVICEID, MODULE_NAME, sourceContent_2);
+				deviceAccount_2 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS2_DEVICEID, MODULE_NAME, sourceContent_2, null, null);
 				ds2DeviceAccount = new AccountDeviceInstance(deviceAccount_2.getAccount(), DS2_DEVICEID);
 
 				// Add some Call logs
@@ -1366,7 +1366,7 @@ public class CommunicationsManagerTest {
 		if (senderAddressList.size() == 1) {
 			senderAddress = senderAddressList.get(0);
 			try {
-				senderAccountInstance = commsMgr.createAccountFileInstance(EMAIL, senderAddress, MODULE_NAME, abstractFile);
+				senderAccountInstance = commsMgr.createAccountFileInstance(EMAIL, senderAddress, MODULE_NAME, abstractFile, null, null);
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Failed to create account for email address  " + senderAddress, ex); //NON-NLS
 			}
@@ -1384,7 +1384,7 @@ public class CommunicationsManagerTest {
 			try {
 				AccountFileInstance recipientAccountInstance
 						= commsMgr.createAccountFileInstance(EMAIL, addr,
-								MODULE_NAME, abstractFile);
+								MODULE_NAME, abstractFile, null, null);
 				recipientAccountInstances.add(recipientAccountInstance);
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Failed to create account for email address  " + addr, ex); //NON-NLS
@@ -1477,7 +1477,7 @@ public class CommunicationsManagerTest {
 
 			BlackboardArtifact bbart = abstractFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG), attributes); //create a call log and then add attributes from result set.
 			// Create a phone number account for the phone number
-			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(PHONE, phoneNumber, MODULE_NAME, abstractFile);
+			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(PHONE, phoneNumber, MODULE_NAME, abstractFile, null, null);
 			List<AccountFileInstance> accountInstanceList = new ArrayList<AccountFileInstance>();
 			accountInstanceList.add(phoneNumAccount);
 
@@ -1511,7 +1511,7 @@ public class CommunicationsManagerTest {
 			BlackboardArtifact bbart = abstractFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE), attributes);
 
 			// Create a phone number account for the phone number
-			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(PHONE, phoneNumber, MODULE_NAME, abstractFile);
+			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(PHONE, phoneNumber, MODULE_NAME, abstractFile, null, null);
 			List<AccountFileInstance> accountInstanceList = new ArrayList<AccountFileInstance>();
 			accountInstanceList.add(phoneNumAccount);
 
@@ -1538,7 +1538,7 @@ public class CommunicationsManagerTest {
 			BlackboardArtifact bbart = abstractFile.newDataArtifact(new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT), attributes);
 
 			// Create a phone number account for the phone number
-			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(PHONE, phoneNumber, MODULE_NAME, abstractFile);
+			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(PHONE, phoneNumber, MODULE_NAME, abstractFile, null, null);
 			List<AccountFileInstance> accountInstanceList = new ArrayList<AccountFileInstance>();
 			accountInstanceList.add(phoneNumAccount);
 
