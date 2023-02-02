@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.annotations.Beta;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,8 +41,6 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeResultSet;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
-import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
-import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 
 /**
  * Provides an API to create Accounts and communications/relationships between
@@ -678,7 +675,7 @@ public final class CommunicationsManager {
 			}
 
 			try {
-				PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+				PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(query, Statement.RETURN_GENERATED_KEYS);
 				insertStmt.clearParameters();
 				insertStmt.setInt(1, getAccountTypeId(accountType));
 				String accountUniqueIdentifier = normalizeAccountID(accountType, accountUniqueID);
