@@ -959,6 +959,7 @@ public final class OsAccountManager {
 
 			
 			// TBD: We need to emit another event which tells CT that two accounts are being merged so it can updates other dedicated tables 
+			trans.registerMergedOsAccount(sourceAccount.getId(), destAccount.getId());
 			
 			// Update the source account. Make a dummy signature to prevent problems with the unique constraint.
 			String mergedSignature = makeMergedOsAccountSignature();
