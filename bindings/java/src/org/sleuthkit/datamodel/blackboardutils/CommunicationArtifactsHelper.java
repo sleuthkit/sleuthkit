@@ -315,9 +315,11 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		try {
 			contactArt = addContact(contactName, phoneNumber, homePhoneNumber, mobilePhoneNumber, emailAddr, transaction, additionalAttributes);
 			transaction.commit();
-		} catch (TskCoreException | BlackboardException ex) {
-			transaction.rollback();
-			throw ex;
+			transaction = null;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 
 		if (contactArt != null) {
@@ -615,9 +617,11 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		try {
 			msgArt = addMessage(messageType, direction, senderId, recipientIdsList, dateTime, readStatus, subject, messageText, threadId, transaction, otherAttributesList);
 			transaction.commit();
-		} catch (TskCoreException | BlackboardException ex) {
-			transaction.rollback();
-			throw ex;
+			transaction = null;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 
 		if (msgArt != null) {
@@ -943,9 +947,11 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		try {
 			callLogArt = addCalllog(direction, callerId, calleeIdsList, startDateTime, endDateTime, mediaType, transaction, otherAttributesList);
 			transaction.commit();
-		} catch (TskCoreException | BlackboardException ex) {
-			transaction.rollback();
-			throw ex;
+			transaction = null;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 
 		if (callLogArt != null) {
@@ -1084,8 +1090,6 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 		Content content = getContent();
 		BlackboardArtifact callLogArtifact = newDataArtifact(content, CALLOG_TYPE, attributes, trans);
 
-		callLogArtifact.addAttributes(attributes);
-
 		// create relationships between caller/callees
 		try {
 			getSleuthkitCase().getCommunicationsManager().addRelationships(callerAccountInstance,
@@ -1130,9 +1134,11 @@ public final class CommunicationArtifactsHelper extends ArtifactHelperBase {
 			dataSourceObjId = dataSourceObjId == null ? 0L : dataSourceObjId;
 			attachmentArts = addAttachments(message, dataSourceObjId, attachments, getModuleName(), transaction);
 			transaction.commit();
-		} catch (TskCoreException ex) {
-			transaction.rollback();
-			throw ex;
+			transaction = null;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 
 		attachmentArts = (attachmentArts == null) ? Collections.emptyList() : attachmentArts;

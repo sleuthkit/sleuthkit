@@ -8480,10 +8480,12 @@ public class SleuthkitCase {
 			LayoutFile lf = addLayoutFile(fileName, size, dirFlag, metaFlag, 
 					ctime, crtime, atime, mtime, fileRanges, parent, dataSourceId, transaction);
 			transaction.commit();
+			transaction = null;
 			return lf;
-		} catch (TskCoreException ex) {
-			transaction.rollback();
-			throw ex;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();	
+			}
 		}
 	}
 	

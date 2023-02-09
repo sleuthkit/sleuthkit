@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.annotations.Beta;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,8 +41,6 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeResultSet;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
-import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
-import org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments;
 
 /**
  * Provides an API to create Accounts and communications/relationships between
@@ -199,15 +196,17 @@ public final class CommunicationsManager {
 		if (this.accountTypeToTypeIdMap.containsKey(accountType)) {
 			return accountType;
 		}
-		
+
 		CaseDbTransaction transaction = this.db.beginTransaction();
 		try {
 			org.sleuthkit.datamodel.Account.Type retAccountType = addAccountType(accountTypeName, displayName, transaction);
 			transaction.commit();
+			transaction = null;
 			return retAccountType;
-		} catch (TskCoreException ex) {
-			transaction.rollback();
-			throw ex;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 	}
 
@@ -235,12 +234,12 @@ public final class CommunicationsManager {
 
 		try {
 			PreparedStatement initialSelectStmt = trans.getConnection().getPreparedStatement(
-					"SELECT * FROM account_types WHERE type_name = ?", 
+					"SELECT * FROM account_types WHERE type_name = ?",
 					Statement.RETURN_GENERATED_KEYS
 			);
 			initialSelectStmt.clearParameters();
 			initialSelectStmt.setString(1, accountTypeName);
-			
+
 			// try to get cached account type
 			try (ResultSet initialSelectRs = initialSelectStmt.executeQuery()) {
 				if (initialSelectRs.next()) {
@@ -253,14 +252,14 @@ public final class CommunicationsManager {
 
 			// if not in database, insert
 			PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(
-				"INSERT INTO account_types (type_name, display_name) VALUES (?, ?)",
-				Statement.RETURN_GENERATED_KEYS
+					"INSERT INTO account_types (type_name, display_name) VALUES (?, ?)",
+					Statement.RETURN_GENERATED_KEYS
 			);
 
 			insertStmt.clearParameters();
-			insertStmt.setString(1, accountTypeName);				
+			insertStmt.setString(1, accountTypeName);
 			insertStmt.setString(2, displayName);
-				
+
 			int affectedRows = insertStmt.executeUpdate();
 			if (affectedRows > 0) {
 				try (ResultSet insertRsKeys = insertStmt.getGeneratedKeys()) {
@@ -272,7 +271,7 @@ public final class CommunicationsManager {
 					}
 				}
 			}
-			
+
 			throw new SQLException(MessageFormat.format("Account with type name: {0} and display name: {1} could not be created", accountTypeName, displayName));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding account type", ex);
@@ -312,9 +311,11 @@ public final class CommunicationsManager {
 					sourceFile, attributes, ingestJobId, transaction);
 
 			transaction.commit();
-		} catch (TskCoreException ex) {
-			transaction.rollback();
-			throw ex;
+			transaction = null;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 
 		if (accountFileInstance != null) {
@@ -451,21 +452,21 @@ public final class CommunicationsManager {
 	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, CaseDbConnection caseDbConnection) throws TskCoreException, InvalidAccountIDException {
 		try {
 			PreparedStatement stmt = caseDbConnection.getPreparedStatement(
-					"SELECT * FROM accounts WHERE account_type_id = ? AND account_unique_identifier = ?", 
+					"SELECT * FROM accounts WHERE account_type_id = ? AND account_unique_identifier = ?",
 					Statement.NO_GENERATED_KEYS
 			);
-		
+
 			stmt.clearParameters();
 			stmt.setInt(1, getAccountTypeId(accountType));
 			stmt.setString(2, normalizeAccountID(accountType, accountUniqueID));
-			
+
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
 					return new Account(rs.getInt("account_id"), accountType,
 							rs.getString("account_unique_identifier"));
 				} else {
 					return null;
-				}				
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding an account", ex);
@@ -483,17 +484,18 @@ public final class CommunicationsManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private DataArtifact newDataArtifact(Content content, BlackboardArtifact.Type artType, 
+	private DataArtifact newDataArtifact(Content content, BlackboardArtifact.Type artType,
 			Collection<BlackboardAttribute> attributes, CaseDbTransaction trans) throws TskCoreException {
-		
-		Long dataSourceObjId;
+
+		long dataSourceObjId;
 		if (content instanceof AbstractFile) {
 			dataSourceObjId = ((AbstractFile) content).getDataSourceObjectId();
+		} else if (content instanceof BlackboardArtifact) {
+			dataSourceObjId = ((BlackboardArtifact) content).getDataSourceObjectID();
 		} else if (content instanceof DataSource) {
 			dataSourceObjId = content.getId();
 		} else {
-			// can be null for anything else
-			dataSourceObjId = null;
+			dataSourceObjId = getDataSourceObjId(trans.getConnection(), content.getId());
 		}
 
 		return getSleuthkitCase().getBlackboard().newDataArtifact(
@@ -505,7 +507,63 @@ public final class CommunicationsManager {
 				trans);
 	}
 
-	
+	/**
+	 * Iteratively checks tsk_objects table for parents until arriving at a
+	 * tsk_objects entry that is of type IMG. If no IMG type is reached, returns
+	 * 0.
+	 *
+	 * @param conn  The database connection.
+	 * @param objId The starting object id.
+	 *
+	 * @return The object id of the parent data source or 0.
+	 *
+	 * @throws TskCoreException
+	 */
+	private long getDataSourceObjId(CaseDbConnection conn, long objId) throws TskCoreException {
+
+		this.db.acquireSingleUserCaseReadLock();
+		try {
+			while (objId > 0) {
+				try (PreparedStatement pStmt = conn.getPreparedStatement(
+						"SELECT par_obj_id, type FROM tsk_objects WHERE obj_id = ?",
+						Statement.NO_GENERATED_KEYS)) {
+
+					pStmt.clearParameters();
+					pStmt.setLong(1, objId);
+					try (ResultSet rs = pStmt.executeQuery()) {
+						if (rs.next()) {
+							TskData.ObjectType type = TskData.ObjectType.valueOf(rs.getShort("type")); //NON-NLS
+							// if the current id is an image, we have found the data source id.
+							if (type == TskData.ObjectType.IMG) {
+								return objId;
+							}
+
+							Long parId = rs.getLong("par_obj_id");
+							// if no parent id, there is no data source associated with this content.
+							if (rs.wasNull()) {
+								return 0;
+							}
+
+							// otherwise, keep iterating
+							objId = parId;
+
+						} else {
+							// if no record matching the object id, set the data source object id to 0.
+							return 0;
+						}
+					}
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting Content by ID.", ex);
+		} finally {
+			this.db.releaseSingleUserCaseReadLock();
+		}
+
+		// in this event, simply return 0.
+		return 0;
+	}
+
 	/**
 	 * Adds relationships between the sender and each of the recipient account
 	 * instances and between all recipient account instances. All account
@@ -537,9 +595,11 @@ public final class CommunicationsManager {
 		try {
 			addRelationships(sender, recipients, sourceArtifact, relationshipType, dateTime, transaction);
 			transaction.commit();
-		} catch (TskCoreException ex) {
-			transaction.rollback();
-			throw ex;
+			transaction = null;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 	}
 
@@ -678,7 +738,7 @@ public final class CommunicationsManager {
 			}
 
 			try {
-				PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+				PreparedStatement insertStmt = trans.getConnection().getPreparedStatement(query, Statement.RETURN_GENERATED_KEYS);
 				insertStmt.clearParameters();
 				insertStmt.setInt(1, getAccountTypeId(accountType));
 				String accountUniqueIdentifier = normalizeAccountID(accountType, accountUniqueID);
@@ -687,14 +747,14 @@ public final class CommunicationsManager {
 					try (ResultSet rs = insertStmt.getGeneratedKeys()) {
 						if (rs.next()) {
 							return new Account(
-									rs.getInt(1), 
+									rs.getInt(1),
 									accountType,
 									accountUniqueIdentifier
 							);
 						}
 					}
-				} 
-				
+				}
+
 				return null;
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error adding an account", ex);
@@ -790,7 +850,7 @@ public final class CommunicationsManager {
 		try {
 			PreparedStatement pStatement = transaction.getConnection().getPreparedStatement(queryStr, Statement.NO_GENERATED_KEYS);
 			pStatement.clearParameters();
-			
+
 			int paramIdx = 0;
 			pStatement.setInt(++paramIdx, BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID());
 			pStatement.setString(++paramIdx, accountUniqueID);
@@ -1170,7 +1230,7 @@ public final class CommunicationsManager {
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
 			final Long accountID = entry.getKey();
 			String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildCSVString(entry.getValue());
-			
+
 			adiSQLClauses.add(
 					"( "
 					+ (!datasourceObjIdsCSV.isEmpty() ? "( relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " ) ) AND" : "")
@@ -1179,8 +1239,8 @@ public final class CommunicationsManager {
 			);
 		}
 		String adiSQLClause = CommManagerSqlStringUtils.joinAsStrings(adiSQLClauses, " OR ");
-		
-		if(adiSQLClause.isEmpty()) {
+
+		if (adiSQLClause.isEmpty()) {
 			LOGGER.log(Level.SEVERE, "There set of AccountDeviceInstances had no valid data source ids.");
 			return Collections.emptySet();
 		}
@@ -1196,7 +1256,7 @@ public final class CommunicationsManager {
 
 		// Basic join.
 		String limitQuery = " account_relationships AS relationships";
-		
+
 		// If the user set filters expand this to be a subquery that selects
 		// accounts based on the filter.
 		String limitStr = getMostRecentFilterLimitSQL(filter);
