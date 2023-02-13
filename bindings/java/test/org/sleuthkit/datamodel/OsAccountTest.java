@@ -1274,11 +1274,43 @@ public class OsAccountTest {
 		assertTrue(updatedAccount2.getLoginName().orElse("").equalsIgnoreCase(loginname2));
 		assertTrue(updatedAccount2.getSignature().equalsIgnoreCase(ownerUid2));	// account signature should now be addr
 		
-		// RAMAN TODO: CT-4284
-//		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount2.getRealmId());
-//		assertTrue(realm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1));
-//		assertTrue(realm2.getSignature().equalsIgnoreCase(realmSignature1));	
+		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount2.getRealmId());
+		assertTrue(realm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1));
+		assertTrue(realm2.getSignature().equalsIgnoreCase(realmSignature1));
 	}
 	
+	@Test
+	public void windowsAccountMergeTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
+
+		String hostname1 = "windowsAccountMergeTestHost";
+		Host host1 = caseDB.getHostManager().newHost(hostname1);
 	
+		// 1. Create an account with a SID alone
+		String sid = "S-1-5-21-111111111-222222222-666666666-0001";
+		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(sid, null, null, host1, OsAccountRealm.RealmScope.LOCAL);
+		
+		Long realmId = osAccount1.getRealmId();
+		
+		// 2. Create an account with loginName and realmName
+		String loginName = "jdoe";
+		String realmName = "testRealm";
+		OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(null, loginName, realmName, host1, OsAccountRealm.RealmScope.LOCAL);
+
+		// 3. Lookup account by SID, loginName, and realmName
+		Optional<OsAccount> oOsAccount = caseDB.getOsAccountManager().getWindowsOsAccount(sid, loginName, realmName, host1);
+		assertTrue(oOsAccount.isPresent());
+		
+		// 4. Update this account with all SID, loginName, and realmName
+		caseDB.getOsAccountManager().updateCoreWindowsOsAccountAttributes(oOsAccount.get(), sid, loginName, realmName, host1);
+		
+		// The two accounts should be merged
+		
+		// Test that there is now only one account associated with sid1
+		List<OsAccount> accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(a -> a.getAddr().isPresent() && a.getAddr().get().equals(sid)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 1, true);
+		
+		// Test that there is now only one account associated with loginName
+		accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getLoginName().isPresent() && p.getLoginName().get().equals(loginName)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 1, true);
+	}
 }
