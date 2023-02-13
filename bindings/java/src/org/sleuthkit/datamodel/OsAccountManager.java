@@ -864,7 +864,7 @@ public final class OsAccountManager {
 			}
 
 			// Look for matching destination account
-			Optional<OsAccount> matchingDestAccount = getMatchingAccount(sourceAccount, destinationAccounts);
+			Optional<OsAccount> matchingDestAccount = getMatchingAccountForMerge(sourceAccount, destinationAccounts);
 
 			// If we found a match, merge the accounts. Otherwise simply update the realm id
 			if (matchingDestAccount.isPresent()) {
@@ -887,7 +887,7 @@ public final class OsAccountManager {
 	 * @param destinationAccounts List of accounts to match against
 	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount is found.
 	 */
-	private Optional<OsAccount> getMatchingAccount(OsAccount sourceAccount, List<OsAccount> destinationAccounts) {
+	private Optional<OsAccount> getMatchingAccountForMerge(OsAccount sourceAccount, List<OsAccount> destinationAccounts) {
 		// Look for matching destination account
 		OsAccount matchingDestAccount = null;
 
@@ -937,7 +937,7 @@ public final class OsAccountManager {
 		osAccounts.removeIf(acc -> Objects.equals(acc, account));
 		
 		// Look for matching account
-		Optional<OsAccount> matchingAccount = getMatchingAccount(account, osAccounts);
+		Optional<OsAccount> matchingAccount = getMatchingAccountForMerge(account, osAccounts);
 		
 		// If we find a match, merge the accounts.
 		if (matchingAccount.isPresent()) {
