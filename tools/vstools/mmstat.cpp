@@ -38,7 +38,6 @@ static void
 print_stats(const TSK_VS_INFO * vs)
 {
     tsk_printf("%s\n", tsk_vs_type_toname(vs->vstype));
-    return;
 }
 
 int
