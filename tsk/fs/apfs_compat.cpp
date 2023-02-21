@@ -182,7 +182,7 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
     _fsinfo.flags |= TSK_FS_INFO_FLAG_ENCRYPTED;
   }
 
-  _fsinfo.img_info = img_info; 
+  _fsinfo.img_info = img_info;
   _fsinfo.offset = pool.first_img_offset();
   _fsinfo.block_count = vol.alloc_blocks();
   _fsinfo.block_size = pool.block_size();
@@ -198,8 +198,8 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   tsk_init_lock(&_fsinfo.orphan_dir_lock);
 
   // Callbacks
-  _fsinfo.block_walk = [](TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, 
-                          TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, 
+  _fsinfo.block_walk = [](TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
+                          TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb,
                           void *ptr) {
       return to_fs(fs).block_walk(fs, start, end, flags, cb, ptr);
   };
@@ -211,7 +211,7 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   _fsinfo.inode_walk = [](TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
                           TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB action,
                           void* ptr) {
-      return to_fs(fs).inode_walk(fs, start_inum, end_inum, flags, action, ptr); 
+      return to_fs(fs).inode_walk(fs, start_inum, end_inum, flags, action, ptr);
   };
 
   _fsinfo.file_add_meta = [](TSK_FS_INFO* fs, TSK_FS_FILE* fs_file,
@@ -398,7 +398,7 @@ uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
   }
 
   const auto unmount_log = vol.unmount_log();
-  if (unmount_log.size() != 0) {
+  if (!unmount_log.empty()) {
     tsk_fprintf(hFile, "\n");
     tsk_fprintf(hFile, "Unmount Logs\n");
     tsk_fprintf(hFile, "------------\n");
