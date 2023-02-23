@@ -333,6 +333,9 @@ public interface TskEvent {
 
 	}
 
+	/**
+	 * Container to encapsulate the merged account ids, contains both the source and destination account ids.
+	 */
 	public final static class MergedAccountsPair {
 
 		private final Long sourceOsAccountId;
@@ -343,10 +346,18 @@ public interface TskEvent {
 			this.destinationOsAccountId = destinationOsAccountId;
 		}
 
+		/**
+		 * Gets the source os account id. This is the account that was marked as "MERGED"
+		 * @return The TSK object ID of the source os account
+		 */
 		public Long getSourceOsAccountId() {
 			return sourceOsAccountId;
 		}
 
+		/**
+		 * Gets the destination os account id. This is the account that the source was merged into.
+		 * @return The TSK object ID of the destination os account
+		 */
 		public Long getDestinationOsAccountId() {
 			return destinationOsAccountId;
 		}
