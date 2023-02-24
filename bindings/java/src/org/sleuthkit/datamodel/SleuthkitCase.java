@@ -11034,7 +11034,8 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 */
-	void setAcquisitionDetails(long dataSourceId, String details, CaseDbTransaction trans) throws TskCoreException {
+	@Beta
+	public void setAcquisitionDetails(long dataSourceId, String details, CaseDbTransaction trans) throws TskCoreException {
 		try {
 			CaseDbConnection connection = trans.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_DETAILS);
