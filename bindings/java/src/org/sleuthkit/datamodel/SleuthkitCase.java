@@ -13713,6 +13713,7 @@ public class SleuthkitCase {
 		private List<Host> hostsAdded = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
+		private List<TskEvent.MergedAccountsPair> accountsMerged = new ArrayList<>();
 
 		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
 		private List<Long> deletedResultObjectIds = new ArrayList<>();
@@ -13801,6 +13802,16 @@ public class SleuthkitCase {
 		}
 
 		/**
+		 * Saves an account that has been merged as part of this transaction.
+		 *
+		 * @param sourceOsAccountObjId
+		 * @param destinationOsAccountObjId
+		 */
+		void registerMergedOsAccount(long sourceOsAccountObjId, long destinationOsAccountObjId) {
+			accountsMerged.add(new TskEvent.MergedAccountsPair(sourceOsAccountObjId, destinationOsAccountObjId));
+		}
+
+		/**
 		 * Saves an analysis result that has been deleted as a part of this
 		 * transaction.
 		 *
@@ -13853,6 +13864,9 @@ public class SleuthkitCase {
 				}
 				if (!accountsChanged.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsUpdatedTskEvent(accountsChanged));
+				}
+				if (!accountsMerged.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsMergedTskEvent(accountsMerged));
 				}
 				if (!deletedOsAccountObjectIds.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsDeletedTskEvent(deletedOsAccountObjectIds));
