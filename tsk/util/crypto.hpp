@@ -14,6 +14,7 @@
  */
 
 #include "../base/tsk_base.h"
+#include "../base/tsk_base_i.h"
 
 #ifdef HAVE_LIBOPENSSL
 #include <openssl/evp.h>
