@@ -934,7 +934,7 @@ public final class OsAccountManager {
 		
 		// Get all users in the realm (excluding the account)
 		List<OsAccount> osAccounts = getOsAccounts(realm, trans.getConnection());
-		osAccounts.removeIf(acc -> Objects.equals(acc, account));
+		osAccounts.removeIf(acc -> Objects.equals(acc.getId(), account.getId()));
 		
 		// Look for matching account
 		Optional<OsAccount> matchingAccount = getMatchingAccountForMerge(account, osAccounts);
