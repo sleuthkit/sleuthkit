@@ -484,10 +484,6 @@ ifind_data_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
     TSK_FS_INFO *fs = fs_file->fs_info;
     IFIND_DATA_DATA *data = (IFIND_DATA_DATA *) ptr;
 
-    /* Ignore sparse blocks because they do not reside on disk */
-    if (flags & TSK_FS_BLOCK_FLAG_SPARSE)
-        return TSK_WALK_CONT;
-
     if (addr == data->block) {
         if (TSK_FS_TYPE_ISNTFS(fs->ftype))
             tsk_printf("%" PRIuINUM "-%" PRIu32 "-%" PRIu16 "\n",
@@ -510,8 +506,9 @@ static TSK_WALK_RET_ENUM
 ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
 {
     IFIND_DATA_DATA *data = (IFIND_DATA_DATA *) ptr;
-    int file_flags =
-        (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK);
+    const int file_flags =
+        (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK |
+         TSK_FS_FILE_WALK_FLAG_NOSPARSE);
     int i, cnt;
 
     data->curinode = fs_file->meta->addr;
