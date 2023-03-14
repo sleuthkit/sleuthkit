@@ -321,7 +321,7 @@ TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 	return searchPath;
 #else
 	// Nothing to do here if it's not Windows
-	return null;
+	return NULL;
 #endif
 }
 
