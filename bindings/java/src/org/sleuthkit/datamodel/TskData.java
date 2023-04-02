@@ -588,6 +588,7 @@ public class TskData {
 		TSK_VS_TYPE_MAC(0x0008, "Mac"), ///< Mac partition table NON-NLS
 		TSK_VS_TYPE_GPT(0x0010, "GPT"), ///< GPT partition table NON-NLS
 		TSK_VS_TYPE_APFS(0x0020, "APFS"), ///< APFS pool NON-NLS
+		TSK_VS_TYPE_LVM(0x0030, "LVM"), ///< LVM pool NON-NLS
 		TSK_VS_TYPE_DBFILLER(0x00F0, bundle.getString("TskData.tskVSTypeEnum.fake")), ///< fake partition table type for loaddb (for images that do not have a volume system)
 		TSK_VS_TYPE_UNSUPP(0xFFFF, bundle.getString("TskData.tskVSTypeEnum.unsupported"));    ///< Unsupported
 
@@ -749,6 +750,7 @@ public class TskData {
 	public enum TSK_POOL_TYPE_ENUM {
 		TSK_POOL_TYPE_DETECT(0, "Auto detect"), ///< Use autodetection methods
 		TSK_POOL_TYPE_APFS(1, "APFS Pool"), ///< APFS Pooled Volumes
+		TSK_POOL_TYPE_LVM(2, "LVM Pool"), ///< LVM Pooled Volumes
 		TSK_POOL_TYPE_UNSUPP(0xffff, "Unsupported") ///< Unsupported pool container type
 		;
 
