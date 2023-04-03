@@ -890,6 +890,48 @@ public class TskData {
 		}
 	}
 	
+	/**
+	 * Location type stores where the data for a file can be found or the
+	 * reason no data for the file exists.
+	 */
+	public enum LocationType{
+
+		UNKNOWN(0),
+		NO_SAVE_ERROR(1),
+		NO_EMPTY_FILE(2),
+		NO_NOT_FOUND(3),
+		NO_UNRESOLVED(4),
+		NO_READ_ERROR(5),
+		NO_READ_ERROR_PARTIAL(6),
+		NO_NOT_ATTEMPTED(7),
+		NO_NOT_REGULAR_FILE(8),
+		NO_FILE_TOO_LARGE(9),
+		NO_ONLY_HASH_COLLECTED(10),
+		NO_UNSUPPORTED_COMPRESSION(11),
+		YES_TSK(12),
+		YES_REPO(13);
+
+		private final int type;
+		
+		private LocationType(int type){
+			this.type = type;
+		}
+		
+		public int getType(){
+			return type;
+		}
+		
+		public static LocationType valueOf(int type) {
+			for (LocationType v : LocationType.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
+		}
+	}
+	
     /** 
 	 * Type of keyword search query 
 	 **/

@@ -97,6 +97,9 @@ public abstract class AbstractFile extends AbstractContent {
 	protected String sha1Hash;
 	private boolean sha1HashDirty = false;
 	
+	private TskData.LocationType location; // Location of file data	
+	private boolean locationDirty = false;
+	
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
 	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
@@ -152,6 +155,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           including the '.'), can be null.
 	 * @param ownerUid           Owner uid/SID, can be null if not available.
 	 * @param osAccountObjectId	 Object Id of the owner OsAccount, may be null.
+	 * @param location			 Location of file data
 	 *
 	 */
 	AbstractFile(SleuthkitCase db,
@@ -175,6 +179,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String extension,
 			String ownerUid,
 			Long osAccountObjectId,
+			TskData.LocationType location,
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
@@ -221,6 +226,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.encodingType = TskData.EncodingType.NONE;
 		this.ownerUid = ownerUid;
 		this.osAccountObjId = osAccountObjectId;
+		this.location = location;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -726,6 +732,25 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public long getDataSourceObjectId() {
 		return dataSourceObjectId;
+	}
+	
+	/**
+	 * Gets the location of the file data.
+	 * 
+	 * @return The location.
+	 */
+	public TskData.LocationType getLocation() {
+		return location;
+	}
+	
+	/**
+	 * Sets the location of the file data.
+	 * 
+	 * @param location The file data location
+	 */
+	public void setLocation(TskData.LocationType location) {
+		this.location = location;
+		locationDirty = true;
 	}
 
 	/**
@@ -1382,7 +1407,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                          properties to the case database.
 	 */
 	public void save(CaseDbTransaction transaction) throws TskCoreException {
-		if (!(md5HashDirty || sha256HashDirty || sha1HashDirty || mimeTypeDirty || knownStateDirty)) {
+		if (!(md5HashDirty || sha256HashDirty || sha1HashDirty || mimeTypeDirty || knownStateDirty || locationDirty)) {
 			return;
 		}
 
@@ -1414,6 +1439,12 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 			updateSql += "known = '" + this.getKnown().getFileKnownValue() + "'";
 		}
+		if (locationDirty) {
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
+			}
+			updateSql += "location = '" + this.getLocation().getType() + "'";
+		}
 		updateSql = "UPDATE tsk_files SET " + updateSql + " WHERE obj_id = " + this.getId();
 
 		SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
@@ -1424,6 +1455,7 @@ public abstract class AbstractFile extends AbstractContent {
 			sha1HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
+			locationDirty = false;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating properties of file %s (obj_id = %s)", getName(), getId()), ex);
 		}
@@ -1672,5 +1704,75 @@ public abstract class AbstractFile extends AbstractContent {
 	@Deprecated
 	public static long timeToEpoch(String time) {
 		return TimeUtilities.timeToEpoch(time);
+	}
+	
+		/**
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table)
+	 *
+	 * @param db                 case / db handle where this file belongs to
+	 * @param objId              object id in tsk_objects table
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 *                           file.
+	 * @param fileSystemObjectId The object id of the file system. Can be null (or 0 representing null)
+	 * @param attrType
+	 * @param attrId
+	 * @param name               name field of the file
+	 * @param fileType           type of the file
+	 * @param metaAddr
+	 * @param metaSeq
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash            md5sum of the file, or null if not present
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
+	 * @param knownState         knownState status of the file, or null if
+	 *                           unknown (default)
+	 * @param parentPath
+	 * @param mimeType           The MIME type of the file, can be null.
+	 * @param extension          The extension part of the file name (not
+	 *                           including the '.'), can be null.
+	 * @param ownerUid           Owner uid/SID, can be null if not available.
+	 * @param osAccountObjectId	 Object Id of the owner OsAccount, may be null.
+	 *
+	 * @deprecated
+	 */
+	@Deprecated
+	AbstractFile(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
+			Long fileSystemObjectId,
+			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			String name,
+			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
+			long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			short modes,
+			int uid, int gid,
+			String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
+			String parentPath,
+			String mimeType,
+			String extension,
+			String ownerUid,
+			Long osAccountObjectId,
+			List<Attribute> fileAttributes) {
+		this(db, objId, dataSourceObjectId, fileSystemObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, 
+				dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, 
+				md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, 
+				ownerUid, osAccountObjectId, TskData.LocationType.UNKNOWN, fileAttributes);
 	}
 }

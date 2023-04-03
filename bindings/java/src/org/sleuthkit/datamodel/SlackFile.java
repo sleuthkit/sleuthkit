@@ -101,7 +101,7 @@ public class SlackFile extends FsContent {
 			String extension,
 			String ownerUid,
 			Long osAccountObjId) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, TskData.LocationType.UNKNOWN, Collections.emptyList());
 	}
 
 	/**

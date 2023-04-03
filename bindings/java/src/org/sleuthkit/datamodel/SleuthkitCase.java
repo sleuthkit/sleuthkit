@@ -104,7 +104,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 3);
+			= new CaseDbSchemaVersionNumber(9, 4);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -142,6 +142,7 @@ public class SleuthkitCase {
 			"blackboard_attribute_types",
 			"data_source_info",
 			"file_encoding_types",
+			"file_location_types",
 			"ingest_module_types",
 			"ingest_job_status_types",
 			"ingest_modules",
@@ -387,6 +388,7 @@ public class SleuthkitCase {
 			initIngestStatusTypes(connection);
 			initReviewStatuses(connection);
 			initEncodingTypes(connection);
+			initLocationTypes(connection);
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
@@ -762,6 +764,43 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Put the location types into the table. This must be called after the
+	 * database upgrades or the file_location_types table will not exist.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private void initLocationTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			for (TskData.LocationType type : TskData.LocationType.values()) {
+				try {
+					String query = "INSERT INTO file_location_types (location_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT file_location_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_location_types WHERE location_type = " + type.getType()); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
+				}
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
 	 * Records the current examiner name in the tsk_examiners table
 	 *
 	 * @param CaseDbConnection
@@ -936,6 +975,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot0toSchema9dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot1toSchema9dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot2toSchema9dot3(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot3toSchema9dot4(dbSchemaVersion, connection);
 				
 				
 
@@ -2698,6 +2738,34 @@ public class SleuthkitCase {
 
 			
 			return new CaseDbSchemaVersionNumber(9, 3);
+
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	private CaseDbSchemaVersionNumber updateFromSchema9dot3toSchema9dot4(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 3) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// Add location_type table
+			statement.execute("CREATE TABLE file_location_types (location_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
+			initLocationTypes(connection);
+			
+			// add a new column 'location' to tsk_files
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN location INTEGER NOT NULL DEFAULT " + 
+					TskData.LocationType.UNKNOWN + ";");
+
+			return new CaseDbSchemaVersionNumber(9, 4);
 
 		} finally {
 			closeStatement(statement);
@@ -7064,7 +7132,71 @@ public class SleuthkitCase {
 			Content parent, String ownerUid,
 			OsAccount osAccount, List<Attribute> fileAttributes, 
 			CaseDbTransaction transaction) throws TskCoreException {
-
+		return addFileSystemFile(dataSourceObjId, fsObjId,
+				fileName,
+				metaAddr, metaSeq,
+				attrType, attrId,
+				dirFlag, metaFlags, size,
+				ctime, crtime, atime, mtime,
+				md5Hash, sha256Hash, sha1Hash,
+				mimeType,
+				isFile, parent, ownerUid,
+				osAccount, TskData.LocationType.UNKNOWN, fileAttributes,
+				transaction);
+	}
+	
+	/**
+	 * Add a file system file.
+	 *
+	 * @param dataSourceObjId The object id of the root data source of this
+	 *                        file.
+	 * @param fsObjId         The file system object id.
+	 * @param fileName        The name of the file.
+	 * @param metaAddr        The meta address of the file.
+	 * @param metaSeq         The meta address sequence of the file.
+	 * @param attrType        The attributed type of the file.
+	 * @param attrId          The attribute id.
+	 * @param dirFlag         The allocated status from the name structure
+	 * @param metaFlags       The allocated status of the file, usually as
+	 *                        reported in the metadata structure of the file
+	 *                        system.
+	 * @param size            The size of the file in bytes.
+	 * @param ctime           The changed time of the file.
+	 * @param crtime          The creation time of the file.
+	 * @param atime           The accessed time of the file
+	 * @param mtime           The modified time of the file.
+	 * @param md5Hash         The MD5 hash of the file
+	 * @param sha256Hash      The SHA256 hash of the file
+	 * @param sha1Hash        SHA1 Hash of the file. May be null.
+	 * @param mimeType        The MIME type of the file
+	 * @param isFile          True, unless the file is a directory.
+	 * @param parent          The parent of the file (e.g., a virtual
+	 *                        directory).
+	 * @param ownerUid        UID of the file owner as found in the file system,
+	 *                        can be null.
+	 * @param osAccount       OS account of owner, may be null.
+	 * @param location        Location for file content, may be null
+	 * @param fileAttributes  A list of file attributes. May be empty.
+	 
+	 * @param transaction     A caller-managed transaction within which the add
+	 *                        file operations are performed.
+	 *
+	 * @return Newly created file
+	 *
+	 * @throws TskCoreException
+	 */
+	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId,
+			String fileName,
+			long metaAddr, int metaSeq,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash, String sha256Hash, String sha1Hash,
+			String mimeType, boolean isFile,
+			Content parent, String ownerUid,
+			OsAccount osAccount, TskData.LocationType location,
+			List<Attribute> fileAttributes, 
+			CaseDbTransaction transaction) throws TskCoreException {
 		TimelineManager timelineManager = getTimelineManager();
 
 		Statement queryStatement = null;
@@ -7123,6 +7255,7 @@ public class SleuthkitCase {
 			} else {
 				statement.setNull(27, java.sql.Types.BIGINT); // osAccountObjId
 			}
+			statement.setLong(28, location.getType());
 			
 			connection.executeUpdate(statement);
 
@@ -7149,7 +7282,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, null, parentPath, mimeType,
-					extension, ownerUid, osAccountId, fileAttributes);
+					extension, ownerUid, osAccountId, location, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
@@ -10059,7 +10192,7 @@ public class SleuthkitCase {
 				rs.getString("md5"), rs.getString("sha256"), rs.getString("sha1"), 
 				FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), rs.getString("owner_uid"), 
-				osAccountObjId, Collections.emptyList()); //NON-NLS
+				osAccountObjId, TskData.LocationType.valueOf(rs.getInt("location")), Collections.emptyList()); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -10714,7 +10847,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
+	
 	/**
 	 * Store the md5Hash for the file in the database
 	 *
@@ -12908,8 +13041,8 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id, location)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
