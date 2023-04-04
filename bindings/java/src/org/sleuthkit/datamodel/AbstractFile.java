@@ -97,8 +97,8 @@ public abstract class AbstractFile extends AbstractContent {
 	protected String sha1Hash;
 	private boolean sha1HashDirty = false;
 	
-	private TskData.LocationType location; // Location of file data	
-	private boolean locationDirty = false;
+	private TskData.CollectedStatus collected; // Collected status of file data	
+	private boolean collectedDirty = false;
 	
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
@@ -155,7 +155,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           including the '.'), can be null.
 	 * @param ownerUid           Owner uid/SID, can be null if not available.
 	 * @param osAccountObjectId	 Object Id of the owner OsAccount, may be null.
-	 * @param location			 Location of file data
+	 * @param collected			 Collected status of file data
 	 *
 	 */
 	AbstractFile(SleuthkitCase db,
@@ -179,7 +179,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String extension,
 			String ownerUid,
 			Long osAccountObjectId,
-			TskData.LocationType location,
+			TskData.CollectedStatus collected,
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
@@ -226,7 +226,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.encodingType = TskData.EncodingType.NONE;
 		this.ownerUid = ownerUid;
 		this.osAccountObjId = osAccountObjectId;
-		this.location = location;
+		this.collected = collected;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -735,22 +735,22 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 	
 	/**
-	 * Gets the location of the file data.
+	 * Gets the collected status of the file data.
 	 * 
-	 * @return The location.
+	 * @return The collected.
 	 */
-	public TskData.LocationType getLocation() {
-		return location;
+	public TskData.CollectedStatus getCollected() {
+		return collected;
 	}
 	
 	/**
-	 * Sets the location of the file data.
+	 * Sets the collected status of the file data.
 	 * 
-	 * @param location The file data location
+	 * @param collected The file data's collected status
 	 */
-	public void setLocation(TskData.LocationType location) {
-		this.location = location;
-		locationDirty = true;
+	public void setCollected(TskData.CollectedStatus collected) {
+		this.collected = collected;
+		collectedDirty = true;
 	}
 
 	/**
@@ -1407,7 +1407,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                          properties to the case database.
 	 */
 	public void save(CaseDbTransaction transaction) throws TskCoreException {
-		if (!(md5HashDirty || sha256HashDirty || sha1HashDirty || mimeTypeDirty || knownStateDirty || locationDirty)) {
+		if (!(md5HashDirty || sha256HashDirty || sha1HashDirty || mimeTypeDirty || knownStateDirty || collectedDirty)) {
 			return;
 		}
 
@@ -1439,11 +1439,11 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 			updateSql += "known = '" + this.getKnown().getFileKnownValue() + "'";
 		}
-		if (locationDirty) {
+		if (collectedDirty) {
 			if (!updateSql.isEmpty()) {
 				updateSql += ", ";
 			}
-			updateSql += "location = '" + this.getLocation().getType() + "'";
+			updateSql += "collected = '" + this.getCollected().getType() + "'";
 		}
 		updateSql = "UPDATE tsk_files SET " + updateSql + " WHERE obj_id = " + this.getId();
 
@@ -1455,7 +1455,7 @@ public abstract class AbstractFile extends AbstractContent {
 			sha1HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
-			locationDirty = false;
+			collectedDirty = false;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating properties of file %s (obj_id = %s)", getName(), getId()), ex);
 		}
@@ -1773,6 +1773,6 @@ public abstract class AbstractFile extends AbstractContent {
 		this(db, objId, dataSourceObjectId, fileSystemObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, 
 				dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, 
 				md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, 
-				ownerUid, osAccountObjectId, TskData.LocationType.UNKNOWN, fileAttributes);
+				ownerUid, osAccountObjectId, TskData.CollectedStatus.UNKNOWN, fileAttributes);
 	}
 }

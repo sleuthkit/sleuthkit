@@ -207,7 +207,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 
-		stmt.execute("CREATE TABLE file_location_types (location_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
+		stmt.execute("CREATE TABLE file_collection_status_types (collection_status_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 		
 		stmt.execute("CREATE TABLE tsk_files (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "fs_obj_id " + dbQueryHelper.getBigIntType() + ", data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
@@ -222,12 +222,12 @@ class CaseDatabaseFactory {
 				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
 				+ "owner_uid TEXT DEFAULT NULL, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
-				+ "location INTEGER NOT NULL, "
+				+ "collected INTEGER NOT NULL, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE SET NULL, "
-				+ "FOREIGN KEY(location) REFERENCES file_location_types(location_type))" ); 
+				+ "FOREIGN KEY(collected) REFERENCES file_collection_status_types (collection_status_type))" ); 
 
 		stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 

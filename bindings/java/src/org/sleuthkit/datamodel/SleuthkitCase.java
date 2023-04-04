@@ -142,7 +142,7 @@ public class SleuthkitCase {
 			"blackboard_attribute_types",
 			"data_source_info",
 			"file_encoding_types",
-			"file_location_types",
+			"file_collection_status_types",
 			"ingest_module_types",
 			"ingest_job_status_types",
 			"ingest_modules",
@@ -388,7 +388,7 @@ public class SleuthkitCase {
 			initIngestStatusTypes(connection);
 			initReviewStatuses(connection);
 			initEncodingTypes(connection);
-			initLocationTypes(connection);
+			initCollectedStatusTypes(connection);
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
@@ -764,27 +764,27 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Put the location types into the table. This must be called after the
-	 * database upgrades or the file_location_types table will not exist.
+	 * Put the collected status types into the table. This must be called after the
+	 * database upgrades or the file_collection_status_types table will not exist.
 	 *
 	 * @throws SQLException
 	 * @throws TskCoreException
 	 */
-	private void initLocationTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+	private void initCollectedStatusTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
 		Statement statement = null;
 		ResultSet resultSet = null;
 		acquireSingleUserCaseWriteLock();
 		try {
 			statement = connection.createStatement();
-			for (TskData.LocationType type : TskData.LocationType.values()) {
+			for (TskData.CollectedStatus type : TskData.CollectedStatus.values()) {
 				try {
-					String query = "INSERT INTO file_location_types (location_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"; // NON-NLS
+					String query = "INSERT INTO file_collection_status_types (collection_status_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"; // NON-NLS
 					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
-						query += " ON CONFLICT ON CONSTRAINT file_location_types_pkey DO NOTHING"; // NON-NLS
+						query += " ON CONFLICT ON CONSTRAINT file_collection_status_types_pkey DO NOTHING"; // NON-NLS
 					}
 					statement.execute(query);
 				} catch (SQLException ex) {
-					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_location_types WHERE location_type = " + type.getType()); //NON-NLS
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_collection_status_types WHERE collection_status_type = " + type.getType()); //NON-NLS
 					resultSet.next();
 					if (resultSet.getLong("count") == 0) {
 						throw ex;
@@ -2757,13 +2757,13 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-			// Add location_type table
-			statement.execute("CREATE TABLE file_location_types (location_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
-			initLocationTypes(connection);
+			// Add file_collection_status_types table
+			statement.execute("CREATE TABLE file_collection_status_types (collection_status_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
+			initCollectedStatusTypes(connection);
 			
-			// add a new column 'location' to tsk_files
-			statement.execute("ALTER TABLE tsk_files ADD COLUMN location INTEGER NOT NULL DEFAULT " + 
-					TskData.LocationType.UNKNOWN.getType() + ";");
+			// add a new column 'collected' to tsk_files
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN collected INTEGER NOT NULL DEFAULT " + 
+					TskData.CollectedStatus.UNKNOWN.getType() + ";");
 
 			return new CaseDbSchemaVersionNumber(9, 4);
 
@@ -7141,7 +7141,7 @@ public class SleuthkitCase {
 				md5Hash, sha256Hash, sha1Hash,
 				mimeType,
 				isFile, parent, ownerUid,
-				osAccount, TskData.LocationType.UNKNOWN, fileAttributes,
+				osAccount, TskData.CollectedStatus.UNKNOWN, fileAttributes,
 				transaction);
 	}
 	
@@ -7175,7 +7175,7 @@ public class SleuthkitCase {
 	 * @param ownerUid        UID of the file owner as found in the file system,
 	 *                        can be null.
 	 * @param osAccount       OS account of owner, may be null.
-	 * @param location        Location for file content, may be null
+	 * @param collected       Collected status for file content, may be null
 	 * @param fileAttributes  A list of file attributes. May be empty.
 	 
 	 * @param transaction     A caller-managed transaction within which the add
@@ -7194,7 +7194,7 @@ public class SleuthkitCase {
 			String md5Hash, String sha256Hash, String sha1Hash,
 			String mimeType, boolean isFile,
 			Content parent, String ownerUid,
-			OsAccount osAccount, TskData.LocationType location,
+			OsAccount osAccount, TskData.CollectedStatus collected,
 			List<Attribute> fileAttributes, 
 			CaseDbTransaction transaction) throws TskCoreException {
 		TimelineManager timelineManager = getTimelineManager();
@@ -7255,7 +7255,7 @@ public class SleuthkitCase {
 			} else {
 				statement.setNull(27, java.sql.Types.BIGINT); // osAccountObjId
 			}
-			statement.setLong(28, location.getType());
+			statement.setLong(28, collected.getType());
 			
 			connection.executeUpdate(statement);
 
@@ -7282,7 +7282,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, null, parentPath, mimeType,
-					extension, ownerUid, osAccountId, location, fileAttributes);
+					extension, ownerUid, osAccountId, collected, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
@@ -10192,7 +10192,7 @@ public class SleuthkitCase {
 				rs.getString("md5"), rs.getString("sha256"), rs.getString("sha1"), 
 				FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), rs.getString("owner_uid"), 
-				osAccountObjId, TskData.LocationType.valueOf(rs.getInt("location")), Collections.emptyList()); //NON-NLS
+				osAccountObjId, TskData.CollectedStatus.valueOf(rs.getInt("collected")), Collections.emptyList()); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -13041,7 +13041,7 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id, location)"
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id, collected)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS

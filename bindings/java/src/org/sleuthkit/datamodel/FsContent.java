@@ -102,7 +102,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param ownerUid			 UID of the file owner as found in the file
 	 *                           system, can be null.
 	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
-	 * @param location           Location of the file data
+	 * @param collected          Collected status of the file data
 	 */
 	FsContent(SleuthkitCase db,
 			long objId,
@@ -124,9 +124,9 @@ public abstract class FsContent extends AbstractFile {
 			String extension,
 			String ownerUid,
 			Long osAccountObjId,
-			TskData.LocationType location,
+			TskData.CollectedStatus collected,
 			List<Attribute> fileAttributes) {
-		super(db, objId, dataSourceObjectId, Long.valueOf(fsObjId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, location, fileAttributes);
+		super(db, objId, dataSourceObjectId, Long.valueOf(fsObjId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, collected, fileAttributes);
 	}
 
 	/**
@@ -482,6 +482,6 @@ public abstract class FsContent extends AbstractFile {
 			String ownerUid,
 			Long osAccountObjId,
 			List<Attribute> fileAttributes) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, null, knownState, parentPath, mimeType, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, TskData.LocationType.UNKNOWN, Collections.emptyList());
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, null, knownState, parentPath, mimeType, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 	}
 }

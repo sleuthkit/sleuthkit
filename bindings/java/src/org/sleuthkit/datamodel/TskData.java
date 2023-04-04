@@ -891,10 +891,10 @@ public class TskData {
 	}
 	
 	/**
-	 * Location type stores where the data for a file can be found or the
-	 * reason no data for the file exists.
+	 * CollectedStatus stores where the data for a file can be found or the
+     * reason no data for the file exists.
 	 */
-	public enum LocationType{
+	public enum CollectedStatus{
 
 		UNKNOWN(0),
 		NO_SAVE_ERROR(1),
@@ -913,7 +913,7 @@ public class TskData {
 
 		private final int type;
 		
-		private LocationType(int type){
+		private CollectedStatus(int type){
 			this.type = type;
 		}
 		
@@ -921,14 +921,14 @@ public class TskData {
 			return type;
 		}
 		
-		public static LocationType valueOf(int type) {
-			for (LocationType v : LocationType.values()) {
+		public static CollectedStatus valueOf(int type) {
+			for (CollectedStatus v : CollectedStatus.values()) {
 				if (v.type == type) {
 					return v;
 				}
 			}
 			throw new IllegalArgumentException(
-					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
+					MessageFormat.format(bundle.getString("TskData.collectedStatus.exception.msg1.text"), type));
 		}
 	}
 	

@@ -101,12 +101,12 @@ public class File extends FsContent {
 			String extension,
 			String ownerUid,
 			Long osAccountObjId,
-			TskData.LocationType location,
+			TskData.CollectedStatus collected,
 			List<Attribute> fileAttributes) {
 		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, 
 				metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, 
 				modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, 
-				ownerUid, osAccountObjId, location, fileAttributes);
+				ownerUid, osAccountObjId, collected, fileAttributes);
 	}
 
 	/**
