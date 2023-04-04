@@ -2763,7 +2763,7 @@ public class SleuthkitCase {
 			
 			// add a new column 'location' to tsk_files
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN location INTEGER NOT NULL DEFAULT " + 
-					TskData.LocationType.UNKNOWN + ";");
+					TskData.LocationType.UNKNOWN.getType() + ";");
 
 			return new CaseDbSchemaVersionNumber(9, 4);
 
