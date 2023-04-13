@@ -6402,6 +6402,7 @@ public class SleuthkitCase {
 
 			statement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			statement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			connection.executeUpdate(statement);
 
@@ -6539,6 +6540,7 @@ public class SleuthkitCase {
 
 			statement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			statement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 
 			connection.executeUpdate(statement);
 
@@ -6655,6 +6657,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(22, null); //extension, just set it to null
 			preparedStatement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			preparedStatement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			preparedStatement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			
 			connection.executeUpdate(preparedStatement);
@@ -7427,6 +7430,7 @@ public class SleuthkitCase {
 
 				prepStmt.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 				prepStmt.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+				prepStmt.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 				
 				connection.executeUpdate(prepStmt);
 
@@ -7793,6 +7797,7 @@ public class SleuthkitCase {
 
 				prepStmt.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 				prepStmt.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+				prepStmt.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 				
 				connection.executeUpdate(prepStmt);
 
@@ -7995,6 +8000,7 @@ public class SleuthkitCase {
 
 			statement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			statement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			connection.executeUpdate(statement);
 
@@ -8417,6 +8423,8 @@ public class SleuthkitCase {
 				statement.setNull(24, java.sql.Types.BIGINT);
 			}
 			
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
+			
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
 			LocalFile localFile = new LocalFile(this,
@@ -8681,6 +8689,7 @@ public class SleuthkitCase {
 
 			prepStmt.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			prepStmt.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			prepStmt.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			connection.executeUpdate(prepStmt);
 
@@ -13039,8 +13048,8 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
-		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id) " //NON-NLS
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id, collected) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id, collected)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
