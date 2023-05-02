@@ -113,7 +113,7 @@ public class DerivedFile extends AbstractFile {
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, fileSystemObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId,  TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 		setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}
