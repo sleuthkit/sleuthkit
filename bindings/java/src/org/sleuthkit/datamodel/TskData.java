@@ -249,12 +249,12 @@ public class TskData {
 		public static Set<TSK_FS_META_FLAG_ENUM> valuesOf(short metaFlags) {
 			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
 
+			if (metaFlags == TSK_FS_META_FLAG_ENUM.UNKNOWN.getValue()) {
+				matchedFlags.add(TSK_FS_META_FLAG_ENUM.UNKNOWN);
+				return matchedFlags;
+			}
+			
 			for (TSK_FS_META_FLAG_ENUM v : TSK_FS_META_FLAG_ENUM.values()) {
-				
-				if (v == TSK_FS_META_FLAG_ENUM.UNKNOWN) {
-					continue;
-				}
-				
 				long flag = v.getValue();
 
 				if ((metaFlags & flag) == flag) {
@@ -262,10 +262,6 @@ public class TskData {
 				}
 			}
 			
-			if (metaFlags == TSK_FS_META_FLAG_ENUM.UNKNOWN.getValue()) {
-				matchedFlags.add(TSK_FS_META_FLAG_ENUM.UNKNOWN);
-			}
-
 			return matchedFlags;
 		}
 
