@@ -153,6 +153,7 @@ public class TskData {
 	 */
 	public enum TSK_FS_NAME_FLAG_ENUM {
 
+		UNKNOWN(0, bundle.getString("TskData.tskFsNameFlagEnum.unknown")), ///< Unknown
 		ALLOC(1, bundle.getString("TskData.tskFsNameFlagEnum.allocated")), ///< Name is in an allocated state
 		UNALLOC(2, bundle.getString("TskData.tskFsNameFlagEnum.unallocated"));    ///< Name is in an unallocated state
 
@@ -191,8 +192,8 @@ public class TskData {
 					return flag;
 				}
 			}
-			throw new IllegalArgumentException(
-					MessageFormat.format(bundle.getString("TskData.tskFsNameFlagEnum.exception.msg1.text"), dirFlag));
+
+			return TSK_FS_NAME_FLAG_ENUM.UNKNOWN;
 		}
 	}
 
@@ -203,6 +204,7 @@ public class TskData {
 	 */
 	public enum TSK_FS_META_FLAG_ENUM {
 
+		UNKNOWN(0, bundle.getString("TskData.tskFsMetaFlagEnum.unknown")), ///< Unknown
 		ALLOC(1, bundle.getString("TskData.tskFsMetaFlagEnum.allocated")), ///< Metadata structure is currently in an allocated state
 		UNALLOC(2, bundle.getString("TskData.tskFsMetaFlagEnum.unallocated")), ///< Metadata structure is currently in an unallocated state
 		USED(4, bundle.getString("TskData.tskFsMetaFlagEnum.used")), ///< Metadata structure has been allocated at least once
@@ -248,11 +250,20 @@ public class TskData {
 			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
 
 			for (TSK_FS_META_FLAG_ENUM v : TSK_FS_META_FLAG_ENUM.values()) {
+				
+				if (v == TSK_FS_META_FLAG_ENUM.UNKNOWN) {
+					continue;
+				}
+				
 				long flag = v.getValue();
 
 				if ((metaFlags & flag) == flag) {
 					matchedFlags.add(v);
 				}
+			}
+			
+			if (metaFlags == TSK_FS_META_FLAG_ENUM.UNKNOWN.getValue()) {
+				matchedFlags.add(TSK_FS_META_FLAG_ENUM.UNKNOWN);
 			}
 
 			return matchedFlags;
