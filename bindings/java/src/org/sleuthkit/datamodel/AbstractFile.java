@@ -36,6 +36,7 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.FileContentStream.FileContentProvider;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
@@ -116,6 +117,10 @@ public abstract class AbstractFile extends AbstractContent {
 	
 	private volatile String uniquePath;
 	private volatile FileSystem parentFileSystem;
+	
+	private final FileContentProvider contentProvider;
+	private FileContentStream contentStream;
+	private boolean hasContentStream;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -227,6 +232,9 @@ public abstract class AbstractFile extends AbstractContent {
 		this.ownerUid = ownerUid;
 		this.osAccountObjId = osAccountObjectId;
 		this.collected = collected;
+		this.contentProvider = db.getContentProvider();
+		// mark has content stream as true if there is a provider (until proven wrong)
+		this.hasContentStream = contentProvider != null;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1062,11 +1070,35 @@ public abstract class AbstractFile extends AbstractContent {
 	short getMetaFlagsAsInt() {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
-
+	
+	private boolean loadContentStream() {
+		if (hasContentStream) {
+			if (contentStream == null) {
+				contentStream = contentProvider.getFileContentStream(this);
+				if (contentStream == null) {
+					hasContentStream = false;
+					return false;
+				}
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
 		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
+		if (contentProvider != null) {
+			if (loadContentStream()) {
+				return this.contentStream.read(buf, offset, len);
+			} else {
+				return 0;
+			}
+		}
+		
 		if (localPathSet) {
 			return readLocal(buf, offset, len);
 		} else {
@@ -1239,6 +1271,10 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
+		if (contentProvider != null) {
+			return loadContentStream();
+		}
+		
 		if (!localPathSet) {
 			return true;
 		} else {
@@ -1260,6 +1296,10 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
+		if (contentProvider != null) {
+			return loadContentStream();
+		}
+		
 		if (!localPathSet) {
 			return true;
 		} else {
