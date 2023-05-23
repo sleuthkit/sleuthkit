@@ -52,6 +52,6 @@ public interface FileContentStream {
 		 * @return The file content stream or null if no stream can be provided
 		 *         for this file.
 		 */
-		FileContentStream getFileContentStream(AbstractFile file);
+		FileContentStream getFileContentStream(AbstractFile file) throws TskCoreException;
 	}
 }

@@ -1071,7 +1071,7 @@ public abstract class AbstractFile extends AbstractContent {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
 	
-	private boolean loadContentStream() {
+	private boolean loadContentStream() throws TskCoreException {
 		if (hasContentStream) {
 			if (contentStream == null) {
 				contentStream = contentProvider.getFileContentStream(this);
@@ -1272,7 +1272,12 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public boolean exists() {
 		if (contentProvider != null) {
-			return loadContentStream();
+			try {
+				return loadContentStream();
+			} catch (TskCoreException ex) {
+				LOGGER.log(Level.SEVERE, ex.getMessage());
+				return false;
+			}
 		}
 		
 		if (!localPathSet) {
@@ -1297,7 +1302,12 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public boolean canRead() {
 		if (contentProvider != null) {
-			return loadContentStream();
+			try {
+				return loadContentStream();
+			} catch (TskCoreException ex) {
+				LOGGER.log(Level.SEVERE, ex.getMessage());
+				return false;
+			}
 		}
 		
 		if (!localPathSet) {
