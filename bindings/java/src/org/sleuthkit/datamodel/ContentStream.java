@@ -19,9 +19,9 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Custom provider for file content bytes.
+ * Custom provider for content bytes.
  */
-public interface FileContentStream {
+public interface ContentStream {
 
 	/**
 	 * Reads data that this content object is associated with (file contents,
@@ -41,17 +41,17 @@ public interface FileContentStream {
 	/**
 	 * Custom provider for bytes of an abstract file.
 	 */
-	public interface FileContentProvider {
+	public interface ContentProvider {
 
 		/**
-		 * Provides a file content stream for an abstract file or null if this
+		 * Provides a content stream for a content object or null if this
 		 * provider has none to provide.
 		 *
-		 * @param file The file.
+		 * @param content The content.
 		 *
-		 * @return The file content stream or null if no stream can be provided
-		 *         for this file.
+		 * @return The content stream or null if no stream can be provided
+		 *         for this content.
 		 */
-		FileContentStream getFileContentStream(AbstractFile file) throws TskCoreException;
+		ContentStream getFileContentStream(Content content) throws TskCoreException;
 	}
 }

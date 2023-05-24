@@ -79,7 +79,6 @@ import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardArtifact.Category;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
-import org.sleuthkit.datamodel.FileContentStream.FileContentProvider;
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
@@ -95,6 +94,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
 import org.sqlite.SQLiteJDBCLoader;
+import org.sleuthkit.datamodel.ContentStream.ContentProvider;
 
 /**
  * Represents the case database with methods that provide abstractions for
@@ -205,7 +205,7 @@ public class SleuthkitCase {
 	private final Cache<Long, Boolean> isRootDirectoryCache
 			= CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
 	// custom provider for file bytes (can be null)
-	private final FileContentProvider contentProvider;
+	private final ContentProvider contentProvider;
 	
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
@@ -339,7 +339,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, FileContentProvider contentProvider) throws Exception {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentProvider contentProvider) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
@@ -372,7 +372,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType, FileContentProvider contentProvider) throws Exception {
+	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType, ContentProvider contentProvider) throws Exception {
 		this.dbPath = "";
 		this.databaseName = dbName;
 		this.dbType = dbType;
@@ -414,7 +414,7 @@ public class SleuthkitCase {
 		hostAddressManager = new HostAddressManager(this);
 	}
 	
-	FileContentProvider getContentProvider() {
+	ContentProvider getContentProvider() {
 		return this.contentProvider;
 	}
 
@@ -2995,7 +2995,7 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Beta
-	public static SleuthkitCase openCase(String dbPath, FileContentProvider provider) throws TskCoreException {
+	public static SleuthkitCase openCase(String dbPath, ContentProvider provider) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, provider);
@@ -3035,7 +3035,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is a problem opening the database.
 	 */
 	@Beta
-	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir, FileContentProvider contentProvider) throws TskCoreException {
+	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir, ContentProvider contentProvider) throws TskCoreException {
 		try {
 			/*
 			 * The flow of this method involves trying to open case and if
@@ -3087,7 +3087,7 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Beta
-	public static SleuthkitCase newCase(String dbPath, FileContentProvider contentProvider) throws TskCoreException {
+	public static SleuthkitCase newCase(String dbPath, ContentProvider contentProvider) throws TskCoreException {
 		try {
 			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
 			factory.createCaseDatabase();
@@ -3136,7 +3136,7 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Beta
-	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath, FileContentProvider contentProvider) throws TskCoreException {
+	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath, ContentProvider contentProvider) throws TskCoreException {
 		String databaseName = createCaseDataBaseName(caseName);
 		try {
 			/**

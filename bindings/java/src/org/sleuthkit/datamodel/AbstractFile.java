@@ -36,13 +36,14 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.sleuthkit.datamodel.FileContentStream.FileContentProvider;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskData.CollectedStatus;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
+import org.sleuthkit.datamodel.ContentStream.ContentProvider;
 
 /**
  * An abstract base class for classes that represent files that have been added
@@ -118,9 +119,8 @@ public abstract class AbstractFile extends AbstractContent {
 	private volatile String uniquePath;
 	private volatile FileSystem parentFileSystem;
 	
-	private final FileContentProvider contentProvider;
-	private FileContentStream contentStream;
-	private boolean hasContentStream;
+	private ContentStream contentStream;
+	private boolean tryUseContentProvider;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -232,9 +232,9 @@ public abstract class AbstractFile extends AbstractContent {
 		this.ownerUid = ownerUid;
 		this.osAccountObjId = osAccountObjectId;
 		this.collected = collected;
-		this.contentProvider = db.getContentProvider();
-		// mark has content stream as true if there is a provider (until proven wrong)
-		this.hasContentStream = contentProvider != null;
+		// any item that is marked as YES_REPO and there is a custom content provider for the db will use the content provider to provide data
+		// this will be flipped to false if there is no content stream from the content provider for this file
+		this.tryUseContentProvider = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1072,11 +1072,11 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 	
 	private boolean loadContentStream() throws TskCoreException {
-		if (hasContentStream) {
+		if (tryUseContentProvider) {
 			if (contentStream == null) {
-				contentStream = contentProvider.getFileContentStream(this);
+				contentStream = getSleuthkitCase().getContentProvider().getFileContentStream(this);
 				if (contentStream == null) {
-					hasContentStream = false;
+					tryUseContentProvider = false;
 					return false;
 				}
 			}
@@ -1086,12 +1086,19 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 	}
 	
+	/**
+	 * @return True if the custom content provider for the case should be used to fetch content bytes.
+	 */
+	private boolean useContentProvider() {
+		return this.getCollected() == CollectedStatus.YES_REPO && getSleuthkitCase().getContentProvider() != null;
+	}
+	
 	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
 		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (contentProvider != null) {
+		if (useContentProvider()) {
 			if (loadContentStream()) {
 				return this.contentStream.read(buf, offset, len);
 			} else {
@@ -1271,7 +1278,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
-		if (contentProvider != null) {
+		if (useContentProvider()) {
 			try {
 				return loadContentStream();
 			} catch (TskCoreException ex) {
@@ -1301,7 +1308,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
-		if (contentProvider != null) {
+		if (useContentProvider()) {
 			try {
 				return loadContentStream();
 			} catch (TskCoreException ex) {
