@@ -1,4 +1,4 @@
-bindings/java/lib/sqlite-jdbc-3.36.0.3.jar /usr/share/java
+bindings/java/lib/sqlite-jdbc-3.42.0.0.jar /usr/share/java
 bindings/java/dist/sleuthkit-4.12.0.jar /usr/share/java
 case-uco/java/dist/sleuthkit-caseuco-4.12.0.jar /usr/share/java
 
