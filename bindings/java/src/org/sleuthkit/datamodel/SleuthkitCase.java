@@ -335,7 +335,7 @@ public class SleuthkitCase {
 	 * @param caseHandle A handle to a case database object in the native code
 	 *                   SleuthKit layer.
 	 * @param dbType     The type of database we're dealing with
-	 * @param contentProvider Custom provider for file content.
+	 * @param contentProvider Custom provider for file content (can be null).
 	 *
 	 * @throws Exception
 	 */
@@ -368,7 +368,7 @@ public class SleuthkitCase {
 	 * @param dbType      The type of database we're dealing with SleuthKit
 	 *                    layer.
 	 * @param caseDirPath The path to the root case directory.
-	 * @param contentProvider Custom provider for file content.
+	 * @param contentProvider Custom provider for file content (can be null).
 	 *
 	 * @throws Exception
 	 */
@@ -414,6 +414,13 @@ public class SleuthkitCase {
 		hostAddressManager = new HostAddressManager(this);
 	}
 	
+	/**
+	 * Returns the custom content provider for this case if one exists.
+	 * Otherwise, returns null.
+	 *
+	 * @return The custom content provider for this case if one exists.
+	 *         Otherwise, returns null.
+	 */
 	ContentProvider getContentProvider() {
 		return this.contentProvider;
 	}
@@ -2984,7 +2991,7 @@ public class SleuthkitCase {
 		return openCase(dbPath, null);
 	}
 	
-		/**
+	/**
 	 * Open an existing case database.
 	 *
 	 * @param dbPath Path to SQLite case database.

@@ -43,7 +43,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-import org.sleuthkit.datamodel.ContentStream.ContentProvider;
 
 /**
  * An abstract base class for classes that represent files that have been added
@@ -120,7 +119,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private volatile FileSystem parentFileSystem;
 	
 	private ContentStream contentStream;
-	private boolean tryUseContentProvider;
+	private boolean tryContentStream;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -232,9 +231,9 @@ public abstract class AbstractFile extends AbstractContent {
 		this.ownerUid = ownerUid;
 		this.osAccountObjId = osAccountObjectId;
 		this.collected = collected;
-		// any item that is marked as YES_REPO and there is a custom content provider for the db will use the content provider to provide data
+		// any item that is marked as YES_REPO and there is a custom content provider for the db will attempt to use the content provider to provide data
 		// this will be flipped to false if there is no content stream from the content provider for this file
-		this.tryUseContentProvider = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
+		this.tryContentStream = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1071,16 +1070,26 @@ public abstract class AbstractFile extends AbstractContent {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
 	
+	/**
+	 * Attempts to load the content stream for this file.  If none exists, returns false.
+	 * @return  False if no content stream exists for this file.
+	 * @throws TskCoreException 
+	 */
 	private boolean loadContentStream() throws TskCoreException {
-		if (tryUseContentProvider) {
-			if (contentStream == null) {
-				contentStream = getSleuthkitCase().getContentProvider().getFileContentStream(this);
-				if (contentStream == null) {
-					tryUseContentProvider = false;
-					return false;
-				}
-			}
+		if (contentStream != null) {
 			return true;
+		} else if (tryContentStream) {
+			// only attempt to load if the flag indicates it should be tried	
+			contentStream = getSleuthkitCase().getContentProvider().getFileContentStream(this);
+
+			if (contentStream == null) {
+				// if no content stream could be loaded, mark tryContentStream as false so load 
+				// isn't attempted again
+				tryContentStream = false;
+				return false;
+			} else {
+				return true;
+			}
 		} else {
 			return false;
 		}
