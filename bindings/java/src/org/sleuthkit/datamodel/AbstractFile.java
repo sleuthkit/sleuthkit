@@ -1080,7 +1080,7 @@ public abstract class AbstractFile extends AbstractContent {
 			return true;
 		} else if (tryContentStream) {
 			// only attempt to load if the flag indicates it should be tried	
-			contentStream = getSleuthkitCase().getContentProvider().getFileContentStream(this);
+			contentStream = getSleuthkitCase().getContentProvider().getContentStream(this);
 
 			if (contentStream == null) {
 				// if no content stream could be loaded, mark tryContentStream as false so load 
