@@ -1107,12 +1107,8 @@ public abstract class AbstractFile extends AbstractContent {
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
 		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (useContentProvider()) {
-			if (loadContentStream()) {
-				return this.contentStream.read(buf, offset, len);
-			} else {
-				return 0;
-			}
+		if (useContentProvider() && loadContentStream()) {
+			return this.contentStream.read(buf, offset, len);
 		}
 		
 		if (localPathSet) {
