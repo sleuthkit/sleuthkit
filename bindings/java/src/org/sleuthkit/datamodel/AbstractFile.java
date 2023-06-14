@@ -1080,7 +1080,7 @@ public abstract class AbstractFile extends AbstractContent {
 			return true;
 		} else if (tryContentStream) {
 			// only attempt to load if the flag indicates it should be tried	
-			contentStream = getSleuthkitCase().getContentProvider().getContentStream(this);
+			contentStream = getSleuthkitCase().getContentProvider().getContentStream(this).orElse(null);
 
 			if (contentStream == null) {
 				// if no content stream could be loaded, mark tryContentStream as false so load 
@@ -1106,15 +1106,11 @@ public abstract class AbstractFile extends AbstractContent {
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
 		//template method
-		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (useContentProvider()) {
-			if (loadContentStream()) {
-				return this.contentStream.read(buf, offset, len);
-			} else {
-				return 0;
-			}
+		if (useContentProvider() && loadContentStream()) {
+			return this.contentStream.read(buf, offset, len);
 		}
 		
+		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
 		if (localPathSet) {
 			return readLocal(buf, offset, len);
 		} else {
