@@ -1001,9 +1001,9 @@ def normalize_tsk_objects_path(guid_util: TskGuidUtils, objid: int,
         if path_parts and len(path_parts) >= 2:
             is_leapp = False
             for leapp_module in ['aleapp', 'ileapp']:
-                if len(path_parts) > 0 and path_parts[0].lower() == leapp_module and \
+                if len(path_parts) > 0 and path_parts[1].lower() == leapp_module and \
                         path_parts[-1].lower() == 'index.html':
-                    path_parts = [leapp_module, 'index.html']
+                    path_parts = ['ModuleOutput', leapp_module, 'index.html']
                     is_leapp = True
                     break
 
