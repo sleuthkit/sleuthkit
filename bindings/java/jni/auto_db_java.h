@@ -161,7 +161,7 @@ class TskAutoDbJava :public TskAuto {
     jmethodID m_addLayoutFileRangeMethodID = NULL;
 
     // Cached objects
-    vector<TSK_DB_FS_INFO> m_savedFsInfo;    
+    vector<TSK_DB_FS_INFO> m_savedFsInfo;
     vector<TSK_DB_VS_INFO> m_savedVsInfo;
     vector<TSK_DB_VS_PART_INFO> m_savedVsPartInfo;
     vector<TSK_DB_OBJECT> m_savedObjects;

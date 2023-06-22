@@ -307,7 +307,7 @@ TskAutoDbJava::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId
         m_savedVsInfo.push_back(vs_db);
         saveObjectInfo(objId, poolObjId, TSK_DB_OBJECT_TYPE_VS);
     } 
-    if (pool_info->ctype == TSK_POOL_TYPE_LVM){
+    else if (pool_info->ctype == TSK_POOL_TYPE_LVM){
         // Add the APFS pool volume
         jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
             poolObjIdj, TSK_VS_TYPE_LVM, pool_info->img_offset, (uint64_t)pool_info->block_size);
@@ -351,15 +351,11 @@ TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
 
 
     // here we add pool vol into available vs_part fields
+    // some fields were not directly compatible and were not added
     TSK_DB_VS_PART_INFO vol_info_db;
     vol_info_db.objId = objId; ///< set to 0 if unknown (before it becomes a db object)  
-    // pool_vol_info_db.tag = ;  ///< Set to TSK_POOL_VOLUME_INFO_TAG when struct is alloc
-    // vol_info_db. = pool_vol->index;     ///< Index of Volume
     snprintf(vol_info_db.desc, TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1, "%s", pool_vol->desc);   ///< Description
-    //pool_vol_info_db.password_hint = ;                 ///< Password hint for encrypted volumes
-    vol_info_db.start = pool_vol->block;                      ///< Starting Block number
-    //vol_info_db.len = pool_vol->;                 ///< Number of blocks in the volume
-    //vol_info_db.flags = pool_vol->flags;  //flags are not compatible
+    vol_info_db.start = pool_vol->block; ///< Starting Block number
     m_savedVsPartInfo.push_back(vol_info_db);
 
     saveObjectInfo(objId, parObjId, TSK_DB_OBJECT_TYPE_VOL);
@@ -1239,7 +1235,7 @@ TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %lld", (long long int)pool_info->img_offset);
+            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %jd", (intptr_t)pool_info->img_offset);
             return TSK_ERR;
         }
         int64_t curPoolVs = m_poolOffsetToVsId[pool_info->img_offset];
@@ -1755,7 +1751,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo,
     }
 
     //open the fs we have from database
-    TSK_FS_INFO * fsInfo = tsk_fs_open_img((TSK_IMG_INFO*)curImgInfo, dbFsInfo.imgOffset, dbFsInfo.fType); 
+    TSK_FS_INFO * fsInfo = tsk_fs_open_img((TSK_IMG_INFO*)curImgInfo, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
         tsk_error_set_errstr2("TskAutoDbJava::addFsInfoUnalloc: error opening fs at offset %" PRIdOFF, dbFsInfo.imgOffset);
         tsk_error_set_errno(TSK_ERR_AUTO);
@@ -1804,7 +1800,6 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo,
         tsk_error_set_errstr2("addFsInfoUnalloc: error addUnallocBlockFile");
         tsk_error_set_errno(TSK_ERR_AUTO);
         registerError();
-        registerError();
         tsk_fs_close(fsInfo);
         return TSK_ERR;
     }
@@ -1827,7 +1822,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocSpaceToDb() {
     size_t numVsP = 0;
     size_t numFs = 0;
     size_t numPool = 0;
-    
+
     TSK_RETVAL_ENUM retFsSpace = addUnallocFsSpaceToDb(numFs);
     TSK_RETVAL_ENUM retVsSpace = addUnallocVsSpaceToDb(numVsP);
     TSK_RETVAL_ENUM retPoolSpace = addUnallocatedPoolBlocksToDb(numPool);
@@ -1904,12 +1899,12 @@ TSK_RETVAL_ENUM TskAutoDbJava::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbI
 * @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
 */
 TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
-    
+
     if(m_stopAllProcessing) {
         return TSK_OK;
     }
 
-    numFs = m_savedFsInfo.size();     
+    numFs = m_savedFsInfo.size();
     TSK_RETVAL_ENUM allFsProcessRet = TSK_OK;
     
 
