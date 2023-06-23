@@ -26,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -826,11 +827,15 @@ public final class TimelineManager {
 			}
 			if (descriptionID != null) {
 				long eventID = addEventWithExistingDescription(time, eventType, descriptionID, trans.getConnection());
-				return new TimelineEvent(eventID, descriptionID, contentId, artifactId, time, eventType,
+				TimelineEvent timelineEvt = new TimelineEvent(eventID, descriptionID, contentId, artifactId, time, eventType,
 						longDesc, medDesc, shortDesc, hashHit, tagged);
+				
+				trans.registerTimelineEvent(new TimelineEventAddedEvent(timelineEvt));
+				return timelineEvt;
 			} else {
-				// GVDTODO
-				throw new TskCoreException(String.format("Failed to get event description"));
+				throw new TskCoreException(MessageFormat.format(
+						"Failed to get event description for [shortDesc: {0}, dataSourceId: {1}, contentId: {2}, artifactId: {3}]",
+						shortDesc, dataSourceId, contentId, artifactId == null ? "<null>" : artifactId));
 			}
 		} catch (DuplicateException dupEx) {
 			logger.log(Level.SEVERE, "Attempt to make file event duplicate.", dupEx);
