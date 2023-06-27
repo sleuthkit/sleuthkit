@@ -1277,26 +1277,23 @@ TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo)
                             return TSK_OK;                            
                         }                    
                     }
-                    tsk_error_set_errstr("TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)"); 
-                     tsk_error_set_errstr2("cache size: %" PRIdOFF, m_savedVsInfo.size());         
-                    tsk_error_set_errno(TSK_ERR_AUTO);      
-                    registerError();  
+                    if (tsk_verbose) {
+                        tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)");        
+                    }
                     return TSK_ERR;
                 }
             }
         } 
-        tsk_error_set_errstr("TskAutoDb:: GetVsByFsId: error getting VS from FS (Parent VS_Part not found) cache size: %"
-                             PRIdOFF, m_savedVsPartInfo.size() );
-        tsk_error_set_errstr2("FS ParentObjId: %" PRIdOFF, fsObjDbInfo.parObjId);
-        tsk_error_set_errno(TSK_ERR_AUTO);
-        registerError();                    
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (Parent VS_Part not found)");
+        }                   
         return TSK_ERR;    
     }
     else {
-    tsk_error_set_errstr("TskAutoDb:: GetVsByFsId: error getting VS from FS (FS object not found)");     
-    tsk_error_set_errno(TSK_ERR_AUTO);          
-    registerError();
-    return TSK_ERR; 
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (FS object not found)\n");
+        }
+        return TSK_ERR;
     }
 }
 
@@ -1323,13 +1320,13 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
         // finds VS related to the FS
         TSK_DB_VS_INFO curVsDbInfo; 
         if(getVsByFsId(curFsDbInfo->objId, curVsDbInfo) == TSK_ERR){
-            tsk_error_set_errstr2(
-                      "TskAutoDb::addUnallocFsSpaceToDb: error getting VS from FS."
-                      ); 
-            tsk_error_set_errno(TSK_ERR_AUTO);               
-            registerError();
-            //allFsProcessRet = TSK_STOP;
-            return TSK_ERR;
+            // FS is not inside a VS
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDbJava::addUnallocFsSpaceToDb: FS not inside a VS, adding the unnalocated space\n");
+            }
+            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(m_img_info, *curFsDbInfo);
+            if (retval == TSK_ERR)
+                    allFsProcessRet = TSK_ERR;
         }        
         else {
             if ((curVsDbInfo.vstype == TSK_VS_TYPE_APFS)||(curVsDbInfo.vstype == TSK_VS_TYPE_LVM)){ 

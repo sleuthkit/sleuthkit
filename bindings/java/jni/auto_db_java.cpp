@@ -1869,26 +1869,25 @@ TSK_RETVAL_ENUM TskAutoDbJava::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbI
                             vsDbInfo.vstype = curVsDbInfo->vstype;
                             vsDbInfo.offset = curVsDbInfo->offset;
                             return TSK_OK;                            
-                        }                    
+                        }
                     }
-                    tsk_error_set_errstr("TskAutoDbJava:: GetVsByFsId: error getting VS from FS. (Parent VS not Found).");          
-                    tsk_error_set_errno(TSK_ERR_AUTO);      
-                    registerError();  
+                    if (tsk_verbose) {
+                        tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)");        
+                    }
                     return TSK_ERR;
                 }
             }
         } 
-        tsk_error_set_errstr("TskAutoDbJava:: GetVsByFsId: error getting VS from FS (Parent VS Part not found).");
-        tsk_error_set_errstr2("cache size: %" PRIdOFF, m_savedVsPartInfo.size());
-        tsk_error_set_errno(TSK_ERR_AUTO);
-        registerError();                    
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (Parent VS_Part not found)");
+        }                   
         return TSK_ERR;    
     }
     else {
-    tsk_error_set_errstr("TskAutoDbJava:: GetVsByFsId: error getting VS from FS (FS object not found).");     
-    tsk_error_set_errno(TSK_ERR_AUTO);          
-    registerError();
-    return TSK_ERR; 
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (FS object not found)\n");
+        }
+        return TSK_ERR;
     }
 }
 
@@ -1911,17 +1910,16 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
     for (vector<TSK_DB_FS_INFO>::iterator curFsDbInfo = m_savedFsInfo.begin(); curFsDbInfo!= m_savedFsInfo.end(); ++curFsDbInfo) {
         if (m_stopAllProcessing) 
             break;
-        
         // finds VS related to the FS
         TSK_DB_VS_INFO curVsDbInfo; 
         if(getVsByFsId(curFsDbInfo->objId, curVsDbInfo) == TSK_ERR){
-            tsk_error_set_errstr2(
-                      "TskAutoDbJava::addUnallocFsSpaceToDb: error getting VS from FS."
-                      ); 
-            tsk_error_set_errno(TSK_ERR_AUTO);               
-            registerError();
-            //allFsProcessRet = TSK_STOP;
-            return TSK_ERR;
+            // FS is not inside a VS
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDbJava::addUnallocFsSpaceToDb: FS not inside a VS, adding the unnalocated space\n");
+            }
+            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(m_img_info, *curFsDbInfo);
+            if (retval == TSK_ERR)
+                    allFsProcessRet = TSK_ERR;
         }        
         else {
             if ((curVsDbInfo.vstype == TSK_VS_TYPE_APFS)||(curVsDbInfo.vstype == TSK_VS_TYPE_LVM)){ 
@@ -2014,7 +2012,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
                     const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
                     if (pool == nullptr) {
                         tsk_error_set_errstr2(
-                        "findFilesInPool: Error opening pool");
+                        "TskAutoDbJava::addUnallocFsSpaceToDb: Error opening pool");
                         registerError();
                         allFsProcessRet = TSK_ERR;
                     }
@@ -2036,7 +2034,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
                             tsk_img_close(pool_vol_img);
                             tsk_pool_close(pool);
                             tsk_error_set_errstr2(
-                                "findFilesInPool: Unable to open file system in LVM logical volume: %" PRIdOFF "",
+                                "TskAutoDbJava::addUnallocFsSpaceToDb: Unable to open file system in LVM logical volume: %" PRIdOFF "",
                                 curFsDbInfo->imgOffset);
                             tsk_error_set_errno(TSK_ERR_FS);
                             registerError();
