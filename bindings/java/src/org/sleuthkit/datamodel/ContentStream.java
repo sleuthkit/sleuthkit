@@ -18,10 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Optional;
+
 /**
  * Custom provider for content bytes.
  */
-public interface ContentStream {
+public interface ContentStream extends AutoCloseable {
 
 	/**
 	 * Reads data that this content object is associated with (file contents,
@@ -44,14 +46,14 @@ public interface ContentStream {
 	public interface ContentProvider {
 
 		/**
-		 * Provides a content stream for a content object or null if this
+		 * Provides a content stream for a content object or empty if this
 		 * provider has none to provide.
 		 *
 		 * @param content The content.
 		 *
-		 * @return The content stream or null if no stream can be provided
+		 * @return The content stream or empty if no stream can be provided
 		 *         for this content.
 		 */
-		ContentStream getContentStream(Content content) throws TskCoreException;
+		Optional<ContentStream> getContentStream(Content content) throws TskCoreException;
 	}
 }
