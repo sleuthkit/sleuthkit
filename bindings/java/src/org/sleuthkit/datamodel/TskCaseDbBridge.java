@@ -396,6 +396,10 @@ class TskCaseDbBridge {
 					} catch (NotUserSIDException ex) {
 						// if the owner SID is not a user SID, set the owner account to null
 						ownerIdToAccountMap.put(ownerUid, null);
+					} catch (Exception ex) {
+						// catch other exceptions to avoid skiping add batched files loop below
+						logger.log(Level.WARNING, "Error mapping ownerId " + ownerUid + " to account", ex);
+						ownerIdToAccountMap.put(ownerUid, null);
 					}
 				}
 			}
@@ -484,7 +488,7 @@ class TskCaseDbBridge {
                 // Exception firewall to prevent unexpected return to the native code
                 logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
             }
-        } catch (TskCoreException ex) {
+        } catch (Throwable ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
             return -1;

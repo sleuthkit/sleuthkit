@@ -482,7 +482,9 @@ TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, jstring & newJS
 
     if (tsk_UTF8toUTF16((const UTF8 **)&source, (const UTF8 *)&source[input_len], &target, &target[input_len], TSKlenientConversion) != TSKconversionOK) {
         free(utf16_input);
-        return TSK_ERR;
+        // use default JNI method as fallback, fixes https://github.com/sleuthkit/sleuthkit/issues/2723
+        newJString = m_jniEnv->NewStringUTF(input);
+        return TSK_OK;
     }
 
     /*
