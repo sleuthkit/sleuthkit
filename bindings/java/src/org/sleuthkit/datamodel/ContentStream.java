@@ -23,7 +23,7 @@ import java.util.Optional;
 /**
  * Custom provider for content bytes.
  */
-public interface ContentStream {
+public interface ContentStream extends AutoCloseable {
 
 	/**
 	 * Reads data that this content object is associated with (file contents,
