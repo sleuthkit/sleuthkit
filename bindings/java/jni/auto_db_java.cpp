@@ -2029,21 +2029,27 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
                         allFsProcessRet = TSK_ERR;
                     } 
                     else {
-                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, curFsDbInfo->imgOffset, curFsDbInfo->fType);
+                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo->fType);
                         if (fs_info == NULL) {
                             tsk_img_close(pool_vol_img);
                             tsk_pool_close(pool);
                             tsk_error_set_errstr2(
                                 "TskAutoDbJava::addUnallocFsSpaceToDb: Unable to open file system in LVM logical volume: %" PRIdOFF "",
-                                curFsDbInfo->imgOffset);
+                                curVsPartInfo.start);
                             tsk_error_set_errno(TSK_ERR_FS);
                             registerError();
                             allFsProcessRet = TSK_ERR;
                         }
                         else {
                             TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, *curFsDbInfo);
-                            if (retval == TSK_ERR)
+                            if (retval == TSK_ERR){
+                                tsk_error_set_errstr2(
+                                        "TskAutoDb::addUnallocFsSpaceToDb: Error getting unallocated space");
+                                tsk_error_set_errno(TSK_ERR_FS);
+                                registerError();
                                 allFsProcessRet = TSK_ERR;
+                            }
+
 
                             tsk_fs_close(fs_info);
                             tsk_img_close(pool_vol_img);

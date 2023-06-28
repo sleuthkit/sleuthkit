@@ -1275,7 +1275,7 @@ TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo)
                             vsDbInfo.vstype = curVsDbInfo->vstype;
                             vsDbInfo.offset = curVsDbInfo->offset;
                             return TSK_OK;                            
-                        }                    
+                        }
                     }
                     if (tsk_verbose) {
                         tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)");        
@@ -1425,8 +1425,8 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                     }
                     
     
-                    TSK_IMG_INFO *pool_img = pool->get_img_info(pool, curVsPartInfo.start);
-                    if (pool_img == NULL) {                        
+                    TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, curVsPartInfo.start);
+                    if (pool_vol_img == NULL) {                        
                         tsk_pool_close(pool);                        
                         tsk_error_set_errstr2(
                             "TskAutoDb::addUnallocFsSpaceToDb: Error opening LVM logical volume: %" PRIdOFF "",
@@ -1436,24 +1436,29 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         allFsProcessRet = TSK_ERR;
                     } 
                     else {
-                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_img, curFsDbInfo->imgOffset, curFsDbInfo->fType);
+                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo->fType);
                         if (fs_info == NULL) {
-                            tsk_img_close(pool_img);
+                            tsk_img_close(pool_vol_img);
                             tsk_pool_close(pool);
                             tsk_error_set_errstr2(
                                 "findFilesInPool: Unable to open file system in LVM logical volume: %" PRIdOFF "",
-                                curFsDbInfo->imgOffset);
+                                curVsPartInfo.start);
                             tsk_error_set_errno(TSK_ERR_FS);
                             registerError();
                             allFsProcessRet = TSK_ERR;
                         }
                         else {
-                            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, *curFsDbInfo);
-                            if (retval == TSK_ERR)
+                            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, *curFsDbInfo);
+                            if (retval == TSK_ERR){
+                                tsk_error_set_errstr2(
+                                        "TskAutoDb::addUnallocFsSpaceToDb: Error getting unallocated space");
+                                tsk_error_set_errno(TSK_ERR_FS);
+                                registerError();
                                 allFsProcessRet = TSK_ERR;
+                            }
 
                             tsk_fs_close(fs_info);
-                            tsk_img_close(pool_img);
+                            tsk_img_close(pool_vol_img);
 
                             if (retval == TSK_STOP) {
                                 tsk_pool_close(pool);
