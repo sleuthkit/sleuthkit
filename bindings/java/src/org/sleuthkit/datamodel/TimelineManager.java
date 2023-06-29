@@ -838,7 +838,7 @@ public final class TimelineManager {
 						shortDesc, dataSourceId, contentId, artifactId == null ? "<null>" : artifactId));
 			}
 		} catch (DuplicateException dupEx) {
-			logger.log(Level.SEVERE, "Attempt to make file event duplicate.", dupEx);
+			logger.log(Level.WARNING, "Attempt to make duplicate", dupEx);
 			return null;
 		} finally {
 			caseDB.releaseSingleUserCaseWriteLock();
