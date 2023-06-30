@@ -18,7 +18,7 @@
 #include <stdexcept>
 
 /**
- * Get error string from libvslvm and make buffer empty if that didn't work. 
+ * Get error string from libvslvm and make buffer empty if that didn't work.
  * @returns 1 if error message was not set
  */
 static uint8_t getError(libvslvm_error_t *vslvm_error, char error_string[512])
@@ -145,9 +145,6 @@ lvm_logical_volume_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     libvslvm_error_t *vslvm_error = NULL;
 
-    // Commented: offset is already relative (0) to the img_info, that is relative to the volume
-    //// correct the offset to be relative to the start of the logical volume
-    //offset -= pool_img_info->pool_info->img_offset;
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "lvm_logical_volume_img_read: offset: %" PRIdOFF " read len: %" PRIuSIZE ".\n",
