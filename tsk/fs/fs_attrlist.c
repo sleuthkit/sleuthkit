@@ -277,7 +277,7 @@ tsk_fs_attrlist_get_id(const TSK_FS_ATTRLIST * a_fs_attrlist,
     for (fs_attr_cur = a_fs_attrlist->head; fs_attr_cur;
         fs_attr_cur = fs_attr_cur->next) {
         if ((fs_attr_cur->flags & TSK_FS_ATTR_INUSE)
-            && (a_type == TSK_FS_ATTR_TYPE_NOT_FOUND || fs_attr_cur->type == a_type) && (fs_attr_cur->id == a_id))
+            && (fs_attr_cur->type == a_type) && (fs_attr_cur->id == a_id))
             return fs_attr_cur;
     }
 
