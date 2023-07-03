@@ -507,10 +507,6 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                                 "findFilesInPool: Error opening APFS file system");
                             registerError();
                         }
-
-                        tsk_img_close(pool_img);
-                        tsk_pool_close(pool);
-                        return TSK_ERR;
                     }
 
                     tsk_img_close(pool_img);

@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.ref.SoftReference;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -118,8 +119,9 @@ public abstract class AbstractFile extends AbstractContent {
 	private volatile String uniquePath;
 	private volatile FileSystem parentFileSystem;
 	
-	private ContentStream contentStream;
 	private boolean tryContentStream;
+	private Object contentStreamLock = new Object();
+	private SoftReference<ContentStream> contentStreamRef = null;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -1070,44 +1072,54 @@ public abstract class AbstractFile extends AbstractContent {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
 	
+
+	
+	private boolean hasContentStream() {
+		ContentStream contentStream = null;
+		try {
+			contentStream = getContentStream();	
+		} catch (TskCoreException ex) {
+			LOGGER.log(Level.WARNING, "An error occurred while loading content stream for file with id: " + getId(), ex);
+		}
+		return contentStream != null;
+	}
+	
 	/**
-	 * Attempts to load the content stream for this file.  If none exists, returns false.
-	 * @return  False if no content stream exists for this file.
+	 * Attempts to load the content stream for this file.  If none exists, returns null.
+	 * @return  The content stream for this file or null if none exists.
 	 * @throws TskCoreException 
 	 */
-	private boolean loadContentStream() throws TskCoreException {
-		if (contentStream != null) {
-			return true;
-		} else if (tryContentStream) {
-			// only attempt to load if the flag indicates it should be tried	
-			contentStream = getSleuthkitCase().getContentProvider().getContentStream(this).orElse(null);
-
-			if (contentStream == null) {
-				// if no content stream could be loaded, mark tryContentStream as false so load 
-				// isn't attempted again
-				tryContentStream = false;
-				return false;
-			} else {
-				return true;
+	private ContentStream getContentStream() throws TskCoreException {
+		ContentStream contentStream = null;
+		if (tryContentStream) {
+			try {
+				synchronized (contentStreamLock) {
+					// try to get soft reference content stream
+					contentStream = contentStreamRef == null ? null : contentStreamRef.get();
+					// load if not cached and then cache if present
+					if (contentStream == null) {
+						contentStream = getSleuthkitCase().getContentProvider().getContentStream(this).orElse(null);
+						if (contentStream != null) {
+							this.contentStreamRef = new SoftReference<>(contentStream);
+						}
+					}
+				}
+			} finally {
+				if (contentStream == null) {
+					// don't try to load the content stream again if it fails to load (either through exception or not existing)
+					tryContentStream = false;
+				}				
 			}
-		} else {
-			return false;
 		}
+		return contentStream;
 	}
-	
-	/**
-	 * @return True if the custom content provider for the case should be used to fetch content bytes.
-	 */
-	private boolean useContentProvider() {
-		return this.getCollected() == CollectedStatus.YES_REPO && getSleuthkitCase().getContentProvider() != null;
-	}
-	
 	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		//template method
-		if (useContentProvider() && loadContentStream()) {
-			return this.contentStream.read(buf, offset, len);
+		// try to use content stream if present
+		ContentStream contentStream = getContentStream();
+		if (contentStream != null) {
+			return contentStream.read(buf, offset, len);
 		}
 		
 		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
@@ -1283,13 +1295,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
-		if (useContentProvider()) {
-			try {
-				return loadContentStream();
-			} catch (TskCoreException ex) {
-				LOGGER.log(Level.SEVERE, ex.getMessage());
-				return false;
-			}
+		if (hasContentStream()) {
+			return true;
 		}
 		
 		if (!localPathSet) {
@@ -1313,13 +1320,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
-		if (useContentProvider()) {
-			try {
-				return loadContentStream();
-			} catch (TskCoreException ex) {
-				LOGGER.log(Level.SEVERE, ex.getMessage());
-				return false;
-			}
+		if (hasContentStream()) {
+			return true;
 		}
 		
 		if (!localPathSet) {
