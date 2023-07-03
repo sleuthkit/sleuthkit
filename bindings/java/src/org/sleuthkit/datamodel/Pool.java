@@ -114,7 +114,13 @@ public class Pool extends AbstractContent {
 		} else if (this.getParent() instanceof Volume) {
 			// If the parent is a volume, then the pool starts at the volume offset
 			Volume parent = (Volume)this.getParent();
-			return parent.getStart() * image.getSsize(); // Offset needs to be in bytes
+			if (parent.getParent() instanceof VolumeSystem) {
+				// uses block size from parent volume system
+				return parent.getStart() * ((VolumeSystem) parent.getParent()).getBlockSize(); // Offset needs to be in bytes
+			} else {
+				// uses sector size from parent image (old behavior fallback)
+				return parent.getStart() * image.getSsize(); // Offset needs to be in bytes
+			}
 		}
 		throw new TskCoreException("Pool with object ID " + this.getId() + " does not have Image or Volume parent");
 	}
