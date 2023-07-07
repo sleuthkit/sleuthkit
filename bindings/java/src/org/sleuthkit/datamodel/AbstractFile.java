@@ -119,9 +119,9 @@ public abstract class AbstractFile extends AbstractContent {
 	private volatile String uniquePath;
 	private volatile FileSystem parentFileSystem;
 	
-	private boolean tryContentStream;
-	private Object contentStreamLock = new Object();
-	private SoftReference<ContentStream> contentStreamRef = null;
+	private boolean tryContentProviderStream;
+	private Object contentProviderStreamLock = new Object();
+	private SoftReference<ContentProviderStream> contentProviderStreamRef = null;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -234,8 +234,8 @@ public abstract class AbstractFile extends AbstractContent {
 		this.osAccountObjId = osAccountObjectId;
 		this.collected = collected;
 		// any item that is marked as YES_REPO and there is a custom content provider for the db will attempt to use the content provider to provide data
-		// this will be flipped to false if there is no content stream from the content provider for this file
-		this.tryContentStream = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
+		// this will be flipped to false if there is no content provider stream from the content provider for this file
+		this.tryContentProviderStream = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1074,52 +1074,52 @@ public abstract class AbstractFile extends AbstractContent {
 	
 
 	
-	private boolean hasContentStream() {
-		ContentStream contentStream = null;
+	private boolean hasContentProviderStream() {
+		ContentProviderStream contentProviderStream = null;
 		try {
-			contentStream = getContentStream();	
+			contentProviderStream = getContentProviderStream();	
 		} catch (TskCoreException ex) {
-			LOGGER.log(Level.WARNING, "An error occurred while loading content stream for file with id: " + getId(), ex);
+			LOGGER.log(Level.WARNING, "An error occurred while loading content provider stream for file with id: " + getId(), ex);
 		}
-		return contentStream != null;
+		return contentProviderStream != null;
 	}
 	
 	/**
-	 * Attempts to load the content stream for this file.  If none exists, returns null.
+	 * Attempts to load the content provider stream for this file.  If none exists, returns null.
 	 * @return  The content stream for this file or null if none exists.
 	 * @throws TskCoreException 
 	 */
-	private ContentStream getContentStream() throws TskCoreException {
-		ContentStream contentStream = null;
-		if (tryContentStream) {
+	private ContentProviderStream getContentProviderStream() throws TskCoreException {
+		ContentProviderStream contentProviderStream = null;
+		if (tryContentProviderStream) {
 			try {
-				synchronized (contentStreamLock) {
-					// try to get soft reference content stream
-					contentStream = contentStreamRef == null ? null : contentStreamRef.get();
+				synchronized (contentProviderStreamLock) {
+					// try to get soft reference content provider stream
+					contentProviderStream = contentProviderStreamRef == null ? null : contentProviderStreamRef.get();
 					// load if not cached and then cache if present
-					if (contentStream == null) {
-						contentStream = getSleuthkitCase().getContentProvider().getContentStream(this).orElse(null);
-						if (contentStream != null) {
-							this.contentStreamRef = new SoftReference<>(contentStream);
+					if (contentProviderStream == null) {
+						contentProviderStream = getSleuthkitCase().getContentProvider().getContentStream(this).orElse(null);
+						if (contentProviderStream != null) {
+							this.contentProviderStreamRef = new SoftReference<>(contentProviderStream);
 						}
 					}
 				}
 			} finally {
-				if (contentStream == null) {
-					// don't try to load the content stream again if it fails to load (either through exception or not existing)
-					tryContentStream = false;
+				if (contentProviderStream == null) {
+					// don't try to load the content provider stream again if it fails to load (either through exception or not existing)
+					tryContentProviderStream = false;
 				}				
 			}
 		}
-		return contentStream;
+		return contentProviderStream;
 	}
 	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		// try to use content stream if present
-		ContentStream contentStream = getContentStream();
-		if (contentStream != null) {
-			return contentStream.read(buf, offset, len);
+		// try to use content provider stream if present
+		ContentProviderStream contentProviderStream = getContentProviderStream();
+		if (contentProviderStream != null) {
+			return contentProviderStream.read(buf, offset, len);
 		}
 		
 		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
@@ -1295,7 +1295,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
-		if (hasContentStream()) {
+		if (hasContentProviderStream()) {
 			return true;
 		}
 		
@@ -1320,7 +1320,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
-		if (hasContentStream()) {
+		if (hasContentProviderStream()) {
 			return true;
 		}
 		
