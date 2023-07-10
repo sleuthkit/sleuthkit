@@ -119,9 +119,9 @@ public abstract class AbstractFile extends AbstractContent {
 	private volatile String uniquePath;
 	private volatile FileSystem parentFileSystem;
 	
-	private boolean tryContentStream;
-	private Object contentStreamLock = new Object();
-	private SoftReference<ContentStream> contentStreamRef = null;
+	private final boolean tryContentProviderStream;
+	private Object contentProviderStreamLock = new Object();
+	private SoftReference<ContentProviderStream> contentProviderStreamRef = null;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -234,8 +234,8 @@ public abstract class AbstractFile extends AbstractContent {
 		this.osAccountObjId = osAccountObjectId;
 		this.collected = collected;
 		// any item that is marked as YES_REPO and there is a custom content provider for the db will attempt to use the content provider to provide data
-		// this will be flipped to false if there is no content stream from the content provider for this file
-		this.tryContentStream = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
+		// this will be flipped to false if there is no content provider stream from the content provider for this file
+		this.tryContentProviderStream = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1072,58 +1072,47 @@ public abstract class AbstractFile extends AbstractContent {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
 	
-
-	
-	private boolean hasContentStream() {
-		ContentStream contentStream = null;
-		try {
-			contentStream = getContentStream();	
-		} catch (TskCoreException ex) {
-			LOGGER.log(Level.WARNING, "An error occurred while loading content stream for file with id: " + getId(), ex);
-		}
-		return contentStream != null;
-	}
-	
 	/**
-	 * Attempts to load the content stream for this file.  If none exists, returns null.
-	 * @return  The content stream for this file or null if none exists.
-	 * @throws TskCoreException 
+	 * Attempts to get cached or load the content provider stream for this file.
+	 * If none exists, returns null.
+	 *
+	 * NOTE: Does not check the value for tryContentProviderStream before
+	 * attempting.
+	 *
+	 * @return The content stream for this file or null if none exists.
+	 *
+	 * @throws TskCoreException
 	 */
-	private ContentStream getContentStream() throws TskCoreException {
-		ContentStream contentStream = null;
-		if (tryContentStream) {
-			try {
-				synchronized (contentStreamLock) {
-					// try to get soft reference content stream
-					contentStream = contentStreamRef == null ? null : contentStreamRef.get();
-					// load if not cached and then cache if present
-					if (contentStream == null) {
-						contentStream = getSleuthkitCase().getContentProvider().getContentStream(this).orElse(null);
-						if (contentStream != null) {
-							this.contentStreamRef = new SoftReference<>(contentStream);
-						}
-					}
+	private ContentProviderStream getContentProviderStream() throws TskCoreException {
+		synchronized (contentProviderStreamLock) {
+			// try to get soft reference content provider stream
+			ContentProviderStream contentProviderStream = contentProviderStreamRef == null ? null : contentProviderStreamRef.get();
+			// load if not cached and then cache if present
+			if (contentProviderStream == null) {
+				ContentStreamProvider provider = getSleuthkitCase().getContentProvider();
+				contentProviderStream = provider == null ? null : provider.getContentStream(this).orElse(null);
+
+				if (contentProviderStream == null) {
+					throw new TskCoreException(MessageFormat.format("Could not get content provider string for file with obj id: {0}, path: {1}",
+							getId(),
+							getUniquePath()));
 				}
-			} finally {
-				if (contentStream == null) {
-					// don't try to load the content stream again if it fails to load (either through exception or not existing)
-					tryContentStream = false;
-				}				
+
+				this.contentProviderStreamRef = new SoftReference<>(contentProviderStream);
 			}
+
+			return contentProviderStream;
 		}
-		return contentStream;
 	}
 	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		// try to use content stream if present
-		ContentStream contentStream = getContentStream();
-		if (contentStream != null) {
-			return contentStream.read(buf, offset, len);
-		}
-		
-		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (localPathSet) {
+		// try to use content provider stream if should use
+		if (tryContentProviderStream) {
+			ContentProviderStream contentProviderStream = getContentProviderStream();
+			return contentProviderStream.read(buf, offset, len);
+		} else if (localPathSet) {
+			//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
 			return readLocal(buf, offset, len);
 		} else {
 			return readInt(buf, offset, len);
@@ -1289,17 +1278,14 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Check if the file exists. If non-local always true, if local, checks if
-	 * actual local path exists
+	 * Check if the file exists. If non-local or file is marked with YES_REPO
+	 * and there is a content provider always true, if local, checks if actual
+	 * local path exists
 	 *
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
-		if (hasContentStream()) {
-			return true;
-		}
-		
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {
@@ -1314,17 +1300,13 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Check if the file exists and is readable. If non-local (e.g. within an
-	 * image), always true, if local, checks if actual local path exists and is
-	 * readable
+	 * image) or file is marked with YES_REPO and there is a content provider,
+	 * always true, if local, checks if actual local path exists and is readable
 	 *
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
-		if (hasContentStream()) {
-			return true;
-		}
-		
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {
