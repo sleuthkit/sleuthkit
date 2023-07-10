@@ -119,7 +119,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private volatile String uniquePath;
 	private volatile FileSystem parentFileSystem;
 	
-	private boolean tryContentProviderStream;
+	private final boolean tryContentProviderStream;
 	private Object contentProviderStreamLock = new Object();
 	private SoftReference<ContentProviderStream> contentProviderStreamRef = null;
 
@@ -1072,58 +1072,47 @@ public abstract class AbstractFile extends AbstractContent {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
 	
-
-	
-	private boolean hasContentProviderStream() {
-		ContentProviderStream contentProviderStream = null;
-		try {
-			contentProviderStream = getContentProviderStream();	
-		} catch (TskCoreException ex) {
-			LOGGER.log(Level.WARNING, "An error occurred while loading content provider stream for file with id: " + getId(), ex);
-		}
-		return contentProviderStream != null;
-	}
-	
 	/**
-	 * Attempts to load the content provider stream for this file.  If none exists, returns null.
-	 * @return  The content stream for this file or null if none exists.
-	 * @throws TskCoreException 
+	 * Attempts to get cached or load the content provider stream for this file.
+	 * If none exists, returns null.
+	 *
+	 * NOTE: Does not check the value for tryContentProviderStream before
+	 * attempting.
+	 *
+	 * @return The content stream for this file or null if none exists.
+	 *
+	 * @throws TskCoreException
 	 */
 	private ContentProviderStream getContentProviderStream() throws TskCoreException {
-		ContentProviderStream contentProviderStream = null;
-		if (tryContentProviderStream) {
-			try {
-				synchronized (contentProviderStreamLock) {
-					// try to get soft reference content provider stream
-					contentProviderStream = contentProviderStreamRef == null ? null : contentProviderStreamRef.get();
-					// load if not cached and then cache if present
-					if (contentProviderStream == null) {
-						contentProviderStream = getSleuthkitCase().getContentProvider().getContentStream(this).orElse(null);
-						if (contentProviderStream != null) {
-							this.contentProviderStreamRef = new SoftReference<>(contentProviderStream);
-						}
-					}
-				}
-			} finally {
+		synchronized (contentProviderStreamLock) {
+			// try to get soft reference content provider stream
+			ContentProviderStream contentProviderStream = contentProviderStreamRef == null ? null : contentProviderStreamRef.get();
+			// load if not cached and then cache if present
+			if (contentProviderStream == null) {
+				ContentStreamProvider provider = getSleuthkitCase().getContentProvider();
+				contentProviderStream = provider == null ? null : provider.getContentStream(this).orElse(null);
+
 				if (contentProviderStream == null) {
-					// don't try to load the content provider stream again if it fails to load (either through exception or not existing)
-					tryContentProviderStream = false;
-				}				
+					throw new TskCoreException(MessageFormat.format("Could not get content provider string for file with obj id: {0}, path: {1}",
+							getId(),
+							getUniquePath()));
+				}
+
+				this.contentProviderStreamRef = new SoftReference<>(contentProviderStream);
 			}
+
+			return contentProviderStream;
 		}
-		return contentProviderStream;
 	}
 	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		// try to use content provider stream if present
-		ContentProviderStream contentProviderStream = getContentProviderStream();
-		if (contentProviderStream != null) {
+		// try to use content provider stream if should use
+		if (tryContentProviderStream) {
+			ContentProviderStream contentProviderStream = getContentProviderStream();
 			return contentProviderStream.read(buf, offset, len);
-		}
-		
-		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (localPathSet) {
+		} else if (localPathSet) {
+			//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
 			return readLocal(buf, offset, len);
 		} else {
 			return readInt(buf, offset, len);
@@ -1289,17 +1278,14 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Check if the file exists. If non-local always true, if local, checks if
-	 * actual local path exists
+	 * Check if the file exists. If non-local or file is marked with YES_REPO
+	 * and there is a content provider always true, if local, checks if actual
+	 * local path exists
 	 *
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
-		if (hasContentProviderStream()) {
-			return true;
-		}
-		
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {
@@ -1314,17 +1300,13 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Check if the file exists and is readable. If non-local (e.g. within an
-	 * image), always true, if local, checks if actual local path exists and is
-	 * readable
+	 * image) or file is marked with YES_REPO and there is a content provider,
+	 * always true, if local, checks if actual local path exists and is readable
 	 *
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
-		if (hasContentProviderStream()) {
-			return true;
-		}
-		
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {
