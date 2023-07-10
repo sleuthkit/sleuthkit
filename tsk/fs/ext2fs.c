@@ -1613,7 +1613,7 @@ ext2fs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
 static TSK_OFF_T
 ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
     TSK_FS_ATTR * fs_attr, TSK_FS_ATTR * fs_attr_extent,
-    TSK_DADDR_T idx_block)
+    TSK_DADDR_T idx_block, TSK_DADDR_T * idx_offset)
 {
     ext2fs_extent_header *header;
     TSK_FS_ATTR_RUN *data_run;
@@ -1655,8 +1655,10 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
         free(buf);
         return 1;
     }
+    data_run->offset = *idx_offset;
+    ++*idx_offset;
     data_run->addr = idx_block;
-    data_run->len = fs_blocksize;
+    data_run->len = 1;
 
     if (tsk_fs_attr_add_run(fs_info, fs_attr_extent, data_run)) {
         tsk_fs_attr_run_free(data_run);
@@ -1701,7 +1703,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
                         index->ei_leaf_hi)) << 16) | tsk_getu32(fs_info->
                 endian, index->ei_leaf_lo);
             if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
-                    fs_attr_extent, child_block)) {
+                    fs_attr_extent, child_block, idx_offset)) {
                 free(buf);
                 return 1;
             }
@@ -1934,6 +1936,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     else {                  /* interior node */
         TSK_FS_ATTR *fs_attr_extent;
         int32_t extent_index_size;
+        TSK_DADDR_T idx_offset;
 
         // Ensure fs_meta->content_ptr is sufficiently large
         // Otherwise indices[i] below can cause an OOB read
@@ -1965,6 +1968,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
         }
         
         indices = (ext2fs_extent_idx *) (header + 1);
+        idx_offset = 0;
         for (i = 0; i < num_entries; i++) {
             ext2fs_extent_idx *index = &indices[i];
             TSK_DADDR_T child_block =
@@ -1973,7 +1977,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
                                     ei_leaf_hi)) << 16) | tsk_getu32(fs_info->
                                                                      endian, index->ei_leaf_lo);
             if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
-                                                  fs_attr_extent, child_block)) {
+                                                  fs_attr_extent, child_block, &idx_offset)) {
                 return 1;
             }
         }
