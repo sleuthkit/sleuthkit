@@ -82,6 +82,7 @@ import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALU
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TimelineManager.TimelineEventAddedEvent;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.ObjectType;
