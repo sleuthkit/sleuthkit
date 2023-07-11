@@ -82,6 +82,7 @@ import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALU
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TimelineManager.TimelineEventAddedEvent;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.ObjectType;
@@ -13939,6 +13940,7 @@ public class SleuthkitCase {
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>();
 		private List<Host> hostsAdded = new ArrayList<>();
+		private List<TimelineEventAddedEvent> timelineEvents = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
 		private List<TskEvent.MergedAccountsPair> accountsMerged = new ArrayList<>();
@@ -13985,6 +13987,16 @@ public class SleuthkitCase {
 		 */
 		void registerScoreChange(ScoreChange scoreChange) {
 			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
+		}
+		
+		/**
+		 * Register timeline event to be fired when transaction finishes.
+		 * @param timelineEvent The timeline event.
+		 */
+		void registerTimelineEvent(TimelineEventAddedEvent timelineEvent) {
+			if (timelineEvent != null) {
+				timelineEvents.add(timelineEvent);
+			}
 		}
 
 		/**
@@ -14082,6 +14094,11 @@ public class SleuthkitCase {
 							.collect(Collectors.groupingBy(ScoreChange::getDataSourceObjectId));
 					for (Map.Entry<Long, List<ScoreChange>> entry : changesByDataSource.entrySet()) {
 						sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
+					}
+				}
+				if (!timelineEvents.isEmpty()) {
+					for (TimelineEventAddedEvent evt : timelineEvents) {
+						sleuthkitCase.fireTSKEvent(evt);
 					}
 				}
 				if (!hostsAdded.isEmpty()) {
