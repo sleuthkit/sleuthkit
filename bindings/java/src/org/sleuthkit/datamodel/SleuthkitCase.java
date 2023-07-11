@@ -10066,34 +10066,50 @@ public class SleuthkitCase {
 	 *                          within tsk core and the update fails
 	 */
 	public void setImagePaths(long obj_id, List<String> paths) throws TskCoreException {
-		CaseDbConnection connection = null;
-		acquireSingleUserCaseWriteLock();
-		PreparedStatement statement;
+		CaseDbTransaction transaction = beginTransaction();
 		try {
-			connection = connections.getConnection();
-			connection.beginTransaction();
-			statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_IMAGE_NAME);
+			setImagePaths(obj_id, paths, transaction);
+			transaction.commit();
+			transaction = null;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+		}
+	}
+	
+	/**
+	 * Set the file paths for the image given by obj_id
+	 *
+	 * @param obj_id the ID of the image to update
+	 * @param paths  the fully qualified path to the files that make up the
+	 *               image
+	 * @param trans  The case database transaction.
+	 *
+	 * @throws TskCoreException exception thrown when critical error occurs
+	 *                          within tsk core and the update fails
+	 */
+	@Beta
+	public void setImagePaths(long obj_id, List<String> paths, CaseDbTransaction trans) throws TskCoreException {	
+		try {
+			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_IMAGE_NAME);
 			statement.clearParameters();
 			statement.setLong(1, obj_id);
-			connection.executeUpdate(statement);
+			trans.getConnection().executeUpdate(statement);
 			for (int i = 0; i < paths.size(); i++) {
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
+				statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
 				statement.clearParameters();
 				statement.setLong(1, obj_id);
 				statement.setString(2, paths.get(i));
 				statement.setLong(3, i);
-				connection.executeUpdate(statement);
+				trans.getConnection().executeUpdate(statement);
 			}
-			connection.commitTransaction();
 		} catch (SQLException ex) {
-			rollbackTransaction(connection);
 			throw new TskCoreException("Error updating image paths.", ex);
-		} finally {
-			closeConnection(connection);
-			releaseSingleUserCaseWriteLock();
-		}
+		} 
 	}
-
+	
+	
 	/**
 	 * Deletes a datasource from the open case, the database has foreign keys
 	 * with a delete cascade so that all the tables that have a datasource
