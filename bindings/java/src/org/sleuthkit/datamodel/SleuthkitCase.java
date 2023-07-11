@@ -203,7 +203,9 @@ public class SleuthkitCase {
 	private final Map<RootDirectoryKey, Long> rootDirectoryMap = new HashMap<>();
 	private final Cache<Long, Boolean> isRootDirectoryCache
 			= CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
-
+	// custom provider for file bytes (can be null)
+	private final ContentStreamProvider contentProvider;
+	
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
 	 * can be larger than the max size of a SparseBitSet
@@ -332,10 +334,11 @@ public class SleuthkitCase {
 	 * @param caseHandle A handle to a case database object in the native code
 	 *                   SleuthKit layer.
 	 * @param dbType     The type of database we're dealing with
+	 * @param contentProvider Custom provider for file content (can be null).
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
@@ -345,6 +348,7 @@ public class SleuthkitCase {
 		this.connections = new SQLiteConnections(dbPath);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+		this.contentProvider = contentProvider;
 		init();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -363,10 +367,11 @@ public class SleuthkitCase {
 	 * @param dbType      The type of database we're dealing with SleuthKit
 	 *                    layer.
 	 * @param caseDirPath The path to the root case directory.
+	 * @param contentProvider Custom provider for file content (can be null).
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
+	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType, ContentStreamProvider contentProvider) throws Exception {
 		this.dbPath = "";
 		this.databaseName = dbName;
 		this.dbType = dbType;
@@ -374,6 +379,7 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+		this.contentProvider = contentProvider;
 		init();
 	}
 
@@ -405,6 +411,17 @@ public class SleuthkitCase {
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this);
+	}
+	
+	/**
+	 * Returns the custom content provider for this case if one exists.
+	 * Otherwise, returns null.
+	 *
+	 * @return The custom content provider for this case if one exists.
+	 *         Otherwise, returns null.
+	 */
+	ContentStreamProvider getContentProvider() {
+		return this.contentProvider;
 	}
 
 	/**
@@ -2970,9 +2987,24 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase openCase(String dbPath) throws TskCoreException {
+		return openCase(dbPath, null);
+	}
+	
+	/**
+	 * Open an existing case database.
+	 *
+	 * @param dbPath Path to SQLite case database.
+	 * @param contentProvider Custom provider for file content bytes (can be null).
+	 *
+	 * @return Case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, provider);
 		} catch (TskUnsupportedSchemaVersionException ex) {
 			//don't wrap in new TskCoreException
 			throw ex;
@@ -2993,6 +3025,23 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is a problem opening the database.
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
+		return openCase(databaseName, info, caseDir, null);
+	}
+	
+	/**
+	 * Open an existing multi-user case database.
+	 *
+	 * @param databaseName The name of the database.
+	 * @param info         Connection information for the the database.
+	 * @param caseDir      The folder where the case metadata fils is stored.
+	 * @param contentProvider Custom provider for file content bytes (can be null).
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws TskCoreException If there is a problem opening the database.
+	 */
+	@Beta
+	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir, ContentStreamProvider contentProvider) throws TskCoreException {
 		try {
 			/*
 			 * The flow of this method involves trying to open case and if
@@ -3007,7 +3056,7 @@ public class SleuthkitCase {
 			 * are able, but do not lose any information if unable.
 			 */
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
+			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType(), contentProvider);
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -3030,12 +3079,27 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase newCase(String dbPath) throws TskCoreException {
+		return newCase(dbPath, null);
+	}
+	
+	/**
+	 * Creates a new SQLite case database.
+	 *
+	 * @param dbPath Path to where SQlite case database should be created.
+	 * @param contentProvider Custom provider for file bytes (can be null).
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider) throws TskCoreException {
 		try {
 			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
 			factory.createCaseDatabase();
 
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -3057,6 +3121,28 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+		return newCase(caseName, info, caseDirPath, null);
+	}
+	
+	
+	/**
+	 * Creates a new PostgreSQL case database.
+	 *
+	 * @param caseName    The name of the case. It will be used to create a case
+	 *                    database name that can be safely used in SQL commands
+	 *                    and will not be subject to name collisions on the case
+	 *                    database server. Use getDatabaseName to get the
+	 *                    created name.
+	 * @param info        The information to connect to the database.
+	 * @param caseDirPath The case directory path.
+	 * @param contentProvider Custom provider for file bytes (can be null).
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath, ContentStreamProvider contentProvider) throws TskCoreException {
 		String databaseName = createCaseDataBaseName(caseName);
 		try {
 			/**
@@ -3076,7 +3162,7 @@ public class SleuthkitCase {
 
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
-					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType());
+					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType(), contentProvider);
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
