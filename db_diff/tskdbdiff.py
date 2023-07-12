@@ -292,9 +292,8 @@ class TskDbDiff(object):
                             if attr["display_name"] == "Associated Artifact":
                                 attr_value_as_string = TskDbDiff._get_associated_artifact_type(attribute_cursor, attr_value_as_string, isMultiUser)
                             patrn = re.compile("[\n\0\a\b\r\f]")
-                            if attr_value_as_string == None:
-                                print(f'{attr["value_type"]}')
-                                print(f'{attr["display_name"]}')
+                            if attr_value_as_string is None:
+                                print(f'Could not determine attribute value for value type: {attr["value_type"]}, display name: {attr["display_name"]}')
 
                             attr_value_as_string = re.sub(patrn, ' ', attr_value_as_string)
                             if attr["source"] == "Keyword Search" and attr["display_name"] == "Keyword Preview":
@@ -659,7 +658,7 @@ def index_of(lst, search_item) -> int:
     Returns: The index in the list of the item or -1.
 
     """
-    if lst == None:
+    if lst is None:
         return -1
 
     for idx, item in enumerate(lst):
@@ -1009,6 +1008,25 @@ def normalize_tsk_objects_path(guid_util: TskGuidUtils, objid: int,
                 path_parts = path_parts[:-1]
 
         if path_parts and len(path_parts) >= 2:
+            is_leapp = False
+            for leapp_module in ['aleapp', 'ileapp']:
+                if len(path_parts) > 0 and path_parts[1].lower() == leapp_module and \
+                        path_parts[-1].lower() == 'index.html':
+                    path_parts = ['ModuleOutput', leapp_module, 'index.html']
+                    is_leapp = True
+                    break
+            if not is_leapp:
+                for idx in range(0, len(path_parts) - 1):
+                    if path_parts[idx].lower() == "reports" and \
+                            path_parts[idx + 1].lower().startswith("autopsytestcase html report"):
+                        path_parts = ["Reports", "AutopsyTestCase HTML Report"]
+                        break
+                    if path_parts[idx].lower() == "reports" and \
+                            "html report" in path_parts[idx + 1].lower() and \
+                            len(path_parts) > idx + 2 and \
+                            path_parts[idx + 2].lower().endswith("report.html"):
+                        path_parts = ["Reports", "html-report.html"]
+                        break
             for idx in range(0, len(path_parts) - 1):
                 if path_parts[idx].lower() == "reports" and \
                         path_parts[idx + 1].lower().startswith("autopsytestcase html report"):
