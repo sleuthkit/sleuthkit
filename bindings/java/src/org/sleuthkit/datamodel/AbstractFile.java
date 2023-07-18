@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.ref.SoftReference;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -37,6 +38,7 @@ import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskData.CollectedStatus;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -116,6 +118,10 @@ public abstract class AbstractFile extends AbstractContent {
 	
 	private volatile String uniquePath;
 	private volatile FileSystem parentFileSystem;
+	
+	private final boolean tryContentProviderStream;
+	private Object contentProviderStreamLock = new Object();
+	private SoftReference<ContentProviderStream> contentProviderStreamRef = null;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -227,6 +233,9 @@ public abstract class AbstractFile extends AbstractContent {
 		this.ownerUid = ownerUid;
 		this.osAccountObjId = osAccountObjectId;
 		this.collected = collected;
+		// any item that is marked as YES_REPO and there is a custom content provider for the db will attempt to use the content provider to provide data
+		// this will be flipped to false if there is no content provider stream from the content provider for this file
+		this.tryContentProviderStream = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -1062,12 +1071,48 @@ public abstract class AbstractFile extends AbstractContent {
 	short getMetaFlagsAsInt() {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
+	
+	/**
+	 * Attempts to get cached or load the content provider stream for this file.
+	 * If none exists, returns null.
+	 *
+	 * NOTE: Does not check the value for tryContentProviderStream before
+	 * attempting.
+	 *
+	 * @return The content stream for this file or null if none exists.
+	 *
+	 * @throws TskCoreException
+	 */
+	private ContentProviderStream getContentProviderStream() throws TskCoreException {
+		synchronized (contentProviderStreamLock) {
+			// try to get soft reference content provider stream
+			ContentProviderStream contentProviderStream = contentProviderStreamRef == null ? null : contentProviderStreamRef.get();
+			// load if not cached and then cache if present
+			if (contentProviderStream == null) {
+				ContentStreamProvider provider = getSleuthkitCase().getContentProvider();
+				contentProviderStream = provider == null ? null : provider.getContentStream(this).orElse(null);
 
+				if (contentProviderStream == null) {
+					throw new TskCoreException(MessageFormat.format("Could not get content provider string for file with obj id: {0}, path: {1}",
+							getId(),
+							getUniquePath()));
+				}
+
+				this.contentProviderStreamRef = new SoftReference<>(contentProviderStream);
+			}
+
+			return contentProviderStream;
+		}
+	}
+	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		//template method
-		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (localPathSet) {
+		// try to use content provider stream if should use
+		if (tryContentProviderStream) {
+			ContentProviderStream contentProviderStream = getContentProviderStream();
+			return contentProviderStream.read(buf, offset, len);
+		} else if (localPathSet) {
+			//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
 			return readLocal(buf, offset, len);
 		} else {
 			return readInt(buf, offset, len);
@@ -1233,13 +1278,14 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Check if the file exists. If non-local always true, if local, checks if
-	 * actual local path exists
+	 * Check if the file exists. If non-local or file is marked with YES_REPO
+	 * and there is a content provider always true, if local, checks if actual
+	 * local path exists
 	 *
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {
@@ -1254,13 +1300,13 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Check if the file exists and is readable. If non-local (e.g. within an
-	 * image), always true, if local, checks if actual local path exists and is
-	 * readable
+	 * image) or file is marked with YES_REPO and there is a content provider,
+	 * always true, if local, checks if actual local path exists and is readable
 	 *
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {

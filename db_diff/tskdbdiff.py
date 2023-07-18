@@ -272,6 +272,7 @@ class TskDbDiff(object):
                             msg = "There were inconsistent sources for artifact with id #" + str(row["artifact_id"]) + ".\n"
 
                         try:
+                            attr_value_as_string = None
                             if attr["value_type"] == 0:
                                 attr_value_as_string = str(attr["value_text"])                        
                             elif attr["value_type"] == 1:
@@ -285,10 +286,15 @@ class TskDbDiff(object):
                             elif attr["value_type"] == 4:
                                 attr_value_as_string = "bytes"                        
                             elif attr["value_type"] == 5:
-                                attr_value_as_string = str(attr["value_int64"])                        
+                                attr_value_as_string = str(attr["value_int64"])
+                            elif attr["value_type"] == 6:
+                                attr_value_as_string = str(attr["value_text"])
                             if attr["display_name"] == "Associated Artifact":
                                 attr_value_as_string = TskDbDiff._get_associated_artifact_type(attribute_cursor, attr_value_as_string, isMultiUser)
                             patrn = re.compile("[\n\0\a\b\r\f]")
+                            if attr_value_as_string is None:
+                                print(f'Could not determine attribute value for value type: {attr["value_type"]}, display name: {attr["display_name"]}')
+
                             attr_value_as_string = re.sub(patrn, ' ', attr_value_as_string)
                             if attr["source"] == "Keyword Search" and attr["display_name"] == "Keyword Preview":
                                 attr_value_as_string = "<Keyword Preview placeholder>"
@@ -652,6 +658,9 @@ def index_of(lst, search_item) -> int:
     Returns: The index in the list of the item or -1.
 
     """
+    if lst is None:
+        return -1
+
     for idx, item in enumerate(lst):
         if item == search_item:
             return idx
@@ -1006,7 +1015,6 @@ def normalize_tsk_objects_path(guid_util: TskGuidUtils, objid: int,
                     path_parts = ['ModuleOutput', leapp_module, 'index.html']
                     is_leapp = True
                     break
-
             if not is_leapp:
                 for idx in range(0, len(path_parts) - 1):
                     if path_parts[idx].lower() == "reports" and \
@@ -1020,7 +1028,8 @@ def normalize_tsk_objects_path(guid_util: TskGuidUtils, objid: int,
                         path_parts = ["Reports", "html-report.html"]
                         break
 
-        path = os.path.join(*path_parts) if len(path_parts) > 0 else '/'
+
+        path = os.path.join(*path_parts) if (path_parts is not None and len(path_parts) > 0) else '/'
 
         return path
 
