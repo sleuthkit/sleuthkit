@@ -132,6 +132,11 @@ public class VolumeSystem extends AbstractContent {
 			super.finalize();
 		}
 	}
+	
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
+		return v.visit(this);
+	}
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {

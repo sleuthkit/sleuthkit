@@ -401,6 +401,11 @@ public final class OsAccount extends AbstractContent {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
+		return v.visit(this);
+	}
+
 	/**
 	 * Abstracts attributes of an OS account. An attribute may be specific to a
 	 * host, or applicable across all hosts.

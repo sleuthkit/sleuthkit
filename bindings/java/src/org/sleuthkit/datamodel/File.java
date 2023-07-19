@@ -110,6 +110,19 @@ public class File extends FsContent {
 	}
 
 	/**
+	 * Accepts a content visitor (Visitor design pattern).
+	 *
+	 * @param visitor A ContentVisitor supplying an algorithm to run using this
+	 *                file as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+
+	/**
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
 	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using

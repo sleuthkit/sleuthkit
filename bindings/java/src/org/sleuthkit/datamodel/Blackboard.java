@@ -443,10 +443,10 @@ public final class Blackboard {
 		CaseDbConnection connection = null;
 		Statement statement = null;
 		ResultSet rs = null;
-
+		
 		String rowId;
 		switch (caseDb.getDatabaseType()) {
-			case POSTGRESQL:
+			case POSTGRESQL: 
 				rowId = "attrs.CTID";
 				break;
 			case SQLITE:
@@ -455,7 +455,7 @@ public final class Blackboard {
 			default:
 				throw new TskCoreException("Unknown database type: " + caseDb.getDatabaseType());
 		}
-
+		
 		caseDb.acquireSingleUserCaseReadLock();
 		try {
 			connection = caseDb.getConnection();
@@ -467,7 +467,7 @@ public final class Blackboard {
 					+ "attrs.value_int64 AS value_int64, attrs.value_double AS value_double, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id = " + artifact.getArtifactID()
-					+ " AND attrs.attribute_type_id = types.attribute_type_id "
+					+ " AND attrs.attribute_type_id = types.attribute_type_id " 
 					+ " ORDER BY " + rowId);
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
@@ -956,14 +956,11 @@ public final class Blackboard {
 	 */
 	private Score deleteAnalysisResult(AnalysisResult analysisResult, CaseDbTransaction transaction) throws TskCoreException {
 
-		try {			
+		try {
 			CaseDbConnection connection = transaction.getConnection();
-			
-			// Delete the BlackboardArtifactTags for the analysisResult
-			caseDb.getTaggingManager().deleteBlackboardArtifactTags(analysisResult, transaction);
 
 			// delete the blackboard artifacts row. This will also delete the tsk_analysis_result row
-			String deleteSQL = "DELETE FROM tsk_objects WHERE obj_id = ?";
+			String deleteSQL = "DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ?";
 
 			PreparedStatement deleteStatement = connection.getPreparedStatement(deleteSQL, Statement.RETURN_GENERATED_KEYS);
 			deleteStatement.clearParameters();
@@ -978,134 +975,6 @@ public final class Blackboard {
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
-		}
-	}
-
-	/**
-	 * Deletes all analysis results of certain type and (optionally) data
-	 * source.
-	 *
-	 * @param type	        Type of analysis results to delete
-	 *                     (BlackboardArtifact.Type)
-	 * @param dataSourceId Data source ID to delete only analysis results from
-	 *                     specific data source. If null, then delete analysis
-	 *                     results from all data sources.
-	 *
-	 * @throws TskCoreException
-	 */
-	public void deleteAnalysisResults(BlackboardArtifact.Type type, Long dataSourceId) throws TskCoreException {
-		deleteAnalysisResults(type, dataSourceId, "");
-	}
-
-	/**
-	 * Deletes all analysis results of certain type and (optionally) data
-	 * source.
-	 *
-	 * @param type	         Type of analysis results to delete
-	 *                      (BlackboardArtifact.Type)
-	 * @param dataSourceId  Data source ID to delete only analysis results from
-	 *                      specific data source. If null, then delete analysis
-	 *                      results from all data sources.
-	 * @param configuration Name of the analysis result configuration to delete.
-	 *                      Can be empty if there is no configuration for this
-	 *                      analysis result type.
-	 *
-	 * @throws TskCoreException
-	 */
-	public void deleteAnalysisResults(BlackboardArtifact.Type type, Long dataSourceId, String configuration) throws TskCoreException {
-
-		String dataSourceClause = dataSourceId == null
-				? ""
-				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
-
-		String configurationClause = (configuration == null || configuration.isEmpty()
-				? " AND (configuration IS NULL OR configuration = '' )"
-				: " AND configuration = ? ");
-
-		String getIdsQuery = "SELECT artifacts.artifact_obj_id AS artifact_obj_id, artifacts.obj_id AS obj_id, artifacts.data_source_obj_id AS data_source_obj_id "
-				+ " FROM blackboard_artifacts artifacts "
-				+ " JOIN blackboard_artifact_types AS types  ON artifacts.artifact_type_id = types.artifact_type_id "
-				+ " LEFT JOIN tsk_analysis_results AS results  ON artifacts.artifact_obj_id = results.artifact_obj_id "
-				+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
-				+ " AND artifacts.artifact_type_id = ? "
-				+ dataSourceClause
-				+ configurationClause;
-
-		List<Long> artifactObjIdsToDelete = new ArrayList<>();
-		Map<Long, Long> objIdsToDsIds = new HashMap<>();
-		CaseDbTransaction transaction = this.caseDb.beginTransaction();
-		String currentQuery = "";
-		try (CaseDbConnection connection = transaction.getConnection()) {
-
-			try {
-				// get obj_ids of the artifacts that need to be deleted
-				currentQuery = getIdsQuery;
-				PreparedStatement preparedStatement = connection.getPreparedStatement(currentQuery, Statement.RETURN_GENERATED_KEYS);
-				preparedStatement.clearParameters();
-				int paramIdx = 0;
-
-				preparedStatement.setInt(++paramIdx, type.getTypeID());
-
-				if (dataSourceId != null) {
-					preparedStatement.setLong(++paramIdx, dataSourceId);
-				}
-
-				if (!(configuration == null || configuration.isEmpty())) {
-					preparedStatement.setString(++paramIdx, configuration);
-				}
-
-				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
-					while (resultSet.next()) {
-						artifactObjIdsToDelete.add(resultSet.getLong("artifact_obj_id"));
-						
-						objIdsToDsIds.put(resultSet.getLong("obj_id"), resultSet.getLong("data_source_obj_id"));
-					}
-				}
-
-				if (artifactObjIdsToDelete.isEmpty()) {
-					transaction.close();
-					transaction = null;
-					return;
-				}
-
-				// delete the identified artifacts by obj_id. the number of results 
-				// could be very large so we should split deletion into batches to limit the
-				// size of the SQL string
-				int maxArtifactsToDeleteAtOnce = 50;
-				for (int startId = 0; startId < artifactObjIdsToDelete.size(); startId += maxArtifactsToDeleteAtOnce) {
-
-					List<String> newList = artifactObjIdsToDelete.subList(startId, Math.min(artifactObjIdsToDelete.size(), startId + maxArtifactsToDeleteAtOnce)).stream()
-							.map(String::valueOf)
-							.collect(Collectors.toList());
-					
-					currentQuery = "DELETE FROM tsk_objects WHERE obj_id IN ("
-							+ String.join(",", newList)
-							+ ")";
-
-					Statement statement = connection.createStatement();
-					connection.executeUpdate(statement, currentQuery);
-				}
-
-				for (Map.Entry<Long, Long> entry : objIdsToDsIds.entrySet()) {
-					Long objId = entry.getKey();
-					Long dsId = entry.getValue();
-					// register the deleted result with the transaction so an event can be fired for it. 
-					transaction.registerDeletedAnalysisResult(objId);
-
-					// update score of the source file
-					caseDb.getScoringManager().updateAggregateScoreAfterDeletion(objId, dsId, transaction);
-				}
-
-				transaction.commit();
-				transaction = null;
-
-			} catch (SQLException ex) {
-				throw new TskCoreException(String.format("Error while performing query = '%s'", currentQuery), ex);
-			} 
-		} finally {
-			if (transaction != null) {
-				transaction.rollback();
-			}
 		}
 	}
 
@@ -1978,7 +1847,9 @@ public final class Blackboard {
 	 *                     well as the keyword. It should be empty for literal
 	 *                     exact match keyword search types.
 	 * @param searchType   Type of keyword search query.
-	 * @param configuration  Configuration of keyword hits.
+	 * @param kwsListName  (Optional) Name of the keyword list for which the
+	 *                     search results are for. If not specified, then the
+	 *                     results will be for ad-hoc keyword searches.
 	 * @param dataSourceId (Optional) Data source id of the target data source.
 	 *                     If null, then the results will be for all data
 	 *                     sources.
@@ -1988,18 +1859,15 @@ public final class Blackboard {
 	 * @throws TskCoreException If an exception is encountered while running
 	 *                          database query to obtain the keyword hits.
 	 */
-	@Beta
-	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String configuration, Long dataSourceId) throws TskCoreException {
-
+	public List<BlackboardArtifact> getKeywordSearchResults(String keyword, String regex, TskData.KeywordSearchQueryType searchType, String kwsListName, Long dataSourceId) throws TskCoreException {
+		
 		String dataSourceClause = dataSourceId == null
 				? ""
 				: " AND artifacts.data_source_obj_id = ? "; // dataSourceId
 
-		// allow for current way configuration is used for keyword sets (i.e. configuration is list name)
-		// as well as previous way configuration was used for keyword sets (i.e. configuration was null or empty and TSK_SET_NAME was used)
-		String configurationClause = (configuration == null || configuration.isEmpty()
-				? " WHERE ((r.configuration IS NULL OR LENGTH(r.configuration) = 0) AND (r.set_name IS NULL OR LENGTH(r.set_name) = 0))"
-				: " WHERE (r.configuration = ? OR ((r.configuration IS NULL OR LENGTH(r.configuration) = 0) AND r.set_name = ?))");
+		String kwsListClause = (kwsListName == null || kwsListName.isEmpty()
+				? " WHERE r.set_name IS NULL "
+				: " WHERE r.set_name = ? ");
 
 		String keywordClause = (keyword == null || keyword.isEmpty()
 				? ""
@@ -2044,7 +1912,7 @@ public final class Blackboard {
 				+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID()
 				+ " AND artifacts.artifact_type_id = " + BlackboardArtifact.Type.TSK_KEYWORD_HIT.getTypeID() + " "
 				+ dataSourceClause + " ) r "
-				+ configurationClause
+				+ kwsListClause
 				+ keywordClause
 				+ searchTypeClause
 				+ regexClause;
@@ -2060,10 +1928,9 @@ public final class Blackboard {
 				if (dataSourceId != null) {
 					preparedStatement.setLong(++paramIdx, dataSourceId);
 				}
-
-				if (!(configuration == null || configuration.isEmpty())) {
-					preparedStatement.setString(++paramIdx, configuration);
-					preparedStatement.setString(++paramIdx, configuration);
+								
+				if (!(kwsListName == null || kwsListName.isEmpty())) {
+					preparedStatement.setString(++paramIdx, kwsListName);
 				}
 
 				if (!(keyword == null || keyword.isEmpty())) {
@@ -2077,7 +1944,7 @@ public final class Blackboard {
 				if (!(regex == null || regex.isEmpty())) {
 					preparedStatement.setString(++paramIdx, regex);
 				}
-
+				
 				try (ResultSet resultSet = connection.executeQuery(preparedStatement)) {
 					artifacts.addAll(resultSetToAnalysisResults(resultSet));
 				}
@@ -2090,7 +1957,7 @@ public final class Blackboard {
 		}
 		return artifacts;
 	}
-
+	
 	/**
 	 * Gets count of blackboard artifacts of given type that match a given WHERE
 	 * clause. Uses a SELECT COUNT(*) FROM blackboard_artifacts statement
@@ -2468,7 +2335,7 @@ public final class Blackboard {
 		 * artifacts are posted. Posted artifacts should be complete (all
 		 * attributes have been added) and ready for further analysis.
 		 *
-		 * @param artifacts   The artifacts.
+		 * @param artifacts   The artifacts. 
 		 * @param moduleName  The display name of the module posting the
 		 *                    artifacts.
 		 * @param ingestJobId The numeric identifier of the ingest job within

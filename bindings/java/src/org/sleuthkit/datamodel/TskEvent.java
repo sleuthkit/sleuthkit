@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -93,7 +92,7 @@ public interface TskEvent {
 			super(scoreChanges.asList());
 			this.dataSourceObjectId = dataSourceObjectId;
 			scoreChanges.stream().forEach(chg -> {
-				if (!Objects.equals(chg.getDataSourceObjectId(), dataSourceObjectId)) {
+				if (!chg.getDataSourceObjectId().equals(dataSourceObjectId)) {
 					throw new IllegalArgumentException("All data source object IDs in List<ScoreChange> must match dataSourceObjectId");
 				}
 			});
@@ -667,107 +666,6 @@ public interface TskEvent {
 		 * @return The list of deleted TagSet ids.
 		 */
 		public List<Long> getTagSetIds() {
-			return getDataModelObjects();
-		}
-	}
-
-	/**
-	 * Class for BlackboardArtifactTag (Result Tag) events.
-	 */
-	static final class BlackboardArtifactTagsAddedTskEvent extends TskObjectsEvent<BlackboardArtifactTag> {
-
-		/**
-		 * Constructs the BlackboardArtifactTag event.
-		 *
-		 * @param tags The BlackboardArtifactTag that are the subjects of the
-		 *             event.
-		 */
-		BlackboardArtifactTagsAddedTskEvent(List<BlackboardArtifactTag> tags) {
-			super(tags);
-		}
-
-		/**
-		 * Gets the tags.
-		 *
-		 * @return The tags.
-		 */
-		public List<BlackboardArtifactTag> getTags() {
-			return getDataModelObjects();
-		}
-
-	}
-
-	/**
-	 * An event published when one or more BlackboardArtifactTag (Result Tag)
-	 * have been deleted.
-	 */
-	public final static class BlackboardArtifactTagsDeletedTskEvent extends TskObjectsEvent<BlackboardArtifactTag> {
-
-		/**
-		 * Constructs a deleted event for one or more BlackboardArtifactTag.
-		 *
-		 * @param tags The ids of the deleted tags.
-		 */
-		public BlackboardArtifactTagsDeletedTskEvent(List<BlackboardArtifactTag> tags) {
-			super(tags);
-		}
-
-		/**
-		 * Returns the list of deleted TagSet ids.
-		 *
-		 * @return The list of deleted tag ids.
-		 */
-		public List<BlackboardArtifactTag> getTags() {
-			return getDataModelObjects();
-		}
-	}
-
-	/**
-	 * Class for BlackboardArtifactTag (File Tag) events.
-	 */
-	static class ContentTagsAddedTskEvent extends TskObjectsEvent<ContentTag> {
-
-		/**
-		 * Constructs the ContentTag event.
-		 *
-		 * @param tags The ContentTag that are the subjects of the event.
-		 */
-		ContentTagsAddedTskEvent(List<ContentTag> tags) {
-			super(tags);
-		}
-
-		/**
-		 * Gets the tags.
-		 *
-		 * @return The tags.
-		 */
-		public List<ContentTag> getTags() {
-			return getDataModelObjects();
-		}
-
-	}
-
-	/**
-	 * An event published when one or more ContentTags (File Tag) have been
-	 * deleted.
-	 */
-	public final static class ContentTagsDeletedTskEvent extends TskObjectsEvent<ContentTag> {
-
-		/**
-		 * Constructs a deleted event for one or more ContentTag.
-		 *
-		 * @param tags The deleted tags.
-		 */
-		public ContentTagsDeletedTskEvent(List<ContentTag> tags) {
-			super(tags);
-		}
-
-		/**
-		 * Returns the list of deleted ContentTags.
-		 *
-		 * @return The list of deleted tag ids.
-		 */
-		public List<ContentTag> getTags() {
 			return getDataModelObjects();
 		}
 	}
