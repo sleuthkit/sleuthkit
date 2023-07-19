@@ -66,7 +66,7 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(Image i);
-	
+
 	/**
 	 * Act on (visit) a Pool content object
 	 *
@@ -74,7 +74,7 @@ public interface ContentVisitor<T> {
 	 *
 	 * @return result of the visit
 	 */
-	T visit(Pool p);	
+	T visit(Pool p);
 
 	/**
 	 * Act on (visit) a Volume content object
@@ -111,7 +111,7 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(VirtualDirectory vd);
-	
+
 	/**
 	 * Act on (visit) a LocalDirectory content object
 	 *
@@ -119,7 +119,7 @@ public interface ContentVisitor<T> {
 	 *
 	 * @return result of the visit
 	 */
-	T visit(LocalDirectory ld);	
+	T visit(LocalDirectory ld);
 
 	/**
 	 * Act on (visit) a DerivedFile content object
@@ -138,7 +138,7 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(LocalFile df);
-	
+
 	/**
 	 * Act on (visit) a SlackFile content object
 	 *
@@ -146,7 +146,7 @@ public interface ContentVisitor<T> {
 	 *
 	 * @return result of the visit
 	 */
-	T visit(SlackFile sf);	
+	T visit(SlackFile sf);
 
 	/**
 	 * Act on (visit) a blackboard artifact object
@@ -155,8 +155,17 @@ public interface ContentVisitor<T> {
 	 *
 	 * @return result of the visit
 	 */
-	T visit(BlackboardArtifact ba);	
-	
+	T visit(BlackboardArtifact ba);
+
+	/**
+	 * Act on (visit) a local files data source object
+	 *
+	 * @param ds The local files data source object
+	 *
+	 * @return result of the visit
+	 */
+	T visit(LocalFilesDataSource lfds);
+
 	/**
 	 * Act on (visit) a Report object
 	 *
@@ -165,7 +174,7 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(Report r);
-	
+
 	/**
 	 * Act on (visit) a OsAccount object
 	 *
@@ -174,7 +183,7 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(OsAccount act);
-	
+
 	/**
 	 * Act on (visit) an UnsupportedContent object
 	 *
@@ -222,7 +231,7 @@ public interface ContentVisitor<T> {
 		public T visit(Volume v) {
 			return defaultVisit(v);
 		}
-		
+
 		@Override
 		public T visit(Pool p) {
 			return defaultVisit(p);
@@ -242,7 +251,7 @@ public interface ContentVisitor<T> {
 		public T visit(VirtualDirectory ld) {
 			return defaultVisit(ld);
 		}
-		
+
 		@Override
 		public T visit(LocalDirectory ld) {
 			return defaultVisit(ld);
@@ -257,27 +266,32 @@ public interface ContentVisitor<T> {
 		public T visit(LocalFile lf) {
 			return defaultVisit(lf);
 		}
-		
+
 		@Override
 		public T visit(SlackFile sf) {
 			return defaultVisit(sf);
 		}
-		
+
 		@Override
 		public T visit(BlackboardArtifact ba) {
 			return defaultVisit(ba);
 		}
 
 		@Override
+		public T visit(LocalFilesDataSource lfds) {
+			return defaultVisit(lfds);
+		}
+
+		@Override
 		public T visit(Report r) {
 			return defaultVisit(r);
 		}
-		
+
 		@Override
 		public T visit(OsAccount act) {
 			return defaultVisit(act);
 		}
-		
+
 		@Override
 		public T visit(UnsupportedContent uc) {
 			return defaultVisit(uc);

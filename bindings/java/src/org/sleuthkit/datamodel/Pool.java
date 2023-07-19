@@ -141,11 +141,6 @@ public class Pool extends AbstractContent {
 	}
 	
 	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		return v.visit(this);
-	}
-
-	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
