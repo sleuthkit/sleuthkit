@@ -404,4 +404,9 @@ public class Report implements Content {
 	public long getAllArtifactsCount() throws TskCoreException {
 		return db.getBlackboardArtifactsCount(objectId);
 	}
+
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
+		return v.visit(this);
+	}
 }
