@@ -3,11 +3,11 @@ AM_CFLAGS += $(PTHREAD_CFLAGS)
 AM_CXXFLAGS += -Wno-unused-command-line-argument $(PTHREAD_CFLAGS)
 LDADD = ../tsk/libtsk.la
 LDFLAGS += -static $(PTHREAD_LIBS)
-EXTRA_DIST = .indent.pro runtests.sh test_libraries.sh
+EXTRA_DIST = .indent.pro runtests.sh test_libraries.sh test_fls.sh
 
-check_SCRIPTS = runtests.sh test_libraries.sh
+check_SCRIPTS = runtests.sh test_libraries.sh test_fls.sh
 
-TESTS = runtests.sh test_libraries.sh
+TESTS = runtests.sh test_libraries.sh test_fls.sh
 
 check_PROGRAMS = read_apis fs_fname_apis fs_attrlist_apis fs_thread_test
 

@@ -1,36 +1,45 @@
-version: 4.6.0.{build}
+version: develop.{build}
+
+environment:
+  matrix:
+  - TARGET: vs2015
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    JDK_HOME: C:\Program Files\Java\jdk1.8.0
+    PYTHON: "C:\\Python36-x64"
+  - TARGET: linux
+    APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
 
 cache:
-  - C:\Users\appveyor\.ant
-  - C:\ProgramData\chocolatey\bin
-  - C:\ProgramData\chocolatey\lib
-
-image: Visual Studio 2015
+- C:\Users\appveyor\.ant
+- C:\ProgramData\chocolatey\bin
+- C:\ProgramData\chocolatey\lib
 
 install:
-  - ps: choco install nuget.commandline
-  - ps: choco install ant --ignore-dependencies
-  - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
-  - set PATH=C:\Python36-x64\';%PATH%
-environment:
-  global:
-    TSK_HOME: "%APPVEYOR_BUILD_FOLDER%"
-    PYTHON: "C:\\Python36-x64"
-    JDK_HOME: C:\Program Files\Java\jdk1.8.0
-services:
+- ps: If ($isWindows) {
+    choco install nuget.commandline;
+    choco install ant --ignore-dependencies }
+- ps: If ($isWindows) { $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant" }
+- cmd: set PATH=C:\Python36-x64\';%PATH%
+- cmd: set TSK_HOME=%APPVEYOR_BUILD_FOLDER%
 
 before_build:
-  - nuget restore win32\libtsk -PackagesDirectory win32\packages
+- cmd: nuget restore win32\libtsk -PackagesDirectory win32\packages
 
 build_script:
-  - python win32\updateAndBuildAll.py -m
-  - ps: ant -version
-  - ps: pushd bindings/java
-  - cmd: ant -q dist
-  - ps: popd
-  - ps: pushd case-uco/java
-  - cmd: ant -q
-  - ps: popd
+- cmd: python win32\updateAndBuildAll.py -m
+- ps: If ($isWindows) {
+    ant -version;
+    pushd bindings/java;
+    ant -q dist;
+    popd;
+    pushd case-uco/java;
+    ant -q;
+    popd }
+- sh: ./bootstrap && ./configure && make
 
 test_script:
-  - cmd: ant -q -f bindings/java test
+- cmd: ant -q -f bindings/java test
+- sh: make check
+
+after_build:
+- sh: if test -f tests/test-suite.log; then cat tests/test-suite.log; fi

@@ -150,6 +150,16 @@ Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
 
 under Common Public License version 1.0
 
+* tests/dftt/*
+
+Copied from http://dftt.sourceforge.net/
+
+```
+Copyright (c) 2005-2010 by Brian Carrier <carrier <at> digital-evidence <dot> org>
+```
+
+under GNU General Public License version 2
+
 * tsk/auto/sqlite3.c and tsk/auto/sqlite3.h
 
 ```

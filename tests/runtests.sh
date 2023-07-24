@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# This software is distributed under the Common Public License 1.0
 
 # NOTE: This script is not currently being used anywhere. 
 # it curently runs fs_thread_test on a set of images that
@@ -42,7 +44,7 @@ fi
 
 if ! test -x ${FS_THREAD_TEST};
 then
-	echo "Missing test executable: ${IMAGE_DIR}";
+	echo "Missing test executable: ${FS_THREAD_TEST}";
 
 	exit ${EXIT_IGNORE};
 fi
