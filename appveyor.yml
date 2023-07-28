@@ -7,6 +7,8 @@ environment:
     appveyor_build_worker_image: Visual Studio 2015
   - job_name: Linux Build
     appveyor_build_worker_image: Ubuntu
+  - job_name: macOS Build
+    appveyor_build_worker_image: macos-catalina
 
 matrix:
   fast_finish: true
@@ -56,7 +58,17 @@ for:
   - 
     matrix:
       only:
-        - job_name: Linux build
+        - job_name: Linux Build
+
+    build_script:
+      - ./bootstrap
+      - ./configure
+      - make
+
+  - 
+    matrix:
+      only:
+        - job_name: macOS Build
 
     build_script:
       - ./bootstrap
