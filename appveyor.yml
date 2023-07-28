@@ -62,8 +62,8 @@ for:
 
     build_script:
       - ./bootstrap
-      - ./configure
-      - make
+      - ./configure -q
+      - make -s
 
   - 
     matrix:
@@ -72,5 +72,5 @@ for:
 
     build_script:
       - ./bootstrap
-      - ./configure
-      - make
+      - ./configure -q
+      - make -s
