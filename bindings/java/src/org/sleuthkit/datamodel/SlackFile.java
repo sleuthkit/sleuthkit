@@ -117,7 +117,7 @@ public class SlackFile extends FsContent {
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
-	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
+	protected synchronized int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		if (offset == 0 && size == 0) {
 			//special case for 0-size file
 			return 0;
