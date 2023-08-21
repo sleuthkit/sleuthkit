@@ -80,6 +80,10 @@ Every object (image, volume system, file, etc.) has an entry in this table.  Thi
 
 # Hosts / Persons
 Stores data related to hosts and persons, which can help organize data sources. 
+Persons are optional, but hosts are required. When persons are defined, they are associated with one or more hosts. 
+The person and host tree is in parallel to the data source and file tree.  
+- A host is associated with a person
+- A data source is associated with a host (but not a child of it)
 
 ## tsk_persons
 Stores persons for the case. A peron is someone who owns or used a data source in the case. 
@@ -94,9 +98,13 @@ Stores hosts that have a data source in the case. Each data source must be assoc
 - **person_id** - Optional id of associated person
 - **merged_into** - Stores the host ID that this host was merged into
 
-# Data Source / Device Tables 
+# Data Source / Device, Disk Image Tables 
+
+A data source is the top-level container added to the database.  All files and artifacts must be children of a data source. There are different kinds of data sources and some will also have data in tsk_image_info and others will not. The data sources are the root of the object hierarchy. 
+
 ## data_source_info
-Contains information about a data source, which could be an image.  This is where we group data sources into devices (based on device ID).
+Contains information about a data source, which could be an image or logical folder.  The device_id concept allows multiple data source to be grouped together (if they share the same ID).
+The code will go to both tsk_image_info (for disk images) and tsk_files (for other types) for additional information. 
 - **obj_id** - Id of image/data source in tsk_objects
 - **device_id** - Unique ID (GUID) for the device that contains the data source
 - **time_zone** - Timezone that the data source was originally located in
@@ -108,10 +116,8 @@ Contains information about a data source, which could be an image.  This is wher
 - **host_id** - Host associated with this image (must be set)
 
 
-# Disk Image Tables
-
 ## tsk_image_info 
-Contains information about each set of images that is stored in the database. 
+Contains additional data source information if it is a disk image. These rows use the same object ID as data_source_info. 
 - **obj_id** - Id of image in tsk_objects
 - **type** - Type of disk image format (as org.sleuthkit.datamodel.TskData.TSK_IMG_TYPE_ENUM)
 - **ssize** - Sector size of device in bytes
@@ -130,6 +136,9 @@ Stores path(s) to file(s) on disk that make up an image set.
 
 
 # Volume System Tables
+
+The parent of a volume system is often a disk image / data source.
+
 ## tsk_vs_info
 Contains one row for every volume system found in the images.
 - **obj_id** - Id of volume system in tsk_objects
@@ -152,6 +161,9 @@ Contains information about pools (for APFS, logical disk management, etc.)
 - **pool_type** - Type of pool (as org.sleuthkit.datamodel.TskData.TSK_POOL_TYPE_ENUM)
 
 # File System Tables
+
+The parent of a file system is often either a partition or a disk image. These tables form together to create a parent / child structure of a root folder, subfolders, and files. 
+
 ## tsk_fs_info
 Contains one for for every file system in the images. 
 - **obj_id** - Id of filesystem in tsk_objects
