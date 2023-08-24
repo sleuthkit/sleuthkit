@@ -10090,16 +10090,16 @@ public class SleuthkitCase {
 	 *                          within tsk core and the update fails
 	 */
 	@Beta
-	public void setImagePaths(long obj_id, List<String> paths, CaseDbTransaction trans) throws TskCoreException {	
+	public void setImagePaths(long objId, List<String> paths, CaseDbTransaction trans) throws TskCoreException {	
 		try {
 			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_IMAGE_NAME);
 			statement.clearParameters();
-			statement.setLong(1, obj_id);
+			statement.setLong(1, objId);
 			trans.getConnection().executeUpdate(statement);
 			for (int i = 0; i < paths.size(); i++) {
 				statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
 				statement.clearParameters();
-				statement.setLong(1, obj_id);
+				statement.setLong(1, objId);
 				statement.setString(2, paths.get(i));
 				statement.setLong(3, i);
 				trans.getConnection().executeUpdate(statement);
