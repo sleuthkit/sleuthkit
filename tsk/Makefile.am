@@ -8,7 +8,7 @@ libtsk_la_LIBADD = base/libtskbase.la img/libtskimg.la \
     vs/libtskvs.la fs/libtskfs.la hashdb/libtskhashdb.la \
     auto/libtskauto.la pool/libtskpool.la util/libtskutil.la
 # current:revision:age
-libtsk_la_LDFLAGS = -version-info 21:0:2 $(LIBTSK_LDFLAGS)
+libtsk_la_LDFLAGS = -version-info 21:1:2 $(LIBTSK_LDFLAGS)
 
 EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/*.dox docs/*.html \
    tsk.pc.in
