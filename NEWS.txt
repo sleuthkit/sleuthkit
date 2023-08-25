@@ -1,3 +1,14 @@
+---------------- VERSION 4.12.1 --------------
+C/C++:
+- Bug fixes from Luis Nassif and Joachim Metz
+- Added check to stop for very large folders to prevent memory exhausion
+
+Java:
+- Added File Repository concept for files to be stored in another location
+- Schema updated to 9.4
+- Fixed OS Account merge bug and now fire events when accounts are merged
+
+
 ---------------- VERSION 4.12.0 --------------
 - There was a 1-year gap since 4.11.1 and the git log has 441 commits in that timeframe. 
 - Many for small fixes.  
