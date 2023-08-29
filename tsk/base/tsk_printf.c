@@ -92,7 +92,7 @@ tsk_fprintf(FILE * fd, const char *msg, ...)
     {
         WCHAR wbuf[2048];
         tsk_printf_conv(wbuf, 2048, msg, &args);
-        fwprintf(fd, _TSK_T("%s"), wbuf);
+        fwprintf(fd, _TSK_T("%ls"), wbuf);
     }
 #else
     vfprintf(fd, msg, args);
@@ -119,7 +119,7 @@ tsk_printf(const char *msg, ...)
     {
         WCHAR wbuf[2048];
         tsk_printf_conv(wbuf, 2048, msg, &args);
-        wprintf(_TSK_T("%s"), wbuf);
+        wprintf(_TSK_T("%ls"), wbuf);
     }
 #else
     vprintf(msg, args);

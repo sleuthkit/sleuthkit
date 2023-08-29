@@ -24,9 +24,11 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
     bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
     bindings/java/src/*.html \
     case-uco/java/*.xml \
+    case-uco/java/*.md \
     case-uco/java/nbproject/*.xml \
     case-uco/java/nbproject/*.properties \
-    case-uco/java/src/org/sleuthkit/caseuco/*.java
+    case-uco/java/src/org/sleuthkit/caseuco/*.java \
+    case-uco/java/test/org/sleuthkit/caseuco/*.java
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -48,19 +50,20 @@ SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) $(JAVA_CASE
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
-    tsk/img/tsk_img.h tsk/vs/tsk_vs.h tsk/img/pool.hpp \
+    tsk/img/tsk_img.h tsk/vs/tsk_vs.h tsk/img/pool.hpp tsk/img/logical_img.h \
     tsk/vs/tsk_bsd.h tsk/vs/tsk_dos.h tsk/vs/tsk_gpt.h \
     tsk/vs/tsk_mac.h tsk/vs/tsk_sun.h \
     tsk/fs/tsk_fs.h tsk/fs/tsk_ffs.h tsk/fs/tsk_ext2fs.h tsk/fs/tsk_fatfs.h \
-    tsk/fs/tsk_ntfs.h tsk/fs/tsk_iso9660.h tsk/fs/tsk_hfs.h tsk/fs/tsk_yaffs.h \
+    tsk/fs/tsk_ntfs.h tsk/fs/tsk_iso9660.h tsk/fs/tsk_hfs.h tsk/fs/tsk_yaffs.h tsk/fs/tsk_logical_fs.h \
     tsk/fs/tsk_apfs.h tsk/fs/tsk_apfs.hpp tsk/fs/apfs_fs.h tsk/fs/apfs_fs.hpp tsk/fs/apfs_compat.hpp \
     tsk/fs/decmpfs.h tsk/fs/tsk_exfatfs.h tsk/fs/tsk_fatxxfs.h \
     tsk/hashdb/tsk_hashdb.h tsk/auto/tsk_auto.h \
     tsk/auto/tsk_is_image_supported.h tsk/auto/guid.h \
     tsk/pool/tsk_pool.h tsk/pool/tsk_pool.hpp tsk/pool/tsk_apfs.h tsk/pool/tsk_apfs.hpp \
 	tsk/pool/pool_compat.hpp tsk/pool/apfs_pool_compat.hpp \
+    tsk/pool/lvm_pool_compat.hpp \
     tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp \
-    tsk/util/detect_encryption.h
+    tsk/util/detect_encryption.h tsk/util/file_system_utils.h
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \

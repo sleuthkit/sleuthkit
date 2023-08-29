@@ -42,6 +42,7 @@ public class HostAddressManager {
 	private static final Logger LOGGER = Logger.getLogger(HostAddressManager.class.getName());
 
 	private final SleuthkitCase db;
+	private final static byte DEFAULT_MAPPING_CACHE_VALUE = 1;
 
 	/**
 	 * An HostAddress Object Id entry is maintained in this cache when a
@@ -117,19 +118,20 @@ public class HostAddressManager {
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
 			addressType = getDNSType(address);
 		}
+		String normalizedAddress = getNormalizedAddress(address);
 		String queryString = "SELECT * FROM tsk_host_addresses"
 				+ " WHERE address = ?  AND address_type = ?";			
 		try {
 			PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
 			query.clearParameters();
-			query.setString(1, address.toLowerCase());
+			query.setString(1, normalizedAddress.toLowerCase());
 			query.setInt(2, addressType.getId());
 			try (ResultSet rs = query.executeQuery()) {
 				if (!rs.next()) {
 					return Optional.empty();	// no match found
 				} else {
-					HostAddress newHostAddress = new HostAddress(db, rs.getLong("id"), HostAddressType.fromID(rs.getInt("address_type")), address);
-					recentHostAddressCache.put(createRecentHostAddressKey(newHostAddress.getAddressType(), address), newHostAddress);
+					HostAddress newHostAddress = new HostAddress(db, rs.getLong("id"), HostAddressType.fromID(rs.getInt("address_type")), rs.getString("address"));
+					recentHostAddressCache.put(createRecentHostAddressKey(newHostAddress.getAddressType(), normalizedAddress), newHostAddress);
 					return Optional.of(newHostAddress);					
 				}
 			}
@@ -209,6 +211,7 @@ public class HostAddressManager {
 			addressType = getDNSType(address);
 		}
 		
+		String normalizedAddress = getNormalizedAddress(address);
 		try {
 
 			// TODO: need to get the correct parent obj id.  
@@ -223,11 +226,11 @@ public class HostAddressManager {
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, objId);
 			preparedStatement.setInt(2, addressType.getId());
-			preparedStatement.setString(3, address.toLowerCase());
+			preparedStatement.setString(3, normalizedAddress.toLowerCase());
 
 			connection.executeUpdate(preparedStatement);
-			HostAddress hostAddress =  new HostAddress(db, objId, addressType, address);
-			recentHostAddressCache.put(createRecentHostAddressKey(addressType, address), hostAddress);
+			HostAddress hostAddress =  new HostAddress(db, objId, addressType, normalizedAddress);
+			recentHostAddressCache.put(createRecentHostAddressKey(addressType, normalizedAddress), hostAddress);
 			return hostAddress;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error adding host address of type = %s, with address = %s", type.getName(), address), ex);
@@ -439,8 +442,8 @@ public class HostAddressManager {
 			preparedStatement.setNull(4, java.sql.Types.BIGINT);
 		}
 		connection.executeUpdate(preparedStatement);
-		recentHostNameAndIpMappingCache.put(ipAddress.getId(), new Byte((byte) 1));
-		recentHostNameAndIpMappingCache.put(dnsNameAddress.getId(), new Byte((byte) 1));
+		recentHostNameAndIpMappingCache.put(ipAddress.getId(), DEFAULT_MAPPING_CACHE_VALUE);
+		recentHostNameAndIpMappingCache.put(dnsNameAddress.getId(), DEFAULT_MAPPING_CACHE_VALUE);
 	}
 
 	/**
@@ -477,7 +480,7 @@ public class HostAddressManager {
 				} else {
 					boolean status = rs.getLong("mappingCount") > 0;
 					if (status) {
-						recentHostNameAndIpMappingCache.put(addressObjectId, new Byte((byte) 1));
+						recentHostNameAndIpMappingCache.put(addressObjectId, DEFAULT_MAPPING_CACHE_VALUE);
 					}
 					return status;
 				}
@@ -513,6 +516,7 @@ public class HostAddressManager {
 		if (type.equals(HostAddress.HostAddressType.DNS_AUTO)) {
 			addressType = getDNSType(address);
 		} 
+		String normalizedAddress = getNormalizedAddress(address);
 		
 		String queryString = "SELECT id, address_type, address FROM tsk_host_addresses"
 				+ " WHERE address = ?  AND address_type = ?"; 
@@ -521,7 +525,7 @@ public class HostAddressManager {
 		try (CaseDbConnection connection = this.db.getConnection();
 				PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);) {
 			query.clearParameters();
-			query.setString(1, address.toLowerCase());
+			query.setString(1, normalizedAddress.toLowerCase());
 			query.setInt(2, addressType.getId());
 			try (ResultSet rs = query.executeQuery()) {
 				if (!rs.next()) {
@@ -531,7 +535,7 @@ public class HostAddressManager {
 					int addrType = rs.getInt("address_type");
 					String addr = rs.getString("address");
 					HostAddress hostAddr = new HostAddress(db, objId, HostAddress.HostAddressType.fromID(addrType), addr);
-					recentHostAddressCache.put(createRecentHostAddressKey(addrType, address), hostAddr);					
+					recentHostAddressCache.put(createRecentHostAddressKey(addrType, normalizedAddress), hostAddr);					
 					return Optional.of(objId);
 				}
 			}
@@ -568,7 +572,7 @@ public class HostAddressManager {
 				while (rs.next()) {
 					long ipAddressObjId = rs.getLong("ip_address_id");
 					IpAddresses.add(HostAddressManager.this.getHostAddress(ipAddressObjId, connection));
-					recentHostNameAndIpMappingCache.put(ipAddressObjId, new Byte((byte) 1));
+					recentHostNameAndIpMappingCache.put(ipAddressObjId, DEFAULT_MAPPING_CACHE_VALUE);
 				}
 				return IpAddresses;
 			}
@@ -606,7 +610,7 @@ public class HostAddressManager {
 				while (rs.next()) {
 					long dnsAddressId = rs.getLong("dns_address_id");
 					dnsNames.add(HostAddressManager.this.getHostAddress(dnsAddressId, connection));
-					recentHostNameAndIpMappingCache.put(dnsAddressId, new Byte((byte) 1));
+					recentHostNameAndIpMappingCache.put(dnsAddressId, DEFAULT_MAPPING_CACHE_VALUE);
 				}
 				return dnsNames;
 			}
@@ -746,12 +750,17 @@ public class HostAddressManager {
 	}
 
 	
+	// IPV6 address examples:
+	//		Standard: 684D:1111:222:3333:4444:5555:6:77
+	//		Compressed: 1234:fd2:5621:1:89::4500
+	//		With zone/interface specifier: fe80::1ff:fe23:4567:890a%eth2 
+	//									   fe80::1ff:fe23:4567:890a%3
 	private static final Pattern IPV6_STD_PATTERN = 
-            Pattern.compile("^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$");
+            Pattern.compile("^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}(%.+)?$");
     private static final Pattern IPV6_HEX_COMPRESSED_PATTERN = 
-            Pattern.compile("^((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)$");
+            Pattern.compile("^((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)(%.+)?$");
 
-   
+	
     private static boolean isIPv6StdAddress(final String input) {
         return IPV6_STD_PATTERN.matcher(input).matches();
     }
@@ -774,4 +783,47 @@ public class HostAddressManager {
 
 		return false;
 	}
+	
+	/**
+	 * Normalizes an address.
+	 * 
+	 * It intentionally does NOT convert to lowercase so that the case may be
+	 * preserved, and only converted where needed.
+	 *
+	 * @param address
+	 *
+	 * @return Normalized address.
+	 */
+	private static String getNormalizedAddress(String address) {
+		
+		String normalizedAddress = address;
+		
+		if (isIPv6(address)) {
+			normalizedAddress = getNormalizedIPV6Address(address);
+		}
+		
+		return normalizedAddress;
+	}
+	
+	/**
+	 * Normalize an IPv6 address:
+	 *  - removing the zone/interface specifier if one exists.
+	 *
+	 * It intentionally does NOT convert to lowercase so that the case may be
+	 * preserved, and only converted where needed.
+	 *
+	 * @param address Address to normalize. 
+	 *
+	 * @return Normalized IPv6 address.
+	 */
+	private static String getNormalizedIPV6Address(String address) {
+		
+		String normalizedAddress = address;
+		if ( normalizedAddress.contains("%") ) {
+			normalizedAddress = normalizedAddress.substring(0, normalizedAddress.indexOf("%"));
+		}
+		
+		return normalizedAddress;
+	}
 }
+

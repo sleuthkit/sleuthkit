@@ -207,6 +207,8 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 
+		stmt.execute("CREATE TABLE file_collection_status_types (collection_status_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
+		
 		stmt.execute("CREATE TABLE tsk_files (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "fs_obj_id " + dbQueryHelper.getBigIntType() + ", data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "attr_type INTEGER, attr_id INTEGER, " 
@@ -215,15 +217,17 @@ class CaseDatabaseFactory {
 				+ "dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size " + dbQueryHelper.getBigIntType() + ", "
 				+ "ctime " + dbQueryHelper.getBigIntType() + ", "
 				+ "crtime " + dbQueryHelper.getBigIntType() + ", atime " + dbQueryHelper.getBigIntType() + ", "
-				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, "
+				+ "mtime " + dbQueryHelper.getBigIntType() + ", mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, sha256 TEXT, sha1 TEXT,"
 				+ "known INTEGER, "
 				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
 				+ "owner_uid TEXT DEFAULT NULL, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
+				+ "collected INTEGER NOT NULL, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE SET NULL) " ); 
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE SET NULL, "
+				+ "FOREIGN KEY(collected) REFERENCES file_collection_status_types (collection_status_type))" ); 
 
 		stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 
@@ -536,7 +540,7 @@ class CaseDatabaseFactory {
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, " 
 				+ "instance_type INTEGER NOT NULL, "	// PerformedActionOn/ReferencedOn
-				+ "UNIQUE(os_account_obj_id, data_source_obj_id), "
+				+ "UNIQUE(os_account_obj_id, data_source_obj_id, instance_type), "
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, " 
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE ) ");
 		

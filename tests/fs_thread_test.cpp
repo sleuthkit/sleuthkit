@@ -154,7 +154,7 @@ static const TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr, _TSK_T("Usage: %s [-f fstype ] [-o imgoffset ] [-v] image nthreads niters\n"), progname);
+    TFPRINTF(stderr, _TSK_T("Usage: %" PRIttocTSK " [-f fstype ] [-o imgoffset ] [-v] image nthreads niters\n"), progname);
 
     exit(1);
 }
@@ -188,7 +188,7 @@ main(int argc, char** argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                         _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                         _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;

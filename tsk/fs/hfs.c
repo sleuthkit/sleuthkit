@@ -1020,8 +1020,10 @@ hfs_cat_traverse(HFS_INFO * hfs,
                  */
                 //                rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
+                // The nodesize passed to the callback should contain the available node
+                // data size relative from the start of the key.
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen, nodesize,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen, nodesize - rec_off,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_LEAF_STOP) {
                     is_done = 1;

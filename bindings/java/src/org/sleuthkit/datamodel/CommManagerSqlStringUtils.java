@@ -19,17 +19,22 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Collection;
+import java.util.Collections;
 
 /**
- * Collection of string utility methods.
+ * Collection of string utility methods for use by CVT, CommunicationsManager
+ * and Timeline.
  */
-final class StringUtils {
+final class CommManagerSqlStringUtils {
 
-	private StringUtils() {
+	private CommManagerSqlStringUtils() {
 	}
 
 	/**
 	 * Utility method to convert a list to an CSV string.
+	 * 
+	 * Null entries in the values collection will be removed before
+	 * the string is created.
 	 *
 	 * @param values - collection of objects .
 	 *
@@ -41,7 +46,8 @@ final class StringUtils {
 
 	/**
 	 * Utility method to join a collection into a string using a supplied
-	 * separator.
+	 * separator. Null entries in the values collection will be removed before
+	 * the string is created.
 	 *
 	 * @param <T>       The type of the values in the collection to be joined
 	 * @param values    The collection to be joined
@@ -54,11 +60,9 @@ final class StringUtils {
 		if (values == null || values.isEmpty()) {
 			return "";
 		}
+		
+		values.removeAll(Collections.singleton(null));
+		
 		return org.apache.commons.lang3.StringUtils.join(values, separator);
 	}
-
-	static String deleteWhitespace(String result) {
-		return org.apache.commons.lang3.StringUtils.deleteWhitespace(result);
-	}
-
 }

@@ -307,6 +307,63 @@ public interface TskEvent {
 	}
 
 	/**
+	 * An event published when one or more OS accounts are merged.
+	 */
+	public final static class OsAccountsMergedTskEvent extends TskObjectsEvent<MergedAccountsPair> {
+
+		/**
+		 * Constructs an event published when one or more OS accounts are
+		 * merged.
+		 *
+		 * @param mergedAccounts List of the merged OS accounts.
+		 */
+		OsAccountsMergedTskEvent(List<MergedAccountsPair> mergedAccounts) {
+			super(mergedAccounts);
+		}
+
+
+		/**
+		 * Gets the pairs of merged accounts
+		 * 
+		 * @return 
+		 */
+		public List<MergedAccountsPair> getMergedAccountPairs() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * Container to encapsulate the merged account ids, contains both the source and destination account ids.
+	 */
+	public final static class MergedAccountsPair {
+
+		private final Long sourceOsAccountId;
+		private final Long destinationOsAccountId;
+
+		public MergedAccountsPair(Long sourceOsAccountId, Long destinationOsAccountId) {
+			this.sourceOsAccountId = sourceOsAccountId;
+			this.destinationOsAccountId = destinationOsAccountId;
+		}
+
+		/**
+		 * Gets the source os account id. This is the account that was marked as "MERGED"
+		 * @return The TSK object ID of the source os account
+		 */
+		public Long getSourceOsAccountId() {
+			return sourceOsAccountId;
+		}
+
+		/**
+		 * Gets the destination os account id. This is the account that the source was merged into.
+		 * @return The TSK object ID of the destination os account
+		 */
+		public Long getDestinationOsAccountId() {
+			return destinationOsAccountId;
+		}
+	}
+	
+	/**
 	 * An event published when one or more OS account instances are added.
 	 */
 	public final static class OsAcctInstancesAddedTskEvent extends TskObjectsEvent<OsAccountInstance> {
@@ -462,7 +519,7 @@ public interface TskEvent {
 		private final Person person;
 
 		/**
-		 * Contructs an event published when one or more hosts are removed from
+		 * Constructs an event published when one or more hosts are removed from
 		 * a person.
 		 *
 		 * @param person  The person.
@@ -493,4 +550,123 @@ public interface TskEvent {
 
 	}
 
+	static abstract class TagNamesTskEvent extends TskObjectsEvent<TagName> {
+
+		public TagNamesTskEvent(List<TagName> tagNames) {
+			super(tagNames);
+		}
+
+		/**
+		 * Returns the list of added or updated TagName objects.
+		 *
+		 * @return The TagName list.
+		 */
+		public List<TagName> getTagNames() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * An event published when one or more TagName are added.
+	 */
+	public final static class TagNamesAddedTskEvent extends TagNamesTskEvent {
+
+		/**
+		 * Construct an event when one or more TagName are created or updated.
+		 *
+		 * @param tagNames List of added or modified TagName.
+		 */
+		public TagNamesAddedTskEvent(List<TagName> tagNames) {
+			super(tagNames);
+		}
+	}
+
+	/**
+	 * An event published when one or more TagName are updated.
+	 */
+	public final static class TagNamesUpdatedTskEvent extends TagNamesTskEvent {
+
+		/**
+		 * Construct an event when one or more TagName are updated.
+		 *
+		 * @param tagNames List of added or modified TagName.
+		 */
+		public TagNamesUpdatedTskEvent(List<TagName> tagNames) {
+			super(tagNames);
+		}
+	}
+
+	/**
+	 * An event published when one or more TagName are deleted.
+	 */
+	public final static class TagNamesDeletedTskEvent extends TskObjectsEvent<Long> {
+
+		/**
+		 * Constructs a new event with the given list of TagName ids.
+		 *
+		 * @param tagNameIds Deleted TagName id list.
+		 */
+		public TagNamesDeletedTskEvent(List<Long> tagNameIds) {
+			super(tagNameIds);
+		}
+
+		/**
+		 * List of the deleted TagName ids.
+		 *
+		 * @return The list of deleted TagName Ids.
+		 */
+		public List<Long> getTagNameIds() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * An event published when one or more TagSets have been added.
+	 */
+	public final static class TagSetsAddedTskEvent extends TskObjectsEvent<TagSet> {
+
+		/**
+		 * Constructs an added event for one or more TagSets.
+		 *
+		 * @param tagSets The added TagSet.
+		 */
+		public TagSetsAddedTskEvent(List<TagSet> tagSets) {
+			super(tagSets);
+		}
+
+		/**
+		 * Return the TagSets list.
+		 *
+		 * @return The TagSet list.
+		 */
+		public List<TagSet> getTagSets() {
+			return getDataModelObjects();
+		}
+	}
+
+	/**
+	 * An event published when one or more TagSets have been deleted.
+	 */
+	public final static class TagSetsDeletedTskEvent extends TskObjectsEvent<Long> {
+
+		/**
+		 * Constructs a deleted event for one or more TagSets.
+		 *
+		 * @param tagSetIds The ids of the deleted TagSets.
+		 */
+		public TagSetsDeletedTskEvent(List<Long> tagSetIds) {
+			super(tagSetIds);
+		}
+
+		/**
+		 * Returns the list of deleted TagSet ids.
+		 *
+		 * @return The list of deleted TagSet ids.
+		 */
+		public List<Long> getTagSetIds() {
+			return getDataModelObjects();
+		}
+	}
 }

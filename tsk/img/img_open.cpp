@@ -17,6 +17,7 @@
 #include "tsk_img_i.h"
 
 #include "raw.h"
+#include "logical_img.h"
 
 #if HAVE_LIBAFFLIB
 #include "aff.h"
@@ -109,7 +110,7 @@ tsk_img_open(int num_img,
 
     if (tsk_verbose)
         TFPRINTF(stderr,
-            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %s\n"),
+            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
             type, num_img, images[0]);
 
 
@@ -230,21 +231,13 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
-#if HAVE_LIBVHDI
-    case TSK_IMG_TYPE_VHD_VHD:
-        img_info = vhdi_open(num_img, images, a_ssize);
-        break;
-#endif
-
-#if HAVE_LIBVMDK
-    case TSK_IMG_TYPE_VMDK_VMDK:
-        img_info = vmdk_open(num_img, images, a_ssize);
-        break;
-#endif
-
     case TSK_IMG_TYPE_RAW:
         img_info = raw_open(num_img, images, a_ssize);
         break;
+
+	case TSK_IMG_TYPE_LOGICAL:
+		img_info = logical_open(num_img, images, a_ssize);
+		break;
 
 #if HAVE_LIBAFFLIB
     case TSK_IMG_TYPE_AFF_AFF:
@@ -258,6 +251,18 @@ tsk_img_open(int num_img,
 #if HAVE_LIBEWF
     case TSK_IMG_TYPE_EWF_EWF:
         img_info = ewf_open(num_img, images, a_ssize);
+        break;
+#endif
+
+#if HAVE_LIBVMDK
+    case TSK_IMG_TYPE_VMDK_VMDK:
+        img_info = vmdk_open(num_img, images, a_ssize);
+        break;
+#endif
+
+#if HAVE_LIBVHDI
+    case TSK_IMG_TYPE_VHD_VHD:
+        img_info = vhdi_open(num_img, images, a_ssize);
         break;
 #endif
 

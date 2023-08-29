@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,5 +68,25 @@ class PhoneCall extends Facet {
     PhoneCall setCallType(String callType) {
         this.callType = callType;
         return this;
+    }
+
+    String getTo() {
+        return to;
+    }
+
+    String getFrom() {
+        return from;
+    }
+
+    String getStartTime() {
+        return startTime;
+    }
+
+    String getEndTime() {
+        return endTime;
+    }
+
+    String getCallType() {
+        return callType;
     }
 }

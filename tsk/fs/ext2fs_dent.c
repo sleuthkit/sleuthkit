@@ -232,16 +232,16 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
 * structure or a new structure.
 * @param a_addr Address of directory to process.
+* @param recursion_depth Recursion depth to limit the number of self-calls
 * @returns error, corruption, ok etc.
 */
 
 TSK_RETVAL_ENUM
 ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) a_fs;
     char *dirbuf;
-    TSK_OFF_T size;
     TSK_FS_DIR *fs_dir;
     TSK_LIST *list_seen = NULL;
 
@@ -316,12 +316,19 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if ((dirbuf = tsk_malloc((size_t)a_fs->block_size)) == NULL) {
         return TSK_ERR;
     }
+    TSK_OFF_T size = 0;
 
     if (fs_dir->fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_INLINE) {
         // For inline dirs, don't try to read past the end of the data
         size = fs_dir->fs_file->meta->size;
     }
     else {
+        if (fs_dir->fs_file->meta->size <= 0 || a_fs->block_size <= 0
+                || (INT64_MAX - (a_fs->block_size - 1) < fs_dir->fs_file->meta->size)) {
+            tsk_error_set_errstr("ext2fs_dir_open_meta: invalid data size value out of bounds.\n");
+            free(dirbuf);
+            return TSK_ERR;
+        }
         size = roundup(fs_dir->fs_file->meta->size, a_fs->block_size);
     }
     TSK_OFF_T offset = 0;

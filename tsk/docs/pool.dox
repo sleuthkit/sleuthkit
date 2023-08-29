@@ -1,0 +1,17 @@
+/*! \page poolpage Pools
+
+This section is not complete.
+
+Pools can organize non-consecutive blocks into volumes. They were added to TSK as part of the APFS support. 
+
+Pools can exist:
+- At the beginning of a disk image
+- Inside of a single volume.
+- FUTURE: Accross several volumes
+
+A when a pool is detected, it will return several pool volumes.
+
+
+Back to \ref users_guide "Table of Contents"
+*/
+

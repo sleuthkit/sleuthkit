@@ -113,6 +113,19 @@ uint8_t TskIsImageSupported::handleError()
             strncpy(m_unsupportedDesc, lastError->errstr, 1024);
             m_wasUnsupported = true;
         }
+        else if (errCode == TSK_ERR_VS_MULTTYPE) {
+            // errstr only contains the "MAC or DOS" part, so add more context
+            strncpy(m_unsupportedDesc, "Multiple volume system types found - ", 1024);
+            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            m_wasUnsupported = true;
+        }
+        else if (errCode == TSK_ERR_FS_MULTTYPE) {
+            // errstr only contains the "UFS or NTFS" part, so add more context
+            strncpy(m_unsupportedDesc, "Multiple file system types found - ", 1024);
+            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            m_wasUnsupported = true;
+        }
+
     }
     return 0;
 }

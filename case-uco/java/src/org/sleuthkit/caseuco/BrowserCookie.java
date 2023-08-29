@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,5 +75,29 @@ class BrowserCookie extends Facet {
     BrowserCookie setCookiePath(String cookiePath) {
         this.cookiePath = cookiePath;
         return this;
+    }
+
+    String getCookieName() {
+        return cookieName;
+    }
+
+    String getAccessedTime() {
+        return accessedTime;
+    }
+
+    String getExpirationTime() {
+        return expirationTime;
+    }
+
+    String getCookieDomain() {
+        return cookieDomain;
+    }
+
+    String getApplication() {
+        return application;
+    }
+
+    String getCookiePath() {
+        return cookiePath;
     }
 }

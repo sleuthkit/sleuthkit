@@ -211,7 +211,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @param justification	 Justification
 	 * @param attributesList Additional attributes to attach to this analysis
 	 *                       result artifact.
-	 * @param dataDourcrId   The data source for the analysis result
+	 * @param dataSourceId   The data source for the analysis result
 	 *
 	 * @return AnalysisResultAdded The analysis return added and the current
 	 *         aggregate score of content.

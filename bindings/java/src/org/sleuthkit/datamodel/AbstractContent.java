@@ -18,11 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -125,12 +127,11 @@ public abstract class AbstractContent implements Content {
 		// It is possible that multiple threads could be doing this calculation
 		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if (parent == null) {
-			ObjectInfo parentInfo;
-			parentInfo = db.getParentInfo(this);
-			if (parentInfo == null) {
+			Optional<Long> parentIdOpt = getParentId();
+			if (!parentIdOpt.isPresent()) {
 				parent = null;
 			} else {
-				parent = db.getContentById(parentInfo.getId());
+				parent = db.getContentById(parentIdOpt.get());
 			}
 		}
 		return parent;
@@ -138,6 +139,28 @@ public abstract class AbstractContent implements Content {
 
 	void setParent(Content parent) {
 		this.parent = parent;
+	}
+
+	/**
+	 * Returns the parent object id of the content or empty if no parent can be
+	 * identified.
+	 *
+	 * @return An optional of the parent object id.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public Optional<Long> getParentId() throws TskCoreException {
+		if (parentId == UNKNOWN_ID) {
+			ObjectInfo parentInfo = db.getParentInfo(this);
+			if (parentInfo != null) {
+				parentId = parentInfo.getId();
+			}
+		}
+
+		return parentId == UNKNOWN_ID
+				? Optional.empty()
+				: Optional.of(parentId);
 	}
 
 	/**
@@ -327,7 +350,7 @@ public abstract class AbstractContent implements Content {
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
 			return getGenInfoArtifact(true);
 		}
-		BlackboardArtifact.Type artifactType = db.getArtifactType(artifactTypeID);
+		BlackboardArtifact.Type artifactType = db.getBlackboard().getArtifactType(artifactTypeID);
 		switch (artifactType.getCategory()) {
 			case DATA_ARTIFACT:
 				return this.newDataArtifact(artifactType, Collections.emptyList());
@@ -375,26 +398,12 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
-		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
-
-		if (osAccountId != null) {
-			try (CaseDbConnection connection = db.getConnection()) {
-				db.getOsAccountManager().newOsAccountInstance(osAccountId, getDataSource().getId(), OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
-			}
-		}
-		return artifact;
+		return db.getBlackboard().newDataArtifact(artifactType, objId, this.getDataSource().getId(), attributesList, osAccountId);
 	}
 
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
-		DataArtifact artifact = db.getBlackboard().newDataArtifact(artifactType, objId, dataSourceId, attributesList, osAccountId);
-
-		if (osAccountId != null) {
-			try (CaseDbConnection connection = db.getConnection()) {
-				db.getOsAccountManager().newOsAccountInstance(osAccountId, dataSourceId, OsAccountInstance.OsAccountInstanceType.LAUNCHED, connection);
-			}
-		}
-		return artifact;
+		return db.getBlackboard().newDataArtifact(artifactType, objId, dataSourceId, attributesList, osAccountId);
 	}
 
 	@Override
@@ -411,7 +420,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifacts(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifacts(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
