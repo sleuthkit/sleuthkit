@@ -1396,6 +1396,11 @@ public abstract class BlackboardArtifact implements Content {
 		 * interesting.
 		 */
 		public static final Type TSK_INTERESTING_ITEM = new BlackboardArtifact.Type(72, "TSK_INTERESTING_ITEM", bundle.getString("BlackboardArtifact.tskInterestingItem.text"), Category.ANALYSIS_RESULT);
+		
+		/**
+		 * Malware artifact.
+		 */
+		public static final Type TSK_MALWARE = new BlackboardArtifact.Type(73, "TSK_MALWARE", bundle.getString("BlackboardArtifact.tskMalware.text"), Category.ANALYSIS_RESULT);
 		/*
 		 * IMPORTANT!
 		 *
@@ -1475,7 +1480,8 @@ public abstract class BlackboardArtifact implements Content {
 				TSK_PREVIOUSLY_SEEN,
 				TSK_PREVIOUSLY_UNSEEN,
 				TSK_PREVIOUSLY_NOTABLE,
-				TSK_INTERESTING_ITEM
+				TSK_INTERESTING_ITEM,
+				TSK_MALWARE
 		).collect(Collectors.toMap(type -> type.getTypeID(), type -> type)));
 
 		private final String typeName;
@@ -2001,7 +2007,12 @@ public abstract class BlackboardArtifact implements Content {
 		 * interesting.
 		 */
 		TSK_INTERESTING_ITEM(72, "TSK_INTERESTING_ITEM", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskInterestingItem.text"), Category.ANALYSIS_RESULT);
+				bundle.getString("BlackboardArtifact.tskInterestingItem.text"), Category.ANALYSIS_RESULT),
+		/**
+		 * Malware artifact.
+		 */
+		TSK_MALWARE(73, "TSK_MALWARE", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskMalware.text"), Category.ANALYSIS_RESULT);
 		/*
 		 * IMPORTANT!
 		 *
