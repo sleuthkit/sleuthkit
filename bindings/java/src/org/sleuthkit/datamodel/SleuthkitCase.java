@@ -13367,7 +13367,7 @@ public class SleuthkitCase {
 
 			SQLiteConfig config = new SQLiteConfig();
 			config.setSynchronous(SQLiteConfig.SynchronousMode.OFF); // Reduce I/O operations, we have no OS crash recovery anyway.
-			config.setReadUncommited(true);
+			config.setReadUncommitted(true);
 			config.enforceForeignKeys(true); // Enforce foreign key constraints.
 			SQLiteDataSource unpooled = new SQLiteDataSource(config);
 			unpooled.setUrl("jdbc:sqlite:" + dbPath);
