@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.base.Strings;
+import com.google.common.annotations.Beta;
 import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -331,6 +332,84 @@ public final class OsAccountManager {
 			}
 		}
 	}
+	
+		/**
+	 * Creates a local OS account with Linux-specific data. If an account already
+	 * exists with the given id or realm/login, then the existing OS account is
+	 * returned.
+	 *
+	 * @param uid       Account uid, can be null if loginName is supplied.
+	 * @param loginName Login name, can be null if uid is supplied.
+	 * @param referringHost     The associated host.
+	 *
+	 * @return OsAccount.
+	 *
+	 * @throws TskCoreException                     If there is an error in
+	 *                                              creating the OSAccount.
+	 *
+	 */
+	@Beta
+	public OsAccount newLocalLinuxOsAccount(String uid, String loginName, Host referringHost) throws TskCoreException {
+
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to create a local OS account.");
+		}
+		
+		// Ensure at least one of the two is supplied - a non-null unique id or a login name
+		if (StringUtils.isBlank(uid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
+		}
+		
+		OsAccountRealm localRealm = db.getOsAccountRealmManager().newLocalLinuxRealm(referringHost);
+		
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			
+			// try to create account
+			try {
+				OsAccount account = newOsAccount(uid, loginName, localRealm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				trans.commit();
+				trans = null;
+				return account;
+			} catch (SQLException ex) {
+				// Rollback the transaction before proceeding
+				trans.rollback();
+				trans = null;
+
+				// Create may fail if an OsAccount already exists. 
+				Optional<OsAccount> osAccount;
+
+				// First search for account by uniqueId
+				if (!Strings.isNullOrEmpty(uid)) {
+					osAccount = getOsAccountByAddr(uid, localRealm);
+					if (osAccount.isPresent()) {
+						return osAccount.get();
+					}
+				}
+
+				// search by loginName
+				if (!Strings.isNullOrEmpty(loginName)) {
+					osAccount = getOsAccountByLoginName(loginName, localRealm);
+					if (osAccount.isPresent()) {
+						return osAccount.get();
+					}
+				}
+
+				// create failed for some other reason, throw an exception
+				throw new TskCoreException(String.format("Error creating OsAccount with uid = %s, loginName = %s, realm = %s, referring host = %s",
+						(uid != null) ? uid : "Null",
+						(loginName != null) ? loginName : "Null",
+						(!localRealm.getRealmNames().isEmpty()) ? localRealm.getRealmNames().get(0) : "Null",
+						localRealm.getScopeHost().isPresent() ? localRealm.getScopeHost().get().getName() : "Null"), ex);
+
+			}
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
+
 
 	/**
 	 * Creates a OS account with the given uid, name, and realm.
@@ -1212,6 +1291,52 @@ public final class OsAccountManager {
 		}
 	}
 
+	/**
+	 * Gets an OS account using Linux-specific data.
+	 *
+	 * @param uid           Account UID, maybe null if loginName is supplied.
+	 * @param loginName     Login name, maybe null if sid is supplied.
+	 * @param referringHost Host referring the account.
+	 *
+	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount
+	 *         is found.
+	 *
+	 * @throws TskCoreException    If there is an error getting the account.
+	 */
+	@Beta
+	public Optional<OsAccount> getLocalLinuxOsAccount(String uid, String loginName, Host referringHost) throws TskCoreException {
+
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to get an account.");
+		}
+
+		// ensure at least one of the two is supplied - a non-null uid or a login name
+		if (StringUtils.isBlank(uid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot get an OS account with both UID and loginName as null.");
+		}
+			
+		// First get the local realm
+		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getLocalLinuxRealm(referringHost);
+		if (!realm.isPresent()) {
+			return Optional.empty();
+		}
+
+		// Search by UID
+		if (!Strings.isNullOrEmpty(uid)) {
+			Optional<OsAccount> account = this.getOsAccountByAddr(uid, realm.get());
+			if (account.isPresent()) {
+				return account;
+			}
+		}
+
+		// Search by login name
+		if (!Strings.isNullOrEmpty(loginName)) {
+			return this.getOsAccountByLoginName(loginName, realm.get());
+		} else {
+			return Optional.empty();
+		}
+	}	
+	
 	/**
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.

@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
@@ -43,6 +44,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 public final class OsAccountRealmManager {
 
 	private static final Logger LOGGER = Logger.getLogger(OsAccountRealmManager.class.getName());
+	private static final String LOCAL_REALM_NAME = "local";
 
 	private final SleuthkitCase db;
 
@@ -146,6 +148,52 @@ public final class OsAccountRealmManager {
 		
 		// create a realm
 		return newRealm(resolvedRealmName, realmAddr, signature, scopeHost, scopeConfidence);
+	}
+	
+	/**
+	 * Create local realm to use for Linux accounts.
+	 *
+	 * @param referringHost Host where realm reference is found.
+	 *
+	 * @return OsAccountRealm.
+	 *
+	 * @throws TskCoreException                     If there is an error
+	 *                                              creating the realm.
+	 */
+	@Beta
+	public OsAccountRealm newLocalLinuxRealm(Host referringHost) throws TskCoreException {
+
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to create a realm.");
+		}
+		
+		String realmName = LOCAL_REALM_NAME;
+		OsAccountRealm.ScopeConfidence scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;		
+		String signature = makeRealmSignature("", realmName, referringHost);
+		
+		// create a realm
+		return newRealm(realmName, "", signature, referringHost, scopeConfidence);
+	}
+	
+	/**
+	 * Get local realm to use for Linux accounts.
+	 *
+	 * @param referringHost Host where realm reference is found.
+	 *
+	 * @return OsAccountRealm.
+	 *
+	 * @throws TskCoreException                     If there is an error
+	 *                                              creating the realm.
+	 */
+	@Beta
+	public Optional<OsAccountRealm> getLocalLinuxRealm(Host referringHost) throws TskCoreException {
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required get a realm.");
+		}
+		
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			return getRealmByName(LOCAL_REALM_NAME, referringHost, connection);
+		}
 	}
 	
 	/**
