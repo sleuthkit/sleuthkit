@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang3.ArrayUtils;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
@@ -185,7 +186,7 @@ public abstract class FsContent extends AbstractFile {
 		}
 		
 		Content dataSource = getDataSource();
-		if (dataSource instanceof Image && ((Image) dataSource).getPaths() == null || ((Image) dataSource).getPaths().length == 0) {
+		if (dataSource instanceof Image && ArrayUtils.isEmpty(((Image) dataSource).getPaths())) {
 			return 0;
 		}
 		
