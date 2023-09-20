@@ -770,6 +770,80 @@ public class OsAccountTest {
 
 	}
 	
+	@Test
+	public void basicLinuxOsAccountTests() throws TskCoreException {
+
+		try {
+			String hostname1 = "linuxTestHost";
+			Host host1 = caseDB.getHostManager().newHost(hostname1);
+			
+			// Create an account with uid and username
+			String uid1 = "501";
+			String loginName1 = "user1";
+			
+			OsAccount osAccount1 = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid1, loginName1, host1);
+			assertEquals(osAccount1.getAddr().orElse("").equalsIgnoreCase(uid1), true);
+			assertEquals(osAccount1.getLoginName().orElse("").equalsIgnoreCase(loginName1), true);
+			
+			Optional<OsAccount> osAccount1loadWithUID = caseDB.getOsAccountManager().getLocalLinuxOsAccount(uid1, null, host1);
+			assertEquals(osAccount1loadWithUID.isPresent(), true);
+			assertEquals(osAccount1loadWithUID.get().getAddr().orElse("").equalsIgnoreCase(uid1), true);
+			assertEquals(osAccount1loadWithUID.get().getLoginName().orElse("").equalsIgnoreCase(loginName1), true);
+				
+			// Create an account with only a UID then update it
+			String uid2 = "502";
+			String loginName2 = "user2";
+			
+			OsAccount osAccount2 = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid2, null, host1);
+			assertEquals(osAccount2.getAddr().orElse("").equalsIgnoreCase(uid2), true);
+			assertEquals(osAccount2.getLoginName().isEmpty(), true);
+			
+			OsAccountManager.OsAccountUpdateResult updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(osAccount2, uid2, loginName2);
+            Optional<OsAccount> oOsAccount2Updated = updateResult.getUpdatedAccount();
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount2Updated.isPresent(), true);
+			assertEquals(oOsAccount2Updated.get().getAddr().orElse("").equalsIgnoreCase(uid2), true);
+			assertEquals(oOsAccount2Updated.get().getLoginName().orElse("").equalsIgnoreCase(loginName2), true);
+			
+			// Test unusual merge case (unusual because we're updating the account with the name, not the UID)
+			String uid3 = "503";
+			String loginName3 = "user3";
+			
+			OsAccount osAccount3uidOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid3, null, host1);
+			OsAccount osAccount3nameOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginName3, host1);
+			
+			updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(osAccount3nameOnly, uid3, loginName3);
+            Optional<OsAccount> oOsAccount3Updated = updateResult.getUpdatedAccount();
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount3Updated.isPresent(), true);
+			assertEquals(oOsAccount3Updated.get().getAddr().orElse("").equalsIgnoreCase(uid3), true);
+			assertEquals(oOsAccount3Updated.get().getLoginName().orElse("").equalsIgnoreCase(loginName3), true);
+			
+			// Test normal merge case
+			String uid4 = "504";
+			String loginName4 = "user4";
+			
+			OsAccount osAccount4uidOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid4, null, host1);
+			OsAccount osAccount4nameOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginName4, host1);
+			
+			updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(osAccount4uidOnly, uid4, loginName4);
+            Optional<OsAccount> oOsAccount4Updated = updateResult.getUpdatedAccount();
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount4Updated.isPresent(), true);
+			assertEquals(oOsAccount4Updated.get().getAddr().orElse("").equalsIgnoreCase(uid4), true);
+			assertEquals(oOsAccount4Updated.get().getLoginName().orElse("").equalsIgnoreCase(loginName4), true);
+			
+		} finally {
+			
+		}
+
+	}
 	
 	@Test
 	public void windowsSpecialAccountTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
