@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * Represents a file system object stored in tsk_fs_info table FileSystem has a
@@ -69,6 +70,10 @@ public class FileSystem extends AbstractContent {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		Content dataSource = getDataSource();
+		if (dataSource instanceof Image && ArrayUtils.isEmpty(((Image) dataSource).getPaths())) {
+			return 0;
+		}
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
 

@@ -183,6 +183,12 @@ public abstract class FsContent extends AbstractFile {
 			//special case for 0-size file
 			return 0;
 		}
+		
+		Content dataSource = getDataSource();
+		if (dataSource instanceof Image && ((Image) dataSource).getPaths() == null || ((Image) dataSource).getPaths().length == 0) {
+			return 0;
+		}
+		
 		loadFileHandle();
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
