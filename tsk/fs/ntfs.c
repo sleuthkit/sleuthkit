@@ -1860,6 +1860,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         return TSK_ERR;
     }
 
+    // Stores the already cycled attribute-lengths
+    uint32_t cycledLength = 0;
 
     /* Cycle through the list of attributes 
      * There are 16 bytes in the non-union part of 
@@ -2007,11 +2009,17 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             }
 
             // set the details in the fs_attr structure
-            if (tsk_fs_attr_set_str(fs_file, fs_attr, name, type,
+            if (tsk_fs_attr_set_str_offset(fs_file, fs_attr, name, type,
                     id_new, (void *) ((uintptr_t) attr +
                         tsk_getu16(fs->endian,
                             attr->c.r.soff)), tsk_getu32(fs->endian,
-                        attr->c.r.ssize))) {
+                        attr->c.r.ssize), 
+                        (ntfs->root_mft_addr + a_attrinum * ntfs->mft_rsize_b)
+                        + cycledLength
+                        + tsk_getu16(fs->endian,  attr->c.r.soff)
+                        + tsk_getu16(fs->endian,  attr->name_off)
+                        + tsk_getu32(fs->endian,  attr->len)
+                        )) {
                 tsk_error_errstr2_concat("- proc_attrseq");
                 return TSK_ERR;
             }
@@ -2472,6 +2480,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 return TSK_ERR;
             }
         }
+        cycledLength += tsk_getu32(fs->endian, attr->len);
     }
 
 
