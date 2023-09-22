@@ -1821,6 +1821,7 @@ typedef struct {
  * This is called by copy_inode and proc_attrlist.
  *
  * @param ntfs File system to analyze
+ * @param mft MFT entry the attribute came from
  * @param fs_file Generic metadata structure to add the attribute info to
  * @param attrseq Start of the attribute sequence to analyze
  * @param len Length of the attribute sequence buffer
@@ -1832,7 +1833,7 @@ typedef struct {
  * @returns Error code
  */
 static TSK_RETVAL_ENUM
-ntfs_proc_attrseq(NTFS_INFO * ntfs,
+ntfs_proc_attrseq(NTFS_INFO * ntfs, ntfs_mft * mft,
     TSK_FS_FILE * fs_file, const ntfs_attr * a_attrseq, size_t len,
     TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP * a_attr_map, TSK_STACK * a_seen_inum_list)
 {
@@ -2008,17 +2009,18 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 return TSK_ERR;
             }
 
+            TSK_OFF_T contentOffset = (ntfs->root_mft_addr + a_attrinum * ntfs->mft_rsize_b)
+                        + cycledLength
+                        + tsk_getu16(fs->endian,  attr->c.r.soff) 
+                        + tsk_getu16(fs->endian,  mft->attr_off);
+
             // set the details in the fs_attr structure
             if (tsk_fs_attr_set_str_offset(fs_file, fs_attr, name, type,
                     id_new, (void *) ((uintptr_t) attr +
                         tsk_getu16(fs->endian,
                             attr->c.r.soff)), tsk_getu32(fs->endian,
                         attr->c.r.ssize), 
-                        (ntfs->root_mft_addr + a_attrinum * ntfs->mft_rsize_b)
-                        + cycledLength
-                        + tsk_getu16(fs->endian,  attr->c.r.soff)
-                        + tsk_getu16(fs->endian,  attr->name_off)
-                        + tsk_getu32(fs->endian,  attr->len)
+                        contentOffset
                         )) {
                 tsk_error_errstr2_concat("- proc_attrseq");
                 return TSK_ERR;
@@ -2369,6 +2371,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             }
             ntfs_attr_fname *fname = (ntfs_attr_fname *) ((uintptr_t) attr + attr_off);
             if (fname->nspace == NTFS_FNAME_DOS) {
+                cycledLength += tsk_getu32(fs->endian, attr->len);
                 continue;
             }
 
@@ -2834,7 +2837,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         }
 
         if ((retval =
-                ntfs_proc_attrseq(ntfs, fs_file, (ntfs_attr *) ((uintptr_t)
+                ntfs_proc_attrseq(ntfs, mft, fs_file, (ntfs_attr *) ((uintptr_t)
                         mft + tsk_getu16(fs->endian, mft->attr_off)),
                     ntfs->mft_rsize_b - tsk_getu16(fs->endian,
                         mft->attr_off), mftToDo[a], map, processed_inum_list)) != TSK_OK) {
@@ -2973,7 +2976,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     attr =
         (ntfs_attr *) ((uintptr_t) mft + tsk_getu16(fs->endian,
             mft->attr_off));
-    if ((retval = ntfs_proc_attrseq(ntfs, a_fs_file, attr,
+    if ((retval = ntfs_proc_attrseq(ntfs, mft, a_fs_file, attr,
                 ntfs->mft_rsize_b - tsk_getu16(fs->endian,
                     mft->attr_off), a_fs_file->meta->addr,
                 NULL, NULL)) != TSK_OK) {
