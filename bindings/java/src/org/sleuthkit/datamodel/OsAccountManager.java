@@ -1904,6 +1904,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
+	@Beta
 	private OsAccountUpdateResult updateCoreLocalLinuxOsAccountAttributes(OsAccount osAccount, String uid, String loginName, CaseDbTransaction trans) throws TskCoreException {
 		
 		// Update the account core data
