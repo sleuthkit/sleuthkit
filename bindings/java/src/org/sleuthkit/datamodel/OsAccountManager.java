@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.base.Strings;
+import com.google.common.annotations.Beta;
 import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -331,6 +332,84 @@ public final class OsAccountManager {
 			}
 		}
 	}
+	
+	/**
+	 * Creates a local OS account with Linux-specific data. If an account already
+	 * exists with the given id or realm/login, then the existing OS account is
+	 * returned.
+	 *
+	 * @param uid       Account uid, can be null if loginName is supplied.
+	 * @param loginName Login name, can be null if uid is supplied.
+	 * @param referringHost     The associated host.
+	 *
+	 * @return OsAccount.
+	 *
+	 * @throws TskCoreException                     If there is an error in
+	 *                                              creating the OSAccount.
+	 *
+	 */
+	@Beta
+	public OsAccount newLocalLinuxOsAccount(String uid, String loginName, Host referringHost) throws TskCoreException {
+
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to create a local OS account.");
+		}
+		
+		// Ensure at least one of the two is supplied - a non-null unique id or a login name
+		if (StringUtils.isBlank(uid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
+		}
+		
+		OsAccountRealm localRealm = db.getOsAccountRealmManager().newLocalLinuxRealm(referringHost);
+		
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			
+			// try to create account
+			try {
+				OsAccount account = newOsAccount(uid, loginName, localRealm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				trans.commit();
+				trans = null;
+				return account;
+			} catch (SQLException ex) {
+				// Rollback the transaction before proceeding
+				trans.rollback();
+				trans = null;
+
+				// Create may fail if an OsAccount already exists. 
+				Optional<OsAccount> osAccount;
+
+				// First search for account by uniqueId
+				if (!Strings.isNullOrEmpty(uid)) {
+					osAccount = getOsAccountByAddr(uid, localRealm);
+					if (osAccount.isPresent()) {
+						return osAccount.get();
+					}
+				}
+
+				// search by loginName
+				if (!Strings.isNullOrEmpty(loginName)) {
+					osAccount = getOsAccountByLoginName(loginName, localRealm);
+					if (osAccount.isPresent()) {
+						return osAccount.get();
+					}
+				}
+
+				// create failed for some other reason, throw an exception
+				throw new TskCoreException(String.format("Error creating OsAccount with uid = %s, loginName = %s, realm = %s, referring host = %s",
+						(uid != null) ? uid : "Null",
+						(loginName != null) ? loginName : "Null",
+						(!localRealm.getRealmNames().isEmpty()) ? localRealm.getRealmNames().get(0) : "Null",
+						localRealm.getScopeHost().isPresent() ? localRealm.getScopeHost().get().getName() : "Null"), ex);
+
+			}
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
+
 
 	/**
 	 * Creates a OS account with the given uid, name, and realm.
@@ -426,7 +505,7 @@ public final class OsAccountManager {
 
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 				+ " accounts.realm_id, accounts.addr, accounts.signature, "
-				+ "	accounts.type, accounts.status, accounts.admin, accounts.created_date, accounts.db_status, "
+				+ "	accounts.type, accounts.status, accounts.created_date, accounts.db_status, "
 				+ " realms.realm_name as realm_name, realms.realm_addr as realm_addr, realms.realm_signature, realms.scope_host_id, realms.scope_confidence, realms.db_status as realm_db_status "
 				+ " FROM tsk_os_accounts as accounts"
 				+ "		LEFT JOIN tsk_os_account_realms as realms"
@@ -1213,6 +1292,52 @@ public final class OsAccountManager {
 	}
 
 	/**
+	 * Gets an OS account using Linux-specific data.
+	 *
+	 * @param uid           Account UID, maybe null if loginName is supplied.
+	 * @param loginName     Login name, maybe null if sid is supplied.
+	 * @param referringHost Host referring the account.
+	 *
+	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount
+	 *         is found.
+	 *
+	 * @throws TskCoreException    If there is an error getting the account.
+	 */
+	@Beta
+	public Optional<OsAccount> getLocalLinuxOsAccount(String uid, String loginName, Host referringHost) throws TskCoreException {
+
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to get an account.");
+		}
+
+		// ensure at least one of the two is supplied - a non-null uid or a login name
+		if (StringUtils.isBlank(uid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot get an OS account with both UID and loginName as null.");
+		}
+			
+		// First get the local realm
+		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getLocalLinuxRealm(referringHost);
+		if (!realm.isPresent()) {
+			return Optional.empty();
+		}
+
+		// Search by UID
+		if (!Strings.isNullOrEmpty(uid)) {
+			Optional<OsAccount> account = this.getOsAccountByAddr(uid, realm.get());
+			if (account.isPresent()) {
+				return account;
+			}
+		}
+
+		// Search by login name
+		if (!Strings.isNullOrEmpty(loginName)) {
+			return this.getOsAccountByLoginName(loginName, realm.get());
+		} else {
+			return Optional.empty();
+		}
+	}	
+	
+	/**
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.
 	 *
@@ -1737,6 +1862,70 @@ public final class OsAccountManager {
 	 * A column is updated only if its current value is null and a non-null
 	 * value has been specified.
 	 *
+	 * @param osAccount     OsAccount that needs to be updated in the database.
+	 * @param uid           Account ID, may be null.
+	 * @param loginName     Login name, may be null.
+	 *
+	 * @return OsAccountUpdateResult Account update status, and the updated
+	 *         account.
+	 *
+	 * @throws TskCoreException If there is a database error or if the updated
+	 *                          information conflicts with an existing account.
+	 */
+	public OsAccountUpdateResult updateCoreLocalLinuxOsAccountAttributes(OsAccount osAccount, String uid, String loginName) throws TskCoreException {
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			OsAccountUpdateResult updateStatus = this.updateCoreLocalLinuxOsAccountAttributes(osAccount, uid, loginName, trans);
+
+			trans.commit();
+			trans = null;
+			return updateStatus;
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
+	
+	/**
+	 * Update the address and/or login name for the specified account in the
+	 * database.
+	 *
+	 * A column is updated only if it's current value is null and a non-null
+	 * value has been specified.
+	 *
+	 * @param osAccount  OsAccount that needs to be updated in the database.
+	 * @param uid        Account ID, may be null.
+	 * @param loginName  Login name, may be null.
+	 *
+	 * @return OsAccountUpdateResult Account update status, and the updated
+	 *         account.
+	 *
+	 * @throws TskCoreException If there is a database error or if the updated
+	 *                          information conflicts with an existing account.
+	 */
+	@Beta
+	private OsAccountUpdateResult updateCoreLocalLinuxOsAccountAttributes(OsAccount osAccount, String uid, String loginName, CaseDbTransaction trans) throws TskCoreException {
+		
+		// Update the account core data
+		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, uid, loginName, trans);
+
+		Optional<OsAccount> updatedAccount = updateStatus.getUpdatedAccount();
+		if (updatedAccount.isPresent()) {
+			// After updating account data, check if there is matching account to merge
+			mergeOsAccount(updatedAccount.get(), trans);
+		}
+		
+		return updateStatus;
+	}
+	
+	/**
+	 * Update the address and/or login name for the specified account in the
+	 * database.
+	 *
+	 * A column is updated only if its current value is null and a non-null
+	 * value has been specified.
+	 *
 	 *
 	 * NOTE: Will not merge accounts if the updated information conflicts with
 	 * an existing account (such as adding an ID to an account that has only a
@@ -1786,7 +1975,32 @@ public final class OsAccountManager {
 			String newLoginName = currAccount.getLoginName().orElse(null);
 
 			String newSignature = getOsAccountSignature(newAddress, newLoginName);
-			updateAccountSignature(osAccount.getId(), newSignature, connection);
+			
+			try {
+				updateAccountSignature(osAccount.getId(), newSignature, connection);
+			} catch (SQLException ex) {
+				// There's a slight chance that we're in the case where we are trying to add an addr to an OS account
+				// with only a name where the addr already exists on a different OS account. This will cause a unique
+				// constraint failure in updateAccountSignature(). This is unlikely to happen in normal use
+				// since we lookup OS accounts by addr before name when we have both (i.e., it would be strange to have an
+				// OsAccount in hand with only the loginName set when we also know the addr). 
+				// Correctly handling every case here is non-trivial, so for the moment only look for the specific case where
+				// we had an OsAccount with just an addr and and OsAccount with just a login name that we now 
+				// want to combine.
+				if (osAccount.getAddr().isEmpty() && !StringUtils.isBlank(address)) {
+					OsAccountRealm realm = db.getOsAccountRealmManager().getRealmByRealmId(osAccount.getRealmId(), connection);
+					Optional<OsAccount> matchingAddrAcct = getOsAccountByAddr(address, realm.getScopeHost().get(), connection);
+					if (matchingAddrAcct.isEmpty() 
+							|| matchingAddrAcct.get().getId() == osAccount.getId()
+							|| matchingAddrAcct.get().getLoginName().isPresent()) {
+						throw ex; // Rethrow the original error
+					}
+					
+					// What we should have is osAccount with just a loginName and matchingAddrAcct with 
+					// just an address, so merge them.
+					mergeOsAccounts(matchingAddrAcct.get(), osAccount, trans);
+				}
+			}
 
 			// get the updated account from database
 			updatedAccount = getOsAccountByObjectId(osAccount.getId(), connection);
@@ -1796,7 +2010,7 @@ public final class OsAccountManager {
 
 			return new OsAccountUpdateResult(updateStatusCode, updatedAccount);
 
-		} catch (SQLException ex) {
+		} catch (SQLException ex) {			
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
 		}
 	}
