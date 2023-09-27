@@ -66,6 +66,7 @@ class TskCaseDbBridge {
     private final Queue<FileInfo> batchedFiles = new LinkedList<>();
     private final Queue<LayoutRangeInfo> batchedLayoutRanges = new LinkedList<>();
     private final List<Long> layoutFileIds = new ArrayList<>();
+    private final Map<Long, VirtualDirectory> unallocFileDirs = new HashMap<>();
     
     TskCaseDbBridge(SleuthkitCase caseDb, AddDataSourceCallbacks addDataSourceCallbacks, Host host) {
         this.caseDb = caseDb;
@@ -384,11 +385,20 @@ class TskCaseDbBridge {
 						} else {
 							// account not found in the database,  create the account and add to map
 							// Currently we expect only NTFS systems to provide a windows style SID as owner id.
-							OsAccount newAccount = caseDb.getOsAccountManager().newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+							OsAccountManager accountMgr = caseDb.getOsAccountManager();
+							OsAccount newAccount = accountMgr.newWindowsOsAccount(ownerUid, null, null, imageHost, OsAccountRealm.RealmScope.UNKNOWN);
+							Content ds = caseDb.getContentById(fileInfo.dataSourceObjId); // Data sources are cached so this will only access the database once
+							if (ds instanceof DataSource) {
+								accountMgr.newOsAccountInstance(newAccount, (DataSource)ds, OsAccountInstance.OsAccountInstanceType.ACCESSED);
+							}
 							ownerIdToAccountMap.put(ownerUid, newAccount);
 						}
 					} catch (NotUserSIDException ex) {
 						// if the owner SID is not a user SID, set the owner account to null
+						ownerIdToAccountMap.put(ownerUid, null);
+					} catch (Exception ex) {
+						// catch other exceptions to avoid skiping add batched files loop below
+						logger.log(Level.WARNING, "Error mapping ownerId " + ownerUid + " to account", ex);
 						ownerIdToAccountMap.put(ownerUid, null);
 					}
 				}
@@ -419,6 +429,14 @@ class TskCaseDbBridge {
 						}
 					}
 					
+					// We've seen a case where the root folder comes in with an undefined meta type.
+					// We've also seen a case where it comes in as a regular file. The root folder should always be
+					// a directory so it will be cached properly and will not cause errors later for
+					// being an unexpected type.
+					if ((fileInfo.parentObjId == fileInfo.fsObjId)
+							&& (fileInfo.metaType != TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue())) {
+						fileInfo.metaType = TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue();
+					}
 					
                     long objId = addFileToDb(computedParentObjId, 
                         fileInfo.fsObjId, fileInfo.dataSourceObjId,
@@ -442,7 +460,7 @@ class TskCaseDbBridge {
                         fsIdToRootDir.put(fileInfo.fsObjId, objId);
                     }
 
-                    // If the file is a directory, cache the object ID
+                    // If the file is a directory, cache the object ID.
                     if ((fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
                             || (fileInfo.metaType == TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()))
                             && (fileInfo.name != null)
@@ -470,7 +488,7 @@ class TskCaseDbBridge {
                 // Exception firewall to prevent unexpected return to the native code
                 logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
             }
-        } catch (TskCoreException ex) {
+        } catch (Throwable ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
             return -1;
@@ -530,6 +548,12 @@ class TskCaseDbBridge {
             if (fsObjId == 0) {
                 fsObjIdForDb = null;
             }
+			
+            // If the layout file is in an $Unalloc folder, add the name. Otherwise use "/".
+            String parentPath = "/";
+            if (unallocFileDirs.containsKey(parentObjId)) {
+                parentPath = "/" + unallocFileDirs.get(parentObjId).getName() + "/";
+            }
             
             beginTransaction();
             long objId = addFileToDb(parentObjId, 
@@ -545,7 +569,7 @@ class TskCaseDbBridge {
                 null, null, null, null,
                 null, null, null,
                 null, TskData.FileKnown.UNKNOWN,
-                null, null, null, OsAccount.NO_ACCOUNT,
+                parentPath, null, null, OsAccount.NO_ACCOUNT,
                 true, trans);
             commitTransaction();
 
@@ -635,6 +659,7 @@ class TskCaseDbBridge {
             beginTransaction();
             VirtualDirectory dir = caseDb.addVirtualDirectory(fsIdToRootDir.get(fsObjId), name, trans);
             commitTransaction();
+            unallocFileDirs.put(dir.getId(), dir);
             addDataSourceCallbacks.onFilesAdded(Arrays.asList(dir.getId()));
             return dir.getId();
         } catch (TskCoreException ex) {
@@ -858,8 +883,8 @@ class TskCaseDbBridge {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = caseDb.addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 				
-			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, owner_uid, os_account_obj_id)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
+			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, owner_uid, os_account_obj_id, collected)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(fileInsert, Statement.NO_GENERATED_KEYS);			
 			preparedStatement.clearParameters();
 			
@@ -950,6 +975,8 @@ class TskCaseDbBridge {
 				preparedStatement.setNull(28, java.sql.Types.BIGINT);
 			}
 			
+			preparedStatement.setLong(29, TskData.CollectedStatus.UNKNOWN.getType());
+			
 			connection.executeUpdate(preparedStatement);
 
 			// If this is not a slack file create the timeline events
@@ -957,12 +984,12 @@ class TskCaseDbBridge {
 					&& TskData.TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType() != fsType
 					&& (!name.equals(".")) && (!name.equals(".."))) {
 				TimelineManager timelineManager = caseDb.getTimelineManager();
-				DerivedFile derivedFile = new DerivedFile(caseDb, objectId, dataSourceObjId, name,
+				DerivedFile derivedFile = new DerivedFile(caseDb, objectId, dataSourceObjId, fsObjId, name,
 						TskData.TSK_FS_NAME_TYPE_ENUM.valueOf((short) dirType),
 						TskData.TSK_FS_META_TYPE_ENUM.valueOf((short) metaType),
 						TskData.TSK_FS_NAME_FLAG_ENUM.valueOf(dirFlags),
 						(short) metaFlags,
-						size, ctime, crtime, atime, mtime, null, null, null, escaped_path, null, parentObjId, null, null, extension, ownerUid, ownerAcctObjId);
+						size, ctime, crtime, atime, mtime, null, null, null, null, escaped_path, null, parentObjId, null, null, extension, ownerUid, ownerAcctObjId);
 
 				timelineManager.addEventsForNewFileQuiet(derivedFile, connection);
 			}

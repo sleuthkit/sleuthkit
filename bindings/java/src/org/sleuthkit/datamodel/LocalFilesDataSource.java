@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,13 +63,14 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 * @param timezone           The timezone for the data source.
 	 * @param md5Hash            The MD5 hash for the virtual directory.
 	 * @param sha256Hash         The SHA-256 hash for the virtual directory.
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state for the virtual directory
 	 * @param parentPath         The parent path for the virtual directory,
 	 *                           should be "/" if the virtual directory is a
 	 *                           data source.
 	 */
-	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, String sha256Hash, TskData.FileKnown knownState, String parentPath) {
-		super(db, objId, dataSourceObjectId, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, knownState, parentPath);
+	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, String sha256Hash, String sha1Hash, TskData.FileKnown knownState, String parentPath) {
+		super(db, objId, dataSourceObjectId, null, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, sha1Hash, knownState, parentPath);
 		this.objectId = objId;
 		this.deviceId = deviceId;
 		this.timezone = timezone;
@@ -180,6 +181,11 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 		}
 
 		return contentSize;
+	}
+	
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		return "/" + getName();
 	}
 
 	/**
@@ -315,6 +321,34 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	}
 	
 	/**
+	 * Accepts a content visitor (Visitor design pattern).
+	 *
+	 * @param <T>     The type returned by the visitor.
+	 * @param visitor A ContentVisitor supplying an algorithm to run using this
+	 *                virtual directory as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+	
+	/**
+	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
+	 *
+	 * @param <T>     The type returned by the visitor.
+	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
+	 *                this virtual directory as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+	
+	/**
 	 * Constructs a local/logical files and/or directories data source.
 	 *
 	 * @param db                 The case database.
@@ -342,6 +376,6 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 */
 	@Deprecated
 	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, TskData.FileKnown knownState, String parentPath) {
-		this(db, objId, dataSourceObjectId, deviceId, name, dirType, metaType, dirFlag, metaFlags, timezone, md5Hash, null, knownState, parentPath);
+		this(db, objId, dataSourceObjectId, deviceId, name, dirType, metaType, dirFlag, metaFlags, timezone, md5Hash, null, null, knownState, parentPath);
 	}	
 }

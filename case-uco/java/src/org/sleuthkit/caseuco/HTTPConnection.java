@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,5 +33,9 @@ class HTTPConnection extends Facet {
     HTTPConnection setHttpRequestHeader(String httpRequestHeader) {
         this.httpRequestHeader = httpRequestHeader;
         return this;
+    }
+
+    String getHttpRequestHeader() {
+        return httpRequestHeader;
     }
 }

@@ -1,15 +1,15 @@
 /*
- * Sleuth Kit Data Model
- * 
- * Copyright 2020 Basis Technology Corp.
+ * SleuthKit Java Bindings
+ *
+ * Copyright 2023 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,18 +21,18 @@ package org.sleuthkit.datamodel;
 import java.util.Optional;
 
 /**
- *
- * Defines an interface implemented by data source specific events published by
- * Sleuthkit. These events are applicable to single data source.
+ * Custom provider for bytes of an abstract file.
  */
-public interface TskDataSourceEvent {
+public interface ContentStreamProvider {
 
 	/**
-	 * Returns the object id of the data source that the event pertains to.
+	 * Provides a content stream for a content object or empty if this provider
+	 * has none to provide.
 	 *
-	 * All data in an event should pertain to a single data source.
+	 * @param content The content.
 	 *
-	 * @return Data source object id.
+	 * @return The content stream or empty if no stream can be provided for this
+	 *         content.
 	 */
-	public Optional<Long> getDataSourceId();
+	Optional<ContentProviderStream> getContentStream(Content content) throws TskCoreException;
 }

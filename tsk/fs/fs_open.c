@@ -25,6 +25,9 @@
  --*/
 
 #include "tsk_fs_i.h"
+#include "tsk/util/detect_encryption.h"
+#include "tsk/img/unsupported_types.h"
+#include "tsk/img/logical_img.h"
 
 /**
  * \file fs_open.c
@@ -144,13 +147,27 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
         { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }
     };
-
     if (a_img_info == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("tsk_fs_open_img: Null image handle");
         return NULL;
     }
+
+	/* If the image is type IMG_DIR_INFO, then the file system is
+	 * automatically the logical directory file system type. It is an
+	 * error to try to use any other file system type in that case.
+	 */
+	if (a_img_info->itype == TSK_IMG_TYPE_LOGICAL) {
+		if (!(a_ftype == TSK_FS_TYPE_DETECT || a_ftype == TSK_FS_TYPE_LOGICAL)) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_ARG);
+			tsk_error_set_errstr("tsk_fs_open_img: Incompatable file system type given for logical file image");
+			return NULL;
+		}
+
+		return logical_fs_open(a_img_info);
+	}
 
     /* We will try different file systems ...
      * We need to try all of them in case more than one matches
@@ -180,7 +197,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                     fs_first->close(fs_first);
                     fs_info->close(fs_info);
                     tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                    tsk_error_set_errno(TSK_ERR_FS_MULTTYPE);
                     tsk_error_set_errstr(
                         "%s or %s", FS_OPENERS[i].name, name_first);
                     return NULL;
@@ -194,7 +211,43 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 
         if (fs_first == NULL) {
             tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+
+            // If we're still at the start of the image and haven't identified any volume systems or file
+            // systems, check if the image type is a known unsupported type.
+            int unsupportedSignatureFound = 0;
+            if (a_offset == 0) {
+                char * imageType = detectUnsupportedImageType(a_img_info);
+                if (imageType != NULL) {
+                    unsupportedSignatureFound = 1;
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
+                    tsk_error_set_errstr("%s", imageType);
+                    free(imageType);
+                }
+            }
+
+            if (!unsupportedSignatureFound) {
+                // Check if the file system appears to be encrypted
+                encryption_detected_result* result = detectVolumeEncryption(a_img_info, a_offset);
+                if (result != NULL) {
+                    if (result->encryptionType == ENCRYPTION_DETECTED_SIGNATURE) {
+                        tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                        tsk_error_set_errstr("%s", result->desc);
+                    }
+                    else if (result->encryptionType == ENCRYPTION_DETECTED_ENTROPY) {
+                        tsk_error_set_errno(TSK_ERR_FS_POSSIBLY_ENCRYPTED);
+                        tsk_error_set_errstr("%s", result->desc);
+                    }
+                    else {
+                        tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                    }
+                    free(result);
+                    result = NULL;
+                }
+                else {
+                    tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                }
+            }
         }
         return fs_first;
     }

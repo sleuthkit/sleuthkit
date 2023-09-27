@@ -38,13 +38,13 @@ class TSKPool {
 
   virtual ~TSKPool() = default;
 
-  inline const Guid &uuid() const { return _uuid; }
+  inline const TSKGuid &uuid() const { return _uuid; }
 
   inline uint32_t block_size() const noexcept { return _block_size; }
   inline uint32_t dev_block_size() const noexcept { return _dev_block_size; }
   inline uint64_t num_blocks() const noexcept { return _num_blocks; }
   inline uint64_t first_img_offset() const noexcept {
-      if (_members.size() >= 1) {
+      if (!_members.empty()) {
           return _members[0].second;
       }
       return 0;
@@ -67,7 +67,7 @@ class TSKPool {
   TSKPool(std::vector<img_t> &&imgs) noexcept : _members{std::move(imgs)} {}
   
   std::vector<img_t> _members{};
-  Guid _uuid{};
+  TSKGuid _uuid{};
   uint64_t _num_blocks;
   int _num_vols;
   uint32_t _block_size{};

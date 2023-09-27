@@ -186,8 +186,6 @@ tsk_vs_part_free(TSK_VS_INFO * a_vs)
         part = part2;
     }
     a_vs->part_list = NULL;
-
-    return;
 }
 
 /**

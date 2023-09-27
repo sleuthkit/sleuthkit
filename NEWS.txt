@@ -1,3 +1,63 @@
+---------------- VERSION 4.12.1 --------------
+C/C++:
+- Bug fixes from Luis Nassif and Joachim Metz
+- Added check to stop for very large folders to prevent memory exhausion
+
+Java:
+- Added File Repository concept for files to be stored in another location
+- Schema updated to 9.4
+- Fixed OS Account merge bug and now fire events when accounts are merged
+
+
+---------------- VERSION 4.12.0 --------------
+- There was a 1-year gap since 4.11.1 and the git log has 441 commits in that timeframe. 
+- Many for small fixes.  
+- This set of release notes is much more of an overview than other releases
+
+What's New:
+- LVM Support (non-Windows) from Joachim Metz
+- Logical File System support (a folder structure is parsed by TSK libraries) from Ann Priestman (Basis)
+
+What's Changed:
+- Lots of bug fixes from the Basis team and Joachim Metz
+- Additional fixes from Eran-YT, msuhanov, Joel Uckelman, Aleks L, dschoemantruter
+- General themes of C/C++ bounds checks and Java improvements to OS Accounts, Ingest jobs, CaseDbAccessManager, and much more.
+
+
+
+---------------- VERSION 4.11.1 --------------
+
+C/C++:
+- Several fixes from Joachim Metz
+- NTFS Decompression bug fix from Kim Stone and Joel Uckelman
+
+Java:
+- Fixed connection leak when making OS Accounts in bridge
+- OsAccount updates for instance types and special Windows SIDs
+- Fixed issue with duplicate value in Japanese timeline translation
+
+
+---------------- VERSION 4.11.0 --------------
+C/C++:
+- Added checks at various layers to detect encrypted file systems and disks to give more useful error messages.
+- Added checks to detect file formats that are not supported (such as AD1, ZIP, etc.) to give more useful error messages.
+- Added tsk_imageinfo tool that detects if an image is supported by TSK and if it is encrypted.
+- Add numerous bound checks from Joachim Metz.
+- Clarified licenses as pointed out by Joachim Metz.
+
+Java:
+- Updated from Schema 8.6 to 9.1.
+- Added tables and classes for OS Accounts and Realms (Domains).
+- Added tables and classes for Host Addresses (IP, MAC, etc.).
+- Added tables and classes for Analysis Results vs Data Artifacts by adding onto BlackboardArtifacts.
+- Added tables and classes for Host and Person to make it easier to group data sources.
+- Added static types for standard artifact types.
+- Added File Attribute table to allow custom information to be stored for each file.
+- Made ordering of getting lock and connection consistent.
+- Made the findFile methods more efficient by using extension (which is indexed).
+
+
+
 ---------------- VERSION 4.10.2 --------------
 C/C++
 - Added support for Ext4 inline data

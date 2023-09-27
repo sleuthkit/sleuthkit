@@ -198,7 +198,7 @@ typedef struct {
 
 static uint8_t
 hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t nodesize,
     TSK_OFF_T key_off, void *ptr)
 {
     HFS_DIR_OPEN_META_INFO *info = (HFS_DIR_OPEN_META_INFO *) ptr;
@@ -233,7 +233,19 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                 cur_key->parent_cnid) > info->cnid) {
             return HFS_BTREE_CB_LEAF_STOP;
         }
+	// Need at least 2 bytes for key_len
+        if (cur_keylen < 2) {
+            tsk_error_set_errno(TSK_ERR_FS_GENFS);
+            tsk_error_set_errstr("hfs_dir_open_meta: cur_keylen value out of bounds");
+            return HFS_BTREE_CB_ERR;
+        }
         rec_off2 = 2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
+
+        if ((nodesize < 2) || (rec_off2 >= nodesize - 2)) {
+            tsk_error_set_errno(TSK_ERR_FS_GENFS);
+            tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+            return HFS_BTREE_CB_ERR;
+        }
         rec_type = tsk_getu16(hfs->fs_info.endian, &rec_buf[rec_off2]);
 
         // Catalog entry is for a file
@@ -246,6 +258,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This will link the folder to its parent, which is the ".." entry */
         else if (rec_type == HFS_FOLDER_THREAD) {
+            if ((nodesize < sizeof(hfs_thread)) || (rec_off2 > nodesize - sizeof(hfs_thread))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
             hfs_thread *thread = (hfs_thread *) & rec_buf[rec_off2];
             strcpy(info->fs_name->name, "..");
             info->fs_name->meta_addr =
@@ -256,6 +273,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This is a folder in the folder */
         else if (rec_type == HFS_FOLDER_RECORD) {
+            if ((nodesize < sizeof(hfs_folder)) || (rec_off2 > nodesize - sizeof(hfs_folder))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
             hfs_folder *folder = (hfs_folder *) & rec_buf[rec_off2];
 
             info->fs_name->meta_addr =
@@ -283,6 +305,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This is a normal file in the folder */
         else if (rec_type == HFS_FILE_RECORD) {
+            if ((nodesize < sizeof(hfs_file)) || (rec_off2 > nodesize - sizeof(hfs_file))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
             hfs_file *file = (hfs_file *) & rec_buf[rec_off2];
             // This could be a hard link.  We need to test this CNID, and follow it if necessary.
             unsigned char is_err;
@@ -367,11 +394,12 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
 * structure or a new structure.
 * @param a_addr Address of directory to process.
+* @param recursion_depth Recursion depth to limit the number of self-calls
 * @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
 hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
     uint32_t cnid;              /* catalog node ID of the entry (= inum) */

@@ -38,6 +38,7 @@ TskAuto::TskAuto()
 TskAuto::~TskAuto()
 {
     closeImage();
+	m_exteralFsInfoList.clear(); // Don't close the file systems that were passed in
     m_tag = 0;
 }
 
@@ -184,6 +185,17 @@ void
 }
 
 /**
+ * Store a list of pointers to open file systems to use when calling findFilesInImg
+ * instead of opening a new copy.
+ */
+void
+TskAuto::setExternalFileSystemList(const std::list<TSK_FS_INFO *>& fsInfoList)
+{
+	m_exteralFsInfoList.resize(fsInfoList.size());
+	m_exteralFsInfoList.assign(fsInfoList.begin(), fsInfoList.end());
+}
+
+/**
  * @return The size of the image in bytes or -1 if the 
  * image is not open.
  */
@@ -248,6 +260,10 @@ TskAuto::findFilesInImg()
         registerError();
         return 1;
     }
+
+	if (m_img_info->itype == TSK_IMG_TYPE_LOGICAL) {
+		return findFilesInFs(0, TSK_FS_TYPE_LOGICAL);
+	}
 
     return findFilesInVs(0);
 }
@@ -322,8 +338,18 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     TSK_VS_INFO *vs_info;
     // Use mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
-        /* we're going to ignore this error to avoid confusion if the
-         * fs_open passes. */
+
+        /* If the error code is for encryption, we will register it.
+         * If the error code is for multiple volume systems found, register the error
+         * and return without trying to load a file system. Otherwise,
+         * ignore this error to avoid confusion if the fs_open passes. */
+        if (tsk_error_get_errno() == TSK_ERR_VS_ENCRYPTED) {
+            registerError();
+        }
+        else if (tsk_error_get_errno() == TSK_ERR_VS_MULTTYPE) {
+            registerError();
+            return 1;
+        }
         tsk_error_reset();
 
         if(tsk_verbose)
@@ -389,7 +415,7 @@ TskAuto::hasPool(TSK_OFF_T a_start)
     if (pool == nullptr) {
         return false;
     }
-    pool->close(pool);
+    tsk_pool_close(pool);
     return true;
 }
 
@@ -449,7 +475,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
 
             TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
             if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing)) {
-                pool->close(pool);
+                tsk_pool_close(pool);
                 return TSK_STOP;
             }
 
@@ -462,24 +488,31 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                         tsk_fs_close(fs_info);
 
                         if (retval == TSK_STOP) {
-                            pool_img->close(pool_img);
-                            pool->close(pool);
+                            tsk_img_close(pool_img);
+                            tsk_pool_close(pool);
                             return TSK_STOP;
                         }
                     }
                     else {
-                        pool_img->close(pool_img);
-                        pool->close(pool);
-                        tsk_error_set_errstr2(
-                            "findFilesInPool: Error opening APFS file system");
-                        registerError();
-                        return TSK_ERR;
+                        if (vol_info->flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
+                            tsk_error_reset();
+                            tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                            tsk_error_set_errstr(
+                                "Encrypted APFS file system");
+                            tsk_error_set_errstr2("Block: %" PRIdOFF, vol_info->block);
+                            registerError();
+                        }
+                        else {
+                            tsk_error_set_errstr2(
+                                "findFilesInPool: Error opening APFS file system");
+                            registerError();
+                        }
                     }
 
                     tsk_img_close(pool_img);
                 }
                 else {
-                    pool->close(pool);
+                    tsk_pool_close(pool);
                     tsk_error_set_errstr2(
                         "findFilesInPool: Error opening APFS pool");
                     registerError();
@@ -491,7 +524,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         }
     }
     else {
-        pool->close(pool);
+        tsk_pool_close(pool);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_POOL_UNSUPTYPE);
         tsk_error_set_errstr("%d", pool->ctype);
@@ -524,6 +557,18 @@ TSK_RETVAL_ENUM
         registerError();
         return TSK_ERR;
     }
+
+	// If we already have an open copy of this file system, use it
+	for (auto itr = m_exteralFsInfoList.begin(); itr != m_exteralFsInfoList.end(); itr++) {
+		if ((*itr)->offset == a_start) {
+			TSK_FS_INFO *fs_info = *itr;
+			TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+			if (m_errors.empty() == false)
+				return TSK_ERR;
+			else
+				return retval;
+		}
+	}
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
@@ -611,6 +656,18 @@ uint8_t
         registerError();
         return 1;
     }
+
+	// If we already have an open copy of this file system, use it
+	for (auto itr = m_exteralFsInfoList.begin(); itr != m_exteralFsInfoList.end(); itr++) {
+		if ((*itr)->offset == a_start) {
+			TSK_FS_INFO *fs_info = *itr;
+			TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+			if (m_errors.empty() == false)
+				return TSK_ERR;
+			else
+				return retval;
+		}
+	}
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {

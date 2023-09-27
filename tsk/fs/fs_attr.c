@@ -33,6 +33,7 @@
  * They form a linked list and are added to the TSK_FS_META structure
  */
 #include "tsk_fs_i.h"
+#include "tsk_logical_fs.h"
 
 
 /**
@@ -923,9 +924,14 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 }
                 else {
                     ssize_t cnt;
-
-                    cnt = tsk_fs_read_block_decrypt
-                        (fs, addr + len_idx, buf, fs->block_size, fs_attr_run->crypto_id + len_idx);
+					if (fs->ftype == TSK_FS_TYPE_LOGICAL) {
+						// We can't read logical files directly from the image.
+						cnt = logicalfs_read_block(fs, fs_attr->fs_file, addr + len_idx, buf);
+					}
+					else {
+						cnt = tsk_fs_read_block_decrypt
+						(fs, addr + len_idx, buf, fs->block_size, fs_attr_run->crypto_id + len_idx);
+					}
                     if (cnt != fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
@@ -1068,7 +1074,6 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
     }
     // non-resident data
     else if (a_fs_attr->flags & TSK_FS_ATTR_NONRES) {
-		fflush(stderr);
         return tsk_fs_attr_walk_nonres(a_fs_attr, a_flags, a_action,
             a_ptr);
     }
@@ -1101,13 +1106,18 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
     TSK_FS_INFO *fs;
 
     if ((a_fs_attr == NULL) || (a_fs_attr->fs_file == NULL)
-        || (a_fs_attr->fs_file->fs_info == NULL)) {
+        || (a_fs_attr->fs_file->fs_info == NULL) || (a_buf == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
             ("tsk_fs_attr_read: Attribute has null pointers.");
         return -1;
     }
     fs = a_fs_attr->fs_file->fs_info;
+
+	// Handle logical directories separately
+	if (fs->ftype == TSK_FS_TYPE_LOGICAL) {
+		return logicalfs_read(fs, a_fs_attr->fs_file, a_offset, a_len, a_buf);
+	}
 
     /* for compressed data, call the specialized function */
     if (a_fs_attr->flags & TSK_FS_ATTR_COMP) {
@@ -1220,6 +1230,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
              * info out of order and we did not get all of the run info.  We
              * return 0s if data is read from this type of run. */
             else if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
+                if (a_buf == NULL) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
+                    tsk_error_set_errstr("tsk_fs_attr_read - missing a_buf");
+                    return -1;
+                }
                 memset(&a_buf[len_toread - len_remain], 0, len_inrun);
                 if (tsk_verbose)
                     fprintf(stderr,
@@ -1256,11 +1272,11 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
                 // add the byte offset in the block
                 fs_offset_b += byteoffset_toread;
+				cnt =
+					tsk_fs_read_decrypt(fs, fs_offset_b,
+						&a_buf[len_toread - len_remain], len_inrun,
+						data_run_cur->crypto_id + blkoffset_inrun);
 
-                cnt =
-                    tsk_fs_read_decrypt(fs, fs_offset_b,
-                    &a_buf[len_toread - len_remain], len_inrun, 
-                    data_run_cur->crypto_id + blkoffset_inrun);
                 if (cnt != (ssize_t)len_inrun) {
                     if (cnt >= 0) {
                         tsk_error_reset();

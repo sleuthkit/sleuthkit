@@ -69,6 +69,11 @@ extern "C" {
 #define setbit(a,i)     (((uint8_t *)(a))[(i)/NBBY] |= (1<<((i)%NBBY)))
 #endif                          /*  */
 
+/* Threshold to prevent the processing of very large directories.
+ * This is the maximum number of entries in a single directory that will be
+ * processed before bailing out */
+#define MAX_DIR_SIZE_TO_PROCESS 1000000
+
 /* Data structure and action to internally load a file */
     typedef struct {
         char *base;
@@ -141,6 +146,9 @@ extern "C" {
     extern void tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir);
     extern uint8_t tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr, uint32_t hash);
     extern uint32_t tsk_fs_dir_hash(const char *str);
+    extern uint8_t tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
+        TSK_FS_DIR_WALK_FLAG_ENUM a_flags, TSK_FS_DIR_WALK_CB a_action,
+        void *a_ptr, int macro_recursion_depth);
 
     /* Orphan Directory Support */
     TSK_RETVAL_ENUM tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs);
@@ -198,6 +206,7 @@ extern "C" {
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
+	extern TSK_FS_INFO *logical_fs_open(TSK_IMG_INFO *);
 
     /* Specific pool file system routines */
     extern TSK_FS_INFO *apfs_open_auto_detect(TSK_IMG_INFO*, TSK_OFF_T,
@@ -228,7 +237,7 @@ extern "C" {
     extern uint8_t tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         TSK_INUM_T inum, TSK_DADDR_T numblock, int32_t sec_skew);
     extern TSK_RETVAL_ENUM tsk_fs_nofs_dir_open_meta(TSK_FS_INFO * a_fs,
-        TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr);
+        TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr, int recursion_depth);
     extern uint8_t tsk_fs_nofs_jopen(TSK_FS_INFO * a_fs, TSK_INUM_T inum);
     extern uint8_t tsk_fs_nofs_jentry_walk(TSK_FS_INFO * a_fs,
         int a_flags, TSK_FS_JENTRY_WALK_CB a_action, void *a_ptr);

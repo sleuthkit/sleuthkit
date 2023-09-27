@@ -21,10 +21,12 @@ package org.sleuthkit.datamodel;
 import com.google.common.annotations.Beta;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
@@ -122,10 +124,22 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 				? ImmutableSortedSet.of(ROOT_EVENT_TYPE)
 				: this.getParent().getChildren();
 	}
+	
+	/**
+	 * Returns true if the particular instance is deprecated. If deprecated, no
+	 * new timeline event types of this type will be created, but it can be
+	 * shown in the timeline.
+	 *
+	 * @return True if deprecated.
+	 */
+	default boolean isDeprecated() {
+		return false;
+	}
+	
 
 	@Override
 	default int compareTo(TimelineEventType otherType) {
-		return Comparator.comparing(TimelineEventType::getTypeID).compare(this, otherType);
+		return Comparator.comparing(TimelineEventType::getDisplayName).compare(this, otherType);
 	}
 
 	/**
@@ -181,9 +195,18 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 	TimelineEventType ROOT_EVENT_TYPE = new TimelineEventTypeImpl(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
 			HierarchyLevel.ROOT, null) {
+				
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
+			ImmutableSortedSet.Builder<TimelineEventType> builder = ImmutableSortedSet.orderedBy(new Comparator<TimelineEventType>() {
+				@Override
+				public int compare(TimelineEventType o1, TimelineEventType o2) {
+					return ((Long) o1.getTypeID()).compareTo(o2.getTypeID());
+				}
+			});
+
+			builder.add(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
+			return builder.build();
 		}
 	};
 
@@ -203,8 +226,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 		@Override
 		public SortedSet< TimelineEventType> getChildren() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE,
-					WEB_COOKIE_ACCESSED,
-					WEB_COOKIE_END, WEB_BOOKMARK,
+					WEB_COOKIE_ACCESSED, WEB_COOKIE_END, WEB_BOOKMARK,
 					WEB_HISTORY, WEB_SEARCH, WEB_FORM_AUTOFILL,
 					WEB_FORM_ADDRESSES, WEB_FORM_ADDRESSES_MODIFIED,
 					WEB_FORM_AUTOFILL_ACCESSED, WEB_CACHE, WEB_HISTORY_CREATED);
@@ -218,25 +240,17 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet<TimelineEventType> getChildren() {
-			ImmutableSortedSet.Builder<TimelineEventType> builder = ImmutableSortedSet.orderedBy(new Comparator<TimelineEventType>() {
-				@Override
-				public int compare(TimelineEventType o1, TimelineEventType o2) {
-					return o1.getDisplayName().compareTo(o2.getDisplayName());
-				}
-			});
-
-			builder.add(CALL_LOG, CALL_LOG_END, DEVICES_ATTACHED, EMAIL, EMAIL_RCVD,
+			return ImmutableSortedSet.of(CALL_LOG, CALL_LOG_END, DEVICES_ATTACHED, EMAIL, EMAIL_RCVD,
 					EXIF, GPS_BOOKMARK, GPS_LAST_KNOWN_LOCATION, GPS_TRACKPOINT,
 					GPS_ROUTE, GPS_SEARCH, GPS_TRACK, INSTALLED_PROGRAM, LOG_ENTRY, MESSAGE,
 					METADATA_LAST_PRINTED, METADATA_LAST_SAVED, METADATA_CREATED, PROGRAM_EXECUTION,
-					RECENT_DOCUMENTS, REGISTRY, BACKUP_EVENT_START, BACKUP_EVENT, BACKUP_EVENT_END,
+					RECENT_DOCUMENTS, REGISTRY, BACKUP_EVENT_START, BACKUP_EVENT_END,
 					BLUETOOTH_PAIRING, CALENDAR_ENTRY_START, CALENDAR_ENTRY_END,
-					DELETE_PROGRAM, DELETE_PROGRAM_DELETED,
-					OS_INFO, WIFI_NETWORK, USER_DEVICE_EVENT, USER_DEVICE_EVENT_START, USER_DEVICE_EVENT_END,
+					PROGRAM_DELETED,
+					OS_INFO, WIFI_NETWORK, USER_DEVICE_EVENT_START, USER_DEVICE_EVENT_END,
 					SERVICE_ACCOUNT, SCREEN_SHOT, PROGRAM_NOTIFICATION,
-					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER, INSTALLED_PROG);
+					BLUETOOTH_PAIRING_ACCESSED, BLUETOOTH_ADAPTER, CUSTOM_ARTIFACT_CATCH_ALL, STANDARD_ARTIFACT_CATCH_ALL, USER_CREATED);
 
-			return builder.build();
 		}
 	};
 
@@ -431,21 +445,19 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
+	
+	// TimelineEventType with id 22 has been deprecated. Trying to reuse 22
+	// may cause backwards combatibility issues and is not recommened. If 22
+	// is reused create upgrade code to reassign event 22 to MISC_TYPE id = 3.
+	int DEPRECATED_OTHER_EVENT_ID = 22;
 
-	//custom event type base type
-	TimelineEventType CUSTOM_TYPES = new TimelineEventTypeImpl(22,
-			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
-			HierarchyLevel.CATEGORY, ROOT_EVENT_TYPE) {
-		@Override
-		public SortedSet< TimelineEventType> getChildren() {
-			return ImmutableSortedSet.of(OTHER, USER_CREATED);
-		}
-	};
-
-	//generic catch all other event
-	TimelineEventType OTHER = new TimelineEventArtifactTypeSingleDescription(23,
+	// Event for any artifact event with an artifact type for which we don't have
+	// a hard-corded event type. In other words, we recognize the artifact type
+	// as a standard artifact type, but we have not updated the Timeline code
+	// to have a corresponding inner TimelineEventType
+	TimelineEventType STANDARD_ARTIFACT_CATCH_ALL = new TimelineEventArtifactTypeSingleDescription(23,
 			getBundle().getString("CustomTypes.other.name"), //NON-NLS
-			CUSTOM_TYPES,
+			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
@@ -465,10 +477,12 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
-	//generic catch all other event
-	TimelineEventType USER_CREATED = new TimelineEventArtifactTypeSingleDescription(26,
-			getBundle().getString("CustomTypes.userCreated.name"),//NON-NLS
-			CUSTOM_TYPES,
+	// Event for any artifact event with a custom artifact type (e.g. shell bag
+	// artifact)
+	
+	TimelineEventType CUSTOM_ARTIFACT_CATCH_ALL = new TimelineEventArtifactTypeSingleDescription(26,
+			getBundle().getString("CustomTypes.customArtifact.name"),//NON-NLS
+			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
@@ -655,14 +669,20 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-
+	
 	TimelineEventType WEB_COOKIE_END = new URLArtifactEventType(42,
 			getBundle().getString("WebTypes.webCookiesEnd.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME_END),
-			new Type(TSK_URL));
-	
+			new Type(TSK_URL)) {
+				
+		@Override
+		public boolean isDeprecated() {
+			return true;
+		}
+	};
+
 	TimelineEventType BACKUP_EVENT_START = new TimelineEventArtifactTypeImpl(43,
 			getBundle().getString("TimelineEventType.BackupEventStart.txt"),// NON-NLS
 			MISC_TYPES,
@@ -674,18 +694,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType BACKUP_EVENT = new TimelineEventArtifactTypeImpl(44,
-			getBundle().getString("TimelineEventType.BackupEvent.txt"),// NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_BACKUP_EVENT),
-			new BlackboardAttribute.Type(TSK_DATETIME),
-			artf -> {
-				return getBundle().getString("TimelineEventType.BackupEvent.description");
-			},
-			new EmptyExtractor(),
-			new EmptyExtractor());
-	
-	TimelineEventType BACKUP_EVENT_END = new TimelineEventArtifactTypeImpl(45,
+	TimelineEventType BACKUP_EVENT_END = new TimelineEventArtifactTypeImpl(44,
 			getBundle().getString("TimelineEventType.BackupEventEnd.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_BACKUP_EVENT),
@@ -696,64 +705,56 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType BLUETOOTH_PAIRING = new TimelineEventArtifactTypeSingleDescription(46,
+	TimelineEventType BLUETOOTH_PAIRING = new TimelineEventArtifactTypeSingleDescription(45,
 			getBundle().getString("TimelineEventType.BluetoothPairing.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_BLUETOOTH_PAIRING),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DEVICE_NAME));
 	
-	TimelineEventType CALENDAR_ENTRY_START = new TimelineEventArtifactTypeSingleDescription(47,
+	TimelineEventType CALENDAR_ENTRY_START = new TimelineEventArtifactTypeSingleDescription(46,
 			getBundle().getString("TimelineEventType.CalendarEntryStart.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_CALENDAR_ENTRY),
 			new BlackboardAttribute.Type(TSK_DATETIME_START),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 	
-	TimelineEventType CALENDAR_ENTRY_END = new TimelineEventArtifactTypeSingleDescription(48,
+	TimelineEventType CALENDAR_ENTRY_END = new TimelineEventArtifactTypeSingleDescription(47,
 			getBundle().getString("TimelineEventType.CalendarEntryEnd.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_CALENDAR_ENTRY),
 			new BlackboardAttribute.Type(TSK_DATETIME_END),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 	
-	TimelineEventType DELETE_PROGRAM = new TimelineEventArtifactTypeSingleDescription(49,
+	TimelineEventType PROGRAM_DELETED = new TimelineEventArtifactTypeSingleDescription(48,
 			getBundle().getString("TimelineEventType.DeletedProgram.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_DELETED_PROG),
 			new BlackboardAttribute.Type(TSK_DATETIME),
-			new BlackboardAttribute.Type(TSK_PROG_NAME));
+			new BlackboardAttribute.Type(TSK_PROG_NAME));	
 	
-	TimelineEventType DELETE_PROGRAM_DELETED = new TimelineEventArtifactTypeSingleDescription(50,
-			getBundle().getString("TimelineEventType.DeletedProgramDeleted.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_DELETED_PROG),
-			new BlackboardAttribute.Type(TSK_DATETIME_DELETED),
-			new BlackboardAttribute.Type(TSK_PROG_NAME));
-	
-	
-	TimelineEventType OS_INFO = new TimelineEventArtifactTypeSingleDescription(51,
+	TimelineEventType OS_INFO = new TimelineEventArtifactTypeSingleDescription(49,
 			getBundle().getString("TimelineEventType.OSInfo.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_OS_INFO),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 
-	TimelineEventType PROGRAM_NOTIFICATION = new TimelineEventArtifactTypeSingleDescription(52,
+	TimelineEventType PROGRAM_NOTIFICATION = new TimelineEventArtifactTypeSingleDescription(50,
 			getBundle().getString("TimelineEventType.ProgramNotification.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_PROG_NOTIFICATIONS),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 	
-	TimelineEventType SCREEN_SHOT = new TimelineEventArtifactTypeSingleDescription(53,
+	TimelineEventType SCREEN_SHOT = new TimelineEventArtifactTypeSingleDescription(51,
 			getBundle().getString("TimelineEventType.ScreenShot.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_SCREEN_SHOTS),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_PROG_NAME));
 		
-	TimelineEventType SERVICE_ACCOUNT = new TimelineEventArtifactTypeImpl(54,
+	TimelineEventType SERVICE_ACCOUNT = new TimelineEventArtifactTypeImpl(52,
 			getBundle().getString("TimelineEventType.ServiceAccount.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_SERVICE_ACCOUNT),
@@ -766,21 +767,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT = new TimelineEventArtifactTypeImpl(55,
-			getBundle().getString("TimelineEventType.UserDeviceEvent.txt"),// NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
-			new BlackboardAttribute.Type(TSK_DATETIME),
-			artf -> {
-				String progName = stringValueOf(getAttributeSafe(artf, new Type(TSK_PROG_NAME)));
-				String activityType = stringValueOf(getAttributeSafe(artf, new Type(TSK_ACTIVITY_TYPE)));
-				String connectionType = stringValueOf(getAttributeSafe(artf, new Type(TSK_VALUE)));
-				return String.format("Program Name: %s Activity Type: %s Connection Type: %s", progName, activityType, connectionType);
-			},
-			new EmptyExtractor(),
-			new EmptyExtractor());
-	
-	TimelineEventType USER_DEVICE_EVENT_START = new TimelineEventArtifactTypeImpl(56,
+	TimelineEventType USER_DEVICE_EVENT_START = new TimelineEventArtifactTypeImpl(53,
 			getBundle().getString("TimelineEventType.UserDeviceEventStart.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -794,7 +781,7 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType USER_DEVICE_EVENT_END = new TimelineEventArtifactTypeImpl(57,
+	TimelineEventType USER_DEVICE_EVENT_END = new TimelineEventArtifactTypeImpl(54,
 			getBundle().getString("TimelineEventType.UserDeviceEventEnd.txt"),// NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_USER_DEVICE_EVENT),
@@ -808,47 +795,49 @@ public interface TimelineEventType extends Comparable<TimelineEventType> {
 			new EmptyExtractor(),
 			new EmptyExtractor());
 	
-	TimelineEventType WEB_CACHE = new URLArtifactEventType(58,
+	TimelineEventType WEB_CACHE = new URLArtifactEventType(55,
 			getBundle().getString("TimelineEventType.WebCache.text"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_CACHE),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
 	
-	TimelineEventType WIFI_NETWORK = new TimelineEventArtifactTypeSingleDescription(59,
+	TimelineEventType WIFI_NETWORK = new TimelineEventArtifactTypeSingleDescription(56,
 			getBundle().getString("TimelineEventType.WIFINetwork.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_WIFI_NETWORK),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_SSID));
 	
-	TimelineEventType INSTALLED_PROG = new TimelineEventArtifactTypeSingleDescription(60,
-			getBundle().getString("TimelineEventType.InstalledProgram.txt"),//NON-NLS
-			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
-			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
-			new BlackboardAttribute.Type(TSK_PROG_NAME));
-	
-	TimelineEventType WEB_HISTORY_CREATED = new URLArtifactEventType(61,
+	TimelineEventType WEB_HISTORY_CREATED = new URLArtifactEventType(57,
 			getBundle().getString("WebTypes.webHistoryCreated.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
 	
-	TimelineEventType BLUETOOTH_ADAPTER = new TimelineEventArtifactTypeSingleDescription(62,
+	TimelineEventType BLUETOOTH_ADAPTER = new TimelineEventArtifactTypeSingleDescription(58,
 			getBundle().getString("TimelineEventType.BluetoothAdapter.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_BLUETOOTH_ADAPTER),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_NAME));
 	
-	TimelineEventType BLUETOOTH_PAIRING_ACCESSED = new TimelineEventArtifactTypeSingleDescription(63,
+	TimelineEventType BLUETOOTH_PAIRING_ACCESSED = new TimelineEventArtifactTypeSingleDescription(59,
 			getBundle().getString("TimelineEventType.BluetoothPairingLastConnection.txt"),//NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_BLUETOOTH_PAIRING),
 			new BlackboardAttribute.Type(TSK_DATETIME_ACCESSED),
 			new BlackboardAttribute.Type(TSK_DEVICE_NAME));
+	
+	//User manually created events, created with the "Add Event" button in the 
+	// timeline UI.
+	TimelineEventType USER_CREATED = new TimelineEventArtifactTypeSingleDescription(60,
+			getBundle().getString("CustomTypes.userCreated.name"),//NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_TL_EVENT),
+			new BlackboardAttribute.Type(TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	static SortedSet<? extends TimelineEventType> getCategoryTypes() {
 		return ROOT_EVENT_TYPE.getChildren();

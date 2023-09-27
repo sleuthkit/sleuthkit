@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.base.Strings;
+import com.google.common.annotations.Beta;
 import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,29 +29,33 @@ import java.sql.Types;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NavigableSet;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.OsAccount.OsAccountStatus;
 import org.sleuthkit.datamodel.OsAccount.OsAccountType;
 import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
+import org.sleuthkit.datamodel.OsAccountRealmManager.OsRealmUpdateResult;
+import org.sleuthkit.datamodel.OsAccountRealmManager.OsRealmUpdateStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskEvent.OsAccountsUpdatedTskEvent;
+import static org.sleuthkit.datamodel.WindowsAccountUtils.isWindowsWellKnownSid;
+import static org.sleuthkit.datamodel.WindowsAccountUtils.getWindowsWellKnownSidFullName;
 
 /**
  * Responsible for creating/updating/retrieving the OS accounts for files and
  * artifacts.
- *
  */
 public final class OsAccountManager {
 
 	private final SleuthkitCase db;
-
-	private final NavigableSet<OsAccountInstance> osAccountInstanceCache = new ConcurrentSkipListSet<>();
+	private final Object osAcctInstancesCacheLock;
+	private final NavigableMap<OsAccountInstanceKey, OsAccountInstance> osAccountInstanceCache;
 
 	/**
 	 * Construct a OsUserManager for the given SleuthkitCase.
@@ -59,7 +64,9 @@ public final class OsAccountManager {
 	 *
 	 */
 	OsAccountManager(SleuthkitCase skCase) {
-		this.db = skCase;
+		db = skCase;
+		osAcctInstancesCacheLock = new Object();
+		osAccountInstanceCache = new ConcurrentSkipListMap<>();
 	}
 
 	/**
@@ -149,37 +156,141 @@ public final class OsAccountManager {
 			throw new TskCoreException("A referring host is required to create an account.");
 		}
 
-		// ensure at least one of the two is supplied - unique id or a login name
-		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+		// ensure at least one of the two is supplied - a non-null unique id or a login name
+		if ((StringUtils.isBlank(sid) || sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(loginName)) {
 			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
 		}
 		// Realm name is required if the sid is null. 
-		if (StringUtils.isBlank(sid) && StringUtils.isBlank(realmName)) {
+		if ((StringUtils.isBlank(sid) || sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Realm name or SID is required to create a Windows account.");
 		}
 
-		if (!StringUtils.isBlank(sid) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
+		if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
 			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 		}
+
+		// If no SID is given and the given realm/login names is a well known account, get and use the well known SID
+		if (StringUtils.isBlank(sid) 
+			&& !StringUtils.isBlank(loginName) && !StringUtils.isBlank(realmName) 
+				&& WindowsAccountUtils.isWindowsWellKnownAccountName(loginName, realmName)) {
+			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
+		}
+		
+		
+		OsRealmUpdateResult realmUpdateResult;
+		Optional<OsAccountRealm> anotherRealmWithSameName = Optional.empty();
+		Optional<OsAccountRealm> anotherRealmWithSameAddr = Optional.empty();
 		
 		// get the realm for the account, and update it if it is missing addr or name.
-		Optional<OsAccountRealm> realmOptional;
+		OsAccountRealm realm = null;
 		try (CaseDbConnection connection = db.getConnection()) {
-			realmOptional = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(sid, realmName, referringHost, connection);
+			realmUpdateResult = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(sid, realmName, referringHost, connection);
+			
+			Optional<OsAccountRealm> realmOptional = realmUpdateResult.getUpdatedRealm();
+			if (realmOptional.isPresent()) {
+				realm = realmOptional.get();
+				
+				if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
+
+					// Check if update of the realm triggers a merge with any other realm, 
+					// say another realm with same name but no SID, or same SID but no name
+					
+					//1. Check if there is any OTHER realm with the same name, same host but no addr
+					anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, connection);
+					
+					// 2. Check if there is any OTHER realm with same addr and host, but NO name
+					anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, connection);
+				}
+			}
 		}
-		OsAccountRealm realm;
-		if (realmOptional.isPresent()) {
-			realm = realmOptional.get();
-		} else {
+		
+		if (null == realm) {
 			// realm was not found, create it.
 			realm = db.getOsAccountRealmManager().newWindowsRealm(sid, realmName, referringHost, realmScope);
+		} else if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
+			// if the realm already existed and was updated, and there are other realms with same  name or addr that should now be merged into the updated realm
+			if (anotherRealmWithSameName.isPresent() || anotherRealmWithSameAddr.isPresent()) {
+
+				CaseDbTransaction trans = this.db.beginTransaction();
+				try {
+					if (anotherRealmWithSameName.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realm, trans);
+					}
+					if (anotherRealmWithSameAddr.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameAddr.get(), realm, trans);
+					}
+
+					trans.commit();
+				} catch (TskCoreException ex) {
+					trans.rollback();
+					throw ex;	// rethrow
+				}
+			}
+		}
+		
+
+		return newWindowsOsAccount(sid, loginName, realm);
+	}
+
+	/**
+	 * Creates an OS account with Windows-specific data. If an account already
+	 * exists with the given id or realm/login, then the existing OS account is
+	 * returned.
+	 *
+	 * @param sid       Account sid/uid, can be null if loginName is supplied.
+	 * @param loginName Login name, can be null if sid is supplied.
+	 * @param realm     The associated realm.
+	 *
+	 * @return OsAccount.
+	 *
+	 * @throws TskCoreException                     If there is an error in
+	 *                                              creating the OSAccount.
+	 * @throws OsAccountManager.NotUserSIDException If the given SID is not a
+	 *                                              user SID.
+	 *
+	 */
+	public OsAccount newWindowsOsAccount(String sid, String loginName, OsAccountRealm realm) throws TskCoreException, NotUserSIDException {
+
+		// ensure at least one of the two is supplied - a non-null unique id or a login name
+		if ((StringUtils.isBlank(sid) || sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
 		}
 
+		if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && !WindowsAccountUtils.isWindowsUserSid(sid)) {
+			throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
+		}
+
+		// If the login name is well known, we use the well known english name. 
+		String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
+		
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			// try to create account
 			try {
-				OsAccount account = newOsAccount(sid, loginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				String uniqueId = (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) ?  sid : null;
+				if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && isWindowsWellKnownSid(sid)) {
+					// if the SID is a Windows well known SID, then prefer to use the default well known login name
+					String wellKnownLoginName = WindowsAccountUtils.getWindowsWellKnownSidLoginName(sid);
+					if (!StringUtils.isEmpty(wellKnownLoginName)) {
+						resolvedLoginName = wellKnownLoginName;
+					}
+				}
+					
+				OsAccount account = newOsAccount(uniqueId, resolvedLoginName, realm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+
+				// If the SID indicates a special windows account, then set its full name. 
+				if (!StringUtils.isBlank(sid) && !sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && isWindowsWellKnownSid(sid)) {
+					String fullName = getWindowsWellKnownSidFullName(sid);
+					if (StringUtils.isNotBlank(fullName)) {
+						OsAccountUpdateResult updateResult = updateStandardOsAccountAttributes(account, fullName, null, null, null, trans);
+						if (updateResult.getUpdatedAccount().isPresent()) {
+							account = updateResult.getUpdatedAccount().get();
+						}
+					}
+				}
 				trans.commit();
 				trans = null;
 				return account;
@@ -200,17 +311,19 @@ public final class OsAccountManager {
 				}
 
 				// search by loginName
-				if (!Strings.isNullOrEmpty(loginName)) {
-					osAccount = getOsAccountByLoginName(loginName, realm);
+				if (!Strings.isNullOrEmpty(resolvedLoginName)) {
+					osAccount = getOsAccountByLoginName(resolvedLoginName, realm);
 					if (osAccount.isPresent()) {
 						return osAccount.get();
 					}
 				}
 
 				// create failed for some other reason, throw an exception
-				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %d",
-						(sid != null) ? sid : "Null", (loginName != null) ? loginName : "Null",
-						(realmName != null) ? realmName : "Null", referringHost), ex);
+				throw new TskCoreException(String.format("Error creating OsAccount with sid = %s, loginName = %s, realm = %s, referring host = %s",
+						(sid != null) ? sid : "Null",
+						(resolvedLoginName != null) ? resolvedLoginName : "Null",
+						(!realm.getRealmNames().isEmpty()) ? realm.getRealmNames().get(0) : "Null",
+						realm.getScopeHost().isPresent() ? realm.getScopeHost().get().getName() : "Null"), ex);
 
 			}
 		} finally {
@@ -219,6 +332,84 @@ public final class OsAccountManager {
 			}
 		}
 	}
+	
+	/**
+	 * Creates a local OS account with Linux-specific data. If an account already
+	 * exists with the given id or realm/login, then the existing OS account is
+	 * returned.
+	 *
+	 * @param uid       Account uid, can be null if loginName is supplied.
+	 * @param loginName Login name, can be null if uid is supplied.
+	 * @param referringHost     The associated host.
+	 *
+	 * @return OsAccount.
+	 *
+	 * @throws TskCoreException                     If there is an error in
+	 *                                              creating the OSAccount.
+	 *
+	 */
+	@Beta
+	public OsAccount newLocalLinuxOsAccount(String uid, String loginName, Host referringHost) throws TskCoreException {
+
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to create a local OS account.");
+		}
+		
+		// Ensure at least one of the two is supplied - a non-null unique id or a login name
+		if (StringUtils.isBlank(uid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot create OS account with both uniqueId and loginName as null.");
+		}
+		
+		OsAccountRealm localRealm = db.getOsAccountRealmManager().newLocalLinuxRealm(referringHost);
+		
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			
+			// try to create account
+			try {
+				OsAccount account = newOsAccount(uid, loginName, localRealm, OsAccount.OsAccountStatus.UNKNOWN, trans);
+				trans.commit();
+				trans = null;
+				return account;
+			} catch (SQLException ex) {
+				// Rollback the transaction before proceeding
+				trans.rollback();
+				trans = null;
+
+				// Create may fail if an OsAccount already exists. 
+				Optional<OsAccount> osAccount;
+
+				// First search for account by uniqueId
+				if (!Strings.isNullOrEmpty(uid)) {
+					osAccount = getOsAccountByAddr(uid, localRealm);
+					if (osAccount.isPresent()) {
+						return osAccount.get();
+					}
+				}
+
+				// search by loginName
+				if (!Strings.isNullOrEmpty(loginName)) {
+					osAccount = getOsAccountByLoginName(loginName, localRealm);
+					if (osAccount.isPresent()) {
+						return osAccount.get();
+					}
+				}
+
+				// create failed for some other reason, throw an exception
+				throw new TskCoreException(String.format("Error creating OsAccount with uid = %s, loginName = %s, realm = %s, referring host = %s",
+						(uid != null) ? uid : "Null",
+						(loginName != null) ? loginName : "Null",
+						(!localRealm.getRealmNames().isEmpty()) ? localRealm.getRealmNames().get(0) : "Null",
+						localRealm.getScopeHost().isPresent() ? localRealm.getScopeHost().get().getName() : "Null"), ex);
+
+			}
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
+
 
 	/**
 	 * Creates a OS account with the given uid, name, and realm.
@@ -241,39 +432,37 @@ public final class OsAccountManager {
 
 		String signature = getOsAccountSignature(uniqueId, loginName);
 		OsAccount account;
-		db.acquireSingleUserCaseWriteLock();
-		try {
-			CaseDbConnection connection = trans.getConnection();
 
-			// first create a tsk_object for the OsAccount.
-			// RAMAN TODO: need to get the correct parent obj id.  
-			//            Create an Object Directory parent and used its id.
-			long parentObjId = 0;
+		CaseDbConnection connection = trans.getConnection();
 
-			int objTypeId = TskData.ObjectType.OS_ACCOUNT.getObjectType();
-			long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
+		// first create a tsk_object for the OsAccount.
+		// RAMAN TODO: need to get the correct parent obj id.  
+		//            Create an Object Directory parent and used its id.
+		long parentObjId = 0;
 
-			String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, addr, signature, status)"
-					+ " VALUES (?, ?, ?, ?, ?, ?)"; // NON-NLS
+		int objTypeId = TskData.ObjectType.OS_ACCOUNT.getObjectType();
+		long osAccountObjId = db.addObject(parentObjId, objTypeId, connection);
 
-			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.NO_GENERATED_KEYS);
-			preparedStatement.clearParameters();
+		String accountInsertSQL = "INSERT INTO tsk_os_accounts(os_account_obj_id, login_name, realm_id, addr, signature, status)"
+				+ " VALUES (?, ?, ?, ?, ?, ?)"; // NON-NLS
 
-			preparedStatement.setLong(1, osAccountObjId);
+		PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.NO_GENERATED_KEYS);
+		preparedStatement.clearParameters();
 
-			preparedStatement.setString(2, loginName);
-			preparedStatement.setLong(3, realm.getRealmId());
+		preparedStatement.setLong(1, osAccountObjId);
 
-			preparedStatement.setString(4, uniqueId);
-			preparedStatement.setString(5, signature);
-			preparedStatement.setInt(6, accountStatus.getId());
+		preparedStatement.setString(2, loginName);
+		preparedStatement.setLong(3, realm.getRealmId());
 
-			connection.executeUpdate(preparedStatement);
+		preparedStatement.setString(4, uniqueId);
+		preparedStatement.setString(5, signature);
+		preparedStatement.setInt(6, accountStatus.getId());
 
-			account = new OsAccount(db, osAccountObjId, realm.getRealmId(), loginName, uniqueId, signature, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
-		} finally {
-			db.releaseSingleUserCaseWriteLock();
-		}
+		connection.executeUpdate(preparedStatement);
+
+		account = new OsAccount(db, osAccountObjId, realm.getRealmId(), loginName, uniqueId, signature,
+				null, null, null, accountStatus, OsAccount.OsAccountDbStatus.ACTIVE);
+
 		trans.registerAddedOsAccount(account);
 		return account;
 	}
@@ -316,7 +505,7 @@ public final class OsAccountManager {
 
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 				+ " accounts.realm_id, accounts.addr, accounts.signature, "
-				+ "	accounts.type, accounts.status, accounts.admin, accounts.created_date, accounts.db_status, "
+				+ "	accounts.type, accounts.status, accounts.created_date, accounts.db_status, "
 				+ " realms.realm_name as realm_name, realms.realm_addr as realm_addr, realms.realm_signature, realms.scope_host_id, realms.scope_confidence, realms.db_status as realm_db_status "
 				+ " FROM tsk_os_accounts as accounts"
 				+ "		LEFT JOIN tsk_os_account_realms as realms"
@@ -459,39 +648,6 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Get the account instance for given account, host and data source id.
-	 *
-	 * @param osAccount       Account to check for.
-	 * @param dataSourceObjId Data source object id.
-	 * @param connection      Database connection to use.
-	 *
-	 * @return Optional with id of the account instance. Optional.empty() if no
-	 *         matching instance is found.
-	 *
-	 * @throws TskCoreException
-	 */
-	private Optional<Long> getOsAccountInstanceId(OsAccount osAccount, DataSource dataSource, CaseDbConnection connection) throws TskCoreException {
-
-		String queryString = "SELECT * FROM tsk_os_account_instances"
-				+ " WHERE os_account_obj_id = " + osAccount.getId()
-				+ " AND data_source_obj_id = " + dataSource.getId();
-
-		db.acquireSingleUserCaseReadLock();
-		try (Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
-			if (rs.next()) {
-				return Optional.ofNullable(rs.getLong("id"));
-			}
-			return Optional.empty();
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting account instance with account obj id = %d, data source obj id = %d ", osAccount.getId(), dataSource.getId()), ex);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
 	 * Records that an OsAccount was used or referenced on a given data source.
 	 * This data is automatically recorded when a file or DataArtifact is
 	 * created.
@@ -510,10 +666,12 @@ public final class OsAccountManager {
 	 * @param dataSource   Data source where the instance is found.
 	 * @param instanceType Instance type.
 	 *
+	 * @return OsAccountInstance Existing or newly created account instance.
+	 *
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	public void newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
+	public OsAccountInstance newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType) throws TskCoreException {
 		if (osAccount == null) {
 			throw new TskCoreException("Cannot create account instance with null account.");
 		}
@@ -521,14 +679,14 @@ public final class OsAccountManager {
 			throw new TskCoreException("Cannot create account instance with null data source.");
 		}
 
-		// check cache first
-		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, dataSource, instanceType);
-		if (osAccountInstanceCache.contains(accountInstance)) {
-			return;
+		// check the cache first 
+		Optional<OsAccountInstance> existingInstance = cachedAccountInstance(osAccount.getId(), dataSource.getId(), instanceType);
+		if (existingInstance.isPresent()) {
+			return existingInstance.get();
 		}
 
 		try (CaseDbConnection connection = this.db.getConnection()) {
-			newOsAccountInstance(osAccount, dataSource, instanceType, connection);
+			return newOsAccountInstance(osAccount.getId(), dataSource.getId(), instanceType, connection);
 		}
 	}
 
@@ -536,72 +694,145 @@ public final class OsAccountManager {
 	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
 	 * instance already exists in the table.
 	 *
-	 * @param osAccount    Account for which an instance needs to be added.
-	 * @param dataSource   Data source where the instance is found.
-	 * @param instanceType Instance type.
-	 * @param connection   The current database connection.
-	 *
-	 * @throws TskCoreException If there is an error creating the account
-	 *                          instance.
-	 */
-	void newOsAccountInstance(OsAccount osAccount, DataSource dataSource, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
-
-		if (osAccount == null) {
-			throw new TskCoreException("Cannot create account instance with null account.");
-		}
-		if (dataSource == null) {
-			throw new TskCoreException("Cannot create account instance with null data source.");
-		}
-
-		newOsAccountInstance(osAccount, dataSource.getId(), instanceType, connection);
-	}
-
-	/**
-	 * Adds a row to the tsk_os_account_instances table. Does nothing if the
-	 * instance already exists in the table.
-	 *
-	 * @param osAccount       Account for which an instance needs to be added.
-	 * @param dataSourceObjId Data source where the instance is found.
+	 * @param osAccountId     Account id for which an instance needs to be
+	 *                        added.
+	 * @param dataSourceObjId Data source id where the instance is found.
 	 * @param instanceType    Instance type.
 	 * @param connection      The current database connection.
 	 *
+	 * @return OsAccountInstance Existing or newly created account instance.
+	 *
 	 * @throws TskCoreException If there is an error creating the account
 	 *                          instance.
 	 */
-	void newOsAccountInstance(OsAccount osAccount, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
+	OsAccountInstance newOsAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType, CaseDbConnection connection) throws TskCoreException {
 
-		if (osAccount == null) {
-			throw new TskCoreException("Cannot create account instance with null account.");
+		Optional<OsAccountInstance> existingInstance = cachedAccountInstance(osAccountId, dataSourceObjId, instanceType);
+		if (existingInstance.isPresent()) {
+			return existingInstance.get();
 		}
 
-		// check cache first
-		OsAccountInstance accountInstance = new OsAccountInstance(osAccount, dataSourceObjId, instanceType);
-		if (osAccountInstanceCache.contains(accountInstance)) {
-			return;
-		}
-
-		// create the instance 
+		/*
+		 * Create the OS account instance.
+		 */
 		db.acquireSingleUserCaseWriteLock();
 		try {
 			String accountInsertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_instances(os_account_obj_id, data_source_obj_id, instance_type)"
 					+ " VALUES (?, ?, ?)"); // NON-NLS
-
 			PreparedStatement preparedStatement = connection.getPreparedStatement(accountInsertSQL, Statement.RETURN_GENERATED_KEYS);
 			preparedStatement.clearParameters();
-
-			preparedStatement.setLong(1, osAccount.getId());
+			preparedStatement.setLong(1, osAccountId);
 			preparedStatement.setLong(2, dataSourceObjId);
 			preparedStatement.setInt(3, instanceType.getId());
-
 			connection.executeUpdate(preparedStatement);
+			try (ResultSet resultSet = preparedStatement.getGeneratedKeys();) {
+				if (resultSet.next()) {
+					OsAccountInstance accountInstance = new OsAccountInstance(db, resultSet.getLong(1), osAccountId, dataSourceObjId, instanceType);
+					synchronized (osAcctInstancesCacheLock) {
+						OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
+						// remove from cache any instances less significant (higher ordinal) than this instance
+						for (OsAccountInstance.OsAccountInstanceType type : OsAccountInstance.OsAccountInstanceType.values()) {
+							if (accountInstance.getInstanceType().compareTo(type) < 0) {
+								osAccountInstanceCache.remove(key);
+							}
+						}
+						// add the new most significant instance to the cache
+						osAccountInstanceCache.put(key, accountInstance);
+					}
+					/*
+					 * There is a potential issue here. The cache of OS account
+					 * instances is an optimization and was not intended to be
+					 * used as an authoritative indicator of whether or not a
+					 * particular OS account instance was already added to the
+					 * case. In fact, the entire cache is flushed during merge
+					 * operations. But regardless, there is a check-then-act
+					 * race condition for multi-user cases, with or without the
+					 * cache. And although the case database schema and the SQL
+					 * returned by getInsertOrIgnoreSQL() seamlessly prevents
+					 * duplicates in the case database, a valid row ID is
+					 * returned here even if the INSERT is not done. So the
+					 * bottom line is that a redundant event may be published
+					 * from time to time.
+					 */
+					db.fireTSKEvent(new TskEvent.OsAcctInstancesAddedTskEvent(Collections.singletonList(accountInstance)));
 
-			// add to the cache.
-			osAccountInstanceCache.add(accountInstance);
-
+					return accountInstance;
+				} else {
+					// there is the possibility that another thread may be adding the same os account instance at the same time
+					// the database may be updated prior to the cache being updated so this provides an extra opportunity to check
+					// the cache before throwing the exception
+					Optional<OsAccountInstance> existingInstanceRetry = cachedAccountInstance(osAccountId, dataSourceObjId, instanceType);
+					if (existingInstanceRetry.isPresent()) {
+						return existingInstanceRetry.get();
+					}
+				}
+			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error adding os account instance for account = %s, data source object id = %d", osAccount.getAddr().orElse(osAccount.getLoginName().orElse("UNKNOWN")), dataSourceObjId), ex);
+			throw new TskCoreException(String.format("Error adding OS account instance for OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
+		}
+		
+		// It's possible that we weren't able to load the account instance because it
+		// is already in the database but the instance cache was cleared during an account merge.
+		// Try loading it here and re-adding to the cache.
+		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + osAccountId
+				+ "AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
+		List<OsAccountInstance> instances = getOsAccountInstances(whereClause);
+		if (instances.isEmpty()) {
+			throw new TskCoreException(String.format("Could not get autogen key after row insert or reload instance for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
+		}
+		
+		OsAccountInstance accountInstance = instances.get(0);
+		synchronized (osAcctInstancesCacheLock) {
+			OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
+			// remove from cache any instances less significant (higher ordinal) than this instance
+			for (OsAccountInstance.OsAccountInstanceType type : OsAccountInstance.OsAccountInstanceType.values()) {
+				if (accountInstance.getInstanceType().compareTo(type) < 0) {
+					osAccountInstanceCache.remove(key);
+				}
+			}
+			// add the most significant instance to the cache
+			osAccountInstanceCache.put(key, accountInstance);
+		}
+		return accountInstance;
+	}
+
+	/**
+	 * Check if an account instance for exists in the cache for given account
+	 * id, data source and instance type.
+	 *
+	 * Instance type does not need to be an exact match - an existing instance
+	 * with an instance type more significant than the specified type is
+	 * considered a match.
+	 *
+	 * @param osAccountId     Account id.
+	 * @param dataSourceObjId Data source object id.
+	 * @param instanceType    Account instance type.
+	 *
+	 * @return Optional with OsAccountInstance, Optional.empty if there is no
+	 *         matching instance in cache.
+	 *
+	 */
+	private Optional<OsAccountInstance> cachedAccountInstance(long osAccountId, long dataSourceObjId, OsAccountInstance.OsAccountInstanceType instanceType) {
+
+		/*
+		 * Check the cache of OS account instances for an existing instance for
+		 * this OS account and data source. Note that the account instance
+		 * created here has a bogus instance ID. This is possible since the
+		 * instance ID is not considered in the equals() and hashCode() methods
+		 * of this class.
+		 */
+		synchronized (osAcctInstancesCacheLock) {
+			OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
+			OsAccountInstance instance = osAccountInstanceCache.get(key);
+			if (instance != null) {
+				// if the new instance type same or less significant than the existing instance (i.e. same or higher ordinal value) it's a match. 
+				if (instanceType.compareTo(instance.getInstanceType()) >= 0) {
+					return Optional.of(instance);
+				}
+			}
+			return Optional.empty();
 		}
 	}
 
@@ -615,14 +846,13 @@ public final class OsAccountManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<OsAccount> getOsAccounts(Host host) throws TskCoreException {
-
-		String queryString = "SELECT * FROM tsk_os_accounts as accounts "
-				+ " JOIN tsk_os_account_instances as instances "
-				+ "		ON instances.os_account_obj_id = accounts.os_account_obj_id "
-				+ " JOIN data_source_info as datasources "
-				+ "		ON datasources.obj_id = instances.data_source_obj_id "
-				+ " WHERE datasources.host_id = " + host.getHostId()
-				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
+		String queryString = "SELECT * FROM tsk_os_accounts accounts "
+				+ "WHERE accounts.os_account_obj_id IN "
+				+ "(SELECT instances.os_account_obj_id "
+				+ "FROM tsk_os_account_instances instances "
+				+ "INNER JOIN data_source_info datasources ON datasources.obj_id = instances.data_source_obj_id "
+				+ "WHERE datasources.host_id = " + host.getHostId() + ") "
+				+ "AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -636,6 +866,40 @@ public final class OsAccountManager {
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS accounts for host id = %d", host.getHostId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Get all accounts that had an instance on the specified data source.
+	 *
+	 * @param dataSourceId Data source id for which to look accounts for.
+	 *
+	 * @return Set of OsAccounts, may be empty.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public List<OsAccount> getOsAccountsByDataSourceObjId(long dataSourceId) throws TskCoreException {
+		String queryString = "SELECT * FROM tsk_os_accounts acc "
+				+ "WHERE acc.os_account_obj_id IN "
+				+ "(SELECT instance.os_account_obj_id "
+				+ "FROM tsk_os_account_instances instance "
+				+ "WHERE instance.data_source_obj_id = " + dataSourceId + ") "
+				+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			List<OsAccount> accounts = new ArrayList<>();
+			while (rs.next()) {
+				accounts.add(osAccountFromResultSet(rs));
+			}
+			return accounts;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS accounts for data source id = %d", dataSourceId), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -679,35 +943,11 @@ public final class OsAccountManager {
 			}
 
 			// Look for matching destination account
-			OsAccount matchingDestAccount = null;
-
-			// First look for matching unique id
-			if (sourceAccount.getAddr().isPresent()) {
-				List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
-						.filter(p -> p.getAddr().equals(sourceAccount.getAddr()))
-						.collect(Collectors.toList());
-				if (!matchingDestAccounts.isEmpty()) {
-					matchingDestAccount = matchingDestAccounts.get(0);
-				}
-			}
-
-			// If a match wasn't found yet, look for a matching login name.
-			// We will merge only if:
-			// - We didn't already find a unique ID match
-			// - The source account has no unique ID OR the destination account has no unique ID
-			if (matchingDestAccount == null && sourceAccount.getLoginName().isPresent()) {
-				List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
-						.filter(p -> (p.getLoginName().equals(sourceAccount.getLoginName())
-						&& ((!sourceAccount.getAddr().isPresent()) || (!p.getAddr().isPresent()))))
-						.collect(Collectors.toList());
-				if (!matchingDestAccounts.isEmpty()) {
-					matchingDestAccount = matchingDestAccounts.get(0);
-				}
-			}
+			Optional<OsAccount> matchingDestAccount = getMatchingAccountForMerge(sourceAccount, destinationAccounts);
 
 			// If we found a match, merge the accounts. Otherwise simply update the realm id
-			if (matchingDestAccount != null) {
-				mergeOsAccounts(sourceAccount, matchingDestAccount, trans);
+			if (matchingDestAccount.isPresent()) {
+				mergeOsAccounts(sourceAccount, matchingDestAccount.get(), trans);
 			} else {
 				String query = "UPDATE tsk_os_accounts SET realm_id = " + destRealm.getRealmId() + " WHERE os_account_obj_id = " + sourceAccount.getId();
 				try (Statement s = trans.getConnection().createStatement()) {
@@ -717,6 +957,70 @@ public final class OsAccountManager {
 				}
 				trans.registerChangedOsAccount(sourceAccount);
 			}
+		}
+	}
+	
+	/**
+	 * Checks for matching account in a list of accounts for merging
+	 * @param sourceAccount The account to find matches for
+	 * @param destinationAccounts List of accounts to match against
+	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount is found.
+	 */
+	private Optional<OsAccount> getMatchingAccountForMerge(OsAccount sourceAccount, List<OsAccount> destinationAccounts) {
+		// Look for matching destination account
+		OsAccount matchingDestAccount = null;
+
+		// First look for matching unique id
+		if (sourceAccount.getAddr().isPresent()) {
+			List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
+					.filter(p -> p.getAddr().equals(sourceAccount.getAddr()))
+					.collect(Collectors.toList());
+			if (!matchingDestAccounts.isEmpty()) {
+				matchingDestAccount = matchingDestAccounts.get(0);
+			}
+		}
+
+		// If a match wasn't found yet, look for a matching login name.
+		// We will merge only if:
+		// - We didn't already find a unique ID match
+		// - The source account has no unique ID OR the destination account has no unique ID
+		// - destination account has a login name and matches the source account login name
+		if (matchingDestAccount == null && sourceAccount.getLoginName().isPresent()) {
+			List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
+					.filter(p -> p.getLoginName().isPresent())
+					.filter(p -> (p.getLoginName().get().equalsIgnoreCase(sourceAccount.getLoginName().get())
+					&& ((!sourceAccount.getAddr().isPresent()) || (!p.getAddr().isPresent()))))
+					.collect(Collectors.toList());
+			if (!matchingDestAccounts.isEmpty()) {
+				matchingDestAccount = matchingDestAccounts.get(0);
+			}
+		}
+		
+		return Optional.ofNullable(matchingDestAccount);
+	}
+	
+	/**
+	 * Checks for matching accounts in the same realm 
+	 * and then merges the accounts if a match is found
+	 * @param account The account to find matches for
+	 * @param trans The current transaction.
+	 * @throws TskCoreException 
+	 */
+	private void mergeOsAccount(OsAccount account, CaseDbTransaction trans) throws TskCoreException {
+		// Get the realm for the account
+		Long realmId = account.getRealmId();
+		OsAccountRealm realm = db.getOsAccountRealmManager().getRealmByRealmId(realmId,  trans.getConnection());
+		
+		// Get all users in the realm (excluding the account)
+		List<OsAccount> osAccounts = getOsAccounts(realm, trans.getConnection());
+		osAccounts.removeIf(acc -> Objects.equals(acc.getId(), account.getId()));
+		
+		// Look for matching account
+		Optional<OsAccount> matchingAccount = getMatchingAccountForMerge(account, osAccounts);
+		
+		// If we find a match, merge the accounts.
+		if (matchingAccount.isPresent()) {
+			mergeOsAccounts(matchingAccount.get(), account, trans);
 		}
 	}
 
@@ -735,7 +1039,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	private void mergeOsAccounts(OsAccount sourceAccount, OsAccount destAccount, CaseDbTransaction trans) throws TskCoreException {
-	
+
 		String query = "";
 		try (Statement s = trans.getConnection().createStatement()) {
 
@@ -743,7 +1047,7 @@ public final class OsAccountManager {
 			query = makeOsAccountUpdateQuery("tsk_os_account_attributes", sourceAccount, destAccount);
 			s.executeUpdate(query);
 
-			// tsk_os_account_instances has a unique constraint on os_account_obj_id, data_source_obj_id, host_id,
+			// tsk_os_account_instances has a unique constraint on os_account_obj_id, data_source_obj_id, and instance_type,
 			// so delete any rows that would be duplicates.
 			query = "DELETE FROM tsk_os_account_instances "
 					+ "WHERE id IN ( "
@@ -753,12 +1057,16 @@ public final class OsAccountManager {
 					+ "  tsk_os_account_instances destAccountInstance "
 					+ "INNER JOIN tsk_os_account_instances sourceAccountInstance ON destAccountInstance.data_source_obj_id = sourceAccountInstance.data_source_obj_id "
 					+ "WHERE destAccountInstance.os_account_obj_id = " + destAccount.getId()
-					+ " AND sourceAccountInstance.os_account_obj_id = " + sourceAccount.getId() + " )";
+					+ " AND sourceAccountInstance.os_account_obj_id = " + sourceAccount.getId()
+					+ " AND sourceAccountInstance.instance_type = destAccountInstance.instance_type" + ")";
+
 			s.executeUpdate(query);
 
 			query = makeOsAccountUpdateQuery("tsk_os_account_instances", sourceAccount, destAccount);
 			s.executeUpdate(query);
-			osAccountInstanceCache.clear();
+			synchronized (osAcctInstancesCacheLock) {
+				osAccountInstanceCache.clear();
+			}
 
 			query = makeOsAccountUpdateQuery("tsk_files", sourceAccount, destAccount);
 			s.executeUpdate(query);
@@ -766,6 +1074,10 @@ public final class OsAccountManager {
 			query = makeOsAccountUpdateQuery("tsk_data_artifacts", sourceAccount, destAccount);
 			s.executeUpdate(query);
 
+			
+			// register the merged accounts with the transaction to fire off an event
+			trans.registerMergedOsAccount(sourceAccount.getId(), destAccount.getId());
+			
 			// Update the source account. Make a dummy signature to prevent problems with the unique constraint.
 			String mergedSignature = makeMergedOsAccountSignature();
 			query = "UPDATE tsk_os_accounts SET merged_into = " + destAccount.getId()
@@ -773,7 +1085,7 @@ public final class OsAccountManager {
 					+ ", signature = '" + mergedSignature + "' "
 					+ " WHERE os_account_obj_id = " + sourceAccount.getId();
 
-			s.executeUpdate(query);	
+			s.executeUpdate(query);
 			trans.registerDeletedOsAccount(sourceAccount.getId());
 
 			// Merge and update the destination account. Note that this must be done after updating
@@ -808,25 +1120,23 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Copy all fields from sourceAccount that are not set in
-	 * destAccount. 
-	 * 
+	 * Copy all fields from sourceAccount that are not set in destAccount.
+	 *
 	 * Updates the dest account in the database.
 	 *
 	 * @param sourceAccount The source account.
 	 * @param destAccount   The destination account.
-	 * @param trans	Transaction to use for database operations.
-	 * 
+	 * @param trans	        Transaction to use for database operations.
+	 *
 	 * @return OsAccount Updated account.
 	 */
-	private OsAccount  mergeOsAccountObjectsAndUpdateDestAccount(OsAccount sourceAccount, OsAccount destAccount, CaseDbTransaction trans) throws TskCoreException {
-		
+	private OsAccount mergeOsAccountObjectsAndUpdateDestAccount(OsAccount sourceAccount, OsAccount destAccount, CaseDbTransaction trans) throws TskCoreException {
+
 		OsAccount mergedDestAccount = destAccount;
-		
+
 		String destLoginName = null;
 		String destAddr = null;
-		
-		
+
 		// Copy any fields that aren't set in the destination to the value from the source account.
 		if (!destAccount.getLoginName().isPresent() && sourceAccount.getLoginName().isPresent()) {
 			destLoginName = sourceAccount.getLoginName().get();
@@ -838,11 +1148,11 @@ public final class OsAccountManager {
 
 		// update the dest account core 
 		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(destAccount, destAddr, destLoginName, trans);
-		
+
 		if (updateStatus.getUpdateStatusCode() == OsAccountUpdateStatus.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
 			mergedDestAccount = updateStatus.getUpdatedAccount().get();
 		}
-		
+
 		String destFullName = null;
 		Long destCreationTime = null;
 		if (!destAccount.getFullName().isPresent() && sourceAccount.getFullName().isPresent()) {
@@ -852,14 +1162,14 @@ public final class OsAccountManager {
 		if (!destAccount.getCreationTime().isPresent() && sourceAccount.getCreationTime().isPresent()) {
 			destCreationTime = sourceAccount.getCreationTime().get();
 		}
-		
+
 		// update the dest account properties 
 		updateStatus = this.updateStandardOsAccountAttributes(destAccount, destFullName, null, null, destCreationTime, trans);
-		
+
 		if (updateStatus.getUpdateStatusCode() == OsAccountUpdateStatus.UPDATED && updateStatus.getUpdatedAccount().isPresent()) {
 			mergedDestAccount = updateStatus.getUpdatedAccount().get();
 		}
-		
+
 		return mergedDestAccount;
 	}
 
@@ -941,11 +1251,19 @@ public final class OsAccountManager {
 			throw new TskCoreException("A referring host is required to get an account.");
 		}
 
-		// ensure at least one of the two is supplied - sid or a login name
-		if (StringUtils.isBlank(sid) && StringUtils.isBlank(loginName)) {
+		// ensure at least one of the two is supplied - a non-null sid or a login name
+		if ((StringUtils.isBlank(sid) || (sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) ) && StringUtils.isBlank(loginName)) {
 			throw new TskCoreException("Cannot get an OS account with both SID and loginName as null.");
 		}
 
+		// If no SID is given and the given realm/login names is a well known account, get and use the well known SID
+		if (StringUtils.isBlank(sid) 
+			&& !StringUtils.isBlank(loginName) && !StringUtils.isBlank(realmName) 
+				&& WindowsAccountUtils.isWindowsWellKnownAccountName(loginName, realmName)) {
+			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
+			
+		}
+			
 		// first get the realm for the given sid
 		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost);
 		if (!realm.isPresent()) {
@@ -953,20 +1271,72 @@ public final class OsAccountManager {
 		}
 
 		// search by SID
-		if (!Strings.isNullOrEmpty(sid)) {
+		if (!Strings.isNullOrEmpty(sid) && !(sid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))) {
 			if (!WindowsAccountUtils.isWindowsUserSid(sid)) {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", sid));
 			}
 
-			return this.getOsAccountByAddr(sid, realm.get());
+			Optional<OsAccount> account = this.getOsAccountByAddr(sid, realm.get());
+			if (account.isPresent()) {
+				return account;
+			}
 		}
 
 		// search by login name
-		return this.getOsAccountByLoginName(loginName, realm.get());
+		if (!Strings.isNullOrEmpty(loginName)) {
+			String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
+			return this.getOsAccountByLoginName(resolvedLoginName, realm.get());
+		} else {
+			return Optional.empty();
+		}
 	}
 
+	/**
+	 * Gets an OS account using Linux-specific data.
+	 *
+	 * @param uid           Account UID, maybe null if loginName is supplied.
+	 * @param loginName     Login name, maybe null if sid is supplied.
+	 * @param referringHost Host referring the account.
+	 *
+	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount
+	 *         is found.
+	 *
+	 * @throws TskCoreException    If there is an error getting the account.
+	 */
+	@Beta
+	public Optional<OsAccount> getLocalLinuxOsAccount(String uid, String loginName, Host referringHost) throws TskCoreException {
 
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to get an account.");
+		}
 
+		// ensure at least one of the two is supplied - a non-null uid or a login name
+		if (StringUtils.isBlank(uid) && StringUtils.isBlank(loginName)) {
+			throw new TskCoreException("Cannot get an OS account with both UID and loginName as null.");
+		}
+			
+		// First get the local realm
+		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getLocalLinuxRealm(referringHost);
+		if (!realm.isPresent()) {
+			return Optional.empty();
+		}
+
+		// Search by UID
+		if (!Strings.isNullOrEmpty(uid)) {
+			Optional<OsAccount> account = this.getOsAccountByAddr(uid, realm.get());
+			if (account.isPresent()) {
+				return account;
+			}
+		}
+
+		// Search by login name
+		if (!Strings.isNullOrEmpty(loginName)) {
+			return this.getOsAccountByLoginName(loginName, realm.get());
+		} else {
+			return Optional.empty();
+		}
+	}	
+	
 	/**
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.
@@ -977,7 +1347,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	public void addExtendedOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
-	
+
 		synchronized (account) {  // synchronized to prevent multiple threads trying to add osAccount attributes concurrently to the same osAccount.
 			db.acquireSingleUserCaseWriteLock();
 
@@ -1043,8 +1413,8 @@ public final class OsAccountManager {
 			} finally {
 				db.releaseSingleUserCaseWriteLock();
 			}
+			// set the atrribute list in account to the most current list from the database
 			List<OsAccountAttribute> currentAttribsList = getOsAccountAttributes(account);
-			currentAttribsList.addAll(accountAttributes);
 			account.setAttributesInternal(currentAttribsList);
 		}
 		fireChangeEvent(account);
@@ -1089,7 +1459,7 @@ public final class OsAccountManager {
 				if (!rs.wasNull()) {
 					sourceContent = this.db.getContentById(sourceObjId);
 				}
-				BlackboardAttribute.Type attributeType = db.getAttributeType(rs.getInt("attribute_type_id"));
+				BlackboardAttribute.Type attributeType = db.getBlackboard().getAttributeType(rs.getInt("attribute_type_id"));
 				OsAccountAttribute attribute = account.new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"),
 						rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
 						db, account, host, sourceContent);
@@ -1105,40 +1475,116 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Get a list of OsAccountInstances for the give OsAccount.
+	 * Gets the OS account instances for a given OS account.
 	 *
-	 * @param account Account to retrieve instance for.
+	 * @param account The OS account.
 	 *
-	 * @return List of OsAccountInstances, the list maybe empty if none were
-	 *         found.
+	 * @return The OS account instances, may be an empty list.
 	 *
 	 * @throws TskCoreException
 	 */
-	List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
-		List<OsAccountInstance> instanceList = new ArrayList<>();
-		String queryString = String.format("SELECT * FROM tsk_os_account_instances WHERE os_account_obj_id = %d", account.getId());
+	public List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
+		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + account.getId();
+		return getOsAccountInstances(whereClause);
+	}
+
+	/**
+	 * Gets the OS account instances with the given instance IDs.
+	 *
+	 * @param instanceIDs The instance IDs.
+	 *
+	 * @return The OS account instances.
+	 *
+	 * @throws TskCoreException Thrown if there is an error querying the case
+	 *                          database.
+	 */
+	public List<OsAccountInstance> getOsAccountInstances(List<Long> instanceIDs) throws TskCoreException {
+		String instanceIds = instanceIDs.stream().map(id -> id.toString()).collect(Collectors.joining(","));
+
+		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
+
+		String querySQL = "SELECT * FROM tsk_os_account_instances "
+				+ "	WHERE tsk_os_account_instances.id IN (" + instanceIds + ")";
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
+				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
+				ResultSet results = connection.executeQuery(preparedStatement)) {
 
-			while (rs.next()) {
-				long dataSourceId = rs.getLong("data_source_obj_id");
-				int instanceType = rs.getInt("instance_type");
+			osAcctInstances = getOsAccountInstancesFromResultSet(results);
 
-				instanceList.add(new OsAccountInstance(db, account, dataSourceId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
-			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Failed to get OsAccountInstance for OsAccount (%d)", account.getId()), ex);
+			throw new TskCoreException("Failed to get OsAccountInstances (SQL = " + querySQL + ")", ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
-
-		return instanceList;
+		return osAcctInstances;
 	}
-	
-	
+
+	/**
+	 * Gets the OS account instances that satisfy the given SQL WHERE clause.
+	 *
+	 * Note: this query returns only the most significant instance type (least
+	 * ordinal) for each instance, that matches the specified WHERE clause.
+	 *
+	 * @param whereClause The SQL WHERE clause.
+	 *
+	 * @return The OS account instances.
+	 *
+	 * @throws TskCoreException Thrown if there is an error querying the case
+	 *                          database.
+	 */
+	private List<OsAccountInstance> getOsAccountInstances(String whereClause) throws TskCoreException {
+		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
+
+		String querySQL
+				= "SELECT tsk_os_account_instances.* "
+				+ " FROM tsk_os_account_instances "
+				+ " INNER JOIN ( SELECT os_account_obj_id,  data_source_obj_id, MIN(instance_type) AS min_instance_type "
+				+ "					FROM tsk_os_account_instances"
+				+ "					GROUP BY os_account_obj_id, data_source_obj_id ) grouped_instances "
+				+ " ON tsk_os_account_instances.os_account_obj_id = grouped_instances.os_account_obj_id "
+				+ " AND tsk_os_account_instances.instance_type = grouped_instances.min_instance_type "
+				+ " WHERE " + whereClause;
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = db.getConnection();
+				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
+				ResultSet results = connection.executeQuery(preparedStatement)) {
+
+			osAcctInstances = getOsAccountInstancesFromResultSet(results);
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to get OsAccountInstances (SQL = " + querySQL + ")", ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+		return osAcctInstances;
+	}
+
+	/**
+	 * Returns list of OS account instances from the given result set.
+	 *
+	 * @param results Result set from a SELECT tsk_os_account_instances.* query.
+	 *
+	 * @return List of OS account instances.
+	 *
+	 * @throws SQLException
+	 */
+	private List<OsAccountInstance> getOsAccountInstancesFromResultSet(ResultSet results) throws SQLException {
+
+		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
+		while (results.next()) {
+			long instanceId = results.getLong("id");
+			long osAccountObjID = results.getLong("os_account_obj_id");
+			long dataSourceObjId = results.getLong("data_source_obj_id");
+			int instanceType = results.getInt("instance_type");
+			osAcctInstances.add(new OsAccountInstance(db, instanceId, osAccountObjID, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.fromID(instanceType)));
+		}
+
+		return osAcctInstances;
+	}
+
 	/**
 	 * Updates the properties of the specified account in the database.
 	 *
@@ -1160,10 +1606,10 @@ public final class OsAccountManager {
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			OsAccountUpdateResult updateStatus = updateStandardOsAccountAttributes(osAccount, fullName, accountType, accountStatus, creationTime, trans);
-			
+
 			trans.commit();
 			trans = null;
-			
+
 			return updateStatus;
 		} finally {
 			if (trans != null) {
@@ -1173,8 +1619,7 @@ public final class OsAccountManager {
 	}
 
 	/**
-	 * Updates the properties of the specified account in the
-	 * database.
+	 * Updates the properties of the specified account in the database.
 	 *
 	 * A column is updated only if a non-null value has been specified.
 	 *
@@ -1203,12 +1648,12 @@ public final class OsAccountManager {
 			}
 
 			if (Objects.nonNull(accountType)) {
-				updateAccountColumn(osAccount.getId(), "type", accountType, connection);
+				updateAccountColumn(osAccount.getId(), "type", accountType.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (Objects.nonNull(accountStatus)) {
-				updateAccountColumn(osAccount.getId(), "status", accountStatus, connection);
+				updateAccountColumn(osAccount.getId(), "status", accountStatus.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
@@ -1235,18 +1680,18 @@ public final class OsAccountManager {
 		}
 	}
 
-	
 	/**
-	 * Updates specified column in the tsk_os_accounts table to the specified value.
-	 * 
-	 * @param <T> Type of value - must be a String, Long or an Integer. 
+	 * Updates specified column in the tsk_os_accounts table to the specified
+	 * value.
+	 *
+	 * @param <T>          Type of value - must be a String, Long or an Integer.
 	 * @param accountObjId Object id of the account to be updated.
-	 * @param colName Name of column o be updated.
-	 * @param colValue New column value. 
-	 * @param connection Database connection to use.
-	 * 
-	 * @throws SQLException If there is an error updating the database.
-	 * @throws TskCoreException  If the value type is not handled.
+	 * @param colName      Name of column o be updated.
+	 * @param colValue     New column value.
+	 * @param connection   Database connection to use.
+	 *
+	 * @throws SQLException     If there is an error updating the database.
+	 * @throws TskCoreException If the value type is not handled.
 	 */
 	private <T> void updateAccountColumn(long accountObjId, String colName, T colValue, CaseDbConnection connection) throws SQLException, TskCoreException {
 
@@ -1254,28 +1699,33 @@ public final class OsAccountManager {
 				+ " SET " + colName + " = ? "
 				+ " WHERE os_account_obj_id = ?";
 
-		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
-		preparedStatement.clearParameters();
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
 
-		if (Objects.isNull(colValue)) {
-			preparedStatement.setNull(1, Types.NULL); // handle null value
-		} else {
-			if (colValue instanceof String) {
-				preparedStatement.setString(1, (String) colValue);
-			} else if (colValue instanceof Long) {
-				preparedStatement.setLong(1, (Long) colValue);
-			} else if (colValue instanceof Integer) {
-				preparedStatement.setInt(1, (Integer) colValue);
+			if (Objects.isNull(colValue)) {
+				preparedStatement.setNull(1, Types.NULL); // handle null value
 			} else {
-				throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				if (colValue instanceof String) {
+					preparedStatement.setString(1, (String) colValue);
+				} else if (colValue instanceof Long) {
+					preparedStatement.setLong(1, (Long) colValue);
+				} else if (colValue instanceof Integer) {
+					preparedStatement.setInt(1, (Integer) colValue);
+				} else {
+					throw new TskCoreException(String.format("Unhandled column data type received while updating the account (%d) ", accountObjId));
+				}
 			}
-		}
 
-		preparedStatement.setLong(2, accountObjId);
-		
-		connection.executeUpdate(preparedStatement);
+			preparedStatement.setLong(2, accountObjId);
+
+			connection.executeUpdate(preparedStatement);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
-	
+
 	/**
 	 * Updates the signature of the specified account, if the db status of the
 	 * account is active.
@@ -1289,25 +1739,25 @@ public final class OsAccountManager {
 	private void updateAccountSignature(long accountObjId, String signature, CaseDbConnection connection) throws SQLException {
 
 		String updateSQL = "UPDATE tsk_os_accounts SET "
-					+ "		signature = "
-					+ "       CASE WHEN db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + " THEN ? ELSE signature END  "
-					+ " WHERE os_account_obj_id = ?";	// 8
+				+ "		signature = "
+				+ "       CASE WHEN db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId() + " THEN ? ELSE signature END  "
+				+ " WHERE os_account_obj_id = ?";	// 8
 
 		PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 		preparedStatement.clearParameters();
 
 		preparedStatement.setString(1, signature);
 		preparedStatement.setLong(2, accountObjId);
-		
+
 		connection.executeUpdate(preparedStatement);
 	}
-	
+
 	/**
 	 * Update the address and/or login name for the specified account in the
 	 * database. Also update the realm addr/name if needed.
-	 * 
-	 * A column is updated only if its current value is null and a
-	 * non-null value has been specified.
+	 *
+	 * A column is updated only if its current value is null and a non-null
+	 * value has been specified.
 	 *
 	 *
 	 * @param osAccount     OsAccount that needs to be updated in the database.
@@ -1317,7 +1767,7 @@ public final class OsAccountManager {
 	 * @param referringHost Host.
 	 *
 	 * @return OsAccountUpdateResult Account update status, and the updated
-         account.
+	 *         account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
@@ -1336,9 +1786,7 @@ public final class OsAccountManager {
 			}
 		}
 	}
-	
-	
-	
+
 	/**
 	 * Update the address and/or login name for the specified account in the
 	 * database. Also update the realm addr/name if needed.
@@ -1346,30 +1794,130 @@ public final class OsAccountManager {
 	 * A column is updated only if it's current value is null and a non-null
 	 * value has been specified.
 	 *
-	 * @param osAccount OsAccount that needs to be updated in the database.
+	 * @param osAccount  OsAccount that needs to be updated in the database.
 	 * @param accountSid Account SID, may be null.
-	 * @param loginName Login name, may be null.
-	 * @param realmName Account realm name. May be null if accountSid is not null.
+	 * @param loginName  Login name, may be null.
+	 * @param realmName  Account realm name. May be null if accountSid is not
+	 *                   null.
 	 *
 	 * @return OsAccountUpdateResult Account update status, and the updated
-         account.
+	 *         account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
 	 */
 	private OsAccountUpdateResult updateCoreWindowsOsAccountAttributes(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost, CaseDbTransaction trans) throws TskCoreException, NotUserSIDException {
-						
+
 		// first get and update the realm - if we have the info to find the realm
-		if ( !StringUtils.isBlank(accountSid) || !StringUtils.isBlank(realmName) ) {
-			db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, realmName, referringHost, trans.getConnection());
-		}
 		
+		if ((!StringUtils.isBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) || !StringUtils.isBlank(realmName)) {
+			// If the SID is a well known SID, ensure we use the well known english name
+			String resolvedRealmName = WindowsAccountUtils.toWellknownEnglishRealmName(realmName);
+			
+			
+			OsRealmUpdateResult realmUpdateResult = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, resolvedRealmName, referringHost, trans.getConnection());
+			
+			
+			Optional<OsAccountRealm> realmOptional = realmUpdateResult.getUpdatedRealm();
+
+			if (realmOptional.isPresent()) {
+				
+				if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
+
+					// Check if update of the realm triggers a merge with any other realm, 
+					// say another realm with same name but no SID, or same SID but no name
+					//1. Check if there is any OTHER realm with the same name, same host but no addr
+					Optional<OsAccountRealm> anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, trans.getConnection());
+
+					// 2. Check if there is any OTHER realm with same addr and host, but NO name
+					Optional<OsAccountRealm> anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, trans.getConnection());
+
+					if (anotherRealmWithSameName.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realmOptional.get(), trans);
+					}
+					if (anotherRealmWithSameAddr.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameAddr.get(), realmOptional.get(), trans);
+					}
+				}
+			}
+		}
+
 		// now update the account core data
-		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, loginName, trans);
+		String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
+		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, resolvedLoginName, trans);
+
+		Optional<OsAccount> updatedAccount = updateStatus.getUpdatedAccount();
+		if (updatedAccount.isPresent()) {
+			// After updating account data, check if there is matching account to merge
+			mergeOsAccount(updatedAccount.get(), trans);
+		}
 		
 		return updateStatus;
 	}
 
+	/**
+	 * Update the address and/or login name for the specified account in the
+	 * database.
+	 *
+	 * A column is updated only if its current value is null and a non-null
+	 * value has been specified.
+	 *
+	 * @param osAccount     OsAccount that needs to be updated in the database.
+	 * @param uid           Account ID, may be null.
+	 * @param loginName     Login name, may be null.
+	 *
+	 * @return OsAccountUpdateResult Account update status, and the updated
+	 *         account.
+	 *
+	 * @throws TskCoreException If there is a database error or if the updated
+	 *                          information conflicts with an existing account.
+	 */
+	public OsAccountUpdateResult updateCoreLocalLinuxOsAccountAttributes(OsAccount osAccount, String uid, String loginName) throws TskCoreException {
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			OsAccountUpdateResult updateStatus = this.updateCoreLocalLinuxOsAccountAttributes(osAccount, uid, loginName, trans);
+
+			trans.commit();
+			trans = null;
+			return updateStatus;
+		} finally {
+			if (trans != null) {
+				trans.rollback();
+			}
+		}
+	}
+	
+	/**
+	 * Update the address and/or login name for the specified account in the
+	 * database.
+	 *
+	 * A column is updated only if it's current value is null and a non-null
+	 * value has been specified.
+	 *
+	 * @param osAccount  OsAccount that needs to be updated in the database.
+	 * @param uid        Account ID, may be null.
+	 * @param loginName  Login name, may be null.
+	 *
+	 * @return OsAccountUpdateResult Account update status, and the updated
+	 *         account.
+	 *
+	 * @throws TskCoreException If there is a database error or if the updated
+	 *                          information conflicts with an existing account.
+	 */
+	@Beta
+	private OsAccountUpdateResult updateCoreLocalLinuxOsAccountAttributes(OsAccount osAccount, String uid, String loginName, CaseDbTransaction trans) throws TskCoreException {
+		
+		// Update the account core data
+		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, uid, loginName, trans);
+
+		Optional<OsAccount> updatedAccount = updateStatus.getUpdatedAccount();
+		if (updatedAccount.isPresent()) {
+			// After updating account data, check if there is matching account to merge
+			mergeOsAccount(updatedAccount.get(), trans);
+		}
+		
+		return updateStatus;
+	}
 	
 	/**
 	 * Update the address and/or login name for the specified account in the
@@ -1388,7 +1936,7 @@ public final class OsAccountManager {
 	 * @param loginName Login name, may be null.
 	 *
 	 * @return OsAccountUpdateResult Account update status, and the updated
-         account.
+	 *         account.
 	 *
 	 * @throws TskCoreException If there is a database error or if the updated
 	 *                          information conflicts with an existing account.
@@ -1401,17 +1949,12 @@ public final class OsAccountManager {
 		try {
 			CaseDbConnection connection = trans.getConnection();
 
-			// if a new addr is provided and the account already has an address, and they are not the same, throw an exception
-			if (!StringUtils.isBlank(address) && !StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !address.equalsIgnoreCase(osAccount.getAddr().orElse(""))) {
+			// if a new non-null addr is provided and the account already has an address, and they are not the same, throw an exception
+			if (!StringUtils.isBlank(address) && !address.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) && !StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !address.equalsIgnoreCase(osAccount.getAddr().orElse(""))) {
 				throw new TskCoreException(String.format("Account (%d) already has an address (%s), address cannot be updated.", osAccount.getId(), osAccount.getAddr().orElse("NULL")));
 			}
 
-			// if a new login name is provided and the account already has a loginname and they are not the same, throw an exception
-			if (!StringUtils.isBlank(loginName) && !StringUtils.isBlank(osAccount.getLoginName().orElse(null)) && !loginName.equalsIgnoreCase(osAccount.getLoginName().orElse(""))) {
-				throw new TskCoreException(String.format("Account (%d) already has a login name (%s), login name cannot be updated.", osAccount.getId(), osAccount.getLoginName().orElse("NULL")));
-			}
-
-			if (StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address)) {
+			if (StringUtils.isBlank(osAccount.getAddr().orElse(null)) && !StringUtils.isBlank(address) && !address.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 				updateAccountColumn(osAccount.getId(), "addr", address, connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
@@ -1421,16 +1964,44 @@ public final class OsAccountManager {
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
-			// update signature if needed
-			if (updateStatusCode == OsAccountUpdateStatus.UPDATED) {
-				String newSignature = getOsAccountSignature(address, loginName);
-				updateAccountSignature(osAccount.getId(), newSignature, connection);
-			}
-
 			// if nothing is changed, return
 			if (updateStatusCode == OsAccountUpdateStatus.NO_CHANGE) {
 				return new OsAccountUpdateResult(updateStatusCode, osAccount);
 			}
+
+			// update signature if needed, based on the most current addr/loginName
+			OsAccount currAccount = getOsAccountByObjectId(osAccount.getId(), connection);
+			String newAddress = currAccount.getAddr().orElse(null);
+			String newLoginName = currAccount.getLoginName().orElse(null);
+
+			String newSignature = getOsAccountSignature(newAddress, newLoginName);
+			
+			try {
+				updateAccountSignature(osAccount.getId(), newSignature, connection);
+			} catch (SQLException ex) {
+				// There's a slight chance that we're in the case where we are trying to add an addr to an OS account
+				// with only a name where the addr already exists on a different OS account. This will cause a unique
+				// constraint failure in updateAccountSignature(). This is unlikely to happen in normal use
+				// since we lookup OS accounts by addr before name when we have both (i.e., it would be strange to have an
+				// OsAccount in hand with only the loginName set when we also know the addr). 
+				// Correctly handling every case here is non-trivial, so for the moment only look for the specific case where
+				// we had an OsAccount with just an addr and and OsAccount with just a login name that we now 
+				// want to combine.
+				if (osAccount.getAddr().isEmpty() && !StringUtils.isBlank(address)) {
+					OsAccountRealm realm = db.getOsAccountRealmManager().getRealmByRealmId(osAccount.getRealmId(), connection);
+					Optional<OsAccount> matchingAddrAcct = getOsAccountByAddr(address, realm.getScopeHost().get(), connection);
+					if (matchingAddrAcct.isEmpty() 
+							|| matchingAddrAcct.get().getId() == osAccount.getId()
+							|| matchingAddrAcct.get().getLoginName().isPresent()) {
+						throw ex; // Rethrow the original error
+					}
+					
+					// What we should have is osAccount with just a loginName and matchingAddrAcct with 
+					// just an address, so merge them.
+					mergeOsAccounts(matchingAddrAcct.get(), osAccount, trans);
+				}
+			}
+
 			// get the updated account from database
 			updatedAccount = getOsAccountByObjectId(osAccount.getId(), connection);
 
@@ -1439,12 +2010,11 @@ public final class OsAccountManager {
 
 			return new OsAccountUpdateResult(updateStatusCode, updatedAccount);
 
-		} catch (SQLException ex) {
+		} catch (SQLException ex) {			
 			throw new TskCoreException(String.format("Error updating account with unique id = %s, account id = %d", osAccount.getAddr().orElse("Unknown"), osAccount.getId()), ex);
 		}
 	}
 
-	
 	/**
 	 * Returns a list of hosts where the OsAccount has appeared.
 	 *
@@ -1491,37 +2061,22 @@ public final class OsAccountManager {
 	 * @throws SQLException
 	 */
 	private OsAccount osAccountFromResultSet(ResultSet rs) throws SQLException {
-		OsAccount osAccount = new OsAccount(db, rs.getLong("os_account_obj_id"), rs.getLong("realm_id"), rs.getString("login_name"), rs.getString("addr"),
-				rs.getString("signature"), OsAccount.OsAccountStatus.fromID(rs.getInt("status")),
+
+		OsAccountType accountType = null;
+		int typeId = rs.getInt("type");
+		if (!rs.wasNull()) {
+			accountType = OsAccount.OsAccountType.fromID(typeId);
+		}
+
+		Long creationTime = rs.getLong("created_date"); // getLong returns 0 if value is null
+		if (rs.wasNull()) {
+			creationTime = null;
+		}
+
+		return new OsAccount(db, rs.getLong("os_account_obj_id"), rs.getLong("realm_id"), rs.getString("login_name"), rs.getString("addr"),
+				rs.getString("signature"), rs.getString("full_name"), creationTime, accountType, OsAccount.OsAccountStatus.fromID(rs.getInt("status")),
 				OsAccount.OsAccountDbStatus.fromID(rs.getInt("db_status")));
 
-		// set other optional fields
-		String fullName = rs.getString("full_name");
-		if (!rs.wasNull()) {
-			osAccount.setFullName(fullName);
-		}
-
-		int type = rs.getInt("type");
-		if (!rs.wasNull()) {
-			osAccount.setOsAccountType(OsAccount.OsAccountType.fromID(type));
-		}
-
-		long creationTime = rs.getLong("created_date");
-		if (!rs.wasNull()) {
-			osAccount.setCreationTime(creationTime);
-		}
-
-		return osAccount;
-	}
-
-	/**
-	 * Fires an OsAccountAddedEvent for the given OsAccount. Do not call this
-	 * with an open transaction.
-	 *
-	 * @param account Newly created account.
-	 */
-	private void fireCreationEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsCreationEvent(Collections.singletonList(account)));
 	}
 
 	/**
@@ -1531,19 +2086,8 @@ public final class OsAccountManager {
 	 * @param account Updated account.
 	 */
 	private void fireChangeEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsUpdateEvent(Collections.singletonList(account)));
+		db.fireTSKEvent(new OsAccountsUpdatedTskEvent(Collections.singletonList(account)));
 	}
-
-	/**
-	 * Fires an OsAccountDeleteEvent for the given OsAccount. Do not call this
-	 * with an open transaction.
-	 *
-	 * @param account Deleted account.
-	 */
-	private void fireDeleteEvent(OsAccount account) {
-		db.fireTSKEvent(new OsAccountsDeleteEvent(Collections.singletonList(account.getId())));
-	}	
-
 
 	/**
 	 * Created an account signature for an OS Account. This signature is simply
@@ -1570,87 +2114,6 @@ public final class OsAccountManager {
 			throw new TskCoreException("OS Account must have either a uniqueID or a login name.");
 		}
 		return signature;
-	}
-
-	/**
-	 * Event fired by OsAccountManager to indicate that a new OsAccount was
-	 * created.
-	 */
-	public static final class OsAccountsCreationEvent {
-
-		private final List<OsAccount> accountList;
-
-		/**
-		 * Constructs a new AddedEvent
-		 *
-		 * @param accountList List newly created accounts.
-		 */
-		OsAccountsCreationEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
-		}
-
-		/**
-		 * Returns a list of the added OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
-	}
-
-	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * updated.
-	 */
-	public static final class OsAccountsUpdateEvent {
-
-		private final List<OsAccount> accountList;
-
-		/**
-		 * Constructs a new ChangeEvent
-		 *
-		 * @param accountList List newly created accounts.
-		 */
-		OsAccountsUpdateEvent(List<OsAccount> accountList) {
-			this.accountList = accountList;
-		}
-
-		/**
-		 * Returns a list of the updated OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<OsAccount> getOsAcounts() {
-			return Collections.unmodifiableList(accountList);
-		}
-	}
-
-	/**
-	 * Event fired by OsAccount Manager to indicate that an OsAccount was
-	 * deleted.
-	 */
-	public static final class OsAccountsDeleteEvent {
-
-		private final List<Long> accountObjectIds;
-
-		/**
-		 * Constructs a new DeleteEvent
-		 *
-		 * @param accountList List newly deleted accounts.
-		 */
-		OsAccountsDeleteEvent(List<Long> accountObjectIds) {
-			this.accountObjectIds = accountObjectIds;
-		}
-
-		/**
-		 * Returns a list of the deleted OsAccounts.
-		 *
-		 * @return List of OsAccounts.
-		 */
-		public List<Long> getOsAcountObjectIds() {
-			return Collections.unmodifiableList(accountObjectIds);
-		}
 	}
 
 	/**
@@ -1687,25 +2150,26 @@ public final class OsAccountManager {
 			super(msg, ex);
 		}
 	}
-	
+
 	/**
 	 * Status of an account update.
 	 */
 	public enum OsAccountUpdateStatus {
 
-		NO_CHANGE,	/// no change was made to account.
-		UPDATED,	/// account was updated
+		NO_CHANGE, /// no change was made to account.
+		UPDATED, /// account was updated
 		MERGED		/// account update triggered a merge
 	}
-	
+
 	/**
-	 * Container that encapsulates the account update status and the updated account.
+	 * Container that encapsulates the account update status and the updated
+	 * account.
 	 */
 	public final static class OsAccountUpdateResult {
-		
+
 		private final OsAccountUpdateStatus updateStatus;
 		private final OsAccount updatedAccount;
-		
+
 		OsAccountUpdateResult(OsAccountUpdateStatus updateStatus, OsAccount updatedAccount) {
 			this.updateStatus = updateStatus;
 			this.updatedAccount = updatedAccount;
@@ -1717,6 +2181,63 @@ public final class OsAccountManager {
 
 		public Optional<OsAccount> getUpdatedAccount() {
 			return Optional.ofNullable(updatedAccount);
+		}
+	}
+
+	/**
+	 * Represents the osAccountId\dataSourceId pair for use with the cache of
+	 * OsAccountInstances.
+	 */
+	private class OsAccountInstanceKey implements Comparable<OsAccountInstanceKey>{
+
+		private final long osAccountId;
+		private final long dataSourceId;
+
+		OsAccountInstanceKey(long osAccountId, long dataSourceId) {
+			this.osAccountId = osAccountId;
+			this.dataSourceId = dataSourceId;
+		}
+
+		@Override
+		public boolean equals(Object other) {
+			if (this == other) {
+				return true;
+			}
+			if (other == null) {
+				return false;
+			}
+			if (getClass() != other.getClass()) {
+				return false;
+			}
+
+			final OsAccountInstanceKey otherKey = (OsAccountInstanceKey) other;
+
+			if (osAccountId != otherKey.osAccountId) {
+				return false;
+			}
+
+			return dataSourceId == otherKey.dataSourceId;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 5;
+			hash = 53 * hash + (int) (this.osAccountId ^ (this.osAccountId >>> 32));
+			hash = 53 * hash + (int) (this.dataSourceId ^ (this.dataSourceId >>> 32));
+			return hash;
+		}
+
+		@Override
+		public int compareTo(OsAccountInstanceKey other) {
+			if(this.equals(other)) {
+				return 0;
+			}
+			
+			if (dataSourceId != other.dataSourceId) {
+				return Long.compare(dataSourceId, other.dataSourceId);
+			}
+
+			return Long.compare(osAccountId, other.osAccountId);
 		}
 	}
 }

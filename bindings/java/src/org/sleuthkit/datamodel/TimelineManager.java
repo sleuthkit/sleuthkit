@@ -26,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,15 +42,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import static org.sleuthkit.datamodel.CollectionUtils.isNotEmpty;
+import static org.sleuthkit.datamodel.CommManagerSqlStringUtils.buildCSVString;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
-import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
 
 /**
  * Provides access to the timeline data in a case database.
@@ -80,10 +81,8 @@ public final class TimelineManager {
 	 */
 	private static final ImmutableList<TimelineEventType> PREDEFINED_EVENT_TYPES
 			= new ImmutableList.Builder<TimelineEventType>()
-					.add(TimelineEventType.CUSTOM_TYPES)
 					.addAll(TimelineEventType.WEB_ACTIVITY.getChildren())
 					.addAll(TimelineEventType.MISC_TYPES.getChildren())
-					.addAll(TimelineEventType.CUSTOM_TYPES.getChildren())
 					.build();
 
 	// all known artifact type ids (used for determining if an artifact is standard or custom event)
@@ -116,22 +115,26 @@ public final class TimelineManager {
 	TimelineManager(SleuthkitCase caseDB) throws TskCoreException {
 		this.caseDB = caseDB;
 
-		//initialize root and base event types, these are added to the DB in c++ land
-		ROOT_CATEGORY_AND_FILESYSTEM_TYPES.forEach(eventType -> eventTypeIDMap.put(eventType.getTypeID(), eventType));
+		List<TimelineEventType> fullList = new ArrayList<>();
+		fullList.addAll(ROOT_CATEGORY_AND_FILESYSTEM_TYPES);
+		fullList.addAll(PREDEFINED_EVENT_TYPES);
 
-		//initialize the other event types that aren't added in c++
 		caseDB.acquireSingleUserCaseWriteLock();
 		try (final CaseDbConnection con = caseDB.getConnection();
-				final Statement statement = con.createStatement()) {
-			for (TimelineEventType type : PREDEFINED_EVENT_TYPES) {
-				String query = " INTO tsk_event_types(event_type_id, display_name, super_type_id) "
-								+ "VALUES( " + type.getTypeID() + ", '"
-								+ escapeSingleQuotes(type.getDisplayName()) + "',"
-								+ type.getParent().getTypeID()
-								+ ")";
-				con.executeUpdate(statement,
-						insertOrIgnore(query)); //NON-NLS
-				eventTypeIDMap.put(type.getTypeID(), type);	
+				final PreparedStatement pStatement = con.prepareStatement(
+						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) VALUES (?, ?, ?)"),
+						Statement.NO_GENERATED_KEYS)) {
+			for (TimelineEventType type : fullList) {
+				pStatement.setLong(1, type.getTypeID());
+				pStatement.setString(2, escapeSingleQuotes(type.getDisplayName()));
+				if (type != type.getParent()) {
+					pStatement.setLong(3, type.getParent().getTypeID());
+				} else {
+					pStatement.setNull(3, java.sql.Types.INTEGER);
+				}
+
+				con.executeUpdate(pStatement);
+				eventTypeIDMap.put(type.getTypeID(), type);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to initialize timeline event types", ex); // NON-NLS
@@ -349,6 +352,12 @@ public final class TimelineManager {
 	 *         the event type is not found.
 	 */
 	public Optional<TimelineEventType> getEventType(long eventTypeID) {
+		// The parent EventType with ID 22 has been deprecated. This ID had two
+		// children which have be reassigned to MISC_TYPES.
+		if(eventTypeID == TimelineEventType.DEPRECATED_OTHER_EVENT_ID) {
+			return Optional.of(TimelineEventType.MISC_TYPES);
+		}
+
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 
@@ -477,7 +486,8 @@ public final class TimelineManager {
 		String insertDescriptionSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (PreparedStatement insertDescriptionStmt = connection.prepareStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+		try {
+			PreparedStatement insertDescriptionStmt = connection.getPreparedStatement(insertDescriptionSql, PreparedStatement.RETURN_GENERATED_KEYS);
 			insertDescriptionStmt.clearParameters();
 			insertDescriptionStmt.setLong(1, dataSourceObjId);
 			insertDescriptionStmt.setLong(2, fileObjId);
@@ -578,6 +588,7 @@ public final class TimelineManager {
 	 */
 	Set<TimelineEvent> addEventsForNewFileQuiet(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
 		//gather time stamps into map
+		// if any of these events become deprecated in the future, filtering may need to occur.
 		Map<TimelineEventType, Long> timeMap = ImmutableMap.of(TimelineEventType.FILE_CREATED, file.getCrtime(),
 				TimelineEventType.FILE_ACCESSED, file.getAtime(),
 				TimelineEventType.FILE_CHANGED, file.getCtime(),
@@ -659,15 +670,15 @@ public final class TimelineManager {
 			TimelineEventType eventType;//the type of the event to add.
 			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_TL_EVENT_TYPE));
 			if (attribute == null) {
-				eventType = TimelineEventType.OTHER;
+				eventType = TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL;
 			} else {
 				long eventTypeID = attribute.getValueLong();
-				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.OTHER);
+				eventType = eventTypeIDMap.getOrDefault(eventTypeID, TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL);
 			}
 
 			try {
 				// @@@ This casting is risky if we change class hierarchy, but was expedient.  Should move parsing to another class
-				addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.OTHER).makeEventDescription(artifact), eventType, artifact)
+				addArtifactEvent(((TimelineEventArtifactTypeImpl) TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL).makeEventDescription(artifact), eventType, artifact)
 						.ifPresent(newEvents::add);
 			} catch (DuplicateException ex) {
 				logger.log(Level.SEVERE, getDuplicateExceptionMessage(artifact, "Attempt to make a timeline event artifact duplicate"), ex);
@@ -776,10 +787,62 @@ public final class TimelineManager {
 		TimelineEventDescriptionWithTime evtWDesc = new TimelineEventDescriptionWithTime(timeVal, description, description, description);
 
 		TimelineEventType evtType = (ARTIFACT_TYPE_IDS.contains(artifact.getArtifactTypeID()))
-				? TimelineEventType.OTHER
-				: TimelineEventType.USER_CREATED;
+				? TimelineEventType.STANDARD_ARTIFACT_CATCH_ALL
+				: TimelineEventType.CUSTOM_ARTIFACT_CATCH_ALL;
 
 		return addArtifactEvent(evtWDesc, evtType, artifact);
+	}
+	
+	
+	/**
+	 * Adds a timeline event to the database in a transaction.
+	 * @param eventType The event type.
+	 * @param shortDesc The short description.
+	 * @param medDesc The medium description.
+	 * @param longDesc The long description.
+	 * @param dataSourceId The data source id of the event.
+	 * @param contentId The content id of the event.
+	 * @param artifactId The artifact id of the event (can be null).
+	 * @param time Unix epoch offset time of the event in seconds.
+	 * @param hashHit True if a hash hit.
+	 * @param tagged True if tagged.
+	 * @param trans The transaction.
+	 * @return The added event.
+	 * @throws TskCoreException 
+	 */
+	@Beta
+	public TimelineEvent addTimelineEvent(
+			TimelineEventType eventType, String shortDesc, String medDesc, String longDesc,
+			long dataSourceId, long contentId, Long artifactId, long time,
+			boolean hashHit, boolean tagged,
+			CaseDbTransaction trans
+	) throws TskCoreException {
+		caseDB.acquireSingleUserCaseWriteLock();
+		try {
+			Long descriptionID = addEventDescription(dataSourceId, contentId, artifactId,
+					longDesc, medDesc, shortDesc, hashHit, tagged, trans.getConnection());
+
+			if (descriptionID == null) {
+				descriptionID = getEventDescription(dataSourceId, contentId, artifactId, longDesc, trans.getConnection());
+			}
+			if (descriptionID != null) {
+				long eventID = addEventWithExistingDescription(time, eventType, descriptionID, trans.getConnection());
+				TimelineEvent timelineEvt = new TimelineEvent(eventID, descriptionID, contentId, artifactId, time, eventType,
+						longDesc, medDesc, shortDesc, hashHit, tagged);
+				
+				trans.registerTimelineEvent(new TimelineEventAddedEvent(timelineEvt));
+				return timelineEvt;
+			} else {
+				throw new TskCoreException(MessageFormat.format(
+						"Failed to get event description for [shortDesc: {0}, dataSourceId: {1}, contentId: {2}, artifactId: {3}]",
+						shortDesc, dataSourceId, contentId, artifactId == null ? "<null>" : artifactId));
+			}
+		} catch (DuplicateException dupEx) {
+			logger.log(Level.WARNING, "Attempt to make duplicate", dupEx);
+			return null;
+		} finally {
+			caseDB.releaseSingleUserCaseWriteLock();
+		}
 	}
 
 	/**
@@ -798,7 +861,9 @@ public final class TimelineManager {
 	private Optional<TimelineEvent> addArtifactEvent(TimelineEventDescriptionWithTime eventPayload,
 			TimelineEventType eventType, BlackboardArtifact artifact) throws TskCoreException, DuplicateException {
 
-		if (eventPayload == null) {
+		// make sure event payload is present
+		// only create event for a timeline event type if not deprecated
+		if (eventPayload == null || eventType.isDeprecated()) {
 			return Optional.empty();
 		}
 		long time = eventPayload.getTime();
@@ -865,7 +930,8 @@ public final class TimelineManager {
 		String insertEventSql = getSqlIgnoreConflict(tableValuesClause);
 
 		caseDB.acquireSingleUserCaseWriteLock();
-		try (PreparedStatement insertRowStmt = connection.prepareStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);) {
+		try {
+			PreparedStatement insertRowStmt = connection.getPreparedStatement(insertEventSql, Statement.RETURN_GENERATED_KEYS);
 			insertRowStmt.clearParameters();
 			insertRowStmt.setLong(1, type.getTypeID());
 			insertRowStmt.setLong(2, descriptionID);

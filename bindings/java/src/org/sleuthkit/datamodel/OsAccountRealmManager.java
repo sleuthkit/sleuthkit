@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,14 +18,17 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -41,6 +44,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 public final class OsAccountRealmManager {
 
 	private static final Logger LOGGER = Logger.getLogger(OsAccountRealmManager.class.getName());
+	private static final String LOCAL_REALM_NAME = "local";
 
 	private final SleuthkitCase db;
 
@@ -80,7 +84,8 @@ public final class OsAccountRealmManager {
 		if (referringHost == null) {
 			throw new TskCoreException("A referring host is required to create a realm.");
 		}
-		if (StringUtils.isBlank(accountSid) && StringUtils.isBlank(realmName)) {
+		if ((StringUtils.isBlank(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+			&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Either an address or a name is required to create a realm.");
 		}
 		
@@ -99,6 +104,7 @@ public final class OsAccountRealmManager {
 
 			case UNKNOWN:
 			default:
+				// NOTE: if there's a well known SID, the scope will be changed to LOCAL later. 
 				// check if the referring host already has a realm
 				boolean isHostRealmKnown = isHostRealmKnown(referringHost);
 				if (isHostRealmKnown) {
@@ -114,7 +120,8 @@ public final class OsAccountRealmManager {
 		
 		// get windows realm address from sid
 		String realmAddr = null;
-		if (!Strings.isNullOrEmpty(accountSid)) {
+		String resolvedRealmName = WindowsAccountUtils.toWellknownEnglishRealmName(realmName);
+		if (!Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 			
 			if (!WindowsAccountUtils.isWindowsUserSid(accountSid)) {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", accountSid ));
@@ -122,17 +129,71 @@ public final class OsAccountRealmManager {
 			
 			realmAddr = WindowsAccountUtils.getWindowsRealmAddress(accountSid);
 			
-			// if the account is special windows account, create a local realm for it.
-			if (realmAddr.equals(WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR)) {
+			
+			if (WindowsAccountUtils.isWindowsWellKnownSid(accountSid)) {
+				
+				// if the sid is a Windows well known SID, create a local realm for it.
 				scopeHost = referringHost;
 				scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;
+				
+				// if the SID is a Windows well known SID, then prefer to use the default well known name to create the realm 
+				String wellKnownRealmName = WindowsAccountUtils.getWindowsWellKnownSidRealmName(accountSid);
+				if (!StringUtils.isEmpty(wellKnownRealmName)) {
+					resolvedRealmName = wellKnownRealmName;
+				}
 			}
 		}
 		
-		String signature = makeRealmSignature(realmAddr, realmName, scopeHost);
+		String signature = makeRealmSignature(realmAddr, resolvedRealmName, scopeHost);
 		
 		// create a realm
-		return newRealm(realmName, realmAddr, signature, scopeHost, scopeConfidence);
+		return newRealm(resolvedRealmName, realmAddr, signature, scopeHost, scopeConfidence);
+	}
+	
+	/**
+	 * Create local realm to use for Linux accounts.
+	 *
+	 * @param referringHost Host where realm reference is found.
+	 *
+	 * @return OsAccountRealm.
+	 *
+	 * @throws TskCoreException                     If there is an error
+	 *                                              creating the realm.
+	 */
+	@Beta
+	public OsAccountRealm newLocalLinuxRealm(Host referringHost) throws TskCoreException {
+
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required to create a realm.");
+		}
+		
+		String realmName = LOCAL_REALM_NAME;
+		OsAccountRealm.ScopeConfidence scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;		
+		String signature = makeRealmSignature("", realmName, referringHost);
+		
+		// create a realm
+		return newRealm(realmName, "", signature, referringHost, scopeConfidence);
+	}
+	
+	/**
+	 * Get local realm to use for Linux accounts.
+	 *
+	 * @param referringHost Host where realm reference is found.
+	 *
+	 * @return OsAccountRealm.
+	 *
+	 * @throws TskCoreException                     If there is an error
+	 *                                              creating the realm.
+	 */
+	@Beta
+	public Optional<OsAccountRealm> getLocalLinuxRealm(Host referringHost) throws TskCoreException {
+		if (referringHost == null) {
+			throw new TskCoreException("A referring host is required get a realm.");
+		}
+		
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			return getRealmByName(LOCAL_REALM_NAME, referringHost, connection);
+		}
 	}
 	
 	/**
@@ -159,7 +220,8 @@ public final class OsAccountRealmManager {
 		}
 		
 		// need at least one of the two, the addr or name to look up
-		if (Strings.isNullOrEmpty(accountSid) && Strings.isNullOrEmpty(realmName)) {
+		if ((Strings.isNullOrEmpty(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) )
+				&& Strings.isNullOrEmpty(realmName)) {
 			throw new TskCoreException("Realm address or name is required get a realm.");
 		}
 		
@@ -190,12 +252,13 @@ public final class OsAccountRealmManager {
 		}
 		
 		// need at least one of the two, the addr or name to look up
-		if (StringUtils.isBlank(accountSid) && StringUtils.isBlank(realmName)) {
+		if ((StringUtils.isBlank(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
+				&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Realm address or name is required get a realm.");
 		}
 		
-		// If an accountSID is provided search for realm by addr.
-		if (!Strings.isNullOrEmpty(accountSid)) {
+		// If a non null accountSID is provided search for realm by addr.
+		if (!Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
 			
 			if (!WindowsAccountUtils.isWindowsUserSid(accountSid)) {
 				throw new OsAccountManager.NotUserSIDException(String.format("SID = %s is not a user SID.", accountSid ));
@@ -208,10 +271,13 @@ public final class OsAccountRealmManager {
 			}
 		}
 
+		// ensure we are using English names for any well known SIDs. 
+		String resolvedRealmName = WindowsAccountUtils.toWellknownEnglishRealmName(realmName);
+		
 		// No realm addr so search by name.
-		Optional<OsAccountRealm> realm = getRealmByName(realmName, referringHost, connection);
-		if (realm.isPresent() && !Strings.isNullOrEmpty(accountSid)) {
-			// If we were given an accountSID, make sure there isn't one set on the matching realm.
+		Optional<OsAccountRealm> realm = getRealmByName(resolvedRealmName, referringHost, connection);
+		if (realm.isPresent() && !Strings.isNullOrEmpty(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) {
+			// If we were given a non-null accountSID, make sure there isn't one set on the matching realm.
 			// We know it won't match because the previous search by SID failed.
 			if (realm.get().getRealmAddr().isPresent()) {
 				return Optional.empty();
@@ -235,28 +301,26 @@ public final class OsAccountRealmManager {
 	 * @param referringHost Referring Host.
 	 * @param connection    Database connection to use.
 	 *
-	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm
-	 *         is found.
+	 * @return OsRealmUpdateResult account update result. 
 	 *
 	 * @throws TskCoreException
 	 */
-	Optional<OsAccountRealm> getAndUpdateWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException, OsAccountManager.NotUserSIDException {
+	OsRealmUpdateResult getAndUpdateWindowsRealm(String accountSid, String realmName, Host referringHost, CaseDbConnection connection) throws TskCoreException, OsAccountManager.NotUserSIDException {
 		
 		// get realm
-		Optional<OsAccountRealm> realmOptional =  getWindowsRealm(accountSid, realmName, referringHost, connection );
-		
+		Optional<OsAccountRealm> realmOptional = getWindowsRealm(accountSid, realmName, referringHost, connection);
+
 		// if found, update it if needed
 		if (realmOptional.isPresent()) {
-			String realmAddr = StringUtils.isNotBlank(accountSid) ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
+			String realmAddr = (StringUtils.isNotBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) ? WindowsAccountUtils.getWindowsRealmAddress(accountSid) : null;
 			OsRealmUpdateResult realmUpdateResult = updateRealm(realmOptional.get(), realmAddr, realmName, connection);
-			
-			// if realm was updated, return the updated realm
-			if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
-				return realmUpdateResult.getUpdatedRealm();
-			} 
-		} 
-		
-		return realmOptional; // return the found realm as is, if any
+
+			return realmUpdateResult;
+
+		} else {
+			return new OsRealmUpdateResult(OsRealmUpdateStatus.NO_CHANGE, null);
+		}
+
 	}
 	
 	
@@ -290,6 +354,9 @@ public final class OsAccountRealmManager {
 	/**
 	 * Updates the realm address and/or name, if a non blank address/name is
 	 * specified and the current address/name is blank.
+	 * 
+	 * The realm name will not be updated regardless of the value in realmName
+	 * if the passed in realm has an address equal to SPECIAL_WINDOWS_REALM_ADDR.
 	 *
 	 * @param realm      Realm to update.
 	 * @param realmAddr  Realm address, may be null if the address doesn't need
@@ -303,74 +370,119 @@ public final class OsAccountRealmManager {
 	 * @throws TskCoreException If there is a database error or if a realm
 	 *                          already exists with that information.
 	 */
-	private OsRealmUpdateResult updateRealm(OsAccountRealm realm, String realmAddr, String realmName,  CaseDbConnection connection) throws TskCoreException {
-		
+	private OsRealmUpdateResult updateRealm(OsAccountRealm realm, String realmAddr, String realmName, CaseDbConnection connection) throws TskCoreException {
+
 		// need at least one of the two
-		if (StringUtils.isBlank(realmAddr) && StringUtils.isBlank(realmName)) {
+		if ( (StringUtils.isBlank(realmAddr) || realmAddr.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))  
+				&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Realm address or name is required to update realm.");
 		}
-		
+
 		OsRealmUpdateStatus updateStatusCode = OsRealmUpdateStatus.NO_CHANGE;
 		OsAccountRealm updatedRealm = null;
-		
-		List<String> realmNames = realm.getRealmNames();
-		String currRealmName = realmNames.isEmpty() ? null : realmNames.get(0);	// currently there is only one name.
-		String currRealmAddr = realm.getRealmAddr().orElse(null);
-		
-		
-		// set name and address to new values only if the current value is blank and the new value isn't.		
-		String newRealmAddr;
-		if ( (StringUtils.isBlank(currRealmAddr) && StringUtils.isNotBlank(realmAddr))) {
-			newRealmAddr = realmAddr;
-			updateStatusCode = OsRealmUpdateStatus.UPDATED;
-		} else {
-			newRealmAddr = currRealmAddr;
-		}
-		
-		String newRealmName;
-		if (StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)) {
-			newRealmName = realmName;
-			updateStatusCode = OsRealmUpdateStatus.UPDATED;
-		} else {
-			newRealmName = currRealmName;
-		}
-		
-		// make new signature
-		String newSignature = makeRealmSignature(newRealmAddr, newRealmName, realm.getScopeHost().orElse(null));
-		
-		// if nothing is to be changed, return
-		if ( updateStatusCode == OsRealmUpdateStatus.NO_CHANGE) {
-			return new OsRealmUpdateResult(updateStatusCode, realm);
-		}
-		
-		
+
 		db.acquireSingleUserCaseWriteLock();
 		try {
-			// We only alow realm addr, name and signature to be updated at this time. 
+			String currRealmAddr = realm.getRealmAddr().orElse(null);
+
+			// set name and address to new values only if the current value is blank and the new value isn't.		
+			if ((StringUtils.isBlank(currRealmAddr) && StringUtils.isNotBlank(realmAddr) && !realmAddr.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID))) {
+				updateRealmColumn(realm.getRealmId(), "realm_addr", realmAddr, connection);
+				currRealmAddr = realmAddr;
+				updateStatusCode = OsRealmUpdateStatus.UPDATED;
+			}
+			
+			List<String> realmNames = realm.getRealmNames();
+			String currRealmName = realmNames.isEmpty() ? null : realmNames.get(0);	// currently there is only one name.
+			
+			// Update realm name if:
+			//	 Current realm name is empty
+			//	 The passed in realm name is not empty
+			if (StringUtils.isBlank(currRealmName) && StringUtils.isNotBlank(realmName)) {
+				updateRealmColumn(realm.getRealmId(), "realm_name", realmName, connection);
+				updateStatusCode = OsRealmUpdateStatus.UPDATED;
+			}
+			
+			// if nothing is to be changed, return
+			if (updateStatusCode == OsRealmUpdateStatus.NO_CHANGE) {
+				return new OsRealmUpdateResult(updateStatusCode, realm);
+			}
+
+			// update realm signature - based on the most current address and name
+			OsAccountRealm currRealm = getRealmByRealmId(realm.getRealmId(), connection);
+			String newRealmAddr = currRealm.getRealmAddr().orElse(null);
+			String newRealmName = (currRealm.getRealmNames().isEmpty() == false) ? currRealm.getRealmNames().get(0) : null;
+
+			// make new signature
+			String newSignature = makeRealmSignature(newRealmAddr, newRealmName, realm.getScopeHost().orElse(null));
+
 			// Use a random string as the signature if the realm is not active.
-			String updateSQL = "UPDATE tsk_os_account_realms SET realm_name = ?,  realm_addr = ?, " 
-					+  " realm_signature = "
+			String updateSQL = "UPDATE tsk_os_account_realms SET  "
+					+ " realm_signature = "
 					+ "   CASE WHEN db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId() + " THEN ? ELSE realm_signature END "
 					+ " WHERE id = ?";
 			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
-			
-			preparedStatement.setString(1, newRealmName);
-			preparedStatement.setString(2, newRealmAddr);
-			preparedStatement.setString(3, newSignature); // Is only set for active accounts
-			preparedStatement.setLong(4, realm.getRealmId());
+
+			preparedStatement.setString(1, newSignature); // Is only set for active accounts
+			preparedStatement.setLong(2, realm.getRealmId());
 			connection.executeUpdate(preparedStatement);
-			
+
 			// read the updated realm
 			updatedRealm = this.getRealmByRealmId(realm.getRealmId(), connection);
-			
+
 			return new OsRealmUpdateResult(updateStatusCode, updatedRealm);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating realm with id = %d, name = %s, addr = %s", realm.getRealmId(), realmName != null ? realmName : "Null", realm.getRealmAddr().orElse("Null") ), ex);
+			throw new TskCoreException(String.format("Error updating realm with id = %d, name = %s, addr = %s", realm.getRealmId(), realmName != null ? realmName : "Null", realm.getRealmAddr().orElse("Null")), ex);
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
-		
+
+	}
+
+	/**
+	 * Updates specified column in the tsk_os_account_realms table to the specified value.
+	 * 
+	 * @param <T> Type of value - must be a String, Long or an Integer. 
+	 * @param realmId Id of the realm to be updated.
+	 * @param colName Name of column o be updated.
+	 * @param colValue New column value. 
+	 * @param connection Database connection to use.
+	 * 
+	 * @throws SQLException If there is an error updating the database.
+	 * @throws TskCoreException  If the value type is not handled.
+	 */
+	private <T> void updateRealmColumn(long realmId, String colName, T colValue, CaseDbConnection connection) throws SQLException, TskCoreException {
+
+		String updateSQL = "UPDATE tsk_os_account_realms "
+				+ " SET " + colName + " = ? "
+				+ " WHERE id = ?";
+
+		db.acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQL, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+
+			if (Objects.isNull(colValue)) {
+				preparedStatement.setNull(1, Types.NULL); // handle null value
+			} else {
+				if (colValue instanceof String) {
+					preparedStatement.setString(1, (String) colValue);
+				} else if (colValue instanceof Long) {
+					preparedStatement.setLong(1, (Long) colValue);
+				} else if (colValue instanceof Integer) {
+					preparedStatement.setInt(1, (Integer) colValue);
+				} else {
+					throw new TskCoreException(String.format("Unhandled column data type received while updating the realm (id = %d) ", realmId));
+				}
+			}
+
+			preparedStatement.setLong(2, realmId);
+
+			connection.executeUpdate(preparedStatement);
+		} finally {
+			db.releaseSingleUserCaseWriteLock();
+		}
 	}
 	
 	private final static String REALM_QUERY_STRING = "SELECT realms.id as realm_id, realms.realm_name as realm_name,"
@@ -452,34 +564,36 @@ public final class OsAccountRealmManager {
 				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
 				    
-		db.acquireSingleUserCaseReadLock();
-		try (	Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
-			OsAccountRealm accountRealm = null;
-			if (rs.next()) {
-				Host realmHost = null;
-				long hostId = rs.getLong("scope_host_id");
-				if (!rs.wasNull()) {
-					if (host != null ) {
-						realmHost = host; // exact match on given host
-					} else {
-						realmHost = new Host(hostId, rs.getString("host_name"));
-					}
-				}
-				
-				accountRealm = new OsAccountRealm(rs.getLong("realm_id"), rs.getString("realm_name"), 
-												rs.getString("realm_addr"), rs.getString("realm_signature"), 
-												realmHost, ScopeConfidence.fromID(rs.getInt("scope_confidence")),
-												OsAccountRealm.RealmDbStatus.fromID(rs.getInt("db_status")));
-			} 
-			return Optional.ofNullable(accountRealm);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error running the realms query = %s with realmaddr = %s and host name = %s",
-					queryString, realmAddr, (host != null ? host.getName() : "Null")), ex);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
-		}
+		return getRealmUsingQuery(queryString, host,  connection);
+	}
+	
+	/**
+	 * Get another realm with the given addr
+	 * that's different from the specified realm.
+	 * 
+	 * @param realm A known realm, the returned realm should be different from this. 
+	 * @param host Host for realm, may be null.
+	 * @param connection Database connection to use.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no realm found with matching real address.
+	 * 
+	 * @throws TskCoreException.
+	 */
+	Optional<OsAccountRealm> getAnotherRealmByAddr(OsAccountRealm realm, String realmAddr, Host host, CaseDbConnection connection) throws TskCoreException {
+			
+		// If the given realm has a host id, then the other realm should have the same host id
+		// If the given realm has no host id,  then the other realm should have no host id
+		String whereHostClause = realm.getScopeHost().isPresent() 
+							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
+							: " realms.scope_host_id IS NULL ";
+		String queryString = REALM_QUERY_STRING
+						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
+						+ " AND " + whereHostClause
+						+ " AND realms.id <> " + realm.getRealmId()
+				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
+						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
+				    
+		return getRealmUsingQuery(queryString, host,  connection);
 	}
 	
 	/**
@@ -505,6 +619,52 @@ public final class OsAccountRealmManager {
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
 
+		return getRealmUsingQuery(queryString, host,  connection);
+	}
+	
+	/**
+	 * Get another realm with the given name
+	 * that's different from the specified realm.
+	 * 
+	 * @param realm A known realm, the returned realm should be different from this. 
+	 * @param realmName Realm name.
+	 * @param host Host for realm, may be null.
+	 * @param connection Database connection to use.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
+	 * @throws TskCoreException.
+	 */
+	Optional<OsAccountRealm> getAnotherRealmByName(OsAccountRealm realm, String realmName, Host host, CaseDbConnection connection) throws TskCoreException {
+		
+		// If the given realm has a host id, then the other realm should have the same host id
+		// If the given realm has no host id,  then the other realm should have no host id
+		String whereHostClause = realm.getScopeHost().isPresent()
+							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
+							: " realms.scope_host_id IS NULL ";
+		String queryString = REALM_QUERY_STRING
+				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
+				+ " AND " + whereHostClause
+				+ " AND realms.id <> " + realm.getRealmId()
+				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
+				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
+
+		return getRealmUsingQuery(queryString, host,  connection);
+		
+	}
+	
+	/**
+	 * Get the realm using the given realm query. 
+	 * 
+	 * @param queryString Query string
+	 * 
+	  * @param host Host for realm, may be null.
+	 * @param connection Database connection to use.
+	 * 
+	 * @return Optional with OsAccountRealm, Optional.empty if no matching realm is found.
+	 * @throws TskCoreException 
+	 */
+	private Optional<OsAccountRealm> getRealmUsingQuery(String queryString,  Host host, CaseDbConnection connection) throws TskCoreException {
+		
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -529,30 +689,34 @@ public final class OsAccountRealmManager {
 			} 
 			return Optional.ofNullable(accountRealm);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting account realm for with name = %s", realmName), ex);
+			throw new TskCoreException(String.format("Error getting realm using query = %s", queryString), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
 	
 	/**
-	 * Check is there is any realm with a host-scope and KNOWN confidence for the given host.  
+	 * Check if there is any realm with a host-scope and KNOWN confidence for the given host.  
 	 * If we can assume that a host will have only a single host-scoped realm, then you can 
 	 * assume a new realm is domain-scoped when this method returns true.  I.e. once we know
 	 * the host-scoped realm, then everything else is domain-scoped. 
+	 * 
+	 * NOTE: a host may now have several local realms for Windows well known SIDs.  
+	 *       The above assumption only holds for a non well known SID. 
+	 *       Caller must take the account SID into consideration when using this method. 
 	 * 
 	 * @param host Host for which to look for a realm.
 	 * 
 	 * @return True if there exists a a realm with the host scope matching the host. False otherwise
 	 */
+	
 	private boolean isHostRealmKnown(Host host) throws TskCoreException {
 	
 		// check if this host has a local known realm aleady, other than the special windows realm.
 		String queryString = REALM_QUERY_STRING
 				+ " WHERE realms.scope_host_id = " + host.getHostId()
 				+ " AND realms.scope_confidence = " + OsAccountRealm.ScopeConfidence.KNOWN.getId()
-				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
-				+ " AND LOWER(realms.realm_addr) <> LOWER('"+ WindowsAccountUtils.SPECIAL_WINDOWS_REALM_ADDR + "') ";
+				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();

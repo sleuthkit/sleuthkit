@@ -131,14 +131,23 @@ class APFSBtreeNodeIterator {
   }
 
   template <typename Void = void>
-  auto init_value()
+  auto init_value(int recursion_depth)
       -> std::enable_if_t<Node::is_variable_kv_node::value, Void> {
+    if ((recursion_depth < 0) || (recursion_depth > 64)) {
+      throw std::runtime_error("init_value exceeds recursion depth");
+    }
     if (this->_node->has_fixed_kv_size()) {
       throw std::runtime_error("btree does not have variable sized keys");
     }
     const auto &t = _node->_table_data.toc.variable[_index];
     const auto key_data = _node->_table_data.koff + t.key_offset;
     const auto val_data = _node->_table_data.voff - t.val_offset;
+    if (key_data > _node->_storage.data() + _node->_storage.size()) {
+      throw std::runtime_error("init_value: invalid key_offset");
+    }
+    if (val_data < _node->_storage.data()) {
+      throw std::runtime_error("init_value: invalid val_offset");
+    }
 
     memory_view key{key_data, t.key_length};
 
@@ -150,18 +159,27 @@ class APFSBtreeNodeIterator {
       const auto block_num = *((apfs_block_num *)val_data);
 
       _child_it = std::make_unique<typename Node::iterator>(
-          own_node(_node.get(), block_num), 0);
+          own_node(_node.get(), block_num), 0, recursion_depth);
     }
   }
 
   template <typename Void = void>
-  auto init_value() -> std::enable_if_t<Node::is_fixed_kv_node::value, Void> {
+  auto init_value(int recursion_depth) -> std::enable_if_t<Node::is_fixed_kv_node::value, Void> {
+    if ((recursion_depth < 0) || (recursion_depth > 64)) {
+      throw std::runtime_error("init_value exceeds recursion depth");
+    }
     if (!this->_node->has_fixed_kv_size()) {
       throw std::runtime_error("btree does not have fixed sized keys");
     }
     const auto &t = _node->_table_data.toc.fixed[_index];
     const auto key_data = _node->_table_data.koff + t.key_offset;
     const auto val_data = _node->_table_data.voff - t.val_offset;
+    if (key_data > _node->_storage.data() + _node->_storage.size()) {
+      throw std::runtime_error("init_value: invalid key_offset");
+    }
+    if (val_data < _node->_storage.data()) {
+      throw std::runtime_error("init_value: invalid val_offset");
+    }
 
     if (_node->is_leaf()) {
       _val = {(typename Node::key_type)key_data,
@@ -170,7 +188,7 @@ class APFSBtreeNodeIterator {
       const auto block_num = *((apfs_block_num *)val_data);
 
       _child_it = std::make_unique<typename Node::iterator>(
-          own_node(_node.get(), block_num), 0);
+          own_node(_node.get(), block_num), 0, recursion_depth);
     }
   }
 
@@ -178,9 +196,9 @@ class APFSBtreeNodeIterator {
   // Forward iterators must be DefaultConstructible
   APFSBtreeNodeIterator() = default;
 
-  APFSBtreeNodeIterator(const Node *node, uint32_t index);
+  APFSBtreeNodeIterator(const Node *node, uint32_t index, int recursion_depth);
 
-  APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node, uint32_t index);
+  APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node, uint32_t index, int recursion_depth);
 
   APFSBtreeNodeIterator(const Node *node, uint32_t index,
                         typename Node::iterator &&child);
@@ -270,7 +288,7 @@ class APFSBtreeNodeIterator {
         auto index{_index};
 
         this->~APFSBtreeNodeIterator();
-        new (this) APFSBtreeNodeIterator(std::move(node), index);
+        new (this) APFSBtreeNodeIterator(std::move(node), index, 0);
       }
       return (*this);
     }
@@ -287,7 +305,7 @@ class APFSBtreeNodeIterator {
     auto index{_index};
 
     this->~APFSBtreeNodeIterator();
-    new (this) APFSBtreeNodeIterator(std::move(node), index);
+    new (this) APFSBtreeNodeIterator(std::move(node), index, 0);
 
     return (*this);
   }
@@ -434,8 +452,17 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
     }
 
     _table_data.toc = {_storage.data() + toffset()};
+    if ((uintptr_t)_table_data.toc.v - (uintptr_t)_storage.data() > _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid toffset");
+    }
     _table_data.voff = _storage.data() + voffset();
+    if (_table_data.voff > _storage.data() + _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid voffset");
+    }
     _table_data.koff = _storage.data() + koffset();
+    if (_table_data.koff > _storage.data() + _storage.size()) {
+      throw std::runtime_error("APFSBtreeNode: invalid koffset");
+    }
   }
 
   inline bool is_root() const noexcept {
@@ -484,8 +511,8 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
  public:
   using iterator = APFSBtreeNodeIterator<APFSBtreeNode>;
 
-  iterator begin() const { return {this, 0}; }
-  iterator end() const { return {this, key_count()}; }
+  iterator begin() const { return {this, 0, 0}; }
+  iterator end() const { return {this, key_count(), 0}; }
 
   template <typename T, typename Compare>
   iterator find(const T &value, Compare comp) const {
@@ -505,7 +532,7 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
 
         if (res == 0) {
           // We've found it!
-          return {this, i - 1};
+          return {this, i - 1, 0};
         }
 
         if (res < 0) {
@@ -526,7 +553,7 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
       const auto &k = key(i - 1);
 
       if (comp(k, value) <= 0) {
-        iterator it{this, i - 1};
+        iterator it{this, i - 1, 0};
 
         auto ret = it._child_it->_node->find(value, comp);
         if (ret == it._child_it->_node->end()) {
@@ -580,8 +607,8 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
 
   inline bool is_leaf() const noexcept { return (bn()->level == 0); }
 
-  inline iterator begin() const { return {this, 0}; }
-  inline iterator end() const { return {this, key_count()}; }
+  inline iterator begin() const { return {this, 0, 0}; }
+  inline iterator end() const { return {this, key_count(), 0}; }
 
   template <typename T, typename Compare>
   inline iterator find(const T &value, Compare comp) const {
@@ -595,7 +622,7 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
 
         if (res == 0) {
           // We've found it!
-          return {this, i};
+          return {this, i, 0};
         }
 
         if (res > 0) {
@@ -627,7 +654,7 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
       if (v == 0) {
         // We need to see if the jobj might be in the last node
         if (last != 0) {
-          iterator it{this, last - 1};
+          iterator it{this, last - 1, 0};
 
           auto ret = it._child_it->_node->find(value, comp);
           if (ret != it._child_it->_node->end()) {
@@ -644,7 +671,7 @@ class APFSJObjBtreeNode : public APFSBtreeNode<> {
       return end();
     }
 
-    iterator it{this, last};
+    iterator it{this, last, 0};
 
     auto ret = it._child_it->_node->find(value, comp);
     if (ret == it._child_it->_node->end()) {
@@ -828,7 +855,7 @@ class APFSKeybag : public APFSObject {
   }
 
   using key = struct {
-    Guid uuid;
+    TSKGuid uuid;
     std::unique_ptr<uint8_t[]> data;
     uint16_t type;
   };
@@ -837,7 +864,7 @@ class APFSKeybag : public APFSObject {
   APFSKeybag(const APFSPool &pool, const apfs_block_num block_num,
              const uint8_t *key, const uint8_t *key2 = nullptr);
 
-  std::unique_ptr<uint8_t[]> get_key(const Guid &uuid, uint16_t type) const;
+  std::unique_ptr<uint8_t[]> get_key(const TSKGuid &uuid, uint16_t type) const;
 
   std::vector<key> get_keys() const;
 };
@@ -876,7 +903,7 @@ class APFSSuperblock : public APFSObject {
     return spaceman().num_free_blocks();
   }
 
-  inline Guid uuid() const { return {sb()->uuid}; }
+  inline TSKGuid uuid() const { return {sb()->uuid}; }
 
   const std::vector<apfs_block_num> volume_blocks() const;
   const std::vector<apfs_block_num> sm_bitmap_blocks() const;
@@ -961,12 +988,12 @@ class APFSFileSystem : public APFSObject {
   };
 
   struct wrapped_kek {
-    Guid uuid;
+    TSKGuid uuid;
     uint8_t data[0x28];
     uint64_t iterations;
     uint64_t flags;
     uint8_t salt[0x10];
-    wrapped_kek(Guid &&uuid, const std::unique_ptr<uint8_t[]> &);
+    wrapped_kek(TSKGuid &&uuid, const std::unique_ptr<uint8_t[]> &);
 
     inline bool hw_crypt() const noexcept {
       // If this bit is set, some sort of hardware encryption is used.
@@ -1032,7 +1059,7 @@ class APFSFileSystem : public APFSObject {
 
   bool unlock(const std::string &password) noexcept;
 
-  inline Guid uuid() const noexcept { return {fs()->uuid}; }
+  inline TSKGuid uuid() const noexcept { return {fs()->uuid}; }
 
   inline std::string name() const { return {fs()->name}; }
 
@@ -1135,10 +1162,16 @@ APFSBtreeNodeIterator<APFSJObjBtreeNode>::own_node(
 
 template <>
 template <>
-inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>() {
+inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>(int recursion_depth) {
   const auto &t = _node->_table_data.toc.variable[_index];
   const auto key_data = _node->_table_data.koff + t.key_offset;
   const auto val_data = _node->_table_data.voff - t.val_offset;
+  if (key_data > _node->_storage.data() + _node->_storage.size()) {
+    throw std::runtime_error("APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value: invalid key_offset");
+  }
+  if (val_data < _node->_storage.data()) {
+    throw std::runtime_error("APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value: invalid val_offset");
+  }
 
   memory_view key{key_data, t.key_length};
 
@@ -1156,32 +1189,32 @@ inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>() {
     }
 
     _child_it = std::make_unique<typename APFSJObjBtreeNode::iterator>(
-        own_node(_node.get(), it->value->paddr), 0);
+        own_node(_node.get(), it->value->paddr), 0, recursion_depth);
   }
 }
 
 template <typename Node>
 APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(const Node *node,
-                                                   uint32_t index)
+                                                   uint32_t index, int recursion_depth)
     : _node{own_node(node)}, _index{index} {
   // If we're the end, then there's nothing to do
   if (index >= _node->key_count()) {
     return;
   }
 
-  init_value();
+  init_value(recursion_depth + 1);
 }
 
 template <typename Node>
 APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node,
-                                                   uint32_t index)
+                                                   uint32_t index, int recursion_depth)
     : _node{std::forward<lw_shared_ptr<Node>>(node)}, _index{index} {
   // If we're the end, then there's nothing to do
   if (index >= _node->key_count()) {
     return;
   }
 
-  init_value();
+  init_value(recursion_depth + 1);
 }
 
 template <typename Node>

@@ -21,7 +21,7 @@ static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     /* Some of the lower-level methods like block-sized reads.
         * So if the len is not that multiple, then make it. */
-    if (a_len % a_img_info->sector_size) {
+    if ((a_img_info->sector_size > 0) && (a_len % a_img_info->sector_size)) {
         char *buf2 = a_buf;
 
         size_t len_tmp;
@@ -91,6 +91,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     // maps to an int64 we prefer it over size_t although likely checking
     // for ( a_len > SSIZE_MAX ) is better but the code does not seem to
     // use that approach.
+
     if ((TSK_OFF_T) a_len < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
@@ -212,6 +213,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         // since read_count is used in the calculation it may not be negative.
         // Also it does not make sense to copy data when the read_count is 0.
         if (read_count > 0) {
+
             TSK_OFF_T rel_off = 0;
             a_img_info->cache_age[cache_next] = CACHE_AGE;
             a_img_info->cache_len[cache_next] = read_count;

@@ -48,6 +48,7 @@ import org.junit.runners.Suite;
 	AttributeTest.class,
 	ArtifactTest.class,
 	OsAccountTest.class,
+	TimelineEventTypesTest.class,
 	
 //  Note: these tests have dependencies on images being placed in the input folder: nps-2009-canon2-gen6, ntfs1-gen, and small2	
 //	org.sleuthkit.datamodel.TopDownTraversal.class, 
@@ -135,12 +136,11 @@ public class DataModelTestSuite {
 			String timezone = "";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false, "");
 			try {
-				process.run(imagePaths.toArray(new String[imagePaths.size()]));
+				process.run("Data Source ID", imagePaths.toArray(new String[imagePaths.size()]));
 			} catch (TskDataException ex) {
 				inp.add(ex);
 			}
 			writeExceptions(standardFile.getAbsolutePath(), inp);
-			process.commit();
 
 			// dump the database based on the specific test testType
 			OutputStreamWriter standardWriter = testType.traverse(sk, standardFile.getAbsolutePath());

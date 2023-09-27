@@ -87,7 +87,7 @@
  * @returns TSK_ERR on error and TSK_OK otherwise
  */
 static uint8_t
-iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
+iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, const char *buf,
     size_t a_length, TSK_INUM_T a_addr, TSK_OFF_T a_dir_addr)
 {
     ISO_INFO *iso = (ISO_INFO *) a_fs;
@@ -120,7 +120,6 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 
     buf_idx += dd->entry_len;
     if (buf_idx > a_length - sizeof(iso9660_dentry)) {
-        free(buf);
         tsk_fs_name_free(fs_name);
         return TSK_OK;
     }
@@ -201,7 +200,6 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
         }
     }
 
-    free(buf);
     tsk_fs_name_free(fs_name);
 
     return TSK_OK;
@@ -220,11 +218,12 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
  * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
  * structure or a new structure.
  * @param a_addr Address of directory to process.
+ * @param recursion_depth Recursion depth to limit the number of self-calls
  * @returns error, corruption, ok etc.
  */
 TSK_RETVAL_ENUM
 iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     TSK_RETVAL_ENUM retval;
     TSK_FS_DIR *fs_dir;
@@ -291,6 +290,7 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
         tsk_error_set_errstr2("iso9660_dir_open_meta");
+        free(buf);
         return TSK_ERR;
     }
 
@@ -301,21 +301,26 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     // if we are listing the root directory, add the Orphan directory entry
     if (a_addr == a_fs->root_inum) {
         TSK_FS_NAME *fs_name = tsk_fs_name_alloc(256, 0);
-        if (fs_name == NULL)
+        if (fs_name == NULL) {
+            free(buf);
             return TSK_ERR;
+        }
 
         if (tsk_fs_dir_make_orphan_dir_name(a_fs, fs_name)) {
             tsk_fs_name_free(fs_name);
+            free(buf);
             return TSK_ERR;
         }
 
         if (tsk_fs_dir_add(fs_dir, fs_name)) {
             tsk_fs_name_free(fs_name);
+            free(buf);
             return TSK_ERR;
         }
         tsk_fs_name_free(fs_name);
     }
 
+    free(buf);
     return retval;
 }
 

@@ -821,6 +821,7 @@ extern "C" {
         TSK_FS_TYPE_HFS_LEGACY= 0x00008000,   ///< HFS file system
         TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
         TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
+		TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
@@ -903,6 +904,13 @@ extern "C" {
     * is for an APFS "file system". */
 #define TSK_FS_TYPE_ISAPFS(ftype) \
     (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
+
+	/**
+	* \ingroup fslib
+	* Macro that takes a file system type and returns 1 if the type
+	* is for a logical directory "file system". */
+#define TSK_FS_TYPE_ISDIR(ftype) \
+	(((ftype) & TSK_FS_TYPE_LOGICAL)?1:0)
 
 
     /**
@@ -1016,7 +1024,7 @@ extern "C" {
          uint8_t(*istat) (TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
             TSK_DADDR_T numblock, int32_t sec_skew);
 
-         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead.
+         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode, int recursion_depth);  ///< \internal Call tsk_fs_dir_open_meta() instead.
 
          uint8_t(*jopen) (TSK_FS_INFO *, TSK_INUM_T);   ///< \internal
 

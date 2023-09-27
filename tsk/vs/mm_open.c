@@ -15,6 +15,7 @@
  */
 
 #include "tsk_vs_i.h"
+#include "tsk/util/detect_encryption.h"
 
 
 /**
@@ -42,6 +43,13 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         return NULL;
     }
 
+	if (img_info->itype == TSK_IMG_TYPE_LOGICAL) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_VS_UNSUPTYPE);
+		tsk_error_set_errstr("Logical image type can not have a volume system");
+		return NULL;
+	}
+
     /* Autodetect mode 
      * We need to try all of them in case there are multiple 
      * installations
@@ -50,31 +58,32 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
      * will not be reported
      */
     if (type == TSK_VS_TYPE_DETECT) {
-        TSK_VS_INFO *vs, *vs_set = NULL;
-        char *set = NULL;
+        TSK_VS_INFO *vs, *prev_vs = NULL;
+        char *prev_type = NULL;
 
         if ((vs = tsk_vs_dos_open(img_info, offset, 1)) != NULL) {
-            set = "DOS";
-            vs_set = vs;
+            prev_type = "DOS";
+            prev_vs = vs;
         }
         else {
             tsk_error_reset();
         }
+        
         if ((vs = tsk_vs_bsd_open(img_info, offset)) != NULL) {
-            // if (set == NULL) {
+            // if (prev_type == NULL) {
             // In this case, BSD takes priority because BSD partitions start off with
             // the DOS magic value in the first sector with the boot code.
-            set = "BSD";
-            vs_set = vs;
+            prev_type = "BSD";
+            prev_vs = vs;
             /*
                }
                else {
-               vs_set->close(vs_set);
+               prev_vs->close(prev_vs);
                vs->close(vs);
                tsk_error_reset();
                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
                tsk_error_set_errstr(
-               "BSD or %s at %" PRIuDADDR, set, offset);
+               "BSD or %s at %" PRIuDADDR, prev_type, offset);
                tsk_errstr2[0] = '\0';
                return NULL;
                }
@@ -83,24 +92,26 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         else {
             tsk_error_reset();
         }
+        
         if ((vs = tsk_vs_gpt_open(img_info, offset)) != NULL) {
 
-            if ((set != NULL) && (strcmp(set, "DOS") == 0) && (vs->is_backup)) {
+            if ((prev_type != NULL) && (strcmp(prev_type, "DOS") == 0) && (vs->is_backup)) {
                 /* In this case we've found a DOS partition and a backup GPT partition.
-                 * The DOS partition takes priority in this case (and are already in set and vs_set) */
+                 * The DOS partition takes priority in this case (and are already in prev_type and prev_vs) */
                 vs->close(vs);
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "mm_open: Ignoring secondary GPT Partition\n");
             }
             else {
-                if (set != NULL) {
+                if (prev_type != NULL) {
 
                     /* GPT drives have a DOS Safety partition table.
-                     * Test to see if we can ignore one */
-                    if (strcmp(set, "DOS") == 0) {
+                     * Test to see if the GPT has a safety partiiton
+                     * and then we can igore the DOS */
+                    if (strcmp(prev_type, "DOS") == 0) {
                         TSK_VS_PART_INFO *tmp_set;
-                        for (tmp_set = vs_set->part_list; tmp_set;
+                        for (tmp_set = prev_vs->part_list; tmp_set;
                             tmp_set = tmp_set->next) {
                             if ((tmp_set->desc)
                                 && (strncmp(tmp_set->desc, "GPT Safety",
@@ -110,25 +121,27 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                                 if (tsk_verbose)
                                     tsk_fprintf(stderr,
                                         "mm_open: Ignoring DOS Safety GPT Partition\n");
-                                set = NULL;
-                                vs_set = NULL;
+                                prev_type = NULL;
+                                prev_vs->close(prev_vs);
+                                prev_vs = NULL;
                                 break;
                             }
                         }
                     }
 
-                    if (set != NULL) {
-                        vs_set->close(vs_set);
+                    /* If we never found the safety, then we have a conflict. */
+                    if (prev_type != NULL) {
+                        prev_vs->close(prev_vs);
                         vs->close(vs);
                         tsk_error_reset();
-                        tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
-                        tsk_error_set_errstr("GPT or %s at %" PRIuDADDR, set,
+                        tsk_error_set_errno(TSK_ERR_VS_MULTTYPE);
+                        tsk_error_set_errstr("GPT or %s at %" PRIuDADDR, prev_type,
                             offset);
                         return NULL;
                     }
                 }
-                set = "GPT";
-                vs_set = vs;
+                prev_type = "GPT";
+                prev_vs = vs;
             }
         }
         else {
@@ -136,16 +149,16 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         }
 
         if ((vs = tsk_vs_sun_open(img_info, offset)) != NULL) {
-            if (set == NULL) {
-                set = "Sun";
-                vs_set = vs;
+            if (prev_type == NULL) {
+                prev_type = "Sun";
+                prev_vs = vs;
             }
             else {
-                vs_set->close(vs_set);
+                prev_vs->close(prev_vs);
                 vs->close(vs);
                 tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
-                tsk_error_set_errstr("Sun or %s at %" PRIuDADDR, set,
+                tsk_error_set_errno(TSK_ERR_VS_MULTTYPE);
+                tsk_error_set_errstr("Sun or %s at %" PRIuDADDR, prev_type,
                     offset);
                 return NULL;
             }
@@ -155,16 +168,16 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         }
 
         if ((vs = tsk_vs_mac_open(img_info, offset)) != NULL) {
-            if (set == NULL) {
-                set = "Mac";
-                vs_set = vs;
+            if (prev_type == NULL) {
+                prev_type = "Mac";
+                prev_vs = vs;
             }
             else {
-                vs_set->close(vs_set);
+                prev_vs->close(prev_vs);
                 vs->close(vs);
                 tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
-                tsk_error_set_errstr("Mac or %s at %" PRIuDADDR, set,
+                tsk_error_set_errno(TSK_ERR_VS_MULTTYPE);
+                tsk_error_set_errstr("Mac or %s at %" PRIuDADDR, prev_type,
                     offset);
                 return NULL;
             }
@@ -173,14 +186,31 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             tsk_error_reset();
         }
 
-        if (vs_set == NULL) {
+        if (prev_vs == NULL) {
             tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+
+            // Check whether the volume system appears to be encrypted.
+            // Note that detectDiskEncryption does not do an entropy calculation - high entropy 
+            // files will be reported by tsk_fs_open_img().
+            encryption_detected_result* result = detectDiskEncryption(img_info, offset);
+            if (result != NULL) {
+                if (result->encryptionType == ENCRYPTION_DETECTED_SIGNATURE) {
+                    tsk_error_set_errno(TSK_ERR_VS_ENCRYPTED);
+                    tsk_error_set_errstr("%s", result->desc);
+                }
+                free(result);
+                result = NULL;
+            }
+            else {
+                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+            }
             return NULL;
         }
 
-        return vs_set;
+        return prev_vs;
     }
+    
+    // Not autodetect
     else {
 
         switch (type) {

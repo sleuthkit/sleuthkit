@@ -8,7 +8,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-tvV] [-p pooltype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image\n"),
+        ("usage: %" PRIttocTSK " [-tvV] [-p pooltype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image\n"),
         progname);
     tsk_fprintf(stderr, "\t-t: display type only\n");
     tsk_fprintf(stderr,
@@ -57,7 +57,7 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
         case _TSK_T('b'):
@@ -65,7 +65,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -78,7 +78,7 @@ main(int argc, char **argv1)
             pooltype = tsk_pool_type_toid(OPTARG);
             if (pooltype == TSK_POOL_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported pool container type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -89,7 +89,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -140,7 +140,7 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
             tsk_pool_type_print(stderr);
-        img->close(img);
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -150,13 +150,13 @@ main(int argc, char **argv1)
     else {
         if (pool->poolstat(pool, stdout)) {
             tsk_error_print(stderr);
-            pool->close(pool);
-            img->close(img);
+            tsk_pool_close(pool);
+            tsk_img_close(img);
             exit(1);
         }
     }
 
-    pool->close(pool);
-    img->close(img);
+    tsk_pool_close(pool);
+    tsk_img_close(img);
     exit(0);
 }

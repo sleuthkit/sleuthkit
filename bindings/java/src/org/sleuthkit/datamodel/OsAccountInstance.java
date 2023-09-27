@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
@@ -27,63 +28,79 @@ import java.util.ResourceBundle;
  */
 public class OsAccountInstance implements Comparable<OsAccountInstance> {
 
-	private DataSource dataSource = null;
-	private final OsAccount account;
-	private final OsAccountInstanceType instanceType;
-
-	private final long dataSourceId;
-
-	private SleuthkitCase skCase;
-
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
+	private final SleuthkitCase skCase;
+	private final long instanceId;
+	private final long accountId;
+	private final long dataSourceId;
+	private final OsAccountInstanceType instanceType;
+
+	private OsAccount account;
+	private DataSource dataSource;
+
 	/**
-	 * Construct with OsAccount and DataSource instances.
+	 * Constructs a representation of an OS account instance.
 	 *
-	 * @param account      The instance account.
-	 * @param dataSource   The instance data source
-	 * @param instanceType The instance type.
+	 *
+	 * @param skCase          The case database.
+	 * @param instanceId      The instance ID.
+	 * @param account         The OS account of which this object is an
+	 *                        instance.
+	 * @param dataSourceObjId The object ID of the data source where the
+	 *                        instance was found.
+	 * @param instanceType    The instance type.
 	 */
-	OsAccountInstance(OsAccount account, DataSource dataSource, OsAccountInstanceType instanceType) {
-		this(account, dataSource.getId(), instanceType);
-		this.dataSource = dataSource;
+	OsAccountInstance(SleuthkitCase skCase, long instanceId, OsAccount account, long dataSourceId, OsAccountInstanceType instanceType) {
+		this(skCase, instanceId, account.getId(), dataSourceId, instanceType);
+		this.account = account;
 	}
 
 	/**
-	 * Construct with OsAccount and DataSource instances.
+	 * Constructs a representation of an OS account instance.
 	 *
-	 * @param account         The instance account.
-	 * @param dataSourceObjId The instance data source object id.
+	 * @param skCase          The case database.
+	 * @param instanceId      The instance ID.
+	 * @param accountObjId    The object ID of the OS account of which this
+	 *                        object is an instance.
+	 * @param dataSourceObjId The object ID of the data source where the
+	 *                        instance was found.
 	 * @param instanceType    The instance type.
 	 */
-	OsAccountInstance(OsAccount account, long dataSourceObjId, OsAccountInstanceType instanceType) {
-		this.account = account;
+	OsAccountInstance(SleuthkitCase skCase, long instanceId, long accountObjId, long dataSourceObjId, OsAccountInstanceType instanceType) {
+		this.skCase = skCase;
+		this.instanceId = instanceId;
+		this.accountId = accountObjId;
 		this.dataSourceId = dataSourceObjId;
 		this.instanceType = instanceType;
 	}
-	
+
 	/**
-	 * Construct the OsAccountInstance doing a lazy construction on the data
-	 * source object.
+	 * Gets the instance ID of this OS account instance.
 	 *
-	 * @param skCase       The case instance
-	 * @param account      The OsAccount for this instance
-	 * @param dataSourceId The id of the data source
-	 * @param instanceType The instance type.
+	 * @return The instance ID.
 	 */
-	OsAccountInstance(SleuthkitCase skCase, OsAccount account, long dataSourceId, OsAccountInstanceType instanceType) {
-		this.account = account;
-		this.dataSourceId = dataSourceId;
-		this.instanceType = instanceType;
-		this.skCase = skCase;
+	public long getInstanceId() {
+		return instanceId;
 	}
 
 	/**
 	 * Returns the OsAccount object for this instance.
 	 *
 	 * @return The OsAccount object.
+	 *
+	 * @throws TskCoreException Exception thrown if there is an error querying
+	 *                          the case database.
 	 */
-	public OsAccount getOsAccount() {
+	public OsAccount getOsAccount() throws TskCoreException {
+		if (account == null) {
+			try {
+				account = skCase.getOsAccountManager().getOsAccountByObjectId(accountId);
+			} catch (TskCoreException ex) {
+				throw new TskCoreException(String.format("Failed to get OsAccount for id %d", accountId), ex);
+			}
+		}
+
 		return account;
 	}
 
@@ -134,7 +151,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 			return Long.compare(dataSourceId, other.getDataSourceId());
 		}
 
-		return Long.compare(account.getId(), other.getOsAccount().getId());
+		return Long.compare(accountId, other.accountId);
 	}
 
 	@Override
@@ -149,41 +166,52 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 			return false;
 		}
 		final OsAccountInstance other = (OsAccountInstance) obj;
-		if (this.account.getId() != other.getOsAccount().getId()) {
+		
+		if(this.instanceId != other.instanceId) {
 			return false;
 		}
-
-		return this.dataSourceId != other.dataSourceId;
+		
+		if (this.accountId != other.accountId) {
+			return false;
+		}
+		
+		if(this.instanceType != other.instanceType) {
+			return false;
+		}
+		
+		return this.dataSourceId == other.getDataSourceId();
 	}
 
 	@Override
 	public int hashCode() {
 		int hash = 7;
+		hash = 67 * hash + Objects.hashCode(this.instanceId);
 		hash = 67 * hash + Objects.hashCode(this.dataSourceId);
-		hash = 67 * hash + Objects.hashCode(this.account.getId());
+		hash = 67 * hash + Objects.hashCode(this.accountId);
 		hash = 67 * hash + Objects.hashCode(this.instanceType);
 		return hash;
 	}
 
 	/**
-	 * Describes the relationship between an os account instance and the host
-	 * where the instance was found.
-	 *
-	 * Whether an os account actually performed any action on the host or if
-	 * just a reference to it was found on the host (such as in a log file)
+	 * Describes what is known about what an OS Account did on an specific host. 
+     *
+	 * Note: lower ordinal value is more significant than higher ordinal value. 
+	 * Order of significance: LAUNCHED > ACCESSED > REFERENCED.
 	 */
 	public enum OsAccountInstanceType {
-		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // the user launched a program on the host
-		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")),	// user accesed a resource for read/write
-		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text") );	// user was referenced, e.g. in a event log.
+		LAUNCHED(0, bundle.getString("OsAccountInstanceType.Launched.text"), bundle.getString("OsAccountInstanceType.Launched.descr.text")), // user had an interactive session or launched a program on the host
+		ACCESSED(1, bundle.getString("OsAccountInstanceType.Accessed.text"), bundle.getString("OsAccountInstanceType.Accessed.descr.text")), // user accesed a resource/file for read/write. Could have been via a service (such as a file share) or a SID on a random file from an unknown location.  NOTE: Because Windows event logs do not show if an authentication was for an interactive login or accessing a service, we mark a user as ACCESSED based on authentication. They become LAUNCHED if we have proof of them starting a program or getting an interactive login. 
+		REFERENCED(2, bundle.getString("OsAccountInstanceType.Referenced.text"), bundle.getString("OsAccountInstanceType.Referenced.descr.text"));	// user was referenced in a log file (e.g. in a event log) or registry, but there was no evidence of activity or ownership on the host. Examples include an account that was never used and entries on a log server. 
+        
 
 		private final int id;
 		private final String name;
 		private final String description;
 
-		OsAccountInstanceType(int id, String name, String description) {			this.id = id;
+		OsAccountInstanceType(int id, String name, String description) {
+			this.id = id;
 			this.name = name;
-			this.description = description ;
+			this.description = description;
 		}
 
 		/**
@@ -203,7 +231,7 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 		public String getName() {
 			return name;
 		}
-		
+
 		/**
 		 * Get account instance type description.
 		 *
@@ -227,6 +255,19 @@ public class OsAccountInstance implements Comparable<OsAccountInstance> {
 				}
 			}
 			return null;
+		}
+		
+		/**
+		 * Gets account instance type enum from name.
+		 *
+		 * @param name Name to look for.
+		 *
+		 * @return Account instance type enum, null if no match is found.
+		 */
+		public static OsAccountInstanceType fromString(String name) {
+			return Arrays.stream(values())
+					.filter(val -> val.getName().equals(name))
+					.findFirst().orElse(null);
 		}
 	}
 }

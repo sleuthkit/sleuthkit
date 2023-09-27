@@ -47,7 +47,7 @@ public final class OsAccountRealm {
 	private final String realmName; // realm name
 	
 	private final String realmAddr; // realm address
-	private String signature; // either realm address or name (if address is not known)
+	private String signature; // either realm address or name (if address is not known), plus a scope indicator
 	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
 	private final RealmDbStatus dbStatus; // Status of row in database.
@@ -59,7 +59,7 @@ public final class OsAccountRealm {
 	 * @param realmName       Realm name, may be null.
 	 * @param realmAddr       Unique numeric address for realm, may be null only
 	 *                        if realm name is not null.
-	 * @param signature       Either the address or the name.
+	 * @param signature       Either the address or the name, plus a scope indicator.
 	 * @param host            Host if the realm is host scoped.
 	 * @param scopeConfidence Scope confidence.
 	 */
@@ -140,7 +140,7 @@ public final class OsAccountRealm {
 	 * 
 	 * @return Realm database status. 
 	 */
-	public RealmDbStatus getDbStatus() {
+	RealmDbStatus getDbStatus() {
 		return dbStatus;
 	}	
 
@@ -282,7 +282,7 @@ public final class OsAccountRealm {
 	/**
 	 * Encapsulates status of realm row.
 	 */
-	public enum RealmDbStatus {
+	enum RealmDbStatus {
 		ACTIVE(0, "Active"),
 		MERGED(1, "Merged"),
 		DELETED(2, "Deleted");	
@@ -295,7 +295,7 @@ public final class OsAccountRealm {
 			this.name = name;
 		}
 
-		public int getId() {
+		int getId() {
 			return id;
 		}
 
@@ -303,7 +303,7 @@ public final class OsAccountRealm {
 			return name;
 		}
 
-		public static RealmDbStatus fromID(int typeId) {
+		static RealmDbStatus fromID(int typeId) {
 			for (RealmDbStatus type : RealmDbStatus.values()) {
 				if (type.ordinal() == typeId) {
 					return type;

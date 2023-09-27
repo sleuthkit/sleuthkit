@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,5 +61,21 @@ class CalendarEntry extends Facet {
             this.startTime = Instant.ofEpochSecond(startTime).atOffset(ZoneOffset.UTC).toString();
         }
         return this;
+    }
+
+    String getEventType() {
+        return eventType;
+    }
+
+    String getStartTime() {
+        return startTime;
+    }
+
+    String getEndTime() {
+        return endTime;
+    }
+
+    String getLocation() {
+        return location;
     }
 }

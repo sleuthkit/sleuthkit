@@ -18,10 +18,15 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.MessageFormat;
+import java.sql.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -248,22 +253,16 @@ public final class CaseDbAccessManager {
 		validateTableName(tableName);
 		validateSQL(tableSchema);
 
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseWriteLock();
-
-		Statement statement = null;
 		String createSQL = "CREATE TABLE IF NOT EXISTS " + tableName + " " + tableSchema;
-		try {
-			statement = connection.createStatement();
+		try (CaseDbConnection connection = tskDB.getConnection();
+				Statement statement = connection.createStatement();) {
 			statement.execute(createSQL);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating table " + tableName, ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
-
 	}
 
 	/**
@@ -350,19 +349,14 @@ public final class CaseDbAccessManager {
 		validateIndexName(indexName);
 		validateSQL(colsSQL);
 
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseWriteLock();
-
-		Statement statement = null;
 		String indexSQL = "CREATE INDEX IF NOT EXISTS " + indexName + " ON " + tableName + " " + colsSQL; // NON-NLS
-		try {
-			statement = connection.createStatement();
+		try (CaseDbConnection connection = tskDB.getConnection();
+			Statement statement = connection.createStatement(); ) {
 			statement.execute(indexSQL);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating index " + tableName, ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -529,6 +523,54 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
+	 * Creates a prepared statement object for the purposes of running an update
+	 * statement. The given SQL should not include the starting "UPDATE" 
+	 * or the name of the table.
+	 *
+	 * @param tableName The name of the table being updated.
+	 * @param sql       The insert statement without the starting "UPDATE (table name)" part.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareUpdate(String tableName, String sql, CaseDbTransaction trans) throws TskCoreException {
+		validateTableName(tableName);
+		validateSQL(sql);
+
+		String updateSQL = "UPDATE " + tableName + " " + sql; // NON-NLS
+	
+		try {
+			return new CaseDbPreparedStatement(StatementType.UPDATE, updateSQL, trans);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating update prepared statement for query:\n" + updateSQL, ex);
+		}
+	}
+	
+	/**
+	 * Performs an update statement query with the given case prepared statement.
+	 *
+	 * @param preparedStatement The case prepared statement.
+	 * 
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void update(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+		
+		if (!preparedStatement.getType().equals(StatementType.UPDATE)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for update operation");
+		}
+		
+		try {
+			preparedStatement.getStatement().executeUpdate();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating row in table " + "" + " with sql = "+ "", ex);
+		}
+	}	
+	
+	/**
 	 * Updates row(s) in the specified table.
 	 * 
 	 * @param tableName - table to insert into.
@@ -600,25 +642,147 @@ public final class CaseDbAccessManager {
 		
 		validateSQL(sql);
 		
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseReadLock();
-
-		Statement statement = null;
-		ResultSet resultSet;
 		String selectSQL = "SELECT " +  sql; // NON-NLS
-		try {
-			statement = connection.createStatement();
-			resultSet = statement.executeQuery(selectSQL);
+		try (CaseDbConnection connection = tskDB.getConnection();
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(selectSQL)) {
 			queryCallback.process(resultSet);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error running SELECT query.", ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
 	
+	/**
+	 * Creates a prepared statement object for the purposes of running a select
+	 * statement.
+	 *
+	 * NOTE: Creating the CaseDbPreparedStatement opens a connection and
+	 * acquires a read lock on the case database. For this reason, it is
+	 * recommended to close the prepared statement as soon as it is no longer
+	 * needed, through either a try-with-resources block or calling close().
+	 * Additionally, calling other methods that access or update the database
+	 * should be avoided while the prepared statement is open to prevent
+	 * possible deadlocks.
+	 *
+	 * @param sql The select statement without the starting select keyword.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareSelect(String sql) throws TskCoreException {
+		String selectSQL = "SELECT " + sql; // NON-NLS
+		try {
+			return new CaseDbPreparedStatement(StatementType.SELECT, selectSQL, false);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
+		}
+	}
+	
+	/**
+	 * Creates a prepared statement object for the purposes of running a select
+	 * statement. The given SQL should not include the starting "SELECT" keyword.
+	 *
+	 * @param sql       The select statement without the starting select keyword.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareSelect(String sql, CaseDbTransaction trans) throws TskCoreException {
+		validateSQL(sql);
+
+		String selectSQL = "SELECT " + sql; // NON-NLS
+
+		try {
+			return new CaseDbPreparedStatement(StatementType.SELECT, selectSQL, trans);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
+		}
+	}
+
+
+	/**
+	 * Performs a select statement query with the given case prepared statement.
+	 *
+	 * @param preparedStatement The case prepared statement.
+	 * @param queryCallback     The callback to handle the result set.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void select(CaseDbPreparedStatement preparedStatement, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
+		if (!preparedStatement.getType().equals(StatementType.SELECT)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for select operation");
+		}
+		
+		try (ResultSet resultSet = preparedStatement.getStatement().executeQuery()) {
+			queryCallback.process(resultSet);
+		} catch (SQLException ex) {
+			throw new TskCoreException(MessageFormat.format("Error running SELECT query:\n{0}", preparedStatement.getOriginalSql()), ex);
+		}
+	}
+	
+	/**
+	 * Creates a prepared statement object for the purposes of running an insert
+	 * statement. The given SQL should not include the starting "INSERT INTO" 
+	 * or the name of the table.
+	 * 
+	 * For PostGreSQL, the caller must include the ON CONFLICT DO NOTHING clause
+	 *
+	 * @param tableName The name of the table being updated.
+	 * @param sql       The insert statement without the starting "INSERT INTO (table name)" part.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareInsert(String tableName, String sql, CaseDbTransaction trans) throws TskCoreException {
+		validateTableName(tableName);
+		validateSQL(sql);
+		
+		String insertSQL = "INSERT";
+		if (DbType.SQLITE == tskDB.getDatabaseType()) {
+			insertSQL += " OR IGNORE";
+		}
+		insertSQL = insertSQL + " INTO " + tableName + " " + sql; // NON-NLS
+	
+		try {
+			return new CaseDbPreparedStatement(StatementType.INSERT, insertSQL, trans);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating insert prepared statement for query:\n" + insertSQL, ex);
+		}
+	}
+	
+	/**
+	 * Performs a insert statement query with the given case prepared statement.
+	 *
+	 * @param preparedStatement The case prepared statement.
+	 * 
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void insert(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+		
+		if (!preparedStatement.getType().equals(StatementType.INSERT)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for insert operation");
+		}
+		
+		try {
+			preparedStatement.getStatement().executeUpdate();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error inserting row in table " + "" + " with sql = "+ "", ex);
+		}
+	}
+
 	/**
 	 * Deletes a row in the specified table.
 	 * 
@@ -631,19 +795,14 @@ public final class CaseDbAccessManager {
 		validateTableName(tableName);
 		validateSQL(sql);
 
-		CaseDbConnection connection = tskDB.getConnection();
 		tskDB.acquireSingleUserCaseWriteLock();
-
-		Statement statement = null;
 		String deleteSQL = "DELETE FROM " + tableName + " " + sql; // NON-NLS
-		try {
-			statement = connection.createStatement();
+		try (CaseDbConnection connection = tskDB.getConnection();
+			Statement statement = connection.createStatement();) {
 			statement.executeUpdate(deleteSQL);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from table " + tableName, ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -696,6 +855,310 @@ public final class CaseDbAccessManager {
 		/*
 		 * TODO (JIRA-5950): Need SQL injection defense in CaseDbAccessManager 
 		 */
+	}
+	
+	/**
+	 * Enum to track which type of lock the CaseDbPreparedStatement holds.
+	 */
+	private enum LockType {
+		READ,
+		WRITE,
+		NONE;
+	}
+	
+	/**
+	 * Enum to track which type of statement the CaseDbPreparedStatement holds.
+	 */
+	private enum StatementType {
+		SELECT,
+		INSERT,
+		UPDATE;
+	}
+	
+	/**
+	 * A wrapper around a PreparedStatement to execute queries against the
+	 * database.
+	 */
+	@Beta
+	public class CaseDbPreparedStatement implements AutoCloseable {
+
+		private final CaseDbConnection connection;
+		private final PreparedStatement preparedStatement;
+		private final String originalSql;
+		private final LockType lockType;
+		private final StatementType type;
+		
+		/**
+		 * Construct a prepared statement. This should not be used if a transaction
+		 * is already open.
+		 *
+		 * NOTE: Creating the CaseDbPreparedStatement opens a connection and
+		 * acquires a read lock on the case database. For this reason, it is
+		 * recommended to close the prepared statement as soon as it is no
+		 * longer needed, through either a try-with-resources block or calling
+		 * close(). Additionally, calling other methods that access or update
+		 * the database should be avoided while the prepared statement is open
+		 * to prevent possible deadlocks.
+		 *
+		 * @param type                The type of statement.
+		 * @param query               The query string.
+		 * @param isWriteLockRequired Whether or not a write lock is required.
+		 *                            If a write lock is not required, just a
+		 *                            read lock is acquired.
+		 *
+		 * @throws SQLException
+		 * @throws TskCoreException
+		 */
+		private CaseDbPreparedStatement(StatementType type, String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {		
+			if (isWriteLockRequired) {
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();
+				this.lockType = LockType.WRITE;
+			} else {
+				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();
+				this.lockType = LockType.READ;
+			}
+			this.connection = tskDB.getConnection();
+			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			this.originalSql = query;
+			this.type = type;
+		}
+		
+		/**
+		 * Construct a prepared statement using an already open transaction.
+		 *
+		 * @param type                The type of statement.
+		 * @param query               The query string.
+		 * @param trans               The open transaction.
+		 *
+		 * @throws SQLException
+		 * @throws TskCoreException
+		 */
+		private CaseDbPreparedStatement(StatementType type, String query, CaseDbTransaction trans) throws SQLException, TskCoreException {		
+			this.lockType = LockType.NONE;
+			this.connection = trans.getConnection();
+			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			this.originalSql = query;
+			this.type = type;
+		}
+
+		/**
+		 * Returns the delegate prepared statement.
+		 *
+		 * @return The delegate prepared statement.
+		 */
+		private PreparedStatement getStatement() {
+			return preparedStatement;
+		}
+		
+		/**
+		 * Get the type of statement.
+		 * 
+		 * @return The statement type (select or insert).
+		 */
+		private StatementType getType() {
+			return type;
+		}
+
+		/**
+		 * Returns the original sql query.
+		 *
+		 * @return The original sql query.
+		 */
+		private String getOriginalSql() {
+			return originalSql;
+		}
+		
+		/**
+		 * Resets the parameters in the prepared statement.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void reset() throws TskCoreException {
+			try {
+				preparedStatement.clearParameters();
+			} catch (SQLException ex) {
+				throw new TskCoreException("An error occurred while clearing parameters.", ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setBoolean(int parameterIndex, boolean x) throws TskCoreException {
+			try {
+				preparedStatement.setBoolean(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setByte(int parameterIndex, byte x) throws TskCoreException {
+			try {
+				preparedStatement.setByte(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setInt(int parameterIndex, int x) throws TskCoreException {
+			try {
+				preparedStatement.setInt(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setLong(int parameterIndex, long x) throws TskCoreException {
+			try {
+				preparedStatement.setLong(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setDouble(int parameterIndex, double x) throws TskCoreException {
+			try {
+				preparedStatement.setDouble(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setString(int parameterIndex, String x) throws TskCoreException {
+			try {
+				preparedStatement.setString(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setDate(int parameterIndex, Date x) throws TskCoreException {
+			try {
+				preparedStatement.setDate(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setTime(int parameterIndex, Time x) throws TskCoreException {
+			try {
+				preparedStatement.setTime(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setTimestamp(int parameterIndex, Timestamp x) throws TskCoreException {
+			try {
+				preparedStatement.setTimestamp(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		/**
+		 * Sets the value at the given parameter index to the given value. The
+		 * sql type is determined in the same manner as
+		 * java.sql.PreparedStatement.setObject.
+		 *
+		 * @param parameterIndex The index.
+		 * @param x              The value to set at that index.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void setObject(int parameterIndex, Object x) throws TskCoreException {
+			try {
+				preparedStatement.setObject(parameterIndex, x);
+			} catch (SQLException ex) {
+				throw new TskCoreException(MessageFormat.format("There was an error setting the value at index: {0} to {1}", parameterIndex, x), ex);
+			}
+		}
+
+		@Override
+		public void close() throws SQLException {
+			
+			// Don't close the statement/connection or release a lock if we were supplied a transaction.
+			// Everything will be handled when the transaction is closed.
+			if (lockType.equals(LockType.NONE)) {
+				return;
+			}
+			
+			connection.close();
+			if (lockType.equals(LockType.WRITE)) {
+				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseWriteLock();
+			} else {
+				CaseDbAccessManager.this.tskDB.releaseSingleUserCaseReadLock();
+			}
+		}
 	}
 
 }

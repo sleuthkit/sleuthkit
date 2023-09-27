@@ -243,6 +243,9 @@
     <ClCompile Include="..\..\tsk\img\raw.c">
       <Filter>img</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\img\logical_img.c">
+      <Filter>img</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
@@ -280,6 +283,9 @@
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\logical_fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c">
@@ -361,6 +367,15 @@
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_open.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\detect_encryption.c">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\file_system_utils.c">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\unsupported_types.c">
       <Filter>img</Filter>
     </ClCompile>
   </ItemGroup>
@@ -449,6 +464,9 @@
     <ClInclude Include="..\..\tsk\img\raw.h">
       <Filter>img</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tsk\img\logical_img.h">
+      <Filter>img</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\tsk\img\tsk_img.h">
       <Filter>img</Filter>
     </ClInclude>
@@ -462,6 +480,9 @@
       <Filter>fs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_logical_fs.h">
       <Filter>fs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h">
@@ -532,6 +553,15 @@
       <Filter>pool</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\pool.hpp">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\detect_encryption.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\file_system_utils.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\unsupported_types.h">
       <Filter>img</Filter>
     </ClInclude>
   </ItemGroup>

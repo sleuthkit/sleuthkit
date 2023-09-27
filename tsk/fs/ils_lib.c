@@ -181,7 +181,7 @@ ils_mac_act(TSK_FS_FILE * fs_file, void *ptr)
     }
 
     /* ADD image and file name (if we have one) */
-    TFPRINTF(stdout, _TSK_T("0|<%s-"), data->image);
+    TFPRINTF(stdout, _TSK_T("0|<%" PRIttocTSK "-"), data->image);
     tsk_printf("%s%s%s-%" PRIuINUM ">|%" PRIuINUM "|",
         (fs_file->meta->name2) ? fs_file->meta->name2->name : "",
         (fs_file->meta->name2) ? "-" : "",

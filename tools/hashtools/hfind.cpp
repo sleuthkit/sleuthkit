@@ -24,7 +24,7 @@ usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: %s [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
+             ("usage: %" PRIttocTSK " [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-e: Extended mode - where values other than just the name are printed\n");
@@ -292,7 +292,7 @@ main(int argc, char ** argv1)
             if ((handle = CreateFile(lookup_file, GENERIC_READ,
                                      FILE_SHARE_READ, 0, OPEN_EXISTING, 0,
                                      0)) == INVALID_HANDLE_VALUE) {
-                TFPRINTF(stderr, _TSK_T("Error opening hash file: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Error opening hash file: %" PRIttocTSK "\n"),
                          lookup_file);
                 exit(1);
             }

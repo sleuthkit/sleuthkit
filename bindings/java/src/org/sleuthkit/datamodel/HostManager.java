@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,10 +32,11 @@ import java.util.UUID;
 import org.sleuthkit.datamodel.Host.HostDbStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskEvent.HostsUpdatedTskEvent;
+import org.sleuthkit.datamodel.TskEvent.HostsDeletedTskEvent;
 
 /**
  * Responsible for creating/updating/retrieving Hosts.
- *
  */
 public final class HostManager {
 
@@ -153,7 +154,7 @@ public final class HostManager {
 	/**
 	 * Updates the name of the provided host.
 	 *
-	 * @param host The host to be updated.
+	 * @param host    The host to be updated.
 	 * @param newName The new name of the host.
 	 *
 	 * @return The updated host.
@@ -294,7 +295,7 @@ public final class HostManager {
 
 			return dataSources;
 		} catch (SQLException | TskDataException ex) {
-			throw new TskCoreException(String.format("Error getting data sources for host " + host.getName()), ex);
+			throw new TskCoreException(String.format("Error getting data sources for host %s", host.getName()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -328,7 +329,7 @@ public final class HostManager {
 	private Optional<Host> getHostByName(String name, CaseDbConnection connection) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_hosts"
-				+ " WHERE LOWER(name) = LOWER(?)" 
+				+ " WHERE LOWER(name) = LOWER(?)"
 				+ " AND db_status = " + Host.HostDbStatus.ACTIVE.getId();
 
 		db.acquireSingleUserCaseReadLock();
@@ -434,11 +435,23 @@ public final class HostManager {
 	 * @throws TskCoreException if no host is found or an error occurs.
 	 */
 	public Host getHostByDataSource(DataSource dataSource) throws TskCoreException {
-
+		return getHostByDataSource(dataSource.getId());
+	}	
+	
+	/**
+	 * Get host for the given data source ID.
+	 *
+	 * @param dataSourceId The data source ID to look up the host for.
+	 *
+	 * @return The host for this data source (will not be null).
+	 *
+	 * @throws TskCoreException if no host is found or an error occurs.
+	 */	
+	Host getHostByDataSource(long dataSourceId) throws TskCoreException {
 		String queryString = "SELECT tsk_hosts.id AS hostId, tsk_hosts.name AS name, tsk_hosts.db_status AS db_status FROM \n"
 				+ "tsk_hosts INNER JOIN data_source_info \n"
 				+ "ON tsk_hosts.id = data_source_info.host_id \n"
-				+ "WHERE data_source_info.obj_id = " + dataSource.getId();
+				+ "WHERE data_source_info.obj_id = " + dataSourceId;
 
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
@@ -446,78 +459,78 @@ public final class HostManager {
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
 			if (!rs.next()) {
-				throw new TskCoreException(String.format("Host not found for data source with ID = %d", dataSource.getId()));
+				throw new TskCoreException(String.format("Host not found for data source with ID = %d", dataSourceId));
 			} else {
 				return new Host(rs.getLong("hostId"), rs.getString("name"), Host.HostDbStatus.fromID(rs.getInt("db_status")));
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSource.getId()), ex);
+			throw new TskCoreException(String.format("Error getting host for data source with ID = %d", dataSourceId), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
-	 * Merge source host into destination host.
-	 * When complete:
-	 * - All realms will have been moved into the destination host or merged with existing realms in the destination host.
-	 * - All references to the source host will be updated to reference the destination host.
-	 * - The source host will be updated so that it will no longer be returned by any methods
-	 *    apart from get by host id.
-	 * 
+	 * Merge source host into destination host. When complete: - All realms will
+	 * have been moved into the destination host or merged with existing realms
+	 * in the destination host. - All references to the source host will be
+	 * updated to reference the destination host. - The source host will be
+	 * updated so that it will no longer be returned by any methods apart from
+	 * get by host id.
+	 *
 	 * @param sourceHost The source host.
 	 * @param destHost   The destination host.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	public void mergeHosts(Host sourceHost, Host destHost) throws TskCoreException {
 		String query = "";
 		CaseDbTransaction trans = null;
 		try {
 			trans = db.beginTransaction();
-			
+
 			// Merge or move any realms associated with the source host
 			List<OsAccountRealm> realms = db.getOsAccountRealmManager().getRealmsByHost(sourceHost, trans.getConnection());
 			for (OsAccountRealm realm : realms) {
 				db.getOsAccountRealmManager().moveOrMergeRealm(realm, destHost, trans);
 			}
-			
+
 			try (Statement s = trans.getConnection().createStatement()) {
 				// Update references to the source host
-				
+
 				// tsk_host_address_map has a unique constraint on host_id, addr_obj_id, time,
 				// so delete any rows that would be duplicates.
-				query = "DELETE FROM tsk_host_address_map " +
-					"WHERE id IN ( " +
-					"SELECT " +
-					"  sourceMapRow.id " +
-					"FROM " +
-					"  tsk_host_address_map destMapRow " +
-					"INNER JOIN tsk_host_address_map sourceMapRow ON destMapRow.addr_obj_id = sourceMapRow.addr_obj_id AND destMapRow.time = sourceMapRow.time " +
-					"WHERE destMapRow.host_id = " +  destHost.getHostId() + 
-					" AND sourceMapRow.host_id = " + sourceHost.getHostId() + " )";
+				query = "DELETE FROM tsk_host_address_map "
+						+ "WHERE id IN ( "
+						+ "SELECT "
+						+ "  sourceMapRow.id "
+						+ "FROM "
+						+ "  tsk_host_address_map destMapRow "
+						+ "INNER JOIN tsk_host_address_map sourceMapRow ON destMapRow.addr_obj_id = sourceMapRow.addr_obj_id AND destMapRow.time = sourceMapRow.time "
+						+ "WHERE destMapRow.host_id = " + destHost.getHostId()
+						+ " AND sourceMapRow.host_id = " + sourceHost.getHostId() + " )";
 				s.executeUpdate(query);
 				query = makeOsAccountUpdateQuery("tsk_host_address_map", "host_id", sourceHost, destHost);
 				s.executeUpdate(query);
-				
+
 				query = makeOsAccountUpdateQuery("tsk_os_account_attributes", "host_id", sourceHost, destHost);
 				s.executeUpdate(query);
-				
+
 				query = makeOsAccountUpdateQuery("data_source_info", "host_id", sourceHost, destHost);
 				s.executeUpdate(query);
-			
+
 				// Mark the source host as merged and change the name to a random string.
 				String mergedName = makeMergedHostName();
 				query = "UPDATE tsk_hosts SET merged_into = " + destHost.getHostId()
 						+ ", db_status = " + Host.HostDbStatus.MERGED.getId()
-						+ ", name = '" + mergedName + "' " 
+						+ ", name = '" + mergedName + "' "
 						+ " WHERE id = " + sourceHost.getHostId();
-				s.executeUpdate(query);	
+				s.executeUpdate(query);
 			}
-			
+
 			trans.commit();
 			trans = null;
-			
+
 			// Fire events for updated and deleted hosts
 			fireChangeEvent(sourceHost);
 			fireDeletedEvent(destHost);
@@ -529,118 +542,47 @@ public final class HostManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Create the query to update the host id column to the merged host.
-	 * 
+	 *
 	 * @param tableName  Name of table to update.
 	 * @param columnName Name of the column containing the host id.
-	 * @param sourceHost  The source host.
-	 * @param destHost    The destination host.
-	 * 
+	 * @param sourceHost The source host.
+	 * @param destHost   The destination host.
+	 *
 	 * @return The query.
 	 */
 	private String makeOsAccountUpdateQuery(String tableName, String columnName, Host sourceHost, Host destHost) {
 		return "UPDATE " + tableName + " SET " + columnName + " = " + destHost.getHostId() + " WHERE " + columnName + " = " + sourceHost.getHostId();
 	}
-	
+
 	/**
 	 * Create a random name for hosts that have been merged.
-	 * 
+	 *
 	 * @return The random signature.
 	 */
 	private String makeMergedHostName() {
-		return "MERGED " +  UUID.randomUUID().toString();
+		return "MERGED " + UUID.randomUUID().toString();
 	}
 
 	/**
-	 * Fires an event that a host has changed.
-	 * Do not call this with an open transaction.
+	 * Fires an event that a host has changed. Do not call this with an open
+	 * transaction.
 	 *
 	 * @param newValue The new value for the host.
 	 */
 	private void fireChangeEvent(Host newValue) {
-		db.fireTSKEvent(new HostsUpdateEvent(Collections.singletonList(newValue)));
+		db.fireTSKEvent(new HostsUpdatedTskEvent(Collections.singletonList(newValue)));
 	}
 
 	/**
-	 * Fires an event that a host has been deleted.
-	 * Do not call this with an open transaction.
+	 * Fires an event that a host has been deleted. Do not call this with an
+	 * open transaction.
 	 *
 	 * @param deleted The deleted host.
 	 */
 	private void fireDeletedEvent(Host deleted) {
-		db.fireTSKEvent(new HostsDeletionEvent(Collections.singletonList(deleted)));
-	}
-
-	/**
-	 * Base event for all host events
-	 */
-	static class BaseHostEvent {
-
-		private final List<Host> hosts;
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The hosts that are objects of the event.
-		 */
-		BaseHostEvent(List<Host> hosts) {
-			this.hosts = Collections.unmodifiableList(new ArrayList<>(hosts));
-		}
-
-		/**
-		 * Returns the hosts affected in the event.
-		 *
-		 * @return The hosts affected in the event.
-		 */
-		public List<Host> getHosts() {
-			return hosts;
-		}
-	}
-
-	/**
-	 * Event fired when hosts are created.
-	 */
-	public static final class HostsCreationEvent extends BaseHostEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The added hosts.
-		 */
-		HostsCreationEvent(List<Host> hosts) {
-			super(hosts);
-		}
-	}
-
-	/**
-	 * Event fired when hosts are updated.
-	 */
-	public static final class HostsUpdateEvent extends BaseHostEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The new values for the hosts that were changed.
-		 */
-		HostsUpdateEvent(List<Host> hosts) {
-			super(hosts);
-		}
-	}
-
-	/**
-	 * Event fired when hosts are deleted.
-	 */
-	public static final class HostsDeletionEvent extends BaseHostEvent {
-
-		/**
-		 * Main constructor.
-		 *
-		 * @param hosts The hosts that were deleted.
-		 */
-		HostsDeletionEvent(List<Host> hosts) {
-			super(hosts);
-		}
+		db.fireTSKEvent(new HostsDeletedTskEvent(Collections.singletonList(deleted.getHostId())));
 	}
 }

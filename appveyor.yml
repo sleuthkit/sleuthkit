@@ -1,36 +1,76 @@
 version: 4.6.0.{build}
 
-cache:
-  - C:\Users\appveyor\.ant
-  - C:\ProgramData\chocolatey\bin
-  - C:\ProgramData\chocolatey\lib
+environment: 
+  matrix:
 
-image: Visual Studio 2015
+  - job_name: Windows Build
+    appveyor_build_worker_image: Visual Studio 2015
+  - job_name: Linux Build
+    appveyor_build_worker_image: Ubuntu
+  - job_name: macOS Build
+    appveyor_build_worker_image: macos-catalina
 
-install:
-  - ps: choco install nuget.commandline
-  - ps: choco install ant --ignore-dependencies
-  - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
-  - set PATH=C:\Python36-x64\';%PATH%
-environment:
-  global:
-    TSK_HOME: "%APPVEYOR_BUILD_FOLDER%"
-    PYTHON: "C:\\Python36-x64"
-    JDK_HOME: C:\Program Files\Java\jdk1.8.0
-services:
+matrix:
+  fast_finish: true
 
-before_build:
-  - nuget restore win32\libtsk -PackagesDirectory win32\packages
 
-build_script:
-  - python win32\updateAndBuildAll.py -m
-  - ps: ant -version
-  - ps: pushd bindings/java
-  - cmd: ant -q dist
-  - ps: popd
-  - ps: pushd case-uco/java
-  - cmd: ant -q
-  - ps: popd
+# job-specific configurations
+for: 
 
-test_script:
-  - cmd: ant -q -f bindings/java test
+  - 
+    matrix:
+      only:
+        - job_name: Windows Build
+
+    cache:
+      - C:\Users\appveyor\.ant
+      - C:\ProgramData\chocolatey\bin
+      - C:\ProgramData\chocolatey\lib
+
+    install:
+      - ps: choco install nuget.commandline
+      - ps: choco install ant --ignore-dependencies
+      - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
+      - set PATH=C:\Python36-x64\';%PATH%
+    environment:
+      global:
+        TSK_HOME: "%APPVEYOR_BUILD_FOLDER%"
+        PYTHON: "C:\\Python36-x64"
+        JDK_HOME: C:\Program Files\Java\jdk1.8.0
+    services:
+
+    before_build:
+      - nuget restore win32\libtsk -PackagesDirectory win32\packages
+
+    build_script:
+      - python win32\updateAndBuildAll.py -m
+      - ps: ant -version
+      - ps: pushd bindings/java
+      - cmd: ant -q dist
+      - ps: popd
+      - ps: pushd case-uco/java
+      - cmd: ant -q
+      - ps: popd
+
+    test_script:
+      - cmd: ant -q -f bindings/java test
+
+  - 
+    matrix:
+      only:
+        - job_name: Linux Build
+
+    build_script:
+      - ./bootstrap
+      - ./configure -q
+      - make -s
+
+  - 
+    matrix:
+      only:
+        - job_name: macOS Build
+
+    build_script:
+      - ./bootstrap
+      - ./configure -q
+      - make -s

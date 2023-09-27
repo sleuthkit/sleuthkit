@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,6 +55,7 @@ public class LayoutFile extends AbstractFile {
 	 *                           added.
 	 * @param objId              The object id of the file in the case database.
 	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param fileSystemObjectId The object id of the file system. May be null.
 	 * @param name               The name of the file.
 	 * @param fileType           The type of the file.
 	 * @param dirType            The type of the file, usually as reported in
@@ -77,6 +78,8 @@ public class LayoutFile extends AbstractFile {
 	 * @param mtime              The modified time of the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.
@@ -89,18 +92,20 @@ public class LayoutFile extends AbstractFile {
 	LayoutFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId,
 			String name,
 			TSK_DB_FILES_TYPE_ENUM fileType,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size,
 			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, String sha256Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, String sha1Hash,
+			FileKnown knownState,
 			String parentPath, String mimeType,
 			String ownerUid,
 			Long osAccountObjId) {
 			
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), ownerUid, osAccountObjId, Collections.emptyList());
+		super(db, objId, dataSourceObjectId, fileSystemObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), ownerUid, osAccountObjId, TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 	}
 
 	/**
@@ -250,43 +255,5 @@ public class LayoutFile extends AbstractFile {
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "LayoutFile [\t" + "]\t"; //NON-NLS
-	}
-
-	/**
-	 * Constructs a representation of a layout file that has been added to a
-	 * case. Layout files are not file system files, but "virtual" files created
-	 * from blocks of data (e.g. unallocated) that are treated as files for
-	 * convenience and uniformity.
-	 *
-	 * @param db         The case database to which the file has been added.
-	 * @param objId      The object id of the file in the case database.
-	 * @param name       The name of the file.
-	 * @param fileType   The type of the file.
-	 * @param dirType    The type of the file, usually as reported in the name
-	 *                   structure of the file system. May be set to
-	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType   The type of the file, usually as reported in the
-	 *                   metadata structure of the file system. May be set to
-	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag    The allocated status of the file, usually as reported
-	 *                   in the name structure of the file system.
-	 * @param metaFlags  The allocated status of the file, usually as reported
-	 *                   in the metadata structure of the file system.
-	 * @param size       The size of the file.
-	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
-	 * @param knownState The known state of the file from a hash database
-	 *                   lookup, null if not yet looked up.
-	 * @param parentPath The path of the parent of the file.
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	protected LayoutFile(SleuthkitCase db, long objId, String name,
-			TSK_DB_FILES_TYPE_ENUM fileType,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), name, fileType, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, md5Hash, null, knownState, parentPath, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
 	}
 }
