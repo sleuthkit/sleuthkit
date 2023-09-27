@@ -21,6 +21,8 @@
  * See https://github.com/williballenthin/Rejistry for the original Java version.
  */
 
+#include <memory>
+
 /**
  * \file DBRecord.cpp
  *
@@ -44,12 +46,12 @@ namespace Rejistry {
         uint32_t offset = getDWord(INDIRECT_BLOCK_OFFSET_OFFSET);
         offset += REGFHeader::FIRST_HBIN_OFFSET;
 
-        std::auto_ptr< Cell > c(new Cell(_buf, offset));
+        std::unique_ptr< Cell > c(new Cell(_buf, offset));
         if (c.get() == NULL) {
             throw RegistryParseException("Failed to create Cell for DBRecord.");
         }
 
-        std::auto_ptr< DBIndirectRecord > dbi(c->getDBIndirectRecord());
+        std::unique_ptr< DBIndirectRecord > dbi(c->getDBIndirectRecord());
         return dbi->getData(length);
     }
 

@@ -24,6 +24,7 @@
 /**
  * \file REGFHeader.cpp
   */
+#include <memory>
 
 // Local includes
 #include "REGFHeader.h"
@@ -92,9 +93,9 @@ namespace Rejistry {
      */
     NKRecord::NKRecordPtr REGFHeader::getRootNKRecord() const {
         int32_t firstCellOffset = (int32_t)(getDWord(FIRST_KEY_OFFSET_OFFSET));
-        std::auto_ptr< HBIN > firstHBIN(getFirstHBIN());
+        std::unique_ptr< HBIN > firstHBIN(getFirstHBIN());
         if (firstHBIN.get() != NULL) {
-            std::auto_ptr< Cell > cellPtr(firstHBIN->getCellAtOffset(firstCellOffset));
+            std::unique_ptr< Cell > cellPtr(firstHBIN->getCellAtOffset(firstCellOffset));
 
             if (cellPtr.get() == NULL) {
                 throw RegistryParseException("Failed to get first cell.");

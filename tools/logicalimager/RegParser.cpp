@@ -154,7 +154,7 @@ int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
  */
 int RegParser::getSubKeys(const std::wstring &keyName, std::vector<std::wstring> &subKeyNamesList) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
 
         Rejistry::RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
         subKeyNamesList.reserve(subkeys.size());
@@ -195,7 +195,7 @@ int RegParser::getSubKeys(const std::wstring &keyName, std::vector<std::wstring>
  */
 int RegParser::getSubKeys(const std::wstring &keyName, std::vector<RegKey*> &subKeysList) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
 
         Rejistry::RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
         subKeysList.reserve(subkeys.size());
@@ -240,7 +240,7 @@ int RegParser::getSubKeys(const std::wstring &keyName, std::vector<RegKey*> &sub
  */
 int RegParser::getValue(const std::wstring &keyName, const std::wstring &valName, RegVal &val) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
         Rejistry::RegistryValue *value = key->getValue(valName);
         val.initialize(value);
         delete value;
@@ -281,7 +281,7 @@ int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName,
     }
 
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
         Rejistry::RegistryValue *value = key->getValue(valName);
         val.initialize(value);
         delete value;
@@ -313,7 +313,7 @@ int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName,
 */
 int RegParser::getValues(const std::wstring &keyName, std::vector<RegVal *> &valList) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
 
         Rejistry::RegistryValue::RegistryValuePtrList values = key->getValueList();
         valList.reserve(values.size());
@@ -359,7 +359,7 @@ int RegParser::getValues(const RegKey *startKey, const std::wstring &subpathName
     }
 
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
 
         Rejistry::RegistryValue::RegistryValuePtrList values = key->getValueList();
         valList.reserve(values.size());

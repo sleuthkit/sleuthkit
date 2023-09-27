@@ -30,6 +30,8 @@
 
 #include <cstdint>
 
+#include <string>
+
 // Local includes
 #include "ByteBuffer.h"
 

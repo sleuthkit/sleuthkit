@@ -25,6 +25,7 @@
  * \file VKRecord.cpp
  *
  */
+#include <memory>
 
 // Local includes
 #include "VKRecord.h"
@@ -126,12 +127,12 @@ namespace Rejistry {
                 data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, bufSize), bufSize));
             }
             else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
-                std::auto_ptr< Cell > c(new Cell(_buf, offset));
+                std::unique_ptr< Cell > c(new Cell(_buf, offset));
                 if (c.get() == NULL) {
                     throw RegistryParseException("Failed to create Cell for Value data.");
                 }
                 try {
-                    std::auto_ptr< DBRecord > db(c->getDBRecord());
+                    std::unique_ptr< DBRecord > db(c->getDBRecord());
                     if (db.get() == NULL) {
                         throw RegistryParseException("Failed to create Cell for DBRecord.");
                     }
@@ -142,7 +143,7 @@ namespace Rejistry {
                 }
             }
             else {
-                std::auto_ptr< Cell > c(new Cell(_buf, offset));
+                std::unique_ptr< Cell > c(new Cell(_buf, offset));
                 if (c.get() == NULL) {
                     throw RegistryParseException("Failed to create Cell for Value data.");
                 }
@@ -156,7 +157,7 @@ namespace Rejistry {
             break;
         case ValueData::VALTYPE_QWORD:
             {
-                std::auto_ptr< Cell > c(new Cell(_buf, offset));
+                std::unique_ptr< Cell > c(new Cell(_buf, offset));
                 if (c.get() == NULL) {
                     throw RegistryParseException("Failed to create Cell for Value data.");
                 }
