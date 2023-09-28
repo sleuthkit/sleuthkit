@@ -74,7 +74,8 @@ public class LibraryUtils {
 		if (!loaded) {
 			System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName()); //NON-NLS
 		} else {
-			System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName()); //NON-NLS
+			// We want minimal console output for command line use case
+			//System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName()); //NON-NLS
 		}
 		return loaded;
 	}
@@ -166,7 +167,8 @@ public class LibraryUtils {
 		// copy library to temp folder and load it
 		try {
 			java.io.File tempLibFile = new java.io.File(pathToTempFile.toString()); //NON-NLS
-			System.out.println("Temp Folder for Libraries: " + tempLibFile.getParent()); //NON-NLS
+			// We want minimal console output for command line use case
+			//System.out.println("Temp Folder for Libraries: " + tempLibFile.getParent()); //NON-NLS
 
 			// cycle through the libraries and delete them. 
 			// we used to copy dlls into here. 
