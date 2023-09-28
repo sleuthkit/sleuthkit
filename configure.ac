@@ -315,6 +315,8 @@ dnl )
 dnl For the moment, disable the openssl library so the Travis test will pass
 dnl AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
 
+dnl Dependencies for OSS-Fuzz
+AX_TESTS_CHECK_OSSFUZZ
 
 dnl Enable compliation warnings
 WARNINGS='-Wall -Wextra -Wno-unused-parameter'
@@ -347,6 +349,7 @@ AC_CONFIG_FILES([
     tools/fiwalk/src/Makefile
     tools/fiwalk/plugins/Makefile
     tests/Makefile
+    ossfuzz/Makefile
     samples/Makefile
     man/Makefile
     bindings/java/Makefile
