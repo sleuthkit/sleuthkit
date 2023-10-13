@@ -18,7 +18,9 @@ from sys import platform as _platform
 import time
 import traceback
 
-MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
+MSBUILD_HOME = os.getenv("MSBUILD_HOME", "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current")
+MSBUILD_PATH = os.path.normpath(MSBUILD_HOME+"/Bin/MSBuild.exe")
+
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
