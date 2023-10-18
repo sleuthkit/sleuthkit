@@ -112,7 +112,10 @@ public class SleuthkitCase {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private static final int IS_REACHABLE_TIMEOUT_MS = 1000;
 	private static final String SQL_ERROR_CONNECTION_GROUP = "08";
-	private static final String SQL_CONNECTION_REJECTED = "08006";
+    // either one of these mean connection was rejected by Postgres server
+    private static final String SQL_CONNECTION_REJECTED_1 = "08004";
+    private static final String SQL_CONNECTION_REJECTED_2 = "08006";
+	
 	private static final String SQL_ERROR_AUTHENTICATION_GROUP = "28";
 	private static final String SQL_ERROR_PRIVILEGE_GROUP = "42";
 	private static final String SQL_ERROR_RESOURCE_GROUP = "53";
@@ -305,7 +308,8 @@ public class SleuthkitCase {
 			String sqlState = ex.getSQLState().toLowerCase();
 			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
 				
-				if (SQL_CONNECTION_REJECTED.equals(ex.getSQLState())) {
+				if (SQL_CONNECTION_REJECTED_1.equals(ex.getSQLState()) ||
+						SQL_CONNECTION_REJECTED_2.equals(ex.getSQLState())) {
 					if (info.isSslEnabled()) {
 						result = "Server rejected the SSL connection attempt. Check SSL configuration.";
 					} else {
