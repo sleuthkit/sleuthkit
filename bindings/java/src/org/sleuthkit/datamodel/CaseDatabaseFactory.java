@@ -713,6 +713,12 @@ class CaseDatabaseFactory {
 				.append('/') // NON-NLS
 				.append(encodedDbName);
 			
+			if (info.isSslEnabled()) {
+				// ssl=true: enables SSL encryption. 
+				// NonValidatingFactory avoids hostname verification.
+				url.append("?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory");
+			}
+			
 			Connection conn;
 			try {
 				Properties props = new Properties();
