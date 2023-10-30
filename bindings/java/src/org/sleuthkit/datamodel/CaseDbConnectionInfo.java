@@ -34,6 +34,7 @@ public class CaseDbConnectionInfo {
 	private String userName;
 	private String password;
 	private DbType dbType;
+	private boolean sslEnabled = false;
 
 	/**
 	 * The intent of this class is to hold any information needed to connect to
@@ -54,12 +55,41 @@ public class CaseDbConnectionInfo {
 		this.portNumber = portNumber;
 		this.userName = userName;
 		this.password = password;
+		this.sslEnabled = false;
 		if (dbType == DbType.SQLITE) {
 			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
 		this.dbType = dbType;
 	}
-
+	 
+	/**
+	 * The intent of this class is to hold any information needed to connect to
+	 * a remote database server, except for the actual database name. This constructor 
+	 * allows user to specify whether to use SSL to connect to database. This does
+	 * not hold information to connect to a local database such as SQLite.
+	 *
+	 * It can be used generically to hold remote database connection
+	 * information.
+	 *
+	 * @param hostNameOrIP the host name
+	 * @param portNumber   the port number
+	 * @param userName     the user name
+	 * @param password     the password
+	 * @param dbType       the database type
+	 * @param sslEnabled   a flag whether SSL is enabled
+	 */
+	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, boolean sslEnabled) {
+		this.hostNameOrIP = hostNameOrIP;
+		this.portNumber = portNumber;
+		this.userName = userName;
+		this.password = password;
+		this.sslEnabled = sslEnabled;
+		if (dbType == DbType.SQLITE) {
+			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
+		}
+		this.dbType = dbType;
+	}
+	
 	public DbType getDbType() {
 		return this.dbType;
 	}
@@ -98,5 +128,13 @@ public class CaseDbConnectionInfo {
 
 	public void setPassword(String pass) {
 		this.password = pass;
+	}
+
+	public boolean isSslEnabled() {
+		return sslEnabled;
+	}
+
+	public void setSslEnabled(boolean sslEnabled) {
+		this.sslEnabled = sslEnabled;
 	}
 }
