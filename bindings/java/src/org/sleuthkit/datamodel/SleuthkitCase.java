@@ -299,7 +299,8 @@ public class SleuthkitCase {
 				// NonValidatingFactory avoids hostname verification.
 				// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can’t be encrypted. 
                 // In this mode, the JDBC driver accepts all server certificates.
-				connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+				//connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+				connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
 			}
 			Connection conn = DriverManager.getConnection(connectionURL, info.getUserName(), info.getPassword()); //NON-NLS
 			if (conn != null) {
@@ -13410,7 +13411,8 @@ public class SleuthkitCase {
 				// NonValidatingFactory avoids hostname verification.
 				// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can’t be encrypted. 
                 // In this mode, the JDBC driver accepts all server certificates.
-				connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+				//connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+				connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
 			}
 			comboPooledDataSource.setJdbcUrl(connectionURL);
 			comboPooledDataSource.setUser(info.getUserName());
