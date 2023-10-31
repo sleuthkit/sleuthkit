@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2015 Basis Technology Corp.
+ * Copyright 2011-2023 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,7 @@ public class CaseDbConnectionInfo {
 	private String password;
 	private DbType dbType;
 	private boolean sslEnabled = false;
+	private boolean sslVerify = false;
 
 	/**
 	 * The intent of this class is to hold any information needed to connect to
@@ -56,6 +57,7 @@ public class CaseDbConnectionInfo {
 		this.userName = userName;
 		this.password = password;
 		this.sslEnabled = false;
+		this.sslVerify = false;
 		if (dbType == DbType.SQLITE) {
 			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
@@ -77,13 +79,15 @@ public class CaseDbConnectionInfo {
 	 * @param password     the password
 	 * @param dbType       the database type
 	 * @param sslEnabled   a flag whether SSL is enabled
+	 * @param sslVerify   'true' if SSL certificate needs to be CA verified. 'false' if self-signed certificates should be accepted.
 	 */
-	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, boolean sslEnabled) {
+	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, boolean sslEnabled, boolean sslVerify) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;
 		this.userName = userName;
 		this.password = password;
 		this.sslEnabled = sslEnabled;
+		this.sslVerify = sslVerify;
 		if (dbType == DbType.SQLITE) {
 			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
@@ -137,4 +141,12 @@ public class CaseDbConnectionInfo {
 	public void setSslEnabled(boolean sslEnabled) {
 		this.sslEnabled = sslEnabled;
 	}
+
+	public boolean isSslVerify() {
+		return sslVerify;
+	}
+
+	public void setSslVerify(boolean sslVerify) {
+		this.sslVerify = sslVerify;
+	}	
 }
