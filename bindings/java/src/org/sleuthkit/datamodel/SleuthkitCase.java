@@ -294,17 +294,11 @@ public class SleuthkitCase {
 		try {
 			Class.forName("org.postgresql.Driver"); //NON-NLS
 			String connectionURL = "jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres";
-			if (info.isSslEnabled()) {
-				// ssl=true: enables SSL encryption. 				
+			if (info.isSslEnabled()) {				
 				if (info.isSslVerify()) {
-					// DefaultJavaSSLFactory: uses Java's default truststore to validate server certificate.
-					// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
-					connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
+					connectionURL += CaseDatabaseFactory.SSL_VERIFY_URL;
 				} else {
-					// NonValidatingFactory avoids hostname verification.
-					// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can't be encrypted. 
-					// In this mode, the JDBC driver accepts all server certificates, including self-signed ones.
-					connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}
 			}
 			Connection conn = DriverManager.getConnection(connectionURL, info.getUserName(), info.getPassword()); //NON-NLS
@@ -13412,16 +13406,10 @@ public class SleuthkitCase {
 			String connectionURL = "jdbc:postgresql://" + info.getHost() + ":" + Integer.valueOf(info.getPort()) + "/"
 					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString());
 			if (info.isSslEnabled()) {
-				// ssl=true: enables SSL encryption. 				
 				if (info.isSslVerify()) {
-					// DefaultJavaSSLFactory: uses Java's default truststore to validate server certificate.
-					// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
-					connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
+					connectionURL += CaseDatabaseFactory.SSL_VERIFY_URL;
 				} else {
-					// NonValidatingFactory avoids hostname verification.
-					// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can't be encrypted. 
-					// In this mode, the JDBC driver accepts all server certificates, including self-signed ones.
-					connectionURL += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}
 			}
 			comboPooledDataSource.setJdbcUrl(connectionURL);

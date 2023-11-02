@@ -39,6 +39,17 @@ class CaseDatabaseFactory {
 	private static final Logger logger = Logger.getLogger(CaseDatabaseFactory.class.getName());
 	private final SQLHelper dbQueryHelper;
 	private final DbCreationHelper dbCreationHelper;
+	
+	// ssl=true: enables SSL encryption. 
+	// DefaultJavaSSLFactory: uses Java's default truststore to validate server certificate.
+	// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
+	final static String SSL_VERIFY_URL = "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
+	
+	// ssl=true: enables SSL encryption. 
+	// NonValidatingFactory avoids hostname verification.
+	// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can't be encrypted. 
+	// In this mode, the JDBC driver accepts all server certificates, including self-signed ones.
+	final static String SSL_NONVERIFY_URL = "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
 		
 	/**
 	 * Create a new SQLite case
@@ -716,14 +727,9 @@ class CaseDatabaseFactory {
 			if (info.isSslEnabled()) {
 				// ssl=true: enables SSL encryption. 				
 				if (info.isSslVerify()) {
-					// DefaultJavaSSLFactory: uses Java's default truststore to validate server certificate.
-					// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
-					url.append("?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca");
+					url.append(SSL_VERIFY_URL);
 				} else {
-					// NonValidatingFactory avoids hostname verification.
-					// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can't be encrypted. 
-					// In this mode, the JDBC driver accepts all server certificates, including self-signed ones.
-					url.append("?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require");
+					url.append(SSL_NONVERIFY_URL);
 				}
 			}
 			
