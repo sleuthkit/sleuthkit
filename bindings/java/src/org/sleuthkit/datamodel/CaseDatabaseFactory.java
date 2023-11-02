@@ -724,8 +724,7 @@ class CaseDatabaseFactory {
 				.append('/') // NON-NLS
 				.append(encodedDbName);
 			
-			if (info.isSslEnabled()) {
-				// ssl=true: enables SSL encryption. 				
+			if (info.isSslEnabled()) {				
 				if (info.isSslVerify()) {
 					url.append(SSL_VERIFY_URL);
 				} else {
