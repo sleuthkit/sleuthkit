@@ -36,6 +36,7 @@ public class CaseDbConnectionInfo {
 	private DbType dbType;
 	private boolean sslEnabled = false;
 	private boolean sslVerify = false;
+	private String customSslValidationClassName;
 
 	/**
 	 * The intent of this class is to hold any information needed to connect to
@@ -62,6 +63,7 @@ public class CaseDbConnectionInfo {
 			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
 		this.dbType = dbType;
+		this.customSslValidationClassName = "";
 	}
 	 
 	/**
@@ -80,8 +82,11 @@ public class CaseDbConnectionInfo {
 	 * @param dbType       the database type
 	 * @param sslEnabled   a flag whether SSL is enabled
 	 * @param sslVerify   'true' if SSL certificate needs to be CA verified. 'false' if self-signed certificates should be accepted.
+	 * @param customSslValidationClassName full canonical name of a Java class
+	 *                                     that performs custom SSL certificate
+	 *                                     validation.
 	 */
-	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, boolean sslEnabled, boolean sslVerify) {
+	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, boolean sslEnabled, boolean sslVerify, String customSslValidationClassName) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;
 		this.userName = userName;
@@ -92,6 +97,7 @@ public class CaseDbConnectionInfo {
 			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
 		this.dbType = dbType;
+		this.customSslValidationClassName = customSslValidationClassName;
 	}
 	
 	public DbType getDbType() {
@@ -149,4 +155,12 @@ public class CaseDbConnectionInfo {
 	public void setSslVerify(boolean sslVerify) {
 		this.sslVerify = sslVerify;
 	}	
+
+	public String getCustomSslValidationClassName() {
+		return customSslValidationClassName;
+	}
+
+	public void setCustomSslValidationClassName(String customSslValidationClassName) {
+		this.customSslValidationClassName = customSslValidationClassName;
+	}
 }

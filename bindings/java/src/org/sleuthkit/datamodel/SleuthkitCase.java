@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2021 Basis Technology Corp.
+ * Copyright 2011-2023 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -296,7 +296,12 @@ public class SleuthkitCase {
 			String connectionURL = "jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres";
 			if (info.isSslEnabled()) {				
 				if (info.isSslVerify()) {
-					connectionURL += CaseDatabaseFactory.SSL_VERIFY_URL;
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						connectionURL += CaseDatabaseFactory.SSL_VERIFY_DEFAULT_URL;
+					} else {
+						// use custom SSL certificate validation class
+						connectionURL += CaseDatabaseFactory.getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName());
+					}
 				} else {
 					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}
@@ -13407,7 +13412,12 @@ public class SleuthkitCase {
 					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString());
 			if (info.isSslEnabled()) {
 				if (info.isSslVerify()) {
-					connectionURL += CaseDatabaseFactory.SSL_VERIFY_URL;
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						connectionURL += CaseDatabaseFactory.SSL_VERIFY_DEFAULT_URL;
+					} else {
+						// use custom SSL certificate validation class
+						connectionURL += CaseDatabaseFactory.getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName());
+					}
 				} else {
 					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}
