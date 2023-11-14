@@ -68,9 +68,15 @@ public class CaseDbConnectionInfo {
 	 
 	/**
 	 * The intent of this class is to hold any information needed to connect to
-	 * a remote database server, except for the actual database name. This constructor 
-	 * allows user to specify whether to use SSL to connect to database. This does
-	 * not hold information to connect to a local database such as SQLite.
+	 * a remote database server, except for the actual database name. This
+	 * constructor allows user to specify whether to use SSL to connect to
+	 * database. This does not hold information to connect to a local database
+	 * such as SQLite.
+	 *
+	 * This constructor allows to specify a Java class that performs custom
+	 * PostgreQSL server SSL certificate validation (if 'sslVerify' is set to
+	 * 'true'). If not specified, the application's default JRE keystore will be
+	 * used.
 	 *
 	 * It can be used generically to hold remote database connection
 	 * information.
@@ -84,9 +90,12 @@ public class CaseDbConnectionInfo {
 	 * @param sslVerify   'true' if SSL certificate needs to be CA verified. 'false' if self-signed certificates should be accepted.
 	 * @param customSslValidationClassName full canonical name of a Java class
 	 *                                     that performs custom SSL certificate
-	 *                                     validation.
+	 *                                     validation. If blank, the
+	 *                                     application's default JRE keystore
+	 *                                     will be used.
 	 */
-	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, boolean sslEnabled, boolean sslVerify, String customSslValidationClassName) {
+	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, 
+			boolean sslEnabled, boolean sslVerify, String customSslValidationClassName) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;
 		this.userName = userName;
