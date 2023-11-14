@@ -47,7 +47,7 @@ class CaseDatabaseFactory {
 	final static String SSL_NONVERIFY_URL = "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
 	
 	// ssl=true: enables SSL encryption. 
-	// DefaultJavaSSLFactory: uses Java's default truststore to validate server certificate.
+	// DefaultJavaSSLFactory: uses application's default JRE keystore to validate server certificate.
 	// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
 	final static String SSL_VERIFY_DEFAULT_URL = "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
 
@@ -57,8 +57,8 @@ class CaseDatabaseFactory {
 	 * SSL certificate validation must extend org.postgresql.ssl.WrappedFactory
 	 * and generally must follow the same logic.
 	 *
-	 * ssl=true: enables SSL encryption. sslmode=verify-ca: verifies that the
-	 * server we are connecting to is trusted by CA.
+	 * ssl=true: enables SSL encryption. 
+	 * sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA.
 	 *
 	 * @param customSslValidationClassName full canonical name of a Java class
 	 *                                     that performs custom SSL certificate
