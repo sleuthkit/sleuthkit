@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2021 Basis Technology Corp.
+ * Copyright 2011-2023 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -113,8 +113,8 @@ public class SleuthkitCase {
 	private static final int IS_REACHABLE_TIMEOUT_MS = 1000;
 	private static final String SQL_ERROR_CONNECTION_GROUP = "08";
     // either one of these mean connection was rejected by Postgres server
-    private static final String SQL_CONNECTION_REJECTED_1 = "08004";
-    private static final String SQL_CONNECTION_REJECTED_2 = "08006";
+    private static final String SQL_CONNECTION_REJECTED = "08004";
+    private static final String UNABLE_TO_VERIFY_SSL = "08006";
 	
 	private static final String SQL_ERROR_AUTHENTICATION_GROUP = "28";
 	private static final String SQL_ERROR_PRIVILEGE_GROUP = "42";
@@ -296,7 +296,12 @@ public class SleuthkitCase {
 			String connectionURL = "jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres";
 			if (info.isSslEnabled()) {				
 				if (info.isSslVerify()) {
-					connectionURL += CaseDatabaseFactory.SSL_VERIFY_URL;
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						connectionURL += CaseDatabaseFactory.SSL_VERIFY_DEFAULT_URL;
+					} else {
+						// use custom SSL certificate validation class
+						connectionURL += CaseDatabaseFactory.getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName());
+					}
 				} else {
 					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}
@@ -308,15 +313,15 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			String result;
 			String sqlState = ex.getSQLState().toLowerCase();
-			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
-				
-				if (SQL_CONNECTION_REJECTED_1.equals(ex.getSQLState()) ||
-						SQL_CONNECTION_REJECTED_2.equals(ex.getSQLState())) {
+			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {				
+				if (SQL_CONNECTION_REJECTED.equals(ex.getSQLState())) {
 					if (info.isSslEnabled()) {
 						result = "Server rejected the SSL connection attempt. Check SSL configuration.";
 					} else {
 						result = "Server rejected the connection attempt. Check server configuration.";
 					}					
+				} else if (UNABLE_TO_VERIFY_SSL.equals(ex.getSQLState())) {
+					result = "Unable to verify SSL certificates. Check SSL configuration.";
 				} else {
 					try {
 						if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
@@ -13407,7 +13412,12 @@ public class SleuthkitCase {
 					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString());
 			if (info.isSslEnabled()) {
 				if (info.isSslVerify()) {
-					connectionURL += CaseDatabaseFactory.SSL_VERIFY_URL;
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						connectionURL += CaseDatabaseFactory.SSL_VERIFY_DEFAULT_URL;
+					} else {
+						// use custom SSL certificate validation class
+						connectionURL += CaseDatabaseFactory.getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName());
+					}
 				} else {
 					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}

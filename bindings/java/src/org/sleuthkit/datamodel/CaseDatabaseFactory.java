@@ -39,17 +39,37 @@ class CaseDatabaseFactory {
 	private static final Logger logger = Logger.getLogger(CaseDatabaseFactory.class.getName());
 	private final SQLHelper dbQueryHelper;
 	private final DbCreationHelper dbCreationHelper;
-	
-	// ssl=true: enables SSL encryption. 
-	// DefaultJavaSSLFactory: uses Java's default truststore to validate server certificate.
-	// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
-	final static String SSL_VERIFY_URL = "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
-	
+		
 	// ssl=true: enables SSL encryption. 
 	// NonValidatingFactory avoids hostname verification.
 	// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can't be encrypted. 
 	// In this mode, the JDBC driver accepts all server certificates, including self-signed ones.
 	final static String SSL_NONVERIFY_URL = "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+	
+	// ssl=true: enables SSL encryption. 
+	// DefaultJavaSSLFactory: uses application's default JRE keystore to validate server certificate.
+	// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
+	final static String SSL_VERIFY_DEFAULT_URL = "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
+
+	/**
+	 * Creates JDBC URL string for implementations that use custom keystore to
+	 * validate PostgreSQL CA-signed SSL certificates. The class that performs
+	 * SSL certificate validation must extend org.postgresql.ssl.WrappedFactory
+	 * and generally must follow the same logic.
+	 *
+	 * ssl=true: enables SSL encryption. 
+	 * sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA.
+	 *
+	 * @param customSslValidationClassName full canonical name of a Java class
+	 *                                     that performs custom SSL certificate
+	 *                                     validation.
+	 *
+	 * @return JDBS URL string used to connect to PosgreSQL server via CA-signed
+	 *         SSL certificate.
+	 */
+	static String getCustomPostrgesSslVerificationUrl(String customSslValidationClassName) {
+		return "?ssl=true&sslfactory=" + customSslValidationClassName + "&sslmode=verify-ca";
+	}
 		
 	/**
 	 * Create a new SQLite case
@@ -726,7 +746,12 @@ class CaseDatabaseFactory {
 			
 			if (info.isSslEnabled()) {				
 				if (info.isSslVerify()) {
-					url.append(SSL_VERIFY_URL);
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						url.append(SSL_VERIFY_DEFAULT_URL);
+					} else {
+						// use custom SSL certificate validation class
+						url.append(getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName()));
+					}
 				} else {
 					url.append(SSL_NONVERIFY_URL);
 				}

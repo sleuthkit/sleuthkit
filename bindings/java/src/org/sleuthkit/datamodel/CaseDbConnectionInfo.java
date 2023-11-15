@@ -36,6 +36,7 @@ public class CaseDbConnectionInfo {
 	private DbType dbType;
 	private boolean sslEnabled = false;
 	private boolean sslVerify = false;
+	private String customSslValidationClassName;
 
 	/**
 	 * The intent of this class is to hold any information needed to connect to
@@ -62,13 +63,20 @@ public class CaseDbConnectionInfo {
 			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
 		this.dbType = dbType;
+		this.customSslValidationClassName = "";
 	}
 	 
 	/**
 	 * The intent of this class is to hold any information needed to connect to
-	 * a remote database server, except for the actual database name. This constructor 
-	 * allows user to specify whether to use SSL to connect to database. This does
-	 * not hold information to connect to a local database such as SQLite.
+	 * a remote database server, except for the actual database name. This
+	 * constructor allows user to specify whether to use SSL to connect to
+	 * database. This does not hold information to connect to a local database
+	 * such as SQLite.
+	 *
+	 * This constructor allows to specify a Java class that performs custom
+	 * PostgreQSL server SSL certificate validation (if 'sslVerify' is set to
+	 * 'true'). If not specified, the application's default JRE keystore will be
+	 * used.
 	 *
 	 * It can be used generically to hold remote database connection
 	 * information.
@@ -80,8 +88,14 @@ public class CaseDbConnectionInfo {
 	 * @param dbType       the database type
 	 * @param sslEnabled   a flag whether SSL is enabled
 	 * @param sslVerify   'true' if SSL certificate needs to be CA verified. 'false' if self-signed certificates should be accepted.
+	 * @param customSslValidationClassName full canonical name of a Java class
+	 *                                     that performs custom SSL certificate
+	 *                                     validation. If blank, the
+	 *                                     application's default JRE keystore
+	 *                                     will be used.
 	 */
-	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, boolean sslEnabled, boolean sslVerify) {
+	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType, 
+			boolean sslEnabled, boolean sslVerify, String customSslValidationClassName) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;
 		this.userName = userName;
@@ -92,6 +106,7 @@ public class CaseDbConnectionInfo {
 			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
 		this.dbType = dbType;
+		this.customSslValidationClassName = customSslValidationClassName;
 	}
 	
 	public DbType getDbType() {
@@ -149,4 +164,12 @@ public class CaseDbConnectionInfo {
 	public void setSslVerify(boolean sslVerify) {
 		this.sslVerify = sslVerify;
 	}	
+
+	public String getCustomSslValidationClassName() {
+		return customSslValidationClassName;
+	}
+
+	public void setCustomSslValidationClassName(String customSslValidationClassName) {
+		this.customSslValidationClassName = customSslValidationClassName;
+	}
 }
