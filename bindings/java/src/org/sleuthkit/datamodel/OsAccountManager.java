@@ -505,14 +505,14 @@ public final class OsAccountManager {
 
 		String queryString = "SELECT accounts.os_account_obj_id as os_account_obj_id, accounts.login_name, accounts.full_name, "
 				+ " accounts.realm_id, accounts.addr, accounts.signature, "
-				+ "	accounts.type, accounts.status, accounts.created_date, accounts.db_status, "
+				+ " accounts.type, accounts.status, accounts.created_date, accounts.db_status, "
 				+ " realms.realm_name as realm_name, realms.realm_addr as realm_addr, realms.realm_signature, realms.scope_host_id, realms.scope_confidence, realms.db_status as realm_db_status "
 				+ " FROM tsk_os_accounts as accounts"
-				+ "		LEFT JOIN tsk_os_account_realms as realms"
+				+ "  LEFT JOIN tsk_os_account_realms as realms"
 				+ " ON accounts.realm_id = realms.id"
 				+ " WHERE " + whereHostClause
 				+ "     AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
-				+ "		AND LOWER(accounts.addr) = LOWER('" + uniqueId + "')";
+				+ "  AND LOWER(accounts.addr) = LOWER('" + uniqueId + "')";
 
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();

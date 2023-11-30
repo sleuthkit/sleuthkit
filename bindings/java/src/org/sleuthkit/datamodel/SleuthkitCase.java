@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2021 Basis Technology Corp.
+ * Copyright 2011-2023 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,6 +112,10 @@ public class SleuthkitCase {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private static final int IS_REACHABLE_TIMEOUT_MS = 1000;
 	private static final String SQL_ERROR_CONNECTION_GROUP = "08";
+    // either one of these mean connection was rejected by Postgres server
+    private static final String SQL_CONNECTION_REJECTED = "08004";
+    private static final String UNABLE_TO_VERIFY_SSL = "08006";
+	
 	private static final String SQL_ERROR_AUTHENTICATION_GROUP = "28";
 	private static final String SQL_ERROR_PRIVILEGE_GROUP = "42";
 	private static final String SQL_ERROR_RESOURCE_GROUP = "53";
@@ -289,24 +293,47 @@ public class SleuthkitCase {
 
 		try {
 			Class.forName("org.postgresql.Driver"); //NON-NLS
-			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
+			String connectionURL = "jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres";
+			if (info.isSslEnabled()) {				
+				if (info.isSslVerify()) {
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						connectionURL += CaseDatabaseFactory.SSL_VERIFY_DEFAULT_URL;
+					} else {
+						// use custom SSL certificate validation class
+						connectionURL += CaseDatabaseFactory.getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName());
+					}
+				} else {
+					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
+				}
+			}
+			Connection conn = DriverManager.getConnection(connectionURL, info.getUserName(), info.getPassword()); //NON-NLS
 			if (conn != null) {
 				conn.close();
 			}
 		} catch (SQLException ex) {
 			String result;
 			String sqlState = ex.getSQLState().toLowerCase();
-			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
-				try {
-					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
-						// if we can reach the host, then it's probably port problem
-						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
+			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {				
+				if (SQL_CONNECTION_REJECTED.equals(ex.getSQLState())) {
+					if (info.isSslEnabled()) {
+						result = "Server rejected the SSL connection attempt. Check SSL configuration.";
 					} else {
-						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
+						result = "Server rejected the connection attempt. Check server configuration.";
+					}					
+				} else if (UNABLE_TO_VERIFY_SSL.equals(ex.getSQLState())) {
+					result = "Unable to verify SSL certificates. Check SSL configuration.";
+				} else {
+					try {
+						if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
+							// if we can reach the host, then it's probably port problem
+							result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
+						} else {
+							result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
+						}
+					} catch (IOException | MissingResourceException any) {
+						// it may be anything
+						result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
 					}
-				} catch (IOException | MissingResourceException any) {
-					// it may be anything
-					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
 				}
 			} else if (sqlState.startsWith(SQL_ERROR_AUTHENTICATION_GROUP)) {
 				result = bundle.getString("DatabaseConnectionCheck.Authentication"); //NON-NLS
@@ -357,27 +384,20 @@ public class SleuthkitCase {
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
 	 * create an instance of this class.
-	 *
-	 * @param host        The PostgreSQL database server.
-	 * @param port        The port to use connect to the PostgreSQL database
-	 *                    server.
+	 * 
+	 * @param info		  CaseDbConnectionInfo object with database connection info
 	 * @param dbName      The name of the case database.
-	 * @param userName    The user name to use to connect to the case database.
-	 * @param password    The password to use to connect to the case database.
 	 * @param caseHandle  A handle to a case database object in the native code
-	 * @param dbType      The type of database we're dealing with SleuthKit
-	 *                    layer.
 	 * @param caseDirPath The path to the root case directory.
 	 * @param contentProvider Custom provider for file content (can be null).
-	 *
-	 * @throws Exception
+	 * @throws Exception 
 	 */
-	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType, ContentStreamProvider contentProvider) throws Exception {
+	private SleuthkitCase(CaseDbConnectionInfo info, String dbName, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, ContentStreamProvider contentProvider) throws Exception {
 		this.dbPath = "";
 		this.databaseName = dbName;
-		this.dbType = dbType;
+		this.dbType = info.getDbType();
 		this.caseDirPath = caseDirPath;
-		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
+		this.connections = new PostgreSQLConnections(info, dbName);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
 		this.contentProvider = contentProvider;
@@ -3057,7 +3077,7 @@ public class SleuthkitCase {
 			 * are able, but do not lose any information if unable.
 			 */
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType(), contentProvider);
+			return new SleuthkitCase(info, databaseName, caseHandle, caseDir, contentProvider);
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -3162,8 +3182,7 @@ public class SleuthkitCase {
 			factory.createCaseDatabase();
 
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
-					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType(), contentProvider);
+			return new SleuthkitCase(info, databaseName, caseHandle, caseDirPath, contentProvider);
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -13384,13 +13403,28 @@ public class SleuthkitCase {
 	 */
 	private final class PostgreSQLConnections extends ConnectionPool {
 
-		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException, UnsupportedEncodingException {
+		PostgreSQLConnections(CaseDbConnectionInfo info, String dbName) throws PropertyVetoException, UnsupportedEncodingException {
+			
 			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
 			comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
-			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/"
-					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString()));
-			comboPooledDataSource.setUser(userName);
-			comboPooledDataSource.setPassword(password);
+			
+			String connectionURL = "jdbc:postgresql://" + info.getHost() + ":" + Integer.valueOf(info.getPort()) + "/"
+					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString());
+			if (info.isSslEnabled()) {
+				if (info.isSslVerify()) {
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						connectionURL += CaseDatabaseFactory.SSL_VERIFY_DEFAULT_URL;
+					} else {
+						// use custom SSL certificate validation class
+						connectionURL += CaseDatabaseFactory.getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName());
+					}
+				} else {
+					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
+				}
+			}
+			comboPooledDataSource.setJdbcUrl(connectionURL);
+			comboPooledDataSource.setUser(info.getUserName());
+			comboPooledDataSource.setPassword(info.getPassword());
 			comboPooledDataSource.setAcquireIncrement(2);
 			comboPooledDataSource.setInitialPoolSize(5);
 			comboPooledDataSource.setMinPoolSize(5);
