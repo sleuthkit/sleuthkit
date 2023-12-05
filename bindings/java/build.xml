@@ -33,6 +33,7 @@
 	<property name="i386" location="build/NATIVELIBS/i386"/>
 	<property name="i586" location="build/NATIVELIBS/i586"/>
 	<property name="i686" location="build/NATIVELIBS/i686"/>
+	<property name="aarch64" location="build/NATIVELIBS/aarch64"/>
 
 	<!-- Only added win folders for now -->
 	<target name="init">
@@ -63,6 +64,9 @@
 		<mkdir dir="${i686}"/>
 		<mkdir dir="${i686}/win"/>
 		<mkdir dir="${i686}/linux"/>
+		<mkdir dir="${aarch64}"/>
+		<mkdir dir="${aarch64}/mac"/>
+		<mkdir dir="${aarch64}/linux"/>
 	</target>
 
 	<!-- set classpath for dependencies-->
