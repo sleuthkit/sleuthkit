@@ -24,9 +24,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.Score.Priority;
@@ -88,11 +90,15 @@ public class ScoringManager {
 		if (objIds.isEmpty()) {
 			return Collections.emptyMap();
 		}
+		
+		// We need to deduplicate the list of object IDs. Otherwise the map  
+		// below breaks and throws an exception.
+		Set<Long> set = new HashSet<>(objIds);
 
 		String queryString = "SELECT obj_id, significance, priority FROM tsk_aggregate_score WHERE obj_id in "
-				+ objIds.stream().map(l -> l.toString()).collect(Collectors.joining(",", "(", ")"));
+				+ set.stream().map(l -> l.toString()).collect(Collectors.joining(",", "(", ")"));
 
-		Map<Long, Score> results = objIds.stream().collect(Collectors.toMap( key -> key, key -> Score.SCORE_UNKNOWN));
+		Map<Long, Score> results = set.stream().collect(Collectors.toMap( key -> key, key -> Score.SCORE_UNKNOWN));
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
