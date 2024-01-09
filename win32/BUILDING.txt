@@ -16,13 +16,13 @@ account with Microsoft:
 When installing, 
 - In the "Workloads" tab, select "Desktop development with C++".  
 - In the "Installation Details" panel on the right, additionally select:
-    - "C++/CLI support for 142 build tools.."
+    - "C++/CLI support for 142 build tools"
     - "MSVC 141 - VS 2017 C++ x64/x86 build tools"
 - Under the "Individual components" tab in the "Compilers, build tools 
   and runtimes" section, select "C++ Windows XP Support for VS 2017 
   (v141) tools [Deprecated]"
   
-  
+
 Building
 
 There are four build targets: 
