@@ -18,7 +18,9 @@ from sys import platform as _platform
 import time
 import traceback
 
-MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
+MSBUILD_HOME = os.getenv("MSBUILD_HOME", "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current")
+MSBUILD_PATH = os.path.normpath(MSBUILD_HOME+"/Bin/MSBuild.exe")
+
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
@@ -54,15 +56,25 @@ def getDependencies(depBranch):
 
 def buildTSKAll():
 
+    TSK_HOME = os.getenv("TSK_HOME", False)
+    if not TSK_HOME:
+        print("Please set the TSK_HOME environment variable")
+        sys.exit(1)
+            
     if not MINIMAL:
         if(passed):
             buildTSK(32, "Release")
         if(passed):
             buildTSK(64, "Release_NoLibs")
+        
 
     # MINIMAL is 64-bit for Autopsy and 32-bit with no deps for logical imager et al.
     if(passed):
         buildTSK(32, "Release_NoLibs")
+    if(passed):
+        BuildXPNoLibsFilePath = os.path.join(TSK_HOME, "build_xpnolibs")
+        if os.path.exists(BuildXPNoLibsFilePath):
+            buildTSK(32, "Release_XPNoLibs")
     if(passed):
         buildTSK(64, "Release")
 
