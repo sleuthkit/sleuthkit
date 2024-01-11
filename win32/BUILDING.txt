@@ -1,6 +1,6 @@
                 Last Updated: 18 October 2016
 
-This file describes how to build TSK using Visual Studio 2015 (see
+This file describes how to build TSK using Visual Studio 2019 (see
 README_win32.txt for instructions on building the win32 libraries and
 executables from Linux). 
 
@@ -8,14 +8,20 @@ executables from Linux).
 Installing Visual Studio
 
 If you do not have a copy of Visual Studio, you can use the free
-Community Edition:
+Community Edition which can be downloaded after creating an 
+account with Microsoft:
 
-    http://www.microsoft.com/express/vc/
+    https://my.visualstudio.com/Downloads?q=visual%20studio%202019%20community&wt.mc_id=o~msft~vscom~older-downloads
 
-When installing it, choose to do a custom installation to ensure
-that Visual C++ is added.  You will also need to choose support to make
-XP executables. 
-
+When installing, 
+- In the "Workloads" tab, select "Desktop development with C++".  
+- In the "Installation Details" panel on the right, additionally select:
+    - "C++/CLI support for 142 build tools"
+    - "MSVC 141 - VS 2017 C++ x64/x86 build tools"
+- Under the "Individual components" tab in the "Compilers, build tools 
+  and runtimes" section, select "C++ Windows XP Support for VS 2017 
+  (v141) tools [Deprecated]"
+  
 
 Building
 
