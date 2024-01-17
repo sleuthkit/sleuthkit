@@ -12029,7 +12029,7 @@ public class SleuthkitCase {
 //			+ "AND acc.os_account_obj_id IN (SELECT os_account_obj_id FROM tsk_os_account_instances WHERE data_source_obj_id = ?) "
 //			+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 //			+ " UNION "
-//			+ "SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name, tag_names.tag_set_id "
+//			+ "SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tag_names.tag_set_id, tsk_examiners.login_name "
 //			+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names, tsk_examiners as tsk_examiners "
 //			+ "WHERE content_tags.examiner_id = tsk_examiners.examiner_id "
 //			+ "AND content_tags.obj_id = tsk_files.obj_id "
@@ -13244,7 +13244,7 @@ public class SleuthkitCase {
 			+ "AND acc.os_account_obj_id IN (SELECT os_account_obj_id FROM tsk_os_account_instances WHERE data_source_obj_id = ?) "
 			+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 			+ " UNION "
-			+ "SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name, tag_names.tag_set_id "
+			+ "SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tag_names.tag_set_id, tsk_examiners.login_name "
 			+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names, tsk_examiners as tsk_examiners "
 			+ "WHERE content_tags.examiner_id = tsk_examiners.examiner_id "
 			+ "AND content_tags.obj_id = tsk_files.obj_id "
