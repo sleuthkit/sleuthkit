@@ -11994,7 +11994,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets content tags by tag name, for the given data source.
+	 * Gets content tags by tag name, for the given data source. This includes
+	 * looking up all Content objects that have entries in tsk_files, as well as
+	 * all OsAccounts (which do not have entries in tsk_files).
 	 *
 	 * @param tagName The tag name of interest.
 	 * @param dsObjId data source object id
@@ -12012,6 +12014,11 @@ public class SleuthkitCase {
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
+			
+			// NOTE: Getting all content tags by tag name for a given data source includes
+			// looking up all Content objects that have entries in tsk_files, as well as
+			// all OsAccounts. OsAccounts do not have corresponding entries in tsk_files so we 
+			// have to do a separate query to look them up, and then do a UNION of the results.
 			
 //			"SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tag_names.tag_set_id, tsk_examiners.login_name "
 //			+ "FROM content_tags "
