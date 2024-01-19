@@ -11994,7 +11994,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets content tags by tag name, for the given data source.
+	 * Gets content tags by tag name, for the given data source. This includes
+	 * looking up all Content objects that have entries in tsk_files, as well as
+	 * all OsAccounts (which do not have entries in tsk_files).
 	 *
 	 * @param tagName The tag name of interest.
 	 * @param dsObjId data source object id
@@ -12012,17 +12014,35 @@ public class SleuthkitCase {
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
-
-			//	SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name 
-			//	 FROM content_tags as content_tags, tsk_files as tsk_files 
-			//	 LEFT OUTER JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id 
-			//	 WHERE content_tags.obj_id = tsk_files.obj_id
-			//	 AND content_tags.tag_name_id = ?
-			//	 AND tsk_files.data_source_obj_id = ? 
+			
+			// NOTE: Getting all content tags by tag name for a given data source includes
+			// looking up all Content objects that have entries in tsk_files, as well as
+			// all OsAccounts. OsAccounts do not have corresponding entries in tsk_files so we 
+			// have to do a separate query to look them up, and then do a UNION of the results.
+			
+//			"SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tag_names.tag_set_id, tsk_examiners.login_name "
+//			+ "FROM content_tags "
+//			+ "JOIN tsk_os_accounts acc ON content_tags.obj_id = acc.os_account_obj_id "
+//			+ "JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id "
+//			+ "JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id "
+//			+ "WHERE content_tags.tag_name_id = ? "
+//			+ "AND acc.os_account_obj_id IN (SELECT os_account_obj_id FROM tsk_os_account_instances WHERE data_source_obj_id = ?) "
+//			+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
+//			+ " UNION "
+//			+ "SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tag_names.tag_set_id, tsk_examiners.login_name "
+//			+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names, tsk_examiners as tsk_examiners "
+//			+ "WHERE content_tags.examiner_id = tsk_examiners.examiner_id "
+//			+ "AND content_tags.obj_id = tsk_files.obj_id "
+//			+ "AND content_tags.tag_name_id = tag_names.tag_name_id "
+//			+ "AND content_tags.tag_name_id = ? "
+//			+ "AND tsk_files.data_source_obj_id = ? "
+			
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_CONTENT_TAGS_BY_TAG_NAME_BY_DATASOURCE);
 			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
 			statement.setLong(2, dsObjId);
+			statement.setLong(3, tagName.getId());
+			statement.setLong(4, dsObjId);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
@@ -13214,14 +13234,23 @@ public class SleuthkitCase {
 		SELECT_CONTENT_TAGS_BY_TAG_NAME("SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tsk_examiners.login_name "
 				+ "FROM content_tags "
 				+ "LEFT OUTER JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id "
-				+ "WHERE tag_name_id = ?"), //NON-NLS
-		SELECT_CONTENT_TAGS_BY_TAG_NAME_BY_DATASOURCE("SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name, tag_names.tag_set_id "
-				+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names, tsk_examiners as tsk_examiners "
-				+ "WHERE content_tags.examiner_id = tsk_examiners.examiner_id"
-				+ " AND content_tags.obj_id = tsk_files.obj_id"
-				+ " AND content_tags.tag_name_id = tag_names.tag_name_id"
-				+ " AND content_tags.tag_name_id = ?"
-				+ " AND tsk_files.data_source_obj_id = ? "),
+				+ "WHERE tag_name_id = ?"), //NON-NLS		
+		SELECT_CONTENT_TAGS_BY_TAG_NAME_BY_DATASOURCE("SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tag_names.tag_set_id, tsk_examiners.login_name "
+			+ "FROM content_tags "
+			+ "JOIN tsk_os_accounts acc ON content_tags.obj_id = acc.os_account_obj_id "
+			+ "JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id "
+			+ "JOIN tsk_examiners ON content_tags.examiner_id = tsk_examiners.examiner_id "
+			+ "WHERE content_tags.tag_name_id = ? "
+			+ "AND acc.os_account_obj_id IN (SELECT os_account_obj_id FROM tsk_os_account_instances WHERE data_source_obj_id = ?) "
+			+ "AND acc.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
+			+ " UNION "
+			+ "SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tag_names.tag_set_id, tsk_examiners.login_name "
+			+ "FROM content_tags as content_tags, tsk_files as tsk_files, tag_names as tag_names, tsk_examiners as tsk_examiners "
+			+ "WHERE content_tags.examiner_id = tsk_examiners.examiner_id "
+			+ "AND content_tags.obj_id = tsk_files.obj_id "
+			+ "AND content_tags.tag_name_id = tag_names.tag_name_id "
+			+ "AND content_tags.tag_name_id = ? "
+			+ "AND tsk_files.data_source_obj_id = ? "), //NON-NLS	
 		SELECT_CONTENT_TAG_BY_ID("SELECT content_tags.tag_id, content_tags.obj_id, content_tags.tag_name_id, content_tags.comment, content_tags.begin_byte_offset, content_tags.end_byte_offset, tag_names.display_name, tag_names.description, tag_names.color, tag_names.knownStatus, tsk_examiners.login_name, tag_names.tag_set_id, tag_names.rank "
 				+ "FROM content_tags "
 				+ "INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id "
