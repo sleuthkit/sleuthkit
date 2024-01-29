@@ -84,6 +84,8 @@
  * subtract the number of seconds between 1601 and 1970
  * i.e. TIME - DELTA
  *
+ * Returns 0 if NT date is outside of Unix range
+ *
  */
 uint32_t
 nt2unixtime(uint64_t ntdate)
@@ -91,8 +93,16 @@ nt2unixtime(uint64_t ntdate)
 // (369*365 + 89) * 24 * 3600 * 10000000
 #define	NSEC_BTWN_1601_1970	(uint64_t)(116444736000000000ULL)
 
+    // return 0 if before 1970
+    if (ntdate < NSEC_BTWN_1601_1970) 
+        return 0;
+
     ntdate -= (uint64_t) NSEC_BTWN_1601_1970;
     ntdate /= (uint64_t) 10000000;
+
+    // return if beyond 32-bit epoch range
+    if (ntdate > 0xffffffffULL) 
+        return 0;
 
     return (uint32_t) ntdate;
 }
