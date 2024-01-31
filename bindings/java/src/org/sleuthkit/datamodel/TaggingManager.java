@@ -615,7 +615,7 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException("", ex);
 		} finally {
-			skCase.releaseSingleUserCaseWriteLock();
+			skCase.releaseSingleUserCaseReadLock();
 		}
 
 		return null;
