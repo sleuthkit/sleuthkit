@@ -606,7 +606,7 @@ public class TaggingManager {
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
 								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-								TskData.FileKnown.valueOf(resultSet.getByte("knowStatus")),
+								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
 								resultSet.getLong("tag_set_id"),
 								resultSet.getInt("rank"));
 					}
@@ -615,7 +615,7 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException("", ex);
 		} finally {
-			skCase.releaseSingleUserCaseWriteLock();
+			skCase.releaseSingleUserCaseReadLock();
 		}
 
 		return null;
