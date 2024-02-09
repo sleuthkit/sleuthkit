@@ -191,9 +191,10 @@ procFs(TskImgInfo * img_info, TSK_OFF_T start)
     if (fs_info->dirWalk(fs_info->getRootINum(),
             (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_RECURSE),
             dirAct, NULL)) {
-        delete fs_info;
         tsk_error_print(stderr);
         fs_info->close();
+        // Free fs_info after close
+        delete fs_info;
         return 1;
     }
 
