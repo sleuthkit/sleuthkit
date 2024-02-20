@@ -2185,6 +2185,34 @@ public final class Blackboard {
 			throw ex;
 		}
 	}
+	
+	/**
+	 * Add a new data artifact with the given type.
+	 *
+	 * This api executes in the context of the given transaction.
+	 *
+	 * @param artifactType    The type of the data artifact.
+	 * @param sourceObjId     The content that is the source of this artifact.
+	 * @param dataSourceObjId The data source the artifact source content
+	 *                        belongs to, may be the same as the sourceObjId.
+	 *                        May be null.
+	 * @param attributes      The attributes. May be empty or null.
+	 * @param osAccountObjId  The OS account associated with the artifact.
+	 *                        This method adds a instance type of ACCESSED to this account.
+	 *                        May be null.
+	 * @param transaction     The transaction in the scope of which the
+	 *                        operation is to be performed.
+	 *
+	 * @return DataArtifact New blackboard artifact
+	 *
+	 * @throws TskCoreException If a critical error occurs within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
+			Collection<BlackboardAttribute> attributes, Long osAccountObjId, final CaseDbTransaction transaction) throws TskCoreException {
+
+		return newDataArtifact(artifactType, sourceObjId, dataSourceObjId,
+				attributes, osAccountObjId, OsAccountInstance.OsAccountInstanceType.ACCESSED, transaction);
+	}
 
 	/**
 	 * Add a new data artifact with the given type.
@@ -2199,6 +2227,8 @@ public final class Blackboard {
 	 * @param attributes      The attributes. May be empty or null.
 	 * @param osAccountObjId  The OS account associated with the artifact. May
 	 *                        be null.
+	 * @param osAccountInstanceType The instance type to associate with the osAccountObjId.
+	 *                        May be null.
 	 * @param transaction     The transaction in the scope of which the
 	 *                        operation is to be performed.
 	 *
@@ -2207,7 +2237,9 @@ public final class Blackboard {
 	 * @throws TskCoreException If a critical error occurs within tsk core.
 	 */
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId,
-			Collection<BlackboardAttribute> attributes, Long osAccountObjId, final CaseDbTransaction transaction) throws TskCoreException {
+			Collection<BlackboardAttribute> attributes,
+			Long osAccountObjId, OsAccountInstance.OsAccountInstanceType osAccountInstanceType,
+			final CaseDbTransaction transaction) throws TskCoreException {
 
 		if (artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 			throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", artifactType.getTypeName()));
@@ -2238,7 +2270,9 @@ public final class Blackboard {
 					connection.executeUpdate(statement);
 					
 					// Add an OS account instance 
-					caseDb.getOsAccountManager().newOsAccountInstance(osAccountObjId, dataSourceObjId, OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
+					if (Objects.nonNull(osAccountInstanceType)) {
+						caseDb.getOsAccountManager().newOsAccountInstance(osAccountObjId, dataSourceObjId, osAccountInstanceType, connection);
+					}
 				}
 
 				// if attributes are provided, add them to the artifact.
