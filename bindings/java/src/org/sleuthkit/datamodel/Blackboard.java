@@ -604,6 +604,71 @@ public final class Blackboard {
 				rs.getBytes("value_byte"), caseDb
 		);
 	}
+	
+	/**
+	 * Update file attributes for file with the given object ID.
+	 * For each attribute present, the current attribute of that type will be overwitten with the new value.
+	 * 
+	 * @param fileObjId  File object ID
+	 * @param attributes List of attributes. Each of the given attributes types should already be present in the database.
+	 * 
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void updateFileAttributes(long fileObjId, List<Attribute> attributes) throws TskCoreException {
+
+		caseDb.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = caseDb.getConnection()) {
+			for (Attribute attr : attributes) {
+				String updateString = "UPDATE tsk_file_attributes SET value_byte = ?, value_text = ?, value_int32 = ?, "
+					+ " value_int64 = ?, value_double = ? WHERE attribute_type_id = " + attr.getAttributeType().getTypeID() 
+					+ " AND obj_id = " + fileObjId;
+				
+				try (PreparedStatement preparedStatement = connection.getPreparedStatement(updateString, Statement.NO_GENERATED_KEYS);) {
+					preparedStatement.clearParameters();
+
+					if (attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+						preparedStatement.setBytes(1, attr.getValueBytes());
+					} else {
+						preparedStatement.setBytes(1, null);
+					}
+
+					if (attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+							|| attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
+						preparedStatement.setString(2, attr.getValueString());
+					} else {
+						preparedStatement.setString(2, null);
+					}
+					
+					if (attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+						preparedStatement.setInt(3, attr.getValueInt());
+					} else {
+						preparedStatement.setNull(3, java.sql.Types.INTEGER);
+					}
+
+					if (attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+							|| attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
+						preparedStatement.setLong(4, attr.getValueLong());
+					} else {
+						preparedStatement.setNull(4, java.sql.Types.BIGINT);
+					}
+
+					if (attr.getAttributeType().getValueType() == BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+						preparedStatement.setDouble(5, attr.getValueDouble());
+					} else {
+						preparedStatement.setNull(5, java.sql.Types.DOUBLE);
+					}
+					
+					connection.executeUpdate(preparedStatement);
+
+				} catch (SQLException ex) {
+					throw new TskCoreException(String.format("Error updating attribute using query = '%s'", updateString), ex);
+				}
+			}
+		} finally {
+			caseDb.releaseSingleUserCaseWriteLock();
+		}
+	}
 
 	/**
 	 * Get the attributes associated with the given file.

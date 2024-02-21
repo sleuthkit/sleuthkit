@@ -10920,6 +10920,55 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Updates the given fields of a file entry in the database.
+	 * 
+	 * @param fileObjId
+	 * @param size
+	 * @param mtime
+	 * @param atime
+	 * @param ctime
+	 * @param crtime
+	 * @param userSid
+	 * @param osAcctObjId (may be null)
+	 * 
+	 * @throws TskCoreException 
+	 */
+	@Beta
+	public void updateFile(long fileObjId, long size, long mtime, long atime, long ctime, long crtime, String userSid, Long osAcctObjId) throws TskCoreException {
+		
+		String updateString = "UPDATE tsk_files SET size = ?, mtime = ?, atime = ?, ctime = ?, crtime = ?, "
+				+ " owner_uid = ?, os_account_obj_id = ? WHERE obj_id = ?";
+		
+		acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection connection = connections.getConnection();
+			PreparedStatement preparedStatement = connection.getPreparedStatement(updateString, Statement.NO_GENERATED_KEYS);) {
+			
+			preparedStatement.clearParameters();
+			
+			preparedStatement.setLong(1, size);
+			preparedStatement.setLong(2, mtime);
+			preparedStatement.setLong(3, atime);
+			preparedStatement.setLong(4, ctime);
+			preparedStatement.setLong(5, crtime);
+			preparedStatement.setString(6, userSid);
+			
+			if (osAcctObjId != null) {
+				preparedStatement.setLong(7, osAcctObjId);
+			} else {
+				preparedStatement.setNull(7, java.sql.Types.BIGINT);
+			}
+			
+			preparedStatement.setLong(8, fileObjId);
+			
+			connection.executeUpdate(preparedStatement);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error updating file (obj_id = %s)", fileObjId), ex);
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
 	 * Stores the MIME type of a file in the case database and updates the MIME
 	 * type of the given file object.
 	 *
