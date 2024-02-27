@@ -358,7 +358,7 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Translates the known status of a tag defnition into an item score. This
+	 * Translates the known status of a tag definition into an item score. This
 	 * supports scoring of tagged items.
 	 *
 	 * @param knownStatus The known status of a tag definition.
@@ -374,15 +374,16 @@ public class TaggingManager {
 				 * notable.
 				 */
 				return Score.SCORE_NOTABLE;
+			case SUSPICIOUS:
+				return Score.SCORE_LIKELY_NOTABLE;
 			case UNKNOWN:
 			case KNOWN:
 			default: // N/A
 				/*
 				 * All other known status values have no special significance in
-				 * a tag definition. However, if an item has been tagged at all
-				 * by a user, the item is scored as likely notable.
+				 * a tag definition. 
 				 */
-				return Score.SCORE_LIKELY_NOTABLE;
+				return Score.SCORE_UNKNOWN;
 		}
 	}
 

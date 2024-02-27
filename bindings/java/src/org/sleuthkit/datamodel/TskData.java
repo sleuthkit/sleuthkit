@@ -799,7 +799,8 @@ public class TskData {
 
 		UNKNOWN(0, bundle.getString("TskData.fileKnown.unknown")), ///< File marked as unknown by hash db
 		KNOWN(1, bundle.getString("TskData.fileKnown.known")), ///< File marked as a known by hash db
-		BAD(2, bundle.getString("TskData.fileKnown.knownBad")); ///< File marked as known and bad/notable/interesting by hash db
+		BAD(2, bundle.getString("TskData.fileKnown.knownBad")),
+		SUSPICIOUS(3, bundle.getString("TskData.fileKnown.suspicious")); ///< File marked as suspicious by hash db	
 
 		private byte known;
 		private String name;
