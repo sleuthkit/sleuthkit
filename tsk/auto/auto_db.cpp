@@ -960,6 +960,15 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                     return TSK_OK;
                 }
             }
+        } else if((m_blkMapFlag) && (isResident(fs_attr))
+            && (isDotDir(fs_file) == 0)
+            && fs_attr->rd.offset != -1) {
+            // Resident files receive a single range
+            if (m_db->addFileLayoutRange(m_curFileId,
+                fs_attr->rd.offset, fs_attr->size, 0)) {
+                registerError();
+                return TSK_OK;
+            }
         }
     }
 

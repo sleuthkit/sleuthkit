@@ -312,7 +312,7 @@ extern "C" {
         struct {
             uint8_t *buf;       ///< Buffer for resident data
             size_t buf_size;    ///< Number of bytes allocated to buf
-            TSK_OFF_T offset;   ///< Starting offset in bytes relative to start of file system (NOT YET IMPLEMENTED)
+            TSK_OFF_T offset;   ///< Starting offset in bytes relative to start of file system (NOT YET IMPLEMENTED - except on NTFS)
         } rd;
 
         /* Special file (compressed, encrypted, etc.) */
