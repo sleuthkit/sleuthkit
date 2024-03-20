@@ -35,6 +35,7 @@
 /case-uco/java/nbproject/genfiles.properties
 
 # Windows build folders
+/win32/__pycache__/
 /win32/Debug_NoLibs/
 /win32/*/Debug_NoLibs/
 /win32/Debug/
@@ -47,6 +48,8 @@
 /win32/*/Release_PostgreSQL/
 /win32/Release_NoLibs/
 /win32/*/Release_NoLibs/
+/win32/Release_XPNoLibs/
+/win32/*/Release_XPNoLibs/
 /win32/*/x64/
 /win32/x64/
 /win32/*/*.user
@@ -76,6 +79,7 @@ framework/tools/tsk_validatepipeline/tsk_validatepipeline
 rejistry++/msvcpp/*/Debug
 rejistry++/msvcpp/*/Release
 rejistry++/msvcpp/*/Release_NoLibs
+rejistry++/msvcpp/*/Release_XPNoLibs
 rejistry++/msvcpp/*/x64
 rejistry++/msvcpp/*/*.user
 rejistry++/msvcpp/rejistry++/ipch
