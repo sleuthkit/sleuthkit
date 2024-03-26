@@ -271,6 +271,16 @@ void file_info_xml(const string &name,const string &value)
     }
 }
 
+void file_info_xml2(const string &name,const string &attrib,const string &value)
+{
+    if(x){
+	x->push(name,attrib);
+	x->puts(value);
+	x->pop();
+    }
+}
+
+
 /* Process a string value */
 void file_info(const string &name,const string &value)
 {
@@ -688,7 +698,7 @@ int main(int argc, char * const *argv1)
 		"\n  xmlns='http://www.forensicswiki.org/wiki/Category:Digital_Forensics_XML'"
 		"\n  xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'"
 		"\n  xmlns:dc='http://purl.org/dc/elements/1.1/'"
-		"\n  version='1.0'" );
+		"\n  version='1.1.0+'" );
 	x->push("metadata", "");
 	x->xmlout("dc:type","Disk Image",fw_empty,false);
 	x->pop();

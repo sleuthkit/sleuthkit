@@ -1591,7 +1591,7 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
         return 1;
     }
-    r_enum = ntfs_dinode_lookup(ntfs, (char *) mft, inode_toid);
+    r_enum = ntfs_dinode_lookup(ntfs, (char *) mft, inode_toid, 0);
     if (r_enum == TSK_ERR) {
         free(mft);
         return 1;

@@ -463,6 +463,7 @@ extern "C" {
         TSK_FS_META_MODE_ENUM mode;     ///< Unix-style permissions
         int nlink;              ///< link count (number of file names pointing to this)
         TSK_OFF_T size;         ///< file size (in bytes)
+        TSK_OFF_T start_of_inode;	///< address within file system where inode structure begins
         TSK_UID_T uid;          ///< owner id
         TSK_GID_T gid;          ///< group id
 

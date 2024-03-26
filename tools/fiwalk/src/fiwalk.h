@@ -135,6 +135,7 @@ void file_info(const md5_t &t);
 void file_info(const sha1_t &t);
 void file_info(const sha256_t &t);
 void file_info_xml(const string &name,const string &value);
+void file_info_xml2(const string &name,const string &attrib,const string &value);
 void file_info(const string name, int64_t value);
 void file_infot(const string name,time_t t0);
 void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype);
