@@ -42,7 +42,7 @@
 
 
 
-/** 
+/**
  * \internal
  * Read from one of the multiple files in a split set of disk images.
  *
@@ -264,7 +264,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 }
 
 
-/** 
+/**
  * \internal
  * Read data from a (potentially split) raw disk image.  The offset to
  * start reading from is equal to the volume offset plus the read offset.
@@ -346,7 +346,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                 /* go to the next image segment */
                 while ((len > 0) && (i+1 < raw_info->img_info.num_img)) {
                     ssize_t cnt2;
-                    
+
                     i++;
 
                     if ((raw_info->max_off[i] - raw_info->max_off[i - 1]) >= (TSK_OFF_T)len)
@@ -387,7 +387,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 }
 
 
-/** 
+/**
  * \internal
  * Display information about the disk image set.
  *
@@ -420,12 +420,10 @@ raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
                 (TSK_OFF_T) (raw_info->max_off[i] - 1));
         }
     }
-
-    return;
 }
 
 
-/** 
+/**
  * \internal
  * Free the memory and close the file  handles for the disk image
  *
@@ -540,7 +538,7 @@ set_device_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TS
     }
 
     // If reading a sector starting at offset 1 failed, the assumption is that we have a device
-    // that requires reads to be sector-aligned. 
+    // that requires reads to be sector-aligned.
     if (needs_sector_alignment) {
         // Start at the minimum (512) and double up to max_sector_size (4096)
         unsigned int sector_size = min_sector_size;
@@ -580,7 +578,7 @@ set_device_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TS
 }
 #endif
 
-/** 
+/**
  * \internal
  * Open the set of disk images as a set of split raw images
  *

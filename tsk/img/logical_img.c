@@ -16,7 +16,7 @@
 #include "logical_img.h"
 #include "tsk/util/file_system_utils.h"
 
-/** 
+/**
  * \internal
  * Display information about the disk image set.
  *
@@ -34,8 +34,6 @@ logical_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 	tsk_fprintf(hFile,
 		"Base Directory Path: %" PRIttocTSK "\n",
 		dir_info->base_path);
-
-    return;
 }
 
 /*
@@ -52,9 +50,9 @@ clear_inum_cache_entry(IMG_LOGICAL_INFO *logical_img_info, int index) {
 	logical_img_info->inum_cache[index].cache_age = 0;
 }
 
-/** 
+/**
  * \internal
- * 
+ *
  *
  * @param img_info logical directory to close
  */
@@ -85,9 +83,9 @@ logical_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 	return 0;
 }
 
-/** 
+/**
  * \internal
- * 
+ *
  *
  * @param a_num_img Number of images in set
  * @param a_images List of disk image paths (in sorted order)
@@ -170,7 +168,7 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	TSTRNCPY(logical_info->base_path, a_images[0], len + 1);
 	// Remove trailing slash
 #ifdef TSK_WIN32
-	if ((logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'/') 
+	if ((logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'/')
 			|| (logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'\\')) {
 		logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] = '\0';
 	}
