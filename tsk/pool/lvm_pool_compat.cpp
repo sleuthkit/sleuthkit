@@ -18,7 +18,7 @@
 #include <stdexcept>
 
 /**
- * Get error string from libvslvm and make buffer empty if that didn't work. 
+ * Get error string from libvslvm and make buffer empty if that didn't work.
  * @returns 1 if error message was not set
  */
 static uint8_t getError(libvslvm_error_t *vslvm_error, char error_string[512])
@@ -26,6 +26,53 @@ static uint8_t getError(libvslvm_error_t *vslvm_error, char error_string[512])
     error_string[0] = '\0';
     int retval = libvslvm_error_backtrace_sprint(vslvm_error, error_string, 512);
     return retval <= 0;
+}
+
+LVMPoolCompat::~LVMPoolCompat() {
+  // Clean up the dynamic allocations
+  if (_info.vol_list != nullptr) {
+    auto vol = _info.vol_list;
+    while (vol != nullptr) {
+      if (vol->desc != nullptr) delete[] vol->desc;
+      vol = vol->next;
+    }
+    delete[] _info.vol_list;
+    _info.vol_list = nullptr;
+  }
+}
+
+// Note that vol_list is used by findFilesInPool
+void LVMPoolCompat::init_volumes() {
+    int number_of_logical_volumes = 0;
+    if (libvslvm_volume_group_get_number_of_logical_volumes(_lvm_volume_group, &number_of_logical_volumes, NULL) != 1 ) {
+        return;
+    }
+    _info.num_vols = number_of_logical_volumes;
+    _info.vol_list = new TSK_POOL_VOLUME_INFO[number_of_logical_volumes]();
+
+    libvslvm_logical_volume_t *lvm_logical_volume = NULL;
+    TSK_POOL_VOLUME_INFO *last = nullptr;
+
+    for (int volume_index = 0; volume_index < number_of_logical_volumes; volume_index++ ) {
+        if (libvslvm_volume_group_get_logical_volume(_lvm_volume_group, volume_index, &lvm_logical_volume, NULL) != 1 ) {
+            return;
+        }
+        auto &vinfo = _info.vol_list[volume_index];
+
+        vinfo.tag = TSK_POOL_VOL_INFO_TAG;
+        vinfo.index = volume_index;
+        vinfo.block = volume_index + 1;
+        vinfo.prev = last;
+        if (vinfo.prev != nullptr) {
+            vinfo.prev->next = &vinfo;
+        }
+        vinfo.desc = new char[64];
+        libvslvm_logical_volume_get_name(lvm_logical_volume, vinfo.desc, 64, NULL);
+
+        libvslvm_logical_volume_free(&lvm_logical_volume, NULL);
+
+        last = &vinfo;
+    }
 }
 
 uint8_t LVMPoolCompat::poolstat(FILE *hFile) const noexcept try {
@@ -98,8 +145,6 @@ lvm_logical_volume_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     libvslvm_error_t *vslvm_error = NULL;
 
-    // correct the offset to be relative to the start of the logical volume
-    offset -= pool_img_info->pool_info->img_offset;
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "lvm_logical_volume_img_read: offset: %" PRIdOFF " read len: %" PRIuSIZE ".\n",

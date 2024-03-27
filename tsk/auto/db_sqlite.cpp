@@ -32,7 +32,7 @@ using std::for_each;
 TskDbSqlite::TskDbSqlite(const char* a_dbFilePathUtf8, bool a_blkMapFlag)
     : TskDb(a_dbFilePathUtf8, a_blkMapFlag)
 {
-    strncpy(m_dbFilePathUtf8, a_dbFilePathUtf8, 1024);
+    snprintf(m_dbFilePathUtf8, 1024, "%s", a_dbFilePathUtf8);
     m_utf8 = true;
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
@@ -786,15 +786,25 @@ TskDbSqlite::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId, 
         return retVal;
     }
 
+
     // Add volume system
     if (addObject(TSK_DB_OBJECT_TYPE_VS, poolObjId, vsObjId))
         return 1;
 
-    snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", vsObjId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
+    if (pool_info->ctype == TSK_POOL_TYPE_APFS){
+        snprintf(stmt, 1024,
+            "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", vsObjId, TSK_VS_TYPE_APFS, pool_info->img_offset, pool_info->block_size); // TODO - offset
+    }
+    #ifdef HAVE_LIBVSLVM
+    if (pool_info->ctype == TSK_POOL_TYPE_LVM){
+        snprintf(stmt, 1024,
+            "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuDADDR ",%d)", vsObjId, TSK_VS_TYPE_LVM, pool_info->img_offset, pool_info->block_size); // TODO - offset
+    }
+    #endif /* HAVE_LIBVSLVM */
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");
+
 }
 
 /**
