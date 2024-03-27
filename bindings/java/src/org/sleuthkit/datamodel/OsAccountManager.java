@@ -29,6 +29,7 @@ import java.sql.Types;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Optional;
@@ -178,6 +179,20 @@ public final class OsAccountManager {
 			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
 		}
 		
+		
+		if (StringUtils.isNotBlank(sid)) {
+			// SID Normalized to uppercase
+			sid = sid.toUpperCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(loginName)) {
+			// Windows logon names are case insensitive. saving them in lower case.
+			loginName = loginName.toLowerCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(realmName)) {
+			// Windows realm names are case insensitive. saving them in lower case.
+			realmName = realmName.toLowerCase(Locale.ENGLISH);
+		} 
+		 
 		
 		OsRealmUpdateResult realmUpdateResult;
 		Optional<OsAccountRealm> anotherRealmWithSameName = Optional.empty();
@@ -414,7 +429,7 @@ public final class OsAccountManager {
 	/**
 	 * Creates a OS account with the given uid, name, and realm.
 	 *
-	 * @param uniqueId      Account sid/uid. May be null.
+	 * @param uniqueId      Account sid/uid. May be null. Saved in uppercase.
 	 * @param loginName     Login name. May be null only if SID is not null.
 	 * @param realm	        Realm.
 	 * @param accountStatus Account status.
@@ -512,7 +527,7 @@ public final class OsAccountManager {
 				+ " ON accounts.realm_id = realms.id"
 				+ " WHERE " + whereHostClause
 				+ "     AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
-				+ "  AND LOWER(accounts.addr) = LOWER('" + uniqueId + "')";
+				+ "  AND accounts.addr = '" + uniqueId + "'";
 
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
@@ -544,7 +559,7 @@ public final class OsAccountManager {
 	Optional<OsAccount> getOsAccountByAddr(String uniqueId, OsAccountRealm realm) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE LOWER(addr) = LOWER('" + uniqueId + "')"
+				+ " WHERE addr = '" + uniqueId + "'"
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 				+ " AND realm_id = " + realm.getRealmId();
 
@@ -579,7 +594,7 @@ public final class OsAccountManager {
 	Optional<OsAccount> getOsAccountByLoginName(String loginName, OsAccountRealm realm) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE LOWER(login_name) = LOWER('" + loginName + "')"
+				+ " WHERE login_name = '" + loginName + "'"
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 				+ " AND realm_id = " + realm.getRealmId();
 
@@ -1263,6 +1278,20 @@ public final class OsAccountManager {
 			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
 			
 		}
+		
+				
+		if (StringUtils.isNotBlank(sid)) {
+			// SID Normalized to uppercase
+			sid = sid.toUpperCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(loginName)) {
+			// Windows logon names are case insensitive. saving them in lower case.
+			loginName = loginName.toLowerCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(realmName)) {
+			// Windows realm names are case insensitive. saving them in lower case.
+			realmName = realmName.toLowerCase(Locale.ENGLISH);
+		} 
 			
 		// first get the realm for the given sid
 		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost);
@@ -1775,6 +1804,20 @@ public final class OsAccountManager {
 	public OsAccountUpdateResult updateCoreWindowsOsAccountAttributes(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
+			
+			if (StringUtils.isNotBlank(accountSid)) {
+				// SID Normalized to uppercase
+				accountSid = accountSid.toUpperCase(Locale.ENGLISH);
+			}
+			if (StringUtils.isNotBlank(loginName)) {
+				// Windows logon names are case insensitive. saving them in lower case.
+				loginName = loginName.toLowerCase(Locale.ENGLISH);
+			}
+			if (StringUtils.isNotBlank(realmName)) {
+				// Windows realm names are case insensitive. saving them in lower case.
+				realmName = realmName.toLowerCase(Locale.ENGLISH);
+			}
+
 			OsAccountUpdateResult updateStatus = this.updateCoreWindowsOsAccountAttributes(osAccount, accountSid, loginName, realmName, referringHost, trans);
 
 			trans.commit();
@@ -1847,7 +1890,7 @@ public final class OsAccountManager {
 		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, resolvedLoginName, trans);
 
 		Optional<OsAccount> updatedAccount = updateStatus.getUpdatedAccount();
-		if (updatedAccount.isPresent()) {
+		if (updatedAccount.isPresent() && updateStatus.updateStatus != OsAccountUpdateStatus.NO_CHANGE) {
 			// After updating account data, check if there is matching account to merge
 			mergeOsAccount(updatedAccount.get(), trans);
 		}

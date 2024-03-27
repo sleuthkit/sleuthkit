@@ -383,12 +383,12 @@ public class OsAccountTest {
 		accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getAddr().isPresent() && p.getAddr().get().equals(sid1)).collect(Collectors.toList());
 		assertEquals(accounts.size() == 1, true);
 		
-		// Test that account 3 got moved into the destination realm
-		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(uniqueRealm2Name, destRealm);
+		// Test that account 3 got moved into the destination realm. Tests are currently windows specific
+		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getWindowsOsAccount(null,uniqueRealm2Name, destRealmName, host);
 		assertEquals(optAcct.isPresent(), true);
 		
-		// Test that data from account 4 was merged into account 2
-		optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(matchingName, destRealm);
+		// Test that data from account 4 was merged into account 2. Tests are currently windows specific
+		optAcct = caseDB.getOsAccountManager().getWindowsOsAccount(null, matchingName, destRealmName, host);
 		assertEquals(optAcct.isPresent(), true);
 		if (optAcct.isPresent()) {
 			assertEquals(optAcct.get().getCreationTime().isPresent() &&  optAcct.get().getCreationTime().get() == creationTime1, true);
