@@ -105,7 +105,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 4);
+			= new CaseDbSchemaVersionNumber(9, 5);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1014,6 +1014,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot1toSchema9dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot2toSchema9dot3(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot3toSchema9dot4(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot4toSchema9dot5(dbSchemaVersion, connection);
 				
 				
 
@@ -2804,6 +2805,32 @@ public class SleuthkitCase {
 					TskData.CollectedStatus.UNKNOWN.getType() + ";");
 
 			return new CaseDbSchemaVersionNumber(9, 4);
+
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	private CaseDbSchemaVersionNumber updateFromSchema9dot4toSchema9dot5(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 4) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try { 
+			// Adding indexes to the os account table
+			statement.execute("CREATE INDEX tsk_os_accounts_login_name_idx  ON tsk_os_accounts(login_name, db_status, realm_id)");
+			statement.execute("CREATE INDEX tsk_os_accounts_addr_idx  ON tsk_os_accounts(addr, db_status, realm_id)");
+			statement.execute("CREATE INDEX tsk_os_account_realms_realm_name_idx  ON tsk_os_account_realms(realm_name)");
+			statement.execute("CREATE INDEX tsk_os_account_realms_realm_addr_idx  ON tsk_os_account_realms(realm_addr)");
+			
+			return new CaseDbSchemaVersionNumber(9, 5);
 
 		} finally {
 			closeStatement(statement);

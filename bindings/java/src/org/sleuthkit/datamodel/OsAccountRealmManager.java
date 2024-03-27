@@ -28,6 +28,7 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,6 +88,15 @@ public final class OsAccountRealmManager {
 		if ((StringUtils.isBlank(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
 			&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Either an address or a name is required to create a realm.");
+		}
+
+		if (StringUtils.isNotBlank(accountSid)) {
+			// SID Normalized to uppercase
+			accountSid = accountSid.toUpperCase(Locale.ENGLISH);
+		}
+		if (StringUtils.isNotBlank(realmName)) {
+			// Windows realm names are case insensitive. saving them in lower case.
+			realmName = realmName.toLowerCase(Locale.ENGLISH);
 		}
 		
 		Host scopeHost;
@@ -223,6 +233,14 @@ public final class OsAccountRealmManager {
 		if ((Strings.isNullOrEmpty(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) )
 				&& Strings.isNullOrEmpty(realmName)) {
 			throw new TskCoreException("Realm address or name is required get a realm.");
+		}
+		if (StringUtils.isNotBlank(accountSid)) {
+			// SID Normalized to uppercase
+			accountSid = accountSid.toUpperCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(realmName)) {
+			// Windows realm names are case insensitive. saving them in lower case.
+			realmName = realmName.toLowerCase(Locale.ENGLISH);
 		}
 		
 		try (CaseDbConnection connection = this.db.getConnection()) {
@@ -559,7 +577,7 @@ public final class OsAccountRealmManager {
 							? " 1 = 1 " 
 							: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL) ";
 		String queryString = REALM_QUERY_STRING
-						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
+						+ " WHERE realms.realm_addr = '"+ realmAddr + "' "
 						+ " AND " + whereHostClause
 				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
@@ -587,7 +605,7 @@ public final class OsAccountRealmManager {
 							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
 							: " realms.scope_host_id IS NULL ";
 		String queryString = REALM_QUERY_STRING
-						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
+						+ " WHERE realms.realm_addr = '"+ realmAddr + "' "
 						+ " AND " + whereHostClause
 						+ " AND realms.id <> " + realm.getRealmId()
 				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
@@ -614,7 +632,7 @@ public final class OsAccountRealmManager {
 				? " 1 = 1 "
 				: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL ) ";
 		String queryString = REALM_QUERY_STRING
-				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
+				+ " WHERE realms.realm_name = '" + realmName + "'"
 				+ " AND " + whereHostClause
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
@@ -642,7 +660,7 @@ public final class OsAccountRealmManager {
 							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
 							: " realms.scope_host_id IS NULL ";
 		String queryString = REALM_QUERY_STRING
-				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
+				+ " WHERE realms.realm_name = '" + realmName + "'"
 				+ " AND " + whereHostClause
 				+ " AND realms.id <> " + realm.getRealmId()
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
