@@ -13,6 +13,6 @@ installLib() {
 	cd ..
 }
 
-installLib libvhdi 20201204
-installLib libvmdk 20200926
+installLib libvhdi 20210425
+installLib libvmdk 20210807
 
