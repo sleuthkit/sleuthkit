@@ -67,6 +67,8 @@
 		<copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}" overwrite="true"/>
 		<!-- amd64 -->
 		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}" overwrite="true"/>
+		<!-- aarch64 -->
+		<copy file="${jni.dylib}" tofile="${aarch64}/mac/${jni.jnilib}" overwrite="true"/>
 	</target>
 
 	<!-- Non-OS X -->
@@ -92,6 +94,8 @@
 		<copy file="${jni.so}" tofile="${i586}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- i686 -->
 		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so" overwrite="true"/>
+		<!-- aarch64 -->
+		<copy file="${jni.so}" tofile="${aarch64}/linux/libtsk_jni.so" overwrite="true"/>
 	</target>
 
 	<target name="copyLibs" depends="copyLinuxLibs,copyMacLibs"/>
