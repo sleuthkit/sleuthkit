@@ -383,12 +383,12 @@ public class OsAccountTest {
 		accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getAddr().isPresent() && p.getAddr().get().equals(sid1)).collect(Collectors.toList());
 		assertEquals(accounts.size() == 1, true);
 		
-		// Test that account 3 got moved into the destination realm
-		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(uniqueRealm2Name, destRealm);
+		// Test that account 3 got moved into the destination realm. Tests are currently windows specific
+		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getWindowsOsAccount(null,uniqueRealm2Name, destRealmName, host);
 		assertEquals(optAcct.isPresent(), true);
 		
-		// Test that data from account 4 was merged into account 2
-		optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(matchingName, destRealm);
+		// Test that data from account 4 was merged into account 2. Tests are currently windows specific
+		optAcct = caseDB.getOsAccountManager().getWindowsOsAccount(null, matchingName, destRealmName, host);
 		assertEquals(optAcct.isPresent(), true);
 		if (optAcct.isPresent()) {
 			assertEquals(optAcct.get().getCreationTime().isPresent() &&  optAcct.get().getCreationTime().get() == creationTime1, true);
@@ -839,6 +839,61 @@ public class OsAccountTest {
 			assertEquals(oOsAccount4Updated.get().getAddr().orElse("").equalsIgnoreCase(uid4), true);
 			assertEquals(oOsAccount4Updated.get().getLoginName().orElse("").equalsIgnoreCase(loginName4), true);
 			
+			
+			// Linux user names are case sensitive. 
+			String uid5 = "505";
+			String loginname5 = "user5";
+			String loginName5 = "User5";
+			// creates a user with only id
+			caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid5, null, host1);
+			// Creates a user with name only - lowercase 
+			caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginname5, host1);
+			
+			Optional<OsAccount> oOsAccount5_ = caseDB.getOsAccountManager().getLocalLinuxOsAccount(null, loginname5, host1);
+			assertEquals(oOsAccount5_.isPresent(), true); // Asserting that lowercase login was created		
+			assertEquals(oOsAccount5_.get().getLoginName().orElse(""), loginname5);
+			
+			// Creates a user with name only uppercase   
+			caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginName5, host1);
+		
+			// get the osaccount by uid5
+			Optional<OsAccount> oOsAccount5 = caseDB.getOsAccountManager().getLocalLinuxOsAccount(uid5, "", host1);
+			assertEquals(oOsAccount5.isPresent(), true);
+			
+			// Login name was not provided. so should be blank 
+			assertEquals(oOsAccount5.get().getLoginName().orElse("") , "");
+			assertEquals(oOsAccount5.get().getAddr().orElse(""), uid5);
+		
+			// attempt to add an account with uid5 and loginName5 (505, User5) 
+			OsAccount act5 = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid5, loginName5, host1);
+			
+			// Previous create should not have happened. 
+			assertEquals(act5.getLoginName().orElse("") , "");
+			assertEquals(act5.getAddr().orElse(""), uid5);
+		
+			// Lets try to update the os account uid5 and loginName5 (505, "") to  (505, User5)
+			updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(oOsAccount5.get(), uid5, loginName5);
+			Optional<OsAccount> oOsAccount5Updated = updateResult.getUpdatedAccount();			
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount5Updated.isPresent(), true);
+			assertEquals(oOsAccount5Updated.get().getAddr().orElse(""), uid5);
+			assertEquals(oOsAccount5Updated.get().getLoginName().orElse(""), loginName5);
+			
+						
+			Optional<OsAccount> oOsAccount5_loginName = caseDB.getOsAccountManager().getLocalLinuxOsAccount(null, loginName5, host1);
+			assertEquals(oOsAccount5_loginName.isPresent(), true);  	
+			assertEquals(oOsAccount5_loginName.get().getLoginName().orElse(""), loginName5);
+			assertEquals(oOsAccount5_loginName.get().getAddr().orElse(""), uid5);
+						
+			// Asserting that lowercase login is still there in the database. 	
+			// and did not merge the wrong user. 
+			Optional<OsAccount> oOsAccount5_loginname5 = caseDB.getOsAccountManager().getLocalLinuxOsAccount(null, loginname5, host1);
+			assertEquals(oOsAccount5_loginname5.isPresent(), true); 	
+			assertEquals(oOsAccount5_loginname5.get().getLoginName().orElse(""), loginname5);
+			
+			 
 		} finally {
 			
 		}
