@@ -134,9 +134,12 @@ public final class OsAccountManager {
 	 *
 	 * @param sid           Account sid/uid, can be null if loginName is
 	 *                      supplied.
+	 *						SID when present will be normalized to uppercase 
 	 * @param loginName     Login name, can be null if sid is supplied.
+	 *						Login name when present will be normalized to lowercase 
 	 * @param realmName     Realm within which the accountId or login name is
 	 *                      unique. Can be null if sid is supplied.
+	 *						Realm when present will be normalized to lowercase
 	 * @param referringHost Host referring the account.
 	 * @param realmScope    Realm scope.
 	 *
@@ -429,7 +432,7 @@ public final class OsAccountManager {
 	/**
 	 * Creates a OS account with the given uid, name, and realm.
 	 *
-	 * @param uniqueId      Account sid/uid. May be null. Saved in uppercase.
+	 * @param uniqueId      Account sid/uid. May be null.
 	 * @param loginName     Login name. May be null only if SID is not null.
 	 * @param realm	        Realm.
 	 * @param accountStatus Account status.
@@ -1255,9 +1258,12 @@ public final class OsAccountManager {
 	 * Gets an OS account using Windows-specific data.
 	 *
 	 * @param sid           Account SID, maybe null if loginName is supplied.
+	 *						SID when present will be normalized to uppercase 
 	 * @param loginName     Login name, maybe null if sid is supplied.
+	 *						Login name when present will be normalized to lowercase 
 	 * @param realmName     Realm within which the accountId or login name is
 	 *                      unique. Can be null if sid is supplied.
+	 *						Realm when present will be normalized to lowercase 
 	 * @param referringHost Host referring the account.
 	 *
 	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount
@@ -1797,8 +1803,11 @@ public final class OsAccountManager {
 	 *
 	 * @param osAccount     OsAccount that needs to be updated in the database.
 	 * @param accountSid    Account SID, may be null.
+	 *						Account SID when present will be normalized to uppercase 
 	 * @param loginName     Login name, may be null.
+	 *						Login name when present will be normalized to lowercase 
 	 * @param realmName     Realm name for the account.
+	 *						Realm when present will be normalized to lowercase 
 	 * @param referringHost Host.
 	 *
 	 * @return OsAccountUpdateResult Account update status, and the updated
