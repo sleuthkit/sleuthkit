@@ -860,13 +860,15 @@ public class TskData {
 		}
 
 		/**
-		 * Converts TagType to a corresponding FileKnown value.
+		 * This method is used only to support deprecated APIs. It should not be
+		 * used otherwise. FileKnown used to be used for tag types. Converts
+		 * TagType to a corresponding FileKnown value.
 		 *
 		 * @param tagType to convert
 		 *
 		 * @return the enum FileKnown
 		 */
-		public static FileKnown getFileKnown(TagType tagType) {
+		public static FileKnown convertTagTypeToFileKnown(TagType tagType) {
 			switch (tagType) {
 				case BAD:
 					return FileKnown.BAD;
@@ -879,6 +881,29 @@ public class TskData {
 
 			throw new IllegalArgumentException(
 					MessageFormat.format(bundle.getString("TskData.tagType.exception.msg1.text"), tagType));
+		}
+		
+		/**
+		 * This method is used only to support deprecated APIs. It should not be
+		 * used otherwise. FileKnown used to be used for tag types. Converts
+		 * FileKnown to a corresponding TagType value.
+		 *
+		 * @param fileKnown to convert
+		 *
+		 * @return the enum TagType
+		 */
+		public static TagType convertFileKnownToTagType(FileKnown fileKnown) {
+			switch (fileKnown) {
+				case BAD:
+					return TagType.BAD;
+				case KNOWN:
+					return TagType.KNOWN;
+				case UNKNOWN:
+					return TagType.UNKNOWN;
+			}
+
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.fileKnown.exception.msg1.text"), fileKnown));
 		}
 
 		/**

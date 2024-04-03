@@ -11770,7 +11770,7 @@ public class SleuthkitCase {
 	@Deprecated
 	@SuppressWarnings("deprecation")
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
-		return addOrUpdateTagName(displayName, description, color, TskData.TagType.UNKNOWN);
+		return addOrUpdateTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
 	}
 
 	/**
@@ -11780,7 +11780,7 @@ public class SleuthkitCase {
 	 * @param displayName The display name for the new tag name.
 	 * @param description The description for the new tag name.
 	 * @param color       The HTML color to associate with the new tag name.
-	 * @param knownStatus The TskData.TagType value to associate with the new
+	 * @param knownStatus The TskData.FileKnown value to associate with the new
 	 *                    tag name.
 	 *
 	 * @return A TagName data transfer object (DTO) for the new row.
@@ -11790,7 +11790,7 @@ public class SleuthkitCase {
 	 * TaggingManager.addOrUpdateTagName.
 	 */
 	@Deprecated
-	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.TagType knownStatus) throws TskCoreException {
+	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
 		return getTaggingManager().addOrUpdateTagName(displayName, description, color, knownStatus);
 	}
 

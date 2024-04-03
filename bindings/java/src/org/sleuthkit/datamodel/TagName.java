@@ -119,6 +119,15 @@ public class TagName implements Comparable<TagName>, Serializable {
 	public TskData.TagType getTagType() {
 		return tagType;
 	}
+	
+	/**
+	 * @return 
+	 * @deprecated TagName.getTagType() should be used instead.
+	 */
+	@Deprecated
+	public TskData.FileKnown getKnownStatus() {
+		return TskData.TagType.convertTagTypeToFileKnown(tagType);
+	}
 
 	long getTagSetId() {
 		return tagSetId;

@@ -523,6 +523,15 @@ public class TaggingManager {
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		}
 	}
+	
+	/**
+	 * @return 
+	 * @deprecated TaggingManager.addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.TagType tagType) should be used instead.
+	 */
+	@Deprecated
+	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
+		return addOrUpdateTagName(displayName, description, color, TskData.TagType.convertFileKnownToTagType(knownStatus));
+	}
 
 	/**
 	 * Inserts row into the tags_names table, or updates the existing row if the
