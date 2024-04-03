@@ -810,7 +810,7 @@ public class TskData {
 		}
 
 		/**
-		 * Convert file type type byte value to the enum type
+		 * Convert file known type byte value to the enum type
 		 *
 		 * @param known long value to convert
 		 *
@@ -831,9 +831,9 @@ public class TskData {
 		}
 
 		/**
-		 * Get byte value of the file type status
+		 * Get byte value of the file known status
 		 *
-		 * @return the long value of the file type status
+		 * @return the long value of the file known status
 		 */
 		public byte getFileKnownValue() {
 			return this.known;
