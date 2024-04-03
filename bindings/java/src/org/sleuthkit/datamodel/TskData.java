@@ -798,9 +798,8 @@ public class TskData {
 	public enum FileKnown {
 
 		UNKNOWN(0, bundle.getString("TskData.fileKnown.unknown")), ///< File marked as unknown by hash db
-		KNOWN(1, bundle.getString("TskData.fileKnown.known")), ///< File marked as a known by hash db
-		BAD(2, bundle.getString("TskData.fileKnown.knownBad")),
-		SUSPICIOUS(3, bundle.getString("TskData.fileKnown.suspicious")); ///< File marked as suspicious by hash db	
+		KNOWN(1, bundle.getString("TskData.fileKnown.known")), ///< File marked as a type by hash db
+		BAD(2, bundle.getString("TskData.fileKnown.knownBad")); ///< File marked as bad by hash db	
 
 		private byte known;
 		private String name;
@@ -811,7 +810,7 @@ public class TskData {
 		}
 
 		/**
-		 * Convert file known type byte value to the enum type
+		 * Convert file type type byte value to the enum type
 		 *
 		 * @param known long value to convert
 		 *
@@ -832,12 +831,84 @@ public class TskData {
 		}
 
 		/**
-		 * Get byte value of the file known status
+		 * Get byte value of the file type status
 		 *
-		 * @return the long value of the file known status
+		 * @return the long value of the file type status
 		 */
 		public byte getFileKnownValue() {
 			return this.known;
+		}
+	}
+	
+	/**
+	 * Identifies tag type. This is the knownStatus column in the tag_names
+	 * table.
+	 */
+	public enum TagType {
+
+		UNKNOWN(0, bundle.getString("TskData.tagType.unknown")), // does not change score
+		KNOWN(1, bundle.getString("TskData.tagType.known")), // does not change score
+		BAD(2, bundle.getString("TskData.tagType.knownBad")), // changes score to "notable"
+		SUSPICIOUS(3, bundle.getString("TskData.tagType.suspicious")); // changes score to "likely notable"	
+
+		private byte type;
+		private String name;
+
+		private TagType(int type, String name) {
+			this.type = (byte) type;
+			this.name = name;
+		}
+
+		/**
+		 * Converts TagType to a corresponding FileKnown value.
+		 *
+		 * @param tagType to convert
+		 *
+		 * @return the enum FileKnown
+		 */
+		public static FileKnown getFileKnown(TagType tagType) {
+			switch (tagType) {
+				case BAD:
+					return FileKnown.BAD;
+				case KNOWN:
+					return FileKnown.KNOWN;
+				case UNKNOWN:
+				case SUSPICIOUS:
+					return FileKnown.UNKNOWN;
+			}
+
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tagType.exception.msg1.text"), tagType));
+		}
+
+		/**
+		 * Convert tag type byte value to the enum type
+		 *
+		 * @param type long value to convert
+		 *
+		 * @return the enum type
+		 */
+		public static TagType valueOf(byte type) {
+			for (TagType v : TagType.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tagType.exception.msg1.text"), type));
+		}
+
+		public String getName() {
+			return this.name;
+		}
+
+		/**
+		 * Get byte value of the tag type status
+		 *
+		 * @return the long value of the tag type status
+		 */
+		public byte getTagTypeValue() {
+			return this.type;
 		}
 	}
 

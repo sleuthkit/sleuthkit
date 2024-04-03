@@ -85,17 +85,17 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String displayName;
 	private final String description;
 	private final HTML_COLOR color;
-	private final TskData.FileKnown knownStatus;
+	private final TskData.TagType tagType;
 	private final long tagSetId;
 	private final int rank;
 
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus, long tagSetId, int rank) {
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.TagType tagType, long tagSetId, int rank) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
 		this.color = color;
-		this.knownStatus = knownStatus;
+		this.tagType = tagType;
 		this.tagSetId = tagSetId;
 		this.rank = rank;
 	}
@@ -116,8 +116,8 @@ public class TagName implements Comparable<TagName>, Serializable {
 		return color;
 	}
 
-	public TskData.FileKnown getKnownStatus() {
-		return knownStatus;
+	public TskData.TagType getTagType() {
+		return tagType;
 	}
 
 	long getTagSetId() {
@@ -147,7 +147,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		hash = 89 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
 		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
 		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
-		hash = 89 * hash + (this.knownStatus != null ? this.knownStatus.hashCode() : 0);
+		hash = 89 * hash + (this.tagType != null ? this.tagType.hashCode() : 0);
 		hash = 89 * hash + (int) (this.id ^ (this.tagSetId >>> 32));
 		return hash;
 	}
@@ -165,7 +165,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 				&& Objects.equals(this.displayName, other.getDisplayName())
 				&& Objects.equals(this.description, other.getDescription())
 				&& Objects.equals(this.color, other.getColor())
-				&& Objects.equals(this.knownStatus, other.getKnownStatus())
+				&& Objects.equals(this.tagType, other.getTagType())
 				&& this.tagSetId == other.getTagSetId());
 	}
 }

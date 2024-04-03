@@ -11661,7 +11661,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
 			}
 			return tagNames;
 		} catch (SQLException ex) {
@@ -11697,7 +11697,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
 			}
 			return tagNames;
 		} catch (SQLException ex) {
@@ -11742,7 +11742,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"))); //NON-NLS
 			}
 			return tagNames;
 		} catch (SQLException ex) {
@@ -11765,12 +11765,12 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 * @deprecated TaggingManager.addOrUpdateTagName should be used instead with
-	 * the default knowStatus of TskData.FileKnown.UNKNOWN
+	 * the default knowStatus of TskData.TagType.UNKNOWN
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
-		return addOrUpdateTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
+		return addOrUpdateTagName(displayName, description, color, TskData.TagType.UNKNOWN);
 	}
 
 	/**
@@ -11780,7 +11780,7 @@ public class SleuthkitCase {
 	 * @param displayName The display name for the new tag name.
 	 * @param description The description for the new tag name.
 	 * @param color       The HTML color to associate with the new tag name.
-	 * @param knownStatus The TskData.FileKnown value to associate with the new
+	 * @param knownStatus The TskData.TagType value to associate with the new
 	 *                    tag name.
 	 *
 	 * @return A TagName data transfer object (DTO) for the new row.
@@ -11790,7 +11790,7 @@ public class SleuthkitCase {
 	 * TaggingManager.addOrUpdateTagName.
 	 */
 	@Deprecated
-	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
+	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.TagType knownStatus) throws TskCoreException {
 		return getTaggingManager().addOrUpdateTagName(displayName, description, color, knownStatus);
 	}
 
@@ -11871,7 +11871,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				Content content = getContentById(resultSet.getLong("obj_id")); //NON-NLS
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"),
 						resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name")));  //NON-NLS
@@ -12007,7 +12007,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
 				tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName,
 						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name"));
 			}
@@ -12168,7 +12168,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName,
 						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name"));  //NON-NLS
 				tags.add(tag);
@@ -12261,7 +12261,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
@@ -12501,7 +12501,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
@@ -12551,7 +12551,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
 						artifact, content, tagName, resultSet.getString("comment"), resultSet.getString("login_name"));  //NON-NLS
