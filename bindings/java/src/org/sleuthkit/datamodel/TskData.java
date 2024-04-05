@@ -798,9 +798,8 @@ public class TskData {
 	public enum FileKnown {
 
 		UNKNOWN(0, bundle.getString("TskData.fileKnown.unknown")), ///< File marked as unknown by hash db
-		KNOWN(1, bundle.getString("TskData.fileKnown.known")), ///< File marked as a known by hash db
-		BAD(2, bundle.getString("TskData.fileKnown.knownBad")),
-		SUSPICIOUS(3, bundle.getString("TskData.fileKnown.suspicious")); ///< File marked as suspicious by hash db	
+		KNOWN(1, bundle.getString("TskData.fileKnown.known")), ///< File marked as a type by hash db
+		BAD(2, bundle.getString("TskData.fileKnown.knownBad")); ///< File marked as bad by hash db	
 
 		private byte known;
 		private String name;
@@ -838,6 +837,103 @@ public class TskData {
 		 */
 		public byte getFileKnownValue() {
 			return this.known;
+		}
+	}
+	
+	/**
+	 * Identifies tag type. This is the knownStatus column in the tag_names
+	 * table.
+	 */
+	public enum TagType {
+
+		UNKNOWN(0, bundle.getString("TskData.tagType.unknown")), // does not change score
+		KNOWN(1, bundle.getString("TskData.tagType.known")), // does not change score
+		BAD(2, bundle.getString("TskData.tagType.knownBad")), // changes score to "notable"
+		SUSPICIOUS(3, bundle.getString("TskData.tagType.suspicious")); // changes score to "likely notable"	
+
+		private byte type;
+		private String name;
+
+		private TagType(int type, String name) {
+			this.type = (byte) type;
+			this.name = name;
+		}
+
+		/**
+		 * This method is used only to support deprecated APIs. It should not be
+		 * used otherwise. FileKnown used to be used for tag types. Converts
+		 * TagType to a corresponding FileKnown value.
+		 *
+		 * @param tagType to convert
+		 *
+		 * @return the enum FileKnown
+		 */
+		public static FileKnown convertTagTypeToFileKnown(TagType tagType) {
+			switch (tagType) {
+				case BAD:
+					return FileKnown.BAD;
+				case KNOWN:
+					return FileKnown.KNOWN;
+				case UNKNOWN:
+				case SUSPICIOUS:
+					return FileKnown.UNKNOWN;
+			}
+
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tagType.exception.msg1.text"), tagType));
+		}
+		
+		/**
+		 * This method is used only to support deprecated APIs. It should not be
+		 * used otherwise. FileKnown used to be used for tag types. Converts
+		 * FileKnown to a corresponding TagType value.
+		 *
+		 * @param fileKnown to convert
+		 *
+		 * @return the enum TagType
+		 */
+		public static TagType convertFileKnownToTagType(FileKnown fileKnown) {
+			switch (fileKnown) {
+				case BAD:
+					return TagType.BAD;
+				case KNOWN:
+					return TagType.KNOWN;
+				case UNKNOWN:
+					return TagType.UNKNOWN;
+			}
+
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.fileKnown.exception.msg1.text"), fileKnown));
+		}
+
+		/**
+		 * Convert tag type byte value to the enum type
+		 *
+		 * @param type long value to convert
+		 *
+		 * @return the enum type
+		 */
+		public static TagType valueOf(byte type) {
+			for (TagType v : TagType.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tagType.exception.msg1.text"), type));
+		}
+
+		public String getName() {
+			return this.name;
+		}
+
+		/**
+		 * Get byte value of the tag type status
+		 *
+		 * @return the long value of the tag type status
+		 */
+		public byte getTagTypeValue() {
+			return this.type;
 		}
 	}
 

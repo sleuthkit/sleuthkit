@@ -293,7 +293,7 @@ public class ScoringManager {
 
 		// get the maximum score of the calculated aggregate score of analysis results
 		// or the score derived from the maximum known status of a content tag on this content.
-		Optional<Score> tagScore = db.getTaggingManager().getMaxTagKnownStatus(objId, transaction)
+		Optional<Score> tagScore = db.getTaggingManager().getMaxTagType(objId, transaction)
 				.map(knownStatus -> TaggingManager.getTagScore(knownStatus));
 		
 		if (tagScore.isPresent() && Score.getScoreComparator().compare(tagScore.get(), newScore) > 0) {
