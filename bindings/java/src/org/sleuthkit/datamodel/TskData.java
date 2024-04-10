@@ -876,7 +876,7 @@ public class TskData {
 					return FileKnown.KNOWN;
 				case UNKNOWN:
 				case SUSPICIOUS:
-					return FileKnown.UNKNOWN;
+					return FileKnown.UNKNOWN; // supporting legacy behavior
 			}
 
 			throw new IllegalArgumentException(
@@ -899,7 +899,11 @@ public class TskData {
 				case KNOWN:
 					return TagType.KNOWN;
 				case UNKNOWN:
-					return TagType.UNKNOWN;
+					// Autopsy should use TagType.SUSPICIOUS instead of TagType.UNKNOWN.
+					// Tagging something as SUSPICIOUS will cause the underlying TSK score 
+					// to be chnaged to SCORE_LIKELY_NOTABLE, whereas UNKNOWN
+					// does not change the underlying TSK score. 
+					return TagType.SUSPICIOUS; 
 			}
 
 			throw new IllegalArgumentException(
