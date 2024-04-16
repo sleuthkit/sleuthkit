@@ -33,6 +33,8 @@ import java.net.URL;
 public class LibraryUtils {
 
 	public static final String[] EXTS = new String[]{".so", ".dylib", ".dll", ".jnilib"}; //NON-NLS
+	private static final String TSK_TEMP_OVERRIDE = "tsk.tmpdir";
+	private static final String JAVA_TEMP = "java.io.tmpdir";
 
 	/**
 	 * The libraries the TSK Datamodel needs.
@@ -158,7 +160,8 @@ public class LibraryUtils {
 			return false;
 		}
 		StringBuilder pathToTempFile = new StringBuilder();
-		pathToTempFile.append(System.getProperty("java.io.tmpdir"));
+		String tempDir = System.getProperty(TSK_TEMP_OVERRIDE, System.getProperty(JAVA_TEMP));
+		pathToTempFile.append(tempDir);
 		pathToTempFile.append(java.io.File.separator);
 		pathToTempFile.append(libName);
 		pathToTempFile.append("_");
