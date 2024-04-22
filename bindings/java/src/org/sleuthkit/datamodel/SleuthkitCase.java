@@ -368,7 +368,7 @@ public class SleuthkitCase {
 	 *                               null).
 	 * @param lockingApplicationName The name of the application locking the
 	 *                               case database (null value prevents
-	 *                               locking).
+	 *                               locking; 500 character maximum).
 	 *
 	 * @throws Exception
 	 */
@@ -3072,7 +3072,7 @@ public class SleuthkitCase {
 	 * @param contentProvider Custom provider for file content bytes (can be null).
 	 * @param lockingApplicationName The name of the application locking the
 	 *                               case database (null value prevents
-	 *                               locking).
+	 *                               locking; 500 character maximum).
 	 * @return Case database object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
@@ -3186,7 +3186,7 @@ public class SleuthkitCase {
 	 *                               null).
 	 * @param lockingApplicationName The name of the application locking the
 	 *                               case database (null value prevents
-	 *                               locking).
+	 *                               locking; 500 character maximum).
 	 *
 	 * @return A case database object.
 	 *
