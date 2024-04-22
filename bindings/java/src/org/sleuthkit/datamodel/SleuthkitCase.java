@@ -412,6 +412,7 @@ public class SleuthkitCase {
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
 		this.contentProvider = contentProvider;
+		this.lockResources = null;
 		init();
 	}
 
