@@ -86,7 +86,8 @@ class LockResources implements AutoCloseable {
 
 			if (lockFileLock != null) {
 				lockFileRaf.setLength(0);
-				lockFileRaf.writeChars(applicationName);
+				String limitedAppName = applicationName.length() > 500 ? applicationName.substring(0, 500) : applicationName;
+				lockFileRaf.writeChars(limitedAppName);
 				return new LockResources(lockFile, lockFileRaf, lockFileChannel, lockFileLock);
 			} else {
 				throw ConcurrentDbAccessException.createForFile(lockFile.getAbsolutePath(), lockFileRaf);
