@@ -318,7 +318,7 @@ public class ScoringManager {
 		
 		// only change the DB if we got a new score. 
 		if (newScore.compareTo(currentScore) != 0) {
-			setAggregateScore(objId, dataSourceObjectId, newScore, true, transaction);
+			setAggregateScore(objId, dataSourceObjectId, newScore, oCurrentAggregateScore.isPresent(), transaction);
 
 			// register the score change with the transaction so an event can be fired for it. 
 			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, newScore));
