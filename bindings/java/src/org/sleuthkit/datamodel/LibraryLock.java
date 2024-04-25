@@ -84,7 +84,6 @@ public class LibraryLock implements AutoCloseable {
 	 * @throws IOException
 	 */
 	private static LibraryLock getLibLock() {
-		// TODO error handling cleanup
 		File libTskJniFile = LibraryUtils.getTempFile(
 				System.getProperty(TMP_DIR_KEY, ""),
 				LibraryUtils.Lib.TSK_JNI.getLibName(),
