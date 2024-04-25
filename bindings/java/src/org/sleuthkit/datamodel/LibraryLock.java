@@ -28,12 +28,12 @@ import java.util.logging.Level;
 
 /**
  * Creates a file lock for the libtsk_jni library in the temp directory
- * determined by "java.io.tmpdir". The goal of this class is to prevent
- * applications using TSK using the temp directory java.io.tmpdir from using TSK
- * at the same time that this lock has been placed. In order for this class to
- * be used effectively, the system property "tsk.tmpdir" should also be
- * specified so that LibraryUtils uses the "tsk.tmpdir" path to write libraries
- * instead of the standard "java.io.tempdir".
+ * determined by "java.io.tmpdir". The goal of this class is to prevent another
+ * application from using TSK libraries in the java.io.tmpdir at the same time
+ * that this lock has been placed. In order for this class to be used
+ * effectively, the system property "tsk.tmpdir" should also be specified so
+ * that LibraryUtils uses the "tsk.tmpdir" path to write libraries instead of
+ * the standard "java.io.tempdir".
  */
 public class LibraryLock implements AutoCloseable {
 
