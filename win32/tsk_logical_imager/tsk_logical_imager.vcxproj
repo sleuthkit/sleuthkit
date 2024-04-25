@@ -431,6 +431,9 @@
     <ClCompile Include="..\..\tools\logicalimager\TskHelper.cpp" />
     <ClCompile Include="..\..\tools\logicalimager\tsk_logical_imager.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

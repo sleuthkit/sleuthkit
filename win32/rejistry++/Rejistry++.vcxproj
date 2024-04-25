@@ -354,6 +354,9 @@
     <ClCompile Include="..\..\rejistry++\src\ValueListRecord.cpp" />
     <ClCompile Include="..\..\rejistry++\src\VKRecord.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
