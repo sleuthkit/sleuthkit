@@ -19,6 +19,8 @@
 #include "tsk_fatxxfs.h"
 #include "tsk_exfatfs.h"
 
+#include "tsk_encryption.h"
+
 /**
  * \internal
  * Open part of a disk image as a FAT file system. 
@@ -38,6 +40,9 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 	int find_boot_sector_attempt = 0;
 
     tsk_error_reset();
+
+    //doTheThing(a_img_info);
+    tskEncryptionTest(a_img_info);
 
     if (TSK_FS_TYPE_ISFAT(a_ftype) == 0) {
         tsk_error_reset();
