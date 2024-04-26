@@ -484,7 +484,7 @@ public class OsAccountTest {
 		 * Test the scenario where an update of an account triggers an update of
 		 * a realm.
 		 * 
-		 * This test case has two realms with same name but different ids
+		 * This test case has two realms with same name but different addr
 		 */
 		Host host = caseDB.getHostManager().newHost("updateRealmSameNameTests");
 
