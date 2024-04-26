@@ -476,6 +476,83 @@ public class OsAccountTest {
 			assertTrue(osAccount22.getOsAccountDbStatus() == OsAccount.OsAccountDbStatus.MERGED);
 				
 	}
+
+	@Test
+	public void updateRealmSameNameTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
+
+		/**
+		 * Test the scenario where an update of an account triggers an update of
+		 * a realm.
+		 * 
+		 * This test case has two realms with same name but different ids
+		 */
+		Host host = caseDB.getHostManager().newHost("updateRealmSameNameTests");
+
+		// Step 1: create an account
+		String ownerUid1 = "S-1-5-21-1182664808-117526782-2525957323-13395";
+		String realmName1 = "CORP";
+		String loginName1 = "sandip";
+
+		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, loginName1, realmName1, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm1 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount1.getRealmId());
+
+		// Step 2: create another account with same username but different SID
+		String ownerUid2 = "S-1-5-21-1182664808-117526782-2525957324-13396";
+		String realmName2 = null;
+		String loginName2 = "sandip";
+		
+		Optional<OsAccount> oOsAccount2 = caseDB.getOsAccountManager().getWindowsOsAccount(ownerUid2, loginName2, realmName2, host);
+
+		// this account should not exists
+		assertEquals(false, oOsAccount2.isPresent());
+
+		// create a new account -  a new realm as there is nothing to tie it to realm1 
+		OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid2, loginName2, realmName2, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount2.getRealmId());
+
+		assertTrue(osAccount1.getId() != osAccount2.getId());
+		assertTrue(realm1.getRealmId() != realm2.getRealmId());
+
+		// Step 3: now create/update the account with sid/domain/username
+		// this should return the existing account2, which needs to be updated.
+		String ownerUid3 = "S-1-5-21-1182664808-117526782-2525957324-13396";
+		String realmAddr3 = "S-1-5-21-1182664808-117526782-2525957324";
+		String loginName3 = "sandip";
+		String realmName3 = "CORP";
+
+		Optional<OsAccount> oOsAccount3 = caseDB.getOsAccountManager().getWindowsOsAccount(ownerUid3, loginName3, realmName3, host);
+
+		assertTrue(oOsAccount3.isPresent());
+
+		// update the account so that its domain gets updated.
+		OsAccountManager.OsAccountUpdateResult updateResult = caseDB.getOsAccountManager().updateCoreWindowsOsAccountAttributes(oOsAccount3.get(), ownerUid3, loginName3, realmName3, host);
+		Optional<OsAccount> updatedAccount3 = updateResult.getUpdatedAccount();
+		assertTrue(updatedAccount3.isPresent());
+
+		// this should not cause the realm1 to be updated - realm2 should not be merged into realm1 because the SID was different
+		OsAccountRealm realm3 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount3.get().getRealmId());
+
+		assertTrue(realm3.getRealmId() != realm1.getRealmId());
+		assertTrue(realm3.getRealmId() == realm2.getRealmId());
+		
+		assertTrue(realm3.getRealmAddr().isPresent()); // verify the realm gets an addr
+		assertTrue(realm3.getRealmAddr().get().equalsIgnoreCase(realmAddr3));
+
+		assertTrue(realm3.getRealmNames().get(0).equalsIgnoreCase(realmName3));	// verify realm name.
+
+		// And now verify that the realms have not been merged
+		OsAccountRealm realm12 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount1.getRealmId());
+		assertTrue(realm12.getDbStatus() != OsAccountRealm.RealmDbStatus.MERGED);
+		OsAccountRealm realm22 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount2.getRealmId());
+		assertTrue(realm22.getDbStatus() != OsAccountRealm.RealmDbStatus.MERGED);
+
+		// And the accounts have not been merged 
+		OsAccount osAccount12 = caseDB.getOsAccountManager().getOsAccountByObjectId(osAccount1.getId());
+		OsAccount osAccount22 = caseDB.getOsAccountManager().getOsAccountByObjectId(osAccount2.getId());
+		assertTrue(osAccount12.getOsAccountDbStatus() != OsAccount.OsAccountDbStatus.MERGED);
+		assertTrue(osAccount22.getOsAccountDbStatus() != OsAccount.OsAccountDbStatus.MERGED);
+
+	}
 	
 	@Test 
 	public void hostAddressTests() throws TskCoreException {
