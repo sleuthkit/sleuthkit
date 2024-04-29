@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataValueVolumeMasterKey.h"
 
 MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {
@@ -45,3 +47,5 @@ MetadataValueVolumeMasterKey::~MetadataValueVolumeMasterKey() {
         }
     }
 }
+
+#endif

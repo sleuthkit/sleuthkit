@@ -1,7 +1,8 @@
 #pragma once
 
-#include "MetadataValue.h"
+#ifdef HAVE_LIBMBEDTLS
 
+#include "MetadataValue.h"
 #include "mbedtls/aes.h"
 
 #define BITLOCKER_KEY_MAC_LEN 16
@@ -38,3 +39,5 @@ private:
 	size_t encryptedDataLen = 0;
 	uint8_t* encryptedData = NULL;
 };
+
+#endif

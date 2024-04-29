@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataValue.h"
 
 class MetadataValueKey : public MetadataValue {
@@ -38,3 +40,5 @@ private:
 	size_t keyLen = 0;
 	uint8_t* key = NULL;
 };
+
+#endif

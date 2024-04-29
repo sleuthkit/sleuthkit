@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataEntry.h"
 #include "MetadataValue.h"
 
@@ -76,3 +78,5 @@ MetadataEntry::~MetadataEntry() {
         delete(metadataValue);
     }
 }
+
+#endif

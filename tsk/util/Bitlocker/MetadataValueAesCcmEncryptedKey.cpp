@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataValueAesCcmEncryptedKey.h"
 
 MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen)
@@ -58,7 +60,6 @@ int MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t keyLen, Metada
 
     writeDebug("  Created MetadataEntry of type " + convertMetadataEntryTypeToString((*keyEntry)->getEntryType())
         + " and value " + convertMetadataValueTypeToString((*keyEntry)->getValueType()));
-    (*keyEntry)->print();
 
     return 0;
 }
@@ -237,3 +238,5 @@ MetadataValueAesCcmEncryptedKey::~MetadataValueAesCcmEncryptedKey() {
         free(encryptedData);
     }
 };
+
+#endif

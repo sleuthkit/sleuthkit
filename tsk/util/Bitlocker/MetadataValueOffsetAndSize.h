@@ -1,4 +1,5 @@
 #pragma once
+#ifdef HAVE_LIBMBEDTLS
 
 #include "MetadataValue.h"
 
@@ -21,3 +22,5 @@ private:
 	uint64_t offset = 0;
 	uint64_t size = 0;
 };
+
+#endif

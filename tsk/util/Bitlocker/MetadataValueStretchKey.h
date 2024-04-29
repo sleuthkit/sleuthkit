@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataValue.h"
 
 #define BITLOCKER_STRETCH_KEY_SHA256_LEN 32
@@ -22,3 +24,5 @@ private:
 	uint8_t salt[16];
 	MetadataEntry* encryptedKeyEntry = NULL;
 };
+
+#endif

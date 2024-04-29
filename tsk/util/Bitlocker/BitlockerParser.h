@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 #include <stdio.h>
 #include "tsk/base/tsk_base_i.h"
 #include "tsk/img/tsk_img_i.h"
@@ -85,17 +87,20 @@ public:
         mbedtls_aes_xts_init(&aesXtsDecryptionContext);
     };
 
-	void initialize(TSK_IMG_INFO* a_img_info, const char* password);
-    void initialize(TSK_IMG_INFO* a_img_info);
+	int initialize(TSK_IMG_INFO* a_img_info, const char* password);
+    int initialize(TSK_IMG_INFO* a_img_info);
 
 	bool initializationSuccessful() { return isBitlocker & unlockSuccessful; }
 
     uint16_t getSectorSize() {
         return sectorSize;
     }
-    int decryptSector(uint64_t offset, uint8_t* encryptedData, uint8_t* decryptedData);
+    ssize_t readAndDecryptSectors(TSK_DADDR_T start, size_t len, uint8_t* data);
+    int decryptSector(TSK_DADDR_T offset, uint8_t* data);
+    TSK_DADDR_T convertVolumeOffset(TSK_DADDR_T origOffset);
 
     ~BitlockerParser() {
+        writeDebug("Deleting BitlockerParser");
         memset(passwordHash, 0, SHA256_DIGEST_LENGTH);
         clearFveMetadataEntries();
         if (decryptedVmkEntry != NULL) {
@@ -113,7 +118,7 @@ private:
     int readFveMetadataBlockHeader(uint64_t& currentOffset);
     int readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize);
     int readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize);
-    int clearFveMetadataEntries() {
+    void clearFveMetadataEntries() {
         for (auto it = metadataEntries.begin(); it != metadataEntries.end(); ++it) {
             delete(*it);
         }
@@ -126,8 +131,8 @@ private:
     int setKeys(MetadataEntry* fvekEntry);
     int setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type);
 
-    int decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* encryptedData, uint8_t* decryptedData);
-    int decryptSectorAESXTS(uint64_t offset, uint8_t* encryptedData, uint8_t* decryptedData);
+    int decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data);
+    int decryptSectorAESXTS(uint64_t offset, uint8_t* data);
 
     list<MetadataEntry*> metadataEntries;
     MetadataEntry* decryptedVmkEntry = NULL;
@@ -155,3 +160,5 @@ private:
 
     BITLOCKER_ENCRYPTION_TYPE encryptionType = BITLOCKER_ENCRYPTION_TYPE::UNKNOWN;
 };
+
+#endif

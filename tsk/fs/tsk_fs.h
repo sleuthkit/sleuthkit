@@ -930,6 +930,13 @@ extern "C" {
     };
     typedef enum TSK_FS_ISTAT_FLAG_ENUM TSK_FS_ISTAT_FLAG_ENUM;
 
+    // Not used by APFS
+    enum TSK_FS_ENCRYPTION_TYPE_ENUM {
+        TSK_FS_ENCRYPTION_TYPE_NONE = 0x00,
+        TSK_FS_ENCRYPTION_TYPE_BITLOCKER = 0x01
+    };
+    typedef enum TSK_FS_ENCRYPTION_TYPE_ENUM TSK_FS_ENCRYPTION_TYPE_ENUM;
+
 #define TSK_FS_INFO_TAG  0x10101010
 #define TSK_FS_INFO_FS_ID_LEN   32      // set based on largest file system / volume ID supported
 
@@ -976,7 +983,7 @@ extern "C" {
 
         TSK_FS_TYPE_ENUM ftype; ///< type of file system
         const char *duname;     ///< string "name" of data unit type
-        TSK_FS_INFO_FLAG_ENUM flags;    ///< flags for file system
+        uint16_t flags;         ///< flags for file system
         uint8_t fs_id[TSK_FS_INFO_FS_ID_LEN];   ///< File system id (as reported in boot sector)
         size_t fs_id_used;      ///< Number of bytes in fs_id that are being used
 
@@ -990,6 +997,10 @@ extern "C" {
                                         * after looking for orphans
                                         * or afer a full name_walk is performed.
                                         * (r/w shared - lock) */
+
+        /* Hold encryption type and data structure */
+        TSK_FS_ENCRYPTION_TYPE_ENUM encryption_type;
+        void* encryption_data;
 
         /* orphan_hunt_lock protects orphan_dir */
         tsk_lock_t orphan_dir_lock;     // taken for the duration of orphan hunting (not just when updating orphan_dir)
@@ -2190,11 +2201,11 @@ class TskFsInfo {
         * return flags for file system
     * @return flags for file system
     */
-    TSK_FS_INFO_FLAG_ENUM getFlags() const {
+    uint16_t getFlags() const {
         if (m_fsInfo != NULL)
             return m_fsInfo->flags;
         else
-            return (TSK_FS_INFO_FLAG_ENUM) 0;
+            return 0;
     };
     /**
         * return file system id (as reported in boot sector).  Use getFsIdLen() to determine how many byts in buffer are used.

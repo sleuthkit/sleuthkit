@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataUtils.h"
 
 #include "MetadataEntry.h"
@@ -36,7 +38,8 @@ void writeWarning(string errMes) {
 }
 
 void writeDebug(string msg) {
-    printf("Debug: %s\n", msg.c_str());
+    //printf("Debug: %s\n", msg.c_str());
+    //fflush(stdout);
 }
 
 void readMetadataEntries(uint8_t* metadataEntryBuffer, size_t metadataEntriesBufSize, list<MetadataEntry*>& entries, list<string>& errorList) {
@@ -133,3 +136,5 @@ string convertUint64ToString(uint64_t val) {
     ss << "0x" << std::setfill('0') << std::setw(16) << std::hex << val;
     return ss.str();
 }
+
+#endif

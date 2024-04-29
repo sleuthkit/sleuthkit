@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 #include "tsk/base/tsk_base_i.h"
 #include <string>
 
@@ -70,3 +72,5 @@ string convertEncryptionTypeToString(BITLOCKER_ENCRYPTION_TYPE type);
 bool isAESCBC(BITLOCKER_ENCRYPTION_TYPE type);
 bool isAESXTS(BITLOCKER_ENCRYPTION_TYPE type);
 bool usesDiffuser(BITLOCKER_ENCRYPTION_TYPE type);
+
+#endif

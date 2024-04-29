@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataValue.h"
 
 class MetadataValueVolumeMasterKey : public MetadataValue {
@@ -27,3 +29,5 @@ private:
 	BITLOCKER_KEY_PROTECTION_TYPE keyProtectionType = BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN;
 	list<MetadataEntry*> properties;
 };
+
+#endif

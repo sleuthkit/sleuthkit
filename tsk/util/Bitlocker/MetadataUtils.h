@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 #include <string>
 #include <list>
 
@@ -22,3 +24,5 @@ void writeDebug(string msg);
 string convertUint64ToString(uint64_t val);
 string convertUint32ToString(uint32_t val);
 string convertByteArrayToString(uint8_t* bytes, size_t len);
+
+#endif

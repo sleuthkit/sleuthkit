@@ -2,6 +2,8 @@
 // Don't include this file from other headers - use a forward declaration and include it in the .cpp
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 #include <list>
 
 #include "MetadataEntry.h"
@@ -53,3 +55,5 @@ public:
 
 	~MetadataValueUnknown() {};
 };
+
+#endif

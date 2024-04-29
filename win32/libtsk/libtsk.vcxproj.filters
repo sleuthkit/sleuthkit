@@ -396,9 +396,6 @@
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.cpp">
       <Filter>util\Bitlocker</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueGeneric.cpp">
-      <Filter>util\Bitlocker</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueKey.cpp">
       <Filter>util\Bitlocker</Filter>
     </ClCompile>
@@ -411,10 +408,7 @@
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.cpp">
       <Filter>util\Bitlocker</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerInit.c">
-      <Filter>util\Bitlocker</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\encryption.cpp">
+    <ClCompile Include="..\..\tsk\fs\encryptionHelper.cpp">
       <Filter>fs</Filter>
     </ClCompile>
   </ItemGroup>
@@ -633,10 +627,7 @@
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.h">
       <Filter>util\Bitlocker</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerInit.h">
-      <Filter>util\Bitlocker</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\tsk\fs\tsk_encryption.h">
+    <ClInclude Include="..\..\tsk\fs\encryptionHelper.h">
       <Filter>fs</Filter>
     </ClInclude>
   </ItemGroup>

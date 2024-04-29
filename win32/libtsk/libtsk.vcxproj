@@ -277,7 +277,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBOPENSSL;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBOPENSSL;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;HAVE_LIBMBEDTLS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -378,7 +378,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
-    <ClCompile Include="..\..\tsk\fs\encryption.cpp" />
+    <ClCompile Include="..\..\tsk\fs\encryptionHelper.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
@@ -390,13 +390,11 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\pool\pool_open.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_read.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
-    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerInit.c" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerParser.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\DataTypes.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataEntry.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataUtils.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.cpp" />
-    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueGeneric.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueKey.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.cpp" />
@@ -503,7 +501,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\fs\decmpfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp" />
-    <ClInclude Include="..\..\tsk\fs\tsk_encryption.h" />
+    <ClInclude Include="..\..\tsk\fs\encryptionHelper.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
@@ -519,7 +517,6 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\pool\tsk_apfs.hpp" />
     <ClInclude Include="..\..\tsk\pool\tsk_pool.h" />
     <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
-    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerInit.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerParser.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\DataTypes.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataEntry.h" />

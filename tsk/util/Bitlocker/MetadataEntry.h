@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef HAVE_LIBMBEDTLS
+
 class MetadataValue;
 
 #include "tsk/base/tsk_base_i.h"
@@ -40,3 +42,5 @@ private:
     MetadataValue* metadataValue;
 };
 
+
+#endif

@@ -26,6 +26,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk/util/detect_encryption.h"
+#include "encryptionHelper.h"
 #include "tsk/img/unsupported_types.h"
 #include "tsk/img/logical_img.h"
 
@@ -330,6 +331,9 @@ tsk_fs_free(TSK_FS_INFO * a_fs_info)
         tsk_list_free(a_fs_info->list_inum_named);
         a_fs_info->list_inum_named = NULL;
     }
+
+    /* Free any encryption structures */
+    freeEncryptionData(a_fs_info);
 
     /* we should probably get the lock, but we're 
      * about to kill the entire object so there are

@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataValueStretchKey.h"
 
 #include "mbedtls/sha256.h" 
@@ -86,3 +88,5 @@ MetadataValueStretchKey::~MetadataValueStretchKey() {
         delete encryptedKeyEntry;
     }
 }
+
+#endif

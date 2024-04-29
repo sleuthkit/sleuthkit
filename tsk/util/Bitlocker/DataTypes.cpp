@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "DataTypes.h"
 
 /**
@@ -233,3 +235,5 @@ bool usesDiffuser(BITLOCKER_ENCRYPTION_TYPE type) {
     return (type == BITLOCKER_ENCRYPTION_TYPE::AES_CBC_128_DIFF
         || type == BITLOCKER_ENCRYPTION_TYPE::AES_CBC_256_DIFF);
 }
+
+#endif

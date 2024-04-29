@@ -27,6 +27,7 @@
 #include "../pool/tsk_pool.h"
 
 #include "tsk_fs_i.h"
+#include "encryptionHelper.h"
 
 
 /** \internal
@@ -218,7 +219,7 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
             " not a multiple of %d", a_len, a_fs->block_size);
         return -1;
     }
-
+    
     if (a_addr > a_fs->last_block_act) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -233,11 +234,20 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         return -1;
     }
 
-    ssize_t ret_len;
+    if (a_fs->encryption_type == TSK_FS_ENCRYPTION_TYPE_BITLOCKER) {
+        // Bitlocker moves some sectors from the beginning of the volume
+        // to another spot later in the volume in addition to encrypting them,
+        // so we need to use a custom method to read in the encrypted data
+        // and decrypt it.
+        TSK_DADDR_T offset = a_fs->offset + (TSK_DADDR_T)(a_addr)*a_fs->block_size;
+        return read_and_decrypt_bitlocker_blocks(a_fs, offset, a_len, a_buf);
+    }
 
+    ssize_t ret_len;
     if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
         TSK_OFF_T off =
             a_fs->offset + (TSK_OFF_T) (a_addr) * a_fs->block_size;
+
         ret_len = tsk_img_read(a_fs->img_info, off, a_buf, a_len);
     }
     else {

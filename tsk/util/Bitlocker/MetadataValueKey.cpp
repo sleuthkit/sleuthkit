@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "MetadataValueKey.h"
 
 MetadataValueKey::MetadataValueKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {
@@ -18,3 +20,5 @@ MetadataValueKey::MetadataValueKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, ui
 
     memcpy(key, &(buf[4]), keyLen);
 };
+
+#endif

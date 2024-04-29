@@ -19,7 +19,7 @@
 #include "tsk_fatxxfs.h"
 #include "tsk_exfatfs.h"
 
-#include "tsk_encryption.h"
+#include "encryptionHelper.h"
 
 /**
  * \internal
@@ -40,9 +40,6 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 	int find_boot_sector_attempt = 0;
 
     tsk_error_reset();
-
-    //doTheThing(a_img_info);
-    tskEncryptionTest(a_img_info);
 
     if (TSK_FS_TYPE_ISFAT(a_ftype) == 0) {
         tsk_error_reset();
@@ -70,6 +67,9 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
     fs->journ_inum = 0;
     fs->tag = TSK_FS_INFO_TAG;
 
+    // Check for any volume encryption and initialize if found
+    handleVolumeEncryption(fs);
+
 	// Look for a FAT boot sector. Try up to three times because FAT32 and exFAT file systems have backup boot sectors.
     for (find_boot_sector_attempt = 0; find_boot_sector_attempt < 3; ++find_boot_sector_attempt) {
         TSK_OFF_T boot_sector_offset;
@@ -91,6 +91,8 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 		}
 
         // Read in the prospective boot sector. 
+        printf("fatfs open - trying boot sector 0x%" PRIX64 "\n", boot_sector_offset);
+        fflush(stdout);
         bytes_read = tsk_fs_read(fs, boot_sector_offset, fatfs->boot_sector_buffer, FATFS_MASTER_BOOT_RECORD_SIZE);
         if (bytes_read != FATFS_MASTER_BOOT_RECORD_SIZE) {
             if (bytes_read >= 0) {

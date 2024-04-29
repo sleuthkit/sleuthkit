@@ -1,3 +1,5 @@
+#ifdef HAVE_LIBMBEDTLS
+
 #include "BitlockerParser.h"
 
 #include <codecvt>
@@ -10,35 +12,34 @@
 #include "MetadataValueOffsetAndSize.h"
 #include "mbedtls/sha256.h"
 
-// TEMP
-//size_t tsk_img_read(FILE* infile, size_t size, uint8_t* volHeader, size_t otherSize) {
-//    return 0;
-//}
-
-void BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, const char* password) {
+int BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, const char* password) {
     if (0 != handlePassword(password)) {
         // Don't continue if we failed to hash the password
-        return;
+        return -1;
     }
-    initialize(a_img_info);
+    return initialize(a_img_info);
 }
 
-void BitlockerParser::initialize(TSK_IMG_INFO* a_img_info) {
+int BitlockerParser::initialize(TSK_IMG_INFO* a_img_info) {
     writeDebug("BitlockerParser::initialize()");
     img_info = a_img_info;
+    if (img_info == NULL) {
+        writeError("BitlockerParser::initialize(): a_img_info was NULL");
+        return -1;
+    }
 
     // Read in the volume header
     bitlocker_volume_header_t* volHeader = (bitlocker_volume_header_t*)malloc(sizeof(bitlocker_volume_header_t));
     if (volHeader == NULL) {
         writeError("BitlockerParser::initialize(): Error allocating memory for volume header");
-        return;
+        return -1;
     }
 
     size_t bytesRead = tsk_img_read(img_info, 0, (char*)volHeader, sizeof(bitlocker_volume_header_t));
     if (bytesRead != sizeof(bitlocker_volume_header_t)) {
         writeError("BitlockerParser::initialize(): Error reading first sector (read " + to_string(bytesRead) + " bytes");
         free(volHeader);
-        return;
+        return -1;
     }
 
     // See if it looks like Bitlocker
@@ -47,7 +48,7 @@ void BitlockerParser::initialize(TSK_IMG_INFO* a_img_info) {
     if (memcmp(volHeader->signature, bitlockerSignature, 8)) {
         writeDebug("BitlockerParser::initialize(): No bitlocker signature");
         free(volHeader);
-        return;
+        return -1;
     }
     isBitlocker = true;
 
@@ -103,11 +104,12 @@ void BitlockerParser::initialize(TSK_IMG_INFO* a_img_info) {
         // If we've gotten here then everything is initialized and ready to go.
         writeDebug("  Initialization successful");
         unlockSuccessful = true;
-        return;
+        return 0;
     }
 
     // We were unable to unlock the volume. Clear out the last batch of metadata entries.
     clearFveMetadataEntries();
+    return -1;
 }
 
 int BitlockerParser::readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize) {
@@ -609,7 +611,75 @@ int BitlockerParser::handlePassword(const char* password) {
     return 0;
 }
 
-int BitlockerParser::decryptSector(uint64_t offset, uint8_t* encryptedData, uint8_t* decryptedData) {
+// Returns number of bytes read or -1 on error
+ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T start, size_t len, uint8_t* data) {
+    writeDebug("BitlockerParser::readAndDecryptSectors");
+    if (!initializationSuccessful()) {
+        writeError("BitlockerParser::readAndDecryptSectors(): BitlockerParser has not been initialized");
+        return -1;
+    }
+
+    if (start > volumeHeaderSize) {
+        // All sectors should be in their normal spot on disk
+        ssize_t ret_len = tsk_img_read(img_info, start, (char*)data, len);
+
+        if (ret_len > 0) {
+            for (TSK_DADDR_T i = 0; i < len; i += sectorSize) {
+                decryptSector(i + start, &(data[i]));
+            }
+        }
+        return ret_len;
+    }
+
+    // We're reading the volume header and possibly data after it.
+    size_t nRelocatedBytesToRead = min(volumeHeaderSize - start, len);
+    if (nRelocatedBytesToRead <= 0) {
+        writeError("BitlockerParser::readAndDecryptSectors(): Error reading from volume header");
+        return -1;
+    }
+
+    TSK_DADDR_T offsetToRead = convertVolumeOffset(start);
+    ssize_t ret_len = tsk_img_read(img_info, offsetToRead, (char*)data, nRelocatedBytesToRead);
+    if (ret_len == 0) {
+        return 0;
+    }
+
+    if (ret_len > 0) {
+        for (TSK_DADDR_T i = 0; i < len; i += sectorSize) {
+            decryptSector(offsetToRead + i, &(data[i]));
+        }
+    }
+
+    // We're done under two conditions:
+    // - We read in the total bytes we wanted (i.e. we don't need to read any sectors outside the volume header)
+    // - We didn't read in the expected number of bytes from the volume header. Just return what we have.
+    if (ret_len >= len || ret_len != nRelocatedBytesToRead) {
+        return ret_len;
+    }
+
+    // Read in the remaining sectors using their real addresses
+    size_t bytesLeft = len - ret_len;
+    offsetToRead = volumeHeaderSize; // Start right after the volume header
+
+    ssize_t ret_len2 = tsk_img_read(img_info, offsetToRead, (char*)(&data[ret_len]), bytesLeft);
+    if (ret_len2 == 0) {
+        return ret_len;
+    }
+
+    TSK_DADDR_T offset = offsetToRead;
+    uint8_t* dataPtr = &(data[ret_len]);
+    while (bytesLeft > 0) {
+        decryptSector(offset, dataPtr);
+
+        offset += sectorSize;
+        dataPtr += sectorSize;
+        bytesLeft -= sectorSize;
+    }
+
+    return ret_len + ret_len2;
+}
+
+int BitlockerParser::decryptSector(TSK_DADDR_T offset, uint8_t* data) {
     writeDebug("BitlockerParser::decryptSector");
     if (!initializationSuccessful()) {
         writeError("BitlockerParser::decryptSector(): BitlockerParser has not been initialized");
@@ -623,11 +693,11 @@ int BitlockerParser::decryptSector(uint64_t offset, uint8_t* encryptedData, uint
             return -1; 
         }
         else {
-            return decryptSectorAESCBC_noDiffuser(offset, encryptedData, decryptedData);
+            return decryptSectorAESCBC_noDiffuser(offset, data);
         }
     }
     else if (isAESXTS(encryptionType)) {
-        return decryptSectorAESXTS(offset, encryptedData, decryptedData);
+        return decryptSectorAESXTS(offset, data);
     }
     else {
         writeError("BitlockerParser::decryptSector(): Encryption method not currently supported - " + convertEncryptionTypeToString(encryptionType));
@@ -635,8 +705,16 @@ int BitlockerParser::decryptSector(uint64_t offset, uint8_t* encryptedData, uint
     }
 }
 
-int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* encryptedData, uint8_t* decryptedData) {
+int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data) {
     writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser");
+
+    uint8_t* encryptedData = (uint8_t*)malloc(sectorSize);
+    if (encryptedData == NULL) {
+        writeError("BitlockerParser::decryptSectorAESCBC_noDiffuser(): Error allocating encryptedData");
+        return -1;
+    }
+    memcpy(encryptedData, data, sectorSize);
+    memset(data, 0, sectorSize);
 
     union {
         uint8_t bytes[16];
@@ -646,22 +724,33 @@ int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* en
     memset(iv.bytes, 0, 16);
     iv.offset = offset;
 
-    // TODO check sector size first
-    writeDebug("  Data:         " + convertByteArrayToString(encryptedData, 16) + "...");
+    // TODO check sector size first?
+    writeDebug("  Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(encryptedData, 32) + "...");
     writeDebug("  Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
 
     uint8_t encryptedIv[16];
     mbedtls_aes_crypt_ecb(&aesFvekEncryptionContext, MBEDTLS_AES_ENCRYPT, iv.bytes, encryptedIv);
     writeDebug("  Encrypted IV: " + convertByteArrayToString(encryptedIv, 16));
 
-    mbedtls_aes_crypt_cbc(&aesFvekDecryptionContext, MBEDTLS_AES_DECRYPT, sectorSize, encryptedIv, encryptedData, decryptedData);
-    writeDebug("  Decrypted:    " + convertByteArrayToString(decryptedData, 16) + "...");
+    mbedtls_aes_crypt_cbc(&aesFvekDecryptionContext, MBEDTLS_AES_DECRYPT, sectorSize, encryptedIv, encryptedData, data);
+    writeDebug("  Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 32) + "...\n");
+
+    memset(encryptedData, 0, sectorSize);
+    free(encryptedData);
 
     return 0;
 }
 
-int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* encryptedData, uint8_t* decryptedData) {
+int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
     writeDebug("BitlockerParser::decryptSectorAESXTS");
+
+    uint8_t* encryptedData = (uint8_t*)malloc(sectorSize);
+    if (encryptedData == NULL) {
+        writeError("BitlockerParser::decryptSectorAESXTS(): Error allocating encryptedData");
+        return -1;
+    }
+    memcpy(encryptedData, data, sectorSize);
+    memset(data, 0, sectorSize);
 
     union {
         uint8_t bytes[16];
@@ -675,8 +764,39 @@ int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* encryptedData
     writeDebug("  Data:         " + convertByteArrayToString(encryptedData, 16) + "...");
     writeDebug("  Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
 
-    mbedtls_aes_crypt_xts(&aesXtsDecryptionContext, MBEDTLS_AES_DECRYPT, sectorSize, iv.bytes, encryptedData, decryptedData);
-    writeDebug("  Decrypted:    " + convertByteArrayToString(decryptedData, 16) + "...");
+    mbedtls_aes_crypt_xts(&aesXtsDecryptionContext, MBEDTLS_AES_DECRYPT, sectorSize, iv.bytes, encryptedData, data);
+    writeDebug("  Decrypted:    " + convertByteArrayToString(data, 16) + "...");
+
+    memset(encryptedData, 0, sectorSize);
+    free(encryptedData);
 
     return 0;
 }
+
+/**
+* Convert the given address to the actual address. This should only be different for sectors
+* at the start of the volume that were moved to make room for the Bitlocker volume header.
+* 
+* Returns the original offset on any kind of error.
+*/
+TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
+    writeDebug("BitlockerParser::convertVolumeOffset(): Converting offset " + convertUint64ToString(origOffset));
+
+    // The expectation is that the first volumeHeaderSize bytes of the volume have been moved to volumeHeaderOffset.
+    // So if we're given an offset in that range convert it to the relocated one.
+    if (origOffset >= volumeHeaderSize) {
+        writeDebug("  Offset is not in the range of relocated sectors - returning original");
+        return origOffset;
+    }
+
+    TSK_DADDR_T newOffset = volumeHeaderOffset + origOffset;
+    // Make sure we didn't overflow
+    if (newOffset < volumeHeaderOffset || newOffset < origOffset) {
+        return origOffset;
+    }
+
+    writeDebug("  Offset is in the range of relocated sectors - returning new offset " + convertUint64ToString(newOffset));
+    return newOffset;
+}
+
+#endif
