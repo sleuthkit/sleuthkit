@@ -217,9 +217,17 @@ public final class OsAccountManager {
 					
 					//1. Check if there is any OTHER realm with the same name, same host but no addr
 					anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, connection);
+					if (anotherRealmWithSameName.isPresent() && anotherRealmWithSameName.get().getRealmAddr().isPresent()) {
+						// realm with same name has addr, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
 					
 					// 2. Check if there is any OTHER realm with same addr and host, but NO name
 					anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, connection);
+					if (anotherRealmWithSameAddr.isPresent() && !anotherRealmWithSameAddr.get().getRealmNames().isEmpty()) {
+						// realm with same addr has name, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
 				}
 			}
 		}
@@ -1886,10 +1894,18 @@ public final class OsAccountManager {
 					// say another realm with same name but no SID, or same SID but no name
 					//1. Check if there is any OTHER realm with the same name, same host but no addr
 					Optional<OsAccountRealm> anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, trans.getConnection());
-
+					if (anotherRealmWithSameName.isPresent() && anotherRealmWithSameName.get().getRealmAddr().isPresent()) {
+						// realm with same name has addr, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
+					
 					// 2. Check if there is any OTHER realm with same addr and host, but NO name
 					Optional<OsAccountRealm> anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, trans.getConnection());
-
+					if (anotherRealmWithSameAddr.isPresent() && !anotherRealmWithSameAddr.get().getRealmNames().isEmpty()) {
+						// realm with same addr has name, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
+					
 					if (anotherRealmWithSameName.isPresent()) {
 						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realmOptional.get(), trans);
 					}
