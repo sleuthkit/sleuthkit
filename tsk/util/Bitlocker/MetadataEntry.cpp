@@ -32,7 +32,11 @@ MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
     }
 
     MetadataValue* metadataValue = createMetadataValue(valueType, &(buf[8]), size - HEADER_SIZE);
-    if (metadataValue == NULL || !metadataValue->wasLoadedSuccessfully()) {
+    if (metadataValue == NULL) {
+        return NULL;
+    }
+    if (!metadataValue->wasLoadedSuccessfully()) {
+        delete metadataValue;
         return NULL;
     }
 

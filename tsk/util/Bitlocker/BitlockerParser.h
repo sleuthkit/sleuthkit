@@ -104,7 +104,7 @@ public:
         memset(passwordHash, 0, SHA256_DIGEST_LENGTH);
         clearFveMetadataEntries();
         if (decryptedVmkEntry != NULL) {
-            delete (decryptedVmkEntry);
+            delete decryptedVmkEntry;
         }
 
         mbedtls_aes_free(&aesFvekEncryptionContext);
@@ -114,7 +114,7 @@ public:
     }
 
 private:
-    int handlePassword(const char* password);
+    int handlePassword(string password);
     int readFveMetadataBlockHeader(uint64_t& currentOffset);
     int readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize);
     int readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize);
@@ -122,6 +122,7 @@ private:
         for (auto it = metadataEntries.begin(); it != metadataEntries.end(); ++it) {
             delete(*it);
         }
+        metadataEntries.clear();
     }
     int getVolumeMasterKey();
     int parseVMKEntry(MetadataEntry* entry, MetadataEntry** vmkEntry);

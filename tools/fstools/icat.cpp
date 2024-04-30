@@ -203,12 +203,6 @@ main(int argc, char **argv1)
         usage();
     }
 
-    /* Passwords only work if the file system type has been specified */
-    if (strlen(password) > 0 && fstype == TSK_FS_TYPE_DETECT) {
-        tsk_fprintf(stderr, "File system type must be specified to use a password\n");
-        usage();
-    }
-
     /* Get the inode address */
     if (tsk_fs_parse_inum(argv[argc - 1], &inum, &type, &type_used, &id,
             &id_used)) {

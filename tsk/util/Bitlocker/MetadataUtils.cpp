@@ -35,6 +35,7 @@ void writeWarning(string errMes) {
         tsk_error_set_errstr("fatfs_open: sector size is 0");
     */
     printf("writeWarning: %s\n", errMes.c_str());
+    fflush(stdout);
 }
 
 void writeDebug(string msg) {

@@ -216,12 +216,6 @@ main(int argc, char **argv1)
         usage();
     }
 
-    /* Passwords only work if the file system type has been specified */
-    if (strlen(password) > 0 && fstype == TSK_FS_TYPE_DETECT) {
-        tsk_fprintf(stderr, "File system type must be specified to use a password\n");
-        usage();
-    }
-
     /* if we are given the inode in the inode-type-id form, then ignore
      * the other stuff w/out giving an error
      *

@@ -173,12 +173,6 @@ main(int argc, char **argv1)
         usage();
     }
 
-    /* Passwords only work if the file system type has been specified */
-    if (strlen(password) > 0 && fstype == TSK_FS_TYPE_DETECT) {
-        tsk_fprintf(stderr, "File system type must be specified to use a password\n");
-        usage();
-    }
-
     if ((img =
             tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
                 ssize)) == NULL) {

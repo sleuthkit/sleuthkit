@@ -22,10 +22,10 @@ TSK_DADDR_T convert_bitlocker_block_offset(TSK_FS_INFO* a_fs_info, TSK_DADDR_T a
 #endif
 }
 
-int handleBitlocker(TSK_FS_INFO* a_fs_info) {
+int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 #ifdef HAVE_LIBMBEDTLS
 	BitlockerParser* bitlockerParser = new BitlockerParser();
-	if (0 != bitlockerParser->initialize(a_fs_info->img_info, "password")) {
+	if (0 != bitlockerParser->initialize(a_fs_info->img_info, a_pass)) {
 		delete bitlockerParser;
 		return -1;
 	}
@@ -39,10 +39,10 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info) {
 	return 0;
 }
 
-int handleVolumeEncryption(TSK_FS_INFO* a_fs_info) {
+int handleVolumeEncryption(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	int ret = 0;
 #ifdef HAVE_LIBMBEDTLS
-	ret = handleBitlocker(a_fs_info);
+	ret = handleBitlocker(a_fs_info, a_pass);
 #endif
 
 	return ret;

@@ -12,7 +12,6 @@
 class MetadataValue {
 public:
 	MetadataValue(BITLOCKER_METADATA_VALUE_TYPE a_valueType) { valueType = a_valueType; };
-	static MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen);
 
 	BITLOCKER_METADATA_VALUE_TYPE getValueType() { return valueType; }
 	bool wasLoadedSuccessfully() {

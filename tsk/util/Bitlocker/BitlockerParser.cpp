@@ -13,7 +13,18 @@
 #include "mbedtls/sha256.h"
 
 int BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, const char* password) {
+    writeDebug("BitlockerParser::initialize()");
+
+    // Proceed with initialization if password is empty
+    string passwordStr(password);
+    if (passwordStr.empty()) {
+        writeDebug("  Password is empty");
+        return initialize(a_img_info);
+    }
+
+    // Otherwise process the password to use later (we won't know whether it's correct or not at this point)
     if (0 != handlePassword(password)) {
+        writeDebug("  Processing password " + passwordStr);
         // Don't continue if we failed to hash the password
         return -1;
     }
@@ -231,6 +242,7 @@ int BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset, uint32_t& me
 
 int BitlockerParser::getVolumeMasterKey() {
     writeDebug("BitlockerParser::setVolumeMasterKey()");
+    decryptedVmkEntry = NULL;
 
     // Get VMK entries
     list<MetadataEntry*> vmkEntries;
@@ -583,11 +595,11 @@ int BitlockerParser::parseVolumeHeader() {
 * 
 * Returns 0 on success, -1 on error
 */
-int BitlockerParser::handlePassword(const char* password) {
+int BitlockerParser::handlePassword(string password) {
 
     // Convert to UTF16
     writeDebug("BitlockerParser::handlePassword()");
-    writeDebug("  Password: " + string(password));
+    writeDebug("  Password: " + password);
     string utf8password(password);
     wstring utf16password(L"");
     try {
@@ -724,7 +736,6 @@ int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* da
     memset(iv.bytes, 0, 16);
     iv.offset = offset;
 
-    // TODO check sector size first?
     writeDebug("  Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(encryptedData, 32) + "...");
     writeDebug("  Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
 
