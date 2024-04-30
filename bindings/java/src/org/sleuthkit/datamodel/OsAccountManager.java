@@ -802,8 +802,8 @@ public final class OsAccountManager {
 		// It's possible that we weren't able to load the account instance because it
 		// is already in the database but the instance cache was cleared during an account merge.
 		// Try loading it here and re-adding to the cache.
-		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + osAccountId
-				+ "AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
+		String whereClause = " tsk_os_account_instances.os_account_obj_id = " + osAccountId
+						   + " AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
 		List<OsAccountInstance> instances = getOsAccountInstances(whereClause);
 		if (instances.isEmpty()) {
 			throw new TskCoreException(String.format("Could not get autogen key after row insert or reload instance for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
@@ -1533,7 +1533,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	public List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
-		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + account.getId();
+		String whereClause = " tsk_os_account_instances.os_account_obj_id = " + account.getId();
 		return getOsAccountInstances(whereClause);
 	}
 
