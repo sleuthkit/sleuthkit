@@ -26,26 +26,27 @@ MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(BITLOCKER_METAD
     memcpy(encryptedData, &(buf[headerLen]), encryptedDataLen);
 };
 
-int MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t keyLen, MetadataEntry** keyEntry) {
+BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t keyLen, MetadataEntry** keyEntry) {
     writeDebug("MetadataValueAesCcmEncryptedKey::decrypt()");
 
     // The expectation is that we'll have a 16-byte MAC and then an FVE key entry of variable length
     if (keyLen < BITLOCKER_KEY_MAC_LEN + 8) { // Key entry header is 8 bytes
         writeError("MetadataValueAesCcmEncryptedKey::decrypt(): Encrypted data is not long enough to contain MAC and MetadataEntry");
-        return -1;
+        return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     uint8_t* decryptedData = (uint8_t*)malloc(encryptedDataLen);
     if (decryptedData == NULL) {
         writeError("MetadataValueAesCcmEncryptedKey::decrypt(): Error allocating space for decryptedData");
-        return -1;
+        return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Decrypt the key entry
-    if (0 != decryptKey(key, keyLen, nonce, getNonceLen(), encryptedData, encryptedDataLen, decryptedData)) {
+    BITLOCKER_STATUS ret = decryptKey(key, keyLen, nonce, getNonceLen(), encryptedData, encryptedDataLen, decryptedData);
+    if (ret != BITLOCKER_STATUS::SUCCESS) {
         memset(decryptedData, 0, encryptedDataLen);
         free(decryptedData);
-        return -1;
+        return ret; // Propagate the return value in case it indicates an incorrect password
     }
 
     // Try to create the key entry
@@ -55,16 +56,16 @@ int MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t keyLen, Metada
 
     if (keyEntry == NULL) {
         writeError("MetadataValueAesCcmEncryptedKey::decrypt(): Failed to create MetadataEntry from decrypted data");
-        return -1;
+        return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     writeDebug("  Created MetadataEntry of type " + convertMetadataEntryTypeToString((*keyEntry)->getEntryType())
         + " and value " + convertMetadataValueTypeToString((*keyEntry)->getValueType()));
 
-    return 0;
+    return BITLOCKER_STATUS::SUCCESS;
 }
 
-int MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_t keyLen, uint8_t* nonce, size_t nonceLen, uint8_t* encryptedData,
+BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_t keyLen, uint8_t* nonce, size_t nonceLen, uint8_t* encryptedData,
     size_t encryptedDataLen, uint8_t* decryptedData) {
 
     writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey()");
@@ -76,7 +77,7 @@ int MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_t keyLen, uin
     // Set up the IV
     if (nonceLen > 14 || nonceLen < 12) {
         writeError("decryptKey: Invalid nonce length: " + to_string(nonceLen));
-        return -1;
+        return BITLOCKER_STATUS::GENERAL_ERROR;
     }
     uint8_t nonceLenUint8 = nonceLen & 0xff;
 
@@ -98,8 +99,6 @@ int MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_t keyLen, uin
     if (encryptedDataLen > BITLOCKER_DECRYPT_KEY_BLOCK_SIZE) {
         while (offset + BITLOCKER_DECRYPT_KEY_BLOCK_SIZE < encryptedDataLen) {
             mbedtls_aes_crypt_ecb(&aes_context, MBEDTLS_AES_ENCRYPT, iv, block);
-
-            //writeDebug("  block:  " + convertByteArrayToString(block, BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
 
             for (int i = 0; i < BITLOCKER_DECRYPT_KEY_BLOCK_SIZE; i++) {
                 decryptedData[offset + i] = encryptedData[offset + i] ^ block[i];
@@ -138,18 +137,20 @@ int MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_t keyLen, uin
     memset(mac2, 0, BITLOCKER_KEY_MAC_LEN);
 
     
-    int ret = createMessageAuthenticationCode(&aes_context, nonce, nonceLenUint8, &(decryptedData[BITLOCKER_KEY_MAC_LEN]),
-        encryptedDataLen - BITLOCKER_KEY_MAC_LEN, mac2);
+    if (0 != createMessageAuthenticationCode(&aes_context, nonce, nonceLenUint8, &(decryptedData[BITLOCKER_KEY_MAC_LEN]),
+        encryptedDataLen - BITLOCKER_KEY_MAC_LEN, mac2)) {
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
 
     writeDebug("  Mac1: " + convertByteArrayToString(mac1, BITLOCKER_KEY_MAC_LEN));
     writeDebug("  Mac2: " + convertByteArrayToString(mac2, BITLOCKER_KEY_MAC_LEN));
 
-    if (ret != 0 || memcmp(mac1, mac2, BITLOCKER_KEY_MAC_LEN) != 0) {
+    if (memcmp(mac1, mac2, BITLOCKER_KEY_MAC_LEN) != 0) {
         writeError("MetadataValueAesCcmEncryptedKey::decryptKey: MAC not valid. Password may be incorrect.");
-        return -1;
+        return BITLOCKER_STATUS::WRONG_PASSWORD;
     }
 
-    return 0;
+    return BITLOCKER_STATUS::SUCCESS;
 }
 
 /**

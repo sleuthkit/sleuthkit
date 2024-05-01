@@ -87,15 +87,15 @@ public:
         mbedtls_aes_xts_init(&aesXtsDecryptionContext);
     };
 
-	int initialize(TSK_IMG_INFO* a_img_info, const char* password);
-    int initialize(TSK_IMG_INFO* a_img_info);
+    BITLOCKER_STATUS initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset, const char* password);
+    BITLOCKER_STATUS initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset);
 
 	bool initializationSuccessful() { return isBitlocker & unlockSuccessful; }
 
     uint16_t getSectorSize() {
         return sectorSize;
     }
-    ssize_t readAndDecryptSectors(TSK_DADDR_T start, size_t len, uint8_t* data);
+    ssize_t readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_t len, uint8_t* data);
     int decryptSector(TSK_DADDR_T offset, uint8_t* data);
     TSK_DADDR_T convertVolumeOffset(TSK_DADDR_T origOffset);
 
@@ -114,29 +114,33 @@ public:
     }
 
 private:
-    int handlePassword(string password);
-    int readFveMetadataBlockHeader(uint64_t& currentOffset);
-    int readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize);
-    int readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize);
+    bool hasBitlockerSignature(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset);
+    BITLOCKER_STATUS initializeInternal(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset);
+    BITLOCKER_STATUS handlePassword(string password);
+    BITLOCKER_STATUS readFveMetadataBlockHeader(uint64_t& currentOffset);
+    BITLOCKER_STATUS readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize);
+    BITLOCKER_STATUS readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize);
     void clearFveMetadataEntries() {
         for (auto it = metadataEntries.begin(); it != metadataEntries.end(); ++it) {
             delete(*it);
         }
         metadataEntries.clear();
     }
-    int getVolumeMasterKey();
-    int parseVMKEntry(MetadataEntry* entry, MetadataEntry** vmkEntry);
-    int getFullVolumeEncryptionKey();
-    int getKeyData(MetadataEntry* entry, uint8_t** keyDataPtr, size_t& keyLen);
-    int parseVolumeHeader();
-    int setKeys(MetadataEntry* fvekEntry);
-    int setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type);
+    BITLOCKER_STATUS getVolumeMasterKey();
+    BITLOCKER_STATUS parseVMKEntry(MetadataEntry* entry, MetadataEntry** vmkEntry);
+    BITLOCKER_STATUS getFullVolumeEncryptionKey();
+    BITLOCKER_STATUS getKeyData(MetadataEntry* entry, uint8_t** keyDataPtr, size_t& keyLen);
+    BITLOCKER_STATUS parseVolumeHeader();
+    BITLOCKER_STATUS setKeys(MetadataEntry* fvekEntry);
+    BITLOCKER_STATUS setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type);
 
     int decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data);
     int decryptSectorAESXTS(uint64_t offset, uint8_t* data);
 
     list<MetadataEntry*> metadataEntries;
     MetadataEntry* decryptedVmkEntry = NULL;
+
+    uint64_t volumeOffset; // All offsets appear to be relative to the start of the volume
 
     mbedtls_aes_context aesFvekEncryptionContext;
     mbedtls_aes_context aesFvekDecryptionContext;

@@ -68,8 +68,13 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
     fs->journ_inum = 0;
     fs->tag = TSK_FS_INFO_TAG;
 
-    // Check for any volume encryption and initialize if found
-    handleVolumeEncryption(fs, a_pass);
+    // Check for any volume encryption and initialize if found.
+    // A non-zero value will only be returned if we are very confident encryption was found but
+    // need different input from the user to decrypt the drive.
+    if (0 != handleVolumeEncryption(fs, a_pass)) {
+        tsk_fs_free((TSK_FS_INFO*)fatfs);
+        return NULL;
+    }
 
 	// Look for a FAT boot sector. Try up to three times because FAT32 and exFAT file systems have backup boot sectors.
     for (find_boot_sector_attempt = 0; find_boot_sector_attempt < 3; ++find_boot_sector_attempt) {

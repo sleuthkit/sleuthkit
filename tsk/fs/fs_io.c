@@ -239,8 +239,8 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         // to another spot later in the volume in addition to encrypting them,
         // so we need to use a custom method to read in the encrypted data
         // and decrypt it.
-        TSK_DADDR_T offset = a_fs->offset + (TSK_DADDR_T)(a_addr)*a_fs->block_size;
-        return read_and_decrypt_bitlocker_blocks(a_fs, offset, a_len, a_buf);
+        TSK_DADDR_T offsetInVolume = (TSK_DADDR_T)(a_addr) * a_fs->block_size;
+        return read_and_decrypt_bitlocker_blocks(a_fs, offsetInVolume, a_len, a_buf);
     }
 
     ssize_t ret_len;

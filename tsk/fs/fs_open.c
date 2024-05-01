@@ -206,6 +206,14 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             }
             else {
                 // fs does not open as type i
+                
+                // If we're in the state where we want to tell the user they used the wrong password or
+                // need to enter a password, return now to preserve the error state. It is very unlikely
+                // we would be in this state and be able to open the volume with a different file system type.
+                if (tsk_error_get_errno() == TSK_ERR_FS_BITLOCKER_PASSWORD_ERROR) {
+                    return NULL;
+                }
+
                 tsk_error_reset();
             }
         }
