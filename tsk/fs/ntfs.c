@@ -20,6 +20,7 @@
 #include "tsk_ntfs.h"
 
 #include <ctype.h>
+#include "encryptionHelper.h"
 
 /**
  * \file ntfs.c

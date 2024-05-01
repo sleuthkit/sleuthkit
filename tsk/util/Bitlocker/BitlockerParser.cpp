@@ -710,7 +710,10 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
     }
 
     // We're reading the volume header and possibly data after it.
-    size_t nRelocatedBytesToRead = min(volumeHeaderSize - offsetInVolume, len);
+    size_t nRelocatedBytesToRead = volumeHeaderSize - offsetInVolume;
+    if (len < nRelocatedBytesToRead) {
+        nRelocatedBytesToRead = len;
+    }
     if (nRelocatedBytesToRead <= 0) {
         writeError("BitlockerParser::readAndDecryptSectors(): Error reading from volume header");
         return -1;
