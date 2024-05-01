@@ -63,7 +63,11 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
 	tsk/pool/pool_compat.hpp tsk/pool/apfs_pool_compat.hpp \
     tsk/pool/lvm_pool_compat.hpp \
     tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp \
-    tsk/util/detect_encryption.h tsk/util/file_system_utils.h
+    tsk/util/detect_encryption.h tsk/util/file_system_utils.h \
+    tsk/util/Bitlocker/BitlockerParser.h tsk/util/Bitlocker/DataTypes.h tsk/util/Bitlocker/MetadataEntry.h \
+    tsk/util/Bitlocker/MetadataUtils.h tsk/util/Bitlocker/MetadataValue.h tsk/util/Bitlocker/MetadataValueAesCcmEncryptedKey.h \
+    tsk/util/Bitlocker/MetadataValueKey.h tsk/util/Bitlocker/MetadataValueOffsetAndSize.h \
+    tsk/util/Bitlocker/MetadataValueStretchKey.h tsk/util/Bitlocker/MetadataValueVolumeMasterKey.h
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \
