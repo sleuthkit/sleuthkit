@@ -333,6 +333,7 @@ AC_CONFIG_FILES([
     tsk/auto/Makefile
     tsk/pool/Makefile
     tsk/util/Makefile
+    tsk/util/Bitlocker/Makefile
     tools/Makefile
     tools/imgtools/Makefile
     tools/vstools/Makefile
