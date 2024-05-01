@@ -137,6 +137,7 @@ ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T of
 }
 
 void freeEncryptionData(TSK_FS_INFO* a_fs_info) {
+#ifdef HAVE_LIBMBEDTLS
 	if (a_fs_info->encryption_type == TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
 		&& a_fs_info->encryption_data != NULL) {
 
@@ -145,4 +146,5 @@ void freeEncryptionData(TSK_FS_INFO* a_fs_info) {
 		a_fs_info->encryption_data = NULL;
 	}
 	a_fs_info->encryption_type = TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_NONE;
+#endif
 }
