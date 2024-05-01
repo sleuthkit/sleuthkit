@@ -81,6 +81,7 @@ class BitlockerParser {
 public:
 	BitlockerParser() {
         memset(passwordHash, 0, SHA256_DIGEST_LENGTH);
+        memset(recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
         mbedtls_aes_init(&aesFvekEncryptionContext);
         mbedtls_aes_init(&aesFvekDecryptionContext);
         mbedtls_aes_init(&aesTweakEncryptionContext);
@@ -102,6 +103,7 @@ public:
     ~BitlockerParser() {
         writeDebug("Deleting BitlockerParser");
         memset(passwordHash, 0, SHA256_DIGEST_LENGTH);
+        memset(recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
         clearFveMetadataEntries();
         if (decryptedVmkEntry != NULL) {
             delete decryptedVmkEntry;
@@ -157,6 +159,9 @@ private:
 
     bool havePassword = false;
     uint8_t passwordHash[SHA256_DIGEST_LENGTH];
+
+    bool haveRecoveryPassword = false;
+    uint8_t recoveryPasswordHash[SHA256_DIGEST_LENGTH];
 
     uint64_t volumeHeaderOffset = 0;
     uint64_t volumeHeaderSize = 0;

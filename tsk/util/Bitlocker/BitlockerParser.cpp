@@ -2,6 +2,7 @@
 
 #include "BitlockerParser.h"
 
+#include <regex>
 #include <codecvt>
 
 #include "MetadataUtils.h"
@@ -53,11 +54,11 @@ bool BitlockerParser::hasBitlockerSignature(TSK_IMG_INFO* a_img_info, uint64_t a
         return false;
     }
 
-    if (memcmp(signature, bitlockerSignature, 8)) {
-        writeDebug("BitlockerParser::hasBitlockerSignature(): No bitlocker signature");
+    if (0 != memcmp(signature, bitlockerSignature, 8)) {
+        writeDebug("BitlockerParser::hasBitlockerSignature(): No bitlocker signature (" + convertByteArrayToString(signature, 8) + ")");
         return false;
     }
-    isBitlocker = true;
+    return true;
 }
 
 BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset) {
@@ -360,9 +361,22 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
     }
 
     BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
-    if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
-        // If we don't have a password we can't decrypt this
-        if (!havePassword) {
+    writeDebug("  VMK protected with " + convertKeyProtectionTypeToString(protectionType));
+    if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD
+        || protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
+        // TEMP
+        if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
+            writeError("TEMP SKIPPING PASSWORD");
+            return BITLOCKER_STATUS::GENERAL_ERROR;
+        }
+
+        // If we don't have the right type of password we can't decrypt this
+        if (!havePassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
+            writeError("BitlockerParser::parseVMKEntry(): Can't process password-protected VMK since we have no password");
+            return BITLOCKER_STATUS::NEED_PASSWORD;
+        }
+
+        if (!haveRecoveryPassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
             writeError("BitlockerParser::parseVMKEntry(): Can't process password-protected VMK since we have no password");
             return BITLOCKER_STATUS::NEED_PASSWORD;
         }
@@ -418,6 +432,15 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
 
         return BITLOCKER_STATUS::SUCCESS;
     }
+    //else if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
+    //    // If we don't have a recovery password we can't decrypt this
+    //    if (!haveRecoveryPassword) {
+    //        writeError("BitlockerParser::parseVMKEntry(): Can't process password-protected VMK since we have no recovery password");
+    //        return BITLOCKER_STATUS::NEED_PASSWORD;
+    //    }
+//
+    //    return BITLOCKER_STATUS::GENERAL_ERROR; // TEMP TEMP
+    //}
     else {
         // TODO - support more protection types
         writeError("BitlockerParser::parseVMKEntry(): Unsupported protection type " + convertKeyProtectionTypeToString(protectionType));
@@ -659,32 +682,84 @@ BITLOCKER_STATUS BitlockerParser::parseVolumeHeader() {
 * - Convert password to UTF16
 * - Hash twice with SHA-256
 * 
-* Returns 0 on success, -1 on error
+* Returns SUCCESS if the we successfully process the password as a normal password or a recovery key
 */
 BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
 
     // Convert to UTF16
     writeDebug("BitlockerParser::handlePassword()");
     writeDebug("  Password: " + password);
+    writeDebug("  Processing as a normal password");
     string utf8password(password);
     wstring utf16password(L"");
+    BITLOCKER_STATUS ret;
     try {
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
         utf16password = converter.from_bytes(utf8password);
+
+        writeDebug("  Bytes to hash: " + convertByteArrayToString((uint8_t*)utf16password.c_str(), utf16password.length() * 2));
+
+        // Hash twice
+        uint8_t hashOutput[SHA256_DIGEST_LENGTH];
+        mbedtls_sha256((uint8_t*)utf16password.c_str(), utf16password.length() * 2, hashOutput, 0);
+        mbedtls_sha256(hashOutput, SHA256_DIGEST_LENGTH, passwordHash, 0);
+        havePassword = true;
+
+        writeDebug("  Password hash: " + convertByteArrayToString(passwordHash, SHA256_DIGEST_LENGTH));
+
+        // Whether the recovery password parsing works or not, we'll return SUCCESS because we have a password ready to go
+        ret = BITLOCKER_STATUS::SUCCESS;
     }
     catch (...) {
         writeError("BitlockerParser::handlePassword(): Error converting password to UTF16");
-        return BITLOCKER_STATUS::GENERAL_ERROR;
+        // We'll return this error if we fail to parse it as a recovery password
+        ret = BITLOCKER_STATUS::GENERAL_ERROR;
     }
-    writeDebug("  Bytes to hash: " + convertByteArrayToString((uint8_t*)utf16password.c_str(), utf16password.length() * 2));
+
+    // Try to parse the password as a recovery password. We don't really want to add another password field to TSK
+    // so we'll just try to use any supplied password as a normal password and potentially as a recovery password (if it has the right format).
+    // Example: 162294-601403-607013-155265-438779-479028-357148-102091
+    // Each part should be divisible by 11 and lead to a 16-bit value. Those values are combined to form a 16 byte key.
+    std::regex recoveryPasswordPattern("^(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})$");
+    std::match_results<std::string::const_iterator> match;
+    if (!std::regex_search(password, match, recoveryPasswordPattern) || (match.size() != 9)) {
+        writeDebug("  Password is not a recovery password");
+        return ret;
+    }
+
+    writeDebug("  Password may be a recovery password");
+    uint8_t recoveryPasswordKey[16];
+    for (int i = 0; i < 8; i++) {
+        try {
+            unsigned long val = stoul(match[i + 1]);
+            if (val % 11 != 0) {
+                writeDebug("  Value is not a multiple of 11 (" + to_string(val) + ")");
+            }
+
+            val = val / 11;
+            if (val > 0xffff) {
+                writeDebug("  Value too large to be part of valid recovery password (" + to_string(val) + ")");
+                return ret;
+            }
+
+            ((uint16_t*)recoveryPasswordKey)[i] = val;
+        }
+        catch (...) {
+            writeDebug("BitlockerParser::handlePassword(): Error converting recovery password value to integer");
+            memset(recoveryPasswordKey, 0, 16);
+            return ret;
+        }
+    }
+
+    writeDebug("  Key from recovery password: " + convertByteArrayToString(recoveryPasswordKey, 16));
 
     // Hash twice
     uint8_t hashOutput[SHA256_DIGEST_LENGTH];
-    mbedtls_sha256((uint8_t*)utf16password.c_str(), utf16password.length() * 2, hashOutput, 0);
-    mbedtls_sha256(hashOutput, SHA256_DIGEST_LENGTH, passwordHash, 0);
-    havePassword = true;
+    mbedtls_sha256(recoveryPasswordKey, 16, hashOutput, 0);
+    mbedtls_sha256(hashOutput, SHA256_DIGEST_LENGTH, recoveryPasswordHash, 0);
+    haveRecoveryPassword = true;
 
-    writeDebug("  Password hash: " + convertByteArrayToString(passwordHash, SHA256_DIGEST_LENGTH));
+    writeDebug("  Recovery password hash: " + convertByteArrayToString(passwordHash, SHA256_DIGEST_LENGTH));
 
     return BITLOCKER_STATUS::SUCCESS;
 }
