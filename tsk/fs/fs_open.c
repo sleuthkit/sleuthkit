@@ -162,7 +162,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 		if (!(a_ftype == TSK_FS_TYPE_DETECT || a_ftype == TSK_FS_TYPE_LOGICAL)) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_ARG);
-			tsk_error_set_errstr("tsk_fs_open_img: Incompatable file system type given for logical file image");
+			tsk_error_set_errstr("tsk_fs_open_img: Incompatible file system type given for logical file image");
 			return NULL;
 		}
 
