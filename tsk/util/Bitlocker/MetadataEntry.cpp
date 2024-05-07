@@ -29,6 +29,7 @@ MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
     }
     if (valueType == BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN) {
         writeWarning(string("MetadataEntry::createMetadataEntry: Unhandled value type " + to_string(tsk_getu16(TSK_LIT_ENDIAN, &(buf[4])))));
+        writeWarning("   Contents: " + convertByteArrayToString(&(buf[8]), size - HEADER_SIZE));
     }
 
     MetadataValue* metadataValue = createMetadataValue(valueType, &(buf[8]), size - HEADER_SIZE);

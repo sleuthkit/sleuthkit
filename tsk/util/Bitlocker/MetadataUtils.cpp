@@ -39,8 +39,8 @@ void writeWarning(string errMes) {
 }
 
 void writeDebug(string msg) {
-    printf("Debug: %s\n", msg.c_str());
-    fflush(stdout);
+    //printf("Debug: %s\n", msg.c_str());
+    //fflush(stdout);
 }
 
 void readMetadataEntries(uint8_t* metadataEntryBuffer, size_t metadataEntriesBufSize, list<MetadataEntry*>& entries, list<string>& errorList) {

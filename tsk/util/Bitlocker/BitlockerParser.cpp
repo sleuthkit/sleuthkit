@@ -364,11 +364,6 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
     writeDebug("  VMK protected with " + convertKeyProtectionTypeToString(protectionType));
     if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD
         || protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
-        // TEMP
-        if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
-            writeError("TEMP SKIPPING PASSWORD");
-            return BITLOCKER_STATUS::GENERAL_ERROR;
-        }
 
         // If we don't have the right type of password we can't decrypt this
         if (!havePassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
@@ -395,9 +390,14 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
 
-        // Use password to create intermediate stretched key
+        // Use password/recovery password to create intermediate stretched key
         uint8_t key[BITLOCKER_STRETCH_KEY_SHA256_LEN];
-        stretchKey->parseStretchKeyUsingPassword((uint8_t*)passwordHash, SHA256_DIGEST_LENGTH, key, BITLOCKER_STRETCH_KEY_SHA256_LEN);
+        if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
+            stretchKey->parseStretchKeyUsingPassword((uint8_t*)passwordHash, SHA256_DIGEST_LENGTH, key, BITLOCKER_STRETCH_KEY_SHA256_LEN);
+        }
+        else if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
+            stretchKey->parseStretchKeyUsingPassword((uint8_t*)recoveryPasswordHash, SHA256_DIGEST_LENGTH, key, BITLOCKER_STRETCH_KEY_SHA256_LEN);
+        }
 
         // There should also be one encrypted key entry
         list<MetadataValue*> encryptedKeys;
@@ -432,15 +432,6 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
 
         return BITLOCKER_STATUS::SUCCESS;
     }
-    //else if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
-    //    // If we don't have a recovery password we can't decrypt this
-    //    if (!haveRecoveryPassword) {
-    //        writeError("BitlockerParser::parseVMKEntry(): Can't process password-protected VMK since we have no recovery password");
-    //        return BITLOCKER_STATUS::NEED_PASSWORD;
-    //    }
-//
-    //    return BITLOCKER_STATUS::GENERAL_ERROR; // TEMP TEMP
-    //}
     else {
         // TODO - support more protection types
         writeError("BitlockerParser::parseVMKEntry(): Unsupported protection type " + convertKeyProtectionTypeToString(protectionType));
@@ -742,7 +733,7 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
                 return ret;
             }
 
-            ((uint16_t*)recoveryPasswordKey)[i] = val;
+            ((uint16_t*)recoveryPasswordKey)[i] = (uint16_t)val;
         }
         catch (...) {
             writeDebug("BitlockerParser::handlePassword(): Error converting recovery password value to integer");
@@ -753,13 +744,11 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
 
     writeDebug("  Key from recovery password: " + convertByteArrayToString(recoveryPasswordKey, 16));
 
-    // Hash twice
-    uint8_t hashOutput[SHA256_DIGEST_LENGTH];
-    mbedtls_sha256(recoveryPasswordKey, 16, hashOutput, 0);
-    mbedtls_sha256(hashOutput, SHA256_DIGEST_LENGTH, recoveryPasswordHash, 0);
+    // Only hash this once
+    mbedtls_sha256(recoveryPasswordKey, 16, recoveryPasswordHash, 0);
     haveRecoveryPassword = true;
 
-    writeDebug("  Recovery password hash: " + convertByteArrayToString(passwordHash, SHA256_DIGEST_LENGTH));
+    writeDebug("  Recovery password hash: " + convertByteArrayToString(recoveryPasswordHash, SHA256_DIGEST_LENGTH));
 
     return BITLOCKER_STATUS::SUCCESS;
 }
