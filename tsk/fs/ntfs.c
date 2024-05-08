@@ -5271,7 +5271,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // Check for any volume encryption and initialize if found.
     // A non-zero value will only be returned if we are very confident encryption was found but
     // need different input from the user to decrypt the drive.
-    if (0 != handleVolumeEncryption(ntfs, a_pass)) {
+    if (0 != handleVolumeEncryption((TSK_FS_INFO*)ntfs, a_pass)) {
         goto on_error;
     }
 

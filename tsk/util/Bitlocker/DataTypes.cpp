@@ -142,20 +142,20 @@ BITLOCKER_KEY_PROTECTION_TYPE getKeyProtectionTypeEnum(uint16_t val) {
 string convertKeyProtectionTypeToString(BITLOCKER_KEY_PROTECTION_TYPE type) {
     switch (type) {
     case BITLOCKER_KEY_PROTECTION_TYPE::CLEAR_KEY:
-        return "Clear Key";
+        return "clear key";
     case BITLOCKER_KEY_PROTECTION_TYPE::TPM:
         return "TPM";
     case BITLOCKER_KEY_PROTECTION_TYPE::STARTUP_KEY:
-        return "Startup Key";
+        return "startup key";
     case BITLOCKER_KEY_PROTECTION_TYPE::TPM_AND_PIN:
         return "TPM and PIN";
     case BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD:
-        return "Recovery Password";
+        return "recovery password";
     case BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD:
-        return "Password";
+        return "password";
     case BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN:
     default:
-        return "Unknown";
+        return "unknown key protection type";
     }
 }
 
@@ -215,7 +215,7 @@ string convertEncryptionTypeToString(BITLOCKER_ENCRYPTION_TYPE type) {
     case BITLOCKER_ENCRYPTION_TYPE::AES_XTS_256:
         return "AES-XTS 256-bit";
     default:
-        return "Unknown";
+        return "Unknown Encryption Type";
     }
 }
 

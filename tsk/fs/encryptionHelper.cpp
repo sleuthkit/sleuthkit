@@ -4,24 +4,6 @@
 #include "tsk/util/Bitlocker/BitlockerParser.h"
 #endif
 
-TSK_DADDR_T convert_bitlocker_block_offset(TSK_FS_INFO* a_fs_info, TSK_DADDR_T a_orig_offset) {
-#ifdef HAVE_LIBMBEDTLS
-	printf("convert_bitlocker_block_offset: orig offset: 0x%" PRIx64 "\n", a_orig_offset);
-
-	printf("  encryption_type: %d\n", a_fs_info->encryption_type);
-	if (a_fs_info->encryption_type != TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
-		|| a_fs_info->encryption_data == NULL) {
-		return a_orig_offset;
-	}
-
-	BitlockerParser* parser = (BitlockerParser*)a_fs_info->encryption_data;
-	return parser->convertVolumeOffset(a_orig_offset);
-
-#else
-	return a_orig_offset;
-#endif
-}
-
 /**
 * Test whether the volume is encrypted with Bitlocker and initialize the parser and other fields if it is.
 * 
@@ -76,7 +58,8 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	a_fs_info->encryption_data = (void*)bitlockerParser;
 	a_fs_info->flags |= TSK_FS_INFO_FLAG_ENCRYPTED;
 	a_fs_info->block_size = bitlockerParser->getSectorSize();
-	a_fs_info->decrypt_block = decrypt_bitlocker_block;
+	// We don't set a_fs_info->decrypt_block here because Bitlocker needs to handle both reading in the block
+	// and doing the decryption since some sectors may have been relocated
 #endif
 	return 0;
 }
@@ -94,26 +77,14 @@ int handleVolumeEncryption(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	int ret = 0;
 #ifdef HAVE_LIBMBEDTLS
 	ret = handleBitlocker(a_fs_info, a_pass);
+
+	// TEMP
+	char buf[256];
+	getEncryptionDescription(a_fs_info, buf, 256);
+	printf("Desc: %s\n", buf);
 #endif
 
 	return ret;
-}
-
-uint8_t decrypt_bitlocker_block(TSK_FS_INFO* a_fs_info, TSK_DADDR_T start, void* data) {
-#ifdef HAVE_LIBMBEDTLS
-	if (a_fs_info->encryption_type != TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
-		|| a_fs_info->encryption_data == NULL
-		|| data == NULL) {
-
-		return -1;
-	}
-
-	BitlockerParser* parser = (BitlockerParser*)a_fs_info->encryption_data;
-	return parser->decryptSector(start, (uint8_t*)data);
-
-#else
-	return -1;
-#endif
 }
 
 ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T offsetInVolume, size_t len, void* data) {
@@ -133,6 +104,32 @@ ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T of
 	return parser->readAndDecryptSectors(offsetInVolume, len, (uint8_t*)data);
 #else
 	return -1;
+#endif
+}
+
+/**
+* Copys a summary of the encryption algoritm to a_desc. Expected size of description is under 100 characters.
+* 
+* @param a_fs_info  TSK_FS_INFO object
+* @param a_desc     Output buffer for description
+* @param a_descLen  Size of output buffer (recommended - 256 bytes)
+*/
+void getEncryptionDescription(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen) {
+	if (a_descLen <= 0) {
+		return;
+	}
+
+	memset(a_desc, 0, a_descLen);
+
+#ifdef HAVE_LIBMBEDTLS
+	if (a_fs_info->encryption_type == TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
+		&& a_fs_info->encryption_data != NULL) {
+
+		BitlockerParser* parser = (BitlockerParser*)a_fs_info->encryption_data;
+		string descStr = parser->getDescription();
+
+		strncpy(a_desc, descStr.c_str(), a_descLen - 1);
+	}
 #endif
 }
 

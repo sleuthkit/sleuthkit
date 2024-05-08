@@ -3,6 +3,7 @@
 #ifdef HAVE_LIBMBEDTLS
 
 #include <stdio.h>
+#include <set>
 #include "tsk/base/tsk_base_i.h"
 #include "tsk/img/tsk_img_i.h"
 
@@ -93,12 +94,12 @@ public:
 
 	bool initializationSuccessful() { return isBitlocker & unlockSuccessful; }
 
+    string getDescription();
+
     uint16_t getSectorSize() {
         return sectorSize;
     }
     ssize_t readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_t len, uint8_t* data);
-    int decryptSector(TSK_DADDR_T offset, uint8_t* data);
-    TSK_DADDR_T convertVolumeOffset(TSK_DADDR_T origOffset);
 
     ~BitlockerParser() {
         writeDebug("Deleting BitlockerParser");
@@ -136,6 +137,8 @@ private:
     BITLOCKER_STATUS setKeys(MetadataEntry* fvekEntry);
     BITLOCKER_STATUS setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type);
 
+    TSK_DADDR_T convertVolumeOffset(TSK_DADDR_T origOffset);
+    int decryptSector(TSK_DADDR_T offset, uint8_t* data);
     int decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data);
     int decryptSectorAESXTS(uint64_t offset, uint8_t* data);
 
@@ -153,6 +156,8 @@ private:
 
 	bool isBitlocker = false;
 	bool unlockSuccessful = false;
+
+    BITLOCKER_KEY_PROTECTION_TYPE protectionTypeUsed = BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN;
 
     TSK_IMG_INFO* img_info = NULL;
     list<uint64_t> fveMetadataOffsets;

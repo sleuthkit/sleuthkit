@@ -8,9 +8,9 @@
 extern "C" {
 #endif
 	int handleVolumeEncryption(TSK_FS_INFO* a_fs_info, const char* a_pass);
+	static void getEncryptionDescription(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen);
 
 	ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T start, size_t len, void* data);
-	uint8_t decrypt_bitlocker_block(TSK_FS_INFO* a_fs_info, TSK_DADDR_T start, void* data);
 
 	void freeEncryptionData(TSK_FS_INFO* a_fs_info);
 #ifdef __cplusplus

@@ -4,6 +4,7 @@
 
 #include <regex>
 #include <codecvt>
+#include <sstream>
 
 #include "MetadataUtils.h"
 #include "MetadataValue.h"
@@ -362,6 +363,7 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
 
     BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
     writeDebug("  VMK protected with " + convertKeyProtectionTypeToString(protectionType));
+
     if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD
         || protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
 
@@ -427,8 +429,9 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
 
-        // Save the VMK
+        // Save the VMK and what we used to decrypt
         *vmkEntry = keyEntry;
+        protectionTypeUsed = protectionType;
 
         return BITLOCKER_STATUS::SUCCESS;
     }
@@ -942,6 +945,22 @@ TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
 
     writeDebug("  Offset is in the range of relocated sectors - returning new offset " + convertUint64ToString(newOffset));
     return newOffset;
+}
+
+string BitlockerParser::getDescription() {
+    if (!isBitlocker) {
+        return "BitLocker not detected";
+    }
+
+    if (!unlockSuccessful) {
+        return "BitLocker not successfully intialized";
+    }
+
+    // Make a string similar to: "BitLocker AES-CBC 128 bit protected by password, recovery password"
+    stringstream ss;
+    ss << "BitLocker " << convertEncryptionTypeToString(encryptionType) << " encryption, ";
+    ss << "decrypted using " << convertKeyProtectionTypeToString(protectionTypeUsed);
+    return ss.str();
 }
 
 #endif
