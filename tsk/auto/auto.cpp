@@ -32,6 +32,7 @@ TskAuto::TskAuto()
     m_curVsPartDescr = "";
     m_imageWriterEnabled = false;
     m_imageWriterPath = NULL;
+    m_fileSystemPassword = "";
 }
 
 
@@ -571,7 +572,7 @@ TSK_RETVAL_ENUM
 	}
 
     TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
+    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();
@@ -670,7 +671,7 @@ uint8_t
 	}
 
     TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
+    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();

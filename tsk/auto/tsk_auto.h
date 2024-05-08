@@ -103,6 +103,11 @@ class TskAuto {
 	void setExternalFileSystemList(const std::list<TSK_FS_INFO *>& exteralFsInfoList);
 
     /**
+    * Set a password that will be used when trying to open each file system
+    */
+    void setFileSystemPassword(std::string fileSystemPassword) { m_fileSystemPassword = fileSystemPassword; }
+
+    /**
      * TskAuto calls this method before it processes the volume system that is found in an 
      * image. You can use this to learn about the volume system before it is processed
      * and you can force TskAuto to skip this volume system. 
@@ -241,6 +246,7 @@ class TskAuto {
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
+    std::string m_fileSystemPassword;
     
     std::vector<error_record> m_errors;
 

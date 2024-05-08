@@ -2265,39 +2265,47 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param imagePathJ the image path
- * @return true if the image can be processed, false otherwise
+ * @param passwordJ  the password to try for any file systems found
+ * @return empty string if the image can be processed, error message otherwise
  */
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
-  (JNIEnv * env, jclass obj, jstring imagePathJ) {
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
+  (JNIEnv * env, jclass obj, jstring imagePathJ, jstring passwordJ) {
       
     TskIsImageSupported tskIsImage;
     TSK_TCHAR imagePathT[1024];
     toTCHAR(env, imagePathT, 1024, imagePathJ);
 
+    jboolean isCopy;
+    const char* password = NULL;
+    if (passwordJ != NULL) {
+        password = (const char*)env->GetStringUTFChars(passwordJ, &isCopy);
+        tskIsImage.setFileSystemPassword(string(password));
+        env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+    }
+
+    jstring resultStr = env->NewStringUTF(""); // This will stay empty if we can open the image/file system
+
     // It seems like passing &imagePathT should work instead of making this new array,
     // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
     TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
-    bool result;
     imagePaths[0] = imagePathT;
     if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
-        result = false;
+        resultStr = env->NewStringUTF("Error opening image");
     } else {
         if (tskIsImage.findFilesInImg()) {
-            result = false;
+            resultStr = env->NewStringUTF(tskIsImage.getSingleLineErrorMessage().c_str());
         } else {
-            if (tskIsImage.isImageSupported()) {
-                result = true;
-            }
-            else {
-                result = false;
+            if (!tskIsImage.isImageSupported()) {
+                resultStr = env->NewStringUTF(tskIsImage.getSingleLineErrorMessage().c_str());
             }   
         }
     }
 
     // Cleanup
+    tskIsImage.closeImage();
     free(imagePaths);
 
-    return (jboolean) result;
+    return resultStr;
 }
 
 /*

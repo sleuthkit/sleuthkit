@@ -29,9 +29,11 @@ TskIsImageSupported::TskIsImageSupported()
     m_wasPossibleEncryptionFound = false;
     m_wasFileSystemFound = false;
     m_wasUnsupported = false;
+    m_bitlockerError = false;
     m_encryptionDesc[0] = '\0';
     m_possibleEncryptionDesc[0] = '\0';
     m_unsupportedDesc[0] = '\0';
+    m_bitlockerDesc[0] = '\0';
 }
 
 bool TskIsImageSupported::isImageSupported()
@@ -42,6 +44,47 @@ bool TskIsImageSupported::isImageSupported()
 bool TskIsImageSupported::isImageEncrypted()
 {
     return m_wasEncryptionFound;
+}
+
+/**
+* Idea is to try to give the user a simple error message explaining the most likely 
+* reason the image is not supported
+*/
+std::string TskIsImageSupported::getSingleLineErrorMessage() {
+    // If we have this, we are very confident we have a BitLocker-protected partition
+    // and that we either need a password or that the one given was incorrect.
+    if (m_bitlockerError) {
+        if (strnlen(m_bitlockerDesc, 1024) > 0) {
+            return std::string(m_bitlockerDesc);
+        }
+        return "BitLocker error";
+    }
+
+    // Check if we have a known unsupported image type
+    if (strnlen(m_unsupportedDesc, 1024) > 0) {
+        return "Unsupported image type (" + std::string(m_unsupportedDesc) + ")";
+    }
+
+    // Now report any encryption/possible encryption
+    if (m_wasEncryptionFound || m_wasPossibleEncryptionFound) {
+        std::string encDesc = "";
+        if (m_wasEncryptionFound) {
+            encDesc = "Encryption detected";
+            if (strnlen(m_encryptionDesc, 1024) > 0) {
+                encDesc += " (" + std::string(m_encryptionDesc) + ")";
+            }
+        }
+        else {
+            encDesc = "Possible encryption detected";
+            if (strnlen(m_possibleEncryptionDesc, 1024) > 0) {
+                encDesc += " (" + std::string(m_possibleEncryptionDesc) + ")";
+            }
+        }
+        return encDesc;
+    }
+
+    // Default message
+    return "Error loading file systems";
 }
 
 void TskIsImageSupported::printResults() {
@@ -104,6 +147,14 @@ uint8_t TskIsImageSupported::handleError()
         if (errCode == TSK_ERR_FS_ENCRYPTED || errCode == TSK_ERR_VS_ENCRYPTED) {
             strncpy(m_encryptionDesc, lastError->errstr, 1024);
             m_wasEncryptionFound = true;
+        }
+        else if (errCode == TSK_ERR_FS_BITLOCKER_PASSWORD_ERROR) {
+            // This is the case where we tried to open Bitlocker but needed the password.
+            strncpy(m_encryptionDesc, "BitLocker", 1024);
+            m_wasEncryptionFound = true;
+            m_bitlockerError = true;
+            strncpy(m_bitlockerDesc, "BitLocker error - ", 1024);
+            strncat(m_bitlockerDesc, lastError->errstr, 950);
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
             strncpy(m_possibleEncryptionDesc, lastError->errstr, 1024);
