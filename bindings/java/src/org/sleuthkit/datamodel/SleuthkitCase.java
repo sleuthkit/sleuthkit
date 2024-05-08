@@ -210,6 +210,7 @@ public class SleuthkitCase {
 			= CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
 	// custom provider for file bytes (can be null)
 	private final ContentStreamProvider contentProvider;
+	private final LockResources lockResources;
 	
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
@@ -358,21 +359,31 @@ public class SleuthkitCase {
 	 * Private constructor, clients must use newCase() or openCase() method to
 	 * create an instance of this class.
 	 *
-	 * @param dbPath     The full path to a SQLite case database file.
-	 * @param caseHandle A handle to a case database object in the native code
-	 *                   SleuthKit layer.
-	 * @param dbType     The type of database we're dealing with
-	 * @param contentProvider Custom provider for file content (can be null).
+	 * @param dbPath                 The full path to a SQLite case database
+	 *                               file.
+	 * @param caseHandle             A handle to a case database object in the
+	 *                               native code SleuthKit layer.
+	 * @param dbType                 The type of database we're dealing with
+	 * @param contentProvider        Custom provider for file content (can be
+	 *                               null).
+	 * @param lockingApplicationName The name of the application locking the
+	 *                               case database (null value prevents
+	 *                               locking; 500 character maximum).
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider) throws Exception {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider, String lockingApplicationName) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
 		File dbFile = new File(dbPath);
 		this.caseDirPath = dbFile.getParentFile().getAbsolutePath();
 		this.databaseName = dbFile.getName();
+
+		this.lockResources = lockingApplicationName == null
+				? null
+				: LockResources.tryAcquireFileLock(this.caseDirPath, this.databaseName, lockingApplicationName);
+
 		this.connections = new SQLiteConnections(dbPath);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
@@ -401,6 +412,7 @@ public class SleuthkitCase {
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
 		this.contentProvider = contentProvider;
+		this.lockResources = null;
 		init();
 	}
 
@@ -3050,9 +3062,26 @@ public class SleuthkitCase {
 	 */
 	@Beta
 	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider) throws TskCoreException {
+		return openCase(dbPath, provider, null);
+	}
+
+	/**
+	 * Open an existing case database.
+	 *
+	 * @param dbPath Path to SQLite case database.
+	 * @param contentProvider Custom provider for file content bytes (can be null).
+	 * @param lockingApplicationName The name of the application locking the
+	 *                               case database (null value prevents
+	 *                               locking; 500 character maximum).
+	 * @return Case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider, String lockingApplicationName) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, provider);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, provider, lockingApplicationName);
 		} catch (TskUnsupportedSchemaVersionException ex) {
 			//don't wrap in new TskCoreException
 			throw ex;
@@ -3060,6 +3089,9 @@ public class SleuthkitCase {
 			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
 		}
 	}
+	
+	
+
 
 	/**
 	 * Open an existing multi-user case database.
@@ -3142,12 +3174,33 @@ public class SleuthkitCase {
 	 */
 	@Beta
 	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider) throws TskCoreException {
+		return newCase(dbPath, contentProvider, null);
+	}
+
+	/**
+	 * Creates a new SQLite case database.
+	 *
+	 * @param dbPath                 Path to where SQlite case database should
+	 *                               be created.
+	 * @param contentProvider        Custom provider for file bytes (can be
+	 *                               null).
+	 * @param lockingApplicationName The name of the application locking the
+	 *                               case database (null value prevents
+	 *                               locking; 500 character maximum).
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName) throws TskCoreException {
+
 		try {
 			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
 			factory.createCaseDatabase();
 
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -10832,6 +10885,14 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error freeing case handle.", ex); //NON-NLS
 		} finally {
 			releaseSingleUserCaseWriteLock();
+		}
+
+		if (this.lockResources != null) {
+			try {
+				this.lockResources.close();
+			} catch (Exception ex) {
+				logger.log(Level.SEVERE, "Error closing lock resources.", ex); //NON-NLS
+			}
 		}
 	}
 
