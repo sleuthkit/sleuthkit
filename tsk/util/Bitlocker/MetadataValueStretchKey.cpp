@@ -18,20 +18,22 @@ MetadataValueStretchKey::MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE a
     encryptedKeyEntry = MetadataEntry::createMetadataEntry(&(buf[headerLen]), bufLen - headerLen);
 }
 
-int MetadataValueStretchKey::parseStretchKeyUsingPassword(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* stretchKey, size_t stretchKeyLen) {
+BITLOCKER_STATUS MetadataValueStretchKey::parseStretchKeyUsingPassword(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* stretchKey, size_t stretchKeyLen) {
     writeDebug("MetadataValueStretchKey::parseStretchKeyUsingPassword");
 
     // Generate stretch key
     if (stretchKeyLen != BITLOCKER_STRETCH_KEY_SHA256_LEN) {
         registerError("parseStretchKeyUsingPassword(): Incorrect stretch key length");
-        return -1;
+        return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
-    int ret = generateStretchedKey(passwordHash, passwordHashLen, salt, 16, stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN);
+    if (BITLOCKER_STATUS::SUCCESS != generateStretchedKey(passwordHash, passwordHashLen, salt, 16, stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN)) {
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
     writeDebug("  Stretched key: " + convertByteArrayToString(stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN));
 
     // There's an encrypted key entry in here but it's unclear how to decrypt it. Ignore for now.
-    return 0;
+    return BITLOCKER_STATUS::SUCCESS;
 }
 
 // Generate stretch key from password hash
@@ -39,7 +41,7 @@ int MetadataValueStretchKey::parseStretchKeyUsingPassword(uint8_t* passwordHash,
 // passwordHash is expected to have length BITLOCKER_STRETCH_KEY_SHA256_LEN
 // salt is expected to have length BITLOCKER_STRETCH_KEY_SALT_LEN
 // result is expected to have length BITLOCKER_STRETCH_KEY_SHA256_LEN
-int MetadataValueStretchKey::generateStretchedKey(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* salt, size_t saltLen, uint8_t* result, size_t resultLen) {
+BITLOCKER_STATUS MetadataValueStretchKey::generateStretchedKey(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* salt, size_t saltLen, uint8_t* result, size_t resultLen) {
 
     writeDebug("MetadataValueStretchKey::generateStretchedKey()");
 
@@ -47,7 +49,7 @@ int MetadataValueStretchKey::generateStretchedKey(uint8_t* passwordHash, size_t 
         || saltLen != BITLOCKER_STRETCH_KEY_SALT_LEN
         || resultLen != BITLOCKER_STRETCH_KEY_SHA256_LEN) {
         writeError("Incorrect buffer lengths given to generateStretchKey()");
-        return -1;
+        return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     writeDebug("  PasswordHash: " + convertByteArrayToString(passwordHash, passwordHashLen));
@@ -73,7 +75,7 @@ int MetadataValueStretchKey::generateStretchedKey(uint8_t* passwordHash, size_t 
     memcpy(result, hashStruct.updatedHash, BITLOCKER_STRETCH_KEY_SHA256_LEN);
     memset(&hashStruct, 0, structSize);
 
-    return 0;
+    return BITLOCKER_STATUS::SUCCESS;
 }
 
 void MetadataValueStretchKey::print() {

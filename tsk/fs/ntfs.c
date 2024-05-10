@@ -5269,8 +5269,9 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->bmap_buf = NULL;
 
     // Check for any volume encryption and initialize if found.
-    // A non-zero value will only be returned if we are very confident encryption was found but
-    // need different input from the user to decrypt the drive.
+    // A non-zero value will only be returned if we are very confident encryption was found
+    // but encountered an error and should not continue trying to open the volume. 
+    // In this case we should also have a specific error to get back to the user, such as reporting an incorrect password.
     if (0 != handleVolumeEncryption((TSK_FS_INFO*)ntfs, a_pass)) {
         goto on_error;
     }

@@ -21,6 +21,7 @@
 #include "MetadataValue.h"
 #include "MetadataUtils.h"
 #include "MetadataValueKey.h"
+#include "MetadataValueVolumeMasterKey.h"
 #include "BitlockerUtils.h"
 
 #include "mbedtls/aes.h"
@@ -121,6 +122,7 @@ public:
         mbedtls_aes_free(&m_aesFvekDecryptionContext);
         mbedtls_aes_free(&m_aesTweakEncryptionContext);
         mbedtls_aes_xts_free(&m_aesXtsDecryptionContext);
+        writeDebug("  BitlockerParser deleted");
     }
 
 private:
@@ -132,6 +134,8 @@ private:
     BITLOCKER_STATUS readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize);
     BITLOCKER_STATUS getVolumeMasterKey();
     BITLOCKER_STATUS parseVMKEntry(MetadataEntry* entry, MetadataEntry** vmkEntry);
+    BITLOCKER_STATUS parsePasswordProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry);
+    BITLOCKER_STATUS parseClearKeyProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry);
     BITLOCKER_STATUS getFullVolumeEncryptionKey();
     BITLOCKER_STATUS getKeyData(MetadataEntry* entry, uint8_t** keyDataPtr, size_t& keyLen);
     BITLOCKER_STATUS parseVolumeHeader();
@@ -139,6 +143,7 @@ private:
     BITLOCKER_STATUS setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type);
 
     void clearFveMetadataEntries() {
+        writeDebug("clearFveMetadataEntries()");
         for (auto it = m_metadataEntries.begin(); it != m_metadataEntries.end(); ++it) {
             delete(*it);
         }
@@ -146,12 +151,15 @@ private:
     }
 
     void clearIntermediateData() {
+        writeDebug("clearIntermediateData()");
         clearFveMetadataEntries();
+        writeDebug("  Clearing passwords");
         memset(m_passwordHash, 0, SHA256_DIGEST_LENGTH);
         memset(m_recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
-        clearFveMetadataEntries();
+        writeDebug("  Deleting m_decryptedVmkEntry");
         if (m_decryptedVmkEntry != NULL) {
             delete m_decryptedVmkEntry;
+            m_decryptedVmkEntry = NULL;
         }
     }
 

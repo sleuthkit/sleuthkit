@@ -527,75 +527,10 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
     if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD
         || protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
 
-        // If we don't have the right type of password we can't decrypt this
-        if (!m_havePassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
-            writeError("BitlockerParser::parseVMKEntry(): Can't process password-protected VMK since we have no password");
-            return BITLOCKER_STATUS::NEED_PASSWORD;
-        }
-
-        if (!m_haveRecoveryPassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
-            writeError("BitlockerParser::parseVMKEntry(): Can't process recovery password-protected VMK since we have no recovery password");
-            return BITLOCKER_STATUS::NEED_PASSWORD;
-        }
-
-        // The expectation is that we'll have a stretch key entry
-        list<MetadataValue*> stretchKeys;
-        getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::STRETCH_KEY, stretchKeys);
-        if (stretchKeys.empty()) {
-            writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no stretch key entry");
-            return BITLOCKER_STATUS::GENERAL_ERROR;
-        }
-
-        MetadataValueStretchKey* stretchKey = dynamic_cast<MetadataValueStretchKey*>(stretchKeys.front());
-        if (stretchKey == NULL) {
-            writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
-            return BITLOCKER_STATUS::GENERAL_ERROR;
-        }
-
-        // Use password/recovery password to create intermediate stretched key
-        uint8_t stretchedKey[BITLOCKER_STRETCH_KEY_SHA256_LEN];
-        if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
-            stretchKey->parseStretchKeyUsingPassword((uint8_t*)m_passwordHash, SHA256_DIGEST_LENGTH, stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN);
-        }
-        else if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
-            stretchKey->parseStretchKeyUsingPassword((uint8_t*)m_recoveryPasswordHash, SHA256_DIGEST_LENGTH, stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN);
-        }
-
-        // There should also be one encrypted AES-CCM key entry
-        list<MetadataValue*> encryptedKeys;
-        getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY, encryptedKeys);
-        if (encryptedKeys.empty()) {
-            writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no encrypted key entry");
-            return BITLOCKER_STATUS::GENERAL_ERROR;
-        }
-
-        MetadataValueAesCcmEncryptedKey* aesCcmKey = dynamic_cast<MetadataValueAesCcmEncryptedKey*>(encryptedKeys.front());
-        if (aesCcmKey == NULL) {
-            writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
-            return BITLOCKER_STATUS::GENERAL_ERROR;
-        }
-
-        // Decrypt it using the stretched key, which should produce a MetadataEntry of type KEY.
-        // This includes testing a 16-byte message authentication code to verify that
-        // the decrypted key is correct.
-        MetadataEntry* keyEntry = NULL;
-        BITLOCKER_STATUS ret = aesCcmKey->decrypt(stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN, &keyEntry);
-        if (ret != BITLOCKER_STATUS::SUCCESS) {
-            return ret;
-        }
-
-        // Make sure the value is of type Key
-        if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
-            writeError("BitlockerParser::parseVMKEntry(): keyEntry does not have value of type KEY (" 
-                + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
-            return BITLOCKER_STATUS::GENERAL_ERROR;
-        }
-
-        // Save the decrypted VMK and what method we used to decrypt it.
-        *vmkEntry = keyEntry;
-        m_protectionTypeUsed = protectionType;
-
-        return BITLOCKER_STATUS::SUCCESS;
+        return parsePasswordProtectedVMK(vmkValue, vmkEntry);
+    }
+    else if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::CLEAR_KEY) {
+        return parseClearKeyProtectedVMK(vmkValue, vmkEntry);
     }
     else {
         // TODO - support more protection types
@@ -603,6 +538,167 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
         m_unsupportedProtectionTypesFound.insert(protectionType);
         return BITLOCKER_STATUS::UNSUPPORTED_KEY_PROTECTION_TYPE;
     }
+}
+
+/**
+* Attempt to decrypt a volume master key (VMK) entry protected with a password or recovery password.
+* 
+* @param entry    The VMK entry
+* @param vmkEntry Will hold the decrypted VMK if successful
+* 
+* @return SUCCESS if we successfully decrypted the volume master key
+*         GENERAL_ERROR if an unspecified error occurs
+*         WRONG_PASSWORD if the VMK is protected by a password/recovery password but the password we have was incorrect
+*         NEEDS_PASSWORD if the VMK is protected by a password/recovery password but we do not have a password
+*/
+BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry) {
+    writeDebug("BitlockerParser::parsePasswordProtectedVMK()");
+    BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
+
+    // If we don't have the right type of password we can't decrypt this
+    if (!m_havePassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
+        writeError("BitlockerParser::parseVMKEntry(): Can't process password-protected VMK since we have no password");
+        return BITLOCKER_STATUS::NEED_PASSWORD;
+    }
+
+    if (!m_haveRecoveryPassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
+        writeError("BitlockerParser::parseVMKEntry(): Can't process recovery password-protected VMK since we have no recovery password");
+        return BITLOCKER_STATUS::NEED_PASSWORD;
+    }
+
+    // The expectation is that we'll have a stretch key entry
+    list<MetadataValue*> stretchKeys;
+    getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::STRETCH_KEY, stretchKeys);
+    if (stretchKeys.empty()) {
+        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no stretch key entry");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    MetadataValueStretchKey* stretchKey = dynamic_cast<MetadataValueStretchKey*>(stretchKeys.front());
+    if (stretchKey == NULL) {
+        writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // Use password/recovery password to create intermediate stretched key
+    uint8_t stretchedKey[BITLOCKER_STRETCH_KEY_SHA256_LEN];
+    BITLOCKER_STATUS ret;
+    if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
+        ret = stretchKey->parseStretchKeyUsingPassword((uint8_t*)m_passwordHash, SHA256_DIGEST_LENGTH, stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN);
+    }
+    else if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
+        ret = stretchKey->parseStretchKeyUsingPassword((uint8_t*)m_recoveryPasswordHash, SHA256_DIGEST_LENGTH, stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN);
+    }
+    if (ret != BITLOCKER_STATUS::SUCCESS) {
+        writeError("BitlockerParser::parseVMKEntry(): Error creating intermediate stretched key");
+        memset(stretchedKey, 0, BITLOCKER_STRETCH_KEY_SHA256_LEN);
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // There should also be one encrypted AES-CCM key entry
+    list<MetadataValue*> encryptedKeys;
+    getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY, encryptedKeys);
+    if (encryptedKeys.empty()) {
+        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no encrypted key entry");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    MetadataValueAesCcmEncryptedKey* aesCcmKey = dynamic_cast<MetadataValueAesCcmEncryptedKey*>(encryptedKeys.front());
+    if (aesCcmKey == NULL) {
+        writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // Decrypt it using the stretched key, which should produce a MetadataEntry of type KEY.
+    // This includes testing a 16-byte message authentication code to verify that
+    // the decrypted key is correct.
+    MetadataEntry* keyEntry = NULL;
+    ret = aesCcmKey->decrypt(stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN, &keyEntry);
+    if (ret != BITLOCKER_STATUS::SUCCESS) {
+        return ret;
+    }
+
+    // Make sure the value is of type Key
+    if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
+        writeError("BitlockerParser::parseVMKEntry(): keyEntry does not have value of type KEY ("
+            + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // Save the decrypted VMK and what method we used to decrypt it.
+    *vmkEntry = keyEntry;
+    m_protectionTypeUsed = protectionType;
+
+    return BITLOCKER_STATUS::SUCCESS;
+}
+
+/**
+* Attempt to decrypt a volume master key (VMK) entry protected with a clear key.
+*
+* @param entry    The VMK entry
+* @param vmkEntry Will hold the decrypted VMK if successful
+*
+* @return SUCCESS if we successfully decrypted the volume master key
+*         GENERAL_ERROR if an unspecified error occurs
+*/
+BITLOCKER_STATUS BitlockerParser::parseClearKeyProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry) {
+    writeDebug("BitlockerParser::parseClearKeyProtectedVMK()");
+    BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
+
+    // The expectation is that we'll have a key entry
+    list<MetadataValue*> keys;
+    getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::KEY, keys);
+    if (keys.empty()) {
+        writeError("BitlockerParser::parseClearKeyProtectedVMK(): Volume Master Key had no key entry");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    MetadataValueKey* key = dynamic_cast<MetadataValueKey*>(keys.front());
+    if (key == NULL) {
+        writeError("BitlockerParser::parseClearKeyProtectedVMK(): Error casting MetadataValueKey");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // There should also be one encrypted AES-CCM key entry
+    list<MetadataValue*> encryptedKeys;
+    getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY, encryptedKeys);
+    if (encryptedKeys.empty()) {
+        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no encrypted key entry");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    MetadataValueAesCcmEncryptedKey* aesCcmKey = dynamic_cast<MetadataValueAesCcmEncryptedKey*>(encryptedKeys.front());
+    if (aesCcmKey == NULL) {
+        writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // Decrypt it using the key, which should produce a MetadataEntry of type KEY.
+    // This includes testing a 16-byte message authentication code to verify that
+    // the decrypted key is correct.
+    MetadataEntry* keyEntry = NULL;
+    BITLOCKER_STATUS ret = aesCcmKey->decrypt(key->getKeyBytes(), key->getKeyLen(), &keyEntry);
+    if (ret != BITLOCKER_STATUS::SUCCESS) {
+        // If something has gone wrong we could potentially get a WRONG_PASSWORD return value here.
+        // But this is more of an internal error - either we're processing something wrong or the
+        // recorded clear key was incorrect/corrupted. We don't want to tell the user that the
+        // password they probably didn't even enter is incorrect.
+        writeError("BitlockerParser::parseVMKEntry(): Failed to decrypt VMK using the supplied clear key");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // Make sure the value is of type Key
+    if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
+        writeError("BitlockerParser::parseVMKEntry(): keyEntry does not have value of type KEY ("
+            + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    // Save the decrypted VMK and what method we used to decrypt it.
+    *vmkEntry = keyEntry;
+    m_protectionTypeUsed = protectionType;
+
+    return BITLOCKER_STATUS::SUCCESS;
 }
 
 /**

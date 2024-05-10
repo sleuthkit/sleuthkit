@@ -183,6 +183,10 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 "fsopen: Auto detection mode at offset %" PRIdOFF "\n",
                 a_offset);
 
+        int haveErrorToPreserve = 0;
+        uint32_t errorCodeToPreserve;
+        char errorStrToPreserve[TSK_ERROR_STRING_MAX_LENGTH + 1];
+
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
             if ((fs_info = FS_OPENERS[i].open(
                     a_img_info, a_offset, FS_OPENERS[i].type, a_pass, 1)) != NULL) {
@@ -208,15 +212,26 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 // fs does not open as type i
                 
                 // TSK_ERR_FS_BITLOCKER_ERROR is used when we get pretty far into the BitLocker processing but
-                // need something different from the user or find something we can't currently parse.
-                // Return now to preserve the error state. It is very unlikely we would be in this state
-                // and be able to open the volume with a different file system type.
+                // need something different from the user or find something we can't currently parse. We need
+                // to keep trying file systems (we might have a FAT system so we don't want to return after
+                // failing to open as NTFS) but we also want to be able to get the error back to the user.
                 if (tsk_error_get_errno() == TSK_ERR_FS_BITLOCKER_ERROR) {
-                    return NULL;
+                    haveErrorToPreserve = 1;
+                    errorCodeToPreserve = tsk_error_get_errno();
+                    memset(errorStrToPreserve, 0, TSK_ERROR_STRING_MAX_LENGTH + 1);
+                    strncpy(errorStrToPreserve, tsk_error_get_errstr(), TSK_ERROR_STRING_MAX_LENGTH);
                 }
 
                 tsk_error_reset();
             }
+        }
+
+        // If we have an error to report, set it now and return
+        if (haveErrorToPreserve) {
+            tsk_error_reset();
+            tsk_error_set_errno(errorCodeToPreserve);
+            tsk_error_set_errstr("%s", errorStrToPreserve);
+            return NULL;
         }
 
         if (fs_first == NULL) {

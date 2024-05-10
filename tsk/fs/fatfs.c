@@ -69,8 +69,9 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
     fs->tag = TSK_FS_INFO_TAG;
 
     // Check for any volume encryption and initialize if found.
-    // A non-zero value will only be returned if we are very confident encryption was found but
-    // need different input from the user to decrypt the drive.
+    // A non-zero value will only be returned if we are very confident encryption was found
+    // but encountered an error and should not continue trying to open the volume. 
+    // In this case we should also have a specific error to get back to the user, such as reporting an incorrect password.
     if (0 != handleVolumeEncryption(fs, a_pass)) {
         tsk_fs_free((TSK_FS_INFO*)fatfs);
         return NULL;

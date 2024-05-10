@@ -103,15 +103,15 @@ MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE valueType, uint
 
     // These are the valid types we currently process
     case BITLOCKER_METADATA_VALUE_TYPE::VOLUME_MASTER_KEY:
-        return new MetadataValueVolumeMasterKey(a_valueType, buf, bufLen);
+        return new MetadataValueVolumeMasterKey(valueType, buf, bufLen);
     case BITLOCKER_METADATA_VALUE_TYPE::STRETCH_KEY:
-        return new MetadataValueStretchKey(a_valueType, buf, bufLen);
+        return new MetadataValueStretchKey(valueType, buf, bufLen);
     case BITLOCKER_METADATA_VALUE_TYPE::KEY:
-        return new MetadataValueKey(a_valueType, buf, bufLen);
+        return new MetadataValueKey(valueType, buf, bufLen);
     case BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY:
-        return new MetadataValueAesCcmEncryptedKey(a_valueType, buf, bufLen);
+        return new MetadataValueAesCcmEncryptedKey(valueType, buf, bufLen);
     case BITLOCKER_METADATA_VALUE_TYPE::OFFSET_AND_SIZE:
-        return new MetadataValueOffsetAndSize(a_valueType, buf, bufLen);
+        return new MetadataValueOffsetAndSize(valueType, buf, bufLen);
 
     // These are valid types but we don't currently use them
     case BITLOCKER_METADATA_VALUE_TYPE::ERASED:
@@ -122,13 +122,13 @@ MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE valueType, uint
     case BITLOCKER_METADATA_VALUE_TYPE::EXTERNAL_KEY:
     case BITLOCKER_METADATA_VALUE_TYPE::UPDATE:
     case BITLOCKER_METADATA_VALUE_TYPE::ERROR_VAL:
-        return new MetadataValueGeneric(a_valueType, buf, bufLen);
+        return new MetadataValueGeneric(valueType, buf, bufLen);
 
     // These are invalid types 
     case BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN:
     default:
         // Make an unknown entry so we can at least read the entry size to continue parsing
-        return new MetadataValueUnknown(a_valueType, buf, bufLen);
+        return new MetadataValueUnknown(valueType, buf, bufLen);
     }
 }
 
