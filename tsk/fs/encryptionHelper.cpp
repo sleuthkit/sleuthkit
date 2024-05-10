@@ -15,8 +15,7 @@
 * - We found encryption and did all the initialization successfully
 * - We found encryption but had an unspecified error in initialization
 * Returns -1 if:
-* - We got far enough to be confident that it's Bitlocker and that the entered password is incorrect
-* - We got far enough to be confident that it's Bitlocker and that the user needs to enter a password
+* - We got far enough to be confident that it's Bitlocker and have a specific error message to get back to the user
 */
 int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 #ifdef HAVE_LIBMBEDTLS
@@ -29,24 +28,30 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	if (status != BITLOCKER_STATUS::SUCCESS) {
 
 		// If we have a wrong password or missing password we want to get that information back to the user
-		// At some point...
 		if (status == BITLOCKER_STATUS::WRONG_PASSWORD) {
-			writeWarning("### Wrong password");
+			writeDebug("Storing TSK error: Incorrect password entered");
 			tsk_error_reset();
-			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_PASSWORD_ERROR);
+			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			tsk_error_set_errstr("Incorrect password entered");
 			return -1;
 
 		} else if (status == BITLOCKER_STATUS::NEED_PASSWORD) {
-			writeWarning("### Need password");
+			writeDebug("Storing TSK error: Password required to decrypt volume");
 			tsk_error_reset();
-			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_PASSWORD_ERROR);
+			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			tsk_error_set_errstr("Password required to decrypt volume");
 			return -1;
 		}
+		else if (status == BITLOCKER_STATUS::UNSUPPORTED_KEY_PROTECTION_TYPE) {
+			string message = "Unsupported key protection type(s): " + bitlockerParser->getUnsupportedProtectionTypes();
+			writeDebug("Storing TSK error: " + message);
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
+			tsk_error_set_errstr(message.c_str());
+			return -1;
+		}
 		else {
-			writeWarning("### General error");
-			// It's unlikely we're going to be able to open the file system but it's safer to try
+			// It's unlikely we're going to be able to open the file system (we found at least one BitLocker header) but it's safer to try
 			return 0;
 		}
 
@@ -81,7 +86,7 @@ int handleVolumeEncryption(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	// TEMP
 	char buf[256];
 	getEncryptionDescription(a_fs_info, buf, 256);
-	printf("Desc: %s\n", buf);
+	printf("Desc: <<%s>>\n", buf);
 #endif
 
 	return ret;
@@ -116,6 +121,7 @@ ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T of
 */
 void getEncryptionDescription(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen) {
 	if (a_descLen <= 0) {
+		printf("### descLen less than 0?\n");
 		return;
 	}
 
@@ -127,7 +133,7 @@ void getEncryptionDescription(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_des
 
 		BitlockerParser* parser = (BitlockerParser*)a_fs_info->encryption_data;
 		string descStr = parser->getDescription();
-
+		printf("### Trying to copy string %s into a_desc\n", descStr.c_str());
 		strncpy(a_desc, descStr.c_str(), a_descLen - 1);
 	}
 #endif

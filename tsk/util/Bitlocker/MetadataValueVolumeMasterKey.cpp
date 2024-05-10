@@ -5,7 +5,7 @@
 MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {
 
     if (bufLen < headerLen) {
-        registerError("Buffer for creating MetadataValueVolumeMasterKey was too short");
+        registerError("MetadataValueVolumeMasterKey(): Buffer for creating MetadataValueVolumeMasterKey was too short");
         memset(guid, 0, 16);
         return;
     }
@@ -15,12 +15,8 @@ MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VA
     unknown = tsk_getu16(TSK_LIT_ENDIAN, &(buf[24]));
     keyProtectionType = getKeyProtectionTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[26])));
 
-    list<string> errors;
-    readMetadataEntries(&(buf[headerLen]), bufLen - headerLen, properties, errors);
-    if (!errors.empty()) {
-        for (auto it = errors.begin(); it != errors.end(); ++it) {
-            registerError(*it);
-        }
+    if (BITLOCKER_STATUS::SUCCESS != readMetadataEntries(&(buf[headerLen]), bufLen - headerLen, properties)) {
+        registerError("MetadataValueVolumeMasterKey(): Error reading metadata entries");
     }
 };
 

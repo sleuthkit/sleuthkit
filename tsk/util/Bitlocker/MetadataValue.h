@@ -7,7 +7,7 @@
 #include <list>
 
 #include "MetadataEntry.h"
-#include "MetadataUtils.h"
+#include "BitlockerUtils.h"
 
 class MetadataValue {
 public:

@@ -1,3 +1,13 @@
+/*
+ ** The Sleuth Kit
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2024 Sleuth Kit Labs, LLC. All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ */
+
 #pragma once
 
 #ifdef HAVE_LIBMBEDTLS
@@ -11,9 +21,11 @@
 #include "MetadataValue.h"
 #include "MetadataUtils.h"
 #include "MetadataValueKey.h"
+#include "BitlockerUtils.h"
 
 #include "mbedtls/aes.h"
 
+// BitLocker header structures
 typedef struct {
     uint8_t bootEntryPoint[3];
     char signature[8];
@@ -81,39 +93,34 @@ typedef struct {
 class BitlockerParser {
 public:
 	BitlockerParser() {
-        memset(passwordHash, 0, SHA256_DIGEST_LENGTH);
-        memset(recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
-        mbedtls_aes_init(&aesFvekEncryptionContext);
-        mbedtls_aes_init(&aesFvekDecryptionContext);
-        mbedtls_aes_init(&aesTweakEncryptionContext);
-        mbedtls_aes_xts_init(&aesXtsDecryptionContext);
+        memset(m_passwordHash, 0, SHA256_DIGEST_LENGTH);
+        memset(m_recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
+        mbedtls_aes_init(&m_aesFvekEncryptionContext);
+        mbedtls_aes_init(&m_aesFvekDecryptionContext);
+        mbedtls_aes_init(&m_aesTweakEncryptionContext);
+        mbedtls_aes_xts_init(&m_aesXtsDecryptionContext);
     };
 
-    BITLOCKER_STATUS initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset, const char* password);
+    BITLOCKER_STATUS initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset, const char* a_password);
     BITLOCKER_STATUS initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset);
 
-	bool initializationSuccessful() { return isBitlocker & unlockSuccessful; }
+	bool initializationSuccessful() { return m_isBitlocker & m_unlockSuccessful; }
 
     string getDescription();
+    string getUnsupportedProtectionTypes();
 
     uint16_t getSectorSize() {
-        return sectorSize;
+        return m_sectorSize;
     }
     ssize_t readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_t len, uint8_t* data);
 
     ~BitlockerParser() {
         writeDebug("Deleting BitlockerParser");
-        memset(passwordHash, 0, SHA256_DIGEST_LENGTH);
-        memset(recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
-        clearFveMetadataEntries();
-        if (decryptedVmkEntry != NULL) {
-            delete decryptedVmkEntry;
-        }
-
-        mbedtls_aes_free(&aesFvekEncryptionContext);
-        mbedtls_aes_free(&aesFvekDecryptionContext);
-        mbedtls_aes_free(&aesTweakEncryptionContext);
-        mbedtls_aes_xts_free(&aesXtsDecryptionContext);
+        clearIntermediateData();
+        mbedtls_aes_free(&m_aesFvekEncryptionContext);
+        mbedtls_aes_free(&m_aesFvekDecryptionContext);
+        mbedtls_aes_free(&m_aesTweakEncryptionContext);
+        mbedtls_aes_xts_free(&m_aesXtsDecryptionContext);
     }
 
 private:
@@ -123,12 +130,6 @@ private:
     BITLOCKER_STATUS readFveMetadataBlockHeader(uint64_t& currentOffset);
     BITLOCKER_STATUS readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize);
     BITLOCKER_STATUS readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize);
-    void clearFveMetadataEntries() {
-        for (auto it = metadataEntries.begin(); it != metadataEntries.end(); ++it) {
-            delete(*it);
-        }
-        metadataEntries.clear();
-    }
     BITLOCKER_STATUS getVolumeMasterKey();
     BITLOCKER_STATUS parseVMKEntry(MetadataEntry* entry, MetadataEntry** vmkEntry);
     BITLOCKER_STATUS getFullVolumeEncryptionKey();
@@ -137,43 +138,60 @@ private:
     BITLOCKER_STATUS setKeys(MetadataEntry* fvekEntry);
     BITLOCKER_STATUS setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type);
 
+    void clearFveMetadataEntries() {
+        for (auto it = m_metadataEntries.begin(); it != m_metadataEntries.end(); ++it) {
+            delete(*it);
+        }
+        m_metadataEntries.clear();
+    }
+
+    void clearIntermediateData() {
+        clearFveMetadataEntries();
+        memset(m_passwordHash, 0, SHA256_DIGEST_LENGTH);
+        memset(m_recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
+        clearFveMetadataEntries();
+        if (m_decryptedVmkEntry != NULL) {
+            delete m_decryptedVmkEntry;
+        }
+    }
+
     TSK_DADDR_T convertVolumeOffset(TSK_DADDR_T origOffset);
     int decryptSector(TSK_DADDR_T offset, uint8_t* data);
     int decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data);
     int decryptSectorAESXTS(uint64_t offset, uint8_t* data);
 
-    list<MetadataEntry*> metadataEntries;
-    MetadataEntry* decryptedVmkEntry = NULL;
+    list<uint64_t> m_fveMetadataOffsets;
+    list<MetadataEntry*> m_metadataEntries;
+    MetadataEntry* m_decryptedVmkEntry = NULL;
 
-    uint64_t volumeOffset; // All offsets appear to be relative to the start of the volume
+    BITLOCKER_ENCRYPTION_TYPE m_encryptionType = BITLOCKER_ENCRYPTION_TYPE::UNKNOWN;
+    mbedtls_aes_context m_aesFvekEncryptionContext;
+    mbedtls_aes_context m_aesFvekDecryptionContext;
+    mbedtls_aes_context m_aesTweakEncryptionContext;
+    mbedtls_aes_xts_context m_aesXtsDecryptionContext;
 
-    mbedtls_aes_context aesFvekEncryptionContext;
-    mbedtls_aes_context aesFvekDecryptionContext;
-    mbedtls_aes_context aesTweakEncryptionContext;
-    mbedtls_aes_xts_context aesXtsDecryptionContext;
+    const uint8_t m_bitlockerSignature[8] = { 0x2D, 0x46, 0x56, 0x45, 0x2D, 0x46, 0x53, 0x2D }; // "-FVE-FS-"
 
-    const uint8_t bitlockerSignature[8] = { 0x2D, 0x46, 0x56, 0x45, 0x2D, 0x46, 0x53, 0x2D }; // "-FVE-FS-"
+	bool m_isBitlocker = false;
+	bool m_unlockSuccessful = false;
 
-	bool isBitlocker = false;
-	bool unlockSuccessful = false;
+    // Track which protection types were used/found
+    BITLOCKER_KEY_PROTECTION_TYPE m_protectionTypeUsed = BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN;
+    set<BITLOCKER_KEY_PROTECTION_TYPE> m_unsupportedProtectionTypesFound;
 
-    BITLOCKER_KEY_PROTECTION_TYPE protectionTypeUsed = BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN;
+    TSK_IMG_INFO* m_img_info = NULL;
+    uint64_t m_volumeOffset; // All offsets are relative to the start of the volume
+    uint16_t m_sectorSize = 0;
 
-    TSK_IMG_INFO* img_info = NULL;
-    list<uint64_t> fveMetadataOffsets;
+    bool m_havePassword = false;
+    uint8_t m_passwordHash[SHA256_DIGEST_LENGTH];
 
-    bool havePassword = false;
-    uint8_t passwordHash[SHA256_DIGEST_LENGTH];
+    bool m_haveRecoveryPassword = false;
+    uint8_t m_recoveryPasswordHash[SHA256_DIGEST_LENGTH];
 
-    bool haveRecoveryPassword = false;
-    uint8_t recoveryPasswordHash[SHA256_DIGEST_LENGTH];
-
-    uint64_t volumeHeaderOffset = 0;
-    uint64_t volumeHeaderSize = 0;
-
-    uint16_t sectorSize = 0;
-
-    BITLOCKER_ENCRYPTION_TYPE encryptionType = BITLOCKER_ENCRYPTION_TYPE::UNKNOWN;
+    // Offset and size of the original volume header
+    uint64_t m_volumeHeaderOffset = 0;
+    uint64_t m_volumeHeaderSize = 0;    
 };
 
 #endif

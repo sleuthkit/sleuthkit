@@ -1,3 +1,13 @@
+/*
+ ** The Sleuth Kit
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2024 Sleuth Kit Labs, LLC. All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ */
+
 #ifdef HAVE_LIBMBEDTLS
 
 #include "MetadataUtils.h"
@@ -8,65 +18,50 @@
 #include "MetadataValueAesCcmEncryptedKey.h"
 #include "MetadataValueOffsetAndSize.h"
 #include "MetadataValueKey.h"
-
-#include <sstream>
-#include <iomanip>
+#include "BitlockerUtils.h"
 
 /**
-* Record an error message.
+* Parse metadata entries from the given buffer. 
+* 
+* @param metadataEntryBuffer     Data buffer
+* @param metadataEntriesBufSize  Size of metadataEntryBuffer
+* @param entries                 Will hold the parsed entries
+* 
+* @return SUCCESS if all entries were parsed successfully, GENERAL_ERROR otherwise
 */
-void writeError(string errMes) {
-    /* TODO - switch to this once the code is in TSK
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("fatfs_open: sector size is 0");
-    */
-    //printf("writeError: %s\n", errMes.c_str());
-    //fflush(stdout);
-}
-
-/**
-* Record a warning message.
-*/
-void writeWarning(string errMes) {
-    /* TODO - switch to this once the code is in TSK
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("fatfs_open: sector size is 0");
-    */
-    //printf("writeWarning: %s\n", errMes.c_str());
-    //fflush(stdout);
-}
-
-void writeDebug(string msg) {
-    //printf("Debug: %s\n", msg.c_str());
-    //fflush(stdout);
-}
-
-void readMetadataEntries(uint8_t* metadataEntryBuffer, size_t metadataEntriesBufSize, list<MetadataEntry*>& entries, list<string>& errorList) {
+BITLOCKER_STATUS readMetadataEntries(uint8_t* metadataEntryBuffer, size_t metadataEntriesBufSize, list<MetadataEntry*>& entries) {
     size_t index = 0;
     while (index < metadataEntriesBufSize) {
 
         MetadataEntry* entry = MetadataEntry::createMetadataEntry(&(metadataEntryBuffer[index]), metadataEntriesBufSize - index);
         if (entry == NULL) {
-            errorList.push_back("readMetadataEntries(): Error creating metadata entry");
-            return;
+            writeError("readMetadataEntries(): Error creating metadata entry");
+            return BITLOCKER_STATUS::GENERAL_ERROR;
         }
 
         if (entry->getSize() == 0) {
             // Protect against infinite loop - size should not be zero.
-            errorList.push_back("readMetadataEntries(): Entry size was zero");
+            writeError("readMetadataEntries(): Entry size was zero");
             delete(entry); // Don't save this
-            return;
+            return BITLOCKER_STATUS::GENERAL_ERROR;
         }
 
         entries.push_back(entry);
         index += entry->getSize();
     }
+    return BITLOCKER_STATUS::SUCCESS;
 }
 
-void getMetadataEntries(const list<MetadataEntry*>& entries, BITLOCKER_METADATA_ENTRY_TYPE entryType, BITLOCKER_METADATA_VALUE_TYPE valueType,
-    list<MetadataEntry*>& results) {
+/**
+* Get all metadata entries matching the given type and value type.
+* 
+* @param entries     Entries to search
+* @param entryType   Entry type
+* @param valueType   Value type
+* @param results     Will hold any matching entries found
+*/
+void getMetadataEntries(const list<MetadataEntry*>& entries, BITLOCKER_METADATA_ENTRY_TYPE entryType,
+    BITLOCKER_METADATA_VALUE_TYPE valueType, list<MetadataEntry*>& results) {
 
     results.clear();
     for (auto it = entries.begin(); it != entries.end(); ++it) {
@@ -76,6 +71,13 @@ void getMetadataEntries(const list<MetadataEntry*>& entries, BITLOCKER_METADATA_
     }
 }
 
+/**
+* Get all metadata entries matching the given value type.
+*
+* @param entries     Entries to search
+* @param valueType   Value type
+* @param results     Will hold any matching entries found
+*/
 void getMetadataValues(const list<MetadataEntry*>& entries, BITLOCKER_METADATA_VALUE_TYPE valueType, list<MetadataValue*>& results) {
     results.clear();
     for (auto it = entries.begin(); it != entries.end(); ++it) {
@@ -85,9 +87,21 @@ void getMetadataValues(const list<MetadataEntry*>& entries, BITLOCKER_METADATA_V
     }
 }
 
-MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) {
-    switch (a_valueType) {
-        // These are the valid types we currently process
+/**
+* Create a metadata value of the given type from the buffer.
+* Many of the types will just return a generic object since we don't
+* currently use them in the parser.
+* 
+* @param a_valueType  Value type
+* @param buf          Data buffer
+* @param bufLen       Size of the data buffer
+* 
+* @return The newly created MetadataValue or NULL if an error occurs
+*/
+MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen) {
+    switch (valueType) {
+
+    // These are the valid types we currently process
     case BITLOCKER_METADATA_VALUE_TYPE::VOLUME_MASTER_KEY:
         return new MetadataValueVolumeMasterKey(a_valueType, buf, bufLen);
     case BITLOCKER_METADATA_VALUE_TYPE::STRETCH_KEY:
@@ -99,7 +113,7 @@ MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE a_valueType, ui
     case BITLOCKER_METADATA_VALUE_TYPE::OFFSET_AND_SIZE:
         return new MetadataValueOffsetAndSize(a_valueType, buf, bufLen);
 
-        // These are valid types but we don't currently use them
+    // These are valid types but we don't currently use them
     case BITLOCKER_METADATA_VALUE_TYPE::ERASED:
     case BITLOCKER_METADATA_VALUE_TYPE::UNICODE_STRING:
     case BITLOCKER_METADATA_VALUE_TYPE::USE_KEY:
@@ -110,32 +124,12 @@ MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE a_valueType, ui
     case BITLOCKER_METADATA_VALUE_TYPE::ERROR_VAL:
         return new MetadataValueGeneric(a_valueType, buf, bufLen);
 
-        // These are invalid types 
+    // These are invalid types 
     case BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN:
     default:
         // Make an unknown entry so we can at least read the entry size to continue parsing
         return new MetadataValueUnknown(a_valueType, buf, bufLen);
     }
-}
-
-string convertByteArrayToString(uint8_t* bytes, size_t len) {
-    std::stringstream ss;
-    for (size_t i = 0; i < len; i++) {
-        ss << std::setfill('0') << std::setw(2) << std::hex << (bytes[i] & 0xff);
-    }
-    return ss.str();
-}
-
-string convertUint32ToString(uint32_t val) {
-    std::stringstream ss;
-    ss << "0x" << std::setfill('0') << std::setw(8) << std::hex << val;
-    return ss.str();
-}
-
-string convertUint64ToString(uint64_t val) {
-    std::stringstream ss;
-    ss << "0x" << std::setfill('0') << std::setw(16) << std::hex << val;
-    return ss.str();
 }
 
 #endif

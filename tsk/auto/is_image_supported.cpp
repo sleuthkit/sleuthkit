@@ -148,8 +148,10 @@ uint8_t TskIsImageSupported::handleError()
             strncpy(m_encryptionDesc, lastError->errstr, 1024);
             m_wasEncryptionFound = true;
         }
-        else if (errCode == TSK_ERR_FS_BITLOCKER_PASSWORD_ERROR) {
-            // This is the case where we tried to open Bitlocker but needed the password.
+        else if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
+            // This is the case where we're confident we have BitLocker encryption but
+            // failed to initialize it. The most common cause would be a missing
+            // or incorrect password.
             strncpy(m_encryptionDesc, "BitLocker", 1024);
             m_wasEncryptionFound = true;
             m_bitlockerError = true;

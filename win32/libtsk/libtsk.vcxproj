@@ -184,7 +184,7 @@ copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
 copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
 copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
     </PreBuildEvent>
-	<Lib>
+    <Lib>
       <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
@@ -210,7 +210,7 @@ copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
 copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
 copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
     </PreBuildEvent>
-	<Lib>
+    <Lib>
       <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
@@ -243,7 +243,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <Lib>
       <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
     </Lib>
-	<Lib>
+    <Lib>
       <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
@@ -409,6 +409,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\pool\pool_read.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerParser.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerUtils.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\DataTypes.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataEntry.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataUtils.cpp" />
@@ -536,6 +537,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\pool\tsk_pool.h" />
     <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerParser.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerUtils.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\DataTypes.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataEntry.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataUtils.h" />
