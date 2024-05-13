@@ -243,9 +243,9 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
 
         // If we've gotten here then everything is initialized and ready to go.
         writeDebug("  Initialization successful");
-        writeDebug(getDescription());
         clearIntermediateData();
         m_unlockSuccessful = true;
+        writeWarning(getDescription());
         return BITLOCKER_STATUS::SUCCESS;
     }
 
