@@ -103,13 +103,6 @@ int handleVolumeEncryption(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	int ret = 0;
 #ifdef HAVE_LIBMBEDTLS
 	ret = handleBitlocker(a_fs_info, a_pass);
-
-	// TODO TEMP
-	if (ret == 0) {
-		char buf[256];
-		getEncryptionDescription(a_fs_info, buf, 256);
-		printf("Desc: %s\n", buf);
-	}
 #endif
 
 	return ret;

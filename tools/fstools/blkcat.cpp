@@ -32,7 +32,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %" PRIttocTSK " [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-u usize] image [images] unit_addr [num]\n"),
+        ("usage: %" PRIttocTSK " [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-k password] [-u usize] image [images] unit_addr [num]\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: displays in all ASCII \n");
     tsk_fprintf(stderr, "\t-h: displays in hexdump-like fashion\n");
@@ -48,6 +48,7 @@ usage()
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
     tsk_fprintf(stderr,
         "\t-s: display basic block stats such as unit size, fragments, etc.\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -101,7 +102,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:f:hi:o:P:su:vVw"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:f:hi:k:o:P:su:vVw"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             format |= TSK_FS_BLKCAT_ASCII;
@@ -194,6 +195,9 @@ main(int argc, char **argv1)
             break;
         case _TSK_T('w'):
             format |= TSK_FS_BLKCAT_HTML;
+            break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
             break;
         case _TSK_T('?'):
         default:
