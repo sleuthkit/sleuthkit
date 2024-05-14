@@ -3,7 +3,7 @@ AM_CXXFLAGS = -Wall -Wextra -Werror
 EXTRA_DIST = .indent.pro 
 
 noinst_LTLIBRARIES = libtskbitlocker.la
-libtskbitlocker_la_SOURCES = BitlockerParser.cpp DataTypes.cpp MetadataEntry.cpp MetadataUtils.cpp MetadataValueAesCcmEncryptedKey.cpp MetadataValueKey.cpp MetadataValueOffsetAndSize.cpp MetadataValueStretchKey.cpp MetadataValueVolumeMasterKey.cpp
+libtskbitlocker_la_SOURCES = BitlockerParser.cpp DataTypes.cpp BitlockerUtils.cpp MetadataEntry.cpp MetadataUtils.cpp MetadataValueAesCcmEncryptedKey.cpp MetadataValueKey.cpp MetadataValueOffsetAndSize.cpp MetadataValueStretchKey.cpp MetadataValueVolumeMasterKey.cpp
 
 indent:
 	indent *.c *.cpp *.h *.hpp
