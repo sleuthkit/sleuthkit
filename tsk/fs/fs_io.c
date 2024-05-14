@@ -234,6 +234,7 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         return -1;
     }
 
+#ifdef HAVE_LIBMBEDTLS
     if (a_fs->encryption_type == TSK_FS_ENCRYPTION_TYPE_BITLOCKER) {
         // Bitlocker moves some sectors from the beginning of the volume
         // to another spot later in the volume in addition to encrypting them,
@@ -242,6 +243,7 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         TSK_DADDR_T offsetInVolume = (TSK_DADDR_T)(a_addr) * a_fs->block_size;
         return read_and_decrypt_bitlocker_blocks(a_fs, offsetInVolume, a_len, a_buf);
     }
+#endif
 
     ssize_t ret_len;
     if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
