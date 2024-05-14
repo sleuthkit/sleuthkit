@@ -1,3 +1,13 @@
+/*
+ ** The Sleuth Kit
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2024 Sleuth Kit Labs, LLC. All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ */
+
 #ifdef HAVE_LIBMBEDTLS
 
 #include "MetadataValueStretchKey.h"
@@ -7,7 +17,7 @@
 MetadataValueStretchKey::MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {
 
     if (bufLen < headerLen) {
-        registerError("Buffer for creating MetadataValueStretchKey was too short");
+        registerError("MetadataValueStretchKey::MetadataValueStretchKey(): Buffer for creating MetadataValueStretchKey was too short");
         memset(salt, 0, 16);
         return;
     }
@@ -18,42 +28,56 @@ MetadataValueStretchKey::MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE a
     encryptedKeyEntry = MetadataEntry::createMetadataEntry(&(buf[headerLen]), bufLen - headerLen);
 }
 
+/**
+* Parse the stetch key entry and generate the stretched key from the given password hash.
+* 
+* @param passwordHash     Previously computed hash of the password/recovery password
+* @param passwordHashLen  Length of the password hash
+* @param stretchKey       Stretched key will be stored here (should be allocated)
+* @param stretchKeyLen    Length of the stretchKey buffer (expected to be BITLOCKER_STRETCH_KEY_SHA256_LEN)
+* 
+* @return SUCCESS on success, GENERAL_ERROR if an error occurs
+*/
 BITLOCKER_STATUS MetadataValueStretchKey::parseStretchKeyUsingPassword(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* stretchKey, size_t stretchKeyLen) {
-    writeDebug("MetadataValueStretchKey::parseStretchKeyUsingPassword");
 
     // Generate stretch key
     if (stretchKeyLen != BITLOCKER_STRETCH_KEY_SHA256_LEN) {
-        registerError("parseStretchKeyUsingPassword(): Incorrect stretch key length");
+        registerError("MetadataValueStretchKey::parseStretchKeyUsingPassword: Incorrect stretch key length");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     if (BITLOCKER_STATUS::SUCCESS != generateStretchedKey(passwordHash, passwordHashLen, salt, 16, stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN)) {
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
-    writeDebug("  Stretched key: " + convertByteArrayToString(stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN));
+    writeDebug("MetadataValueStretchKey::parseStretchKeyUsingPassword Stretched key: " + convertByteArrayToString(stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN));
 
     // There's an encrypted key entry in here but it's unclear how to decrypt it. Ignore for now.
     return BITLOCKER_STATUS::SUCCESS;
 }
 
-// Generate stretch key from password hash
-// 
-// passwordHash is expected to have length BITLOCKER_STRETCH_KEY_SHA256_LEN
-// salt is expected to have length BITLOCKER_STRETCH_KEY_SALT_LEN
-// result is expected to have length BITLOCKER_STRETCH_KEY_SHA256_LEN
+/**
+* Generate stretched key from password hash
+* 
+* @param passwordHash     Previously computed hash of the password/recovery password
+* @param passwordHashLen  Length of the password hash (should be BITLOCKER_STRETCH_KEY_SHA256_LEN)
+* @param salt             The salt from the stretch key entry
+* @param saltLen          Length of the salt (should be BITLOCKER_STRETCH_KEY_SALT_LEN)
+* @param result           Stretched key will be stored here
+* @param resultLen        Length of the result buffer (should be BITLOCKER_STRETCH_KEY_SHA256_LEN)
+* 
+* @return SUCCESS on success, GENERAL_ERROR if an error occurs
+*/
 BITLOCKER_STATUS MetadataValueStretchKey::generateStretchedKey(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* salt, size_t saltLen, uint8_t* result, size_t resultLen) {
-
-    writeDebug("MetadataValueStretchKey::generateStretchedKey()");
 
     if (passwordHashLen != BITLOCKER_STRETCH_KEY_SHA256_LEN
         || saltLen != BITLOCKER_STRETCH_KEY_SALT_LEN
         || resultLen != BITLOCKER_STRETCH_KEY_SHA256_LEN) {
-        writeError("Incorrect buffer lengths given to generateStretchKey()");
+        writeError("MetadataValueStretchKey::generateStretchedKey: Incorrect buffer length(s)");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
-    writeDebug("  PasswordHash: " + convertByteArrayToString(passwordHash, passwordHashLen));
-    writeDebug("  Salt:         " + convertByteArrayToString(salt, saltLen));
+    writeDebug("MetadataValueStretchKey::generateStretchedKey: PasswordHash: " + convertByteArrayToString(passwordHash, passwordHashLen));
+    writeDebug("MetadataValueStretchKey::generateStretchedKey: Salt:         " + convertByteArrayToString(salt, saltLen));
 
     struct {
         uint8_t updatedHash[BITLOCKER_STRETCH_KEY_SHA256_LEN];
@@ -76,18 +100,6 @@ BITLOCKER_STATUS MetadataValueStretchKey::generateStretchedKey(uint8_t* password
     memset(&hashStruct, 0, structSize);
 
     return BITLOCKER_STATUS::SUCCESS;
-}
-
-void MetadataValueStretchKey::print() {
-    printf("StretchKey\n");
-    printf("Salt: ");
-    for (int i = 0; i < 16; i++) {
-        printf("%02x", salt[i]);
-    }
-    printf("\n");
-    if (encryptedKeyEntry != NULL) {
-        encryptedKeyEntry->print();
-    }
 }
 
 MetadataValueStretchKey::~MetadataValueStretchKey() {

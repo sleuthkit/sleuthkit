@@ -1,3 +1,13 @@
+/*
+ ** The Sleuth Kit
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2024 Sleuth Kit Labs, LLC. All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ */
+
 #ifdef HAVE_LIBMBEDTLS
 
 #include "MetadataEntry.h"
@@ -5,12 +15,16 @@
 
 /**
 * Create a MetadataEntry from the given buffer.
-* Will return null on failure.
+* 
+* @param buf     Data buffer
+* @param bufLen  Size of data buffer
+* 
+* @return The new MetadataEntry (must be freed by caller). Will return nullptr on failure.
 */
 MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
     if (bufLen < HEADER_SIZE) {
         writeError("MetadataEntry::createMetadataEntry: Insufficient bytes to read header");
-        return NULL;
+        return nullptr;
     }
 
     // Read the header
@@ -21,30 +35,32 @@ MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
     // Validation
     if (size < HEADER_SIZE) {
         writeError("MetadataEntry::createMetadataEntry: Size field is too small");
-        return NULL;
+        return nullptr;
     }
     if (size > bufLen) {
         writeError("MetadataEntry::createMetadataEntry: Insufficient bytes to read property value");
-        return NULL;
+        return nullptr;
     }
     if (valueType == BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN) {
         writeDebug(string("MetadataEntry::createMetadataEntry: Unhandled value type " + to_string(tsk_getu16(TSK_LIT_ENDIAN, &(buf[4])))));
-        writeDebug("   Contents: " + convertByteArrayToString(&(buf[8]), size - HEADER_SIZE));
+        writeDebug("MetadataEntry::createMetadataEntry:  Contents: " + convertByteArrayToString(&(buf[8]), size - HEADER_SIZE));
     }
 
+    // Read and create the value
     MetadataValue* metadataValue = createMetadataValue(valueType, &(buf[8]), size - HEADER_SIZE);
-    if (metadataValue == NULL) {
-        return NULL;
+    if (metadataValue == nullptr) {
+        return nullptr;
     }
     if (!metadataValue->wasLoadedSuccessfully()) {
         delete metadataValue;
-        return NULL;
+        return nullptr;
     }
 
+    // Create the entry
     MetadataEntry* entry = new MetadataEntry();
-    if (entry == NULL) {
+    if (entry == nullptr) {
         writeError("MetadataEntry::createMetadataEntry: Error allocating memory");
-        return NULL;
+        return nullptr;
     }
 
     entry->size = size;
@@ -56,31 +72,18 @@ MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
     return entry;
 }
 
-void MetadataEntry::print() {
-    printf("\nMetadataEntry\n");
-    printf("Size: 0x%" PRIx16 "\n", size);
-    printf("Type: %s\n", convertMetadataEntryTypeToString(entryType).c_str());
-    if (metadataValue != NULL) {
-        printf("Value type: ");
-        metadataValue->print();
-        printf("\n"); // TEMP change after making print better
-    }
-    else {
-        printf("Value data is null\n");
-    }
-}
-
 MetadataEntry::MetadataEntry() {
     size = 0;
     entryType = BITLOCKER_METADATA_ENTRY_TYPE::UNKNOWN;
     valueType = BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN;
     version = 0;
-    metadataValue = NULL;
+    metadataValue = nullptr;
 }
 
 MetadataEntry::~MetadataEntry() {
-    if (metadataValue != NULL) {
+    if (metadataValue != nullptr) {
         delete(metadataValue);
+        metadataValue = nullptr;
     }
 }
 

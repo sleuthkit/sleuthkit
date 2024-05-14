@@ -41,7 +41,6 @@
 *         UNSUPPORTED_KEY_PROTECTION_TYPE if the volume master key is protected by an unsupported method (we almost certainly have a BitLocker volume)    
 */
 BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset, const char* a_password) {
-    writeDebug("BitlockerParser::initialize()");
 
     // Do a quick check for the bitlocker signature before getting started
     if (!hasBitlockerSignature(a_img_info, a_volumeOffset)) {
@@ -78,7 +77,6 @@ BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t 
 *         UNSUPPORTED_KEY_PROTECTION_TYPE if the volume master key is protected by an unsupported method (we almost certainly have a BitLocker volume)
 */
 BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset) {
-    writeDebug("BitlockerParser::initialize()");
 
     // Do a quick check for the bitlocker signature before getting started
     if (!hasBitlockerSignature(a_img_info, a_volumeOffset)) {
@@ -101,12 +99,12 @@ bool BitlockerParser::hasBitlockerSignature(TSK_IMG_INFO* a_img_info, uint64_t a
     uint8_t signature[8];
     size_t bytesRead = tsk_img_read(a_img_info, a_volumeOffset + 3, (char*)signature, 8);
     if (bytesRead != 8) {
-        writeDebug("BitlockerParser::hasBitlockerSignature(): Error reading bitlocker signature from offset " + convertUint64ToString(a_volumeOffset + 3));
+        writeDebug("BitlockerParser::hasBitlockerSignature: Error reading BitLocker signature from offset " + convertUint64ToString(a_volumeOffset + 3));
         return false;
     }
 
     if (0 != memcmp(signature, m_bitlockerSignature, 8)) {
-        writeDebug("BitlockerParser::hasBitlockerSignature(): No bitlocker signature (" + convertByteArrayToString(signature, 8) + ")");
+        writeDebug("BitlockerParser::hasBitlockerSignature: No BitLocker signature (" + convertByteArrayToString(signature, 8) + ")");
         return false;
     }
     return true;
@@ -131,35 +129,34 @@ bool BitlockerParser::hasBitlockerSignature(TSK_IMG_INFO* a_img_info, uint64_t a
 * @return BITLOCKER_STATUS enum - see initialize() for description
 */
 BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset) {
-    writeDebug("BitlockerParser::initializeInternal()");
 
     m_volumeOffset = a_volumeOffset;
 
     m_img_info = a_img_info;
-    if (m_img_info == NULL) {
-        writeError("BitlockerParser::initialize(): a_img_info was NULL");
+    if (m_img_info == nullptr) {
+        writeError("BitlockerParser::initialize: a_img_info was null");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Read in the volume header
     bitlocker_volume_header_t* volHeader = (bitlocker_volume_header_t*)malloc(sizeof(bitlocker_volume_header_t));
-    if (volHeader == NULL) {
-        writeError("BitlockerParser::initialize(): Error allocating memory for volume header");
+    if (volHeader == nullptr) {
+        writeError("BitlockerParser::initialize: Error allocating memory for volume header");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     size_t bytesRead = tsk_img_read(m_img_info, m_volumeOffset, (char*)volHeader, sizeof(bitlocker_volume_header_t));
     if (bytesRead != sizeof(bitlocker_volume_header_t)) {
-        writeError("BitlockerParser::initialize(): Error reading first sector (read " + to_string(bytesRead) + " bytes");
+        writeError("BitlockerParser::initialize: Error reading first sector (read " + to_string(bytesRead) + " bytes");
         free(volHeader);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // See if it looks like Bitlocker
-    writeDebug("  Vol sig:  " + convertByteArrayToString((uint8_t*)volHeader->signature, 8));
-    writeDebug("  Expected: " + convertByteArrayToString((uint8_t*)m_bitlockerSignature, 8));
+    writeDebug("BitlockerParser::initializeInternal: Vol sig:  " + convertByteArrayToString((uint8_t*)volHeader->signature, 8));
+    writeDebug("BitlockerParser::initializeInternal: Expected: " + convertByteArrayToString((uint8_t*)m_bitlockerSignature, 8));
     if (memcmp(volHeader->signature, m_bitlockerSignature, 8)) {
-        writeDebug("BitlockerParser::initialize(): No bitlocker signature");
+        writeDebug("BitlockerParser::initialize: No bitlocker signature");
         free(volHeader);
         return BITLOCKER_STATUS::NOT_BITLOCKER;
     }
@@ -171,7 +168,7 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
     m_fveMetadataOffsets.push_back(tsk_getu64(TSK_LIT_ENDIAN, volHeader->fveMetadataOffset3) + m_volumeOffset);
     m_sectorSize = tsk_getu16(TSK_LIT_ENDIAN, volHeader->bytesPerSector);
     if (m_sectorSize == 0) {
-        writeError("BitlockerParser::initialize(): Sector size is zero");
+        writeError("BitlockerParser::initialize: Sector size is zero");
         free(volHeader);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -209,9 +206,9 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
             continue;
         }
 
-        writeDebug("  Top-level metadata entries:");
+        writeDebug("BitlockerParser::initializeInternal: Top-level metadata entries:");
         for (auto it = m_metadataEntries.begin(); it != m_metadataEntries.end(); ++it) {
-            writeDebug("    " + convertMetadataEntryTypeToString((*it)->getEntryType()) + " - " 
+            writeDebug("BitlockerParser::initializeInternal:   " + convertMetadataEntryTypeToString((*it)->getEntryType()) + " - " 
                 + convertMetadataValueTypeToString((*it)->getValueType()));
         }
 
@@ -242,10 +239,10 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
         }
 
         // If we've gotten here then everything is initialized and ready to go.
-        writeDebug("  Initialization successful");
+        writeDebug("BitlockerParser::initializeInternal: Initialization successful");
         clearIntermediateData();
         m_unlockSuccessful = true;
-        writeWarning(getDescription());
+        writeDebug("BitlockerParser::initializeInternal: " + getDescription());
         return BITLOCKER_STATUS::SUCCESS;
     }
 
@@ -273,29 +270,28 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
 * @return SUCCESS if we read the header and the signature is correct, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::readFveMetadataBlockHeader(uint64_t& currentOffset) {
-    writeDebug("BitlockerParser::readFveMetadataBlockHeader()");
-    writeDebug("  Reading metadata block header at offset " + convertUint64ToString(currentOffset));
+    writeDebug("BitlockerParser::readFveMetadataBlockHeader: Reading metadata block header at offset " + convertUint64ToString(currentOffset));
 
     // Read in the block header
     bitlocker_fve_metadata_block_header_v2_t* blockHeader = (bitlocker_fve_metadata_block_header_v2_t*)malloc(sizeof(bitlocker_fve_metadata_block_header_v2_t));
-    if (blockHeader == NULL) {
-        writeError("BitlockerParser::readFveMetadataBlockHeader(): Error allocating memory for block header");
+    if (blockHeader == nullptr) {
+        writeError("BitlockerParser::readFveMetadataBlockHeader: Error allocating memory for block header");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     size_t bytesRead = tsk_img_read(m_img_info, currentOffset, (char*)blockHeader, sizeof(bitlocker_fve_metadata_block_header_v2_t));
     if (bytesRead != sizeof(bitlocker_fve_metadata_block_header_v2_t)) {
-        writeError("BitlockerParser::readFveMetadataBlockHeader(): Error reading block header (read " + to_string(bytesRead) + " bytes");
+        writeError("BitlockerParser::readFveMetadataBlockHeader: Error reading block header (read " + to_string(bytesRead) + " bytes");
         free(blockHeader);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
     currentOffset += bytesRead;
 
     // Check the signature
-    writeDebug("  Block sig: " + convertByteArrayToString((uint8_t*)blockHeader->signature, 8));
-    writeDebug("  Expected:  " + convertByteArrayToString((uint8_t*)m_bitlockerSignature, 8));
+    writeDebug("BitlockerParser::readFveMetadataBlockHeader: Block sig: " + convertByteArrayToString((uint8_t*)blockHeader->signature, 8));
+    writeDebug("BitlockerParser::readFveMetadataBlockHeader: Expected:  " + convertByteArrayToString((uint8_t*)m_bitlockerSignature, 8));
     if (memcmp(blockHeader->signature, m_bitlockerSignature, 8)) {
-        writeError("BitlockerParser::readFveMetadataBlockHeader(): Incorrect signature in block header");
+        writeError("BitlockerParser::readFveMetadataBlockHeader: Incorrect signature in block header");
         free(blockHeader);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -314,19 +310,18 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataBlockHeader(uint64_t& currentOf
 * @return SUCCESS if we read the header and found a valid encryption type and reasonable metadata entry size, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize) {
-    writeDebug("BitlockerParser::readFveMetadataHeader()");
-    writeDebug("  Reading metadata header at offset " + convertUint64ToString(currentOffset));
+    writeDebug("BitlockerParser::readFveMetadataHeader: Reading metadata header at offset " + convertUint64ToString(currentOffset));
 
     // Read in the block header
     bitlocker_fve_metadata_header_t* header = (bitlocker_fve_metadata_header_t*)malloc(sizeof(bitlocker_fve_metadata_header_t));
-    if (header == NULL) {
-        writeError("BitlockerParser::readFveMetadataHeader(): Error allocating memory for header");
+    if (header == nullptr) {
+        writeError("BitlockerParser::readFveMetadataHeader: Error allocating memory for header");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     size_t bytesRead = tsk_img_read(m_img_info, currentOffset, (char*)header, sizeof(bitlocker_fve_metadata_header_t));
     if (bytesRead != sizeof(bitlocker_fve_metadata_header_t)) {
-        writeError("BitlockerParser::readFveMetadataHeader(): Error reading header (read " + to_string(bytesRead) + " bytes");
+        writeError("BitlockerParser::readFveMetadataHeader: Error reading header (read " + to_string(bytesRead) + " bytes");
         free(header);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -334,10 +329,10 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset,
 
     // Get the size of the metadata entries. The header->size field contains the length of the header plus the entries.
     uint32_t size = tsk_getu32(TSK_LIT_ENDIAN, header->size);
-    writeDebug("  Metadata size: " + convertUint32ToString(size));
-    writeDebug("  Header size:   " + convertUint32ToString(sizeof(bitlocker_fve_metadata_header_t)));
+    writeDebug("BitlockerParser::readFveMetadataHeader: Metadata size: " + convertUint32ToString(size));
+    writeDebug("BitlockerParser::readFveMetadataHeader: Header size:   " + convertUint32ToString(sizeof(bitlocker_fve_metadata_header_t)));
     if (size <= sizeof(bitlocker_fve_metadata_header_t)) {
-        writeError("BitlockerParser::readFveMetadataHeader(): Metadata entries size is too small: " + convertUint32ToString(size));
+        writeError("BitlockerParser::readFveMetadataHeader: Metadata entries size is too small: " + convertUint32ToString(size));
         free(header);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -345,26 +340,25 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset,
 
     // Quick sanity check here - the metadata entries shouldn't be too large
     if (metadataEntriesSize > 0x80000) {
-        writeError("BitlockerParser::readFveMetadataHeader(): Metadata entries size appears invalid: " + convertUint32ToString(metadataEntriesSize));
+        writeError("BitlockerParser::readFveMetadataHeader: Metadata entries size appears invalid: " + convertUint32ToString(metadataEntriesSize));
         free(header);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
-    writeDebug("  Metadata entries size: " + convertUint32ToString(metadataEntriesSize));
+    writeDebug("BitlockerParser::readFveMetadataHeader: Metadata entries size: " + convertUint32ToString(metadataEntriesSize));
 
     // Get the encryption method
     uint32_t encVal = tsk_getu32(TSK_LIT_ENDIAN, header->encryptionMethod);
     m_encryptionType = getEncryptionTypeEnum(encVal & 0xffff);
     if (m_encryptionType == BITLOCKER_ENCRYPTION_TYPE::UNKNOWN) {
-        writeError("BitlockerParser::readFveMetadataHeader(): Unhandled encryption type: " + convertUint32ToString(encVal));
+        writeError("BitlockerParser::readFveMetadataHeader: Unhandled encryption type: " + convertUint32ToString(encVal));
         free(header);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
-    writeDebug("  Encryption type: " + convertEncryptionTypeToString(m_encryptionType) + " (" + convertUint32ToString(encVal) + ")");
+    writeDebug("BitlockerParser::readFveMetadataHeader: Encryption type: " + convertEncryptionTypeToString(m_encryptionType) + " (" + convertUint32ToString(encVal) + ")");
 
     free(header);
     return BITLOCKER_STATUS::SUCCESS;
 }
-
 
 /**
 * Read and store all the metadata entries.
@@ -375,20 +369,19 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset,
 * @return SUCCESS if all entries were successfully parsed, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize) {
-    writeDebug("BitlockerParser::readFveMetadataBlockHeader()");
-    writeDebug("  Starting offset: " + convertUint64ToString(currentOffset));
-    writeDebug("  Size: " + convertUint32ToString(metadataEntriesSize));
+    writeDebug("BitlockerParser::readFveMetadataBlockHeader: Starting offset: " + convertUint64ToString(currentOffset));
+    writeDebug("BitlockerParser::readFveMetadataBlockHeader: Size: " + convertUint32ToString(metadataEntriesSize));
 
     // Read in the raw data for all entries
     uint8_t* entryBuffer = (uint8_t*)malloc(metadataEntriesSize);
-    if (entryBuffer == NULL) {
-        writeError("BitlockerParser::readFveMetadataEntries(): Error allocating memory for entries");
+    if (entryBuffer == nullptr) {
+        writeError("BitlockerParser::readFveMetadataEntries: Error allocating memory for entries");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     size_t bytesRead = tsk_img_read(m_img_info, currentOffset, (char*)entryBuffer, metadataEntriesSize);
     if (bytesRead != metadataEntriesSize) {
-        writeError("BitlockerParser::readFveMetadataBlockHeader(): Error reading metadata entries (read " + to_string(bytesRead) + " bytes");
+        writeError("BitlockerParser::readFveMetadataBlockHeader: Error reading metadata entries (read " + to_string(bytesRead) + " bytes");
         free(entryBuffer);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -419,26 +412,25 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataEntries(uint64_t currentOffset,
 *         UNSUPPORTED_KEY_PROTECTION_TYPE if we found a VMK entry with a key protected by an unsupported method
 */
 BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
-    writeDebug("BitlockerParser::setVolumeMasterKey()");
-    m_decryptedVmkEntry = NULL;
+    m_decryptedVmkEntry = nullptr;
 
     // Get VMK entries
     list<MetadataEntry*> vmkEntries;
     getMetadataEntries(m_metadataEntries, BITLOCKER_METADATA_ENTRY_TYPE::VOLUME_MASTER_KEY, BITLOCKER_METADATA_VALUE_TYPE::VOLUME_MASTER_KEY, vmkEntries);
     if (vmkEntries.empty()) {
-        writeError("BitlockerParser::setVolumeMasterKey(): No Volume Master Key entries found");
+        writeError("BitlockerParser::setVolumeMasterKey: No Volume Master Key entries found");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Attempt to parse each of the VMK entries, keeping track of some specific errors if they occur.
     BITLOCKER_STATUS ret = BITLOCKER_STATUS::GENERAL_ERROR;
-    MetadataEntry* vmk = NULL;
+    MetadataEntry* vmk = nullptr;
     bool possibleMissingPassword = false;
     bool possibleWrongPassword = false;
     bool possibleUnsupportedProtectionType = false;
     for (auto it = vmkEntries.begin(); it != vmkEntries.end(); ++it) {
         ret = parseVMKEntry(*it, &vmk);
-        if (ret == BITLOCKER_STATUS::SUCCESS && vmk != NULL) {
+        if (ret == BITLOCKER_STATUS::SUCCESS && vmk != nullptr) {
             // Successfully parsed one of the entries - no need to try another
             break;
         }
@@ -457,8 +449,8 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
     // Note that the order is important here - if we have a normal password that failed to decrypt the
     // password protected VMK entry, we don't want to report that we didn't have a recovery password to
     // try in the recovery password protected VMK.
-    if (ret != BITLOCKER_STATUS::SUCCESS || vmk == NULL) {
-        writeError("BitlockerParser::setVolumeMasterKey(): Failed to extract Volume Master Key");
+    if (ret != BITLOCKER_STATUS::SUCCESS || vmk == nullptr) {
+        writeError("BitlockerParser::setVolumeMasterKey: Failed to extract Volume Master Key");
         if (possibleWrongPassword) {
             return BITLOCKER_STATUS::WRONG_PASSWORD;
         }
@@ -472,7 +464,7 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
     }
 
     // We successfully decrypted one of the VMK entries
-    writeDebug("BitlockerParser::setVolumeMasterKey(): Extracted Volume Master Key");
+    writeDebug("BitlockerParser::setVolumeMasterKey: Extracted Volume Master Key");
     m_decryptedVmkEntry = vmk;
 
     return BITLOCKER_STATUS::SUCCESS;
@@ -491,38 +483,37 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
 *         UNSUPPORTED_KEY_PROTECTION_TYPE if the key is protected by an unsupported method (we currently support password and recovery password - clear key TODO)
 */
 BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEntry** vmkEntry) {
-    writeDebug("BitlockerParser::parseVMKEntry()");
 
     // Sanity checking - we already filtered entries based type and value type
-    if (vmkEntry == NULL) {
-        writeError("BitlockerParser::parseVMKEntry(): Null vmkEntry parameter");
+    if (vmkEntry == nullptr) {
+        writeError("BitlockerParser::parseVMKEntry: Null vmkEntry parameter");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     if (entry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::VOLUME_MASTER_KEY) {
-        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key did not contain value of type VOLUME_MASTER_KEY");
+        writeError("BitlockerParser::parseVMKEntry: Volume Master Key did not contain value of type VOLUME_MASTER_KEY");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValue* value = entry->getValue();
-    if (value == NULL) {
-        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key value was null");
+    if (value == nullptr) {
+        writeError("BitlockerParser::parseVMKEntry: Volume Master Key value was null");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
     
     MetadataValueVolumeMasterKey* vmkValue = dynamic_cast<MetadataValueVolumeMasterKey*>(value);
-    if (vmkValue == NULL) {
-        writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueVolumeMasterKey");
+    if (vmkValue == nullptr) {
+        writeError("BitlockerParser::parseVMKEntry: Error casting MetadataValueVolumeMasterKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // VMK entries contain a list of properties
     for (auto it = vmkValue->getProperties().begin(); it != vmkValue->getProperties().end(); ++it) {
-        writeDebug("  Have property with type " + convertMetadataValueTypeToString((*it)->getValueType()));
+        writeDebug("BitlockerParser::parseVMKEntry: Have property with type " + convertMetadataValueTypeToString((*it)->getValueType()));
     }
 
     BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
-    writeDebug("  VMK protected with " + convertKeyProtectionTypeToString(protectionType));
+    writeDebug("BitlockerParser::parseVMKEntry: VMK protected with " + convertKeyProtectionTypeToString(protectionType));
 
     // Try to decrypt the VMK based on the protection type
     if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD
@@ -534,8 +525,7 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
         return parseClearKeyProtectedVMK(vmkValue, vmkEntry);
     }
     else {
-        // TODO - support more protection types
-        writeError("BitlockerParser::parseVMKEntry(): Unsupported protection type " + convertKeyProtectionTypeToString(protectionType));
+        writeError("BitlockerParser::parseVMKEntry: Unsupported protection type " + convertKeyProtectionTypeToString(protectionType));
         m_unsupportedProtectionTypesFound.insert(protectionType);
         return BITLOCKER_STATUS::UNSUPPORTED_KEY_PROTECTION_TYPE;
     }
@@ -553,17 +543,17 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
 *         NEEDS_PASSWORD if the VMK is protected by a password/recovery password but we do not have a password
 */
 BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry) {
-    writeDebug("BitlockerParser::parsePasswordProtectedVMK()");
+
     BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
 
     // If we don't have the right type of password we can't decrypt this
     if (!m_havePassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
-        writeError("BitlockerParser::parseVMKEntry(): Can't process password-protected VMK since we have no password");
+        writeError("BitlockerParser::parseVMKEntry: Can't process password-protected VMK since we have no password");
         return BITLOCKER_STATUS::NEED_PASSWORD;
     }
 
     if (!m_haveRecoveryPassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
-        writeError("BitlockerParser::parseVMKEntry(): Can't process recovery password-protected VMK since we have no recovery password");
+        writeError("BitlockerParser::parseVMKEntry: Can't process recovery password-protected VMK since we have no recovery password");
         return BITLOCKER_STATUS::NEED_PASSWORD;
     }
 
@@ -571,13 +561,13 @@ BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeM
     list<MetadataValue*> stretchKeys;
     getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::STRETCH_KEY, stretchKeys);
     if (stretchKeys.empty()) {
-        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no stretch key entry");
+        writeError("BitlockerParser::parseVMKEntry: Volume Master Key had no stretch key entry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValueStretchKey* stretchKey = dynamic_cast<MetadataValueStretchKey*>(stretchKeys.front());
-    if (stretchKey == NULL) {
-        writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
+    if (stretchKey == nullptr) {
+        writeError("BitlockerParser::parseVMKEntry: Error casting MetadataValueStretchKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -587,11 +577,11 @@ BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeM
     if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
         ret = stretchKey->parseStretchKeyUsingPassword((uint8_t*)m_passwordHash, SHA256_DIGEST_LENGTH, stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN);
     }
-    else if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
+    else {
         ret = stretchKey->parseStretchKeyUsingPassword((uint8_t*)m_recoveryPasswordHash, SHA256_DIGEST_LENGTH, stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN);
     }
     if (ret != BITLOCKER_STATUS::SUCCESS) {
-        writeError("BitlockerParser::parseVMKEntry(): Error creating intermediate stretched key");
+        writeError("BitlockerParser::parseVMKEntry: Error creating intermediate stretched key");
         memset(stretchedKey, 0, BITLOCKER_STRETCH_KEY_SHA256_LEN);
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -600,20 +590,20 @@ BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeM
     list<MetadataValue*> encryptedKeys;
     getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY, encryptedKeys);
     if (encryptedKeys.empty()) {
-        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no encrypted key entry");
+        writeError("BitlockerParser::parseVMKEntry: Volume Master Key had no encrypted key entry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValueAesCcmEncryptedKey* aesCcmKey = dynamic_cast<MetadataValueAesCcmEncryptedKey*>(encryptedKeys.front());
-    if (aesCcmKey == NULL) {
-        writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
+    if (aesCcmKey == nullptr) {
+        writeError("BitlockerParser::parseVMKEntry: Error casting MetadataValueStretchKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Decrypt it using the stretched key, which should produce a MetadataEntry of type KEY.
     // This includes testing a 16-byte message authentication code to verify that
     // the decrypted key is correct.
-    MetadataEntry* keyEntry = NULL;
+    MetadataEntry* keyEntry = nullptr;
     ret = aesCcmKey->decrypt(stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN, &keyEntry);
     if (ret != BITLOCKER_STATUS::SUCCESS) {
         return ret;
@@ -621,7 +611,7 @@ BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeM
 
     // Make sure the value is of type Key
     if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
-        writeError("BitlockerParser::parseVMKEntry(): keyEntry does not have value of type KEY ("
+        writeError("BitlockerParser::parseVMKEntry: keyEntry does not have value of type KEY ("
             + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -643,20 +633,20 @@ BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeM
 *         GENERAL_ERROR if an unspecified error occurs
 */
 BITLOCKER_STATUS BitlockerParser::parseClearKeyProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry) {
-    writeDebug("BitlockerParser::parseClearKeyProtectedVMK()");
+
     BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
 
     // The expectation is that we'll have a key entry
     list<MetadataValue*> keys;
     getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::KEY, keys);
     if (keys.empty()) {
-        writeError("BitlockerParser::parseClearKeyProtectedVMK(): Volume Master Key had no key entry");
+        writeError("BitlockerParser::parseClearKeyProtectedVMK: Volume Master Key had no key entry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValueKey* key = dynamic_cast<MetadataValueKey*>(keys.front());
-    if (key == NULL) {
-        writeError("BitlockerParser::parseClearKeyProtectedVMK(): Error casting MetadataValueKey");
+    if (key == nullptr) {
+        writeError("BitlockerParser::parseClearKeyProtectedVMK: Error casting MetadataValueKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -664,33 +654,33 @@ BITLOCKER_STATUS BitlockerParser::parseClearKeyProtectedVMK(MetadataValueVolumeM
     list<MetadataValue*> encryptedKeys;
     getMetadataValues(vmkValue->getProperties(), BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY, encryptedKeys);
     if (encryptedKeys.empty()) {
-        writeError("BitlockerParser::parseVMKEntry(): Volume Master Key had no encrypted key entry");
+        writeError("BitlockerParser::parseVMKEntry: Volume Master Key had no encrypted key entry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValueAesCcmEncryptedKey* aesCcmKey = dynamic_cast<MetadataValueAesCcmEncryptedKey*>(encryptedKeys.front());
-    if (aesCcmKey == NULL) {
-        writeError("BitlockerParser::parseVMKEntry(): Error casting MetadataValueStretchKey");
+    if (aesCcmKey == nullptr) {
+        writeError("BitlockerParser::parseVMKEntry: Error casting MetadataValueStretchKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Decrypt it using the key, which should produce a MetadataEntry of type KEY.
     // This includes testing a 16-byte message authentication code to verify that
     // the decrypted key is correct.
-    MetadataEntry* keyEntry = NULL;
+    MetadataEntry* keyEntry = nullptr;
     BITLOCKER_STATUS ret = aesCcmKey->decrypt(key->getKeyBytes(), key->getKeyLen(), &keyEntry);
     if (ret != BITLOCKER_STATUS::SUCCESS) {
         // If something has gone wrong we could potentially get a WRONG_PASSWORD return value here.
         // But this is more of an internal error - either we're processing something wrong or the
         // recorded clear key was incorrect/corrupted. We don't want to tell the user that the
         // password they probably didn't even enter is incorrect.
-        writeError("BitlockerParser::parseVMKEntry(): Failed to decrypt VMK using the supplied clear key");
+        writeError("BitlockerParser::parseVMKEntry: Failed to decrypt VMK using the supplied clear key");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Make sure the value is of type Key
     if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
-        writeError("BitlockerParser::parseVMKEntry(): keyEntry does not have value of type KEY ("
+        writeError("BitlockerParser::parseVMKEntry: keyEntry does not have value of type KEY ("
             + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -709,11 +699,10 @@ BITLOCKER_STATUS BitlockerParser::parseClearKeyProtectedVMK(MetadataValueVolumeM
 * @return SUCCESS on success, GENERAL_ERROR otherwise.
 */
 BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
-    writeDebug("BitlockerParser::getFullVolumeEncryptionKey()");
 
     // Sanity check
-    if (m_decryptedVmkEntry == NULL) {
-        writeError("BitlockerParser::getFullVolumeEncryptionKey(): VMK is not set");
+    if (m_decryptedVmkEntry == nullptr) {
+        writeError("BitlockerParser::getFullVolumeEncryptionKey: VMK is not set");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -722,37 +711,37 @@ BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
     getMetadataEntries(m_metadataEntries, BITLOCKER_METADATA_ENTRY_TYPE::FULL_VOLUME_ENCRYPTION_KEY, 
         BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY, fvekEntries);
     if (fvekEntries.empty()) {
-        writeError("BitlockerParser::getFullVolumeEncryptionKey(): Could not find FVEK metatdata entry");
+        writeError("BitlockerParser::getFullVolumeEncryptionKey: Could not find FVEK metatdata entry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValueAesCcmEncryptedKey* aesCcmKey = dynamic_cast<MetadataValueAesCcmEncryptedKey*>((fvekEntries.front())->getValue());
-    if (aesCcmKey == NULL) {
-        writeError("BitlockerParser::getFullVolumeEncryptionKey(): Error casting MetadataValueAesCcmEncryptedKey");
+    if (aesCcmKey == nullptr) {
+        writeError("BitlockerParser::getFullVolumeEncryptionKey: Error casting MetadataValueAesCcmEncryptedKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Decrypt it using the VMK
     // First get the decrypted key out of the decrypted VMK entry
-    uint8_t* keyBytes = NULL;
+    uint8_t* keyBytes = nullptr;
     size_t keyLen = 0;
     if (BITLOCKER_STATUS::SUCCESS != getKeyData(m_decryptedVmkEntry, &keyBytes, keyLen)) {
-        writeError("BitlockerParser::getFullVolumeEncryptionKey(): Error loading keys");
+        writeError("BitlockerParser::getFullVolumeEncryptionKey: Error loading keys");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Then use that key to decrypt the FVEK entry, which should produce a MetadataEntry of type KEY.
     // This includes testing a 16-byte message authentication code to verify that
     // the decrypted key is correct.
-    MetadataEntry* keyEntry = NULL;
+    MetadataEntry* keyEntry = nullptr;
     BITLOCKER_STATUS ret = aesCcmKey->decrypt(keyBytes, keyLen, &keyEntry);
-    if (ret != BITLOCKER_STATUS::SUCCESS || keyEntry == NULL) {
+    if (ret != BITLOCKER_STATUS::SUCCESS || keyEntry == nullptr) {
         return ret;
     }
 
     // Make sure the value is of type Key
     if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
-        writeError("BitlockerParser::parseVMKEntry(): keyEntry does not have value of type KEY ("
+        writeError("BitlockerParser::parseVMKEntry: keyEntry does not have value of type KEY ("
             + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -771,17 +760,16 @@ BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
 * @return SUCCESS on success, GENERAL_ERROR otherwise.
 */
 BITLOCKER_STATUS BitlockerParser::getKeyData(MetadataEntry* entry, uint8_t** keyDataPtr, size_t& keyLen) {
-    writeDebug("BitlockerParser::getKeyData()");
 
     // Sanity check
     if (entry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
-        writeError("BitlockerParser::getKeyData(): Incorrect entry type (" + convertMetadataValueTypeToString(entry->getValueType()) + ")");
+        writeError("BitlockerParser::getKeyData: Incorrect entry type (" + convertMetadataValueTypeToString(entry->getValueType()) + ")");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValueKey* keyValue = dynamic_cast<MetadataValueKey*>(entry->getValue());
-    if (keyValue == NULL) {
-        writeError("BitlockerParser::getKeyData(): Error casting to MetadataValueKey");
+    if (keyValue == nullptr) {
+        writeError("BitlockerParser::getKeyData: Error casting to MetadataValueKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -789,8 +777,8 @@ BITLOCKER_STATUS BitlockerParser::getKeyData(MetadataEntry* entry, uint8_t** key
     *keyDataPtr = keyValue->getKeyBytes();
     keyLen = keyValue->getKeyLen();
 
-    if (keyDataPtr == NULL || keyLen == 0) {
-        writeError("BitlockerParser::getKeyData(): Key data is invalid");
+    if (keyDataPtr == nullptr || keyLen == 0) {
+        writeError("BitlockerParser::getKeyData: Key data is invalid");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -805,11 +793,10 @@ BITLOCKER_STATUS BitlockerParser::getKeyData(MetadataEntry* entry, uint8_t** key
 * @return SUCCESS on success, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
-    writeDebug("BitlockerParser::setKeys");
 
     MetadataValueKey* fvek = dynamic_cast<MetadataValueKey*>(fvekEntry->getValue());
-    if (fvek == NULL) {
-        writeError("BitlockerParser::setKeys(): Error casting MetadataValueKey");
+    if (fvek == nullptr) {
+        writeError("BitlockerParser::setKeys: Error casting MetadataValueKey");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -841,8 +828,6 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
 * @return SUCCESS on success, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type) {
-
-    writeDebug("BitlockerParser::setKeys " + convertEncryptionTypeToString(type));
 
     // Initialize the AES contexts
     size_t keyBits = fvek->getKeyLen() * 8;
@@ -959,20 +944,19 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
 * @return SUCCESS on success, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::parseVolumeHeader() {
-    writeDebug("BitlockerParser::parseVolumeHeader()");
 
     // Find the volume header entry which should contain an offset and size value
     list<MetadataEntry*> volumeHeaderEntries;
     getMetadataEntries(m_metadataEntries, BITLOCKER_METADATA_ENTRY_TYPE::VOLUME_HEADER_BLOCK,
         BITLOCKER_METADATA_VALUE_TYPE::OFFSET_AND_SIZE, volumeHeaderEntries);
     if (volumeHeaderEntries.empty()) {
-        writeError("BitlockerParser::parseVolumeHeader(): Could not find volume header metatdata entry");
+        writeError("BitlockerParser::parseVolumeHeader: Could not find volume header metatdata entry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     MetadataValueOffsetAndSize* offsetAndSizeValue = dynamic_cast<MetadataValueOffsetAndSize*>((volumeHeaderEntries.front())->getValue());
-    if (offsetAndSizeValue == NULL) {
-        writeError("BitlockerParser::parseVolumeHeader(): Error casting MetadataValueOffsetAndSize");
+    if (offsetAndSizeValue == nullptr) {
+        writeError("BitlockerParser::parseVolumeHeader: Error casting MetadataValueOffsetAndSize");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -980,8 +964,8 @@ BITLOCKER_STATUS BitlockerParser::parseVolumeHeader() {
     // the beginning of the volume.
     m_volumeHeaderOffset = offsetAndSizeValue->getOffset();
     m_volumeHeaderSize = offsetAndSizeValue->getSize();
-    writeDebug("  Volume header offset: " + convertUint64ToString(m_volumeHeaderOffset));
-    writeDebug("  Volume header size  : " + convertUint64ToString(m_volumeHeaderSize));
+    writeDebug("BitlockerParser::parseVolumeHeader: Volume header offset: " + convertUint64ToString(m_volumeHeaderOffset));
+    writeDebug("BitlockerParser::parseVolumeHeader: Volume header size  : " + convertUint64ToString(m_volumeHeaderSize));
     return BITLOCKER_STATUS::SUCCESS;
 }
 
@@ -1006,9 +990,8 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
     // Create the password hash first
     BITLOCKER_STATUS ret;
     try {
-        writeDebug("BitlockerParser::handlePassword()");
-        writeDebug("  Password: " + password);
-        writeDebug("  Processing as a normal password");
+        writeDebug("BitlockerParser::handlePassword: Password: " + password);
+        writeDebug("BitlockerParser::handlePassword: Processing as a normal password");
 
         // Convert to UTF16
         string utf8password(password);
@@ -1016,7 +999,7 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
         utf16password = converter.from_bytes(utf8password);
 
-        writeDebug("  Bytes to hash: " + convertByteArrayToString((uint8_t*)utf16password.c_str(), utf16password.length() * 2));
+        writeDebug("BitlockerParser::handlePassword: Bytes to hash: " + convertByteArrayToString((uint8_t*)utf16password.c_str(), utf16password.length() * 2));
 
         // Hash twice
         uint8_t hashOutput[SHA256_DIGEST_LENGTH];
@@ -1024,13 +1007,13 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
         mbedtls_sha256(hashOutput, SHA256_DIGEST_LENGTH, m_passwordHash, 0);
         m_havePassword = true;
 
-        writeDebug("  Password hash: " + convertByteArrayToString(m_passwordHash, SHA256_DIGEST_LENGTH));
+        writeDebug("BitlockerParser::handlePassword: Password hash: " + convertByteArrayToString(m_passwordHash, SHA256_DIGEST_LENGTH));
 
         // Whether the recovery password parsing works or not, we'll return SUCCESS because we have a password ready to go
         ret = BITLOCKER_STATUS::SUCCESS;
     }
     catch (...) {
-        writeError("BitlockerParser::handlePassword(): Error converting password to UTF16");
+        writeError("BitlockerParser::handlePassword: Error converting password to UTF16");
         // We'll return this error if we fail to parse it as a recovery password
         ret = BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -1042,42 +1025,42 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
     std::regex recoveryPasswordPattern("^(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})$");
     std::match_results<std::string::const_iterator> match;
     if (!std::regex_search(password, match, recoveryPasswordPattern) || (match.size() != 9)) {
-        writeDebug("  Password is not a recovery password");
+        writeDebug("BitlockerParser::handlePassword: Password is not a recovery password");
         return ret;
     }
 
     // For each segment, convert and divide by 11 to produce two bytes of the key
-    writeDebug("  Password may be a recovery password");
+    writeDebug("BitlockerParser::handlePassword: Password may be a recovery password");
     uint8_t recoveryPasswordKey[16];
     for (int i = 0; i < 8; i++) {
         try {
             unsigned long val = stoul(match[i + 1]);
             if (val % 11 != 0) {
-                writeDebug("  Value is not a multiple of 11 (" + to_string(val) + ")");
+                writeDebug("BitlockerParser::handlePassword: Value is not a multiple of 11 (" + to_string(val) + ")");
             }
 
             val = val / 11;
             if (val > 0xffff) {
-                writeDebug("  Value too large to be part of valid recovery password (" + to_string(val) + ")");
+                writeDebug("BitlockerParser::handlePassword: Value too large to be part of valid recovery password (" + to_string(val) + ")");
                 return ret;
             }
 
             ((uint16_t*)recoveryPasswordKey)[i] = (uint16_t)val;
         }
         catch (...) {
-            writeDebug("BitlockerParser::handlePassword(): Error converting recovery password value to integer");
+            writeDebug("BitlockerParser::handlePassword: Error converting recovery password value to integer");
             memset(recoveryPasswordKey, 0, 16);
             return ret;
         }
     }
 
-    writeDebug("  Key from recovery password: " + convertByteArrayToString(recoveryPasswordKey, 16));
+    writeDebug("BitlockerParser::handlePassword: Key from recovery password: " + convertByteArrayToString(recoveryPasswordKey, 16));
 
     // Only hash this once
     mbedtls_sha256(recoveryPasswordKey, 16, m_recoveryPasswordHash, 0);
     m_haveRecoveryPassword = true;
 
-    writeDebug("  Recovery password hash: " + convertByteArrayToString(m_recoveryPasswordHash, SHA256_DIGEST_LENGTH));
+    writeDebug("BitlockerParser::handlePassword: Recovery password hash: " + convertByteArrayToString(m_recoveryPasswordHash, SHA256_DIGEST_LENGTH));
 
     return BITLOCKER_STATUS::SUCCESS;
 }
@@ -1093,19 +1076,19 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
 * @return Number of bytes read or -1 on error
 */
 ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_t len, uint8_t* data) {
-    writeDebug("BitlockerParser::readAndDecryptSectors - starting offset: " + convertUint64ToString(offsetInVolume));
+    writeDebug("BitlockerParser::readAndDecryptSectors: Starting offset: " + convertUint64ToString(offsetInVolume));
     if (!initializationSuccessful()) {
-        writeError("BitlockerParser::readAndDecryptSectors(): BitlockerParser has not been initialized");
+        writeError("BitlockerParser::readAndDecryptSectors: BitlockerParser has not been initialized");
         return -1;
     }
 
     if (offsetInVolume % m_sectorSize != 0) {
-        writeError("BitlockerParser::readAndDecryptSectors(): Starting offset is not sector-aligned (offset: " + convertUint64ToString(offsetInVolume) + ")");
+        writeError("BitlockerParser::readAndDecryptSectors: Starting offset is not sector-aligned (offset: " + convertUint64ToString(offsetInVolume) + ")");
         return -1;
     }
 
     if (len % m_sectorSize != 0) {
-        writeError("BitlockerParser::readAndDecryptSectors(): Length of bytes to read is not a multiple of the sector size (length: " + convertUint32ToString(len) + ")");
+        writeError("BitlockerParser::readAndDecryptSectors: Length of bytes to read is not a multiple of the sector size (length: " + convertUint32ToString(len) + ")");
         return -1;
     }
 
@@ -1127,7 +1110,7 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
         nRelocatedBytesToRead = len;
     }
     if (nRelocatedBytesToRead <= 0) {
-        writeError("BitlockerParser::readAndDecryptSectors(): Error reading from volume header");
+        writeError("BitlockerParser::readAndDecryptSectors: Error reading from volume header");
         return -1;
     }
 
@@ -1182,16 +1165,15 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
 * @return 0 on success, -1 on error.
 */
 int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
-    writeDebug("BitlockerParser::decryptSector");
+
     if (!initializationSuccessful()) {
-        writeError("BitlockerParser::decryptSector(): BitlockerParser has not been initialized");
+        writeError("BitlockerParser::decryptSector: BitlockerParser has not been initialized");
         return -1;
     }
 
-    writeDebug("  Encryption type " + convertEncryptionTypeToString(m_encryptionType));
     if (isAESCBC(m_encryptionType)) {
         if (usesDiffuser(m_encryptionType)) {
-            writeError("BitlockerParser::decryptSector(): Encryption method not currently supported - " + convertEncryptionTypeToString(m_encryptionType));
+            writeError("BitlockerParser::decryptSector: Encryption method not currently supported - " + convertEncryptionTypeToString(m_encryptionType));
             return -1; 
         }
         else {
@@ -1202,7 +1184,7 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
         return decryptSectorAESXTS(volumeOffset, data);
     }
     else {
-        writeError("BitlockerParser::decryptSector(): Encryption method not currently supported - " + convertEncryptionTypeToString(m_encryptionType));
+        writeError("BitlockerParser::decryptSector: Encryption method not currently supported - " + convertEncryptionTypeToString(m_encryptionType));
         return -1;
     }
 }
@@ -1216,12 +1198,11 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
 * @return 0 on success, -1 on error.
 */
 int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data) {
-    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser");
 
     // Make temporary buffer to copy encrypted data to
     uint8_t* encryptedData = (uint8_t*)malloc(m_sectorSize);
-    if (encryptedData == NULL) {
-        writeError("BitlockerParser::decryptSectorAESCBC_noDiffuser(): Error allocating encryptedData");
+    if (encryptedData == nullptr) {
+        writeError("BitlockerParser::decryptSectorAESCBC_noDiffuser: Error allocating encryptedData");
         return -1;
     }
     memcpy(encryptedData, data, m_sectorSize);
@@ -1236,15 +1217,15 @@ int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* da
     memset(iv.bytes, 0, 16);
     iv.offset = offset;
 
-    writeDebug("  Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(encryptedData, 32) + "...");
-    writeDebug("  Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
+    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(encryptedData, 32) + "...");
+    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
 
     uint8_t encryptedIv[16];
     mbedtls_aes_crypt_ecb(&m_aesFvekEncryptionContext, MBEDTLS_AES_ENCRYPT, iv.bytes, encryptedIv);
-    writeDebug("  Encrypted IV: " + convertByteArrayToString(encryptedIv, 16));
+    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Encrypted IV: " + convertByteArrayToString(encryptedIv, 16));
 
     mbedtls_aes_crypt_cbc(&m_aesFvekDecryptionContext, MBEDTLS_AES_DECRYPT, m_sectorSize, encryptedIv, encryptedData, data);
-    writeDebug("  Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 32) + "...\n");
+    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 32) + "...\n");
 
     memset(encryptedData, 0, m_sectorSize);
     free(encryptedData);
@@ -1261,12 +1242,11 @@ int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* da
 * @return 0 on success, -1 on error.
 */
 int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
-    writeDebug("BitlockerParser::decryptSectorAESXTS");
 
     // Make temporary buffer to copy encrypted data to
     uint8_t* encryptedData = (uint8_t*)malloc(m_sectorSize);
-    if (encryptedData == NULL) {
-        writeError("BitlockerParser::decryptSectorAESXTS(): Error allocating encryptedData");
+    if (encryptedData == nullptr) {
+        writeError("BitlockerParser::decryptSectorAESXTS: Error allocating encryptedData");
         return -1;
     }
     memcpy(encryptedData, data, m_sectorSize);
@@ -1282,11 +1262,11 @@ int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
     iv.offset = offset / m_sectorSize;
 
     // TODO check sector size first
-    writeDebug("  Data:         " + convertByteArrayToString(encryptedData, 16) + "...");
-    writeDebug("  Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
+    writeDebug("BitlockerParser::decryptSectorAESXTS: Data:         " + convertByteArrayToString(encryptedData, 16) + "...");
+    writeDebug("BitlockerParser::decryptSectorAESXTS: Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
 
     mbedtls_aes_crypt_xts(&m_aesXtsDecryptionContext, MBEDTLS_AES_DECRYPT, m_sectorSize, iv.bytes, encryptedData, data);
-    writeDebug("  Decrypted:    " + convertByteArrayToString(data, 16) + "...");
+    writeDebug("BitlockerParser::decryptSectorAESXTS: Decrypted:    " + convertByteArrayToString(data, 16) + "...");
 
     memset(encryptedData, 0, m_sectorSize);
     free(encryptedData);
@@ -1303,12 +1283,12 @@ int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
 * @return The converted offset or the original offset on any kind of error.
 */
 TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
-    writeDebug("BitlockerParser::convertVolumeOffset(): Converting offset " + convertUint64ToString(origOffset));
+    writeDebug("BitlockerParser::convertVolumeOffset: Converting offset " + convertUint64ToString(origOffset));
 
     // The expectation is that the first volumeHeaderSize bytes of the volume have been moved to volumeHeaderOffset.
     // So if we're given an offset in that range convert it to the relocated one.
     if (origOffset >= m_volumeHeaderSize) {
-        writeDebug("  Offset is not in the range of relocated sectors - returning original");
+        writeDebug("BitlockerParser::convertVolumeOffset: Offset is not in the range of relocated sectors - returning original");
         return origOffset;
     }
 
@@ -1318,7 +1298,7 @@ TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
         return origOffset;
     }
 
-    writeDebug("  Offset is in the range of relocated sectors - returning new offset " + convertUint64ToString(newOffset));
+    writeDebug("BitlockerParser::convertVolumeOffset: Offset is in the range of relocated sectors - returning new offset " + convertUint64ToString(newOffset));
     return newOffset;
 }
 

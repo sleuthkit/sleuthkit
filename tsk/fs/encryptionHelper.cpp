@@ -47,14 +47,12 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 
 		// If we have some specific error cases we want to get that information back to the user
 		if (status == BITLOCKER_STATUS::WRONG_PASSWORD) {
-			writeDebug("Storing TSK error: Incorrect password entered");
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			tsk_error_set_errstr("Incorrect password entered");
 			return -1;
 
 		} else if (status == BITLOCKER_STATUS::NEED_PASSWORD) {
-			writeDebug("Storing TSK error: Password required to decrypt volume");
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			tsk_error_set_errstr("Password required to decrypt volume");
@@ -62,7 +60,6 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 		}
 		else if (status == BITLOCKER_STATUS::UNSUPPORTED_KEY_PROTECTION_TYPE) {
 			string message = "Unsupported key protection type(s): " + bitlockerParser->getUnsupportedProtectionTypes();
-			writeDebug("Storing TSK error: " + message);
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			tsk_error_set_errstr(message.c_str());

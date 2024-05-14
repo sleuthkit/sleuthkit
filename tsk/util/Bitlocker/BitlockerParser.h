@@ -116,13 +116,11 @@ public:
     ssize_t readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_t len, uint8_t* data);
 
     ~BitlockerParser() {
-        writeDebug("Deleting BitlockerParser");
         clearIntermediateData();
         mbedtls_aes_free(&m_aesFvekEncryptionContext);
         mbedtls_aes_free(&m_aesFvekDecryptionContext);
         mbedtls_aes_free(&m_aesTweakEncryptionContext);
         mbedtls_aes_xts_free(&m_aesXtsDecryptionContext);
-        writeDebug("  BitlockerParser deleted");
     }
 
 private:
@@ -143,7 +141,6 @@ private:
     BITLOCKER_STATUS setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type);
 
     void clearFveMetadataEntries() {
-        writeDebug("clearFveMetadataEntries()");
         for (auto it = m_metadataEntries.begin(); it != m_metadataEntries.end(); ++it) {
             delete(*it);
         }
@@ -151,15 +148,12 @@ private:
     }
 
     void clearIntermediateData() {
-        writeDebug("clearIntermediateData()");
         clearFveMetadataEntries();
-        writeDebug("  Clearing passwords");
         memset(m_passwordHash, 0, SHA256_DIGEST_LENGTH);
         memset(m_recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
-        writeDebug("  Deleting m_decryptedVmkEntry");
-        if (m_decryptedVmkEntry != NULL) {
+        if (m_decryptedVmkEntry != nullptr) {
             delete m_decryptedVmkEntry;
-            m_decryptedVmkEntry = NULL;
+            m_decryptedVmkEntry = nullptr;
         }
     }
 

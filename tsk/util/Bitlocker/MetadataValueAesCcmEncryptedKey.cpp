@@ -1,3 +1,13 @@
+/*
+ ** The Sleuth Kit
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2024 Sleuth Kit Labs, LLC. All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ */
+
 #ifdef HAVE_LIBMBEDTLS
 
 #include "MetadataValueAesCcmEncryptedKey.h"
@@ -5,44 +15,54 @@
 MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen)
     : MetadataValue(a_valueType) {
 
-    memset(nonce, 0, 12);
+    memset(nonce, 0, nonceLen);
 
     if (bufLen < headerLen) {
-        registerError("Buffer for creating MetadataValueAesCcmEncryptedKey was too short");
+        registerError("MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(): Buffer for creating MetadataValueAesCcmEncryptedKey was too short");
         return;
     }
 
     encryptedDataLen = bufLen - headerLen;
     encryptedData = (uint8_t*)malloc(encryptedDataLen);
     if (encryptedData == NULL) {
-        registerError("Failed to allocate buffer for MetadataValueAesCcmEncryptedKey");
+        registerError("MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(): Failed to allocate buffer for MetadataValueAesCcmEncryptedKey");
         return;
     }
 
     nonceTimestamp = tsk_getu64(TSK_LIT_ENDIAN, &(buf[0]));
     nonceCounter = tsk_getu32(TSK_LIT_ENDIAN, &(buf[8]));
-    memcpy(nonce, &(buf[0]), 12);
+    memcpy(nonce, &(buf[0]), nonceLen);
 
     memcpy(encryptedData, &(buf[headerLen]), encryptedDataLen);
 };
 
+/**
+* Decrypt the MetadataValueAesCcmEncryptedKey data using the supplied key and create a MetadataKeyEntry.
+* 
+* @param key      Key bytes
+* @param keyLen   Length of the key
+* @param keyEntry Will hold decrypted keyEntry object on success
+* 
+* @return SUCCESS if key is successfully decrypted
+*         GENERAL_ERROR if an unspecified error occurs
+*         WRONG_PASSWORD if the supplied key appears to be incorrect
+*/
 BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t keyLen, MetadataEntry** keyEntry) {
-    writeDebug("MetadataValueAesCcmEncryptedKey::decrypt()");
 
     // The expectation is that we'll have a 16-byte MAC and then an FVE key entry of variable length
     if (keyLen < BITLOCKER_KEY_MAC_LEN + 8) { // Key entry header is 8 bytes
-        writeError("MetadataValueAesCcmEncryptedKey::decrypt(): Encrypted data is not long enough to contain MAC and MetadataEntry");
+        writeError("MetadataValueAesCcmEncryptedKey::decrypt: Encrypted data is not long enough to contain MAC and MetadataEntry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     uint8_t* decryptedData = (uint8_t*)malloc(encryptedDataLen);
-    if (decryptedData == NULL) {
-        writeError("MetadataValueAesCcmEncryptedKey::decrypt(): Error allocating space for decryptedData");
+    if (decryptedData == nullptr) {
+        writeError("MetadataValueAesCcmEncryptedKey::decrypt: Error allocating space for decryptedData");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Decrypt the key entry
-    BITLOCKER_STATUS ret = decryptKey(key, keyLen, nonce, getNonceLen(), encryptedData, encryptedDataLen, decryptedData);
+    BITLOCKER_STATUS ret = decryptKey(key, keyLen, encryptedData, encryptedDataLen, decryptedData);
     if (ret != BITLOCKER_STATUS::SUCCESS) {
         memset(decryptedData, 0, encryptedDataLen);
         free(decryptedData);
@@ -54,31 +74,38 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
     memset(decryptedData, 0, encryptedDataLen);
     free(decryptedData);
 
-    if (keyEntry == NULL) {
-        writeError("MetadataValueAesCcmEncryptedKey::decrypt(): Failed to create MetadataEntry from decrypted data");
+    if (keyEntry == nullptr) {
+        writeError("MetadataValueAesCcmEncryptedKey::decrypt: Failed to create MetadataEntry from decrypted data");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
-    writeDebug("  Created MetadataEntry of type " + convertMetadataEntryTypeToString((*keyEntry)->getEntryType())
+    writeDebug("MetadataValueAesCcmEncryptedKey::decrypt: Created MetadataEntry of type " + convertMetadataEntryTypeToString((*keyEntry)->getEntryType())
         + " and value " + convertMetadataValueTypeToString((*keyEntry)->getValueType()));
 
     return BITLOCKER_STATUS::SUCCESS;
 }
 
-BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_t keyLen, uint8_t* nonce, size_t nonceLen, uint8_t* encryptedData,
+/**
+* Decrypt the MetadataValueAesCcmEncryptedKey data using the supplied key.
+*
+* @param key      Key bytes
+* @param keyLen   Length of the key
+* @param encryptedData    Buffer to decrypt
+* @param encryptedDataLen Length of buffer to decrypt
+* @param decryptedData    Will hold decrypted data. Expected to have same length as encryptedData.
+*
+* @return SUCCESS if key is successfully decrypted
+*         GENERAL_ERROR if an unspecified error occurs
+*         WRONG_PASSWORD if the supplied key appears to be incorrect
+*/
+BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_t keyLen, uint8_t* encryptedData,
     size_t encryptedDataLen, uint8_t* decryptedData) {
 
-    writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey()");
-
-    writeDebug("  Key:    " + convertByteArrayToString(key, keyLen));
-    writeDebug("  Nonce:  " + convertByteArrayToString(nonce, nonceLen));
-    writeDebug("  Input:  " + convertByteArrayToString(encryptedData, min(16, (int)encryptedDataLen)) + "...");
+    writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: Key:    " + convertByteArrayToString(key, keyLen));
+    writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: Nonce:  " + convertByteArrayToString(nonce, nonceLen));
+    writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: Input:  " + convertByteArrayToString(encryptedData, min(16, (int)encryptedDataLen)) + "...");
 
     // Set up the IV
-    if (nonceLen > 14 || nonceLen < 12) {
-        writeError("decryptKey: Invalid nonce length: " + to_string(nonceLen));
-        return BITLOCKER_STATUS::GENERAL_ERROR;
-    }
     uint8_t nonceLenUint8 = nonceLen & 0xff;
 
     uint8_t iv[BITLOCKER_DECRYPT_KEY_BLOCK_SIZE];
@@ -86,8 +113,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_
     memcpy(&(iv[1]), nonce, nonceLen);
     iv[0] = 15 - nonceLenUint8 - 1;
 
-    writeDebug("  IV:     " + convertByteArrayToString(iv, BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
-    writeDebug("");
+    writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: IV:     " + convertByteArrayToString(iv, BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
 
     // Decrypt the key entry
     mbedtls_aes_context aes_context;
@@ -104,7 +130,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_
                 decryptedData[offset + i] = encryptedData[offset + i] ^ block[i];
 
             }
-            writeDebug("  Dec  :  " + convertByteArrayToString(&(decryptedData[offset]), BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
+            writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: Dec  :  " + convertByteArrayToString(&(decryptedData[offset]), BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
 
             iv[BITLOCKER_DECRYPT_KEY_BLOCK_SIZE - 1]++;
             if (iv[BITLOCKER_DECRYPT_KEY_BLOCK_SIZE - 1] == 0) {
@@ -127,7 +153,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_
         for (size_t i = 0; i < bytesLeft; i++) {
             decryptedData[offset + i] = encryptedData[offset + i] ^ block[i];
         }
-        writeDebug("  Dec  :  " + convertByteArrayToString(&(decryptedData[offset]), bytesLeft));
+        writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: Dec  :  " + convertByteArrayToString(&(decryptedData[offset]), bytesLeft));
     }
 
     // Validate decryption using the message authentication code
@@ -142,8 +168,8 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
-    writeDebug("  Mac1: " + convertByteArrayToString(mac1, BITLOCKER_KEY_MAC_LEN));
-    writeDebug("  Mac2: " + convertByteArrayToString(mac2, BITLOCKER_KEY_MAC_LEN));
+    writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: Mac1: " + convertByteArrayToString(mac1, BITLOCKER_KEY_MAC_LEN));
+    writeDebug("MetadataValueAesCcmEncryptedKey::decryptKey: Mac2: " + convertByteArrayToString(mac2, BITLOCKER_KEY_MAC_LEN));
 
     if (memcmp(mac1, mac2, BITLOCKER_KEY_MAC_LEN) != 0) {
         writeError("MetadataValueAesCcmEncryptedKey::decryptKey: MAC not valid. Password may be incorrect.");
@@ -155,21 +181,28 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_
 
 /**
 * Generate message authentication code from decrypted data
+* 
+* @param aes_context_ptr The initialized AES context
+* @param nonce           The nonce
+* @param nonceLen Length of the nonce (should be 12, 13, or 14)
+* @param data     Data to encrypt
+* @param dataLen  Length of data to encrypt
+* @param mac      Decrypted MAC
+* 
+* @return 0 on success, -1 on error
 */
 int MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(mbedtls_aes_context* aes_context_ptr, uint8_t* nonce, uint8_t nonceLen, 
     uint8_t* data, size_t dataLen, uint8_t* mac) {
 
-    writeDebug("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode()");
-
     // We should have already checked this
     if (nonceLen > 14) {
-        writeError("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(): Invalid nonce length " + nonceLen);
+        writeError("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode: Invalid nonce length " + nonceLen);
         return -1;
     }
 
-    writeDebug("  dataLen: " + to_string(dataLen));
+    writeDebug("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode: dataLen: " + to_string(dataLen));
 
-    writeDebug("  Nonce:  " + convertByteArrayToString(nonce, nonceLen));
+    writeDebug("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode: Nonce:  " + convertByteArrayToString(nonce, nonceLen));
 
     // Set up IV
     uint8_t iv[BITLOCKER_DECRYPT_KEY_BLOCK_SIZE];
@@ -182,7 +215,7 @@ int MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(mbedtls_aes
         iv[i] = lenForIv & 0xff;
         lenForIv = lenForIv >> 8;
     }
-    writeDebug("  IV:     " + convertByteArrayToString(iv, BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
+    writeDebug("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode: IV:     " + convertByteArrayToString(iv, BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
 
     mbedtls_aes_crypt_ecb(aes_context_ptr, MBEDTLS_AES_ENCRYPT, iv, iv);
 
@@ -190,7 +223,6 @@ int MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(mbedtls_aes
     if (dataLen > BITLOCKER_DECRYPT_KEY_BLOCK_SIZE) {
         while (offset + BITLOCKER_DECRYPT_KEY_BLOCK_SIZE < dataLen) {
 
-            //writeDebug("  Data:  " + convertByteArrayToString(data, BITLOCKER_DECRYPT_KEY_BLOCK_SIZE));
             for (int i = 0; i < BITLOCKER_DECRYPT_KEY_BLOCK_SIZE; i++) {
                 iv[i] = data[offset + i] ^ iv[i];
             }
@@ -216,27 +248,10 @@ int MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(mbedtls_aes
     return 0;
 }
 
-void MetadataValueAesCcmEncryptedKey::print() {
-    printf("AesCcmEncryptedKey");
-    printf("\nNonce timestamp: 0x%" PRIx64 "\n", nonceTimestamp);
-    printf("Nonce counter: 0x%" PRIx32 "\n", nonceCounter);
-    printf("Nonce: ");
-    for (size_t i = 0; i < 12; i++) {
-        printf("%02x", nonce[i]);
-    }
-    printf("\nEncrypted data: ");
-    for (size_t i = 0; i < encryptedDataLen; i++) {
-        if (i > 16) {
-            printf("...");
-            break;
-        }
-        printf("%02x", encryptedData[i]);
-    }
-}
-
 MetadataValueAesCcmEncryptedKey::~MetadataValueAesCcmEncryptedKey() {
-    if (encryptedData != NULL) {
+    if (encryptedData != nullptr) {
         free(encryptedData);
+        encryptedData = nullptr;
     }
 };
 

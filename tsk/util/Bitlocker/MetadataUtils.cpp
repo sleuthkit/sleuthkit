@@ -35,13 +35,13 @@ BITLOCKER_STATUS readMetadataEntries(uint8_t* metadataEntryBuffer, size_t metada
 
         MetadataEntry* entry = MetadataEntry::createMetadataEntry(&(metadataEntryBuffer[index]), metadataEntriesBufSize - index);
         if (entry == NULL) {
-            writeError("readMetadataEntries(): Error creating metadata entry");
+            writeError("readMetadataEntries: Error creating metadata entry");
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
 
         if (entry->getSize() == 0) {
             // Protect against infinite loop - size should not be zero.
-            writeError("readMetadataEntries(): Entry size was zero");
+            writeError("readMetadataEntries: Entry size was zero");
             delete(entry); // Don't save this
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }

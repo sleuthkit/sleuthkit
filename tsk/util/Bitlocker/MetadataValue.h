@@ -1,5 +1,14 @@
+/*
+ ** The Sleuth Kit
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2024 Sleuth Kit Labs, LLC. All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ */
 
-// Don't include this file from other headers - use a forward declaration and include it in the .cpp
+// Be careful about including this file in other headers that include MetadataEntry.h - use a forward declaration and include it in the .cpp
 #pragma once
 
 #ifdef HAVE_LIBMBEDTLS
@@ -22,8 +31,6 @@ public:
 		loadSuccessful = false;
 		writeError(errMsg);
 	}
-
-	virtual void print() = 0;
 	virtual ~MetadataValue() {};
 
 private:
@@ -32,7 +39,7 @@ private:
 };
 
 /**
-* Class used to hold valid but unprocessed metadata values
+* Class used to hold valid but currently unprocessed metadata values
 */
 class MetadataValueGeneric : public MetadataValue {
 public:

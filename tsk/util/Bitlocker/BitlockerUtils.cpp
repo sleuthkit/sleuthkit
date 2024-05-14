@@ -13,43 +13,61 @@
 #ifdef HAVE_LIBMBEDTLS
 
 #include "BitlockerUtils.h"
+#include "tsk/base/tsk_base_i.h"
 
 #include <sstream>
 #include <iomanip>
 
 /**
 * Record an error message.
+* Save the error and write to output if in verbose mode.
+* There is a good chance any error code saved here will be
+* overwritten during the file system open process.
+* 
+* @param errMes  The error message
 */
 void writeError(string errMes) {
-    /* TODO - switch to this once the code is in TSK
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("fatfs_open: sector size is 0");
-    */
-    //printf("writeError: %s\n", errMes.c_str());
-    //fflush(stdout);
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
+    tsk_error_set_errstr(errMes.c_str());
+
+    if (tsk_verbose) {
+        tsk_fprintf(stderr, "%s\n", errMes.c_str());
+    }
 }
 
 /**
 * Record a warning message.
+* Current the same as recording a debug message - writes a message if we're in verbose mode.
+* 
+* @param warningMes  The warning message
 */
-void writeWarning(string errMes) {
-    /* TODO - switch to this once the code is in TSK
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("fatfs_open: sector size is 0");
-    */
-    printf("writeWarning: %s\n", errMes.c_str());
-    fflush(stdout);
-}
-
-void writeDebug(string msg) {
-    //printf("Debug: %s\n", msg.c_str());
-    //fflush(stdout);
+void writeWarning(string warningMes) {
+    if (tsk_verbose) {
+        tsk_fprintf(stderr, "%s\n", warningMes.c_str());
+    }
 }
 
 /**
-* Convert a byte array into a string of hex digits
+* Record a debug message.
+* Writes a message if we're in verbose mode.
+*
+* @param debugMes  The debug message
+*/
+void writeDebug(string debugMes) {
+    if (tsk_verbose) {
+        tsk_fprintf(stderr, "%s\n", debugMes.c_str());
+    }
+}
+
+/**
+* Convert a byte array into a string of hex digits.
+* Ex: "5502df1a"
+* 
+* @param bytes   The byte array
+* @param len     Size of byte array (or number of bytes to print if less than the size)
+* 
+* @return String containing hex values
 */
 string convertByteArrayToString(uint8_t* bytes, size_t len) {
     std::stringstream ss;
@@ -61,6 +79,11 @@ string convertByteArrayToString(uint8_t* bytes, size_t len) {
 
 /**
 * Convert a uint32_t value into a hex string
+* Ex: "0x000056ab"
+* 
+* @param val  32-bit value to convert to string
+* 
+* @return val as a string
 */
 string convertUint32ToString(uint32_t val) {
     std::stringstream ss;
@@ -70,6 +93,11 @@ string convertUint32ToString(uint32_t val) {
 
 /**
 * Convert a uint64_t value into a hex string
+* Ex: "0x00000000000056ab"
+* 
+* @param val  64-bit value to convert to string
+* 
+* @return val as a string
 */
 string convertUint64ToString(uint64_t val) {
     std::stringstream ss;

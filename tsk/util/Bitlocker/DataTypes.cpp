@@ -1,10 +1,23 @@
+/*
+ ** The Sleuth Kit
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2024 Sleuth Kit Labs, LLC. All Rights reserved
+ ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ */
+
 #ifdef HAVE_LIBMBEDTLS
 
 #include "DataTypes.h"
 
 /**
 * Convert entry type value to enum.
-* Returns BITLOCKER_METADATA_ENTRY_TYPE::UNKNOWN if unknown or invalid.
+* 
+* @param val  The entry type as an integer
+* 
+* @return Enum associated with the value. Returns BITLOCKER_METADATA_ENTRY_TYPE::UNKNOWN if unknown or invalid.
 */
 BITLOCKER_METADATA_ENTRY_TYPE getMetadataEntryTypeEnum(uint16_t val) {
     switch (val) {
@@ -27,6 +40,13 @@ BITLOCKER_METADATA_ENTRY_TYPE getMetadataEntryTypeEnum(uint16_t val) {
     }
 }
 
+/**
+* Converts entry type enum to printable string.
+* 
+* @param type  Entry type
+* 
+* @returns Entry type as a string
+*/
 string convertMetadataEntryTypeToString(BITLOCKER_METADATA_ENTRY_TYPE type) {
     switch (type) {
     case BITLOCKER_METADATA_ENTRY_TYPE::PROPERTY:
@@ -51,7 +71,10 @@ string convertMetadataEntryTypeToString(BITLOCKER_METADATA_ENTRY_TYPE type) {
 
 /**
 * Convert value type value to enum.
-* Returns BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN if invalid.
+* 
+* @param val  The value type as an integer
+* 
+* @return Enum associated with the value. Returns BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN if invalid.
 */
 BITLOCKER_METADATA_VALUE_TYPE getMetadataValueTypeEnum(uint16_t val) {
     switch (val) {
@@ -86,6 +109,13 @@ BITLOCKER_METADATA_VALUE_TYPE getMetadataValueTypeEnum(uint16_t val) {
     }
 }
 
+/**
+* Converts value type enum to printable string.
+*
+* @param type  Value type
+*
+* @returns Value type as a string
+*/
 string convertMetadataValueTypeToString(BITLOCKER_METADATA_VALUE_TYPE type) {
     switch (type) {
     case BITLOCKER_METADATA_VALUE_TYPE::ERASED:
@@ -120,6 +150,13 @@ string convertMetadataValueTypeToString(BITLOCKER_METADATA_VALUE_TYPE type) {
     }
 }
 
+/**
+* Convert key protection type value to enum.
+*
+* @param val  The protection type as an integer
+*
+* @return Enum associated with the value. Returns BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN if invalid.
+*/
 BITLOCKER_KEY_PROTECTION_TYPE getKeyProtectionTypeEnum(uint16_t val) {
     switch (val) {
     case 0x0000:
@@ -139,6 +176,13 @@ BITLOCKER_KEY_PROTECTION_TYPE getKeyProtectionTypeEnum(uint16_t val) {
     }
 }
 
+/**
+* Converts key protection type enum to printable string.
+*
+* @param type  Protection type
+*
+* @returns Protection type as a string
+*/
 string convertKeyProtectionTypeToString(BITLOCKER_KEY_PROTECTION_TYPE type) {
     switch (type) {
     case BITLOCKER_KEY_PROTECTION_TYPE::CLEAR_KEY:
@@ -159,6 +203,13 @@ string convertKeyProtectionTypeToString(BITLOCKER_KEY_PROTECTION_TYPE type) {
     }
 }
 
+/**
+* Convert encryption type value to enum.
+*
+* @param val  The encryption type as an integer
+*
+* @return Enum associated with the value. Returns BITLOCKER_ENCRYPTION_TYPE::UNKNOWN if invalid.
+*/
 BITLOCKER_ENCRYPTION_TYPE getEncryptionTypeEnum(uint16_t val) {
     switch (val) {
     case 0x1000:
@@ -190,6 +241,13 @@ BITLOCKER_ENCRYPTION_TYPE getEncryptionTypeEnum(uint16_t val) {
     }
 }
 
+/**
+* Converts encryption type enum to printable string.
+*
+* @param type  Encryption type
+*
+* @returns Encryption type as a string
+*/
 string convertEncryptionTypeToString(BITLOCKER_ENCRYPTION_TYPE type) {
     switch (type) {
     case BITLOCKER_ENCRYPTION_TYPE::STRETCH_KEY:
@@ -219,6 +277,13 @@ string convertEncryptionTypeToString(BITLOCKER_ENCRYPTION_TYPE type) {
     }
 }
 
+/**
+* Check if the encryption type is AES-CBC
+*
+* @param type  Encryption type
+*
+* @return true if the encryption type is AES-CBC, false otherwise
+*/
 bool isAESCBC(BITLOCKER_ENCRYPTION_TYPE type) {
     return (type == BITLOCKER_ENCRYPTION_TYPE::AES_CBC_128_DIFF
         || type == BITLOCKER_ENCRYPTION_TYPE::AES_CBC_256_DIFF
@@ -226,11 +291,25 @@ bool isAESCBC(BITLOCKER_ENCRYPTION_TYPE type) {
         || type == BITLOCKER_ENCRYPTION_TYPE::AES_CBC_256);
 }
 
+/**
+* Check if the encryption type is AES-XTS
+* 
+* @param type  Encryption type
+*
+* @return true if the encryption type is AES-XTS, false otherwise
+*/
 bool isAESXTS(BITLOCKER_ENCRYPTION_TYPE type) {
     return (type == BITLOCKER_ENCRYPTION_TYPE::AES_XTS_128
         || type == BITLOCKER_ENCRYPTION_TYPE::AES_XTS_256);
 }
 
+/**
+* Check if the encryption type uses the diffuser
+* 
+* @param type  Encryption type
+* 
+* @return true if the encryption type uses the diffuser, false otherwise
+*/
 bool usesDiffuser(BITLOCKER_ENCRYPTION_TYPE type) {
     return (type == BITLOCKER_ENCRYPTION_TYPE::AES_CBC_128_DIFF
         || type == BITLOCKER_ENCRYPTION_TYPE::AES_CBC_256_DIFF);
