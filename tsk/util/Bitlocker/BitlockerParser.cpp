@@ -139,7 +139,7 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
     }
 
     // Read in the volume header
-    bitlocker_volume_header_t* volHeader = (bitlocker_volume_header_t*)malloc(sizeof(bitlocker_volume_header_t));
+    bitlocker_volume_header_t* volHeader = (bitlocker_volume_header_t*)tsk_malloc(sizeof(bitlocker_volume_header_t));
     if (volHeader == nullptr) {
         writeError("BitlockerParser::initialize: Error allocating memory for volume header");
         return BITLOCKER_STATUS::GENERAL_ERROR;
@@ -181,6 +181,7 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
 
     // Attempt to parse the data at each offset
     for (auto it = m_fveMetadataOffsets.begin(); it != m_fveMetadataOffsets.end(); ++it) {
+
         // Clear out any entries from the previous offset
         clearFveMetadataEntries();
 
@@ -273,7 +274,7 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataBlockHeader(uint64_t& currentOf
     writeDebug("BitlockerParser::readFveMetadataBlockHeader: Reading metadata block header at offset " + convertUint64ToString(currentOffset));
 
     // Read in the block header
-    bitlocker_fve_metadata_block_header_v2_t* blockHeader = (bitlocker_fve_metadata_block_header_v2_t*)malloc(sizeof(bitlocker_fve_metadata_block_header_v2_t));
+    bitlocker_fve_metadata_block_header_v2_t* blockHeader = (bitlocker_fve_metadata_block_header_v2_t*)tsk_malloc(sizeof(bitlocker_fve_metadata_block_header_v2_t));
     if (blockHeader == nullptr) {
         writeError("BitlockerParser::readFveMetadataBlockHeader: Error allocating memory for block header");
         return BITLOCKER_STATUS::GENERAL_ERROR;
@@ -313,7 +314,7 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset,
     writeDebug("BitlockerParser::readFveMetadataHeader: Reading metadata header at offset " + convertUint64ToString(currentOffset));
 
     // Read in the block header
-    bitlocker_fve_metadata_header_t* header = (bitlocker_fve_metadata_header_t*)malloc(sizeof(bitlocker_fve_metadata_header_t));
+    bitlocker_fve_metadata_header_t* header = (bitlocker_fve_metadata_header_t*)tsk_malloc(sizeof(bitlocker_fve_metadata_header_t));
     if (header == nullptr) {
         writeError("BitlockerParser::readFveMetadataHeader: Error allocating memory for header");
         return BITLOCKER_STATUS::GENERAL_ERROR;
@@ -373,7 +374,7 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataEntries(uint64_t currentOffset,
     writeDebug("BitlockerParser::readFveMetadataBlockHeader: Size: " + convertUint32ToString(metadataEntriesSize));
 
     // Read in the raw data for all entries
-    uint8_t* entryBuffer = (uint8_t*)malloc(metadataEntriesSize);
+    uint8_t* entryBuffer = (uint8_t*)tsk_malloc(metadataEntriesSize);
     if (entryBuffer == nullptr) {
         writeError("BitlockerParser::readFveMetadataEntries: Error allocating memory for entries");
         return BITLOCKER_STATUS::GENERAL_ERROR;
@@ -829,22 +830,25 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
 */
 BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCRYPTION_TYPE type) {
 
+    writeDebug("BitlockerParser::setKeys: Setting up keys for encryption type " + convertEncryptionTypeToString(type));
+
     // Initialize the AES contexts
     size_t keyBits = fvek->getKeyLen() * 8;
     uint8_t* keyBytes = fvek->getKeyBytes();
+
     int ret;
 
     switch (type) {
     case BITLOCKER_ENCRYPTION_TYPE::AES_CBC_128_DIFF:
-        // We expect a 128-bit key and 128-bit tweak key
-        if (keyBits != 256) {
-            writeError("BitlockerParser::setKeys: Expected 256 bits for key and tweak key but have " + keyBits);
+        // We only need a 128-bit key and 128-bit tweak key but there should be 512 bits
+        if (keyBits != 512) {
+            writeError("BitlockerParser::setKeys: Expected 512 bits for key and tweak key but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
 
         ret = mbedtls_aes_setkey_enc(&m_aesFvekEncryptionContext, &(keyBytes[0]), 128);
         ret |= mbedtls_aes_setkey_dec(&m_aesFvekDecryptionContext, &(keyBytes[0]), 128);
-        ret |= mbedtls_aes_setkey_enc(&m_aesTweakEncryptionContext, &(keyBytes[16]), 128);
+        ret |= mbedtls_aes_setkey_enc(&m_aesTweakEncryptionContext, &(keyBytes[32]), 128); // Note that key bytes 16-31 and 48-63 are not used
 
         if (ret != 0) {
             writeError("BitlockerParser::setKeys: Error setting AES context");
@@ -855,7 +859,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
     case BITLOCKER_ENCRYPTION_TYPE::AES_CBC_256_DIFF:
         // We expect a 256-bit key and 256-bit tweak key
         if (keyBits != 512) {
-            writeError("BitlockerParser::setKeys: Expected 512 bits for key and tweak key but have " + keyBits);
+            writeError("BitlockerParser::setKeys: Expected 512 bits for key and tweak key but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
         
@@ -872,7 +876,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
     case BITLOCKER_ENCRYPTION_TYPE::AES_CBC_128:
         // We expect a 128-bit key
         if (keyBits != 128) {
-            writeError("BitlockerParser::setKeys: Expected 128 bits for key but have " + keyBits);
+            writeError("BitlockerParser::setKeys: Expected 128 bits for key but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
 
@@ -888,7 +892,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
     case BITLOCKER_ENCRYPTION_TYPE::AES_CBC_256:
         // We expect a 256-bit key
         if (keyBits != 256) {
-            writeError("BitlockerParser::setKeys: Expected 256 bits for key but have " + keyBits);
+            writeError("BitlockerParser::setKeys: Expected 256 bits for key but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
         
@@ -904,7 +908,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
     case BITLOCKER_ENCRYPTION_TYPE::AES_XTS_128:
         // We expect a 128-bit key1 and 128-bit key2
         if (keyBits != 256) {
-            writeError("BitlockerParser::setKeys: Expected 256 bits for key1 and key2 but have " + keyBits);
+            writeError("BitlockerParser::setKeys: Expected 256 bits for key1 and key2 but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
         
@@ -919,7 +923,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
     case BITLOCKER_ENCRYPTION_TYPE::AES_XTS_256:
         // We expect a 256-bit key1 and 256-bit key2
         if (keyBits != 512) {
-            writeError("BitlockerParser::setKeys: Expected 512 bits for key1 and key2 but have " + keyBits);
+            writeError("BitlockerParser::setKeys: Expected 512 bits for key1 and key2 but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
         
@@ -1087,7 +1091,7 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
         return -1;
     }
 
-    if (len % m_sectorSize != 0) {
+    if ((uint32_t)len % m_sectorSize != 0) {
         writeError("BitlockerParser::readAndDecryptSectors: Length of bytes to read is not a multiple of the sector size (length: " + convertUint32ToString(len) + ")");
         return -1;
     }
@@ -1173,8 +1177,7 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
 
     if (isAESCBC(m_encryptionType)) {
         if (usesDiffuser(m_encryptionType)) {
-            writeError("BitlockerParser::decryptSector: Encryption method not currently supported - " + convertEncryptionTypeToString(m_encryptionType));
-            return -1; 
+            return decryptSectorAESCBC_diffuser(volumeOffset, data);
         }
         else {
             return decryptSectorAESCBC_noDiffuser(volumeOffset, data);
@@ -1200,7 +1203,7 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
 int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data) {
 
     // Make temporary buffer to copy encrypted data to
-    uint8_t* encryptedData = (uint8_t*)malloc(m_sectorSize);
+    uint8_t* encryptedData = (uint8_t*)tsk_malloc(m_sectorSize);
     if (encryptedData == nullptr) {
         writeError("BitlockerParser::decryptSectorAESCBC_noDiffuser: Error allocating encryptedData");
         return -1;
@@ -1233,6 +1236,136 @@ int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* da
     return 0;
 }
 
+#define BITLOCKER_DIFFUSER_ROTATE_LEFT(a,n)  (((a) << (n)) | ((a) >> ((sizeof(a) * 8)-(n))))
+
+/**
+* Decrypt data using diffuser A
+*
+* @param data     Data to decrypt
+* @param dataLen  Length of data (in bytes)
+* @param result   Result buffer
+*/
+void BitlockerParser::decryptDiffuserA(uint8_t* data, size_t dataLen, uint8_t* result) {
+
+    // Copy the data into the result buffer
+    memcpy(result, data, dataLen);
+
+    // Set up a 4-byte version of the result buffer
+    uint32_t* result32 = (uint32_t*)result;
+    uint16_t result32len = (uint32_t)dataLen / 4;
+
+    uint16_t shiftBits[] = { 9, 0, 13, 0 };
+    for (int cycle = 0; cycle < 5; cycle++) {  // Five cycles
+        for (int index = 0; index < result32len; index++) {
+
+            int indexMinusTwo = (index - 2 + result32len) % result32len;  // Add result32len to prevent negative result
+            int indexMinusFive = (index - 5 + result32len) % result32len;
+            result32[index] = result32[index] + 
+                (result32[indexMinusTwo] ^ BITLOCKER_DIFFUSER_ROTATE_LEFT(result32[indexMinusFive], shiftBits[index % 4]));
+        }
+    }
+}
+
+/**
+* Decrypt data using diffuser B
+* 
+* @param data     Data to decrypt
+* @param dataLen  Length of data (in bytes)
+* @param result   Result buffer
+*/
+void BitlockerParser::decryptDiffuserB(uint8_t* data, size_t dataLen, uint8_t* result) {
+
+    // Copy the data into the result buffer
+    memcpy(result, data, dataLen);
+
+    // Set up a 4-byte version of the result buffer
+    uint32_t* result32 = (uint32_t*)result;
+    uint16_t result32len = (uint32_t)dataLen / 4;
+
+    uint16_t shiftBits[] = { 0, 10, 0, 25 };
+    for (int cycle = 0; cycle < 3; cycle++) {  // Three cycles
+        for (int index = 0; index < result32len; index++) {
+
+            int indexPlusTwo = (index + 2) % result32len;
+            int indexPlusFive = (index + 5) % result32len;
+            result32[index] = result32[index] +
+                (result32[indexPlusTwo] ^ BITLOCKER_DIFFUSER_ROTATE_LEFT(result32[indexPlusFive], shiftBits[index % 4]));
+        }
+    }
+}
+
+/**
+* Decrypt the data that was read from the given offset using AES-CBC with elephant diffuser (128 or 256 bit)
+*
+* @volumeOffset Offset to the data relative to the start of the volume. Expected to be sector-aligned.
+* @data         Data to decrypt. Will hold the decrypted data.
+*
+* @return 0 on success, -1 on error.
+*/
+int BitlockerParser::decryptSectorAESCBC_diffuser(uint64_t offset, uint8_t* data) {
+
+    // Make temporary buffer to copy encrypted data to
+    uint8_t* encryptedData = (uint8_t*)tsk_malloc(m_sectorSize);
+    uint8_t* tempBuffer = (uint8_t*)tsk_malloc(m_sectorSize);
+    if (encryptedData == nullptr || tempBuffer == nullptr) {
+        writeError("BitlockerParser::decryptSectorAESCBC_noDiffuser: Error allocating encryptedData or tempBuffer");
+        return -1;
+    }
+    memcpy(encryptedData, data, m_sectorSize);
+    memset(data, 0, m_sectorSize);
+    memset(tempBuffer, 0, m_sectorSize);
+
+    // The volume offset is used to create the IV
+    union {
+        uint8_t bytes[16];
+        uint64_t offset;
+    } iv;
+
+    memset(iv.bytes, 0, 16);
+    iv.offset = offset;
+
+    // Create the sector key
+    uint8_t sectorKey[32];
+    memset(sectorKey, 0, 32);
+
+    mbedtls_aes_crypt_ecb(&m_aesTweakEncryptionContext, MBEDTLS_AES_ENCRYPT, iv.bytes, &(sectorKey[0]));
+    iv.bytes[15] = 0x80;
+    mbedtls_aes_crypt_ecb(&m_aesTweakEncryptionContext, MBEDTLS_AES_ENCRYPT, iv.bytes, &(sectorKey[16]));
+
+    writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(encryptedData, 32) + "...");
+    writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Sector key:  " + convertByteArrayToString(sectorKey, 32));
+
+    // Decrypt the sector normally
+    if (0 != decryptSectorAESCBC_noDiffuser(offset, encryptedData)) {
+        memset(encryptedData, 0, m_sectorSize);
+        free(encryptedData);
+        free(tempBuffer);
+        memset(iv.bytes, 0, 16);
+        memset(sectorKey, 0, 32);
+        return -1;
+    }
+
+    // Apply diffuser
+    decryptDiffuserB(encryptedData, m_sectorSize, tempBuffer);
+    decryptDiffuserA(tempBuffer, m_sectorSize, data);
+
+    // Apply sector key
+    for (int loop = 0; loop < m_sectorSize; ++loop) {
+        data[loop] ^= sectorKey[loop % 32];
+    }
+
+    writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 32) + "...\n");
+
+    memset(encryptedData, 0, m_sectorSize);
+    free(encryptedData);
+    memset(tempBuffer, 0, m_sectorSize);
+    free(tempBuffer);
+    memset(iv.bytes, 0, 16);
+    memset(sectorKey, 0, 32);
+
+    return 0;
+}
+
 /**
 * Decrypt the data that was read from the given offset using AES-XTS (128 or 256 bit)
 *
@@ -1244,7 +1377,7 @@ int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* da
 int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
 
     // Make temporary buffer to copy encrypted data to
-    uint8_t* encryptedData = (uint8_t*)malloc(m_sectorSize);
+    uint8_t* encryptedData = (uint8_t*)tsk_malloc(m_sectorSize);
     if (encryptedData == nullptr) {
         writeError("BitlockerParser::decryptSectorAESXTS: Error allocating encryptedData");
         return -1;
@@ -1321,7 +1454,7 @@ string BitlockerParser::getDescription() {
     // Make a string similar to: "BitLocker AES-CBC 128 bit decrypted using password"
     stringstream ss;
     ss << "BitLocker " << convertEncryptionTypeToString(m_encryptionType) << " encryption, ";
-    ss << "decrypted using " << convertKeyProtectionTypeToString(m_protectionTypeUsed);
+    ss << "unlocked using " << convertKeyProtectionTypeToString(m_protectionTypeUsed);
     return ss.str();
 }
 

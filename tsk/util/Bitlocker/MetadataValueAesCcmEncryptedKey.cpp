@@ -23,7 +23,7 @@ MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(BITLOCKER_METAD
     }
 
     encryptedDataLen = bufLen - headerLen;
-    encryptedData = (uint8_t*)malloc(encryptedDataLen);
+    encryptedData = (uint8_t*)tsk_malloc(encryptedDataLen);
     if (encryptedData == NULL) {
         registerError("MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(): Failed to allocate buffer for MetadataValueAesCcmEncryptedKey");
         return;
@@ -55,7 +55,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
-    uint8_t* decryptedData = (uint8_t*)malloc(encryptedDataLen);
+    uint8_t* decryptedData = (uint8_t*)tsk_malloc(encryptedDataLen);
     if (decryptedData == nullptr) {
         writeError("MetadataValueAesCcmEncryptedKey::decrypt: Error allocating space for decryptedData");
         return BITLOCKER_STATUS::GENERAL_ERROR;

@@ -160,6 +160,9 @@ private:
     TSK_DADDR_T convertVolumeOffset(TSK_DADDR_T origOffset);
     int decryptSector(TSK_DADDR_T offset, uint8_t* data);
     int decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data);
+    int decryptSectorAESCBC_diffuser(uint64_t offset, uint8_t* data);
+    void decryptDiffuserA(uint8_t* data, size_t dataLen, uint8_t* result);
+    void decryptDiffuserB(uint8_t* data, size_t dataLen, uint8_t* result);
     int decryptSectorAESXTS(uint64_t offset, uint8_t* data);
 
     list<uint64_t> m_fveMetadataOffsets;

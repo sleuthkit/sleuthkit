@@ -23,7 +23,7 @@ MetadataValueKey::MetadataValueKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, ui
     encryptionType = getEncryptionTypeEnum(tsk_getu32(TSK_LIT_ENDIAN, &(buf[0])) & 0xffff);
 
     keyLen = bufLen - 4;
-    key = (uint8_t*)malloc(keyLen);
+    key = (uint8_t*)tsk_malloc(keyLen);
     if (key == nullptr) {
         registerError("MetadataValueKey::MetadataValueKey(): Failed to allocate buffer for key");
         return;
