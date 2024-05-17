@@ -297,6 +297,9 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataBlockHeader(uint64_t& currentOf
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
+    // Store the size of the volume that has been encrypted
+    m_encryptedVolumeSize = tsk_getu64(TSK_LIT_ENDIAN, blockHeader->encryptedVolSize);
+
     free(blockHeader);
     return BITLOCKER_STATUS::SUCCESS;
 }
@@ -1173,6 +1176,12 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
     if (!initializationSuccessful()) {
         writeError("BitlockerParser::decryptSector: BitlockerParser has not been initialized");
         return -1;
+    }
+
+    if (volumeOffset >= m_encryptedVolumeSize) {
+        writeDebug("BitlockerParser::decryptSector: Sector is beyond what was encrypted - returning original data. ");
+        writeDebug("BitlockerParser::decryptSector: Data:         " + convertUint64ToString(volumeOffset) + "   " + convertByteArrayToString(data, 32) + "...");
+        return 0;
     }
 
     if (isAESCBC(m_encryptionType)) {

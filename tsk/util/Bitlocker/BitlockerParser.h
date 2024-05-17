@@ -187,6 +187,7 @@ private:
     TSK_IMG_INFO* m_img_info = NULL;
     uint64_t m_volumeOffset; // All offsets are relative to the start of the volume
     uint16_t m_sectorSize = 0;
+    uint64_t m_encryptedVolumeSize = 0;
 
     bool m_havePassword = false;
     uint8_t m_passwordHash[SHA256_DIGEST_LENGTH];
