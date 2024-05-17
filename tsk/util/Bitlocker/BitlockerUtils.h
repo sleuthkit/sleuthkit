@@ -23,5 +23,6 @@ void writeDebug(string msg);
 string convertUint64ToString(uint64_t val);
 string convertUint32ToString(uint32_t val);
 string convertByteArrayToString(uint8_t* bytes, size_t len);
+string convertGuidToString(uint8_t* bytes);
 
 #endif

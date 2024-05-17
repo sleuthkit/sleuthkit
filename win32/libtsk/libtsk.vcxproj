@@ -417,6 +417,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueKey.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.cpp" />
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.cpp" />
     <ClCompile Include="..\..\tsk\util\crypto.cpp" />
     <ClCompile Include="..\..\tsk\util\detect_encryption.c" />
@@ -546,6 +547,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueKey.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.h" />
     <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.h" />
     <ClInclude Include="..\..\tsk\util\crypto.hpp" />
     <ClInclude Include="..\..\tsk\util\detect_encryption.h" />

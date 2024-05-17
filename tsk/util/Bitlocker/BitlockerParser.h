@@ -94,6 +94,7 @@ typedef struct {
 class BitlockerParser {
 public:
 	BitlockerParser() {
+        memset(m_bitlockerRecoveryKeyId, 0, 16);
         memset(m_passwordHash, 0, SHA256_DIGEST_LENGTH);
         memset(m_recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
         mbedtls_aes_init(&m_aesFvekEncryptionContext);
@@ -109,6 +110,7 @@ public:
 
     string getDescription();
     string getUnsupportedProtectionTypes();
+    string getRecoveryKeyIdStr();
 
     uint16_t getSectorSize() {
         return m_sectorSize;
@@ -188,6 +190,8 @@ private:
     uint64_t m_volumeOffset; // All offsets are relative to the start of the volume
     uint16_t m_sectorSize = 0;
     uint64_t m_encryptedVolumeSize = 0;
+    bool m_haveRecoveryKeyId = false;
+    uint8_t m_bitlockerRecoveryKeyId[16];
 
     bool m_havePassword = false;
     uint8_t m_passwordHash[SHA256_DIGEST_LENGTH];

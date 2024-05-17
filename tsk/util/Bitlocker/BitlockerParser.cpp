@@ -22,6 +22,7 @@
 #include "MetadataValueVolumeMasterKey.h"
 #include "MetadataValueAesCcmEncryptedKey.h"
 #include "MetadataValueOffsetAndSize.h"
+#include "MetadataValueUnicode.h"
 #include "mbedtls/sha256.h"
 
 /**
@@ -162,7 +163,7 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
     }
     m_isBitlocker = true;
 
-    // For the moment, we only need the FVE metadata offsets and the sector size
+    // Save the FVE metadata offsets and the sector size
     m_fveMetadataOffsets.push_back(tsk_getu64(TSK_LIT_ENDIAN, volHeader->fveMetadataOffset1) + m_volumeOffset);
     m_fveMetadataOffsets.push_back(tsk_getu64(TSK_LIT_ENDIAN, volHeader->fveMetadataOffset2) + m_volumeOffset);
     m_fveMetadataOffsets.push_back(tsk_getu64(TSK_LIT_ENDIAN, volHeader->fveMetadataOffset3) + m_volumeOffset);
@@ -459,6 +460,13 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
             return BITLOCKER_STATUS::WRONG_PASSWORD;
         }
         else if (possibleMissingPassword) {
+            if (m_havePassword) {
+                // This is specifically the case where the user supplied a bad recovery password
+                // (i.e. it wasn't the expected length, a value wasn't divisible by 11, etc.)
+                // and there is no password-protected VMK. It comes back as a missing password because
+                // we don't attempt to use malformed recovery passwords.
+                return BITLOCKER_STATUS::WRONG_PASSWORD;
+            }
             return BITLOCKER_STATUS::NEED_PASSWORD;
         }
         else if (possibleUnsupportedProtectionType) {
@@ -548,7 +556,19 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
 */
 BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry) {
 
+    if (vmkValue == nullptr) {
+        writeError("BitlockerParser::parseVMKEntry: vmkValue is null");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
     BITLOCKER_KEY_PROTECTION_TYPE protectionType = vmkValue->getProtectionType();
+
+    if (protectionType == BITLOCKER_KEY_PROTECTION_TYPE::RECOVERY_PASSWORD) {
+        // If we have a recovery key, make a copy of the GUID
+        vmkValue->copyGuid(m_bitlockerRecoveryKeyId);
+        writeDebug("BitlockerParser::parseVMKEntry: Storing recovery key GUID " + convertGuidToString(m_bitlockerRecoveryKeyId));
+        m_haveRecoveryKeyId = true;
+    }
 
     // If we don't have the right type of password we can't decrypt this
     if (!m_havePassword && protectionType == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
@@ -1044,6 +1064,7 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
             unsigned long val = stoul(match[i + 1]);
             if (val % 11 != 0) {
                 writeDebug("BitlockerParser::handlePassword: Value is not a multiple of 11 (" + to_string(val) + ")");
+                return ret;
             }
 
             val = val / 11;
@@ -1178,6 +1199,8 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
         return -1;
     }
 
+    // This seems to only work for Windows 7 (and likely earlier). After that it seems like m_encryptedVolumeSize
+    // is set to the full volume size even when encryption was paused partway through.
     if (volumeOffset >= m_encryptedVolumeSize) {
         writeDebug("BitlockerParser::decryptSector: Sector is beyond what was encrypted - returning original data. ");
         writeDebug("BitlockerParser::decryptSector: Data:         " + convertUint64ToString(volumeOffset) + "   " + convertByteArrayToString(data, 32) + "...");
@@ -1489,6 +1512,14 @@ string BitlockerParser::getUnsupportedProtectionTypes() {
         ss << convertKeyProtectionTypeToString(*it);
     }
     return ss.str();
+}
+
+string BitlockerParser::getRecoveryKeyIdStr() {
+    if (!m_haveRecoveryKeyId) {
+        return "";
+    }
+
+    return "(Recovery key identifier: " + convertGuidToString(m_bitlockerRecoveryKeyId) + ")";
 }
 
 #endif

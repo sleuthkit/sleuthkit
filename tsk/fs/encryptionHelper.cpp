@@ -49,13 +49,15 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 		if (status == BITLOCKER_STATUS::WRONG_PASSWORD) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
-			tsk_error_set_errstr("Incorrect password entered");
+			string errStr = "Incorrect password entered " + bitlockerParser->getRecoveryKeyIdStr();
+			tsk_error_set_errstr(errStr.c_str());
 			return -1;
 
 		} else if (status == BITLOCKER_STATUS::NEED_PASSWORD) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
-			tsk_error_set_errstr("Password required to decrypt volume");
+			string errStr = "Password required to decrypt volume " + bitlockerParser->getRecoveryKeyIdStr();
+			tsk_error_set_errstr(errStr.c_str());
 			return -1;
 		}
 		else if (status == BITLOCKER_STATUS::UNSUPPORTED_KEY_PROTECTION_TYPE) {

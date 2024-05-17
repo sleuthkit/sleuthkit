@@ -26,6 +26,10 @@ public:
 		return properties;
 	}
 
+	void copyGuid(uint8_t* dest) {
+		memcpy(dest, guid, 16);
+	}
+
 	~MetadataValueVolumeMasterKey();
 
 private:

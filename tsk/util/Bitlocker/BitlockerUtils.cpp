@@ -107,4 +107,47 @@ string convertUint64ToString(uint64_t val) {
     return ss.str();
 }
 
+
+/**
+* Convert the given bytes to a GUID string
+* 
+* @param bytes  The GUID in bytes. Expected to have length 16.
+* 
+* @return GUID string
+*/
+string convertGuidToString(uint8_t* bytes) {
+    struct BITLOCKER_GUID {
+        DWORD data1;
+        WORD  data2;
+        WORD  data3;
+        BYTE  data4[8];
+    };
+
+    BITLOCKER_GUID* guidStruct = (BITLOCKER_GUID*)bytes;
+    stringstream ss;
+    ss << std::uppercase;
+    ss.width(8);
+    ss << std::hex << guidStruct->data1 << '-';
+
+    ss.width(4);
+    ss << std::hex << guidStruct->data2 << '-';
+
+    ss.width(4);
+    ss << std::hex << guidStruct->data3 << '-';
+
+    ss.width(2);
+    ss << std::hex
+        << static_cast<short>(guidStruct->data4[0])
+        << static_cast<short>(guidStruct->data4[1])
+        << '-'
+        << static_cast<short>(guidStruct->data4[2])
+        << static_cast<short>(guidStruct->data4[3])
+        << static_cast<short>(guidStruct->data4[4])
+        << static_cast<short>(guidStruct->data4[5])
+        << static_cast<short>(guidStruct->data4[6])
+        << static_cast<short>(guidStruct->data4[7]);
+    ss << std::nouppercase;
+    return ss.str();
+}
+
 #endif

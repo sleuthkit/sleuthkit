@@ -17,6 +17,7 @@
 #include "MetadataValueVolumeMasterKey.h"
 #include "MetadataValueAesCcmEncryptedKey.h"
 #include "MetadataValueOffsetAndSize.h"
+#include "MetadataValueUnicode.h"
 #include "MetadataValueKey.h"
 #include "BitlockerUtils.h"
 
@@ -112,10 +113,11 @@ MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE valueType, uint
         return new MetadataValueAesCcmEncryptedKey(valueType, buf, bufLen);
     case BITLOCKER_METADATA_VALUE_TYPE::OFFSET_AND_SIZE:
         return new MetadataValueOffsetAndSize(valueType, buf, bufLen);
+    case BITLOCKER_METADATA_VALUE_TYPE::UNICODE_STRING:
+        return new MetadataValueUnicode(valueType, buf, bufLen);
 
     // These are valid types but we don't currently use them
     case BITLOCKER_METADATA_VALUE_TYPE::ERASED:
-    case BITLOCKER_METADATA_VALUE_TYPE::UNICODE_STRING:
     case BITLOCKER_METADATA_VALUE_TYPE::USE_KEY:
     case BITLOCKER_METADATA_VALUE_TYPE::TPM_ENCODED_KEY:
     case BITLOCKER_METADATA_VALUE_TYPE::VALIDATION:

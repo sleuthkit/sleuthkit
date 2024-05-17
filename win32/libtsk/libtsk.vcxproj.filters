@@ -414,6 +414,9 @@
     <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerUtils.cpp">
       <Filter>util\Bitlocker</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -634,6 +637,9 @@
       <Filter>fs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerUtils.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.h">
       <Filter>util\Bitlocker</Filter>
     </ClInclude>
   </ItemGroup>
