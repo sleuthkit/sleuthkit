@@ -45,8 +45,6 @@ class MetadataValueGeneric : public MetadataValue {
 public:
 	MetadataValueGeneric(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {};
 
-	void print() { printf("MetadataValueGeneric"); }
-
 	~MetadataValueGeneric() {};
 };
 
@@ -56,8 +54,6 @@ public:
 class MetadataValueUnknown : public MetadataValue {
 public:
 	MetadataValueUnknown(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {};
-
-	void print() { printf("Unknown"); }
 
 	~MetadataValueUnknown() {};
 };
