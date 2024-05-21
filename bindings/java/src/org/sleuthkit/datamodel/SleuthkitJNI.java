@@ -1931,9 +1931,9 @@ public class SleuthkitJNI {
 	}
 
 	public static boolean isImageSupported(String imagePath) {
-		// isImageSupportedNat returns a blank string if the image is supported or
+		// isImageSupportedStringNat returns a blank string if the image is supported or
 		// an error message if the file systems could not be opened
-		return isImageSupportedNat(imagePath, "").isBlank();
+		return isImageSupportedStringNat(imagePath, "").isBlank();
 	}
 	
 	/**
@@ -1969,7 +1969,7 @@ public class SleuthkitJNI {
 	 * @return TestOpenImageResult that will contain whether we were able to open a file system and a user-friendly message
 	 */
 	public static TestOpenImageResult testOpenImage(String imagePath, String password) {
-		String resultStr = isImageSupportedNat(imagePath, password);
+		String resultStr = isImageSupportedStringNat(imagePath, password);
 		if (resultStr.isBlank()) {
 			return new TestOpenImageResult(true, "Image opened successfully");
 		}
@@ -2241,7 +2241,7 @@ public class SleuthkitJNI {
 
 	private static native String getCurDirNat(long process);
 
-	private static native String isImageSupportedNat(String imagePath, String password);
+	private static native String isImageSupportedStringNat(String imagePath, String password);
 	
 	private static native long getSleuthkitVersionNat();
 
