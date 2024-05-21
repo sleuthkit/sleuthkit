@@ -33,7 +33,6 @@ void writeError(string errMes) {
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "%s\n", errMes.c_str());
-        fflush(stderr);
     }
 }
 
@@ -58,7 +57,6 @@ void writeWarning(string warningMes) {
 void writeDebug(string debugMes) {
     if (tsk_verbose) {
         tsk_fprintf(stderr, "%s\n", debugMes.c_str());
-        fflush(stderr);
     }
 }
 
