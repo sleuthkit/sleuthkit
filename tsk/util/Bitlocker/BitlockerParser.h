@@ -8,6 +8,11 @@
  ** This software is distributed under the Common Public License 1.0
  */
 
+/**
+* BitLocker Parser (beta).
+* Should support Win7 and newer images protected with password, recovery password, or clear key.
+*/
+
 #pragma once
 
 #ifdef HAVE_LIBMBEDTLS
@@ -63,9 +68,9 @@ typedef struct {
     uint8_t fveMetadataOffset3[8];
     uint8_t unknown3[310];
     uint8_t sectorSignature[2];
-} bitlocker_volume_header_t;
+} bitlocker_volume_header_win7_t;
 
-// Version 1 (Vista) is the same size and has the signature in the same place, which is all we currently use
+// Version 2 is used in Win7 and later
 typedef struct {
     char signature[8];
     uint8_t unknown1[2];

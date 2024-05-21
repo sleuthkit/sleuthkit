@@ -1077,6 +1077,7 @@ extern "C" {
     extern void tsk_fs_type_print(FILE *);
     extern const char *tsk_fs_type_toname(TSK_FS_TYPE_ENUM);
     extern TSK_FS_TYPE_ENUM tsk_fs_type_supported();
+    extern void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen);
 
     extern ssize_t tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off,
         char *a_buf, size_t a_len);

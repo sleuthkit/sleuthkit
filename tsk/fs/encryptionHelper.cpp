@@ -144,7 +144,7 @@ ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T of
 * @param a_desc     Output buffer for description
 * @param a_descLen  Size of output buffer (recommended - 256 bytes)
 */
-void getEncryptionDescription(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen) {
+void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen) {
 	if (a_descLen <= 0) {
 		return;
 	}

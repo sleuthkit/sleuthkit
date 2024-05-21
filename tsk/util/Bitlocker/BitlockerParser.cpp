@@ -140,14 +140,14 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
     }
 
     // Read in the volume header
-    bitlocker_volume_header_t* volHeader = (bitlocker_volume_header_t*)tsk_malloc(sizeof(bitlocker_volume_header_t));
+    bitlocker_volume_header_win7_t* volHeader = (bitlocker_volume_header_win7_t*)tsk_malloc(sizeof(bitlocker_volume_header_win7_t));
     if (volHeader == nullptr) {
         writeError("BitlockerParser::initialize: Error allocating memory for volume header");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
-    size_t bytesRead = tsk_img_read(m_img_info, m_volumeOffset, (char*)volHeader, sizeof(bitlocker_volume_header_t));
-    if (bytesRead != sizeof(bitlocker_volume_header_t)) {
+    size_t bytesRead = tsk_img_read(m_img_info, m_volumeOffset, (char*)volHeader, sizeof(bitlocker_volume_header_win7_t));
+    if (bytesRead != sizeof(bitlocker_volume_header_win7_t)) {
         writeError("BitlockerParser::initialize: Error reading first sector (read " + to_string(bytesRead) + " bytes");
         free(volHeader);
         return BITLOCKER_STATUS::GENERAL_ERROR;
@@ -235,9 +235,14 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
         }
 
         // Find the offset and size of the original volume header. BitLocker moves it later in the volume
-        // to make room for its own header.
+        // to make room for its own header. If not found we can use the offset and size we previously saved
+        // from one of the headers.
         if (BITLOCKER_STATUS::SUCCESS != parseVolumeHeader()) {
-            continue;
+            if (m_volumeHeaderOffset == 0 || m_volumeHeaderSize == 0) {
+                continue;
+            }
+            writeDebug("BitlockerParser::initializeInternal: Volume header offset: " + convertUint64ToString(m_volumeHeaderOffset));
+            writeDebug("BitlockerParser::initializeInternal: Volume header size  : " + convertUint64ToString(m_volumeHeaderSize));
         }
 
         // If we've gotten here then everything is initialized and ready to go.
@@ -298,8 +303,22 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataBlockHeader(uint64_t& currentOf
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
+    // Check the version
+    uint16_t version = tsk_getu16(TSK_LIT_ENDIAN, blockHeader->version);
+    writeDebug("BitlockerParser::readFveMetadataBlockHeader: Version: " + to_string(version));
+    if (version != 2) {
+        writeError("BitlockerParser::readFveMetadataBlockHeader: Only version 2 is currently supported (found version " + to_string(version) + ")");
+        free(blockHeader);
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
     // Store the size of the volume that has been encrypted
     m_encryptedVolumeSize = tsk_getu64(TSK_LIT_ENDIAN, blockHeader->encryptedVolSize);
+
+    // Store the offset and size of the original volume header. If we have a volume header block we'll overwrite these (though
+    // we'd expect them to be the same).
+    m_volumeHeaderOffset = tsk_getu64(TSK_LIT_ENDIAN, blockHeader->volumeHeaderOffset);
+    m_volumeHeaderSize = tsk_getu32(TSK_LIT_ENDIAN, blockHeader->nVolHeaderSectors) * (uint64_t)(m_sectorSize);
 
     free(blockHeader);
     return BITLOCKER_STATUS::SUCCESS;

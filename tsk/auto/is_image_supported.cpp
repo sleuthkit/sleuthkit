@@ -183,6 +183,31 @@ uint8_t TskIsImageSupported::handleError()
     return 0;
 }
 
+/**
+* Prepare the result for dataModel_SleuthkitJNI::isImageSupportedNat.
+* There's some complexity here because BitLocker drives appear to have a very small unencrypted
+* volume followed by the encrypted volume. So we need to check for BitLocker errors instead
+* of just going by whether we were able to open a file system. 
+* 
+* @return Empty string if image is supported, error string if not
+*/
+std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
+    // General approach:
+    // - If we have a BitLocker error then report it, even if we opened at least one file system
+    // - If we did open at least one file system and had no Bitlocker errors, return empty string
+    // - Otherwise return the error string
+
+    if (m_bitlockerError) {
+        return getSingleLineErrorMessage();
+    }
+
+    if (isImageSupported()) {
+        return "";
+    }
+
+    return getSingleLineErrorMessage();
+}
+
 TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,
                                                  const char * /*path*/)
 {

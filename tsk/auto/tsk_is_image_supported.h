@@ -35,6 +35,7 @@ public:
     virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
+    std::string getMessageForIsImageSupportedNat();
     bool isImageSupported();
     bool isImageEncrypted();
     std::string getSingleLineErrorMessage();

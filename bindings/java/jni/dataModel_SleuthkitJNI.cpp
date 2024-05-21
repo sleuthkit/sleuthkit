@@ -2292,13 +2292,8 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSuppo
     if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
         resultStr = env->NewStringUTF("Error opening image");
     } else {
-        if (tskIsImage.findFilesInImg()) {
-            resultStr = env->NewStringUTF(tskIsImage.getSingleLineErrorMessage().c_str());
-        } else {
-            if (!tskIsImage.isImageSupported()) {
-                resultStr = env->NewStringUTF(tskIsImage.getSingleLineErrorMessage().c_str());
-            }   
-        }
+        tskIsImage.findFilesInImg();
+        resultStr = env->NewStringUTF(tskIsImage.getMessageForIsImageSupportedNat().c_str());
     }
 
     // Cleanup
