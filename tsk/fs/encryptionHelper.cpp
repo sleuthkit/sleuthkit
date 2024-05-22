@@ -40,6 +40,7 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	BitlockerParser* bitlockerParser = new BitlockerParser();
 	BITLOCKER_STATUS status = bitlockerParser->initialize(a_fs_info->img_info, a_fs_info->offset, a_pass);
 	if (status == BITLOCKER_STATUS::NOT_BITLOCKER) {
+		delete bitlockerParser;
 		return 0;
 	}
 
@@ -51,6 +52,7 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			string errStr = "Incorrect password entered " + bitlockerParser->getRecoveryKeyIdStr();
 			tsk_error_set_errstr(errStr.c_str());
+			delete bitlockerParser;
 			return -1;
 
 		} else if (status == BITLOCKER_STATUS::NEED_PASSWORD) {
@@ -58,6 +60,7 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			string errStr = "Password required to decrypt volume " + bitlockerParser->getRecoveryKeyIdStr();
 			tsk_error_set_errstr(errStr.c_str());
+			delete bitlockerParser;
 			return -1;
 		}
 		else if (status == BITLOCKER_STATUS::UNSUPPORTED_KEY_PROTECTION_TYPE) {
@@ -65,15 +68,13 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
 			tsk_error_set_errstr(message.c_str());
+			delete bitlockerParser;
 			return -1;
 		}
-		else {
-			// It's unlikely we're going to be able to open the file system (we found at least one BitLocker header) but it's safer to try
-			return 0;
-		}
 
+		// It's unlikely we're going to be able to open the file system (we found at least one BitLocker header) but it's safer to try
 		delete bitlockerParser;
-		return -1;
+		return 0;
 	}
 
 	// Store the BitLocker data to use when reading the volume

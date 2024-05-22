@@ -41,7 +41,7 @@ MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(BITLOCKER_METAD
 * 
 * @param key      Key bytes
 * @param keyLen   Length of the key
-* @param keyEntry Will hold decrypted keyEntry object on success
+* @param keyEntry Will hold decrypted keyEntry object on success. Must be freed by caller.
 * 
 * @return SUCCESS if key is successfully decrypted
 *         GENERAL_ERROR if an unspecified error occurs
@@ -66,6 +66,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
     if (ret != BITLOCKER_STATUS::SUCCESS) {
         memset(decryptedData, 0, encryptedDataLen);
         free(decryptedData);
+        decryptedData = nullptr;
         return ret; // Propagate the return value in case it indicates an incorrect password
     }
 
@@ -73,6 +74,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
     *keyEntry = MetadataEntry::createMetadataEntry(&(decryptedData[BITLOCKER_KEY_MAC_LEN]), encryptedDataLen);
     memset(decryptedData, 0, encryptedDataLen);
     free(decryptedData);
+    decryptedData = nullptr;
 
     if (keyEntry == nullptr) {
         writeError("MetadataValueAesCcmEncryptedKey::decrypt: Failed to create MetadataEntry from decrypted data");

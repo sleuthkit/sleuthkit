@@ -60,6 +60,7 @@ MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
     MetadataEntry* entry = new MetadataEntry();
     if (entry == nullptr) {
         writeError("MetadataEntry::createMetadataEntry: Error allocating memory");
+        delete metadataValue;
         return nullptr;
     }
 
@@ -82,7 +83,7 @@ MetadataEntry::MetadataEntry() {
 
 MetadataEntry::~MetadataEntry() {
     if (metadataValue != nullptr) {
-        delete(metadataValue);
+        delete metadataValue;
         metadataValue = nullptr;
     }
 }

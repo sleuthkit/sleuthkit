@@ -57,7 +57,7 @@ std::string TskIsImageSupported::getSingleLineErrorMessage() {
         if (strnlen(m_bitlockerDesc, 1024) > 0) {
             return std::string(m_bitlockerDesc);
         }
-        return "BitLocker error";
+        return "BitLocker error"; // Safety message - we should always have a description saved
     }
 
     // Check if we have a known unsupported image type

@@ -149,7 +149,7 @@ private:
 
     void clearFveMetadataEntries() {
         for (auto it = m_metadataEntries.begin(); it != m_metadataEntries.end(); ++it) {
-            delete(*it);
+            delete *it;
         }
         m_metadataEntries.clear();
     }

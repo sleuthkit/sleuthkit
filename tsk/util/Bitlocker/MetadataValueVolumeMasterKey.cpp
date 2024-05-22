@@ -39,7 +39,7 @@ MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VA
 MetadataValueVolumeMasterKey::~MetadataValueVolumeMasterKey() {
     for (auto it = properties.begin(); it != properties.end(); ++it) {
         if (*it != NULL) {
-            delete(*it);
+            delete *it;
         }
     }
 }
