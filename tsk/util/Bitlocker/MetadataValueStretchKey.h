@@ -19,7 +19,7 @@
 
 class MetadataValueStretchKey : public MetadataValue {
 public:
-	MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen);
+	MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen);
 
 	BITLOCKER_STATUS parseStretchKeyUsingPassword(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* stretchKey, size_t stretchKeyLen);
 
@@ -27,10 +27,10 @@ public:
 private:
 	BITLOCKER_STATUS generateStretchedKey(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* salt, size_t saltLen, uint8_t* result, size_t resultLen);
 
-	const size_t headerLen = 20;
-	BITLOCKER_ENCRYPTION_TYPE encryptionType;
-	uint8_t salt[16];
-	MetadataEntry* encryptedKeyEntry = NULL;
+	const size_t m_headerLen = 20;
+	BITLOCKER_ENCRYPTION_TYPE m_encryptionType;
+	uint8_t m_salt[16];
+	MetadataEntry* m_encryptedKeyEntry = NULL;
 };
 
 #endif

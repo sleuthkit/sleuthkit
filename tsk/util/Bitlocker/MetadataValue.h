@@ -20,22 +20,22 @@
 
 class MetadataValue {
 public:
-	MetadataValue(BITLOCKER_METADATA_VALUE_TYPE a_valueType) { valueType = a_valueType; };
+	MetadataValue(BITLOCKER_METADATA_VALUE_TYPE valueType) { m_valueType = valueType; };
 
-	BITLOCKER_METADATA_VALUE_TYPE getValueType() { return valueType; }
+	BITLOCKER_METADATA_VALUE_TYPE getValueType() { return m_valueType; }
 	bool wasLoadedSuccessfully() {
-		return loadSuccessful;
+		return m_loadSuccessful;
 	}
 
 	void registerError(string errMsg) {
-		loadSuccessful = false;
+		m_loadSuccessful = false;
 		writeError(errMsg);
 	}
 	virtual ~MetadataValue() {};
 
 private:
-	BITLOCKER_METADATA_VALUE_TYPE valueType;
-	bool loadSuccessful = true;
+	BITLOCKER_METADATA_VALUE_TYPE m_valueType;
+	bool m_loadSuccessful = true;
 };
 
 /**

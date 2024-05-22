@@ -12,11 +12,11 @@
 
 #include "MetadataValueVolumeMasterKey.h"
 
-MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {
+MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen) : MetadataValue(valueType) {
 
-    if (bufLen < headerLen) {
+    if (bufLen < m_headerLen) {
         registerError("MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(): Buffer for creating MetadataValueVolumeMasterKey was too short");
-        memset(guid, 0, 16);
+        memset(m_guid, 0, 16);
         return;
     }
 
@@ -26,18 +26,18 @@ MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VA
     // - 2 byte unknown
     // - 2 byte key protection type
     // - list of metadata entries
-    memcpy(guid, buf, 16);
-    lastModificationTime = tsk_getu64(TSK_LIT_ENDIAN, &(buf[16]));
-    unknown = tsk_getu16(TSK_LIT_ENDIAN, &(buf[24]));
-    keyProtectionType = getKeyProtectionTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[26])));
+    memcpy(m_guid, buf, 16);
+    m_lastModificationTime = tsk_getu64(TSK_LIT_ENDIAN, &(buf[16]));
+    m_unknown = tsk_getu16(TSK_LIT_ENDIAN, &(buf[24]));
+    m_keyProtectionType = getKeyProtectionTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[26])));
 
-    if (BITLOCKER_STATUS::SUCCESS != readMetadataEntries(&(buf[headerLen]), bufLen - headerLen, properties)) {
+    if (BITLOCKER_STATUS::SUCCESS != readMetadataEntries(&(buf[m_headerLen]), bufLen - m_headerLen, m_properties)) {
         registerError("MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(): Error reading metadata entries");
     }
 };
 
 MetadataValueVolumeMasterKey::~MetadataValueVolumeMasterKey() {
-    for (auto it = properties.begin(); it != properties.end(); ++it) {
+    for (auto it = m_properties.begin(); it != m_properties.end(); ++it) {
         if (*it != NULL) {
             delete *it;
         }

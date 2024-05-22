@@ -14,18 +14,18 @@
 
 #include "mbedtls/sha256.h" 
 
-MetadataValueStretchKey::MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen) : MetadataValue(a_valueType) {
+MetadataValueStretchKey::MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen) : MetadataValue(valueType) {
 
-    if (bufLen < headerLen) {
+    if (bufLen < m_headerLen) {
         registerError("MetadataValueStretchKey::MetadataValueStretchKey(): Buffer for creating MetadataValueStretchKey was too short");
-        memset(salt, 0, 16);
+        memset(m_salt, 0, 16);
         return;
     }
 
-    encryptionType = getEncryptionTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[0])));
-    memcpy(salt, &(buf[4]), 16);
+    m_encryptionType = getEncryptionTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[0])));
+    memcpy(m_salt, &(buf[4]), 16);
 
-    encryptedKeyEntry = MetadataEntry::createMetadataEntry(&(buf[headerLen]), bufLen - headerLen);
+    m_encryptedKeyEntry = MetadataEntry::createMetadataEntry(&(buf[m_headerLen]), bufLen - m_headerLen);
 }
 
 /**
@@ -46,7 +46,7 @@ BITLOCKER_STATUS MetadataValueStretchKey::parseStretchKeyUsingPassword(uint8_t* 
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
-    if (BITLOCKER_STATUS::SUCCESS != generateStretchedKey(passwordHash, passwordHashLen, salt, 16, stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN)) {
+    if (BITLOCKER_STATUS::SUCCESS != generateStretchedKey(passwordHash, passwordHashLen, m_salt, 16, stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN)) {
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
     writeDebug("MetadataValueStretchKey::parseStretchKeyUsingPassword Stretched key: " + convertByteArrayToString(stretchKey, BITLOCKER_STRETCH_KEY_SHA256_LEN));
@@ -103,8 +103,8 @@ BITLOCKER_STATUS MetadataValueStretchKey::generateStretchedKey(uint8_t* password
 }
 
 MetadataValueStretchKey::~MetadataValueStretchKey() {
-    if (encryptedKeyEntry != NULL) {
-        delete encryptedKeyEntry;
+    if (m_encryptedKeyEntry != NULL) {
+        delete m_encryptedKeyEntry;
     }
 }
 

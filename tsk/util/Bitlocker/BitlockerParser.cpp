@@ -456,9 +456,11 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
     bool possibleWrongPassword = false;
     bool possibleUnsupportedProtectionType = false;
     for (auto it = vmkEntries.begin(); it != vmkEntries.end(); ++it) {
+        // Note that vmk will be only be allocated on SUCCESS - we don't need to free it on error conditions.
         ret = parseVMKEntry(*it, &vmk);
-        if (ret == BITLOCKER_STATUS::SUCCESS && vmk != nullptr) {
-            // Successfully parsed one of the entries - no need to try another
+        if (ret == BITLOCKER_STATUS::SUCCESS) {
+            // Successfully parsed one of the entries - no need to try another.
+            // Since the return value was SUCCESS vmk is now pointing to an allocated MetadataEntry entry.
             break;
         }
         else if (ret == BITLOCKER_STATUS::WRONG_PASSWORD) {
@@ -476,7 +478,7 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
     // Note that the order is important here - if we have a normal password that failed to decrypt the
     // password protected VMK entry, we don't want to report that we didn't have a recovery password to
     // try in the recovery password protected VMK.
-    if (ret != BITLOCKER_STATUS::SUCCESS || vmk == nullptr) {
+    if (ret != BITLOCKER_STATUS::SUCCESS) {
         writeError("BitlockerParser::setVolumeMasterKey: Failed to extract Volume Master Key");
         if (possibleWrongPassword) {
             return BITLOCKER_STATUS::WRONG_PASSWORD;
@@ -651,6 +653,8 @@ BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeM
     // the decrypted key is correct.
     MetadataEntry* keyEntry = nullptr;
     ret = aesCcmKey->decrypt(stretchedKey, BITLOCKER_STRETCH_KEY_SHA256_LEN, &keyEntry);
+
+    // Note that on success keyEntry will always be a valid, allocated object. Otherwise it will be null.
     if (ret != BITLOCKER_STATUS::SUCCESS) {
         return ret;
     }
@@ -659,6 +663,7 @@ BITLOCKER_STATUS BitlockerParser::parsePasswordProtectedVMK(MetadataValueVolumeM
     if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
         writeError("BitlockerParser::parseVMKEntry: keyEntry does not have value of type KEY ("
             + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
+        delete keyEntry;
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -715,6 +720,8 @@ BITLOCKER_STATUS BitlockerParser::parseClearKeyProtectedVMK(MetadataValueVolumeM
     // the decrypted key is correct.
     MetadataEntry* keyEntry = nullptr;
     BITLOCKER_STATUS ret = aesCcmKey->decrypt(key->getKeyBytes(), key->getKeyLen(), &keyEntry);
+
+    // Note that on success keyEntry will always be a valid, allocated object. Otherwise it will be null.
     if (ret != BITLOCKER_STATUS::SUCCESS) {
         // If something has gone wrong we could potentially get a WRONG_PASSWORD return value here.
         // But this is more of an internal error - either we're processing something wrong or the
@@ -728,6 +735,7 @@ BITLOCKER_STATUS BitlockerParser::parseClearKeyProtectedVMK(MetadataValueVolumeM
     if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
         writeError("BitlockerParser::parseVMKEntry: keyEntry does not have value of type KEY ("
             + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
+        delete keyEntry;
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -781,7 +789,9 @@ BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
     // the decrypted key is correct.
     MetadataEntry* keyEntry = nullptr;
     BITLOCKER_STATUS ret = aesCcmKey->decrypt(keyBytes, keyLen, &keyEntry);
-    if (ret != BITLOCKER_STATUS::SUCCESS || keyEntry == nullptr) {
+
+    // Note that on success keyEntry will always be a valid, allocated object. Otherwise it will be null.
+    if (ret != BITLOCKER_STATUS::SUCCESS) {
         return ret;
     }
 
@@ -789,11 +799,14 @@ BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
     if (keyEntry->getValueType() != BITLOCKER_METADATA_VALUE_TYPE::KEY) {
         writeError("BitlockerParser::parseVMKEntry: keyEntry does not have value of type KEY ("
             + convertMetadataValueTypeToString(keyEntry->getValueType()) + ")");
+        delete keyEntry;
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
     // Use the decrypted FVEK to intialize the AES contexts we'll use to decrypt the volume
-    return (setKeys(keyEntry));
+    ret = setKeys(keyEntry);
+    delete keyEntry;
+    return ret;
 }
 
 /**
@@ -839,6 +852,11 @@ BITLOCKER_STATUS BitlockerParser::getKeyData(MetadataEntry* entry, uint8_t** key
 * @return SUCCESS on success, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
+
+    if (fvekEntry == nullptr) {
+        writeError("BitlockerParser::setKeys: fvekEntry was null");
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
 
     MetadataValueKey* fvek = dynamic_cast<MetadataValueKey*>(fvekEntry->getValue());
     if (fvek == nullptr) {

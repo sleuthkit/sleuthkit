@@ -64,27 +64,27 @@ MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
         return nullptr;
     }
 
-    entry->size = size;
-    entry->entryType = entryType;
-    entry->valueType = valueType;
-    entry->version = tsk_getu16(TSK_LIT_ENDIAN, &(buf[6]));
-    entry->metadataValue = metadataValue;
+    entry->m_size = size;
+    entry->m_entryType = entryType;
+    entry->m_valueType = valueType;
+    entry->m_version = tsk_getu16(TSK_LIT_ENDIAN, &(buf[6]));
+    entry->m_metadataValue = metadataValue;
 
     return entry;
 }
 
 MetadataEntry::MetadataEntry() {
-    size = 0;
-    entryType = BITLOCKER_METADATA_ENTRY_TYPE::UNKNOWN;
-    valueType = BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN;
-    version = 0;
-    metadataValue = nullptr;
+    m_size = 0;
+    m_entryType = BITLOCKER_METADATA_ENTRY_TYPE::UNKNOWN;
+    m_valueType = BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN;
+    m_version = 0;
+    m_metadataValue = nullptr;
 }
 
 MetadataEntry::~MetadataEntry() {
-    if (metadataValue != nullptr) {
-        delete metadataValue;
-        metadataValue = nullptr;
+    if (m_metadataValue != nullptr) {
+        delete m_metadataValue;
+        m_metadataValue = nullptr;
     }
 }
 

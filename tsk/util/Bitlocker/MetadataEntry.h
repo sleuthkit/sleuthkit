@@ -23,19 +23,19 @@ public:
     static MetadataEntry* createMetadataEntry(uint8_t* buf, size_t bufLen);
 
     uint16_t getSize() {
-        return size;
+        return m_size;
     }
 
     BITLOCKER_METADATA_ENTRY_TYPE getEntryType() {
-        return entryType;
+        return m_entryType;
     }
 
     BITLOCKER_METADATA_VALUE_TYPE getValueType() {
-        return valueType;
+        return m_valueType;
     }
 
     MetadataValue* getValue() {
-        return metadataValue;
+        return m_metadataValue;
     }
 
     ~MetadataEntry();
@@ -44,11 +44,11 @@ private:
     MetadataEntry();
 
     static const size_t HEADER_SIZE = 8; // Size in bytes of the next four entries
-    uint16_t size;
-    BITLOCKER_METADATA_ENTRY_TYPE entryType;
-    BITLOCKER_METADATA_VALUE_TYPE valueType;
-    uint16_t version;
-    MetadataValue* metadataValue;
+    uint16_t m_size;
+    BITLOCKER_METADATA_ENTRY_TYPE m_entryType;
+    BITLOCKER_METADATA_VALUE_TYPE m_valueType;
+    uint16_t m_version;
+    MetadataValue* m_metadataValue;
 };
 
 

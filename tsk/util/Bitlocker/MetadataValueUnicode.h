@@ -18,13 +18,13 @@ public:
 	MetadataValueUnicode(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen);
 
 	wstring getUnicodeWString() {
-		return unicodeStringW;
+		return m_unicodeStringW;
 	}
 
 	~MetadataValueUnicode() {};
 
 private:
-	wstring unicodeStringW = L"";
+	wstring m_unicodeStringW = L"";
 };
 
 #endif

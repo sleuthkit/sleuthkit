@@ -25,7 +25,7 @@ MetadataValueUnicode::MetadataValueUnicode(BITLOCKER_METADATA_VALUE_TYPE a_value
         registerError("MetadataValueUnicode::MetadataValueUnicode(): Buffer for creating MetadataValueUnicode does not have even length");
         return;
     }
-    unicodeStringW = wstring(reinterpret_cast<wchar_t*>(buf), bufLen / sizeof(wchar_t));
+    m_unicodeStringW = wstring(reinterpret_cast<wchar_t*>(buf), bufLen / sizeof(wchar_t));
 }
 
 #endif

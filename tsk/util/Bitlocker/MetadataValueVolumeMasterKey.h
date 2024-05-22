@@ -16,30 +16,30 @@
 
 class MetadataValueVolumeMasterKey : public MetadataValue {
 public:
-	MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VALUE_TYPE a_valueType, uint8_t* buf, size_t bufLen);
+	MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen);
 
 	BITLOCKER_KEY_PROTECTION_TYPE getProtectionType() {
-		return keyProtectionType;
+		return m_keyProtectionType;
 	}
 
 	list<MetadataEntry*>& getProperties() {
-		return properties;
+		return m_properties;
 	}
 
 	void copyGuid(uint8_t* dest) {
-		memcpy(dest, guid, 16);
+		memcpy(dest, m_guid, 16);
 	}
 
 	~MetadataValueVolumeMasterKey();
 
 private:
-	const size_t headerLen = 28;
+	const size_t m_headerLen = 28;
 
-	uint8_t guid[16];
-	uint64_t lastModificationTime = 0;
-	uint16_t unknown;
-	BITLOCKER_KEY_PROTECTION_TYPE keyProtectionType = BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN;
-	list<MetadataEntry*> properties;
+	uint8_t m_guid[16];
+	uint64_t m_lastModificationTime = 0;
+	uint16_t m_unknown;
+	BITLOCKER_KEY_PROTECTION_TYPE m_keyProtectionType = BITLOCKER_KEY_PROTECTION_TYPE::UNKNOWN;
+	list<MetadataEntry*> m_properties;
 };
 
 #endif
