@@ -128,6 +128,14 @@ public:
         mbedtls_aes_free(&m_aesFvekDecryptionContext);
         mbedtls_aes_free(&m_aesTweakEncryptionContext);
         mbedtls_aes_xts_free(&m_aesXtsDecryptionContext);
+        if (m_encryptedDataBuffer != nullptr) {
+            memset(m_encryptedDataBuffer, 0, m_sectorSize);
+            m_encryptedDataBuffer = nullptr;
+        }
+        if (m_diffuserTempBuffer != nullptr) {
+            memset(m_diffuserTempBuffer, 0, m_sectorSize);
+            m_diffuserTempBuffer = nullptr;
+        }
     }
 
 private:
@@ -171,6 +179,10 @@ private:
     void decryptDiffuserA(uint8_t* data, uint16_t dataLen, uint8_t* result);
     void decryptDiffuserB(uint8_t* data, uint16_t dataLen, uint8_t* result);
     int decryptSectorAESXTS(uint64_t offset, uint8_t* data);
+
+    // If allocated, both with have size m_sectorSize
+    uint8_t* m_encryptedDataBuffer = nullptr;
+    uint8_t* m_diffuserTempBuffer = nullptr;
 
     list<uint64_t> m_fveMetadataOffsets;
     list<MetadataEntry*> m_metadataEntries;

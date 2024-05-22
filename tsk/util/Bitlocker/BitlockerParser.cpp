@@ -845,7 +845,8 @@ BITLOCKER_STATUS BitlockerParser::getKeyData(MetadataEntry* entry, uint8_t** key
 }
 
 /**
-* Use the decrypted full volume encryption key (FVEK) to initialize the appropriate AES contexts
+* Use the decrypted full volume encryption key (FVEK) to initialize the appropriate AES contexts.
+* Also allocate memory for the temp buffers used during decryption.
 * 
 * @param fvekEntry The entry containing the decrypted FVEK
 * 
@@ -876,6 +877,13 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
             m_encryptionType = fvek->getEncryptionType();
             return BITLOCKER_STATUS::SUCCESS;
         }
+        return BITLOCKER_STATUS::GENERAL_ERROR;
+    }
+
+    m_encryptedDataBuffer = (uint8_t*)tsk_malloc(m_sectorSize);
+    m_diffuserTempBuffer = (uint8_t*)tsk_malloc(m_sectorSize);
+    if (m_encryptedDataBuffer == nullptr || m_diffuserTempBuffer == nullptr) {
+        writeError("BitlockerParser::setKeys: Error allocating temp buffers");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
 
@@ -1249,8 +1257,10 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
     // This seems to only work for Windows 7 (and likely earlier). After that it seems like m_encryptedVolumeSize
     // is set to the full volume size even when encryption was paused partway through.
     if (volumeOffset >= m_encryptedVolumeSize) {
-        writeDebug("BitlockerParser::decryptSector: Sector is beyond what was encrypted - returning original data. ");
-        writeDebug("BitlockerParser::decryptSector: Data:         " + convertUint64ToString(volumeOffset) + "   " + convertByteArrayToString(data, 16) + "...");
+        if (tsk_verbose) {
+            writeDebug("BitlockerParser::decryptSector: Sector is beyond what was encrypted - returning original data. ");
+            writeDebug("BitlockerParser::decryptSector: Data:         " + convertUint64ToString(volumeOffset) + "   " + convertByteArrayToString(data, 16) + "...");
+        }
         return 0;
     }
 
@@ -1281,14 +1291,7 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
 */
 int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* data) {
 
-    // Make temporary buffer to copy encrypted data to
-    uint8_t* encryptedData = (uint8_t*)tsk_malloc(m_sectorSize);
-    if (encryptedData == nullptr) {
-        writeError("BitlockerParser::decryptSectorAESCBC_noDiffuser: Error allocating encryptedData");
-        return -1;
-    }
-    memcpy(encryptedData, data, m_sectorSize);
-    memset(data, 0, m_sectorSize);
+    memcpy(m_encryptedDataBuffer, data, m_sectorSize);
 
     // The volume offset is used to create the IV
     union {
@@ -1299,18 +1302,21 @@ int BitlockerParser::decryptSectorAESCBC_noDiffuser(uint64_t offset, uint8_t* da
     memset(iv.bytes, 0, 16);
     iv.offset = offset;
 
-    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(encryptedData, 16) + "...");
-    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(m_encryptedDataBuffer, 16) + "...");
+        writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
+    }
 
     uint8_t encryptedIv[16];
     mbedtls_aes_crypt_ecb(&m_aesFvekEncryptionContext, MBEDTLS_AES_ENCRYPT, iv.bytes, encryptedIv);
-    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Encrypted IV: " + convertByteArrayToString(encryptedIv, 16));
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Encrypted IV: " + convertByteArrayToString(encryptedIv, 16));
+    }
 
-    mbedtls_aes_crypt_cbc(&m_aesFvekDecryptionContext, MBEDTLS_AES_DECRYPT, m_sectorSize, encryptedIv, encryptedData, data);
-    writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 16) + "...\n");
-
-    memset(encryptedData, 0, m_sectorSize);
-    free(encryptedData);
+    mbedtls_aes_crypt_cbc(&m_aesFvekDecryptionContext, MBEDTLS_AES_DECRYPT, m_sectorSize, encryptedIv, m_encryptedDataBuffer, data);
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::decryptSectorAESCBC_noDiffuser: Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 16) + "...\n");
+    }
 
     return 0;
 }
@@ -1383,16 +1389,9 @@ void BitlockerParser::decryptDiffuserB(uint8_t* data, uint16_t dataLen, uint8_t*
 */
 int BitlockerParser::decryptSectorAESCBC_diffuser(uint64_t offset, uint8_t* data) {
 
-    // Make temporary buffer to copy encrypted data to
-    uint8_t* encryptedData = (uint8_t*)tsk_malloc(m_sectorSize);
-    uint8_t* tempBuffer = (uint8_t*)tsk_malloc(m_sectorSize);
-    if (encryptedData == nullptr || tempBuffer == nullptr) {
-        writeError("BitlockerParser::decryptSectorAESCBC_noDiffuser: Error allocating encryptedData or tempBuffer");
-        return -1;
-    }
-    memcpy(encryptedData, data, m_sectorSize);
+    memcpy(m_encryptedDataBuffer, data, m_sectorSize);
     memset(data, 0, m_sectorSize);
-    memset(tempBuffer, 0, m_sectorSize);
+    memset(m_diffuserTempBuffer, 0, m_sectorSize);
 
     // The volume offset is used to create the IV
     union {
@@ -1411,34 +1410,31 @@ int BitlockerParser::decryptSectorAESCBC_diffuser(uint64_t offset, uint8_t* data
     iv.bytes[15] = 0x80;
     mbedtls_aes_crypt_ecb(&m_aesTweakEncryptionContext, MBEDTLS_AES_ENCRYPT, iv.bytes, &(sectorKey[16]));
 
-    writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(encryptedData, 16) + "...");
-    writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Sector key:  " + convertByteArrayToString(sectorKey, 32));
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Data:         " + convertUint64ToString(offset) + "   " + convertByteArrayToString(m_encryptedDataBuffer, 16) + "...");
+        writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Sector key:  " + convertByteArrayToString(sectorKey, 32));
+    }
 
     // Decrypt the sector normally
-    if (0 != decryptSectorAESCBC_noDiffuser(offset, encryptedData)) {
-        memset(encryptedData, 0, m_sectorSize);
-        free(encryptedData);
-        free(tempBuffer);
+    if (0 != decryptSectorAESCBC_noDiffuser(offset, m_encryptedDataBuffer)) {
         memset(iv.bytes, 0, 16);
         memset(sectorKey, 0, 32);
         return -1;
     }
 
     // Apply diffuser
-    decryptDiffuserB(encryptedData, m_sectorSize, tempBuffer);
-    decryptDiffuserA(tempBuffer, m_sectorSize, data);
+    decryptDiffuserB(m_encryptedDataBuffer, m_sectorSize, m_diffuserTempBuffer);
+    decryptDiffuserA(m_diffuserTempBuffer, m_sectorSize, data);
 
     // Apply sector key
     for (int loop = 0; loop < m_sectorSize; ++loop) {
         data[loop] ^= sectorKey[loop % 32];
     }
 
-    writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 16) + "...\n");
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::decryptSectorAESCBC_diffuser: Decrypted:    " + convertUint64ToString(offset) + "   " + convertByteArrayToString(data, 16) + "...\n");
+    }
 
-    memset(encryptedData, 0, m_sectorSize);
-    free(encryptedData);
-    memset(tempBuffer, 0, m_sectorSize);
-    free(tempBuffer);
     memset(iv.bytes, 0, 16);
     memset(sectorKey, 0, 32);
 
@@ -1455,14 +1451,7 @@ int BitlockerParser::decryptSectorAESCBC_diffuser(uint64_t offset, uint8_t* data
 */
 int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
 
-    // Make temporary buffer to copy encrypted data to
-    uint8_t* encryptedData = (uint8_t*)tsk_malloc(m_sectorSize);
-    if (encryptedData == nullptr) {
-        writeError("BitlockerParser::decryptSectorAESXTS: Error allocating encryptedData");
-        return -1;
-    }
-    memcpy(encryptedData, data, m_sectorSize);
-    memset(data, 0, m_sectorSize);
+    memcpy(m_encryptedDataBuffer, data, m_sectorSize);
 
     // The volume offset divided by the sector size is used to create the IV
     union {
@@ -1473,14 +1462,15 @@ int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
     memset(iv.bytes, 0, 16);
     iv.offset = offset / m_sectorSize;
 
-    writeDebug("BitlockerParser::decryptSectorAESXTS: Data:         " + convertByteArrayToString(encryptedData, 16) + "...");
-    writeDebug("BitlockerParser::decryptSectorAESXTS: Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::decryptSectorAESXTS: Data:         " + convertByteArrayToString(m_encryptedDataBuffer, 16) + "...");
+        writeDebug("BitlockerParser::decryptSectorAESXTS: Starting IV:  " + convertByteArrayToString(iv.bytes, 16));
+    }
 
-    mbedtls_aes_crypt_xts(&m_aesXtsDecryptionContext, MBEDTLS_AES_DECRYPT, m_sectorSize, iv.bytes, encryptedData, data);
-    writeDebug("BitlockerParser::decryptSectorAESXTS: Decrypted:    " + convertByteArrayToString(data, 16) + "...");
-
-    memset(encryptedData, 0, m_sectorSize);
-    free(encryptedData);
+    mbedtls_aes_crypt_xts(&m_aesXtsDecryptionContext, MBEDTLS_AES_DECRYPT, m_sectorSize, iv.bytes, m_encryptedDataBuffer, data);
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::decryptSectorAESXTS: Decrypted:    " + convertByteArrayToString(data, 16) + "...");
+    }
 
     return 0;
 }
@@ -1499,7 +1489,9 @@ TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
     // The expectation is that the first volumeHeaderSize bytes of the volume have been moved to volumeHeaderOffset.
     // So if we're given an offset in that range convert it to the relocated one.
     if (origOffset >= m_volumeHeaderSize) {
-        writeDebug("BitlockerParser::convertVolumeOffset: Offset is not in the range of relocated sectors - returning original");
+        if (tsk_verbose) {
+            writeDebug("BitlockerParser::convertVolumeOffset: Offset is not in the range of relocated sectors - returning original");
+        }
         return origOffset;
     }
 
@@ -1509,7 +1501,9 @@ TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
         return origOffset;
     }
 
-    writeDebug("BitlockerParser::convertVolumeOffset: Offset is in the range of relocated sectors - returning new offset " + convertUint64ToString(newOffset));
+    if (tsk_verbose) {
+        writeDebug("BitlockerParser::convertVolumeOffset: Offset is in the range of relocated sectors - returning new offset " + convertUint64ToString(newOffset));
+    }
     return newOffset;
 }
 
