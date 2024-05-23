@@ -1529,7 +1529,7 @@ string BitlockerParser::getDescription() {
         return "BitLocker not successfully intialized";
     }
 
-    // Make a string similar to: "BitLocker AES-CBC 128 bit decrypted using password"
+    // Make a string similar to: "BitLocker AES-CBC 128 bit, unlocked using password"
     stringstream ss;
     ss << "BitLocker " << convertEncryptionTypeToString(m_encryptionType) << " encryption, ";
     ss << "unlocked using " << convertKeyProtectionTypeToString(m_protectionTypeUsed);

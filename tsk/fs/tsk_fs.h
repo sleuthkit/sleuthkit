@@ -983,7 +983,7 @@ extern "C" {
 
         TSK_FS_TYPE_ENUM ftype; ///< type of file system
         const char *duname;     ///< string "name" of data unit type
-        uint16_t flags;         ///< flags for file system
+        TSK_FS_INFO_FLAG_ENUM flags;         ///< flags for file system
         uint8_t fs_id[TSK_FS_INFO_FS_ID_LEN];   ///< File system id (as reported in boot sector)
         size_t fs_id_used;      ///< Number of bytes in fs_id that are being used
 
@@ -2202,11 +2202,11 @@ class TskFsInfo {
         * return flags for file system
     * @return flags for file system
     */
-    uint16_t getFlags() const {
+    TSK_FS_INFO_FLAG_ENUM getFlags() const {
         if (m_fsInfo != NULL)
             return m_fsInfo->flags;
         else
-            return 0;
+            return (TSK_FS_INFO_FLAG_ENUM)0;
     };
     /**
         * return file system id (as reported in boot sector).  Use getFsIdLen() to determine how many byts in buffer are used.

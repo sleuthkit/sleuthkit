@@ -80,7 +80,7 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	// Store the BitLocker data to use when reading the volume
 	a_fs_info->encryption_type = TSK_FS_ENCRYPTION_TYPE_BITLOCKER;
 	a_fs_info->encryption_data = (void*)bitlockerParser;
-	a_fs_info->flags |= TSK_FS_INFO_FLAG_ENCRYPTED;
+	a_fs_info->flags = (TSK_FS_INFO_FLAG_ENUM)(a_fs_info->flags | TSK_FS_INFO_FLAG_ENCRYPTED);
 	a_fs_info->block_size = bitlockerParser->getSectorSize();
 	// We don't set a_fs_info->decrypt_block here because Bitlocker needs to handle both reading in the block
 	// and doing the decryption since some sectors may have been relocated
