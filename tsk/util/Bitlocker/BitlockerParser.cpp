@@ -1097,7 +1097,7 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
     // so we'll just use any supplied password as a normal password and potentially as a recovery password (if it has the right format).
     // Example: 162294-601403-607013-155265-438779-479028-357148-102091
     // Each part should be divisible by 11 to produce a 16-bit value. Those eight values are combined to form a 16 byte key.
-    std::regex recoveryPasswordPattern("^(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})-(\\d{1,6})$");
+    std::regex recoveryPasswordPattern("^(\\d{6})-(\\d{6})-(\\d{6})-(\\d{6})-(\\d{6})-(\\d{6})-(\\d{6})-(\\d{6})$");
     std::match_results<std::string::const_iterator> match;
     if (!std::regex_search(password, match, recoveryPasswordPattern) || (match.size() != 9)) {
         writeDebug("BitlockerParser::handlePassword: Password is not a recovery password");
@@ -1554,6 +1554,10 @@ string BitlockerParser::getUnsupportedProtectionTypes() {
     return ss.str();
 }
 
+/**
+* Returns a string containing the recovery key ID. Intended to be displayed to the user if the password
+* is incorrect or missing to help locate the correct recovery password.
+*/
 string BitlockerParser::getRecoveryKeyIdStr() {
     if (!m_haveRecoveryKeyId) {
         return "";
