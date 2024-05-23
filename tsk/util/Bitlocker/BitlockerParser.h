@@ -130,10 +130,12 @@ public:
         mbedtls_aes_xts_free(&m_aesXtsDecryptionContext);
         if (m_encryptedDataBuffer != nullptr) {
             memset(m_encryptedDataBuffer, 0, m_sectorSize);
+            free(m_encryptedDataBuffer);
             m_encryptedDataBuffer = nullptr;
         }
         if (m_diffuserTempBuffer != nullptr) {
             memset(m_diffuserTempBuffer, 0, m_sectorSize);
+            free(m_diffuserTempBuffer);
             m_diffuserTempBuffer = nullptr;
         }
     }

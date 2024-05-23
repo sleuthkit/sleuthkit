@@ -883,6 +883,12 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
     m_encryptedDataBuffer = (uint8_t*)tsk_malloc(m_sectorSize);
     m_diffuserTempBuffer = (uint8_t*)tsk_malloc(m_sectorSize);
     if (m_encryptedDataBuffer == nullptr || m_diffuserTempBuffer == nullptr) {
+        if (m_encryptedDataBuffer != nullptr) {
+            free(m_encryptedDataBuffer);
+        }
+        if (m_diffuserTempBuffer != nullptr) {
+            free(m_diffuserTempBuffer);
+        }
         writeError("BitlockerParser::setKeys: Error allocating temp buffers");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
