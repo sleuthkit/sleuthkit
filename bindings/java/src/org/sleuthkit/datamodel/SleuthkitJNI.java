@@ -1931,7 +1931,49 @@ public class SleuthkitJNI {
 	}
 
 	public static boolean isImageSupported(String imagePath) {
-		return isImageSupportedNat(imagePath);
+		// isImageSupportedStringNat returns a blank string if the image is supported or
+		// an error message if the file systems could not be opened
+		return isImageSupportedStringNat(imagePath, "").isBlank();
+	}
+	
+	/**
+	 * Helper class to hold the result of running testOpenImage()
+	 */
+	public static class TestOpenImageResult {
+		boolean testSuccess;
+		String message;
+		
+		TestOpenImageResult(boolean testSuccess, String message) {
+			this.testSuccess = testSuccess;
+			this.message = message;
+		}
+	
+		// True if we were able to open at least one file system in the given image
+		public boolean wasSuccessful() {
+			return testSuccess;
+		}
+		
+		// Contains a user-friendly status message. On success, will contain "Image opened successfully". 
+		// Otherwise it will give our best effort to explain why we were unsuccessful.
+		public String getMessage() {
+			return message;
+		}
+	}
+	
+	/**
+	 * Tries opening the image with the optional password.
+	 *
+	 * @param imagePath  Path to the image (will just be the first for .e01, .001, etc).
+	 * @param password   Password to use when trying to decrypt the volumes. Leave blank for no password.
+	 * 
+	 * @return TestOpenImageResult that will contain whether we were able to open a file system and a user-friendly message
+	 */
+	public static TestOpenImageResult testOpenImage(String imagePath, String password) {
+		String resultStr = isImageSupportedStringNat(imagePath, password);
+		if (resultStr.isBlank()) {
+			return new TestOpenImageResult(true, "Image opened successfully");
+		}
+		return new TestOpenImageResult(false, resultStr);
 	}
 	
 	/** Get the version of the Sleuthkit code in number form.
@@ -2199,7 +2241,7 @@ public class SleuthkitJNI {
 
 	private static native String getCurDirNat(long process);
 
-	private static native boolean isImageSupportedNat(String imagePath);
+	private static native String isImageSupportedStringNat(String imagePath, String password);
 	
 	private static native long getSleuthkitVersionNat();
 

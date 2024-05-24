@@ -28,6 +28,7 @@ usage()
         progname);
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -81,7 +82,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:P:uvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:k:o:P:uvV"))) > 0) {
         switch (ch) {
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
@@ -140,6 +141,9 @@ main(int argc, char **argv1)
                 tsk_error_print(stderr);
                 exit(1);
             }
+            break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
             break;
         case _TSK_T('v'):
             tsk_verbose++;

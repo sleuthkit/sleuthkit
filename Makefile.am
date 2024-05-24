@@ -55,7 +55,7 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/vs/tsk_mac.h tsk/vs/tsk_sun.h \
     tsk/fs/tsk_fs.h tsk/fs/tsk_ffs.h tsk/fs/tsk_ext2fs.h tsk/fs/tsk_fatfs.h \
     tsk/fs/tsk_ntfs.h tsk/fs/tsk_iso9660.h tsk/fs/tsk_hfs.h tsk/fs/tsk_yaffs.h tsk/fs/tsk_logical_fs.h \
-    tsk/fs/tsk_apfs.h tsk/fs/tsk_apfs.hpp tsk/fs/apfs_fs.h tsk/fs/apfs_fs.hpp tsk/fs/apfs_compat.hpp \
+    tsk/fs/tsk_apfs.h tsk/fs/tsk_apfs.hpp tsk/fs/apfs_fs.h tsk/fs/apfs_fs.hpp tsk/fs/apfs_compat.hpp tsk/fs/encryptionHelper.h \
     tsk/fs/decmpfs.h tsk/fs/tsk_exfatfs.h tsk/fs/tsk_fatxxfs.h \
     tsk/hashdb/tsk_hashdb.h tsk/auto/tsk_auto.h \
     tsk/auto/tsk_is_image_supported.h tsk/auto/guid.h \
@@ -63,7 +63,11 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
 	tsk/pool/pool_compat.hpp tsk/pool/apfs_pool_compat.hpp \
     tsk/pool/lvm_pool_compat.hpp \
     tsk/util/crypto.hpp tsk/util/lw_shared_ptr.hpp tsk/util/span.hpp \
-    tsk/util/detect_encryption.h tsk/util/file_system_utils.h
+    tsk/util/detect_encryption.h tsk/util/file_system_utils.h \
+    tsk/util/Bitlocker/BitlockerParser.h tsk/util/Bitlocker/DataTypes.h tsk/util/Bitlocker/MetadataEntry.h \
+    tsk/util/Bitlocker/MetadataUtils.h tsk/util/Bitlocker/MetadataValue.h tsk/util/Bitlocker/MetadataValueAesCcmEncryptedKey.h \
+    tsk/util/Bitlocker/MetadataValueKey.h tsk/util/Bitlocker/MetadataValueOffsetAndSize.h tsk/util/Bitlocker/MetadataValueUnicode.h \
+    tsk/util/Bitlocker/MetadataValueStretchKey.h tsk/util/Bitlocker/MetadataValueVolumeMasterKey.h tsk/util/Bitlocker/BitlockerUtils.h
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \

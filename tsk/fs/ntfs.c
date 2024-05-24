@@ -20,6 +20,7 @@
 #include "tsk_ntfs.h"
 
 #include <ctype.h>
+#include "encryptionHelper.h"
 
 /**
  * \file ntfs.c
@@ -5219,12 +5220,13 @@ process_kape_boot_format(NTFS_INFO* ntfs_info) {
  * @param img_info Disk image to analyze
  * @param offset Byte offset where NTFS file system starts
  * @param ftype Specific type of NTFS file system
+ * @param a_pass (Optional) bitlocker password
  * @param test NOT USED
  * @returns NULL on error or if data is not an NTFS file system
  */
 TSK_FS_INFO *
 ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     char *myname = "ntfs_open";
     NTFS_INFO *ntfs = NULL;
@@ -5265,6 +5267,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->loading_the_MFT = 0;
     ntfs->bmap = NULL;
     ntfs->bmap_buf = NULL;
+
+    // Check for any volume encryption and initialize if found.
+    // A non-zero value will only be returned if we are very confident encryption was found
+    // but encountered an error and should not continue trying to open the volume. 
+    // In this case we should also have a specific error to get back to the user, such as reporting an incorrect password.
+    if (0 != handleVolumeEncryption((TSK_FS_INFO*)ntfs, a_pass)) {
+        goto on_error;
+    }
 
     /* Read the boot sector */
     len = roundup(sizeof(ntfs_sb), img_info->sector_size);

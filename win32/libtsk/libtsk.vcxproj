@@ -167,7 +167,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;_ITERATOR_DEBUG_LEVEL=2;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;HAVE_LIBMBEDTLS;WIN32;_DEBUG;_LIB;_ITERATOR_DEBUG_LEVEL=2;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -184,12 +184,18 @@ copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
 copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
 copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBMBEDTLS;HAVE_LIBZ;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -204,13 +210,19 @@ copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
 copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
 copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;_LIB;WINVER=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBMBEDTLS;WIN32;NDEBUG;_LIB;WINVER=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -230,6 +242,12 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     </PreBuildEvent>
     <Lib>
       <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
+    </Lib>
+    <Lib>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">
@@ -277,7 +295,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBOPENSSL;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBOPENSSL;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;HAVE_LIBMBEDTLS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -294,6 +312,12 @@ copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
 xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
 xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarget)\Microsoft.VC142.CRT" "$(OutDir)"</Command>
     </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">
     <ClCompile>
@@ -372,6 +396,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
+    <ClCompile Include="..\..\tsk\fs\encryptionHelper.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
@@ -383,6 +408,17 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\pool\pool_open.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_read.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerParser.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerUtils.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\DataTypes.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataEntry.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataUtils.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.cpp" />
     <ClCompile Include="..\..\tsk\util\crypto.cpp" />
     <ClCompile Include="..\..\tsk\util\detect_encryption.c" />
     <ClCompile Include="..\..\tsk\util\file_system_utils.c" />
@@ -485,6 +521,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\fs\decmpfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp" />
+    <ClInclude Include="..\..\tsk\fs\encryptionHelper.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
@@ -500,6 +537,18 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\pool\tsk_apfs.hpp" />
     <ClInclude Include="..\..\tsk\pool\tsk_pool.h" />
     <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerParser.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerUtils.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\DataTypes.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataEntry.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataUtils.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValue.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueKey.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.h" />
     <ClInclude Include="..\..\tsk\util\crypto.hpp" />
     <ClInclude Include="..\..\tsk\util\detect_encryption.h" />
     <ClInclude Include="..\..\tsk\util\file_system_utils.h" />
@@ -548,6 +597,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <Import Project="..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets" Condition="Exists('..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets')" />
     <Import Project="..\packages\zlib_native.1.2.11\build\native\zlib_native.targets" Condition="Exists('..\packages\zlib_native.1.2.11\build\native\zlib_native.targets')" />
     <Import Project="..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets" Condition="Exists('..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets')" />
+    <Import Project="..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets" Condition="Exists('..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild" Condition="!$(Configuration.EndsWith('_NoLibs'))">
     <PropertyGroup>
@@ -557,5 +607,6 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <Error Condition="!Exists('..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets'))" />
     <Error Condition="!Exists('..\packages\zlib_native.1.2.11\build\native\zlib_native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\zlib_native.1.2.11\build\native\zlib_native.targets'))" />
     <Error Condition="!Exists('..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets'))" />
+    <Error Condition="!Exists('..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets'))" />
   </Target>
 </Project>

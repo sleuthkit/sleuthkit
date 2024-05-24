@@ -25,6 +25,9 @@
     <Filter Include="util">
       <UniqueIdentifier>{5ae960da-f555-42cd-bc00-eba8c536e79b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="util\Bitlocker">
+      <UniqueIdentifier>{8ac041d0-9f31-48c5-aff5-909554fdfe98}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tsk\vs\bsd.c">
@@ -378,6 +381,42 @@
     <ClCompile Include="..\..\tsk\img\unsupported_types.c">
       <Filter>img</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerParser.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\DataTypes.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataEntry.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataUtils.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\encryptionHelper.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerUtils.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -563,6 +602,45 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\unsupported_types.h">
       <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerParser.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\DataTypes.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataEntry.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataUtils.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValue.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\encryptionHelper.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerUtils.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.h">
+      <Filter>util\Bitlocker</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
