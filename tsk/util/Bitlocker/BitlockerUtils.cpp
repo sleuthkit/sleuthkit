@@ -107,43 +107,43 @@ string convertUint64ToString(uint64_t val) {
 
 
 /**
-* Convert the given bytes to a GUID string
+* Convert the given bytes to the GUID string we would expect to see in the recovery key file.
 * 
 * @param bytes  The GUID in bytes. Expected to have length 16.
 * 
 * @return GUID string
 */
 string convertGuidToString(uint8_t* bytes) {
+
     struct BITLOCKER_GUID {
-        DWORD data1;
-        WORD  data2;
-        WORD  data3;
-        BYTE  data4[8];
-    };
+        uint32_t data1;
+        uint16_t data2;
+        uint16_t data3;
+        BYTE*  data4;
+    } guidStruct;
 
-    BITLOCKER_GUID* guidStruct = (BITLOCKER_GUID*)bytes;
+    guidStruct.data1 = tsk_getu32(TSK_LIT_ENDIAN, &bytes[0]);
+    guidStruct.data2 = tsk_getu16(TSK_LIT_ENDIAN, &bytes[4]);
+    guidStruct.data3 = tsk_getu16(TSK_LIT_ENDIAN, &bytes[6]);
+    guidStruct.data4 = &bytes[8];
+
     stringstream ss;
-    ss << std::uppercase;
-    ss.width(8);
-    ss << std::hex << guidStruct->data1 << '-';
+    ss << std::uppercase << std::hex;
+    ss << std::setw(8) << std::setfill('0') << guidStruct.data1 << '-';
 
-    ss.width(4);
-    ss << std::hex << guidStruct->data2 << '-';
+    ss << std::setw(4) << std::setfill('0') << guidStruct.data2 << '-';
 
-    ss.width(4);
-    ss << std::hex << guidStruct->data3 << '-';
+    ss << std::setw(4) << std::setfill('0') << guidStruct.data3 << '-';
 
-    ss.width(2);
-    ss << std::hex
-        << static_cast<short>(guidStruct->data4[0])
-        << static_cast<short>(guidStruct->data4[1])
+    ss << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[0])
+        << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[1])
         << '-'
-        << static_cast<short>(guidStruct->data4[2])
-        << static_cast<short>(guidStruct->data4[3])
-        << static_cast<short>(guidStruct->data4[4])
-        << static_cast<short>(guidStruct->data4[5])
-        << static_cast<short>(guidStruct->data4[6])
-        << static_cast<short>(guidStruct->data4[7]);
+        << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[2])
+        << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[3])
+        << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[4])
+        << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[5])
+        << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[6])
+        << std::setw(2) << std::setfill('0') << static_cast<short>(guidStruct.data4[7]);
     ss << std::nouppercase;
     return ss.str();
 }
