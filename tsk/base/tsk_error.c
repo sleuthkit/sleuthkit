@@ -81,7 +81,7 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "Encryption detected",
     "Possible encryption detected",
     "Multiple file system types detected",   // 20
-    "Bitlocker initialization failed",
+    "BitLocker initialization failed",
 };
 
 static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {

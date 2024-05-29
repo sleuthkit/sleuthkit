@@ -52,7 +52,8 @@ bool TskIsImageSupported::isImageEncrypted()
 */
 std::string TskIsImageSupported::getSingleLineErrorMessage() {
     // If we have this, we are very confident we have a BitLocker-protected partition
-    // and that we either need a password or that the one given was incorrect.
+    // and that we have a message to show the user. Most commonly this is a missing
+    // or incorrect password.
     if (m_bitlockerError) {
         if (strnlen(m_bitlockerDesc, 1024) > 0) {
             return std::string(m_bitlockerDesc);
@@ -155,7 +156,7 @@ uint8_t TskIsImageSupported::handleError()
             strncpy(m_encryptionDesc, "BitLocker", 1024);
             m_wasEncryptionFound = true;
             m_bitlockerError = true;
-            strncpy(m_bitlockerDesc, "BitLocker error - ", 1024);
+            strncpy(m_bitlockerDesc, "BitLocker status - ", 1024);
             strncat(m_bitlockerDesc, lastError->errstr, 950);
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {

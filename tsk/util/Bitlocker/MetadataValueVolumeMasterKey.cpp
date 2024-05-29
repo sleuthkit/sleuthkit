@@ -27,7 +27,9 @@ MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(BITLOCKER_METADATA_VA
     // - 2 byte key protection type
     // - list of metadata entries
     memcpy(m_guid, buf, 16);
+    writeDebug("MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(): GUID: " + convertByteArrayToString(m_guid, 16));
     m_lastModificationTime = tsk_getu64(TSK_LIT_ENDIAN, &(buf[16]));
+    writeDebug("MetadataValueVolumeMasterKey::MetadataValueVolumeMasterKey(): Last modification time: " + convertUint64ToString(m_lastModificationTime));
     m_unknown = tsk_getu16(TSK_LIT_ENDIAN, &(buf[24]));
     m_keyProtectionType = getKeyProtectionTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[26])));
 
