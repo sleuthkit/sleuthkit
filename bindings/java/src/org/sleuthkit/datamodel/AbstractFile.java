@@ -908,6 +908,26 @@ public abstract class AbstractFile extends AbstractContent {
 		return (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR)
 				|| metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR));
 	}
+	
+	/**
+	 * Count of Abstract File's children of specified types. The types are
+	 * instances of TskData.TSK_FS_NAME_TYPE_ENUM types and the matching is
+	 * performed against the tsk_files.dir_type column. Some usage examples are
+	 * to get a count of all subdirectories, which requires searching for all
+	 * children of types TskData.TSK_FS_NAME_TYPE_ENUM.DIR "OR"
+	 * TskData.TSK_FS_NAME_TYPE_ENUM.VIRT_DIR.
+	 *
+	 * @param types List of TskData.TSK_FS_NAME_TYPE_ENUM types.
+	 *
+	 * @return Total count of children of the specified types.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException exception thrown if a
+	 *                                                  critical error occurs
+	 *                                                  within tsk core
+	 */
+	public int countChildrenOfType(List<TSK_FS_NAME_TYPE_ENUM> types) throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildrenCountByType(this, types);
+	}
 
 	/**
 	 * Is this a root of a file system
