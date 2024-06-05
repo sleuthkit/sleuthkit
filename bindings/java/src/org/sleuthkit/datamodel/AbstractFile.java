@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -925,6 +926,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                                                  critical error occurs
 	 *                                                  within tsk core
 	 */
+	@Beta
 	public int countChildrenOfType(List<TSK_FS_NAME_TYPE_ENUM> types) throws TskCoreException {
 		return getSleuthkitCase().getAbstractFileChildrenCountByType(this, types);
 	}
