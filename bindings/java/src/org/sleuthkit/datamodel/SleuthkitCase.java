@@ -5453,8 +5453,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Counts if the content object children. Note: this is generally more
-	 * efficient then preloading all children and counting, and facilities lazy
+	 * Count of all content object's children. Note: this is generally more
+	 * efficient then preloading all children and counting, and facilitates lazy
 	 * loading.
 	 *
 	 * @param content content object to check for children count
@@ -5480,6 +5480,75 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_CHILD_OBJECTS_BY_PARENT);
 			statement.clearParameters();
 			statement.setLong(1, content.getId());
+			rs = connection.executeQuery(statement);
+			int countChildren = -1;
+			if (rs.next()) {
+				countChildren = rs.getInt("count");
+			}
+			return countChildren;
+		} catch (SQLException e) {
+			throw new TskCoreException("Error checking for children of parent " + content, e);
+		} finally {
+			closeResultSet(rs);
+			closeConnection(connection);
+			releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Count of the content object's children of specified types. The types are
+	 * instances of TskData.TSK_FS_NAME_TYPE_ENUM types and the matching is
+	 * performed against the tsk_files.dir_type column. Some usage examples are
+	 * to get a count of all subdirectories, which requires searching for all
+	 * children of types TskData.TSK_FS_NAME_TYPE_ENUM.DIR OR
+	 * TskData.TSK_FS_NAME_TYPE_ENUM.VIRT_DIR.
+	 *
+	 * Note: this is generally more efficient then preloading all children and
+	 * counting, and facilitates lazy loading.
+	 *
+	 * @param content content object to check for children count
+	 * @param types   List of TskData.TSK_FS_NAME_TYPE_ENUM types.
+	 *
+	 * @return Total count of children of the specified types.
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within tsk core
+	 */
+	int getAbstractFileChildrenCountByType(Content content, List<TSK_FS_NAME_TYPE_ENUM> types) throws TskCoreException {
+
+		if (!this.getHasChildren(content)) {
+			return 0;
+		}
+
+		if (types == null || types.isEmpty()) {
+			return 0;
+		}
+
+		CaseDbConnection connection = null;
+		ResultSet rs = null;
+		acquireSingleUserCaseReadLock();
+		try {
+			connection = connections.getConnection();
+
+			// Construct the IN clause dynamically
+			StringBuilder inClause = new StringBuilder("?");
+			for (int i = 1; i < types.size(); i++) {
+				inClause.append(", ?");
+			}
+
+			String sql = "SELECT COUNT(*) AS count "
+					+ "FROM tsk_objects "
+					+ "INNER JOIN tsk_files ON tsk_objects.obj_id = tsk_files.obj_id "
+					+ "WHERE (tsk_objects.par_obj_id = ? AND tsk_files.dir_type IN (" + inClause.toString() + "))";
+
+			PreparedStatement statement = connection.getConnection().prepareStatement(sql);
+			statement.clearParameters();
+			statement.setLong(1, content.getId());
+
+			for (int i = 0; i < types.size(); i++) {
+				statement.setInt(i + 2, types.get(i).getValue()); // Note: i+2 because index 1 is already taken by obj_id
+			}
+
 			rs = connection.executeQuery(statement);
 			int countChildren = -1;
 			if (rs.next()) {
