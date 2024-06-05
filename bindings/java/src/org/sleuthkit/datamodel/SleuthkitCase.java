@@ -5454,7 +5454,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Count of all content object's children. Note: this is generally more
-	 * efficient then preloading all children and counting, and facilities lazy
+	 * efficient then preloading all children and counting, and facilitates lazy
 	 * loading.
 	 *
 	 * @param content content object to check for children count
@@ -5504,7 +5504,7 @@ public class SleuthkitCase {
 	 * TskData.TSK_FS_NAME_TYPE_ENUM.VIRT_DIR.
 	 *
 	 * Note: this is generally more efficient then preloading all children and
-	 * counting, and facilities lazy loading.
+	 * counting, and facilitates lazy loading.
 	 *
 	 * @param content content object to check for children count
 	 * @param types   List of TskData.TSK_FS_NAME_TYPE_ENUM types.
@@ -5519,7 +5519,7 @@ public class SleuthkitCase {
 		if (!this.getHasChildren(content)) {
 			return 0;
 		}
-		
+
 		if (types == null || types.isEmpty()) {
 			return 0;
 		}
@@ -5545,10 +5545,10 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, content.getId());
 
-            for (int i = 0; i < types.size(); i++) {
-                statement.setInt(i + 2, types.get(i).getValue()); // Note: i+2 because index 1 is already taken by obj_id
-            }
-			
+			for (int i = 0; i < types.size(); i++) {
+				statement.setInt(i + 2, types.get(i).getValue()); // Note: i+2 because index 1 is already taken by obj_id
+			}
+
 			rs = connection.executeQuery(statement);
 			int countChildren = -1;
 			if (rs.next()) {
@@ -5562,7 +5562,7 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
-	}	
+	}
 
 	/**
 	 * Returns the list of AbstractFile Children of a given type for a given
