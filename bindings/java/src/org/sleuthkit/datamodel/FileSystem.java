@@ -138,8 +138,8 @@ public class FileSystem extends AbstractContent {
 	private String getImagePasswordFromSettings(String settingsStr) {
 		
 		if(StringUtils.isBlank(settingsStr)){
-            return "";
-        }
+			return "";
+		}
 
 		try {
 			Map<String, Object> settingsMap = (new Gson()).fromJson(settingsStr, Map.class);
