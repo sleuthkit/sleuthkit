@@ -19,7 +19,11 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Represents a file system object stored in tsk_fs_info table FileSystem has a
@@ -115,12 +119,35 @@ public class FileSystem extends AbstractContent {
 						}
 						filesystemHandle = SleuthkitJNI.openFsPool(image.getImageHandle(), imgOffset, pool.getPoolHandle(), poolVolume.getStart(), getSleuthkitCase());
 					} else {
-						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, getSleuthkitCase());
+						String password = getImagePasswordFromSettings(image.getAcquisitionToolSettings());
+						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, password, getSleuthkitCase());
 					}
 				}
 			}
 		}
 		return this.filesystemHandle;
+	}
+	
+	/**
+	 * Attempt to read the image password from the settings string 
+	 * 
+	 * @param settingsStr
+	 * 
+	 * @return the password if found, empty string otherwise
+	 */
+	private String getImagePasswordFromSettings(String settingsStr) {
+		
+		if(StringUtils.isBlank(settingsStr)){
+            return "";
+        }
+
+		try {
+			Map<String, Object> settingsMap = (new Gson()).fromJson(settingsStr, Map.class);
+			return (String)settingsMap.getOrDefault("imagePassword", "");
+		} catch (JsonSyntaxException ex) {
+			// There's no guarantee that acquisition settings will contain a valid JSON string
+			return "";
+		}
 	}
 
 	public Directory getRootDirectory() throws TskCoreException {

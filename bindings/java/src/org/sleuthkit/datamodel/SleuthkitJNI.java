@@ -1130,6 +1130,24 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openFs(long imgHandle, long fsOffset, SleuthkitCase skCase) throws TskCoreException {
+		return openFs(imgHandle, fsOffset, "", skCase);
+	}
+	
+	/**
+	 * Get file system Handle Opened handle is cached (transparently) so it does
+	 * not need be reopened next time for the duration of the application
+	 *
+	 * @param imgHandle pointer to imgHandle in sleuthkit
+	 * @param fsOffset  byte offset to the file system
+	 * @param password  image password
+	 * @param skCase    the case containing the file system
+	 *
+	 * @return pointer to a fsHandle structure in the sleuthkit
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static long openFs(long imgHandle, long fsOffset, String password, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			long fsHandle;
@@ -1148,7 +1166,7 @@ public class SleuthkitJNI {
 					//return cached
 					fsHandle = imgOffSetToFsHandle.get(fsOffset);
 				} else {
-					fsHandle = openFsNat(imgHandle, fsOffset);
+					fsHandle = openFsDecryptNat(imgHandle, fsOffset, password);
 					//cache it
 					imgOffSetToFsHandle.put(fsOffset, fsHandle);
 				}
@@ -2196,6 +2214,8 @@ public class SleuthkitJNI {
 	private static native long getImgInfoForPoolNat(long poolHandle, long poolOffset) throws TskCoreException;
 	
 	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
+	
+	private static native long openFsDecryptNat(long imgHandle, long fsId, String password) throws TskCoreException;
 
 	private static native long openFileNat(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException;
 
