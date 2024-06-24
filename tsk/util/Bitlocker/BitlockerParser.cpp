@@ -1004,7 +1004,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
         
-        ret = mbedtls_aes_xts_setkey_dec(&m_aesXtsDecryptionContext, &(keyBytes[0]), 256);
+        ret = mbedtls_aes_xts_setkey_dec(&m_aesXtsDecryptionContext, &(keyBytes[0]), 512);
 
         if (ret != 0) {
             writeError("BitlockerParser::setKeys: Error setting AES context");
