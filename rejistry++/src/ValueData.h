@@ -57,7 +57,9 @@ namespace Rejistry {
             VALTYPE_RESOURCE_LIST,
             VALTYPE_FULL_RESOURCE_DESCRIPTOR,
             VALTYPE_RESOURCE_REQUIREMENTS_LIST,
-            VALTYPE_QWORD
+            VALTYPE_QWORD,
+            //https://binaryforay.blogspot.com/2015/01/registry-hive-basics-part-3-vk-records.html
+            VALTYPE_FILETIME = 0x10,     
         };
 
         /// Map the value type enum to a string.

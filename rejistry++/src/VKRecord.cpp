@@ -77,7 +77,7 @@ namespace Rejistry {
     }
 
     ValueData::VALUE_TYPES VKRecord::getValueType() const {
-        return (ValueData::VALUE_TYPES)getDWord(VALUE_TYPE_OFFSET);
+        return (ValueData::VALUE_TYPES)(getDWord(VALUE_TYPE_OFFSET) & 0x0000FFFF);
     }
 
     uint32_t VKRecord::getDataLength() const {
@@ -156,6 +156,7 @@ namespace Rejistry {
             data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, 0x4), 0x4));
             break;
         case ValueData::VALTYPE_QWORD:
+        case ValueData::VALTYPE_FILETIME:
             {
                 std::unique_ptr< Cell > c(new Cell(_buf, offset));
                 if (c.get() == NULL) {
