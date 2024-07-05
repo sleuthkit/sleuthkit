@@ -13118,7 +13118,7 @@ public class SleuthkitCase {
 				insertStatement.setInt(3, type.ordinal());
 				insertStatement.setString(4, version);
 				connection.executeUpdate(insertStatement);
-				resultSet = statement.getGeneratedKeys();
+				resultSet = insertStatement.getGeneratedKeys();
 				resultSet.next();
 				long id = resultSet.getLong(1); //last_insert_rowid()
 				resultSet.close();
