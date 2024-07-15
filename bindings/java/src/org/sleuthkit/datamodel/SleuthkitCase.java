@@ -67,6 +67,7 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -418,7 +419,7 @@ public class SleuthkitCase {
 
 	private void init() throws Exception {
 		blackboard = new Blackboard(this);
-		updateDatabaseSchema(null);
+		updateDatabaseSchema(null); 
 		try (CaseDbConnection connection = connections.getConnection()) {
 			blackboard.initBlackboardArtifactTypes(connection);
 			blackboard.initBlackboardAttributeTypes(connection);
@@ -431,7 +432,7 @@ public class SleuthkitCase {
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
-		}
+		} 
 
 		fileManager = new FileManager(this);
 		communicationsMgr = new CommunicationsManager(this);
@@ -443,7 +444,7 @@ public class SleuthkitCase {
 		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
-		hostAddressManager = new HostAddressManager(this);
+		hostAddressManager = new HostAddressManager(this); 
 	}
 	
 	/**
@@ -897,29 +898,44 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	private void populateHasChildrenMap(CaseDbConnection connection) throws TskCoreException {
-		long timestamp = System.currentTimeMillis();
+		CompletableFuture.runAsync(() -> {
+			// The distinct parent objeect id lookup is expensive in postgresql 
+			// This is offloaded into a thread and the incident open proceeds. 
+			// The access to the results are guarded by an object lock on hasChildrenBitSetMap. 
+			// The issue with this approach is that the SQLException will not cause a TSKCOreException. 
+			// Since this is running async, it also acquires a new connection from the pool
+			
+			long timestamp = System.currentTimeMillis();
 
-		Statement statement = null;
-		ResultSet resultSet = null;
-		acquireSingleUserCaseWriteLock();
-		try {
-			statement = connection.createStatement();
-			resultSet = statement.executeQuery("select distinct par_obj_id from tsk_objects"); //NON-NLS
-
-			synchronized (hasChildrenBitSetMap) {
-				while (resultSet.next()) {
-					setHasChildren(resultSet.getLong("par_obj_id"));
+			Statement statement = null;
+			ResultSet resultSet = null;
+			acquireSingleUserCaseWriteLock();
+			try (CaseDbConnection neoConnection = connections.getConnection()) {
+				statement = neoConnection.createStatement();
+				String query = "select distinct par_obj_id from tsk_objects";
+				if (dbType == DbType.POSTGRESQL) {
+					query = "select distinct ON (par_obj_id) par_obj_id from tsk_objects";
 				}
+
+				resultSet = statement.executeQuery(query); //NON-NLS
+
+				synchronized (hasChildrenBitSetMap) {
+					while (resultSet.next()) {
+						setHasChildren(resultSet.getLong("par_obj_id"));
+					}
+				}
+				long delay = System.currentTimeMillis() - timestamp;
+				logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error populating parent node cache", ex); //NON-NLS
+			} catch (TskCoreException ex) {
+				logger.log(Level.SEVERE, "Error acquiring connection", ex); //NON-NLS
+			} finally {
+				closeResultSet(resultSet);
+				closeStatement(statement);
+				releaseSingleUserCaseWriteLock();
 			}
-			long delay = System.currentTimeMillis() - timestamp;
-			logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error populating parent node cache", ex);
-		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
+		});
 	}
 
 	/**
