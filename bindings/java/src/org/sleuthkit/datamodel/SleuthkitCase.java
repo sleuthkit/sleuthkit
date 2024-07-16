@@ -931,12 +931,10 @@ public class SleuthkitCase {
 
 	/**
 	 * Set up or update the hasChildren map using the tsk_objects table.
-	 *
-	 * @param connection
-	 *
+	 * 
 	 * @throws TskCoreException
 	 */
-	private void populateHasChildrenMap(CaseDbConnection connection) throws TskCoreException {
+	private void populateHasChildrenMap() throws TskCoreException {
 		CompletableFuture.runAsync(() -> {
 			
 			/**
@@ -999,13 +997,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	void addDataSourceToHasChildrenMap() throws TskCoreException {
-
-		CaseDbConnection connection = connections.getConnection();
-		try {
-			populateHasChildrenMap(connection);
-		} finally {
-			closeConnection(connection);
-		}
+		populateHasChildrenMap();		 
 	}
 
 	/**
