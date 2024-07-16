@@ -436,7 +436,7 @@ public class SleuthkitCase {
 			initReviewStatuses(connection);
 			initEncodingTypes(connection);
 			initCollectedStatusTypes(connection);
-			populateHasChildrenMap(connection);
+			populateHasChildrenMap(true);
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
 		} 
@@ -934,8 +934,9 @@ public class SleuthkitCase {
 	 * 
 	 * @throws TskCoreException
 	 */
-	private void populateHasChildrenMap() throws TskCoreException {
-		CompletableFuture.runAsync(() -> {
+	private void populateHasChildrenMap(boolean async) throws TskCoreException {
+		
+		Runnable childrenBitSetLockInitRunnable =  () -> {
 			
 			/**
 			 * This lock is insufficient to handle the case where this thread 
@@ -987,7 +988,13 @@ public class SleuthkitCase {
 				// Countdown the latch as initialization has completed. 
 				childrenBitSetInitLatch.countDown(); 
 			}
-		});
+		};
+
+		if (async) {
+			CompletableFuture.runAsync(childrenBitSetLockInitRunnable);
+		} else {
+			childrenBitSetLockInitRunnable.run();
+		}
 	}
 
 	/**
@@ -997,7 +1004,13 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	void addDataSourceToHasChildrenMap() throws TskCoreException {
-		populateHasChildrenMap();		 
+		try {
+			// Await initialization. ensure no async version of the init is still running.
+			childrenBitSetInitLatch.await();
+		} catch (InterruptedException ex) {
+			throw new AssertionError("Interrupted Exception awaiting Children bit set initialization", ex); //NON-NLS
+		}
+		populateHasChildrenMap(false);		 
 	}
 
 	/**
