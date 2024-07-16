@@ -68,6 +68,7 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture; 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -219,7 +220,10 @@ public class SleuthkitCase {
 	 * can be larger than the max size of a SparseBitSet
 	 */
 	private final Map<Long, SparseBitSet> hasChildrenBitSetMap = new HashMap<>();
+	// Lock to serialize access to the bitset.
 	private final ReentrantLock childrenBitSetLock = new ReentrantLock();
+	// Latch to enforce a happens before relation
+	private final CountDownLatch childrenBitSetInitLatch = new CountDownLatch(1);
 	
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
@@ -488,6 +492,13 @@ public class SleuthkitCase {
 	 * @return true if the content has children, false otherwise
 	 */
 	boolean getHasChildren(Content content) {
+		
+		try {
+			// Await initialization 
+			childrenBitSetInitLatch.await();
+		} catch (InterruptedException ex) {
+			throw new AssertionError("Interrupted Exception awaiting Children bit set initialization", ex); //NON-NLS
+		}
 		childrenBitSetLock.lock();
 		try {
 			long objId = content.getId();
@@ -512,18 +523,36 @@ public class SleuthkitCase {
 	private void setHasChildren(Long objId) {
 		childrenBitSetLock.lock();
 		try {
-			long mapIndex = objId / Integer.MAX_VALUE;
-			int mapValue = (int) (objId % Integer.MAX_VALUE);
-
-			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
-				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
-			} else {
-				SparseBitSet bitSet = new SparseBitSet();
-				bitSet.set(mapValue);
-				hasChildrenBitSetMap.put(mapIndex, bitSet);
-			}
+			setHasChildren(objId, false);
 		} finally {
 			childrenBitSetLock.unlock();
+		}
+	}
+
+	/**
+	 * Add this objId to the list of objects that have children (of any type)
+	 * @param objId
+	 * @param initializing set to true if invoked from initialization
+	 */
+	private void setHasChildren(Long objId, boolean initializing) {
+		try {
+			if (!initializing) {
+				// Await initialization 
+				childrenBitSetInitLatch.await();
+			}
+		} catch (InterruptedException ex) {
+			throw new AssertionError("Interrupted Exception awaiting Children bit set initialization",ex); //NON-NLS
+		}
+
+		long mapIndex = objId / Integer.MAX_VALUE;
+		int mapValue = (int) (objId % Integer.MAX_VALUE);
+
+		if (hasChildrenBitSetMap.containsKey(mapIndex)) {
+			hasChildrenBitSetMap.get(mapIndex).set(mapValue);
+		} else {
+			SparseBitSet bitSet = new SparseBitSet();
+			bitSet.set(mapValue);
+			hasChildrenBitSetMap.put(mapIndex, bitSet);
 		}
 	}
 
@@ -909,6 +938,12 @@ public class SleuthkitCase {
 	 */
 	private void populateHasChildrenMap(CaseDbConnection connection) throws TskCoreException {
 		CompletableFuture.runAsync(() -> {
+			
+			/**
+			 * This lock is insufficient to handle the case where this thread 
+			 * 
+			 */
+			childrenBitSetLock.lock();
 			// The distinct parent objeect id lookup is expensive in postgresql 
 			// This is offloaded into a thread and the incident open proceeds. 
 			// The access to the results are guarded by an object lock on hasChildrenBitSetMap. 
@@ -919,8 +954,7 @@ public class SleuthkitCase {
 
 			Statement statement = null;
 			ResultSet resultSet = null;
-			acquireSingleUserCaseWriteLock();
-			childrenBitSetLock.lock();
+			acquireSingleUserCaseWriteLock();			
 			try (CaseDbConnection neoConnection = connections.getConnection()) {
 				statement = neoConnection.createStatement();
 				String query = "select distinct par_obj_id from tsk_objects";
@@ -934,20 +968,25 @@ public class SleuthkitCase {
 				 * Operating under the re-entrant lock {@link #childrenBitSetLock}
 				 */
 				while (resultSet.next()) {
-					setHasChildren(resultSet.getLong("par_obj_id"));
+					setHasChildren(resultSet.getLong("par_obj_id"), true);
 				}
 
 				long delay = System.currentTimeMillis() - timestamp;
 				logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error populating parent node cache", ex); //NON-NLS
+				// Dont really expect this to be thrown, but if this happens, then it is non-recoverable. 
+				throw new AssertionError("Error populating parent node cache",ex); //NON-NLS
 			} catch (TskCoreException ex) {
 				logger.log(Level.SEVERE, "Error acquiring connection", ex); //NON-NLS
+				throw new AssertionError("Error acquiring connection",ex); //NON-NLS
 			} finally {
 				closeResultSet(resultSet);
 				closeStatement(statement);
 				releaseSingleUserCaseWriteLock();
 				childrenBitSetLock.unlock();
+				// Countdown the latch as initialization has completed. 
+				childrenBitSetInitLatch.countDown(); 
 			}
 		});
 	}
