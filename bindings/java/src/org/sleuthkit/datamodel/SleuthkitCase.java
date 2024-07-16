@@ -941,7 +941,8 @@ public class SleuthkitCase {
 			
 			/**
 			 * This lock is insufficient to handle the case where this thread 
-			 * 
+			 * starts non-deterministically. {@link #childrenBitSetInitLatch} 
+			 * is countdown at the end of the initialization to provide the necessary guarantees. 
 			 */
 			childrenBitSetLock.lock();
 			// The distinct parent objeect id lookup is expensive in postgresql 
