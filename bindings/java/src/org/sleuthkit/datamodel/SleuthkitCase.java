@@ -67,8 +67,9 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture; 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -218,6 +219,8 @@ public class SleuthkitCase {
 	 * can be larger than the max size of a SparseBitSet
 	 */
 	private final Map<Long, SparseBitSet> hasChildrenBitSetMap = new HashMap<>();
+	private final ReentrantLock childrenBitSetLock = new ReentrantLock();
+	
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 	// This read/write lock is used to implement a layer of locking on top of
@@ -485,15 +488,19 @@ public class SleuthkitCase {
 	 * @return true if the content has children, false otherwise
 	 */
 	boolean getHasChildren(Content content) {
-		long objId = content.getId();
-		long mapIndex = objId / Integer.MAX_VALUE;
-		int mapValue = (int) (objId % Integer.MAX_VALUE);
+		childrenBitSetLock.lock();
+		try {
+			long objId = content.getId();
+			long mapIndex = objId / Integer.MAX_VALUE;
+			int mapValue = (int) (objId % Integer.MAX_VALUE);
 
-		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				return hasChildrenBitSetMap.get(mapIndex).get(mapValue);
 			}
 			return false;
+
+		} finally {
+			childrenBitSetLock.unlock();
 		}
 	}
 
@@ -503,10 +510,11 @@ public class SleuthkitCase {
 	 * @param objId
 	 */
 	private void setHasChildren(Long objId) {
-		long mapIndex = objId / Integer.MAX_VALUE;
-		int mapValue = (int) (objId % Integer.MAX_VALUE);
+		childrenBitSetLock.lock();
+		try {
+			long mapIndex = objId / Integer.MAX_VALUE;
+			int mapValue = (int) (objId % Integer.MAX_VALUE);
 
-		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
 			} else {
@@ -514,6 +522,8 @@ public class SleuthkitCase {
 				bitSet.set(mapValue);
 				hasChildrenBitSetMap.put(mapIndex, bitSet);
 			}
+		} finally {
+			childrenBitSetLock.unlock();
 		}
 	}
 
@@ -910,6 +920,7 @@ public class SleuthkitCase {
 			Statement statement = null;
 			ResultSet resultSet = null;
 			acquireSingleUserCaseWriteLock();
+			childrenBitSetLock.lock();
 			try (CaseDbConnection neoConnection = connections.getConnection()) {
 				statement = neoConnection.createStatement();
 				String query = "select distinct par_obj_id from tsk_objects";
@@ -919,11 +930,13 @@ public class SleuthkitCase {
 
 				resultSet = statement.executeQuery(query); //NON-NLS
 
-				synchronized (hasChildrenBitSetMap) {
-					while (resultSet.next()) {
-						setHasChildren(resultSet.getLong("par_obj_id"));
-					}
+				/**
+				 * Operating under the re-entrant lock {@link #childrenBitSetLock}
+				 */
+				while (resultSet.next()) {
+					setHasChildren(resultSet.getLong("par_obj_id"));
 				}
+
 				long delay = System.currentTimeMillis() - timestamp;
 				logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
 			} catch (SQLException ex) {
@@ -934,6 +947,7 @@ public class SleuthkitCase {
 				closeResultSet(resultSet);
 				closeStatement(statement);
 				releaseSingleUserCaseWriteLock();
+				childrenBitSetLock.unlock();
 			}
 		});
 	}
