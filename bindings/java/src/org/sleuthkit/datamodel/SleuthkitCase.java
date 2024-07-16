@@ -521,12 +521,7 @@ public class SleuthkitCase {
 	 * @param objId
 	 */
 	private void setHasChildren(Long objId) {
-		childrenBitSetLock.lock();
-		try {
-			setHasChildren(objId, false);
-		} finally {
-			childrenBitSetLock.unlock();
-		}
+		setHasChildren(objId, false);
 	}
 
 	/**
@@ -544,15 +539,20 @@ public class SleuthkitCase {
 			throw new AssertionError("Interrupted Exception awaiting Children bit set initialization",ex); //NON-NLS
 		}
 
-		long mapIndex = objId / Integer.MAX_VALUE;
-		int mapValue = (int) (objId % Integer.MAX_VALUE);
+		childrenBitSetLock.lock();
+		try {
+			long mapIndex = objId / Integer.MAX_VALUE;
+			int mapValue = (int) (objId % Integer.MAX_VALUE);
 
-		if (hasChildrenBitSetMap.containsKey(mapIndex)) {
-			hasChildrenBitSetMap.get(mapIndex).set(mapValue);
-		} else {
-			SparseBitSet bitSet = new SparseBitSet();
-			bitSet.set(mapValue);
-			hasChildrenBitSetMap.put(mapIndex, bitSet);
+			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
+				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
+			} else {
+				SparseBitSet bitSet = new SparseBitSet();
+				bitSet.set(mapValue);
+				hasChildrenBitSetMap.put(mapIndex, bitSet);
+			}
+		} finally {
+			childrenBitSetLock.unlock();
 		}
 	}
 
