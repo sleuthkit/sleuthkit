@@ -22,6 +22,7 @@
 
 #include "tsk_is_image_supported.h"
 #include <sstream>
+#include <algorithm>
 
 TskIsImageSupported::TskIsImageSupported()
 {
