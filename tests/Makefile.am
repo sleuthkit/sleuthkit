@@ -9,6 +9,9 @@ check_SCRIPTS = runtests.sh test_libraries.sh
 
 TESTS = runtests.sh test_libraries.sh
 
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER =
+
 check_PROGRAMS = read_apis fs_fname_apis fs_attrlist_apis fs_thread_test
 
 read_apis_SOURCES = read_apis.cpp

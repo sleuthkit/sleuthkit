@@ -16,16 +16,7 @@ TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E0
 IMGBASE="data/imageformat_mmls_1"
 
 if [ -n "$WINEARCH" ]; then
-  linkage=${STAGE_NAME#*/*/}
-  if [ "$linkage" = 'shared' ]; then
-    # Required dlls for running this are missing on windows shared
-    # Since windows static tests work now where they were silently failing before,
-    # making this work is not worth the effort.
-    echo "Skipping test on windows $linkage"
-    exit $EXIT_SKIP
-  fi
-
-  MMLS_CMD+='.exe'
+  MMLS_CMD="wine ${MMLS_CMD}.exe"
   IMGBASE=$(echo "$IMGBASE" | tr '/' '\\')
 fi
 
