@@ -60,6 +60,9 @@ for:
       only:
         - job_name: Linux Build
 
+    install:
+      - sudo apt install -y autoconf
+
     build_script:
       - ./bootstrap
       - ./configure -q
