@@ -1,0 +1,141 @@
+# This file based on https://gist.github.com/mwouts/9842452d020c08faf9e84a3bba38a66f
+# See: https://help.github.com/en/actions/reference/software-installed-on-github-hosted-runners
+# 2022-08-06 - slg - Updated os to be 'macos-latest', 'ubuntu-20.04', 'ubuntu-22.04'
+#                    See https://github.com/actions/virtual-environments for details.
+# 2020-06-22 - slg - customized
+# 2020-06-27 - slg - expanded to G++ for MacOS
+# 2020-07-03 - slg - ported to be13_api; removed python (be13_api doesn't use python)
+# 2021-05-07 - slg - Started work again
+# 2022-02-10 - slg - renamed be20_api. Our work here is done.
+
+name: TSK Tests on MacOS and Ubuntu (c++17)
+
+on:
+  push:
+    branches:
+      - '**' # This will trigger the action for all branches
+  pull_request:
+    branches:
+      - main # Specify the branches for which pull_request events should trigger the action
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-22.04]
+        platform: [x64, arm64]
+    runs-on: ${{ matrix.os }}
+
+    env:
+      MAKE_OPTS: -j2
+
+    steps:
+      # https://github.com/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Extract Version from configure.ac
+        id: extract_version
+        run: |
+          echo "::set-output name=version::$(grep 'AC_INIT' configure.ac| cut -d',' -f2 | tr -d "[]() ")"
+
+      # Conditional step for push events
+      - name: Run on push
+        if: github.event_name == 'push'
+        run: echo "This runs on a push to any branch"
+
+      # Conditional step for pull_request events
+      - name: Run on pull request
+        if: github.event_name == 'pull_request'
+        run: echo "This runs on a pull request to the main branch"
+
+      - name: "MacOS: run CONFIGURE_MACOS.bash"
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          bash ./bootstrap
+
+      - name: "Ubuntu: run CONFIGURE_UBUNTU22LTS.bash"
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          bash ./bootstrap
+
+      - name: Version Numbers
+        run: |
+          autoconf --version
+          automake --version
+          aclocal --version
+          gcc --version
+          g++ --version
+
+      - name: Files
+        run: |
+          find . -print
+
+      - name: Dump configure script
+        run: |
+          cat configure
+
+      - name: C++ checks not optimizaiton with address-sanitizer (Mac and Linux)
+        if: false
+        run: |
+          ./configure --disable-opt --enable-address-sanitizer
+          make $MAKE_OPTS all
+          make $MAKE_OPTS bulk_extractor
+          make check || (cat test-suite.log; exit 1)
+          make distclean
+
+      - name: C++ checks optimization with address-sanitizer (Mac and Linux)
+        if: false
+        run: |
+          echo === Try Address Sanitizer Optimization ===
+          ./configure --enable-address-sanitizer --enable-silent-rules --quiet
+          make $MAKE_OPTS all
+          pushd src
+          make $MAKE_OPTS bulk_extractor
+          make check || (cat test-suite.log; exit 1)
+          popd
+          make distclean
+
+      - name: C++ checks with thread-sanitizer on ubuntu are disabled
+        if: false && startsWith(matrix.os, 'ubuntu-DISABLED')
+        run: |
+          bash bootstrap.sh
+          ./configure --enable-thread-sanitizer --enable-silent-rules  --quiet
+          make clean
+          make $MAKE_OPTS  all
+          pushd src
+          make $MAKE_OPTS  bulk_extractor
+          make check || (cat test-suite.log; exit 1)
+          popd
+          make distclean
+
+      - name: C++ checks with codecov
+        if: false && startsWith(matrix.os, 'ubuntu')
+        run: |
+          bash bootstrap.sh
+          ./configure --disable-opt CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
+          make clean
+          make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
+          make check
+          gcov-9 $(find -name '*.o' -or '*.c' -or '*.cpp' -or '*.h' -or '*.hpp')
+
+      - name: upload codecov report
+        if: startsWith(matrix.os, 'ubuntu')
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          name: codecov-umbrealla
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: distcheck
+        run: |
+          bash bootstrap
+          ./configure -q
+          make distcheck
+
+      - uses: ammaraskar/gcc-problem-matcher@0.2.0
+        name: GCC Problem Matcher
