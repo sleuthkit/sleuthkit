@@ -22,14 +22,21 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-22.04]
-        platform: [x64, arm64]
+        os: [macos-latest]
+        platform: [arm64]
+        #os: [macos-latest, ubuntu-22.04]
+        #platform: [x64, arm64]
     runs-on: ${{ matrix.os }}
 
     env:
       MAKE_OPTS: -j2
 
     steps:
+      - name: System Prep
+        run: |
+          brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config
+
+
       # https://github.com/actions/checkout
       - name: Checkout
         uses: actions/checkout@v4
