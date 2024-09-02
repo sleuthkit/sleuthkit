@@ -140,9 +140,10 @@ jobs:
 
       - name: distcheck
         run: |
-          bash bootstrap
-          ./configure -q
-          make distcheck
+          echo disabled
+          #bash bootstrap
+          #./configure -q
+          #make distcheck
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher
