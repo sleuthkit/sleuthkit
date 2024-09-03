@@ -30,11 +30,6 @@ jobs:
       MAKE_OPTS: -j2
 
     steps:
-      - name: System Prep
-        run: |
-          brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config
-
-
       # https://github.com/actions/checkout
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,24 +41,16 @@ jobs:
         run: |
           echo "::set-output name=version::$(grep 'AC_INIT' configure.ac| cut -d',' -f2 | tr -d "[]() ")"
 
-      # Conditional step for push events
-      - name: Run on push
-        if: github.event_name == 'push'
-        run: echo "This runs on a push to any branch"
-
-      # Conditional step for pull_request events
-      - name: Run on pull request
-        if: github.event_name == 'pull_request'
-        run: echo "This runs on a pull request to the main branch"
-
-      - name: "MacOS: run CONFIGURE_MACOS.bash"
+      - name: "Configure for MacOS"
         if: startsWith(matrix.os, 'macos')
         run: |
+          brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config
           bash ./bootstrap
 
-      - name: "Ubuntu: run CONFIGURE_UBUNTU22LTS.bash"
+      - name: "Configure for Ubuntu"
         if: startsWith(matrix.os, 'ubuntu')
         run: |
+          sudo apt install -y autoconf automake g++ flex libexpat1-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
           bash ./bootstrap
 
       - name: Version Numbers
