@@ -93,7 +93,7 @@ jobs:
       - name: C++ checks with thread-sanitizer on ubuntu are disabled
         if: false && startsWith(matrix.os, 'ubuntu-DISABLED')
         run: |
-          bash bootstrap.sh
+          bash ./bootstrap
           ./configure --enable-thread-sanitizer --enable-silent-rules  --quiet
           make clean
           make $MAKE_OPTS  all
@@ -106,7 +106,7 @@ jobs:
       - name: C++ checks with codecov
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
-          bash bootstrap.sh
+          bash ./bootstrap
           ./configure --disable-opt CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
