@@ -113,6 +113,10 @@ jobs:
           make check
           gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp' -or -name '*.h' -or -name '*.hpp')
 
+      - name: List all files
+        run: |
+          find . -ls
+
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         uses: codecov/codecov-action@v4
