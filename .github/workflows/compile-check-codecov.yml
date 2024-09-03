@@ -22,10 +22,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [macos-latest]
-        platform: [arm64]
-        #os: [macos-latest, ubuntu-22.04]
-        #platform: [x64, arm64]
+        os: [macos-latest, ubuntu-22.04]
+        platform: [x64, arm64]
     runs-on: ${{ matrix.os }}
 
     env:
@@ -119,7 +117,7 @@ jobs:
           make distclean
 
       - name: C++ checks with codecov
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
           bash bootstrap.sh
           ./configure --disable-opt CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
