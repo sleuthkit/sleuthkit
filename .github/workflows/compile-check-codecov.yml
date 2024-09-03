@@ -106,6 +106,7 @@ jobs:
       - name: C++ checks with codecov
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
+          sudo pip3 install coverage
           bash ./bootstrap
           ./configure --disable-opt CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean

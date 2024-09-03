@@ -3,8 +3,8 @@ coverage:
   round: nearest
   precision: 2
 
-fixes:
-  - "/home/runner/work/::"
+#fixes:
+#  - "/home/runner/work/sleuthkit/sleuthkit::"
 
 ignore:
   - "m4/*"
