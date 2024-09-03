@@ -111,7 +111,7 @@ jobs:
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
           make check
-          gcov-9 $(find -name '*.o' -or '*.c' -or '*.cpp' -or '*.h' -or '*.hpp')
+          gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp' -or -name '*.h' -or -name '*.hpp')
 
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
