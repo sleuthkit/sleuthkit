@@ -114,7 +114,7 @@ jobs:
           gcov-9 $(find -name '*.o' -or '*.c' -or '*.cpp' -or '*.h' -or '*.hpp')
 
       - name: upload codecov report
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
