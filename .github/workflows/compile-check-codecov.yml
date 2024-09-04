@@ -117,7 +117,7 @@ jobs:
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
           # Now move the .gcda files from the .libs directories up to the proper location
-          fs img util vs ; do mv -v tsk/$dir/.libs/*.gcda tsk/$dir/ ; done
+          for dir in fs img util vs ; do mv -v tsk/$dir/.libs/*.gcda tsk/$dir/ ; done
           # Run gcov on the gcda files
           gcov-9 $(find -name '*.gcda')
 
