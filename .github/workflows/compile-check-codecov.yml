@@ -148,10 +148,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          pushd src
-          gcov-9 *.o *.cpp rar/*.cpp rar/*.hpp
           bash <(curl -s https://codecov.io/bash)
-          popd
 
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && false
