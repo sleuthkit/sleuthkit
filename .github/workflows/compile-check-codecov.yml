@@ -116,18 +116,15 @@ jobs:
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
-          bash tests/get_dftt.bash
+          # Now re-link the test program without the library
+          (cd tests; g++ -o fs_thread_test -g -O0 -fPIC -fprofile-arcs -ftest-coverage fs_thread_test.o tsk_thread.o ../tsk/*/*.o -lsqlite3 -lz)
           make check
-          (cd tests;         gcov -pb read_apis.cpp)
-          (cd tests;         gcov -pb fs_thread_test.cpp)
-          (cd tools/vstools; gcov -pb mmls.cpp)
+          gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp')
 
       - name: Dump test logfile
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
-          cat tests/test-suite.log
-          cat tests/test_libraries.sh.log
-          cat tests/runtests.sh.log
+          for fn in tests/*.log ; do echo $fn ; ls -l $fn ; cat $fn ; done
 
       - name: List all files
         run: |

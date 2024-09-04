@@ -210,3 +210,4 @@ tests/data
 *.gcov
 *.gz
 *.gcda
+*.log
