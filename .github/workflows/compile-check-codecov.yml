@@ -116,10 +116,12 @@ jobs:
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
+          echo test results:
+          for fn in */*.log ; do echo $fn: ; cat $fn ; done
           # Now move the .gcda files from the .libs directories up to the proper location
-          for dir in fs img util vs ; do mv -v tsk/$dir/.libs/*.gcda tsk/$dir/ ; done
+          find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gcno .." \;
           # Run gcov on the gcda files
-          gcov-9 $(find -name '*.gcda')
+          gcov-9 $(find -name '*.gcda' -print)
 
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
