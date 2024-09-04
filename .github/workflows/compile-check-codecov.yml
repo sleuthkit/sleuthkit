@@ -138,16 +138,28 @@ jobs:
           find . -name '*.gcno' -ls
           echo gcda:
           find . -name '*.gcda' -ls
+          echo running gcov:
           gcov $(find -name '*.gcda' -print)
+          echo ls -l tests
+          ls -l tests
+
+      - name: oldstyle upload codecov report
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          pushd src
+          gcov-9 *.o *.cpp rar/*.cpp rar/*.hpp
+          bash <(curl -s https://codecov.io/bash)
+          popd
 
       - name: upload codecov report
-        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && false
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
           name: "Do codecov"
           verbose: true
-          directory: tests
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
