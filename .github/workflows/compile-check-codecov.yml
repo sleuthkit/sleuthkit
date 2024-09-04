@@ -128,9 +128,8 @@ jobs:
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
           echo test results:
           for fn in */*.log ; do echo $fn: ; cat $fn ; done
-          # Now move the .gcda files from the .libs directories up to the proper location
-          find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gcno .." \;
-          # Run gcov on the gcda files
+          echo move the .gcno and .gcda files into place
+          find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gc* .." \;
           find . -name '*.gcno' -ls
           find . -name '*.gcda' -ls
           gcov-9 $(find -name '*.gcda' -print)
