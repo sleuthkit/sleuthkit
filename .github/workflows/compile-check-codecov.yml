@@ -72,7 +72,7 @@ jobs:
       - name: C++ checks not optimizaiton with address-sanitizer (Mac and Linux)
         if: false
         run: |
-          ./configure --disable-opt --enable-address-sanitizer
+          ./configure --enable-address-sanitizer
           make $MAKE_OPTS all
           make $MAKE_OPTS bulk_extractor
           make check || (cat test-suite.log; exit 1)
@@ -108,11 +108,12 @@ jobs:
         run: |
           sudo pip3 install coverage
           bash ./bootstrap
-          ./configure --disable-opt CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
+          ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
           make check
-          gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp' -or -name '*.h' -or -name '*.hpp')
+	  (cd tests;         gcov -pb read_apis.cpp)
+	  (cd tools/vstools; gcov -pb mmls.cpp)
 
       - name: List all files
         run: |
@@ -125,6 +126,7 @@ jobs:
           fail_ci_if_error: true
           name: "Do codecov"
           verbose: true
+	  directory: tests
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
