@@ -108,6 +108,16 @@ jobs:
           popd
           make distclean
 
+      # https://gcc.gnu.org/onlinedocs/gcc/Gcov-Data-Files.html
+      # The .gcno notes file is generated when the source file is compiled with the GCC
+      # -ftest-coverage option. It contains information to reconstruct the basic
+      # block graphs and assign source line numbers to blocks.
+
+      # The .gcda count data file is generated when a program containing object files
+      # built with the GCC -fprofile-arcs option is executed.
+      # A separate .gcda file is created for each object file compiled with this option.
+      # It contains arc transition counts, value profile counts, and some summary information.
+
       - name: Prepare C++ checks with codecov
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
@@ -121,6 +131,8 @@ jobs:
           # Now move the .gcda files from the .libs directories up to the proper location
           find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gcno .." \;
           # Run gcov on the gcda files
+          find . -name '*.gcno' -ls
+          find . -name '*.gcda' -ls
           gcov-9 $(find -name '*.gcda' -print)
 
       - name: upload codecov report
