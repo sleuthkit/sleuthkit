@@ -116,17 +116,10 @@ jobs:
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
-          # Now re-link the test program without the library
-          (cd tests; g++ -o fs_thread_test -g -O0 -fPIC -fprofile-arcs -ftest-coverage fs_thread_test.o tsk_thread.o ../tsk/*/*.o -lsqlite3 -lz)
-          make check
-          gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp')
-
-      - name: Run C++ checks with codecov
-        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
-        run: |
-          make check
-          for fn in tests/*.log ; do echo $fn ; ls -l $fn ; cat $fn ; done
-          gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp')
+          # Now move the .gcda files from the .libs directories up to the proper location
+          for dir in base fs img util vs ; do mv -v tsk/$dir/.libs/*.gcda tsk/$dir/ ; done
+          # Run gcov on the gcda files
+          gcov-9 $(find -name '*.gcda)
 
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
