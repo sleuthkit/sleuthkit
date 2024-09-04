@@ -24,7 +24,7 @@ for i in ${ggID[@]};do
     COOKIES=$(mktemp)
     CODE=$(wget --save-cookies $COOKIES --keep-session-cookies --no-check-certificate "https://docs.google.com/uc?export=download&id=${id}" -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/Code: \1\n/p')
     CODE=$(echo $CODE | rev | cut -d: -f1 | rev | xargs)
-    wget --load-cookies $COOKIES "https://docs.google.com/uc?export=download&confirm=${CODE}&id=${id}" -O ./data/${name}
+    wget --no-verbose --load-cookies $COOKIES "https://docs.google.com/uc?export=download&confirm=${CODE}&id=${id}" -O ./data/${name}
     rm -f $COOKIES
     if [ ! -f "./data/${name}" ]; then
       echo "Error downloading data (${name})"

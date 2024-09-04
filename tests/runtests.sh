@@ -1,11 +1,8 @@
 #!/bin/bash
 
-# NOTE: This script is not currently being used anywhere. 
-# it curently runs fs_thread_test on a set of images that
-# are not public
+# This script is called by 'make check'
+# It curently runs fs_thread_test on a set of images, of which some are public
 #
-# This could probably be renamed to something with threadtest in the name
-
 
 EXIT_SUCCESS=0;
 EXIT_FAILURE=1;
@@ -29,7 +26,6 @@ check_diffs()
 if ! test -d ${IMAGE_DIR};
 then
 	echo "Missing image directory: ${IMAGE_DIR}";
-
 	exit ${EXIT_IGNORE};
 fi
 
@@ -43,59 +39,96 @@ fi
 if ! test -x ${FS_THREAD_TEST};
 then
 	echo "Missing test executable: ${IMAGE_DIR}";
-
 	exit ${EXIT_IGNORE};
 fi
 
-rm -f base.log thread-*.log
-${FS_THREAD_TEST} -f ext2 ${IMAGE_DIR}/ext2fs.dd 1 1
-mv thread-0.log base.log
-${FS_THREAD_TEST} -f ext2 ${IMAGE_DIR}/ext2fs.dd ${NTHREADS} ${NITERS}
-
-if ! check_diffs;
+if test -f ${IMAGE_DIR}/ext2fs.dd
 then
+    echo testing ${IMAGE_DIR}/ext2fs.dd
+    rm -f base.log thread-*.log
+    ${FS_THREAD_TEST} -f ext2 ${IMAGE_DIR}/ext2fs.dd 1 1
+    mv thread-0.log base.log
+    ${FS_THREAD_TEST} -f ext2 ${IMAGE_DIR}/ext2fs.dd ${NTHREADS} ${NITERS}
+    
+    if ! check_diffs;
+    then
 	exit ${EXIT_FAILURE};
+    fi
+else
+    echo ${IMAGE_DIR}/ext2fs.dd missing
+    [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE};
 fi
 
-rm -f base.log thread-*.log
-${FS_THREAD_TEST} -f ufs ${IMAGE_DIR}/misc-ufs1.dd 1 1
-mv thread-0.log base.log
-${FS_THREAD_TEST} -f ufs ${IMAGE_DIR}/misc-ufs1.dd ${NTHREADS} ${NITERS}
-
-if ! check_diffs;
+if test -f ${IMAGE_DIR}/ext2fs.dd
 then
+    echo testing ${IMAGE_DIR}/ext2fs.dd
+    rm -f base.log thread-*.log
+    ${FS_THREAD_TEST} -f ufs ${IMAGE_DIR}/misc-ufs1.dd 1 1
+    mv thread-0.log base.log
+    ${FS_THREAD_TEST} -f ufs ${IMAGE_DIR}/misc-ufs1.dd ${NTHREADS} ${NITERS}
+    
+    if ! check_diffs;
+    then
 	exit ${EXIT_FAILURE};
-fi
+    fi
+else
+    echo ${IMAGE_DIR}/ext2fs.dd missing
+    [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE};
+fi    
 
-rm -f base.log thread-*.log
-${FS_THREAD_TEST} -f hfs -o 64 ${IMAGE_DIR}/test_hfs.dmg 1 1
-mv thread-0.log base.log
-${FS_THREAD_TEST} -f hfs -o 64 ${IMAGE_DIR}/test_hfs.dmg ${NTHREADS} ${NITERS}
 
-if ! check_diffs;
+if test -f ${IMAGE_DIR}/test_hfs.dmg
 then
+    echo testing ${IMAGE_DIR}/test_hfs.dmg
+    rm -f base.log thread-*.log
+    ${FS_THREAD_TEST} -f hfs -o 64 ${IMAGE_DIR}/test_hfs.dmg 1 1
+    mv thread-0.log base.log
+    ${FS_THREAD_TEST} -f hfs -o 64 ${IMAGE_DIR}/test_hfs.dmg ${NTHREADS} ${NITERS}
+    
+    if ! check_diffs;
+    then
 	exit ${EXIT_FAILURE};
-fi
+    fi
+else
+    echo ${IMAGE_DIR}/test_hfs.dmg missing
+    [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE};
+fi    
 
-rm -f base.log thread-*.log
-${FS_THREAD_TEST} -f ntfs ${IMAGE_DIR}/ntfs-img-kw-1.dd 1 1
-mv thread-0.log base.log
-${FS_THREAD_TEST} -f ntfs ${IMAGE_DIR}/ntfs-img-kw-1.dd ${NTHREADS} ${NITERS}
-
-if ! check_diffs;
+if test -f ${IMAGE_DIR}/ntfs-img-kw-1.dd
 then
+    echo testing ${IMAGE_DIR}/ntfs-img-kw-1.dd
+    rm -f base.log thread-*.log
+    ${FS_THREAD_TEST} -f ntfs ${IMAGE_DIR}/ntfs-img-kw-1.dd 1 1
+    mv thread-0.log base.log
+    ${FS_THREAD_TEST} -f ntfs ${IMAGE_DIR}/ntfs-img-kw-1.dd ${NTHREADS} ${NITERS}
+    
+    if ! check_diffs;
+    then
 	exit ${EXIT_FAILURE};
-fi
+    fi
+else
+    echo ${IMAGE_DIR}/ntfs-img-kw-1.dd missing
+    [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE};
+fi    
 
-rm -f base.log thread-*.log
-${FS_THREAD_TEST} -f fat ${IMAGE_DIR}/fat32.dd 1 1
-mv thread-0.log base.log
-${FS_THREAD_TEST} -f fat ${IMAGE_DIR}/fat32.dd ${NTHREADS} ${NITERS}
 
-if ! check_diffs;
+if test -f ${IMAGE_DIR}/fat32.dd
 then
+    echo testing ${IMAGE_DIR}/fat32.dd
+    rm -f base.log thread-*.log
+    ${FS_THREAD_TEST} -f fat ${IMAGE_DIR}/fat32.dd 1 1
+    mv thread-0.log base.log
+    ${FS_THREAD_TEST} -f fat ${IMAGE_DIR}/fat32.dd ${NTHREADS} ${NITERS}
+    
+    if ! check_diffs;
+    then
 	exit ${EXIT_FAILURE};
-fi
+    fi
+else
+    echo ${IMAGE_DIR}/fat32.dd missing
+    [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE};
+fi    
+    
 
 exit ${EXIT_SUCCESS};
 

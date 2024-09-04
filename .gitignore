@@ -206,3 +206,8 @@ sleuthkit-*.tar.gz
 #Test data folder
 
 tests/data
+*.gcno
+*.gcov
+*.gz
+*.gcda
+*.log
