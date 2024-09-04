@@ -28,6 +28,7 @@ jobs:
 
     env:
       MAKE_OPTS: -j2
+      NOHARDFAIL: TRUE 
 
     steps:
       # https://github.com/actions/checkout
@@ -35,6 +36,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Get disk images
+        run: |
+          bash tests/get_dftt.bash                        
 
       - name: Extract Version from configure.ac
         id: extract_version
@@ -111,6 +116,7 @@ jobs:
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
+          bash tests/get_dftt.bash
           make check
           (cd tests;         gcov -pb read_apis.cpp)
           (cd tools/vstools; gcov -pb mmls.cpp)

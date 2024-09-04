@@ -209,3 +209,4 @@ tests/data
 *.gcno
 *.gcov
 *.gz
+*.gcda
