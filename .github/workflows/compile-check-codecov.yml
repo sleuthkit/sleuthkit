@@ -128,6 +128,10 @@ jobs:
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
           echo test results:
           for fn in */*.log ; do echo $fn: ; cat $fn ; done
+
+      - name: Run gcov-9
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
+        run: |
           echo move the .gcno and .gcda files into place
           find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gc* .." \;
           find . -name '*.gcno' -ls
