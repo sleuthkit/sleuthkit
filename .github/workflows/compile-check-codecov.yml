@@ -115,6 +115,13 @@ jobs:
           (cd tests;         gcov -pb read_apis.cpp)
           (cd tools/vstools; gcov -pb mmls.cpp)
 
+      - name: Dump test logfile
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
+        run: |
+          cat tests/test-suite.log
+          cat tests/test_libraries.sh.log
+          cat tests/runtests.sh.log
+
       - name: List all files
         run: |
           find . -ls
