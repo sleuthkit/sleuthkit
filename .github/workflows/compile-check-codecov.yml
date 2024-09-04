@@ -117,13 +117,9 @@ jobs:
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
           # Now move the .gcda files from the .libs directories up to the proper location
-          mv -v tsk/base/.libs/*.gcda  tsk/base/
-          mv -v tsk/fs/.libs/*.gcda  tsk/fs/
-          mv -v tsk/img/.libs/*.gcda  tsk/img/
-          mv -v tsk/util/.libs/*.gcda  tsk/util/
-          mv -v tsk/vs/.libs/*.gcda  tsk/vs/
+          fs img util vs ; do mv -v tsk/$dir/.libs/*.gcda tsk/$dir/ ; done
           # Run gcov on the gcda files
-          gcov-9 $(find -name '*.gcda)
+          gcov-9 $(find -name '*.gcda')
 
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
