@@ -119,6 +119,7 @@ jobs:
           bash tests/get_dftt.bash
           make check
           (cd tests;         gcov -pb read_apis.cpp)
+          (cd tests;         gcov -pb fs_thread_test.cpp)
           (cd tools/vstools; gcov -pb mmls.cpp)
 
       - name: Dump test logfile
