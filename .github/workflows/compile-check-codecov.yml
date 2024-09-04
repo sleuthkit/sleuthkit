@@ -108,7 +108,7 @@ jobs:
           popd
           make distclean
 
-      - name: C++ checks with codecov
+      - name: Prepare C++ checks with codecov
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
           sudo pip3 install coverage
@@ -121,14 +121,12 @@ jobs:
           make check
           gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp')
 
-      - name: Dump test logfile
+      - name: Run C++ checks with codecov
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
+          make check
           for fn in tests/*.log ; do echo $fn ; ls -l $fn ; cat $fn ; done
-
-      - name: List all files
-        run: |
-          find . -ls
+          gcov-9 $(find -name '*.o' -or -name '*.c' -or -name '*.cpp')
 
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
