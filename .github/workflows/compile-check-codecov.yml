@@ -28,7 +28,7 @@ jobs:
 
     env:
       MAKE_OPTS: -j2
-      NOHARDFAIL: TRUE 
+      NOHARDFAIL: TRUE
 
     steps:
       # https://github.com/actions/checkout
@@ -39,7 +39,7 @@ jobs:
 
       - name: Get disk images
         run: |
-          bash tests/get_dftt.bash                        
+          bash tests/get_dftt.bash
 
       - name: Extract Version from configure.ac
         id: extract_version
@@ -129,14 +129,16 @@ jobs:
           echo test results:
           for fn in */*.log ; do echo $fn: ; cat $fn ; done
 
-      - name: Run gcov-9
+      - name: Run gcov
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
         run: |
           echo move the .gcno and .gcda files into place
           find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gc* .." \;
+          echo gcno:
           find . -name '*.gcno' -ls
+          echo gcda:
           find . -name '*.gcda' -ls
-          gcov-9 $(find -name '*.gcda' -print)
+          gcov $(find -name '*.gcda' -print)
 
       - name: upload codecov report
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
