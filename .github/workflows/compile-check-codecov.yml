@@ -112,8 +112,8 @@ jobs:
           make clean
           make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
           make check
-	  (cd tests;         gcov -pb read_apis.cpp)
-	  (cd tools/vstools; gcov -pb mmls.cpp)
+          (cd tests;         gcov -pb read_apis.cpp)
+          (cd tools/vstools; gcov -pb mmls.cpp)
 
       - name: List all files
         run: |
@@ -126,7 +126,7 @@ jobs:
           fail_ci_if_error: true
           name: "Do codecov"
           verbose: true
-	  directory: tests
+          directory: tests
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
