@@ -65,8 +65,11 @@ for:
 
     build_script:
       - ./bootstrap
-      - ./configure -q
-      - make -s
+      - ./configure
+      - make -j
+
+    test_script:
+      - make -j check VERBOSE=1
 
   - 
     matrix:
@@ -75,5 +78,8 @@ for:
 
     build_script:
       - ./bootstrap
-      - ./configure -q
-      - make -s
+      - ./configure
+      - make -j
+
+    test_script:
+      - make -j check VERBOSE=1
