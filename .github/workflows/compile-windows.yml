@@ -44,8 +44,8 @@ jobs:
           choco install nuget.commandline
           choco install ant --ignore-dependencies
 
-      - name: Restore NuGet packages
-        run: nuget restore win32/lib
+      #- name: Restore NuGet packages
+      #  run: nuget restore win32/lib
 
       - name: Build TSK
         run: |
