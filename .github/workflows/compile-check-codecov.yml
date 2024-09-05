@@ -15,8 +15,9 @@ on:
     branches:
       - '**' # This will trigger the action for all branches
   pull_request:
-    branches:
-      - main # Specify the branches for which pull_request events should trigger the action
+    branches:  # Specify the branches for which pull_request events should trigger the action
+      - main
+      - develop
 
 jobs:
   build:
