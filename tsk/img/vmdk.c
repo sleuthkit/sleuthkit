@@ -99,7 +99,6 @@ vmdk_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
     vmdk_image_close(TSK_IMG_INFO * img_info)
 {
-    int i;
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
     libvmdk_error_t *vmdk_error = NULL;
     char *errmsg = NULL;
@@ -147,7 +146,6 @@ vmdk_open(int a_num_img,
 
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
     libvmdk_error_t *vmdk_error = NULL;
-    int i;
 
     IMG_VMDK_INFO *vmdk_info = NULL;
     TSK_IMG_INFO *img_info = NULL;
