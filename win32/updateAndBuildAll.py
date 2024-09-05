@@ -34,12 +34,18 @@ LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S
 MINIMAL = False
 
 def find_msbuild():
+    # First try using shutil to search the patn
+    msbuild_path = shutil.which(MSBUILD)
+    if msbuild_path:
+        return msbuild_path
+
+    # Use our hard-coded locations
     for loc in MSBUILD_LOCATIONS:
         if os.path.exists(loc):
             msbuild_exe = os.path.join(loc,MSBUILD)
             assert os.path.exists(msbuild_exe)
             return msbuild_exe
-    raise RuntimeError("Could not find %s",MSBUILD)
+    raise FileNotFoundError(f"Could not find {MSBUILD}")
 
 
 def getDependencies(depBranch):
