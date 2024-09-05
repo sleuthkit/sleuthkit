@@ -47,6 +47,11 @@ jobs:
       #- name: Restore NuGet packages
       #  run: nuget restore win32/lib
 
+      - name: Set JDK_HOME and INCLUDE
+        run: |
+          echo "JDK_HOME=$(Get-Command java).Path.Replace('\bin\java.exe', '')" >> $GITHUB_ENV
+          echo "INCLUDE=${{ env.JDK_HOME }}/include;${{ env.JDK_HOME }}/include/win32" >> $GITHUB_ENV
+
       - name: Build TSK
         run: |
           python win32\updateAndBuildAll.py -m
