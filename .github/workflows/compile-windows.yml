@@ -30,12 +30,6 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin' # You can use 'zulu' or 'adopt' as well
-          java-version: '11'
-
       - name: Install Chocolatey
         run: |
           Set-ExecutionPolicy Bypass -Scope Process -Force;
@@ -43,6 +37,29 @@ jobs:
           iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           choco install nuget.commandline
           choco install ant --ignore-dependencies
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # You can use 'zulu' or 'adopt' as well
+          java-version: '11'
+
+      - name: Search for all jni.h files on the system
+        run: |
+          Get-ChildItem -Recurse -Filter jni.h -ErrorAction SilentlyContinue
+
+      - name: Print INCLUDE environment variable
+        run: echo $env:INCLUDE
+
+      - name: Set INCLUDE environment variable (if needed)
+        run: |
+          # Example: Add a custom path if the jni.h directory is found but not in INCLUDE
+          $jniPath = (Get-ChildItem -Recurse -Filter jni.h -ErrorAction SilentlyContinue | Select-Object -First 1).DirectoryName
+          if ($jniPath) {
+            echo "Found jni.h at $jniPath"
+            $env:INCLUDE = "$jniPath;$env:INCLUDE"
+            echo "Updated INCLUDE: $env:INCLUDE"
+          }
 
       #- name: Restore NuGet packages
       #  run: nuget restore win32/lib
