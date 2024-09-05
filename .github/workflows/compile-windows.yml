@@ -50,9 +50,10 @@ jobs:
           find $JAVA_HOME -print
 
       - name: Set JDK_HOME and INCLUDE
+        shell: bash
         run: |
-          echo "JDK_HOME=$(Get-Command java).Path.Replace('\bin\java.exe', '')" >> $GITHUB_ENV
-          echo "INCLUDE=${{ env.JDK_HOME }}/include;${{ env.JDK_HOME }}/include/win32" >> $GITHUB_ENV
+          echo "JDK_HOME=$JAVA_HOME" >> $GITHUB_ENV
+          echo "INCLUDE=$INCLUDE;$JAVA_HOME/include;$JAVA_HOME/include/win32" >> $GITHUB_ENV
 
       - name: Demo JAVA_HOME/include/jni.h
         shell: bash
@@ -60,7 +61,11 @@ jobs:
           ls -l $JAVA_HOME/include/jni.h
           echo INCLUDE=$INCLUDE
           ls -l $GITHUB_ENV
-          cat $GITHUB_ENV
+
+      - name: bash printenv
+        shell: bash
+        run: |
+          printenv
 
       - name: Build TSK
         run: |
