@@ -38,15 +38,21 @@ jobs:
           choco install nuget.commandline
           choco install ant --ignore-dependencies
 
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # You can use 'zulu' or 'adopt' as well
-          java-version: '11'
+          java-version: '17'
 
       - name: Search for all jni.h files on the system
         run: |
           Get-ChildItem -Recurse -Filter jni.h -ErrorAction SilentlyContinue
+
+      - name: Find jni.h using the Linux `find` command
+        shell: bash
+        run: |
+          echo "Searching for jni.h..."
+          find / -name "jni.h" 2>/dev/null
 
       - name: Print INCLUDE environment variable
         run: echo $env:INCLUDE
