@@ -44,46 +44,23 @@ jobs:
           distribution: 'zulu' # choose 'temurin', 'zulu' or 'adopt'
           java-version: '17'
 
-      - name: Search for all jni.h files on the system
-        run: |
-          Get-ChildItem -Recurse -Filter jni.h -ErrorAction SilentlyContinue
-
       - name: Print the Java release from JAVA_HOME
         shell: bash
         run: |
           find $JAVA_HOME -print
 
-      - name: Print the Java release from /
-        shell: bash
-        run: |
-          find / -print
-
-      - name: Find jni.h using the Linux `find` command
-        shell: bash
-        run: |
-          echo "Searching for jni.h..."
-          find / -name "jni.h" 2>/dev/null
-
-      - name: Print INCLUDE environment variable
-        run: echo $env:INCLUDE
-
-      - name: Set INCLUDE environment variable (if needed)
-        run: |
-          # Example: Add a custom path if the jni.h directory is found but not in INCLUDE
-          $jniPath = (Get-ChildItem -Recurse -Filter jni.h -ErrorAction SilentlyContinue | Select-Object -First 1).DirectoryName
-          if ($jniPath) {
-            echo "Found jni.h at $jniPath"
-            $env:INCLUDE = "$jniPath;$env:INCLUDE"
-            echo "Updated INCLUDE: $env:INCLUDE"
-          }
-
-      #- name: Restore NuGet packages
-      #  run: nuget restore win32/lib
-
       - name: Set JDK_HOME and INCLUDE
         run: |
           echo "JDK_HOME=$(Get-Command java).Path.Replace('\bin\java.exe', '')" >> $GITHUB_ENV
           echo "INCLUDE=${{ env.JDK_HOME }}/include;${{ env.JDK_HOME }}/include/win32" >> $GITHUB_ENV
+
+      - name: Demo JAVA_HOME/include/jni.h
+        shell: bash
+        run: |
+          ls -l $JAVA_HOME/include/jni.h
+          echo INCLUDE=$INCLUDE
+          ls -l $GITHUB_ENV
+          cat $GITHUB_ENV
 
       - name: Build TSK
         run: |
