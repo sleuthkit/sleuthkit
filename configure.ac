@@ -299,6 +299,14 @@ WARNINGS='-Wall -Wextra -Wno-unused-parameter'
 AC_SUBST(AM_CFLAGS, $WARNINGS)
 AC_SUBST(AM_CXXFLAGS, $WARNINGS)
 
+check_imgs=
+AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
+AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
+AS_IF([test "x$ax_libvhdi" != "xno"], [check_imgs="$check_imgs image.vhd"])
+AS_IF([test "x$ax_libvmdk" != "xno"], [check_imgs="$check_imgs image.vmdk"])
+
+AC_SUBST(CHECK_IMGS, $check_imgs)
+
 AC_CONFIG_FILES([
     Makefile
     tsk/Makefile
@@ -325,6 +333,7 @@ AC_CONFIG_FILES([
     tools/fiwalk/src/Makefile
     tools/fiwalk/plugins/Makefile
     tests/Makefile
+    tests/imgs_to_dump
     samples/Makefile
     man/Makefile
     bindings/java/Makefile
