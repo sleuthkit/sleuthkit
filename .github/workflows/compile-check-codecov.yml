@@ -39,6 +39,7 @@ jobs:
           submodules: recursive
 
       - name: Prep the VM (MacOS)
+        if: startsWith(matrix.os, 'macos')
         run: |
           brew install cppunit
 
