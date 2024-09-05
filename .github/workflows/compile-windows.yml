@@ -1,0 +1,62 @@
+name: TSK Tests on Windows
+
+on:
+  push:
+    branches:
+      - '**' # This will trigger the action for all branches
+  pull_request:
+    branches:  # Specify the branches for which pull_request events should trigger the action
+      - main
+      - develop
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        targetplatform: [x86, x64]
+    runs-on: windows-latest
+
+    env:
+      TSK_HOME: "${{ github.workspace }}"
+
+    steps:
+      # https://github.com/actions/checkout
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v1
+      - uses: microsoft/setup-msbuild@v1.1
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # You can use 'zulu' or 'adopt' as well
+          java-version: '11'
+
+      - name: Install Chocolatey
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force;
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          choco install nuget.commandline
+          choco install ant --ignore-dependencies
+
+      - name: Restore NuGet packages
+        run: nuget restore win32/lib
+
+      - name: Build TSK
+        run: |
+          python win32\updateAndBuildAll.py -m
+
+      - name: Build Java
+        run: |
+          ant -version
+          cd bindings\java
+          ant -q dist
+          cd ..\..
+          cd case-uco\java
+          ant -q
+          cd ..\..
