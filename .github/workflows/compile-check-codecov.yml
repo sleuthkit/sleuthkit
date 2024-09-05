@@ -39,7 +39,7 @@ jobs:
 
       - name: Prep the VM (MacOS)
         run: |
-          sudo brew install cppunit
+          brew install cppunit
 
       - name: Prep the VM (ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
