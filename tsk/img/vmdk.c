@@ -32,7 +32,7 @@ getError(libvmdk_error_t * vmdk_error,
     retval = libvmdk_error_backtrace_sprint(vmdk_error,
         error_string, TSK_VMDK_ERROR_STRING_SIZE);
     libvmdk_error_free(&vmdk_error);
-    return retval ? 1 : 0;
+    return retval != 0;
 } 
 
 
