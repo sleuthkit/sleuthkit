@@ -203,11 +203,5 @@ unit_tests/base/test_base
 
 sleuthkit-*.tar.gz
 
-#Test data folder
-
-tests/data
-*.gcno
-*.gcov
-*.gz
-*.gcda
-*.log
+# Whitelist test data folder
+!tests/data/*
