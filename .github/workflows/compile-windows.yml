@@ -48,6 +48,16 @@ jobs:
         run: |
           Get-ChildItem -Recurse -Filter jni.h -ErrorAction SilentlyContinue
 
+      - name: Print the Java release from JAVA_HOME
+        shell: bash
+        run: |
+          find $JAVA_HOME -print
+
+      - name: Print the Java release from /
+        shell: bash
+        run: |
+          find / -print
+
       - name: Find jni.h using the Linux `find` command
         shell: bash
         run: |
