@@ -46,7 +46,7 @@ jobs:
       - name: Prep the VM (ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt install cppunit
+          sudo apt-get install libcppunit-dev
 
       - name: Get disk images
         run: |
