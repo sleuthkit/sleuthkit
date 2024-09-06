@@ -136,7 +136,11 @@ jobs:
           bash ./bootstrap
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
-          make $MAKE_OPTS  check || (echo ==error== ; cat test-suite.log; exit 1)
+          make $MAKE_OPTS
+
+      - name: Run C++ unit-test with codecov
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
+          (cd unit-tests; make $MAKE_OPTS  check ) || (echo ==error== ; cat test-suite.log; exit 1)
           echo test results:
           for fn in */*.log ; do echo $fn: ; cat $fn ; done
 
