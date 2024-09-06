@@ -192,6 +192,11 @@ AS_IF([test "x$enable_cppunit" != "xno"], [
 
 AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
 
+dnl check for Catch2
+AX_PKG_CHECK_MODULES([CATCH2], [], [catch2-with-main], [with_catch2=yes], [with_catch2=no])
+CATCH2_CPPFLAGS="-DCATCH_CONFIG_ENABLE_ALL_STRINGMAKERS"
+AC_SUBST([CATCH2_CPPFLAGS])
+
 dnl check for user online input
 AC_ARG_ENABLE([offline],
     [ AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
@@ -359,6 +364,7 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
+   Catch2 support:                        $with_catch2
    cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
