@@ -132,7 +132,6 @@ jobs:
 
       - name: Prepare C++ executable for running unit tests with codecov
         run: |
-          pip3 install coverage
           bash ./bootstrap
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
@@ -163,6 +162,9 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip3 install coverage
           bash <(curl -s https://codecov.io/bash)
 
       - name: newstyle upload codecov report (unexplicably fails)
