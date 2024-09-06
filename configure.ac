@@ -206,7 +206,7 @@ AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
     dnl javac is needed to compile the JAR file
-    AC_PROG_JAVAC
+    AX_PROG_JAVAC
     if test "x$JAVAC" != x; then
         AX_JNI_INCLUDE_DIR
         for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
@@ -219,7 +219,7 @@ AS_IF([test "x$enable_java" != "xno"], [
 
     dnl java is needed by ant
     dnl we had one report of a system with javac and not java
-    AC_PROG_JAVA
+    AX_PROG_JAVA
 
     dnl Test is ant is available
     AC_PATH_PROG([ANT_FOUND], [ant], [])
