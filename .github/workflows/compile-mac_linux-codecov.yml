@@ -37,6 +37,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - name: Prep the VM (MacOS)
         if: startsWith(matrix.os, 'macos')
@@ -129,8 +130,7 @@ jobs:
       # A separate .gcda file is created for each object file compiled with this option.
       # It contains arc transition counts, value profile counts, and some summary information.
 
-      - name: Prepare C++ checks with codecov
-        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
+      - name: Prepare C++ executable for running unit tests with codecov
         run: |
           sudo pip3 install coverage
           bash ./bootstrap
@@ -138,8 +138,7 @@ jobs:
           make clean
           make $MAKE_OPTS
 
-      - name: Run C++ unit-test with codecov
-        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64')
+      - name: Run C++ unit-test
         run: |
           (cd unit-tests; make $MAKE_OPTS  check ) || (echo ==error== ; cat test-suite.log; exit 1)
           echo test results:
@@ -166,7 +165,8 @@ jobs:
         run: |
           bash <(curl -s https://codecov.io/bash)
 
-      - name: upload codecov report
+      - name: newstyle upload codecov report (unexplicably fails)
+        # commented out because it unexplicitly fails
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && false
         uses: codecov/codecov-action@v4
         with:
@@ -185,3 +185,8 @@ jobs:
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher
+
+      - name: List all files
+        shell: bash
+        run: |
+          find . -ls
