@@ -38,7 +38,6 @@ AC_TYPE_MODE_T
 AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
 dnl AC_CHECK_MEMBERS([struct stat.st_rdev])
-
 dnl AC_STRUCT_TM
 
 dnl check for large file support
