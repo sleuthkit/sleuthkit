@@ -1,15 +1,15 @@
 dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
+AC_PREREQ([2.71])
 
-AC_INIT(sleuthkit, 4.12.1)
+AC_INIT([sleuthkit],[4.12.1])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
-AM_PROG_LIBTOOL
+LT_INIT
 AM_MAINTAINER_MODE
 
 dnl Checks for programs.
@@ -25,7 +25,6 @@ AC_PATH_PROG(PERL, perl)
 TSK_CHECK_PROG_PKGCONFIG
 
 dnl Checks for header files.
-AC_HEADER_STDC
 dnl AC_HEADER_MAJOR
 dnl AC_HEADER_SYS_WAIT
 dnl AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h unistd.h utime.h wchar.h wctype.h])
@@ -39,7 +38,6 @@ AC_TYPE_MODE_T
 AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
 dnl AC_CHECK_MEMBERS([struct stat.st_rdev])
-dnl AC_HEADER_TIME
 dnl AC_STRUCT_TM
 
 dnl check for large file support
@@ -206,7 +204,7 @@ AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
     dnl javac is needed to compile the JAR file
-    AC_PROG_JAVAC
+    AX_PROG_JAVAC
     if test "x$JAVAC" != x; then
         AX_JNI_INCLUDE_DIR
         for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
@@ -219,7 +217,7 @@ AS_IF([test "x$enable_java" != "xno"], [
 
     dnl java is needed by ant
     dnl we had one report of a system with javac and not java
-    AC_PROG_JAVA
+    AX_PROG_JAVA
 
     dnl Test is ant is available
     AC_PATH_PROG([ANT_FOUND], [ant], [])
