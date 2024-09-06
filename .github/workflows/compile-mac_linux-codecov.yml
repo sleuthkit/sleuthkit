@@ -132,7 +132,7 @@ jobs:
 
       - name: Prepare C++ executable for running unit tests with codecov
         run: |
-          sudo pip3 install coverage
+          pip3 install coverage
           bash ./bootstrap
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
