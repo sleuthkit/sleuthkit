@@ -150,6 +150,11 @@ AS_IF([test "x$ax_libbfio" = "xyes"],
       [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
       [ax_libvslvm=no])
 
+dnl check for Catch2
+AX_PKG_CHECK_MODULES([CATCH2], [], [catch2-with-main], [with_catch2=yes], [with_catch2=no])
+CATCH2_CPPFLAGS="-DCATCH_CONFIG_ENABLE_ALL_STRINGMAKERS"
+AC_SUBST([CATCH2_CPPFLAGS])
+
 dnl check for user online input
 AC_ARG_ENABLE([offline],
     [ AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
@@ -324,6 +329,7 @@ dnl Print a summary
 dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
+
    afflib support:                        $ax_afflib
    libaff4 support:                       $ax_libaff4
    libewf support:                        $ax_libewf
@@ -334,6 +340,7 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
+
    Catch2 support:                        $with_catch2
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
