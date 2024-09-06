@@ -1,6 +1,6 @@
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
- 
+
 # Bindings dependecies and build folders
 /bindings/java/lib/
 /bindings/java/build/
@@ -199,3 +199,7 @@ unit_tests/base/test_base
 .DS_Store
 
 sleuthkit-*.tar.gz
+
+# Whitelist test data folder
+!tests/data/*
+.Tpo

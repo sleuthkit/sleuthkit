@@ -38,6 +38,16 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Prep the VM (MacOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew install cppunit
+
+      - name: Prep the VM (ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get install libcppunit-dev
+
       - name: Get disk images
         run: |
           bash tests/get_dftt.bash
