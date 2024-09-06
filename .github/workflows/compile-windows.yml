@@ -65,7 +65,7 @@ jobs:
       - name: bash printenv
         shell: bash
         run: |
-          printenv
+          printenv | sort
 
       - name: Build TSK
         run: |
