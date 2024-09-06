@@ -5,7 +5,7 @@ LDADD = ../tsk/libtsk.la
 LDFLAGS += -static $(PTHREAD_LIBS) -lcppunit
 
 
-SUBDIRS = base
+SUBDIRS = base img
 check_PROGRAMS = runner
 
 runner_SOURCES = runner.cpp base/errors_test.cpp
