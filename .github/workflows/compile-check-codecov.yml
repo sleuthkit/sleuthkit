@@ -41,7 +41,7 @@ jobs:
       - name: Prep the VM (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install cppunit
+          brew install catch2
 
       - name: Prep the VM (ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
