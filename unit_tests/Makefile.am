@@ -2,7 +2,7 @@ AM_CPPFLAGS = -I.. -I$(srcdir)/..  -I/System/Volumes/Data/opt/homebrew/Cellar/cp
 AM_CFLAGS += $(PTHREAD_CFLAGS)
 AM_CXXFLAGS += -Wno-unused-command-line-argument $(PTHREAD_CFLAGS)
 LDADD = ../tsk/libtsk.la
-LDFLAGS += -static $(PTHREAD_LIBS) -lcppunit
+LDFLAGS += -static $(PTHREAD_LIBS) -L/opt/homebrew/Cellar/cppunit/1.15.1/lib -lcppunit
 
 
 SUBDIRS = base img
