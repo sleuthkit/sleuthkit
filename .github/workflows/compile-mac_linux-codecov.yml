@@ -39,11 +39,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Prep the VM (MacOS)
-        if: startsWith(matrix.os, 'macos')
-        run: |
-          brew install cppunit
-
       - name: Prep the VM (ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
@@ -61,7 +56,7 @@ jobs:
       - name: "Configure for MacOS"
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config
+          brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config cppunit
           bash ./bootstrap
 
       - name: "Configure for Ubuntu"
