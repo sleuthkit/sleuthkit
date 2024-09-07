@@ -57,6 +57,7 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config cppunit
+          find / -type f -print | grep cppunit
           bash ./bootstrap
 
       - name: "Configure for Ubuntu"
