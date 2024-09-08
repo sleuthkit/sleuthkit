@@ -141,14 +141,14 @@ jobs:
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
           make clean
           make $MAKE_OPTS check
-          (cd unit-tests; make $MAKE_OPTS check)
+          (cd unit_tests; make $MAKE_OPTS check)
           echo test results:
           for fn in */*.log ; do echo $fn: ; cat $fn ; done
 
       - name: Run C++ unit test and gcov
         if: env.run_codecov == 'true'
         run: |
-          (cd unit-tests; ./runner)
+          (cd unit_tests; ./runner)
           echo move the .gcno and .gcda files into place
           find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gc* .." \;
           echo gcno:
