@@ -293,7 +293,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                                 && (dir->name[0] == FATXXFS_SLOT_DELETED)) {
                                     name_ptr[a++] = '_';
                             }
-                            else if ((dir->lowercase & FATXXFS_CASE_LOWER_BASE)
+                            else if ((dir->ntbyte & FATXXFS_CASE_LOWER_BASE)
                                 && (dir->name[b] >= 'A')
                                 && (dir->name[b] <= 'Z')) {
                                     name_ptr[a++] = dir->name[b] + 32;
@@ -309,7 +309,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                         (dir->ext[b] != 0x20)) {
                             if (b == 0)
                                 name_ptr[a++] = '.';
-                            if ((dir->lowercase & FATXXFS_CASE_LOWER_EXT) &&
+                            if ((dir->ntbyte & FATXXFS_CASE_LOWER_EXT) &&
                                 (dir->ext[b] >= 'A') && (dir->ext[b] <= 'Z'))
                                 name_ptr[a++] = dir->ext[b] + 32;
                             else
