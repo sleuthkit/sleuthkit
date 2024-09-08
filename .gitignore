@@ -1,6 +1,6 @@
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
- 
+
 # Bindings dependecies and build folders
 /bindings/java/lib/
 /bindings/java/build/
@@ -191,6 +191,7 @@ tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
 unit_tests/base/test_base
+unit_tests/img/test_img
 
 # EMACS backup files
 *~
@@ -199,3 +200,7 @@ unit_tests/base/test_base
 .DS_Store
 
 sleuthkit-*.tar.gz
+
+# Whitelist test data folder
+!tests/data/*
+.Tpo

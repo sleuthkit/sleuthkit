@@ -507,7 +507,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\img\img_io.c" />
     <ClCompile Include="..\..\tsk\img\img_open.cpp" />
     <ClCompile Include="..\..\tsk\img\img_types.c" />
-    <ClCompile Include="..\..\tsk\img\mult_files.c" />
+    <ClCompile Include="..\..\tsk\img\mult_files.cpp" />
     <ClCompile Include="..\..\tsk\img\raw.c" />
     <ClCompile Include="..\..\tsk\img\logical_img.c" />
   </ItemGroup>
@@ -583,6 +583,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\hashdb\tsk_hashdb_i.h" />
     <ClInclude Include="..\..\tsk\img\aff.h" />
     <ClInclude Include="..\..\tsk\img\ewf.h" />
+    <ClInclude Include="..\..\tsk\img\mult_files.h" />
     <ClInclude Include="..\..\tsk\img\raw.h" />
     <ClInclude Include="..\..\tsk\img\logical_img.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img.h" />

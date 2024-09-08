@@ -340,7 +340,8 @@ AC_CONFIG_FILES([
     bindings/java/jni/Makefile
     case-uco/java/Makefile
     unit_tests/Makefile
-    unit_tests/base/Makefile])
+    unit_tests/base/Makefile
+    unit_tests/img/Makefile])
 
 AC_OUTPUT
 
@@ -358,6 +359,7 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
+   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ])
