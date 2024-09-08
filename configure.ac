@@ -63,7 +63,7 @@ AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
 AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
-AC_CHECK_FUNCS([strlcpy strlcat])
+AC_CHECK_FUNCS([strlcpy strlcat strnlen])
 
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
@@ -134,6 +134,8 @@ AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
 dnl Check if we should link with afflib
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
+dnl Check if we should link with libaff4
+TSK_OPT_DEP_CHECK([libaff4], [], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
 dnl Check if we should link with zlib
 TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
 dnl Check if we should link with libbfio
@@ -356,7 +358,7 @@ dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
-   libbfio support:                       $ax_libbfio
+   libaff4 support:                       $ax_libaff4
    libewf support:                        $ax_libewf
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
