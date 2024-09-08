@@ -39,7 +39,7 @@ jobs:
       - name: Set codecov
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && true
         run: |
-          echo "run_codecov=true >> $GITHUB_ENV
+          echo "run_codecov=true" >> $GITHUB_ENV
 
       # https://github.com/actions/checkout
       - name: Checkout
