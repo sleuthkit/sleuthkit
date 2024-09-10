@@ -5,7 +5,7 @@ environment:
   - job_name: Windows Build
     image: Visual Studio 2019
   - job_name: Linux Build
-    image: Ubuntu2204
+    image: Ubuntu
   - job_name: macOS Build
     image: macos-catalina
 
@@ -61,8 +61,10 @@ for:
 
     install:
       - cat /etc/os-release
-      - sudo apt install -y autoconf
       - autoconf --version
+      - sudo apt install -y autoconf
+      - wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz
+      - (tar -xf autoconf-2.71.tar.gz && cd autoconf-2.71 && ./configure && make && sudo make install)
 
     build_script:
       - ./bootstrap
