@@ -1,6 +1,6 @@
 version: 4.6.0.{build}
 
-environment: 
+environment:
   matrix:
 
   - job_name: Windows Build
@@ -15,9 +15,9 @@ matrix:
 
 
 # job-specific configurations
-for: 
+for:
 
-  - 
+  -
     matrix:
       only:
         - job_name: Windows Build
@@ -55,13 +55,15 @@ for:
     test_script:
       - cmd: ant -q -f bindings/java test
 
-  - 
+  -
     matrix:
       only:
         - job_name: Linux Build
 
     install:
       - sudo apt install -y autoconf
+      - cat /etc/os-release
+      - autoconf --version
 
     build_script:
       - ./bootstrap
@@ -71,7 +73,7 @@ for:
     test_script:
       - make -j check VERBOSE=1
 
-  - 
+  -
     matrix:
       only:
         - job_name: macOS Build
