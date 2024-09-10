@@ -60,8 +60,8 @@ for:
         - job_name: Linux Build
 
     install:
-      - sudo apt install -y autoconf
       - cat /etc/os-release
+      - sudo apt install -y autoconf
       - autoconf --version
 
     build_script:
