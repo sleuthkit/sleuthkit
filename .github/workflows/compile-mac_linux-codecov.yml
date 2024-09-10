@@ -121,7 +121,6 @@ jobs:
         run: |
           bash ./bootstrap
           ./configure --enable-thread-sanitizer --disable-silent-rules  --quiet
-          cat config.h
           make clean
           make $MAKE_OPTS  all
           make check || (cat test-suite.log; exit 1)
