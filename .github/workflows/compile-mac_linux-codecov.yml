@@ -141,7 +141,6 @@ jobs:
         run: |
           bash ./bootstrap
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --disable-silent-rules
-          cat config.h
           make clean
           make $MAKE_OPTS check
           (cd unit_tests; make $MAKE_OPTS check)
