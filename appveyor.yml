@@ -3,13 +3,14 @@ version: 4.6.0.{build}
 environment:
   matrix:
   - job_name: Windows Build
-    image: Visual Studio 2019
+    appveyor_build_worker_image: Visual Studio 2019
   - job_name: Linux Build
-    image: Ubuntu
+    appveyor_build_worker_image: Ubuntu
   - job_name: macOS Build
-    image: macos-catalina
+    appveyor_build_worker_image: macos-catalina
 
 matrix:
+
   fast_finish: true
 
 
@@ -60,13 +61,13 @@ for:
         - job_name: Linux Build
 
     install:
-      - cat /etc/os-release
-      - autoconf --version
       - sudo apt install -y autoconf
-      - wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz
-      - (tar -xf autoconf-2.71.tar.gz && cd autoconf-2.71 && ./configure && make && sudo make install)
 
     build_script:
+      - cat /etc/os-release
+      - wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz
+      - (tar -xf autoconf-2.71.tar.gz && cd autoconf-2.71 && ./configure && make && sudo make install)
+      - autoconf --version
       - ./bootstrap
       - ./configure
       - make -j
