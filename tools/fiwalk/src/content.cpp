@@ -286,7 +286,7 @@ void content::write_record()
                 runs += "/>\n";
             }
 	}
-	file_info_xml("byte_runs",runs);
+	file_info_xml2("byte_runs","facet='data'", runs);
 	if(!invalid){
 	    if(opt_md5  && h_md5.hashed_bytes>0)   file_info(h_md5.final());
 	    if(opt_sha1 && h_sha1.hashed_bytes>0)  file_info(h_sha1.final());

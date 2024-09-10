@@ -3,6 +3,9 @@
 /* Define to 1 if using 'alloca.c'. */
 #undef C_ALLOCA
 
+/* Define to 1 if you have the <aff4/libaff4-c.h> header file. */
+#undef HAVE_AFF4_LIBAFF4_C_H
+
 /* Define to 1 if you have the <afflib/afflib.h> header file. */
 #undef HAVE_AFFLIB_AFFLIB_H
 
@@ -45,7 +48,10 @@
 /* Define to 1 if you have the 'ishexnumber' function. */
 #undef HAVE_ISHEXNUMBER
 
-/* Define to 1 if you have the 'afflib' library (-lafflib). */
+/* Define to 1 if you have the `aff4' library (-laff4). */
+#undef HAVE_LIBAFF4
+
+/* Define to 1 if you have the `afflib' library (-lafflib). */
 #undef HAVE_LIBAFFLIB
 
 /* Define to 1 if you have the 'bfio' library (-lbfio). */
@@ -141,6 +147,9 @@
 
 /* Define to 1 if you have the 'strlcpy' function. */
 #undef HAVE_STRLCPY
+
+/* Define to 1 if you have the `strnlen' function. */
+#undef HAVE_STRNLEN
 
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
