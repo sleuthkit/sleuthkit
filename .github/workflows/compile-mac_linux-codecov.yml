@@ -98,7 +98,7 @@ jobs:
       - name: C++ checks not optimizaiton with address-sanitizer (Mac and Linux)
         if: false
         run: |
-          ./configure --enable-address-sanitizer
+          ./configure --enable-address-sanitizer --disable-silent-rules
           make $MAKE_OPTS all
           make $MAKE_OPTS bulk_extractor
           make check || (cat test-suite.log; exit 1)
@@ -120,11 +120,10 @@ jobs:
         if: false && startsWith(matrix.os, 'ubuntu-DISABLED')
         run: |
           bash ./bootstrap
-          ./configure --enable-thread-sanitizer --enable-silent-rules  --quiet
+          ./configure --enable-thread-sanitizer --disable-silent-rules  --quiet
+          cat config.h
           make clean
           make $MAKE_OPTS  all
-          pushd src
-          make $MAKE_OPTS  bulk_extractor
           make check || (cat test-suite.log; exit 1)
           popd
           make distclean
@@ -142,7 +141,8 @@ jobs:
       - name: Prepare C++ executable and make check
         run: |
           bash ./bootstrap
-          ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
+          ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --disable-silent-rules
+          cat config.h
           make clean
           make $MAKE_OPTS check
           (cd unit_tests; make $MAKE_OPTS check)
