@@ -165,6 +165,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
+          find . -ls
           python3 -m venv venv
           source venv/bin/activate
           pip3 install coverage
