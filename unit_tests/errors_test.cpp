@@ -9,6 +9,8 @@
 #include <tsk_config.h>
 #include <cstring>
 
+#include "catch.hpp"
+
 #ifdef HAVE_PTHREAD
 #ifdef __APPLE__
 #include <mach/semaphore.h>
@@ -22,21 +24,16 @@ extern "C" mach_port_t mach_task_self(void);
 #endif
 #endif
 
-#include "catch.hpp"
 
 TEST_CASE("void ErrorsTest::testInitialState()","[errors]") {
-	TSK_ERROR_INFO *ei;
-
-	ei = tsk_error_get_info();
+	TSK_ERROR_INFO *ei = tsk_error_get_info();
 	REQUIRE(0 == ei->t_errno);
 	REQUIRE(0 == ei->errstr[0]);
 	REQUIRE(0 == ei->errstr2[0]);
 }
 
 TEST_CASE("void ErrorsTest::testLengthChecks()","[errors]") {
-	TSK_ERROR_INFO *ei;
-
-	ei = tsk_error_get_info();
+	tsk_error_get_info();
 	std::string s;
 	for (unsigned x = 0; x < 4096; x ++) {
 		s = s + std::string("x");
@@ -108,7 +105,7 @@ void * thread_1(void *arg) {
 	return 0;
 }
 
-TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]"){
+TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]") {
 	xErrorsTestShared shared;
 	tsk_error_reset();
 	// start semaphore unlocked. Thread will lock.
@@ -119,7 +116,6 @@ TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]"){
 #else
 	REQUIRE(sem_init(&shared.sync_barrier, 0, 0)==0);
 #endif
-
 	pthread_t thread1;
 
 	int pte = pthread_create(&thread1, 0, thread_1, &shared);
@@ -136,9 +132,11 @@ TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]"){
 	// wait for thread to set some things.
 	REQUIRE (sem_wait(&shared.sync_barrier) == 0);
 #endif
+
 	REQUIRE(0 == tsk_error_get_errno());
 	REQUIRE(0 == tsk_error_get_errstr()[0]);
 	REQUIRE(0 == tsk_error_get_errstr2()[0]);
+
 	// give thread permission to proceed
 #ifdef __APPLE__
 	se = semaphore_signal(shared.sync_barrier);
@@ -153,6 +151,4 @@ TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]"){
 	REQUIRE(!shared.errstr_check_failed);
 	REQUIRE(!shared.errstr2_check_failed);
 }
-
-
 #endif
