@@ -144,15 +144,15 @@ TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]"){
 	se = semaphore_signal(shared.sync_barrier);
         REQUIRE(se==0);
 #else
-	REQUIRE (sem_post(&shared.sync_barrier) == 0);{
+	REQUIRE (sem_post(&shared.sync_barrier) == 0);
 #endif
-
 	void *exitval = 0;
 	pte = pthread_join(thread1, &exitval);
         REQUIRE(pte == 0);
 	REQUIRE(!shared.errno_check_failed);
 	REQUIRE(!shared.errstr_check_failed);
 	REQUIRE(!shared.errstr2_check_failed);
-        }
- }
+}
+
+
 #endif
