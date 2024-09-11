@@ -26,7 +26,7 @@
 #include "tsk/img/logical_img.h"
 
 #ifdef TSK_WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 using std::vector;
