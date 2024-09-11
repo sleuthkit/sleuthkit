@@ -8,7 +8,7 @@
 AM_CPPFLAGS = -I.. -I$(srcdir)/..  $(CATCH2_CPPFLAGS)
 AM_CFLAGS += $(PTHREAD_CFLAGS)
 AM_CXXFLAGS += -Wno-unused-command-line-argument $(PTHREAD_CFLAGS)
-LDADD = ../tsk/libtsk.la
+# LDADD = ../tsk/libtsk.la
 LDFLAGS += -static $(PTHREAD_LIBS)
 check_PROGRAMS = runner
 
