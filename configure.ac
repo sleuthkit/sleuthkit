@@ -1,7 +1,7 @@
 dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 
 AC_INIT([sleuthkit],[4.12.1])
 AC_CONFIG_AUX_DIR([config])

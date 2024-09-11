@@ -65,9 +65,6 @@ for:
 
     build_script:
       - cat /etc/os-release
-      - wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz
-      - (tar -xf autoconf-2.71.tar.gz && cd autoconf-2.71 && ./configure && make && sudo make install)
-      - autoconf --version
       - ./bootstrap
       - ./configure
       - make -j
