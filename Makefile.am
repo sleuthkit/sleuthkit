@@ -582,9 +582,13 @@ EXTRA_DIST += tests/runtests.sh
 check_SCRIPTS = \
 	tests/runtests.sh \
 	tests/test_imgs.sh \
-	tests/test_libraries.sh
+	tests/test_libraries.sh \
+	tests/test_static_tools.sh
 
 TESTS = $(check_SCRIPTS)
+if BUILD_STATIC
+TESTS += test_static_tools.sh
+endif
 
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
