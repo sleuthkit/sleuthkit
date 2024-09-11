@@ -1,16 +1,19 @@
 dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 
 AC_INIT([sleuthkit],[4.12.1])
 AC_CONFIG_AUX_DIR([config])
+m4_include([m4/slg_address_sanitizer.m4])
+m4_include([m4/slg_noopt.m4])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
 LT_INIT
 AM_MAINTAINER_MODE
+
 
 dnl Checks for programs.
 AC_PROG_CXX
@@ -23,6 +26,9 @@ AC_PROG_MAKE_SET
 AC_PATH_PROG(PERL, perl)
 
 TSK_CHECK_PROG_PKGCONFIG
+
+
+
 
 dnl Checks for header files.
 dnl AC_HEADER_MAJOR
@@ -241,6 +247,15 @@ case "$host" in
   AC_MSG_RESULT([no])
   ;;
 esac
+
+dnl ensure static linkage of tools during static builds
+if test "x$enable_shared" != "xyes"; then
+  CXXLD="$CXX -all-static"
+else
+  CXXLD="$CXX"
+fi
+
+AC_SUBST([CXXLD])
 
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
