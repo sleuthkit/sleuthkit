@@ -6,6 +6,8 @@ AC_PREREQ([2.69])
 AC_INIT([sleuthkit],[4.12.1])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
+m4_include([slg_address_sanitizer.m4])
+m4_include([slg_noopt.m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
@@ -25,8 +27,6 @@ AC_PATH_PROG(PERL, perl)
 TSK_CHECK_PROG_PKGCONFIG
 
 
-m4_include([m4/slg_address_sanitizer.m4])
-m4_include([slg_noopt.m4])
 
 
 dnl Checks for header files.
