@@ -1,7 +1,6 @@
 AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
 AM_CXXFLAGS += -Wno-unused-command-line-argument
 LDADD = ../../tsk/libtsk.la
-LDFLAGS += -static
 EXTRA_DIST = .indent.pro fscheck.cpp
 
 bin_PROGRAMS = blkcalc blkcat blkls blkstat ffind fls fcat fsstat icat ifind ils \
