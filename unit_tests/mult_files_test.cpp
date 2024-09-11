@@ -1,8 +1,8 @@
 #include "tsk/img/mult_files.h"
 
-#include <catch2/catch_test_macros.hpp>
+#include "catch.hpp"
 
-TEST_CASE("testSegmentsAlphabetic") {
+TEST_CASE("testSegmentsAlphabetic", "[mult_files]") {
   TSK_OSTRINGSTREAM os;
   TSK_STRING base = _TSK_T("x");
 
@@ -55,7 +55,7 @@ TEST_CASE("testSegmentsAlphabetic") {
   }
 }
 
-TEST_CASE("testSegmentsBin") {
+TEST_CASE("testSegmentsBin", "[mult_files]") {
   TSK_OSTRINGSTREAM os;
   const auto pfunc = getSegmentPattern(_TSK_T("file.bin"));
 
@@ -68,7 +68,7 @@ TEST_CASE("testSegmentsBin") {
   CHECK(pfunc(999, os) == _TSK_T("file(1000).bin"));
 }
 
-TEST_CASE("testSegmentsDmg") {
+TEST_CASE("testSegmentsDmg", "[mult_files]") {
   TSK_OSTRINGSTREAM os;
   const auto pfunc = getSegmentPattern(_TSK_T("file.dmg"));
 
@@ -81,7 +81,7 @@ TEST_CASE("testSegmentsDmg") {
   CHECK(pfunc(999, os) == _TSK_T("file.1000.dmgpart"));
 }
 
-TEST_CASE("testSegmentsNone") {
+TEST_CASE("testSegmentsNone", "[mult_files]") {
   const auto pfunc = getSegmentPattern(_TSK_T("some.img"));
   CHECK(!pfunc);
 }
@@ -117,7 +117,7 @@ TEST_CASE("testSegmentsNumericOneBased") {
   }
 }
 
-TEST_CASE("testSegmentsNumericZeroBased") {
+TEST_CASE("testSegmentsNumericZeroBased", "[mult_files]") {
   TSK_OSTRINGSTREAM os;
   TSK_STRING base = _TSK_T("file");
 

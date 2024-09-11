@@ -48,7 +48,6 @@ AC_FUNC_ALLOCA
 AC_FUNC_ERROR_AT_LINE
 dnl AC_FUNC_FORK
 AC_FUNC_FSEEKO
-AC_PROG_GCC_TRADITIONAL
 AC_FUNC_LSTAT
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 dnl AC_FUNC_MALLOC
@@ -150,52 +149,6 @@ dnl Check if we should link with libvslvm
 AS_IF([test "x$ax_libbfio" = "xyes"],
       [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
       [ax_libvslvm=no])
-
-dnl check for cppunit
-AC_ARG_ENABLE([cppunit],
-    [AS_HELP_STRING([--disable-cppunit], [Build without cppunit tests])])
-
-ac_cv_cppunit=no
-AS_IF([test "x$enable_cppunit" != "xno"], [
-  AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
-    [
-      dnl IGNOREs keep cppunit out of .pc file, as it's for testing only
-      TSK_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit >= 1.12.1], [ac_cv_cppunit=yes], [ac_cv_cppunit=no], [IGNORE], [IGNORE])
-    ]
-  )
-
-  AS_IF([test "x$ac_cv_cppunit" != "xyes"],
-    [AM_PATH_CPPUNIT(1.12.1)
-     AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes])]
-  )
-
-  AC_MSG_CHECKING([for TestRunner in -lcppunit])
-
-  SAVED_CFLAGS="$CFLAGS"
-  SAVED_LDFLAGS="$LDFLAGS"
-  CFLAGS="$CPPUNIT_CLFAGS"
-  LDFLAGS="$CPPUNIT_LIBS"
-
-  AC_LANG_PUSH([C++])
-  AC_LINK_IFELSE([AC_LANG_PROGRAM(
-    [[#include <cppunit/ui/text/TestRunner.h>]],
-    [[CppUnit::TextUi::TestRunner();]])],
-    [ax_cv_cppunit=yes],
-    [ax_cv_cppunit=no])
-  AC_LANG_POP([C++])
-
-  CFLAGS="$SAVED_CFLAGS"
-  LDFLAGS="$SAVED_LDFLAGS"
-
-  AC_MSG_RESULT([$ax_cv_cppunit])
-])
-
-AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
-
-dnl check for Catch2
-AX_PKG_CHECK_MODULES([CATCH2], [], [catch2-with-main], [with_catch2=yes], [with_catch2=no])
-CATCH2_CPPFLAGS="-DCATCH_CONFIG_ENABLE_ALL_STRINGMAKERS"
-AC_SUBST([CATCH2_CPPFLAGS])
 
 dnl check for user online input
 AC_ARG_ENABLE([offline],
@@ -373,7 +326,6 @@ Building:
 
 Features:
    Catch2 support:                        $with_catch2
-   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ])
