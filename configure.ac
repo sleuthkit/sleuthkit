@@ -255,6 +255,7 @@ else
   CXXLD="$CXX"
 fi
 
+AM_CONDITIONAL([BUILD_STATIC], [test "x$enable_shared" != "xyes"])
 AC_SUBST([CXXLD])
 
 dnl Dependencies for fiwalk
