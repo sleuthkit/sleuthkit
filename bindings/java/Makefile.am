@@ -7,6 +7,10 @@ jar_DATA = $(tsk_jar)
 
 if OFFLINE
  ant_args=-Doffline=true
+if CUSTOM_DEFAULT_JAR_LOCATION
+  ant_args+= -Ddefault-jar-location="@DEFAULT_JAR_LOCATION@"
+else
+endif
 else
 
 endif

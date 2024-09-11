@@ -32,21 +32,16 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-C
 
 ACLOCAL_AMFLAGS = -I m4
 
-# directories to compile
-if HAVE_CPPUNIT
-  UNIT_TESTS=unit_tests
-endif
-
 # Compile java bindings if all of the dependencies existed
 if X_JNI
   JAVA_BINDINGS=bindings/java
   JAVA_CASEUCO=case-uco/java
-else   
+else
   JAVA_BINDINGS=
   JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) $(JAVA_CASEUCO)
+SUBDIRS = tsk tools tests samples man unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
@@ -71,7 +66,7 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \
-    tsk/sorter/solaris.sort tsk/sorter/windows.sort 
+    tsk/sorter/solaris.sort tsk/sorter/windows.sort
 
 api-docs:
 	doxygen tsk/docs/Doxyfile

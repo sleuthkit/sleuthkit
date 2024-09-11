@@ -6,6 +6,8 @@ noinst_LTLIBRARIES = libtskimg.la
 libtskimg_la_SOURCES = \
 	aff.c \
 	aff.h \
+	aff4.c \
+	aff4.h \
 	ewf.cpp \
 	ewf.h \
 	img_io.c \

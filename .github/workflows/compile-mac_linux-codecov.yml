@@ -46,12 +46,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
+
+      - name: Prep the VM (MacOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          echo nothing to do
 
       - name: Prep the VM (ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get install libcppunit-dev
+          sudo apt install -y autoconf automake g++ flex libexpat1-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
 
       - name: Get disk images
         run: |
@@ -65,14 +69,12 @@ jobs:
       - name: "Configure for MacOS"
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config cppunit
-          find / -type f -print | grep cppunit
+          brew install wget libtool autoconf automake libtool libxml2 libewf pkg-config
           bash ./bootstrap
 
       - name: "Configure for Ubuntu"
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt install -y autoconf automake g++ flex libexpat1-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
           bash ./bootstrap
 
       - name: Version Numbers
@@ -94,7 +96,7 @@ jobs:
       - name: C++ checks not optimizaiton with address-sanitizer (Mac and Linux)
         if: false
         run: |
-          ./configure --enable-address-sanitizer
+          ./configure --enable-address-sanitizer --disable-silent-rules
           make $MAKE_OPTS all
           make $MAKE_OPTS bulk_extractor
           make check || (cat test-suite.log; exit 1)
@@ -116,11 +118,9 @@ jobs:
         if: false && startsWith(matrix.os, 'ubuntu-DISABLED')
         run: |
           bash ./bootstrap
-          ./configure --enable-thread-sanitizer --enable-silent-rules  --quiet
+          ./configure --enable-thread-sanitizer --disable-silent-rules  --quiet
           make clean
           make $MAKE_OPTS  all
-          pushd src
-          make $MAKE_OPTS  bulk_extractor
           make check || (cat test-suite.log; exit 1)
           popd
           make distclean
@@ -138,7 +138,7 @@ jobs:
       - name: Prepare C++ executable and make check
         run: |
           bash ./bootstrap
-          ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --enable-silent-rules --quiet
+          ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --disable-silent-rules
           make clean
           make $MAKE_OPTS check
           (cd unit_tests; make $MAKE_OPTS check)
@@ -165,6 +165,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
+          find . -ls
           python3 -m venv venv
           source venv/bin/activate
           pip3 install coverage

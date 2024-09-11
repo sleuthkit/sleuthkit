@@ -9,6 +9,8 @@
 #include <tsk_config.h>
 #include <cstring>
 
+#include "catch.hpp"
+
 #ifdef HAVE_PTHREAD
 #ifdef __APPLE__
 #include <mach/semaphore.h>
@@ -22,34 +24,23 @@ extern "C" mach_port_t mach_task_self(void);
 #endif
 #endif
 
-#include "errors_test.h"
 
-// Registers the fixture into the 'registry'
-CPPUNIT_TEST_SUITE_REGISTRATION( ErrorsTest );
-
-void ErrorsTest::setUp() {}
-void ErrorsTest::tearDown() {}
-
-void ErrorsTest::testInitialState() {
-	TSK_ERROR_INFO *ei;
-
-	ei = tsk_error_get_info();
-	CPPUNIT_ASSERT(0 == ei->t_errno);
-	CPPUNIT_ASSERT(0 == ei->errstr[0]);
-	CPPUNIT_ASSERT(0 == ei->errstr2[0]);
+TEST_CASE("void ErrorsTest::testInitialState()","[errors]") {
+	TSK_ERROR_INFO *ei = tsk_error_get_info();
+	REQUIRE(0 == ei->t_errno);
+	REQUIRE(0 == ei->errstr[0]);
+	REQUIRE(0 == ei->errstr2[0]);
 }
 
-void ErrorsTest::testLengthChecks() {
-	TSK_ERROR_INFO *ei;
-
-	ei = tsk_error_get_info();
+TEST_CASE("void ErrorsTest::testLengthChecks()","[errors]") {
+	tsk_error_get_info();
 	std::string s;
 	for (unsigned x = 0; x < 4096; x ++) {
 		s = s + std::string("x");
 	}
 	tsk_error_set_errstr("%s", s.c_str());
 	std::string es(tsk_error_get_errstr());
-	CPPUNIT_ASSERT(es.size() < 1025);
+	REQUIRE(es.size() < 1025);
 }
 
 #ifdef HAVE_PTHREAD
@@ -114,85 +105,50 @@ void * thread_1(void *arg) {
 	return 0;
 }
 
-void ErrorsTest::testMultithreaded()
-{
+TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]") {
 	xErrorsTestShared shared;
 	tsk_error_reset();
 	// start semaphore unlocked. Thread will lock.
 #ifdef __APPLE__
 	kern_return_t se;
 	se = semaphore_create(mach_task_self(), &shared.sync_barrier, SYNC_POLICY_FIFO, 0);
-	if (se != 0) {
-		fprintf(stderr, "sem_init failed: %d\n", se);
-				CPPUNIT_FAIL("Could not initialize semaphore");
-	}
+        REQUIRE(se==0);
 #else
-	if (sem_init(&shared.sync_barrier, 0, 0)) {
-		fprintf(stderr, "sem_init failed: %s\n", strerror(errno));
-		CPPUNIT_FAIL("Could not initialize semaphore");
-	}
+	REQUIRE(sem_init(&shared.sync_barrier, 0, 0)==0);
 #endif
-
 	pthread_t thread1;
 
 	int pte = pthread_create(&thread1, 0, thread_1, &shared);
-	if (pte != 0) {
-		fprintf(stderr, "pthread_create failed: %d\n", pte);
-		CPPUNIT_FAIL("pthread_create failed.");
-	}
+        REQUIRE(pte==0);
 
 #ifdef __APPLE__
 	se = semaphore_signal(shared.sync_barrier);
-	if (se != 0) {
-		fprintf(stderr, "semaphore_signal failed: %d\n", se);
-			CPPUNIT_FAIL("Could not post to semaphore");
-
-	}
+        REQUIRE(se==0);
 	se = semaphore_wait(shared.sync_barrier);
-	if (se != 0) {
-		fprintf(stderr, "semaphore_wait failed: %d\n", se);
-			CPPUNIT_FAIL("Could not post to semaphore");
-
-	}
+	REQUIRE(se==0);
 #else
 	// give thread permission to proceed
-	if (sem_post(&shared.sync_barrier) != 0) {
-		fprintf(stderr, "sem_post failed: %s\n", strerror(errno));
-		CPPUNIT_FAIL("Could not post to semaphore");
-	}
+	REQUIRE (sem_post(&shared.sync_barrier) == 0);
 	// wait for thread to set some things.
-	if (sem_wait(&shared.sync_barrier) != 0) {
-		fprintf(stderr, "sem_wait failed: %s\n", strerror(errno));
-		CPPUNIT_FAIL("Could not wait on semaphore");
-	}
+	REQUIRE (sem_wait(&shared.sync_barrier) == 0);
 #endif
-	CPPUNIT_ASSERT(0 == tsk_error_get_errno());
-	CPPUNIT_ASSERT(0 == tsk_error_get_errstr()[0]);
-	CPPUNIT_ASSERT(0 == tsk_error_get_errstr2()[0]);
+
+	REQUIRE(0 == tsk_error_get_errno());
+	REQUIRE(0 == tsk_error_get_errstr()[0]);
+	REQUIRE(0 == tsk_error_get_errstr2()[0]);
+
 	// give thread permission to proceed
 #ifdef __APPLE__
 	se = semaphore_signal(shared.sync_barrier);
-	if (se != 0) {
-		fprintf(stderr, "semaphore_signal failed: %d\n", se);
-		CPPUNIT_FAIL("Could not post to semaphore");
-	}
+        REQUIRE(se==0);
 #else
-	if (sem_post(&shared.sync_barrier) != 0) {
-		fprintf(stderr, "sem_post failed: %s\n", strerror(errno));
-		CPPUNIT_FAIL("Could not post to semaphore");
-	}
+	REQUIRE (sem_post(&shared.sync_barrier) == 0);
 #endif
-
 	void *exitval = 0;
 	pte = pthread_join(thread1, &exitval);
-	if (pte != 0) {
-		fprintf(stderr, "pthread_join failed: %d\n", pte);
-	    CPPUNIT_FAIL("pthread_join failed.");
-	}
-	CPPUNIT_ASSERT(!shared.errno_check_failed);
-	CPPUNIT_ASSERT(!shared.errstr_check_failed);
-	CPPUNIT_ASSERT(!shared.errstr2_check_failed);
+        REQUIRE(pte == 0);
+	REQUIRE(!shared.errno_check_failed);
+	REQUIRE(!shared.errstr_check_failed);
+	REQUIRE(!shared.errstr2_check_failed);
 }
 #endif
-
-
