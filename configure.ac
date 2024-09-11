@@ -24,6 +24,11 @@ AC_PATH_PROG(PERL, perl)
 
 TSK_CHECK_PROG_PKGCONFIG
 
+
+m4_include([m4/slg_address_sanitizer.m4])
+m4_include([slg_noopt.m4])
+
+
 dnl Checks for header files.
 dnl AC_HEADER_MAJOR
 dnl AC_HEADER_SYS_WAIT
