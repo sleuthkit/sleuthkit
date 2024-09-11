@@ -109,7 +109,6 @@ void * thread_1(void *arg) {
 }
 
 TEST_CASE("void ErrorsTest::testMultithreaded()","[errors]"){
-{
 	xErrorsTestShared shared;
 	tsk_error_reset();
 	// start semaphore unlocked. Thread will lock.
