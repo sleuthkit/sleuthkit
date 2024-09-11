@@ -48,10 +48,10 @@
 /* Define to 1 if you have the 'ishexnumber' function. */
 #undef HAVE_ISHEXNUMBER
 
-/* Define to 1 if you have the `aff4' library (-laff4). */
+/* Define to 1 if you have the 'aff4' library (-laff4). */
 #undef HAVE_LIBAFF4
 
-/* Define to 1 if you have the `afflib' library (-lafflib). */
+/* Define to 1 if you have the 'afflib' library (-lafflib). */
 #undef HAVE_LIBAFFLIB
 
 /* Define to 1 if you have the 'bfio' library (-lbfio). */
@@ -106,6 +106,9 @@
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
 
+/* Have PTHREAD_PRIO_INHERIT. */
+#undef HAVE_PTHREAD_PRIO_INHERIT
+
 /* Define to 1 if you have the <queue> header file. */
 #undef HAVE_QUEUE
 
@@ -148,7 +151,7 @@
 /* Define to 1 if you have the 'strlcpy' function. */
 #undef HAVE_STRLCPY
 
-/* Define to 1 if you have the `strnlen' function. */
+/* Define to 1 if you have the 'strnlen' function. */
 #undef HAVE_STRNLEN
 
 /* Define to 1 if you have the <sys/param.h> header file. */

@@ -1,10 +1,11 @@
-AM_CPPFLAGS = -I../.. $(CPPUNIT_CFLAGS)
-AM_CXXFLAGS += $(CPPUNIT_CFLAGS)
-LDADD = ../../tsk/libtsk.la $(CPPUNIT_LIBS)
-LDFLAGS = -static
+AM_CPPFLAGS = -I../..
 
 check_PROGRAMS = test_img
-test_img_SOURCES= ../runner.cpp mult_files_test.cpp ../../tsk/img/mult_files.cpp
+
+test_img_CPPFLAGS = $(AM_CPPFLAGS) $(CATCH2_CPPFLAGS)
+test_img_CFLAGS = $(AM_CFLAGS) $(CATCH2_CFLAGS)
+test_img_LDADD = ../../tsk/libtsk.la $(CATCH2_LIBS)
+test_img_SOURCES = mult_files_test.cpp ../../tsk/img/mult_files.cpp
 
 TESTS = $(check_PROGRAMS)
 
