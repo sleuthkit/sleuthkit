@@ -160,12 +160,15 @@ jobs:
           echo ls -l tests
           ls -l tests
 
+      - name: list all files
+        run: |
+          find . -ls
+
       - name: oldstyle upload codecov report
         if: env.run_codecov == 'true'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          find . -ls
           python3 -m venv venv
           source venv/bin/activate
           pip3 install coverage
