@@ -166,7 +166,22 @@ bin_PROGRAMS = \
 	tools/autotools/tsk_gettimes \
 	tools/autotools/tsk_imageinfo \
 	tools/autotools/tsk_loaddb \
-	tools/autotools/tsk_recover
+	tools/autotools/tsk_recover \
+	tools/fstools/blkcalc \
+	tools/fstools/blkcat \
+	tools/fstools/blkls \
+	tools/fstools/blkstat \
+	tools/fstools/ffind \
+	tools/fstools/fls \
+	tools/fstools/fcat \
+	tools/fstools/fsstat \
+	tools/fstools/icat \
+	tools/fstools/ifind \
+	tools/fstools/ils \
+	tools/fstools/istat \
+	tools/fstools/jcat \
+	tools/fstools/jls \
+	tools/fstools/usnjls
 
 tools_autotools_tsk_comparedir_LDADD = $(TSK_LIB)
 tools_autotools_tsk_comparedir_SOURCES = tools/autotools/tsk_comparedir.cpp tools/autotools/tsk_comparedir.h
@@ -182,6 +197,53 @@ tools_autotools_tsk_loaddb_SOURCES = tools/autotools/tsk_loaddb.cpp
 
 tools_autotools_tsk_recover_LDADD = $(TSK_LIB)
 tools_autotools_tsk_recover_SOURCES = tools/autotools/tsk_recover.cpp
+
+EXTRA_DIST += tools/fstools/fscheck.cpp
+
+tools_fstools_blkcalc_LDADD = $(TSK_LIB)
+tools_fstools_blkcalc_SOURCES = tools/fstools/blkcalc.cpp
+
+tools_fstools_blkcat_LDADD = $(TSK_LIB)
+tools_fstools_blkcat_SOURCES = tools/fstools/blkcat.cpp
+
+tools_fstools_blkls_LDADD = $(TSK_LIB)
+tools_fstools_blkls_SOURCES = tools/fstools/blkls.cpp
+
+tools_fstools_blkstat_LDADD = $(TSK_LIB)
+tools_fstools_blkstat_SOURCES = tools/fstools/blkstat.cpp
+
+tools_fstools_ffind_LDADD = $(TSK_LIB)
+tools_fstools_ffind_SOURCES = tools/fstools/ffind.cpp
+
+tools_fstools_fls_LDADD = $(TSK_LIB)
+tools_fstools_fls_SOURCES = tools/fstools/fls.cpp
+
+tools_fstools_fcat_LDADD = $(TSK_LIB)
+tools_fstools_fcat_SOURCES = tools/fstools/fcat.cpp
+
+tools_fstools_fsstat_LDADD = $(TSK_LIB)
+tools_fstools_fsstat_SOURCES = tools/fstools/fsstat.cpp
+
+tools_fstools_icat_LDADD = $(TSK_LIB)
+tools_fstools_icat_SOURCES = tools/fstools/icat.cpp
+
+tools_fstools_ifind_LDADD = $(TSK_LIB)
+tools_fstools_ifind_SOURCES = tools/fstools/ifind.cpp
+
+tools_fstools_ils_LDADD = $(TSK_LIB)
+tools_fstools_ils_SOURCES = tools/fstools/ils.cpp
+
+tools_fstools_istat_LDADD = $(TSK_LIB)
+tools_fstools_istat_SOURCES = tools/fstools/istat.cpp
+
+tools_fstools_jcat_LDADD = $(TSK_LIB)
+tools_fstools_jcat_SOURCES = tools/fstools/jcat.cpp
+
+tools_fstools_jls_LDADD = $(TSK_LIB)
+tools_fstools_jls_SOURCES = tools/fstools/jls.cpp
+
+tools_fstools_usnjls_LDADD = $(TSK_LIB)
+tools_fstools_usnjls_SOURCES = tools/fstools/usnjls.cpp
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
