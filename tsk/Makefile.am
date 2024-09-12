@@ -1,5 +1,5 @@
 # Compile the sub directories
-SUBDIRS = img fs util util/Bitlocker
+SUBDIRS = img util util/Bitlocker
 
 AM_CPPFLAGS = -I..
 AM_CXXFLAGS = -Wall -Wextra
@@ -7,12 +7,13 @@ AM_CXXFLAGS = -Wall -Wextra
 noinst_LTLIBRARIES = \
 	auto/libtskauto.la \
 	base/libtskbase.la \
+	fs/libtskfs.la \
 	hashdb/libtskhashdb.la \
 	pool/libtskpool.la \
 	vs/libtskvs.la
 
-auto_libtskauto_la_AM_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
-auto_libtskauto_la_AM_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
 auto_libtskauto_la_SOURCES = \
 	auto/auto.cpp \
 	auto/auto_db.cpp \
@@ -56,6 +57,71 @@ base_libtskbase_la_SOURCES = \
 	base/tsk_version.c \
 	base/XGetopt.c
 
+fs_libtskfs_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
+fs_libtskfs_la_SOURCES = \
+	fs/apfs_compat.cpp \
+	fs/apfs.cpp \
+	fs/apfs_fs.cpp \
+	fs/apfs_open.cpp \
+	fs/dcalc_lib.c \
+	fs/dcat_lib.c \
+	fs/decmpfs.c \
+	fs/dls_lib.c \
+	fs/dstat_lib.c \
+	fs/encryptionHelper.cpp \
+	fs/exfatfs.c \
+	fs/exfatfs_dent.c \
+	fs/exfatfs_meta.c \
+	fs/ext2fs.c \
+	fs/ext2fs_dent.c \
+	fs/ext2fs_journal.c \
+	fs/fatfs.c \
+	fs/fatfs_dent.cpp \
+	fs/fatfs_meta.c \
+	fs/fatfs_utils.c \
+	fs/fatxxfs.c \
+	fs/fatxxfs_dent.c \
+	fs/fatxxfs_meta.c \
+	fs/ffind_lib.c \
+	fs/ffs.c \
+	fs/ffs_dent.c \
+	fs/fls_lib.c \
+	fs/fs_attr.c \
+	fs/fs_attrlist.c \
+	fs/fs_block.c \
+	fs/fs_dir.c \
+	fs/fs_file.c \
+	fs/fs_inode.c \
+	fs/fs_io.c \
+	fs/fs_load.c \
+	fs/fs_name.c \
+	fs/fs_open.c \
+	fs/fs_parse.c \
+	fs/fs_types.c \
+	fs/hfs.c \
+	fs/hfs_dent.c \
+	fs/hfs_journal.c \
+	fs/hfs_unicompare.c \
+	fs/icat_lib.c \
+	fs/ifind_lib.c \
+	fs/ils_lib.c \
+	fs/iso9660.c \
+	fs/iso9660_dent.c \
+	fs/logical_fs.cpp \
+	fs/lzvn.c \
+	fs/lzvn.h \
+	fs/nofs_misc.c \
+	fs/ntfs.c \
+	fs/ntfs_dent.cpp \
+	fs/rawfs.c \
+	fs/swapfs.c \
+	fs/tsk_fs_i.h \
+	fs/unix_misc.c \
+	fs/usnjls_lib.c \
+	fs/usn_journal.c \
+	fs/walk_cpp.cpp \
+	fs/yaffs.cpp
+
 hashdb_libtskhashdb_la_SOURCES = \
 	hashdb/binsrch_index.cpp \
 	hashdb/encase.c \
@@ -70,7 +136,7 @@ hashdb_libtskhashdb_la_SOURCES = \
 	hashdb/tsk_hashdb_i.h \
 	hashdb/tsk_hash_info.h
 
-pool_libtskpool_la_AM_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
+pool_libtskpool_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
 pool_libtskpoo_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 pool_libtskpool_la_SOURCES = \
 	pool/apfs_pool_compat.cpp \
