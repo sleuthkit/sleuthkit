@@ -187,7 +187,10 @@ bin_PROGRAMS = \
 	tools/imgtools/img_cat \
 	tools/imgtools/img_stat \
 	tools/srchtools/srch_strings \
-	tools/srchtools/sigfind
+	tools/srchtools/sigfind \
+	tools/vstools/mmls \
+	tools/vstools/mmstat \
+	tools/vstools/mmcat
 
 tools_autotools_tsk_comparedir_LDADD = $(TSK_LIB)
 tools_autotools_tsk_comparedir_SOURCES = tools/autotools/tsk_comparedir.cpp tools/autotools/tsk_comparedir.h
@@ -266,6 +269,15 @@ tools_srchtools_srch_strings_SOURCES = srch_strings.c
 
 tools_srchtools_sigfind_LDADD = $(TSK_LIB)
 tools_srchtools_sigfind_SOURCES = sigfind.cpp
+
+tools_vstools_mmls_LDADD = $(TSK_LIB)
+tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp
+
+tools_vstools_mmstat_LDADD = $(TSK_LIB)
+tools_vstools_mmstat_SOURCES = tools/vstools/mmstat.cpp
+
+tools_vstools_mmcat_LDADD =  $(TSK_LIB)
+tools_vstools_mmcat_SOURCES = tools/vstools/mmcat.cpp
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
