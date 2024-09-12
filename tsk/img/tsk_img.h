@@ -71,15 +71,16 @@ extern "C" {
         TSK_IMG_TYPE_AFF_AFM = 0x0010,  ///< AFM AFF Format
         TSK_IMG_TYPE_AFF_ANY = 0x0020,  ///< Any format supported by AFFLIB (including beta ones)
 
-        TSK_IMG_TYPE_EWF_EWF   = 0x0040,   ///< EWF version
-        TSK_IMG_TYPE_VMDK_VMDK = 0x0080, ///< VMDK version
-        TSK_IMG_TYPE_VHD_VHD   = 0x0100,   ///< VHD version
+        TSK_IMG_TYPE_EWF_EWF   = 0x0040,  ///< EWF version
+        TSK_IMG_TYPE_VMDK_VMDK = 0x0080,  ///< VMDK version
+        TSK_IMG_TYPE_VHD_VHD   = 0x0100,  ///< VHD version
         TSK_IMG_TYPE_AFF4_AFF4 = 0x0200,  ///< AFF4 version
+        TSK_IMG_TYPE_QCOW_QCOW = 0x0400,  ///< QCOW version
         TSK_IMG_TYPE_EXTERNAL  = 0x1000,  ///< external defined format which at least implements TSK_IMG_INFO, used by pytsk
-        TSK_IMG_TYPE_POOL      = 0x4000,      ///< Pool
-        TSK_IMG_TYPE_LOGICAL   = 0x8000,       ///< Logical directory
+        TSK_IMG_TYPE_POOL      = 0x4000,  ///< Pool
+        TSK_IMG_TYPE_LOGICAL   = 0x8000,  ///< Logical directory
 
-        TSK_IMG_TYPE_UNSUPP = 0xffff   ///< Unsupported disk image type
+        TSK_IMG_TYPE_UNSUPP = 0xffff      ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
 
 #define TSK_IMG_INFO_CACHE_NUM  32
