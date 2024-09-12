@@ -42,6 +42,36 @@ EXTRA_DIST = \
 	win32/NugetPackages.props \
 	win32/docs/*
 
+dist_man_MANS = \
+	man/blkcalc.1 \
+	man/blkcat.1 \
+	man/blkls.1 \
+	man/blkstat.1 \
+	man/fcat.1 \
+	man/ffind.1 \
+	man/fls.1 \
+	man/fsstat.1 \
+	man/hfind.1 \
+	man/icat.1 \
+	man/ifind.1 \
+	man/ils.1 \
+	man/img_cat.1 \
+	man/img_stat.1 \
+	man/istat.1 \
+	man/jcat.1 \
+	man/jls.1 \
+	man/mactime.1 \
+	man/mmcat.1 \
+	man/mmls.1 \
+	man/mmstat.1 \
+	man/sigfind.1 \
+	man/sorter.1 \
+	man/tsk_comparedir.1 \
+	man/tsk_gettimes.1 \
+	man/tsk_loaddb.1 \
+	man/tsk_recover.1 \
+	man/usnjls.1
+
 ACLOCAL_AMFLAGS = -I m4
 
 # Compile java bindings if all of the dependencies existed
