@@ -154,11 +154,14 @@ void partition_info(const string &name,const string &value,const string &attribu
 void partition_info(const string &name,const string &value);
 void partition_info(const string &name,long i);
 void partition_info(const string &name, const struct timeval &ts);
+int fiwalk_main(int argc, char * const *argv1);
 
 
 
 /* fiwalk_tsk.cpp */
 int process_image_file(int argc,char *const *argv,const char *audit_file,u_int sector_size);
+
+
 
 #ifdef _MSC_VER
 #define F_OK 00

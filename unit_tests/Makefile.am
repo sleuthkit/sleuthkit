@@ -189,5 +189,30 @@ vs_src = \
 	../tsk/vs/sun.c \
 	../tsk/vs/tsk_vs_i.h
 
+fiwalk_src = \
+	../tools/fiwalk/src/arff.cpp \
+	../tools/fiwalk/src/arff.h \
+	../tools/fiwalk/src/base64.cpp \
+	../tools/fiwalk/src/base64.h \
+	../tools/fiwalk/src/content.cpp \
+	../tools/fiwalk/src/content.h \
+	../tools/fiwalk/src/dfxml.cpp \
+	../tools/fiwalk/src/dfxml.h \
+	../tools/fiwalk/src/fiwalk.cpp  \
+	../tools/fiwalk/src/fiwalk.h \
+	../tools/fiwalk/src/fiwalk_tsk.cpp \
+	../tools/fiwalk/src/hash_t.h \
+	../tools/fiwalk/src/hexbuf.c \
+	../tools/fiwalk/src/hexbuf.h \
+	../tools/fiwalk/src/plugin.cpp \
+	../tools/fiwalk/src/plugin.h \
+	../tools/fiwalk/src/sha2.c \
+	../tools/fiwalk/src/sha2.h \
+	../tools/fiwalk/src/unicode_escape.cpp \
+	../tools/fiwalk/src/unicode_escape.h \
+	../tools/fiwalk/src/utils.c \
+	../tools/fiwalk/src/utils.h
+
+
 runner_SOURCES = runner.cpp mult_files_test.cpp errors_test.cpp  catch.hpp $(auto_src) $(base_src) $(fs_src) $(hashdb_src) $(img_src) \
-	$(pool_src) $(util_src) $(vs_src)
+	$(pool_src) $(util_src) $(vs_src) $(fiwalk_src)

@@ -3,6 +3,9 @@
 /* Define to 1 if using 'alloca.c'. */
 #undef C_ALLOCA
 
+/* enable AddressSanitizer */
+#undef HAVE_ADDRESS_SANITIZER
+
 /* Define to 1 if you have the <aff4/libaff4-c.h> header file. */
 #undef HAVE_AFF4_LIBAFF4_C_H
 
@@ -69,19 +72,13 @@
 /* Define to 1 if you have the <libewf.h> header file. */
 #undef HAVE_LIBEWF_H
 
-/* Define if using opensll */
-#undef HAVE_LIBOPENSSL
-
-/* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
-#undef HAVE_LIBSQLITE3
-
-/* Define to 1 if you have the `qcow' library (-lqcow). */
+/* Define to 1 if you have the 'qcow' library (-lqcow). */
 #undef HAVE_LIBQCOW
 
 /* Define to 1 if you have the <libqcow.h> header file. */
 #undef HAVE_LIBQCOW_H
 
-/* Define to 1 if you have the `stdc++' library (-lstdc++). */
+/* Define to 1 if you have the 'stdc++' library (-lstdc++). */
 #undef HAVE_LIBSTDC__
 
 /* Define to 1 if you have the 'vhdi' library (-lvhdi). */
@@ -183,6 +180,12 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
+
+/* enable ThreadSanitizer */
+#undef HAVE_THREAD_SANITIZER
+
+/* enable UndefinedSanitizer */
+#undef HAVE_UNDEFINED_SANITIZER
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
