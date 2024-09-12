@@ -32,11 +32,11 @@ jobs:
       NOHARDFAIL: TRUE
 
     steps:
-      - name: Set variables
+      - name: Set make variables
         run: |
           echo "run_codecov=false" >> $GITHUB_ENV
 
-      - name: Set codecov
+      - name: Enable codecov on ubuntu x64
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && true
         run: |
           echo "run_codecov=true" >> $GITHUB_ENV
@@ -47,17 +47,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Prep the VM (MacOS)
-        if: startsWith(matrix.os, 'macos')
-        run: |
-          echo nothing to do
-
-      - name: Prep the VM (ubuntu)
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          sudo apt install -y autoconf automake g++ flex libexpat1-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
-
-      - name: Get disk images
+      - name: Get regression disk images
         run: |
           bash tests/get_dftt.bash
 
@@ -75,9 +65,10 @@ jobs:
       - name: "Configure for Ubuntu"
         if: startsWith(matrix.os, 'ubuntu')
         run: |
+          sudo apt install -y autoconf automake g++ flex libexpat1-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
           bash ./bootstrap
 
-      - name: Version Numbers
+      - name: Report version numbers
         run: |
           autoconf --version
           automake --version
@@ -85,31 +76,18 @@ jobs:
           gcc --version
           g++ --version
 
-      - name: Files
+      - name: Report files
         run: |
-          find . -print
+          find . -ls
 
       - name: Dump configure script
         run: |
           cat configure
 
-      - name: C++ checks not optimizaiton with address-sanitizer (Mac and Linux)
-        if: false
+      - name: Run unit tests with address-sanitizer (Mac and Linux)
         run: |
           ./configure --enable-address-sanitizer --disable-silent-rules
-          make $MAKE_OPTS all
-          make $MAKE_OPTS bulk_extractor
-          make check || (cat test-suite.log; exit 1)
-          make distclean
-
-      - name: C++ checks optimization with address-sanitizer (Mac and Linux)
-        if: false
-        run: |
-          echo === Try Address Sanitizer Optimization ===
-          ./configure --enable-address-sanitizer --enable-silent-rules --quiet
-          make $MAKE_OPTS all
-          pushd src
-          make $MAKE_OPTS bulk_extractor
+          pushd unit_tests
           make check || (cat test-suite.log; exit 1)
           popd
           make distclean
@@ -125,42 +103,17 @@ jobs:
           popd
           make distclean
 
-      # https://gcc.gnu.org/onlinedocs/gcc/Gcov-Data-Files.html
-      # The .gcno notes file is generated when the source file is compiled with the GCC
-      # -ftest-coverage option. It contains information to reconstruct the basic
-      # block graphs and assign source line numbers to blocks.
-
-      # The .gcda count data file is generated when a program containing object files
-      # built with the GCC -fprofile-arcs option is executed.
-      # A separate .gcda file is created for each object file compiled with this option.
-      # It contains arc transition counts, value profile counts, and some summary information.
-
       - name: Prepare C++ executable and make check
         run: |
           bash ./bootstrap
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --disable-silent-rules
-          make clean
-          make $MAKE_OPTS check
-          (cd unit_tests; make $MAKE_OPTS check)
-          echo test results:
-          for fn in */*.log ; do echo $fn: ; cat $fn ; done
+          pushd unit_tests
+          make $MAKE_OPTS runner
+          ./runner
+          gcov *.o *.cpp ../*/*/*.o ../*/*/*.cpp
+          popd
 
-      - name: Run C++ unit test and gcov
-        if: env.run_codecov == 'true'
-        run: |
-          (cd unit_tests; ./runner)
-          echo move the .gcno and .gcda files into place
-          find . -name '.libs' -type d -exec bash -c "cd {} ; pwd ; mv -vf *.gc* .." \;
-          echo gcno:
-          find . -name '*.gcno' -ls
-          echo gcda:
-          find . -name '*.gcda' -ls
-          echo running gcov:
-          gcov $(find -name '*.gcda' -print)
-          echo ls -l tests
-          ls -l tests
-
-      - name: oldstyle upload codecov report
+      - name: upload codecov report
         if: env.run_codecov == 'true'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -169,20 +122,15 @@ jobs:
           python3 -m venv venv
           source venv/bin/activate
           pip3 install coverage
+          pushd unit_tests
           bash <(curl -s https://codecov.io/bash)
+          popd
 
-      - name: newstyle upload codecov report (unexplicably fails)
-        # commented out because it unexplicitly fails
-        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && false
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: true
-          name: "Do codecov"
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: run all checks
+        run: |
+          make check
 
-      - name: distcheck
+      - name: distcheck disabled
         run: |
           echo disabled
           #bash bootstrap
