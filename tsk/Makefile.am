@@ -1,5 +1,30 @@
 # Compile the sub directories
-SUBDIRS = base img vs fs hashdb auto pool util util/Bitlocker
+SUBDIRS = img vs fs hashdb auto pool util util/Bitlocker
+
+AM_CPPFLAGS = -I..
+
+noinst_LTLIBRARIES = base/libtskbase.la
+
+base_libtskbase_la_SOURCES = \
+	base/crc.c \
+	base/crc.h \
+	base/md5c.c \
+	base/mymalloc.c \
+	base/sha1c.c \
+	base/tsk_base_i.c \
+	base/tsk_base_i.h \
+	base/tsk_endian.c \
+	base/tsk_error.c \
+	base/tsk_error_win32.cpp \
+	base/tsk_list.c \
+	base/tsk_lock.c \
+	base/tsk_parse.c \
+	base/tsk_printf.c \
+	base/tsk_stack.c \
+	base/tsk_unicode.c \
+	base/tsk_unicode.h \
+	base/tsk_version.c \
+	base/XGetopt.c
 
 # Merge the libraries into one
 lib_LTLIBRARIES = libtsk.la

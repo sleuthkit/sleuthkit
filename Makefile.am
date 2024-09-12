@@ -2,6 +2,8 @@ AM_CPPFLAGS = -I. -I$(srcdir)
 AM_CFLAGS += -Wall -Wno-unused-command-line-argument
 AM_CXXFLAGS += -Wall -Wno-overloaded-virtual -Wno-unused-command-line-argument
 
+CLEANFILES =
+
 # File that we want to include in the dist
 EXTRA_DIST = \
 	API-CHANGES.txt \
