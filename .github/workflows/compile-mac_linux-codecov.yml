@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      MAKE_OPTS: -j2
+      MAKE_OPTS: -j4
       NOHARDFAIL: TRUE
 
     steps:
@@ -110,7 +110,6 @@ jobs:
           pushd unit_tests
           make $MAKE_OPTS runner
           ./runner
-          gcov *.o *.cpp ../*/*/*.o ../*/*/*.cpp
           popd
 
       - name: upload codecov report
