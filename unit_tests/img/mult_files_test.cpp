@@ -1,6 +1,6 @@
 #include "tsk/img/mult_files.h"
 
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("testSegmentsAlphabetic", "[mult_files]") {
   TSK_OSTRINGSTREAM os;

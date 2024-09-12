@@ -28,7 +28,6 @@ addons:
     - libsqlite3-dev
     - ant
     - ant-optional
-    - libcppunit-dev
     - wget
     - openjdk-8-jdk
   homebrew:
@@ -38,7 +37,6 @@ addons:
     - wget
     - libewf
     - gettext
-    - cppunit
     - afflib
     taps: homebrew/cask-versions
     casks: adoptopenjdk8

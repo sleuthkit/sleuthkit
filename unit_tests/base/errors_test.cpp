@@ -9,7 +9,7 @@
 #include <tsk_config.h>
 #include <cstring>
 
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
 
 #ifdef HAVE_PTHREAD
 #ifdef __APPLE__
@@ -23,7 +23,6 @@ extern "C" mach_port_t mach_task_self(void);
 #define SEM_TYPE sem_t
 #endif
 #endif
-
 
 TEST_CASE("void ErrorsTest::testInitialState()","[errors]") {
 	TSK_ERROR_INFO *ei = tsk_error_get_info();

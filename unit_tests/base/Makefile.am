@@ -1,11 +1,11 @@
 AM_CPPFLAGS = -I../..
-AM_CXXFLAGS += -Wno-unused-command-line-argument $(CPPUNIT_CFLAGS)
-LDADD = ../../tsk/libtsk.la $(CPPUNIT_LIBS)
-LDFLAGS = -static 
+
+test_base_CPPFLAGS = $(AM_CPPFLAGS) $(CATCH2_CPPFLAGS)
+test_base_CFLAGS = $(AM_CFLAGS) $(CATCH2_CFLAGS)
+test_base_LDADD = ../../tsk/libtsk.la $(CATCH2_LIBS)
+test_base_SOURCES = errors_test.cpp
 
 check_PROGRAMS = test_base
-
-test_base_SOURCES = ../runner.cpp errors_test.cpp errors_test.h
 
 TESTS = $(check_PROGRAMS)
 
