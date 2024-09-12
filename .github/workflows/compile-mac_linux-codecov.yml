@@ -123,7 +123,7 @@ jobs:
           source venv/bin/activate
           pip3 install coverage
           pushd unit_tests
-          bash <(curl -s https://codecov.io/bash)
+          bash <(curl -s https://codecov.io/bash) -B develop
           popd
 
       - name: run all checks
