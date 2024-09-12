@@ -1,5 +1,5 @@
 # Compile the sub directories
-SUBDIRS = img fs hashdb util util/Bitlocker
+SUBDIRS = img fs util util/Bitlocker
 
 AM_CPPFLAGS = -I..
 AM_CXXFLAGS = -Wall -Wextra
@@ -7,6 +7,7 @@ AM_CXXFLAGS = -Wall -Wextra
 noinst_LTLIBRARIES = \
 	auto/libtskauto.la \
 	base/libtskbase.la \
+	hashdb/libtskhashdb.la \
 	pool/libtskpool.la \
 	vs/libtskvs.la
 
@@ -54,6 +55,20 @@ base_libtskbase_la_SOURCES = \
 	base/tsk_unicode.h \
 	base/tsk_version.c \
 	base/XGetopt.c
+
+hashdb_libtskhashdb_la_SOURCES = \
+	hashdb/binsrch_index.cpp \
+	hashdb/encase.c \
+	hashdb/hashkeeper.c \
+	hashdb/hdb_base.c \
+	hashdb/idxonly.c \
+	hashdb/md5sum.c \
+	hashdb/nsrl.c \
+	hashdb/sqlite_hdb.cpp \
+	hashdb/tsk_hashdb.c \
+	hashdb/tsk_hashdb.h \
+	hashdb/tsk_hashdb_i.h \
+	hashdb/tsk_hash_info.h
 
 pool_libtskpool_la_AM_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
 pool_libtskpoo_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
