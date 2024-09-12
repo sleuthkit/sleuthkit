@@ -182,7 +182,9 @@ bin_PROGRAMS = \
 	tools/fstools/jcat \
 	tools/fstools/jls \
 	tools/fstools/usnjls \
-	tools/hashtools/hfind
+	tools/hashtools/hfind \
+	tools/imgtools/img_cat \
+	tools/imgtools/img_stat
 
 tools_autotools_tsk_comparedir_LDADD = $(TSK_LIB)
 tools_autotools_tsk_comparedir_SOURCES = tools/autotools/tsk_comparedir.cpp tools/autotools/tsk_comparedir.h
@@ -250,6 +252,12 @@ EXTRA_DIST += tools/hashtools/md5.c tools/hashtools/sha1.c
 
 tools_hashtools_hfind_LDADD = $(TSK_LIB)
 tools_hashtools_hfind_SOURCES = tools/hashtools/hfind.cpp
+
+tools_imgtools_img_cat_LDADD = $(TSK_LIB)
+tools_imgtools_img_cat_SOURCES = tools/imgtools/img_cat.cpp
+
+tools_imgtools_img_stat_LDADD = $(TSK_LIB)
+tools_imgtools_img_stat_SOURCES = tools/imgtools/img_stat.cpp
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
