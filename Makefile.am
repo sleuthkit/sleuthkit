@@ -1,3 +1,7 @@
+AM_CPPFLAGS = -I. -I$(srcdir)
+AM_CFLAGS += -Wall -Wno-unused-command-line-argument
+AM_CXXFLAGS += -Wall -Wno-overloaded-virtual -Wno-unused-command-line-argument
+
 # File that we want to include in the dist
 EXTRA_DIST = \
 	API-CHANGES.txt \
@@ -157,9 +161,6 @@ nobase_dist_data_DATA = \
 
 TSK_LIB = tsk/libtsk.la
 
-AM_CPPFLAGS = -I. -I$(srcdir)
-AM_CFLAGS += -Wno-unused-command-line-argument
-AM_CXXFLAGS += -Wno-overloaded-virtual -Wno-unused-command-line-argument
 #EXTRA_DIST = .indent.pro
 
 bin_PROGRAMS = \
@@ -186,6 +187,7 @@ bin_PROGRAMS = \
 	tools/hashtools/hfind \
 	tools/imgtools/img_cat \
 	tools/imgtools/img_stat \
+	tools/pooltools/pstat \
 	tools/srchtools/srch_strings \
 	tools/srchtools/sigfind \
 	tools/vstools/mmls \
@@ -264,6 +266,9 @@ tools_imgtools_img_cat_SOURCES = tools/imgtools/img_cat.cpp
 
 tools_imgtools_img_stat_LDADD = $(TSK_LIB)
 tools_imgtools_img_stat_SOURCES = tools/imgtools/img_stat.cpp
+
+tools_pooltools_pstat_LDADD = $(TSK_LIB)
+tools_pooltools_pstat_SOURCES = tools/pooltools/pstat.cpp
 
 tools_srchtools_srch_strings_SOURCES = srch_strings.c
 
