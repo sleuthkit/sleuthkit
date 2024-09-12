@@ -1,1 +1,1 @@
-SUBDIRS = vstools srchtools sorter timeline fiwalk pooltools
+SUBDIRS = vstools sorter timeline fiwalk pooltools

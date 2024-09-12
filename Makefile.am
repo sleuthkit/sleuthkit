@@ -158,6 +158,7 @@ nobase_dist_data_DATA = \
 TSK_LIB = tsk/libtsk.la
 
 AM_CPPFLAGS = -I. -I$(srcdir)
+AM_CFLAGS += -Wno-unused-command-line-argument
 AM_CXXFLAGS += -Wno-overloaded-virtual -Wno-unused-command-line-argument
 #EXTRA_DIST = .indent.pro
 
@@ -184,7 +185,9 @@ bin_PROGRAMS = \
 	tools/fstools/usnjls \
 	tools/hashtools/hfind \
 	tools/imgtools/img_cat \
-	tools/imgtools/img_stat
+	tools/imgtools/img_stat \
+	tools/srchtools/srch_strings \
+	tools/srchtools/sigfind
 
 tools_autotools_tsk_comparedir_LDADD = $(TSK_LIB)
 tools_autotools_tsk_comparedir_SOURCES = tools/autotools/tsk_comparedir.cpp tools/autotools/tsk_comparedir.h
@@ -258,6 +261,11 @@ tools_imgtools_img_cat_SOURCES = tools/imgtools/img_cat.cpp
 
 tools_imgtools_img_stat_LDADD = $(TSK_LIB)
 tools_imgtools_img_stat_SOURCES = tools/imgtools/img_stat.cpp
+
+tools_srchtools_srch_strings_SOURCES = srch_strings.c
+
+tools_srchtools_sigfind_LDADD = $(TSK_LIB)
+tools_srchtools_sigfind_SOURCES = sigfind.cpp
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
