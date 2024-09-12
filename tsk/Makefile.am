@@ -29,14 +29,26 @@ base_libtskbase_la_SOURCES = \
 # Merge the libraries into one
 lib_LTLIBRARIES = libtsk.la
 libtsk_la_SOURCES =
-libtsk_la_LIBADD = base/libtskbase.la img/libtskimg.la \
-    vs/libtskvs.la fs/libtskfs.la hashdb/libtskhashdb.la \
-    auto/libtskauto.la pool/libtskpool.la util/libtskutil.la  util/Bitlocker/libtskbitlocker.la
+libtsk_la_LIBADD = \
+	auto/libtskauto.la \
+	base/libtskbase.la \
+	fs/libtskfs.la \
+	hashdb/libtskhashdb.la \
+	img/libtskimg.la \
+	pool/libtskpool.la \
+	util/Bitlocker/libtskbitlocker.la \
+	util/libtskutil.la \
+	vs/libtskvs.la
+
 # current:revision:age
 libtsk_la_LDFLAGS = -version-info 21:1:2 $(LIBTSK_LDFLAGS)
 
-EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/*.dox docs/*.html \
-   tsk.pc.in
+EXTRA_DIST = \
+	tsk_tools_i.h \
+	docs/Doxyfile \
+	docs/*.dox \
+	docs/*.html \
+	tsk.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = tsk.pc
