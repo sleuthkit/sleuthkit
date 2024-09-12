@@ -1,5 +1,5 @@
 AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
-EXTRA_DIST = .indent.pro 
+EXTRA_DIST = .indent.pro
 
 noinst_LTLIBRARIES = libtskimg.la
 
@@ -19,7 +19,7 @@ libtskimg_la_SOURCES = \
 	logical_img.h \
 	mult_files.cpp \
 	raw.c \
-  raw.h \
+	raw.h \
 	tsk_img_i.h \
 	unsupported_types.c \
 	unsupported_types.h \
