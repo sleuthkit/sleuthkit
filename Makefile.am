@@ -87,7 +87,7 @@ else
   JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests samples man unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
+SUBDIRS = tsk tools tests samples unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
