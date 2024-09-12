@@ -1,1 +1,1 @@
-SUBDIRS = imgtools vstools fstools hashtools srchtools sorter timeline autotools fiwalk pooltools
+SUBDIRS = imgtools vstools fstools hashtools srchtools sorter timeline fiwalk pooltools

@@ -155,6 +155,34 @@ nobase_dist_data_DATA = \
 	tsk/sorter/solaris.sort \
 	tsk/sorter/windows.sort
 
+TSK_LIB = tsk/libtsk.la
+
+AM_CPPFLAGS = -I. -I$(srcdir)
+AM_CXXFLAGS += -Wno-overloaded-virtual -Wno-unused-command-line-argument
+#EXTRA_DIST = .indent.pro
+
+bin_PROGRAMS = \
+	tools/autotools/tsk_comparedir \
+	tools/autotools/tsk_gettimes \
+	tools/autotools/tsk_imageinfo \
+	tools/autotools/tsk_loaddb \
+	tools/autotools/tsk_recover
+
+tools_autotools_tsk_comparedir_LDADD = $(TSK_LIB)
+tools_autotools_tsk_comparedir_SOURCES = tools/autotools/tsk_comparedir.cpp tools/autotools/tsk_comparedir.h
+
+tools_autotools_tsk_gettimes_LDADD = $(TSK_LIB)
+tools_autotools_tsk_gettimes_SOURCES = tools/autotools/tsk_gettimes.cpp
+
+tools_autotools_tsk_imageinfo_LDADD = $(TSK_LIB)
+tools_autotools_tsk_imageinfo_SOURCES = tools/autotools/tsk_imageinfo.cpp
+
+tools_autotools_tsk_loaddb_LDADD = $(TSK_LIB)
+tools_autotools_tsk_loaddb_SOURCES = tools/autotools/tsk_loaddb.cpp
+
+tools_autotools_tsk_recover_LDADD = $(TSK_LIB)
+tools_autotools_tsk_recover_SOURCES = tools/autotools/tsk_recover.cpp
+
 api-docs:
 	doxygen tsk/docs/Doxyfile
 	cd bindings/java/doxygen; doxygen Doxyfile
