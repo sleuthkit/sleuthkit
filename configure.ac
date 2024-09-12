@@ -147,6 +147,8 @@ dnl Check if we should link with libbfio
 TSK_OPT_DEP_CHECK([libbfio], [], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
 dnl Check if we should link with libewf
 TSK_OPT_DEP_CHECK([libewf], [EWF], [libewf], [libewf.h], [ewf], [libewf_get_version])
+dnl Check if we should link with libqcow
+TSK_OPT_DEP_CHECK([libqcow], [QCOW], [libqcow], [libqcow.h], [qcow], [libqcow_get_version])
 dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
@@ -283,6 +285,7 @@ AC_SUBST(AM_CXXFLAGS, $WARNINGS)
 check_imgs=
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
 AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
+AS_IF([test "x$ax_libqcow" != "xno"], [check_imgs="$check_imgs image.qcow"])
 AS_IF([test "x$ax_libvhdi" != "xno"], [check_imgs="$check_imgs image.vhd"])
 AS_IF([test "x$ax_libvmdk" != "xno"], [check_imgs="$check_imgs image.vmdk"])
 
@@ -333,6 +336,7 @@ Building:
    afflib support:                        $ax_afflib
    libaff4 support:                       $ax_libaff4
    libewf support:                        $ax_libewf
+   libqcow support:                       $ax_libqcow
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
    libvslvm support:                      $ax_libvslvm
