@@ -1,12 +1,38 @@
 # Compile the sub directories
-SUBDIRS = img vs fs hashdb auto util util/Bitlocker
+SUBDIRS = img fs hashdb util util/Bitlocker
 
 AM_CPPFLAGS = -I..
 AM_CXXFLAGS = -Wall -Wextra
 
 noinst_LTLIBRARIES = \
+	auto/libtskauto.la \
 	base/libtskbase.la \
-	pool/libtskpool.la
+	pool/libtskpool.la \
+	vs/libtskvs.la
+
+auto_libtskauto_la_AM_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+auto_libtskauto_la_AM_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+auto_libtskauto_la_SOURCES = \
+	auto/auto.cpp \
+	auto/auto_db.cpp \
+	auto/case_db.cpp \
+	auto/db_sqlite.cpp \
+	auto/guid.cpp \
+	auto/guid.h \
+	auto/is_image_supported.cpp \
+	auto/tsk_auto.h \
+	auto/tsk_auto_i.h \
+	auto/tsk_case_db.h \
+	auto/tsk_case_db.h \
+	auto/tsk_db.cpp \
+	auto/tsk_db.h \
+	auto/tsk_db_sqlite.h \
+	auto/tsk_is_image_supported.h
+
+# Compile the bundled sqlite3 if there isn't an existing lib to use
+if !HAVE_LIBSQLITE3
+auto_libtskauto_la_SOURCES += auto/sqlite3.c auto/sqlite3.h
+endif
 
 base_libtskbase_la_SOURCES = \
 	base/crc.c \
@@ -41,6 +67,18 @@ pool_libtskpool_la_SOURCES = \
 	pool/pool_open.cpp \
 	pool/pool_read.cpp \
 	pool/pool_types.cpp
+
+vs_libtskvs_la_SOURCES = \
+	vs/bsd.c \
+	vs/dos.c \
+	vs/gpt.c \
+	vs/mac.c \
+	vs/mm_io.c \
+	vs/mm_open.c \
+	vs/mm_part.c \
+	vs/mm_types.c \
+	vs/sun.c \
+	vs/tsk_vs_i.h
 
 # Merge the libraries into one
 lib_LTLIBRARIES = libtsk.la
