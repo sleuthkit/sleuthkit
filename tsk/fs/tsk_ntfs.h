@@ -706,6 +706,7 @@ extern "C" {
         uint8_t ver;            /* version of NTFS - uses the VINFO flag */
         TSK_FS_FILE *mft_file;  /* contains the data for the mft entry for the mft */
         const TSK_FS_ATTR *mft_data;    /* Data run for MFT entry for MFT */
+        uint32_t csize;         /* real number of sectors in a cluster */
         uint32_t csize_b;       /* number of bytes in a cluster */
         uint16_t ssize_b;       /* number of bytes in a sector */
         uint32_t mft_rsize_b;   /* number of bytes per mft record */
