@@ -1,9 +1,12 @@
 # Compile the sub directories
-SUBDIRS = img vs fs hashdb auto pool util util/Bitlocker
+SUBDIRS = img vs fs hashdb auto util util/Bitlocker
 
 AM_CPPFLAGS = -I..
+AM_CXXFLAGS = -Wall -Wextra
 
-noinst_LTLIBRARIES = base/libtskbase.la
+noinst_LTLIBRARIES = \
+	base/libtskbase.la \
+	pool/libtskpool.la
 
 base_libtskbase_la_SOURCES = \
 	base/crc.c \
@@ -25,6 +28,19 @@ base_libtskbase_la_SOURCES = \
 	base/tsk_unicode.h \
 	base/tsk_version.c \
 	base/XGetopt.c
+
+pool_libtskpool_la_AM_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
+pool_libtskpoo_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
+pool_libtskpool_la_SOURCES = \
+	pool/apfs_pool_compat.cpp \
+	pool/apfs_pool.cpp \
+	pool/img_bfio_handle.c \
+	pool/img_bfio_handle.h \
+	pool/lvm_pool_compat.cpp \
+	pool/lvm_pool.cpp \
+	pool/pool_open.cpp \
+	pool/pool_read.cpp \
+	pool/pool_types.cpp
 
 # Merge the libraries into one
 lib_LTLIBRARIES = libtsk.la
