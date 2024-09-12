@@ -16,6 +16,7 @@ EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/*.dox docs/*.html \
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = tsk.pc
 
+# TODO: This can be done more simply from configure.ac
 tsk.pc: tsk.pc.in Makefile
 	sed -e 's![@]prefix[@]!$(prefix)!g' \
       -e 's![@]exec_prefix[@]!$(exec_prefix)!g' \
