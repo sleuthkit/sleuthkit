@@ -7,7 +7,7 @@
  * MD5 of any objects, save those objects into a directory, or both.
  *
  * Algorithm:
- * 1 - Find all of the partitions on the disk. 
+ * 1 - Find all of the partitions on the disk.
  * 2 - For each partition, walk the files.
  * 3 - For each file, print the requested information.
  * 4 - For each partition, walk the indoes
@@ -113,13 +113,13 @@ void print_version()
     printf("AFFLIB Version:    %s\n",af_version());
 #else
     printf("*** NO AFFLIB SUPPORT ***\n");
-#endif    
+#endif
 #ifdef HAVE_LIBEWF
     printf("LIBEWF Version:    %s\n",libewf_get_version());
 #else
     printf("*** NO LIBEWF SUPPORT ***\n");
 #endif
-    
+
 }
 
 void usage()
@@ -128,8 +128,8 @@ void usage()
     printf("Default behavior: Just print the file system statistics and exit.\n");
     printf("options:\n");
     printf("    -c config.txt   read config.txt for metadata extraction tools\n");
-    printf("    -C nn           only process nn files, then do a clean exit\n"); 
-    
+    printf("    -C nn           only process nn files, then do a clean exit\n");
+
     printf("\n");
     printf("include/exclude parameters; may be repeated. \n");
     printf("    -n pattern  = only match files for which the filename matches\n");
@@ -185,7 +185,7 @@ void usage()
 }
 
 /****************************************************************
- ** Support routines 
+ ** Support routines
  ****************************************************************/
 static const char *cstr(const string &str){
     return str.c_str();
@@ -284,8 +284,8 @@ void file_info_xml2(const string &name,const string &attrib,const string &value)
 /* Process a string value */
 void file_info(const string &name,const string &value)
 {
-    if(a) a->add_value(name,value); 
-    if(t && !opt_body_file) fputs(cstr(name + ": " + value + "\n"),t); 
+    if(a) a->add_value(name,value);
+    if(t && !opt_body_file) fputs(cstr(name + ": " + value + "\n"),t);
     if(x) x->xmlout(name,value,std::string(),true); // escape the XML
 }
 
@@ -315,7 +315,7 @@ void file_info(const sha256_t &h)
 /* Process a numeric value */
 void file_info(const string name, int64_t value)
 {
-    if(a) a->add_value(name,value); 
+    if(a) a->add_value(name,value);
     if(t || x){
 	if(t) fprintf(t,"%s: %" PRId64 "\n",cstr(name),value);
 	if(x) x->xmlprintf(name,"","%" PRId64,value);
@@ -326,13 +326,13 @@ void file_info(const string name, int64_t value)
 void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 {
 	const char * tm_format = NULL;
-	
+
 	if(TSK_FS_TYPE_ISFAT(ftype))
 	{
 #ifdef _MSC_VER
 	    tm_format="%Y-%m-%dT%H:%M:%S";
 #else
-	    tm_format="%FT%T";	
+	    tm_format="%FT%T";
 #endif
 	}
 	else
@@ -344,7 +344,7 @@ void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 #endif
 	}
 
-    if(a) a->add_valuet(name,t0); 
+    if(a) a->add_valuet(name,t0);
 //	struct tm *temp_time = gmtime(&t0);
     if(x){
 	char buf[32];
@@ -377,7 +377,7 @@ void file_infot(const string name,time_t t0)
 #define TM_FORMAT "%FT%TZ"
 #endif
 
-    if(a) a->add_valuet(name,t0); 
+    if(a) a->add_valuet(name,t0);
 //	struct tm *temp_time = gmtime(&t0);
     if(x){
 	char buf[32];
@@ -460,7 +460,7 @@ static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 
 		opt_arg=(char *)tsk_malloc(TSTRLEN(OPTARG)+2);
 		temp=opt_arg;
-		ret_val = 
+		ret_val =
 			tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
 			(const UTF16 **) &OPTARG, (UTF16 *)(OPTARG+arg_len+1),
 			(UTF8 **)&temp, (UTF8 *)(temp+arg_len+2), TSKlenientConversion);
@@ -475,7 +475,7 @@ static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 }
 #endif
 
-int main(int argc, char * const *argv1)
+int fiwalk_main(int argc, char * const *argv1)
 {
     int ch;
     const char *arff_fn = 0;
@@ -506,7 +506,7 @@ int main(int argc, char * const *argv1)
 #else
 	argv = (TSK_TCHAR * const*) argv1;
 #endif
-	
+
     while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:S:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1 = true;break;
@@ -546,7 +546,7 @@ int main(int argc, char * const *argv1)
 #endif
 		break;
 	case _TSK_T('V'): print_version();exit(0);
-	case _TSK_T('X'): 
+	case _TSK_T('X'):
 #ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		xml_fn = new string(opt_arg);
@@ -556,7 +556,7 @@ int main(int argc, char * const *argv1)
 		break;
 	case _TSK_T('x'): opt_x = true;break;
 	case _TSK_T('Z'): opt_zap = true;break;
-	case _TSK_T('a'): 
+	case _TSK_T('a'):
 #ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		audit_file = opt_arg;
@@ -564,16 +564,16 @@ int main(int argc, char * const *argv1)
 		audit_file = OPTARG;
 #endif
 		break;
-	case _TSK_T('c'): 
+	case _TSK_T('c'):
 #ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		config_file = opt_arg;
 #else
 		config_file = OPTARG;
-#endif		
+#endif
 		break;
 	case _TSK_T('n'):
-		
+
 #ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		namelist.push_back(opt_arg);
@@ -661,7 +661,7 @@ int main(int argc, char * const *argv1)
 	}
 	x = new xml(*xml_fn,true);	// we will make DTD going to a file
     }
-	
+
     /* If no output file has been specified, output text to stdout */
     if(a==0 && x==0 && t==0){
 	t = stdout;
@@ -702,7 +702,7 @@ int main(int argc, char * const *argv1)
 	x->push("metadata", "");
 	x->xmlout("dc:type","Disk Image",fw_empty,false);
 	x->pop();
-	    
+
 	/* Output carver information per photorec standard */
 	x->add_DFXML_creator("fiwalk",tsk_version_get_str(),command_line);
     }

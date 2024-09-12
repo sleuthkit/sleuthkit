@@ -204,3 +204,6 @@ sleuthkit-*.tar.gz
 # Whitelist test data folder
 !tests/data/*
 .Tpo
+*.gcno
+*.gcda
+wget-log
