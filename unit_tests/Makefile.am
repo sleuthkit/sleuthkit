@@ -214,5 +214,7 @@ fiwalk_src = \
 	../tools/fiwalk/src/utils.h
 
 
-runner_SOURCES = runner.cpp mult_files_test.cpp errors_test.cpp  catch.hpp $(auto_src) $(base_src) $(fs_src) $(hashdb_src) $(img_src) \
-	$(pool_src) $(util_src) $(vs_src) $(fiwalk_src)
+tests_src = mult_files_test.cpp errors_test.cpp fiwalk_test.cpp
+
+runner_SOURCES = runner.cpp catch.hpp $(auto_src) $(base_src) $(fs_src) $(hashdb_src) $(img_src) \
+	$(pool_src) $(util_src) $(vs_src) $(fiwalk_src) $(tests_src)

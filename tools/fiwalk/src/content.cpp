@@ -43,7 +43,7 @@
 
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
-#endif 
+#endif
 
 #ifdef HAVE_MAGIC_H
 #include <magic.h>
@@ -115,7 +115,7 @@ bool content::name_filtered()
 
 #if _MSC_VER
 #define MAXPATHLEN _MAX_PATH //found in stdlib.h of VC++
-#endif 
+#endif
 static int open_filename_with_suffix(string &filename)
 {
     for(int i=0;i<10000;i++){
@@ -189,7 +189,7 @@ void content::open_savefile()
  * -b = do not put the filename in the output.
  * -z = attempt to decompress compressed files.
  */
- 
+
 string content::filemagic()
 {
 #ifdef HAVE_LIBMAGIC
@@ -255,28 +255,28 @@ void content::write_record()
 	for(seglist::const_iterator i = this->segs.begin();i!=this->segs.end();i++){
 	    char buf[1024];
 	    if(i->flags & TSK_FS_BLOCK_FLAG_SPARSE){
-		sprintf(buf,"       <byte_run file_offset='%" PRIu64 "' fill='0' len='%" PRIu64 "'", i->file_offset,i->len);
+		snprintf(buf,sizeof(buf),"       <byte_run file_offset='%" PRIu64 "' fill='0' len='%" PRIu64 "'", i->file_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RAW){
-		sprintf(buf,
+		snprintf(buf,sizeof(buf),
 			"       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' " "img_offset='%" PRIu64 "' len='%" PRIu64 "'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_COMP){
 		if(i->fs_offset){
-		    sprintf(buf,
+		    snprintf(buf,sizeof(buf),
 			    "       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' "
 			    "img_offset='%" PRIu64 "' uncompressed_len='%" PRIu64 "'",
 			    i->file_offset,i->fs_offset,i->img_offset,i->len);
 		} else {
-		    sprintf(buf,
+		    snprintf(buf,sizeof(buf),
 			    "       <byte_run file_offset='%" PRIu64 "' uncompressed_len='%" PRIu64 "'", i->file_offset,i->len);
 		}
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RES){
-		sprintf(buf,
+		snprintf(buf,sizeof(buf),
 			"       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' "
                         "img_offset='%" PRIu64 "' len='%" PRIu64 "' type='resident'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else{
-		sprintf(buf,"       <byte_run file_offset='%" PRIu64 "' unknown_flags='%d'",i->file_offset,i->flags);
+		snprintf(buf,sizeof(buf),"       <byte_run file_offset='%" PRIu64 "' unknown_flags='%d'",i->file_offset,i->flags);
 	    }
 	    runs += buf;
 

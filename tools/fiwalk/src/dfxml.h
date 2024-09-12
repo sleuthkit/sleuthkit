@@ -112,7 +112,7 @@ public:
     std::stack<TSK_INUM_T> parent_stack;
 
 
-    static std::string make_command_line(int argc,char * const *argv){
+    static std::string make_command_line(int argc,const char * const *argv){
 	std::string command_line;
 	for(int i=0;i<argc;i++){
 	    if(i>0) command_line.push_back(' ');
@@ -187,4 +187,3 @@ public:
 #endif
 
 #endif
-

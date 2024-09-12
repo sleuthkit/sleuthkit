@@ -81,7 +81,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     bool can_run_plugin;
 
     /* Make sure that the SleuthKit structures are properly set */
-    if (fs_file->name == NULL) 
+    if (fs_file->name == NULL)
         return 1;
     if (fs_file->meta == NULL && opt_debug)
         printf("File: %s %s  has no meta\n", path, fs_file->name->name);
@@ -126,7 +126,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     	int myflags = TSK_FS_FILE_WALK_FLAG_NOID;
     	if (opt_no_data) myflags |= TSK_FS_FILE_WALK_FLAG_AONLY;
     	if (tsk_fs_file_walk (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act, (void *) &ci)) {
-    
+
     	    // ignore errors from deleted files that were being recovered
     	    //if (tsk_errno != TSK_ERR_FS_RECOVER) {
     	    if (tsk_error_get_errno() != TSK_ERR_FS_RECOVER) {
@@ -181,7 +181,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     if (fs_file->meta != NULL)
     {
         // Also report filesize to preserve the original element order, and save an if branch
-        file_info("filesize",fs_file->meta->size); 
+        file_info("filesize",fs_file->meta->size);
 
         if(fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc_inode",1);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) file_info("alloc_inode",0);
@@ -192,7 +192,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
         if(fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC) file_info("alloc_name",0);
     }
 
-    
+
     /* Report contents of metadata structures */
     if(fs_file->meta != NULL)
     {
@@ -201,7 +201,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
         if(fs_file->meta->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_COMP)    file_info("compressed",1);
-    
+
         file_info("inode",fs_file->meta->addr);
         file_info("meta_type",fs_file->meta->type);
         file_info("mode",fs_file->meta->mode); // *** REPLACE WITH drwx-rw-rw or whatever
@@ -214,7 +214,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
         string i_runs = "";
         uint64_t current_partition_start = fs_file->fs_info->offset;
         if (fs_file->meta->start_of_inode != 0){
-            sprintf(i_buf,"       <byte_run fs_offset='%" PRIu64 "' img_offset='%" PRIu64 "'/>\n",fs_file->meta->start_of_inode, current_partition_start + fs_file->meta->start_of_inode);
+            snprintf(i_buf,sizeof(i_buf),"       <byte_run fs_offset='%" PRIu64 "' img_offset='%" PRIu64 "'/>\n",fs_file->meta->start_of_inode, current_partition_start + fs_file->meta->start_of_inode);
         }
         i_runs += i_buf;
         file_info_xml2("byte_runs","facet='inode'", i_runs);
@@ -233,17 +233,17 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
            if(fs_file->meta->atime) file_infot("atime",fs_file->meta->atime);
            if(fs_file->meta->crtime) file_infot("crtime",fs_file->meta->crtime);
     	}
-    
+
         /* TK: do content_ptr */
         if(fs_file->meta->seq!=0) file_info("seq",fs_file->meta->seq);
-    
+
         /* Special processing for EXT */
         if(TSK_FS_TYPE_ISEXT(fs_file->fs_info->ftype)){
     	if(fs_file->meta->time2.ext2.dtime){
     	    file_infot("dtime",fs_file->meta->time2.ext2.dtime);
     	}
         }
-    
+
         /* Special processing for HFS */
         if(TSK_FS_TYPE_ISHFS(fs_file->fs_info->ftype)){
     	if(fs_file->meta->time2.hfs.bkup_time){
@@ -254,12 +254,12 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 
     // fs_file->meta == NULL)
     else {
-    
-        // @@@ BC: This is a bit confusing.  It seems to be cramming NAME-level info 
-        // into places that typically has META-level info. 
+
+        // @@@ BC: This is a bit confusing.  It seems to be cramming NAME-level info
+        // into places that typically has META-level info.
         if (fs_file->name->meta_addr!=0)file_info("inode",fs_file->name->meta_addr);
         file_info("meta_type",fs_file->name->type);
-        
+
         if(fs_file->name->meta_seq!=0) file_info("seq",fs_file->name->meta_seq);
     }
 

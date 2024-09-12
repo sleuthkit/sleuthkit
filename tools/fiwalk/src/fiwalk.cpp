@@ -166,6 +166,7 @@ void usage()
     printf("    -A<file> = ARFF output to <file>\n");
     printf("    -X<file> = XML output to a <file> (full DTD)\n");
     printf("         -X0 = Write output to filename.xml\n");
+    printf("    -Y       = Do not include <creator> or <usage> DFXML sections (things that can change)\n");
     printf("    -Z       = zap (erase) the output file\n");
     printf("    -x       = XML output to stdout (no DTD)\n");
     printf("    -T<file> = Walkfile output to <file>\n");
@@ -246,14 +247,14 @@ void partition_info(const string &name,const string &value)
 void partition_info(const string &name,long i)
 {
     char buf[1024];
-    sprintf(buf,"%ld",i);
+    snprintf(buf,sizeof(buf),"%ld",i);
     partition_info(name,buf,fw_empty);
 }
 
 void partition_info(const string &name, const struct timeval &ts)
 {
     char buf[64];
-    sprintf(buf, "%d.%06d",(int)ts.tv_sec, (int)ts.tv_usec);
+    snprintf(buf, sizeof(buf), "%d.%06d",(int)ts.tv_sec, (int)ts.tv_usec);
     partition_info(name,buf,fw_empty);
 }
 
@@ -475,7 +476,7 @@ static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 }
 #endif
 
-int fiwalk_main(int argc, char * const *argv1)
+int fiwalk_main(int argc, const char * const *argv1)
 {
     int ch;
     const char *arff_fn = 0;
@@ -486,6 +487,7 @@ int fiwalk_main(int argc, char * const *argv1)
     string command_line = xml::make_command_line(argc,argv1);
     bool opt_zap = false;
     u_int sector_size=512;			// defaults to 512; may be changed by AFF
+    bool opt_variable = true;                   // include things that can change
 
     struct timeval tv0;
     struct timeval tv1;
@@ -507,7 +509,7 @@ int fiwalk_main(int argc, char * const *argv1)
 	argv = (TSK_TCHAR * const*) argv1;
 #endif
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:S:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
+    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:S:T:VZn:c:b:xOYzh?"))) > 0 ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1 = true;break;
 	case _TSK_T('m'):
@@ -554,6 +556,7 @@ int fiwalk_main(int argc, char * const *argv1)
 		xml_fn = new string(OPTARG);
 #endif
 		break;
+	case _TSK_T('Y'): opt_variable = false;break;
 	case _TSK_T('x'): opt_x = true;break;
 	case _TSK_T('Z'): opt_zap = true;break;
 	case _TSK_T('a'):
@@ -703,8 +706,9 @@ int fiwalk_main(int argc, char * const *argv1)
 	x->xmlout("dc:type","Disk Image",fw_empty,false);
 	x->pop();
 
-	/* Output carver information per photorec standard */
-	x->add_DFXML_creator("fiwalk",tsk_version_get_str(),command_line);
+        if (opt_variable) {
+            x->add_DFXML_creator("fiwalk",tsk_version_get_str(),command_line);
+        }
     }
 
     /* Can't use comment until after here... */
@@ -755,16 +759,18 @@ int fiwalk_main(int argc, char * const *argv1)
         tv.tv_sec--;
         tv.tv_usec = (tv1.tv_usec+1000000) - tv0.tv_usec;
     }
-    sprintf(tvbuf, "%d.%06d",(int)tv.tv_sec, (int)tv.tv_usec);
+    snprintf(tvbuf, sizeof(tvbuf), "%d.%06d",(int)tv.tv_sec, (int)tv.tv_usec);
 
-    comment("clock: %s",tvbuf);
+    if (opt_variable) {
+        comment("clock: %s",tvbuf);
+    }
 
 #ifdef HAVE_SYS_RESOURCE_H
 #ifdef HAVE_GETRUSAGE
     /* Print usage information */
     struct rusage ru;
     memset(&ru,0,sizeof(ru));
-    if(getrusage(RUSAGE_SELF,&ru)==0){
+    if(getrusage(RUSAGE_SELF,&ru)==0 && opt_variable){
 	if(x) x->push("rusage");
 	partition_info("utime",ru.ru_utime);
 	partition_info("stime",ru.ru_stime);
