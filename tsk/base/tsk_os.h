@@ -51,7 +51,10 @@
 #define roundup(x, y)   \
     ( ( ((x)+((y) - 1)) / (y)) * (y) )
 
+#ifndef fseeko
 #define fseeko fseek
+#endif
+
 #define daddr_t int
 #endif
 
