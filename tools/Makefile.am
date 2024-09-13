@@ -1,8 +1,20 @@
-SUBDIRS = timeline fiwalk
+SUBDIRS = fiwalk
 
-bin_SCRIPTS = sorter/sorter
+bin_SCRIPTS = sorter/sorter timeline/mactime
 CLEANFILES = $(bin_SCRIPTS)
-EXTRA_DIST = sorter/sorter.base sorter/.perltidyrc
+EXTRA_DIST = \
+	sorter/sorter.base \
+	sorter/.perltidyrc \
+	timeline/mactime.base \
+	timeline/.perltidyrc
+
+# TODO: use $@ for target file name
+
+timeline/mactime: timeline/mactime.base Makefile
+	@echo "#!$(PERL) -w" > timeline/mactime
+	@echo "my \$$VER=\"$(VERSION)\";" >> timeline/mactime
+	@cat $(srcdir)/timeline/mactime.base >> timeline/mactime
+	@chmod +x timeline/mactime
 
 sorter/sorter: sorter/sorter.base Makefile
 	@echo "#!$(PERL) -w" > sorter/sorter
@@ -13,4 +25,5 @@ sorter/sorter: sorter/sorter.base Makefile
 	@chmod +x sorter/sorter
 
 indent:
-	cd sorter ; perltidy -b sorter.base
+	pushd sorter ; perltidy -b sorter.base ; popd
+	pushd timeline ; perltidy -b mactime.base ; popd

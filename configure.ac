@@ -293,7 +293,6 @@ AC_CONFIG_FILES([
     Makefile
     tsk/Makefile
     tools/Makefile
-    tools/timeline/Makefile
     tools/fiwalk/Makefile
     tools/fiwalk/src/Makefile
     tools/fiwalk/plugins/Makefile
