@@ -301,7 +301,7 @@ tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp
 tools_vstools_mmstat_LDADD = $(TSK_LIB)
 tools_vstools_mmstat_SOURCES = tools/vstools/mmstat.cpp
 
-tools_vstools_mmcat_LDADD =  $(TSK_LIB)
+tools_vstools_mmcat_LDADD = $(TSK_LIB)
 tools_vstools_mmcat_SOURCES = tools/vstools/mmcat.cpp
 
 
