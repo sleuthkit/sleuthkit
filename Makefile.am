@@ -80,16 +80,7 @@ dist_man_MANS = \
 	man/tsk_recover.1 \
 	man/usnjls.1
 
-# Compile java bindings if all of the dependencies existed
-if X_JNI
-  JAVA_BINDINGS=bindings/java
-  JAVA_CASEUCO=case-uco/java
-else
-  JAVA_BINDINGS=
-  JAVA_CASEUCO=
-endif
-
-SUBDIRS = unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
+SUBDIRS = unit_tests
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
@@ -701,6 +692,57 @@ tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 tests_read_apis_LDADD = $(TSK_LIB)
 tests_read_apis_SOURCES = tests/read_apis.cpp
+
+# Compile java bindings if all of the dependencies exist
+if X_JNI
+
+if OFFLINE
+ant_args=-Doffline=true
+if CUSTOM_DEFAULT_JAR_LOCATION
+ant_args+= -Ddefault-jar-location="@DEFAULT_JAR_LOCATION@"
+endif
+endif
+
+tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
+jardir = $(prefix)/share/java
+
+$(tsk_jar):
+	cd bindings/java ; ant dist $(ant_args)
+
+clean-tsk__jar:
+	cd bindings/java ; ant clean
+
+CLEANFILES += $(tsk_jar)
+
+jar_DATA = $(tsk_jar) $(tsk_caseuco_jar)
+
+lib_LTLIBRARIES += bindings/java/jni/libtsk_jni.la
+
+bindings_java_jni_libtsk_jni_la_CPPFLAGS = $(AM_CPPFLAGS) $(JNI_CPPFLAGS)
+bindings_java_jni_libtsk_jni_la_LIBADD = $(TSK_LIB)
+bindings_java_jni_libtsk_jni_la_SOURCES = \
+	bindings/java/jni/auto_db_java.cpp \
+	bindings/java/jni/auto_db_java.h \
+	bindings/java/jni/dataModel_SleuthkitJNI.cpp \
+	bindings/java/jni/dataModel_SleuthkitJNI.h
+
+tsk_caseuco_jar = $(top_builddir)/case-uco/java/dist/sleuthkit-caseuco-$(PACKAGE_VERSION).jar
+
+$(tsk_caseuco_jar):
+	cd case-uco/java ; ant $(ant_args)
+
+clean-tsk_caseuco_jar:
+	cd case-uco/java ; ant clean
+
+CLEANFILES += $(tsk_caseuco_jar)
+
+clean_java = clean-tsk_jar clean-tsk_caseuco_jar
+
+endif
+
+clean-local: $(clean_java)
+
+.PHONY: clean-tsk_jar clean-tsk_caseuco_jar
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
