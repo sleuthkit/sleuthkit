@@ -2,6 +2,8 @@ AM_CPPFLAGS = -I. -I$(srcdir)
 AM_CFLAGS += -Wall -Wno-unused-command-line-argument
 AM_CXXFLAGS += -Wall -Wno-overloaded-virtual -Wno-unused-command-line-argument
 
+ACLOCAL_AMFLAGS = -I m4
+
 CLEANFILES =
 
 # File that we want to include in the dist
@@ -77,8 +79,6 @@ dist_man_MANS = \
 	man/tsk_loaddb.1 \
 	man/tsk_recover.1 \
 	man/usnjls.1
-
-ACLOCAL_AMFLAGS = -I m4
 
 # Compile java bindings if all of the dependencies existed
 if X_JNI
