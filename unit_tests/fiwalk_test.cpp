@@ -22,7 +22,8 @@ TEST_CASE("image.dd","[fiwalk]") {
         o.argv = argv_;
         o.opt_variable = false;
         o.opt_zap = true;
-        o.xml_fn = "/tmp/fiwalk_image.xml";
+        o.opt_parent_tracking = true;
+        o.xml_fn = "/tmp/tests_data_img_image_dd.xml";
         o.run();
         CHECK(o.file_count>0);
         fprintf(stderr,"%s file count = %d\n",argv_[0],o.file_count);
@@ -45,9 +46,10 @@ TEST_CASE("image.gen1.dmg.xml","[fiwalk]") {
         o.filename = argv_[0];
         o.argc = argc_;
         o.argv = argv_;
-        o.xml_fn = "/tmp/image.gen1.dmg.xml";
+        o.xml_fn = "/tmp/from_brian_image_gen1_dmg.xml";
         o.opt_variable = false;
         o.opt_zap = true;
+        o.opt_parent_tracking = true;
         o.run();
         CHECK(o.file_count>0);
         fprintf(stderr,"%s file count = %d\n",argv_[0],o.file_count);

@@ -59,43 +59,6 @@
 #include <sys/resource.h>
 #endif
 
-/* Configurable options */
-
-/* Runtime options */
-#if 0
-string save_outdir = ".";
-int  opt_debug    = 0;
-int  opt_maxgig   = 2;
-bool opt_md5      = true;		// calculate the MD5 for every file?
-bool opt_sha1     = true;		// calculate the SHA1 for every file?
-bool opt_save     = false;
-bool opt_get_fragments = true;// get byte runs even if data is not otherwise accessed
-bool opt_no_data  = false;		// don't get the data
-bool opt_allocated_only = false;
-bool opt_body_file = false;
-bool opt_ignore_ntfs_system_files = false;
-bool opt_parent_tracking = false;
-bool opt_sector_hash = false;
-
-const char *config_file = 0;
-int  file_count_max = 0;
-int  file_count = 0;
-int  next_id = 1;
-
-int  opt_M = 30;
-int  opt_k = 4;
-
-bool opt_magic = false;		// don't get the output of the file command
-
-
-
-/****************************************************************
- ** Current information.
- ****************************************************************/
-int      current_partition_num=0;
-int64_t  current_partition_start=0;	// in bytes
-#endif
-
 /* Individual 'state' variables */
 string  plugin_filename;
 
@@ -265,8 +228,7 @@ void fiwalk::file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
     if(x){
 	char buf[32];
 	strftime(buf,sizeof(buf),tm_format,gmtime(&t0));
-	if(TSK_FS_TYPE_ISFAT(ftype))
-	{
+	if (TSK_FS_TYPE_ISFAT(ftype)) {
             if (!name.compare("atime"))
                 x->xmlout(name,buf,"prec=\"86400\"", false);
             if (!name.compare("mtime"))
