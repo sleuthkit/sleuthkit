@@ -89,7 +89,7 @@ else
   JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests samples unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
+SUBDIRS = tsk tools tests unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
@@ -164,6 +164,17 @@ nobase_dist_data_DATA = \
 TSK_LIB = tsk/libtsk.la
 
 #EXTRA_DIST = .indent.pro
+
+noinst_PROGRAMS = \
+	samples/callback_cpp_style \
+	samples/callback_style \
+	samples/posix_cpp_style \
+	samples/posix_style
+
+samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
+samples_callback_style_SOURCES = samples/callback-style.cpp
+samples_posix_style_SOURCES = samples/posix-style.cpp
+samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
 
 bin_PROGRAMS = \
 	tools/autotools/tsk_comparedir \

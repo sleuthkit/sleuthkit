@@ -292,32 +292,13 @@ AC_SUBST(CHECK_IMGS, $check_imgs)
 AC_CONFIG_FILES([
     Makefile
     tsk/Makefile
-    tsk/base/Makefile
-    tsk/img/Makefile
-    tsk/vs/Makefile
-    tsk/fs/Makefile
-    tsk/hashdb/Makefile
-    tsk/auto/Makefile
-    tsk/pool/Makefile
-    tsk/util/Makefile
-    tsk/util/Bitlocker/Makefile
     tools/Makefile
-    tools/imgtools/Makefile
-    tools/vstools/Makefile
-    tools/fstools/Makefile
-    tools/hashtools/Makefile
-    tools/srchtools/Makefile
-    tools/autotools/Makefile
-    tools/pooltools/Makefile
-    tools/sorter/Makefile
     tools/timeline/Makefile
     tools/fiwalk/Makefile
     tools/fiwalk/src/Makefile
     tools/fiwalk/plugins/Makefile
     tests/Makefile
     tests/imgs_to_dump
-    samples/Makefile
-    man/Makefile
     bindings/java/Makefile
     bindings/java/jni/Makefile
     case-uco/java/Makefile
