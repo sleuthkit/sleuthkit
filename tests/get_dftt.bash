@@ -19,10 +19,10 @@ if ! test -f $IMAGE_DIR/ntfs-img-kw-1.dd ; then
 fi
 
 # Get additional digital corpora files
-for url in s3://digitalcorpora/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg ; do
+for url in https://corp.digitalcorpora.org/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg; do
     fn=$(basename url)
     if ! test -f $IMAGE_DIR/$fn
     then
-        aws s3 cp $url $IMAGE_DIR/$fn
+        curl $url -o $IMAGE_DIR/$fn
     fi
 done
