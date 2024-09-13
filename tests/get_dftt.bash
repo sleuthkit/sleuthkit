@@ -23,6 +23,6 @@ for url in s3://digitalcorpora/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg 
     fn=$(basename url)
     if ! test -f $IMAGE_DIR/$fn
     then
-        curl $url -o $IMAGE_DIR/$fn
+        aws s3 cp $url $IMAGE_DIR/$fn
     fi
 done
