@@ -1,5 +1,5 @@
 # Compile the sub directories
-SUBDIRS = img util util/Bitlocker
+SUBDIRS = img util
 
 AM_CPPFLAGS = -I..
 AM_CXXFLAGS = -Wall -Wextra
@@ -10,6 +10,7 @@ noinst_LTLIBRARIES = \
 	fs/libtskfs.la \
 	hashdb/libtskhashdb.la \
 	pool/libtskpool.la \
+	util/Bitlocker/libtskbitlocker.la \
 	vs/libtskvs.la
 
 auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
@@ -137,7 +138,7 @@ hashdb_libtskhashdb_la_SOURCES = \
 	hashdb/tsk_hash_info.h
 
 pool_libtskpool_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-pool_libtskpoo_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
+pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 pool_libtskpool_la_SOURCES = \
 	pool/apfs_pool_compat.cpp \
 	pool/apfs_pool.cpp \
@@ -148,6 +149,21 @@ pool_libtskpool_la_SOURCES = \
 	pool/pool_open.cpp \
 	pool/pool_read.cpp \
 	pool/pool_types.cpp
+
+util_Bitlocker_libtskbitlocker_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
+util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
+util_Bitlocker_libtskbitlocker_la_SOURCES = \
+	util/Bitlocker/BitlockerParser.cpp \
+	util/Bitlocker/BitlockerUtils.cpp \
+	util/Bitlocker/DataTypes.cpp \
+	util/Bitlocker/MetadataEntry.cpp \
+	util/Bitlocker/MetadataUtils.cpp \
+	util/Bitlocker/MetadataValueAesCcmEncryptedKey.cpp \
+	util/Bitlocker/MetadataValueKey.cpp \
+	util/Bitlocker/MetadataValueOffsetAndSize.cpp \
+	util/Bitlocker/MetadataValueStretchKey.cpp \
+	util/Bitlocker/MetadataValueUnicode.cpp \
+	util/Bitlocker/MetadataValueVolumeMasterKey.cpp
 
 vs_libtskvs_la_SOURCES = \
 	vs/bsd.c \
