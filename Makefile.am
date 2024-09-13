@@ -396,21 +396,6 @@ EXTRA_DIST += \
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = tsk/tsk.pc
 
-# TODO: This can be done more simply from configure.ac
-tsk/tsk.pc: tsk/tsk.pc.in Makefile
-	sed -e 's![@]prefix[@]!$(prefix)!g' \
-      -e 's![@]exec_prefix[@]!$(exec_prefix)!g' \
-      -e 's![@]includedir[@]!$(includedir)!g' \
-      -e 's![@]libdir[@]!$(libdir)!g' \
-      -e 's![@]PACKAGE_NAME[@]!$(PACKAGE_NAME)!g' \
-      -e 's![@]PACKAGE_VERSION[@]!$(PACKAGE_VERSION)!g' \
-      -e 's![@]AX_PACKAGE_REQUIRES[@]!$(AX_PACKAGE_REQUIRES)!g' \
-      -e 's![@]PACKAGE_LIBS_PRIVATE[@]!$(PACKAGE_LIBS_PRIVATE)!g' \
-      -e 's![@]AX_PACKAGE_REQUIRES_PRIVATE[@]!$(AX_PACKAGE_REQUIRES_PRIVATE)!g' \
-      $< >$@
-
-CLEANFILES += tsk/tsk.pc
-
 #EXTRA_DIST = .indent.pro
 
 noinst_PROGRAMS = \
