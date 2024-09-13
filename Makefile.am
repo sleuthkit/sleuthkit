@@ -89,7 +89,7 @@ else
   JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools tests unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
+SUBDIRS = tsk tools unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
@@ -296,6 +296,59 @@ tools_vstools_mmstat_SOURCES = tools/vstools/mmstat.cpp
 
 tools_vstools_mmcat_LDADD =  $(TSK_LIB)
 tools_vstools_mmcat_SOURCES = tools/vstools/mmcat.cpp
+
+
+EXTRA_DIST += tests/runtests.sh
+
+check_SCRIPTS = \
+	tests/runtests.sh \
+	tests/test_imgs.sh \
+	tests/test_libraries.sh
+
+TESTS = $(check_SCRIPTS)
+
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER =
+
+check_PROGRAMS = \
+	tests/fs_attrlist_apis \
+	tests/fs_fname_apis \
+	tests/fs_thread_test \
+	tests/img_dump \
+	tests/read_apis
+
+tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_fs_fname_apis_LDADD = $(TSK_LIB)
+tests_fs_fname_apis_SOURCES = tests/fs_fname_apis.cpp
+
+tests_fs_attrlist_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_fs_attrlist_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_fs_attrlist_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_fs_attrlist_apis_LDADD = $(TSK_LIB)
+tests_fs_attrlist_apis_SOURCES = tests/fs_attrlist_apis.cpp
+
+tests_fs_thread_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_fs_thread_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_fs_thread_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_fs_thread_test_LDADD = $(TSK_LIB)
+tests_fs_thread_test_SOURCES = \
+	tests/fs_thread_test.cpp \
+	tests/tsk_thread.cpp \
+	tests/tsk_thread.h
+
+tests_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_img_dump_LDADD = $(TSK_LIB)
+tests_img_dump_SOURCES = tests/img_dump.cpp
+
+tests_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_read_apis_LDADD = $(TSK_LIB)
+tests_read_apis_SOURCES = tests/read_apis.cpp
 
 api-docs:
 	doxygen tsk/docs/Doxyfile

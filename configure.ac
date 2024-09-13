@@ -294,7 +294,6 @@ AC_CONFIG_FILES([
     tsk/Makefile
     tools/Makefile
     tools/fiwalk/Makefile
-    tests/Makefile
     tests/imgs_to_dump
     bindings/java/Makefile
     bindings/java/jni/Makefile
