@@ -171,10 +171,17 @@ noinst_PROGRAMS = \
 	samples/posix_cpp_style \
 	samples/posix_style
 
+samples_callback_cpp_style_LDADD = $(TSK_LIB)
 samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
+
+samples_callback_style_LDADD = $(TSK_LIB)
 samples_callback_style_SOURCES = samples/callback-style.cpp
-samples_posix_style_SOURCES = samples/posix-style.cpp
+
+samples_posix_cpp_style_LDADD = $(TSK_LIB)
 samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
+
+samples_posix_style_LDADD = $(TSK_LIB)
+samples_posix_style_SOURCES = samples/posix-style.cpp
 
 bin_PROGRAMS = \
 	tools/autotools/tsk_comparedir \
@@ -283,10 +290,10 @@ tools_imgtools_img_stat_SOURCES = tools/imgtools/img_stat.cpp
 tools_pooltools_pstat_LDADD = $(TSK_LIB)
 tools_pooltools_pstat_SOURCES = tools/pooltools/pstat.cpp
 
-tools_srchtools_srch_strings_SOURCES = srch_strings.c
+tools_srchtools_srch_strings_SOURCES = tools/srchtools/srch_strings.c
 
 tools_srchtools_sigfind_LDADD = $(TSK_LIB)
-tools_srchtools_sigfind_SOURCES = sigfind.cpp
+tools_srchtools_sigfind_SOURCES = tools/srchtools/sigfind.cpp
 
 tools_vstools_mmls_LDADD = $(TSK_LIB)
 tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp
