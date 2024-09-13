@@ -89,7 +89,7 @@ else
   JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
+SUBDIRS = tsk tools/fiwalk unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
@@ -304,6 +304,35 @@ tools_vstools_mmstat_SOURCES = tools/vstools/mmstat.cpp
 tools_vstools_mmcat_LDADD = $(TSK_LIB)
 tools_vstools_mmcat_SOURCES = tools/vstools/mmcat.cpp
 
+bin_SCRIPTS = tools/sorter/sorter tools/timeline/mactime
+
+CLEANFILES += $(bin_SCRIPTS)
+
+EXTRA_DIST += \
+	tools/sorter/sorter.base \
+	tools/sorter/.perltidyrc \
+	tools/timeline/mactime.base \
+	tools/timeline/.perltidyrc
+
+# TODO: use $@ for target file name
+
+tools/timeline/mactime: tools/timeline/mactime.base Makefile
+	@echo "#!$(PERL) -w" > tools/timeline/mactime
+	@echo "my \$$VER=\"$(VERSION)\";" >> tools/timeline/mactime
+	@cat $(srcdir)/tools/timeline/mactime.base >> tools/timeline/mactime
+	@chmod +x tools/timeline/mactime
+
+tools/sorter/sorter: tools/sorter/sorter.base Makefile
+	@echo "#!$(PERL) -w" > tools/sorter/sorter
+	@echo "my \$$BIN_DIR=\"$(bindir)\";" >> tools/sorter/sorter
+	@echo "my \$$DATA_DIR=\"$(datadir)\";" >> tools/sorter/sorter
+	@echo "my \$$VER=\"$(VERSION)\";" >> tools/sorter/sorter
+	@cat $(srcdir)/tools/sorter/sorter.base >> tools/sorter/sorter
+	@chmod +x tools/sorter/sorter
+
+#indent:
+#	pushd sorter ; perltidy -b sorter.base ; popd
+#	pushd timeline ; perltidy -b mactime.base ; popd
 
 EXTRA_DIST += tests/runtests.sh
 
