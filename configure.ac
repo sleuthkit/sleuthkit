@@ -295,7 +295,6 @@ AC_CONFIG_FILES([
     tools/Makefile
     tools/fiwalk/Makefile
     tools/fiwalk/src/Makefile
-    tools/fiwalk/plugins/Makefile
     tests/Makefile
     tests/imgs_to_dump
     bindings/java/Makefile
