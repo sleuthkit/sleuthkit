@@ -346,6 +346,7 @@ TESTS = $(check_SCRIPTS)
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
 
+# TODO: nothing runs these (except for img_dump)!
 check_PROGRAMS = \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
