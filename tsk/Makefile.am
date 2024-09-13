@@ -1,6 +1,3 @@
-# Compile the sub directories
-SUBDIRS = img
-
 AM_CPPFLAGS = -I..
 AM_CXXFLAGS = -Wall -Wextra
 
@@ -9,6 +6,7 @@ noinst_LTLIBRARIES = \
 	base/libtskbase.la \
 	fs/libtskfs.la \
 	hashdb/libtskhashdb.la \
+	img/libtskimg.la \
 	pool/libtskpool.la \
 	util/libtskutil.la \
 	util/Bitlocker/libtskbitlocker.la \
@@ -137,6 +135,34 @@ hashdb_libtskhashdb_la_SOURCES = \
 	hashdb/tsk_hashdb.h \
 	hashdb/tsk_hashdb_i.h \
 	hashdb/tsk_hash_info.h
+
+img_libtskimg_la_SOURCES = \
+	img/aff4.c \
+	img/aff4.h \
+	img/aff.c \
+	img/aff.h \
+	img/ewf.cpp \
+	img/ewf.h \
+	img/img_io.c \
+	img/img_open.cpp \
+	img/img_types.c \
+	img/img_writer.cpp \
+	img/img_writer.h \
+	img/logical_img.c \
+	img/logical_img.h \
+	img/mult_files.cpp \
+	img/mult_files.h \
+	img/qcow.c \
+	img/qcow.h \
+	img/raw.c \
+	img/raw.h \
+	img/tsk_img_i.h \
+	img/unsupported_types.c \
+	img/unsupported_types.h \
+	img/vhd.c \
+	img/vhd.h \
+	img/vmdk.c \
+	img/vmdk.h
 
 pool_libtskpool_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
 pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
