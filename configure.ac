@@ -291,8 +291,6 @@ AC_SUBST(CHECK_IMGS, $check_imgs)
 
 AC_CONFIG_FILES([
     Makefile
-    tsk/Makefile
-    tools/fiwalk/Makefile
     tests/imgs_to_dump
     bindings/java/Makefile
     bindings/java/jni/Makefile
