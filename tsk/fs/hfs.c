@@ -4584,6 +4584,12 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
     //uint32_t dataLength = tsk_getu32(fs_info->endian, resHead->dataLength);
     mapLength = tsk_getu32(fs_info->endian, resHead->mapLength);
 
+    if (mapLength <= 0) {
+      error_returned
+         ("- hfs_parse_resource_fork: map length is 0");
+      return NULL;
+    }
+
     // Read in the WHOLE map
     map = (char *) tsk_malloc(mapLength);
     if (map == NULL) {
