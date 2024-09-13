@@ -139,7 +139,7 @@ extern "C" int main(int argc, char * const *argv1) {
 	    o.opt_body_file = 1;
 	    o.opt_sha1 = 0;
 	    o.opt_md5  = 1;
-	    t = stdout;
+	    o.t = stdout;
 	    break;
 	case _TSK_T('A'):
 #ifdef TSK_WIN32

@@ -59,14 +59,10 @@
 #include <sys/resource.h>
 #endif
 
-/* Output Devices */
-class arff *a = 0;			// ARFF generator
-class xml  *x = 0;
-FILE  *t = 0;				// text output or body file enabled
-
 /* Configurable options */
 
 /* Runtime options */
+#if 0
 string save_outdir = ".";
 int  opt_debug    = 0;
 int  opt_maxgig   = 2;
@@ -89,7 +85,6 @@ int  next_id = 1;
 int  opt_M = 30;
 int  opt_k = 4;
 
-
 bool opt_magic = false;		// don't get the output of the file command
 
 
@@ -99,6 +94,7 @@ bool opt_magic = false;		// don't get the output of the file command
  ****************************************************************/
 int      current_partition_num=0;
 int64_t  current_partition_start=0;	// in bytes
+#endif
 
 /* Individual 'state' variables */
 string  plugin_filename;
@@ -125,7 +121,7 @@ static string fw_empty("");
 /**
  * output a comment in the current file format
  */
-void comment(const char *format,...)
+void fiwalk::comment(const char *format,...)
 {
     if(opt_body_file) return;           // no comments in body file
 
@@ -149,7 +145,7 @@ void comment(const char *format,...)
  * @param ... - the value
  * This will output as a comment in the ARFF file
  */
-void partition_info(const string &name,const string &value,const string &attribute)
+void fiwalk::partition_info(const string &name,const string &value,const string &attribute)
 {
 
     if(name.find(" ")!=string::npos) err(1,"partition_info(%s) has a space in it",cstr(name));
@@ -158,19 +154,19 @@ void partition_info(const string &name,const string &value,const string &attribu
     if(x) x->xmlout(name,value,attribute,true);
 }
 
-void partition_info(const string &name,const string &value)
+void fiwalk::partition_info(const string &name,const string &value)
 {
     partition_info(name,value,fw_empty);
 }
 
-void partition_info(const string &name,long i)
+void fiwalk::partition_info(const string &name,long i)
 {
     char buf[1024];
     snprintf(buf,sizeof(buf),"%ld",i);
     partition_info(name,buf,fw_empty);
 }
 
-void partition_info(const string &name, const struct timeval &ts)
+void fiwalk::partition_info(const string &name, const struct timeval &ts)
 {
     char buf[64];
     snprintf(buf, sizeof(buf), "%d.%06d",(int)ts.tv_sec, (int)ts.tv_usec);
@@ -182,7 +178,7 @@ void partition_info(const string &name, const struct timeval &ts)
  * for each file.  Some of the class are made by metadata extraction
  * in this module; others are called from the plugin system.
  */
-void file_info_xml(const string &name,const string &value)
+void fiwalk::file_info_xml(const string &name,const string &value)
 {
     if(x){
 	x->push(name);
@@ -191,7 +187,7 @@ void file_info_xml(const string &name,const string &value)
     }
 }
 
-void file_info_xml2(const string &name,const string &attrib,const string &value)
+void fiwalk::file_info_xml2(const string &name,const string &attrib,const string &value)
 {
     if(x){
 	x->push(name,attrib);
@@ -202,7 +198,7 @@ void file_info_xml2(const string &name,const string &attrib,const string &value)
 
 
 /* Process a string value */
-void file_info(const string &name,const string &value)
+void fiwalk::file_info(const string &name,const string &value)
 {
     if(a) a->add_value(name,value);
     if(t && !opt_body_file) fputs(cstr(name + ": " + value + "\n"),t);
@@ -210,21 +206,21 @@ void file_info(const string &name,const string &value)
 }
 
 /* this file_info is for sending through a hash. */
-void file_info(const md5_t &h)
+void fiwalk::file_info(const md5_t &h)
 {
     if(a) a->add_value("md5",h.hexdigest());
     if(t && !opt_body_file) fputs(cstr("md5: " + h.hexdigest() + "\n"),t);
     if(x) x->xmlout("hashdigest",h.hexdigest(),"type='md5'",false);
 }
 
-void file_info(const sha1_t &h)
+void fiwalk::file_info(const sha1_t &h)
 {
     if(a) a->add_value("sha1",h.hexdigest());
     if(t && !opt_body_file) fputs(cstr("sha1: " + h.hexdigest() + "\n"),t);
     if(x) x->xmlout("hashdigest",h.hexdigest(),"type='sha1'",false);
 }
 
-void file_info(const sha256_t &h)
+void fiwalk::file_info(const sha256_t &h)
 {
     if(a) a->add_value("sha256",h.hexdigest());
     if(t && !opt_body_file) fputs(cstr("sha256: " + h.hexdigest() + "\n"),t);
@@ -233,7 +229,7 @@ void file_info(const sha256_t &h)
 
 
 /* Process a numeric value */
-void file_info(const string name, int64_t value)
+void fiwalk::file_info(const string name, int64_t value)
 {
     if(a) a->add_value(name,value);
     if(t || x){
@@ -243,7 +239,7 @@ void file_info(const string name, int64_t value)
 }
 
 /* Process a temporal value */
-void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
+void fiwalk::file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 {
     const char * tm_format = NULL;
 
@@ -289,7 +285,7 @@ void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
     }
 }
 
-void file_infot(const string name,time_t t0)
+void fiwalk::file_infot(const string name,time_t t0)
 {
 #ifdef _MSC_VER
 #define TM_FORMAT "%Y-%m-%dT%H:%M:%SZ"
@@ -329,14 +325,6 @@ bool has_unprintable(const u_char *buf,int buflen)
 	buflen--;
     }
     return false;
-}
-
-void sig_info(int /*arg*/)
-{
-    if(a){
-	printf("a=%p\n", (void*)a);
-	printf("\n");
-    }
 }
 
 
@@ -432,7 +420,6 @@ int fiwalk::run()
 
     /* XML initialization */
 
-
     if (opt_x){
         x = new xml(std::cout, false);			// default to stdout
     }
@@ -453,6 +440,9 @@ int fiwalk::run()
             }
         }
         xout = new std::ofstream(xml_fn.c_str());
+        if (!xout->is_open()){
+            errx(1,"Cannot open %s: %s",xml_fn.c_str(),strerror(errno));
+        }
         x = new xml(*xout,true);	// we will make DTD going to a file
     }
 
@@ -520,10 +510,6 @@ int fiwalk::run()
     if (x) x->pop();                     // source
 
     if (opt_debug) printf("calling tsk_img_open(%s)\n",filename);
-
-#ifdef SIGINFO
-    signal(SIGINFO,sig_info);
-#endif
 
 #ifdef TSK_WIN32
     int count = process_image_file(argc, argv1, audit_file, sector_size);

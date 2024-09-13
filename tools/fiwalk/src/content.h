@@ -24,7 +24,7 @@ public:
 typedef std::vector<class seg> seglist;	// vector of blocks
 class content {
 private:
-    const struct fiwalk &o;
+    struct fiwalk &o;
     std::string   evidence_filename;         // filename of what's currently being saved (from evidence file system)
     void     open_tempfile();
     void     open_savefile();
@@ -56,7 +56,7 @@ public:
     uint64_t total_bytes;
     std::vector<std::string> sectorhashes;	// a vector of sector hashes, if any have been computed
 
-    content(TSK_IMG_INFO *img_info_, const fiwalk &o_):
+    content(TSK_IMG_INFO *img_info_, fiwalk &o_):
         o(o_),
 	img_info(img_info_),
 	invalid(false),

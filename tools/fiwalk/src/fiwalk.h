@@ -28,6 +28,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <stdio.h>
 #ifndef WIN32
 #include <pwd.h>
 #endif
@@ -149,20 +150,43 @@ struct fiwalk {
     int run();                          // run fiwalk
     int proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start);
     int proc_vs(TSK_IMG_INFO * img_info);
+    uint8_t process_tsk_file(TSK_FS_FILE * fs_file, const char *path);
     int process_image_file(int argc,char *const *argv,const char *audit_file,u_int sector_size);
     void process_scalpel_audit_file(TSK_IMG_INFO *img_info,const char *audit_file);
+    class xml *x;
+    FILE  *t;				// text output or body file enabled
+    class arff *a;
+
+    void comment(const char *format,...);
+    void file_info(const string &name,const string &value);
+    void file_info(const md5_t &t);
+    void file_info(const sha1_t &t);
+    void file_info(const sha256_t &t);
+    void file_info_xml(const string &name,const string &value);
+    void file_info_xml2(const string &name,const string &attrib,const string &value);
+    void file_info(const string name, int64_t value);
+    void file_infot(const string name,time_t t0);
+    void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype);
+    void partition_info(const string &name,const string &value,const string &attribute);
+    void partition_info(const string &name,const string &value);
+    void partition_info(const string &name,long i);
+    void partition_info(const string &name, const struct timeval &ts);
+    void plugin_process(const std::string &fname);
+    void config_read(const char *fname);
+
+
 
     fiwalk():opt_allocated_only(false),
              opt_body_file(false),
              opt_get_fragments(false),
              opt_ignore_ntfs_system_files(false),
              opt_magic(false),
-             opt_md5(false),
+             opt_md5(true),
              opt_no_data(false),
              opt_parent_tracking(false),
              opt_save(false),
              opt_sector_hash(false),
-             opt_sha1(false),
+             opt_sha1(true),
              opt_x(false),
              opt_variable(true),
              opt_zap(false),
@@ -183,37 +207,22 @@ struct fiwalk {
              opt_maxgig(0),
              vs_count(0),
              sector_size(512),
-             sectorhash_size(512){};
+             sectorhash_size(512),
+             x(0),
+             t(0),
+             a(0)
+    {};
 };
 
 
-void comment(const char *format,...);
-void file_info(const string &name,const string &value);
-void file_info(const md5_t &t);
-void file_info(const sha1_t &t);
-void file_info(const sha256_t &t);
-void file_info_xml(const string &name,const string &value);
-void file_info_xml2(const string &name,const string &attrib,const string &value);
-void file_info(const string name, int64_t value);
-void file_infot(const string name,time_t t0);
-void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype);
 
-extern namelist_t namelist;		// names of files that we want to find
+//extern namelist_t namelist;		// names of files that we want to find
 
 
 /* fiwalk.cpp */
 
-extern class arff *a;
-extern class xml *x;
-extern FILE  *t;				// text output or body file enabled
 
-void partition_info(const string &name,const string &value,const string &attribute);
-void partition_info(const string &name,const string &value);
-void partition_info(const string &name,long i);
-void partition_info(const string &name, const struct timeval &ts);
 int fiwalk_main(int argc, const char * const *argv1);
-
-
 
 /* fiwalk_tsk.cpp */
 

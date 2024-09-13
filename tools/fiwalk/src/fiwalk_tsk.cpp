@@ -76,8 +76,7 @@ file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
  * See also tsk_fs_name_print() in ./tsk/fs/fs_name.c
  */
 
-static uint8_t
-process_tsk_file(TSK_FS_FILE * fs_file, const char *path, fiwalk &o)
+uint8_t fiwalk::process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 {
     /* Use a flag to determine if a file is generically fit for plugins. */
     bool can_run_plugin;
@@ -85,17 +84,17 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path, fiwalk &o)
     /* Make sure that the SleuthKit structures are properly set */
     if (fs_file->name == NULL)
         return 1;
-    if (fs_file->meta == NULL && o.opt_debug)
+    if (fs_file->meta == NULL && opt_debug)
         printf("File: %s %s  has no meta\n", path, fs_file->name->name);
 
     /* SleuthKit meta types are defined in tsk_fs.h.*/
 
-    if (o.opt_debug) printf("Processing %s%s type=%s (0x%x) \n",
+    if (opt_debug) printf("Processing %s%s type=%s (0x%x) \n",
 			  path, fs_file->name->name,
 			  tsk_fs_name_type_str[fs_file->name->type],fs_file->name->type);
 
     /* Recover the filename from the fs_dent, if it is provided */
-    content ci(fs_file->fs_info->img_info, o);	// where the content will go
+    content ci(fs_file->fs_info->img_info, *this);	// where the content will go
     ci.evidence_dirname = path;
     ci.set_filename(fs_file->name->name);
 
@@ -103,55 +102,51 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path, fiwalk &o)
     if (ci.name_filtered()) return 0;
 
     /* Looks like we are processing */
-    if(a) a->new_row();			// tell ARFF we are starting a new row
-    if(x) x->push("fileobject"); 	// tell XML we are starting a new XML object
-    if(o.opt_parent_tracking)
-    {
-        if(fs_file->name->par_addr){
-            if(x)
-            {
+    if (a) a->new_row();			// tell ARFF we are starting a new row
+    if (x) x->push("fileobject"); 	// tell XML we are starting a new XML object
+    if (opt_parent_tracking) {
+        if (fs_file->name->par_addr){
+            if (x) {
                 x->push("parent_object");
                 file_info("inode", fs_file->name->par_addr);
                 if(x) x->pop();
             }
-            if((t||a) && !o.opt_body_file)
-            {
+            if ((t||a) && !opt_body_file) {
                 file_info("parent_inode", fs_file->name->par_addr);
             }
         }
     }
 
-    if(fs_file->meta != NULL)
-    {
+    if(fs_file->meta != NULL) {
         /* Get the content if needed */
-        if(ci.need_file_walk() && (o.opt_maxgig==0 || fs_file->meta->size/1000000000 < o.opt_maxgig)){
-    	int myflags = TSK_FS_FILE_WALK_FLAG_NOID;
-    	if (o.opt_no_data) myflags |= TSK_FS_FILE_WALK_FLAG_AONLY;
-    	if (tsk_fs_file_walk (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act, (void *) &ci)) {
+        if(ci.need_file_walk() && (opt_maxgig==0 || fs_file->meta->size/1000000000 < opt_maxgig)){
+            int myflags = TSK_FS_FILE_WALK_FLAG_NOID;
+            if (opt_no_data) myflags |= TSK_FS_FILE_WALK_FLAG_AONLY;
+            if (tsk_fs_file_walk (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act, (void *) &ci)) {
 
-    	    // ignore errors from deleted files that were being recovered
-    	    //if (tsk_errno != TSK_ERR_FS_RECOVER) {
-    	    if (tsk_error_get_errno() != TSK_ERR_FS_RECOVER) {
-    		if (o.opt_debug){
-    		    fprintf(stderr,"Processing: %s/%s (%" PRIuINUM ")\n", path,
-    			   fs_file->name->name, fs_file->meta->addr);
-    		    tsk_error_print(stderr);
-    		}
-    	    }
-    	    tsk_error_reset();
-    	}
+                // ignore errors from deleted files that were being recovered
+                //if (tsk_errno != TSK_ERR_FS_RECOVER) {
+                if (tsk_error_get_errno() != TSK_ERR_FS_RECOVER) {
+                    if (opt_debug){
+                        fprintf(stderr,"Processing: %s/%s (%" PRIuINUM ")\n", path,
+                                fs_file->name->name, fs_file->meta->addr);
+                        tsk_error_print(stderr);
+                    }
+                }
+                tsk_error_reset();
+            }
         }
     }
 
-    if (o.file_count_max && o.file_count>o.file_count_max) return TSK_WALK_STOP;
-    o.file_count++;
+    if (file_count_max && file_count>file_count_max) return TSK_WALK_STOP;
+    file_count++;
 
     /* Send through to the plugin if we were doing that.
      * Currently results only go to ARFF file, not to the XML file.
      */
 
     /* Finally output the informaton */
-    if (o.opt_body_file && (fs_file->meta != NULL)){
+    if (opt_body_file && (fs_file->meta != NULL)){
 	char ls[64];
 	tsk_fs_meta_make_ls(fs_file->meta,ls,sizeof(ls));
 	fprintf(t,"%s|%s|%" PRId64 "|%s|%d|%d|%" PRId64 "|%d|%d|%d|%d\n",
@@ -175,8 +170,8 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path, fiwalk &o)
     /* fs_file->name */
 
     if(ci.has_filename()) file_info("filename",validateOrEscapeUTF8(ci.filename()));
-    file_info("partition", o.current_partition_num);
-    file_info("id", o.next_id++);
+    file_info("partition", current_partition_num);
+    file_info("id", next_id++);
     file_info("name_type",tsk_fs_name_type_str[fs_file->name->type]);
 
     /* Report metadata structures' allocation first */
@@ -326,7 +321,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void * that)
         return TSK_WALK_CONT;
 
     /* If the name has corresponding metadata, then walk it */
-    process_tsk_file(fs_file, path, *o);
+    o->process_tsk_file(fs_file, path);
 
     return TSK_WALK_CONT;
 }
@@ -532,10 +527,6 @@ int fiwalk::process_image_file(int argc,char * const *argv,const char *audit_fil
     int count = 0;
 
     assert(argc!=0);
-
-    printf("argc=%d",argc);
-    for(int i=0;i<argc;i++) printf("argv[%d]=%s\n",i,argv[i]);
-
 
     img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
 

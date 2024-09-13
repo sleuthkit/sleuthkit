@@ -15,12 +15,12 @@
  * Future additions:
  * Put the temp files on a ram drive, to make it faster to access them.
  * Have a way of emitting XML.
- *          
+ *
  */
 
 #include "tsk/tsk_tools_i.h"
 
-#define __DARWIN_64_BIT_INO_T 1		
+#define __DARWIN_64_BIT_INO_T 1
 
 #include <string.h>
 #include <stdlib.h>
@@ -100,7 +100,7 @@ public:
     myglob(const std::string &pattern){
 	/* Build the regular expression from the pattern */
 	string re;				// the regular expression
-	
+
 	re.push_back('^');			// beginning of string
 	for(string::const_iterator it = pattern.begin(); it!=pattern.end(); it++){
 	    switch(*it){
@@ -144,7 +144,7 @@ public:
 	this->glob = new myglob(pattern.c_str());
 	this->method = method;
 	this->path = path;
-	
+
     }
     ~plugins() {
 	if(glob){
@@ -186,7 +186,7 @@ bool plugin_match(const std::string &fname)
  * This code finds each of those name: value pairs and calls file_info(name,value)
  * for each. Names and values are passed to file_info as strings.
  */
-void plugin_process(const std::string &fname)
+void fiwalk::plugin_process(const std::string &fname)
 {
     comment("plugin_process",fname.c_str());
     static bool first = true;
@@ -207,7 +207,7 @@ void plugin_process(const std::string &fname)
 	    if(cc){		// we found an end-of-line
 		*cc = '\000';
 	    }
-	    
+
 	    /* process name: value pairs */
 	    regmatch_t pmatch[4];
 	    memset(pmatch,0,sizeof(pmatch));
@@ -236,7 +236,7 @@ void plugin_process(const std::string &fname)
 }
 
 
-void config_read(const char *fname)
+void fiwalk::config_read(const char *fname)
 {
     /* make sure the glob function works */
     myglob *g1 = new myglob("*.jpeg");
@@ -253,7 +253,7 @@ void config_read(const char *fname)
     // Compile the regular expression we will use;
     // Unfortunately the POSIX regex has no support for \s
     regex_t r;
-    if(regcomp(&r,"([^ \t]+)[ \t]+([^ \t]+)[ \t]+([^\t\r\n]+)",REG_EXTENDED)) err(1,"regcomp"); 
+    if(regcomp(&r,"([^ \t]+)[ \t]+([^ \t]+)[ \t]+([^\t\r\n]+)",REG_EXTENDED)) err(1,"regcomp");
     FILE *f = fopen(fname,"r");
     if(!f) err(1,"%s",fname);
     char linebuf[1024];

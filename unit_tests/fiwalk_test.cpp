@@ -11,34 +11,48 @@
 
 
 TEST_CASE("image.dd","[fiwalk]") {
-    int argc_ = 4;
-    const char **argv_ = (const char **)calloc(sizeof(char *), argc_+1);
-    argv_[0] = "fiwalk";
-    argv_[1] = "-YZ";                   // no <creator>, and zap the output
-    argv_[2] = "-X/tmp/fiwalk_image.xml";
-    argv_[3] = "../tests/data/img/image.dd";
-    if (access(argv_[3], F_OK)==0){
-        fiwalk_main(argc_,argv_);
+    int argc_ = 1;
+    char *  *argv_ = (char *  *)calloc(sizeof(char *), argc_+1);
+    argv_[0] = strdup("../tests/data/img/image.dd");
+    argv_[1] = 0;
+    if (access(argv_[0], F_OK)==0){
+        fiwalk o;
+        o.filename = argv_[0];
+        o.argc = argc_;
+        o.argv = argv_;
+        o.opt_variable = false;
+        o.opt_zap = true;
+        o.xml_fn = "/tmp/fiwalk_image.xml";
+        o.run();
+        CHECK(o.file_count>0);
+        fprintf(stderr,"%s file count = %d\n",argv_[0],o.file_count);
     } else {
-        fprintf(stderr,"%s not found",argv_[3]);
+        fprintf(stderr,"%s not found",argv_[0]);
     }
     free(argv_);
 }
 
 TEST_CASE("image.gen1.dmg.xml","[fiwalk]") {
-    int argc_ = 4;
+    int argc_ = 1;
     /* Next image */
-    const char **argv_ = (const char **)calloc(sizeof(char *), argc_+1);
+    char *  *argv_ = (char *  *)calloc(sizeof(char *), argc_+1);
     std::string  from_brian = getenv("HOME") + std::string("/from_brian");
     std::string  fname = from_brian + "/image.gen1.dmg";
-    argv_[0] = "fiwalk";
-    argv_[1] = "-YZ";                   // no <creator>, and zap the output
-    argv_[2] = "-X/tmp/image.gen1.dmg.xml";
-    argv_[3] = fname.c_str();
-    if (access(argv_[3], F_OK)==0){
-        fiwalk_main(argc_,argv_);
+    argv_[0] = strdup(fname.c_str());
+    argv_[1] = 0;
+    if (access(argv_[0], F_OK)==0){
+        fiwalk o;
+        o.filename = argv_[0];
+        o.argc = argc_;
+        o.argv = argv_;
+        o.xml_fn = "/tmp/image.gen1.dmg.xml";
+        o.opt_variable = false;
+        o.opt_zap = true;
+        o.run();
+        CHECK(o.file_count>0);
+        fprintf(stderr,"%s file count = %d\n",argv_[0],o.file_count);
     } else {
-        fprintf(stderr,"%s not found",argv_[3]);
+        fprintf(stderr,"%s not found",argv_[0]);
     }
     free(argv_);
 }

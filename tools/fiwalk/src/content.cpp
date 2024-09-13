@@ -248,7 +248,7 @@ string content::filemagic()
 void content::write_record()
 {
     if (o.opt_magic) {
-	file_info("libmagic",validateOrEscapeUTF8(this->filemagic()));
+	o.file_info("libmagic",validateOrEscapeUTF8(this->filemagic()));
     }
     if (this->segs.size()>0){
 	string runs = "";
@@ -286,24 +286,24 @@ void content::write_record()
                 runs += "/>\n";
             }
 	}
-	file_info_xml2("byte_runs","facet='data'", runs);
+	o.file_info_xml2("byte_runs","facet='data'", runs);
 	if (!invalid){
-	    if (o.opt_md5  && h_md5.hashed_bytes>0)   file_info(h_md5.final());
-	    if (o.opt_sha1 && h_sha1.hashed_bytes>0)  file_info(h_sha1.final());
+	    if (o.opt_md5  && h_md5.hashed_bytes>0)   o.file_info(h_md5.final());
+	    if (o.opt_sha1 && h_sha1.hashed_bytes>0)  o.file_info(h_sha1.final());
 	}
     }
 
     /* This stuff is only if we are creating ARFF output */
-    if (a){
-	file_info("fragments",this->segs.size());
+    if (o.a){
+	o.file_info("fragments",this->segs.size());
 	if (img_info->sector_size>0){
 	    if (this->segs.size()>=1){
 		int64_t frag1start = this->segs[0].img_offset / img_info->sector_size;
-		file_info("frag1startsector",frag1start);
+		o.file_info("frag1startsector",frag1start);
 	    }
 	    if (this->segs.size()>=2){
 		int64_t frag2start = this->segs[1].img_offset / img_info->sector_size;
-		file_info("frag2startsector",frag2start);
+		o.file_info("frag2startsector",frag2start);
 	    }
 	}
     }
