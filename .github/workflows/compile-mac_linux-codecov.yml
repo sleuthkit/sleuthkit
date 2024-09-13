@@ -110,7 +110,6 @@ jobs:
           pushd unit_tests
           make $MAKE_OPTS runner
           ./runner
-          gcov *.o *.cpp ../*/*/*.o ../*/*/*.cpp
           popd
 
       - name: upload codecov report

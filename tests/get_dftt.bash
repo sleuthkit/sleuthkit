@@ -14,6 +14,15 @@ for fn in 3-kwsrch-ntfs.zip imageformat_mmls_1.E01 imageformat_mmls_1.vhd imagef
     fi
 done
 
-cp $IMAGE_DIR/3-kwsrch-ntfs/ntfs-img-kw-1.dd $IMAGE_DIR/.
+if ! test -f $IMAGE_DIR/ntfs-img-kw-1.dd ; then
+    cp $IMAGE_DIR/3-kwsrch-ntfs/ntfs-img-kw-1.dd $IMAGE_DIR/.
+fi
 
-
+# Get additional digital corpora files
+for url in https://corp.digitalcorpora.org/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg; do
+    fn=$(basename url)
+    if ! test -f $IMAGE_DIR/$fn
+    then
+        curl $url -o $IMAGE_DIR/$fn
+    fi
+done
