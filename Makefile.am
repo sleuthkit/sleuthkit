@@ -167,7 +167,7 @@ noinst_LTLIBRARIES = \
 	tsk/auto/libtskauto.la \
 	tsk/base/libtskbase.la \
 	tsk/fs/libtskfs.la \
-	tsk.hashdb/libtskhashdb.la \
+	tsk/hashdb/libtskhashdb.la \
 	tsk/img/libtskimg.la \
 	tsk/pool/libtskpool.la \
 	tsk/util/libtskutil.la \
