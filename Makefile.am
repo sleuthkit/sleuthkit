@@ -89,7 +89,7 @@ else
   JAVA_CASEUCO=
 endif
 
-SUBDIRS = tsk tools/fiwalk unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
+SUBDIRS = tsk unit_tests $(JAVA_BINDINGS) $(JAVA_CASEUCO)
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
@@ -189,6 +189,8 @@ bin_PROGRAMS = \
 	tools/autotools/tsk_imageinfo \
 	tools/autotools/tsk_loaddb \
 	tools/autotools/tsk_recover \
+	tools/fiwalk/plugins/jpeg_extract \
+	tools/fiwalk/src/fiwalk \
 	tools/fstools/blkcalc \
 	tools/fstools/blkcat \
 	tools/fstools/blkls \
@@ -215,7 +217,9 @@ bin_PROGRAMS = \
 	tools/vstools/mmcat
 
 tools_autotools_tsk_comparedir_LDADD = $(TSK_LIB)
-tools_autotools_tsk_comparedir_SOURCES = tools/autotools/tsk_comparedir.cpp tools/autotools/tsk_comparedir.h
+tools_autotools_tsk_comparedir_SOURCES = \
+	tools/autotools/tsk_comparedir.cpp \
+	tools/autotools/tsk_comparedir.h
 
 tools_autotools_tsk_gettimes_LDADD = $(TSK_LIB)
 tools_autotools_tsk_gettimes_SOURCES = tools/autotools/tsk_gettimes.cpp
@@ -228,6 +232,60 @@ tools_autotools_tsk_loaddb_SOURCES = tools/autotools/tsk_loaddb.cpp
 
 tools_autotools_tsk_recover_LDADD = $(TSK_LIB)
 tools_autotools_tsk_recover_SOURCES = tools/autotools/tsk_recover.cpp
+
+tools_fiwalk_plugins_jpeg_extract_SOURCES = tools/fiwalk/plugins/jpeg_extract.cpp
+
+EXTRA_DIST += \
+	tools/fiwalk/plugins/docx_extractor.py \
+	tools/fiwalk/plugins/docx_grep.py \
+	tools/fiwalk/plugins/ficonfig.txt \
+	tools/fiwalk/plugins/jpeg_extract.java \
+	tools/fiwalk/plugins/Libextract_plugin.java \
+	tools/fiwalk/plugins/odf_extractor.py \
+	tools/fiwalk/plugins/word_extract.java \
+	tools/fiwalk/src/config-simple.txt \
+	tools/fiwalk/src/ficonfig.txt \
+	tools/fiwalk/src/lua_utf8.c \
+	tools/fiwalk/src/README_PLUGINS.txt \
+	tools/fiwalk/src/word-count-plugin.sh
+
+tools/fiwalk/plugins/plugins.jar: tools/fiwalk/plugins/jpeg_extract.class tools/fiwalk/plugins/word_extract.class tools/fiwalk/plugins/Libextract_plugin.class
+	jar cfv tools/fiwalk/plugins/plugins.jar tools/fiwalk/plugins/jpeg_extract.class tools/fiwalk/plugins/word_extract.class tools/fiwalk/plugins/Libextract_plugin.class
+
+tools/fiwalk/plugins/jpeg_extract.class: tools/fiwalk/plugins/jpeg_extract.java
+	javac tools/fiwalk/plugins/jpeg_extract.java
+
+tools/fiwalk/plugins/word_extract.class: tools/fiwalk/plugins/word_extract.java
+	javac tools/fiwalk/plugins/word_extract.java
+
+tools/fiwalk/plugins/Libextract_plugin.class: tools/fiwalk/plugins/Libextract_plugin.java
+	javac tools/fiwalk/plugins/Libextract_plugin.java
+
+tools_fiwalk_src_fiwalk_LDADD = $(TSK_LIB)
+tools_fiwalk_src_fiwalk_SOURCES = \
+	tools/fiwalk/src/arff.cpp \
+	tools/fiwalk/src/arff.h \
+	tools/fiwalk/src/base64.cpp \
+	tools/fiwalk/src/base64.h \
+	tools/fiwalk/src/content.cpp \
+	tools/fiwalk/src/content.h \
+	tools/fiwalk/src/dfxml.cpp \
+	tools/fiwalk/src/dfxml.h \
+	tools/fiwalk/src/fiwalk.cpp  \
+	tools/fiwalk/src/fiwalk.h \
+	tools/fiwalk/src/fiwalk_main.cpp  \
+	tools/fiwalk/src/fiwalk_tsk.cpp \
+	tools/fiwalk/src/hash_t.h \
+	tools/fiwalk/src/hexbuf.c \
+	tools/fiwalk/src/hexbuf.h \
+	tools/fiwalk/src/plugin.cpp \
+	tools/fiwalk/src/plugin.h \
+	tools/fiwalk/src/sha2.c \
+	tools/fiwalk/src/sha2.h \
+	tools/fiwalk/src/unicode_escape.cpp \
+	tools/fiwalk/src/unicode_escape.h \
+	tools/fiwalk/src/utils.c \
+	tools/fiwalk/src/utils.h
 
 EXTRA_DIST += tools/fstools/fscheck.cpp
 
