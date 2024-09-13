@@ -1,5 +1,5 @@
 # Compile the sub directories
-SUBDIRS = img util
+SUBDIRS = img
 
 AM_CPPFLAGS = -I..
 AM_CXXFLAGS = -Wall -Wextra
@@ -10,6 +10,7 @@ noinst_LTLIBRARIES = \
 	fs/libtskfs.la \
 	hashdb/libtskhashdb.la \
 	pool/libtskpool.la \
+	util/libtskutil.la \
 	util/Bitlocker/libtskbitlocker.la \
 	vs/libtskvs.la
 
@@ -149,6 +150,13 @@ pool_libtskpool_la_SOURCES = \
 	pool/pool_open.cpp \
 	pool/pool_read.cpp \
 	pool/pool_types.cpp
+
+util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
+util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
+util_libtskutil_la_SOURCES = \
+	util/crypto.cpp \
+	util/detect_encryption.c \
+	util/file_system_utils.c
 
 util_Bitlocker_libtskbitlocker_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
 util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
