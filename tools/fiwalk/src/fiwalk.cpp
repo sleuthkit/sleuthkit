@@ -35,8 +35,10 @@
 /* config.h must be first */
 #include "tsk/tsk_tools_i.h"
 
+
 #include <stdio.h>
 #include "fiwalk.h"
+#include "content.h"
 
 /* Bring in our headers */
 #include "arff.h"
@@ -88,10 +90,6 @@ int  opt_M = 30;
 int  opt_k = 4;
 
 
-u_int	sectorhash_size=512;
-
-namelist_t namelist;		// names of files that we want to find
-
 bool opt_magic = false;		// don't get the output of the file command
 
 
@@ -105,84 +103,6 @@ int64_t  current_partition_start=0;	// in bytes
 /* Individual 'state' variables */
 string  plugin_filename;
 
-void print_version()
-{
-    printf("SleuthKit Version: %s\n",tsk_version_get_str());
-#ifdef HAVE_LIBAFFLIB
-    printf("AFFLIB Version:    %s\n",af_version());
-#else
-    printf("*** NO AFFLIB SUPPORT ***\n");
-#endif
-#ifdef HAVE_LIBEWF
-    printf("LIBEWF Version:    %s\n",libewf_get_version());
-#else
-    printf("*** NO LIBEWF SUPPORT ***\n");
-#endif
-
-}
-
-void usage()
-{
-    printf("usage: fiwalk [options] iso-name\n");
-    printf("Default behavior: Just print the file system statistics and exit.\n");
-    printf("options:\n");
-    printf("    -c config.txt   read config.txt for metadata extraction tools\n");
-    printf("    -C nn           only process nn files, then do a clean exit\n");
-
-    printf("\n");
-    printf("include/exclude parameters; may be repeated. \n");
-    printf("    -n pattern  = only match files for which the filename matches\n");
-    printf("                  the pattern.\n");
-    printf("              example: -n .jpeg -n .jpg will find all JPEG files\n");
-    printf("              Case is ignored. Will not match orphan files.\n");
-    printf("    ");
-    printf("\n");
-    printf("Ways to make this program run faster:\n");
-    printf("    -I ignore NTFS system files\n");
-    printf("    -g just report the file objects - don't get the data\n");
-    printf("    -O only walk allocated files\n");
-    printf("    -b do not report byte runs if data not accessed\n");
-    printf("    -z do not calculate MD5 or SHA1 values\n");
-    printf("    -Gnn - Only process the contents of files smaller than nn gigabytes (default %d)\n",
-	   opt_maxgig);
-    printf("           (Specify -G0 to remove space restrictions)\n");
-
-    printf("\n");
-    printf("Ways to make this program run slower:\n");
-    printf("    -M = Report MD5 for each file (default on)\n");
-    printf("    -1 = Report SHA1 for each file (default on)\n");
-    printf("    -S nnnn = Perform sector hashes every nnnn bytes\n");
-#ifdef HAVE_LIBMAGIC
-    printf("    -f = Enable LIBMAGIC (disabled by default)");
-#else
-    printf("    -f = Report the output of the 'file' command for each\n");
-#endif
-    //printf("Full content options:\n");
-    //printf("    -s <dir> = Save all recovered files to <dir>\n");
-    printf("\n");
-    printf("Output options:\n");
-    printf("    -m = Output in SleuthKit 'Body file' format\n");
-    printf("    -A<file> = ARFF output to <file>\n");
-    printf("    -X<file> = XML output to a <file> (full DTD)\n");
-    printf("         -X0 = Write output to filename.xml\n");
-    printf("    -Y       = Do not include <creator> or <usage> DFXML sections (things that can change)\n");
-    printf("    -Z       = zap (erase) the output file\n");
-    printf("    -x       = XML output to stdout (no DTD)\n");
-    printf("    -T<file> = Walkfile output to <file>\n");
-    printf("    -a <audit.txt> = Read the scalpel audit.txt file\n");
-    printf("\n");
-//Bringing this back with dfxml later
-//    printf("Sector hash:\n");
-//    printf("    -E             = Print sector hashes\n");
-//    printf("    -Snnn          = Specify sector hash size; default is %d\n",sectorhash_size);
-
-    printf("Misc:\n");
-    printf("    -d = debug this program\n");
-    printf("    -v = Enable SleuthKit verbose flag\n");
-    printf("\n");
-    print_version();
-    exit(1);
-}
 
 /****************************************************************
  ** Support routines
@@ -474,148 +394,17 @@ static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 }
 #endif
 
-int fiwalk_main(int argc, const char * const *argv1)
+int fiwalk::run()
 {
-    int ch;
-    const char *arff_fn = 0;
-    const char *text_fn = 0;
-    string xml_fn;
-    const char *audit_file = 0;
-    bool opt_x = false;
-    string command_line = xml::make_command_line(argc,argv1);
-    bool opt_zap = false;
-    u_int sector_size=512;			// defaults to 512; may be changed by AFF
-    bool opt_variable = true;                   // include things that can change
-
-    struct timeval tv0;
-    struct timeval tv1;
     gettimeofday(&tv0,0);
-
-    TSK_TCHAR * const *argv;
     std::ofstream *xout = 0;
-
-#ifdef TSK_WIN32
-    char *opt_arg = NULL;
-    char *argv_0 = NULL;
-
-
-    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == NULL) {
-        fprintf(stderr,"Error getting wide arguments\n");
-        exit(1);
-    }
-#else
-    argv = (TSK_TCHAR * const*) argv1;
-#endif
-
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:S:T:VZn:c:b:xOYzh?"))) > 0 ) { // s: removed
-	switch (ch) {
-	case _TSK_T('1'): opt_sha1 = true;break;
-	case _TSK_T('m'):
-	    opt_body_file = 1;
-	    opt_sha1 = 0;
-	    opt_md5  = 1;
-	    t = stdout;
-	    break;
-	case _TSK_T('A'):
-#ifdef TSK_WIN32
-            convert(OPTARG, &opt_arg);
-            arff_fn = opt_arg;
-#else
-            arff_fn = OPTARG;
-#endif
-            break;
-	case _TSK_T('C'): file_count_max = TATOI(OPTARG);break;
-	case _TSK_T('d'): opt_debug++; break;
-	case _TSK_T('f'): opt_magic = true;break;
-	case _TSK_T('g'): opt_no_data = true; break;
-        case _TSK_T('b'): opt_get_fragments = false; break;
-	case _TSK_T('G'): opt_maxgig = TATOI(OPTARG);break;
-	case _TSK_T('h'): usage(); break;
-	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
-	case _TSK_T('M'): opt_md5 = true;
-	case _TSK_T('O'): opt_allocated_only=true; break;
-	case _TSK_T('S'):
-            opt_sector_hash = true;
-            sectorhash_size = TATOI(OPTARG); break;
-	case _TSK_T('T'):
-#ifdef TSK_WIN32
-            convert(OPTARG, &opt_arg);
-            text_fn = opt_arg;
-#else
-            text_fn = OPTARG;
-#endif
-            break;
-	case _TSK_T('V'): print_version();exit(0);
-	case _TSK_T('X'):
-#ifdef TSK_WIN32
-            convert(OPTARG, &opt_arg);
-            xml_fn = string(opt_arg);
-#else
-            xml_fn = string(OPTARG);
-#endif
-            break;
-	case _TSK_T('Y'): opt_variable = false;break;
-	case _TSK_T('x'): opt_x = true;break;
-	case _TSK_T('Z'): opt_zap = true;break;
-	case _TSK_T('a'):
-#ifdef TSK_WIN32
-            convert(OPTARG, &opt_arg);
-            audit_file = opt_arg;
-#else
-            audit_file = OPTARG;
-#endif
-            break;
-	case _TSK_T('c'):
-#ifdef TSK_WIN32
-            convert(OPTARG, &opt_arg);
-            config_file = opt_arg;
-#else
-            config_file = OPTARG;
-#endif
-            break;
-	case _TSK_T('n'):
-
-#ifdef TSK_WIN32
-            convert(OPTARG, &opt_arg);
-            namelist.push_back(opt_arg);
-#else
-            namelist.push_back(OPTARG);
-#endif
-            break;
-	    //case 's': save_outdir = optarg; opt_save = true; break;
-	case _TSK_T('v'): tsk_verbose++; break; 			// sleuthkit option
-	case _TSK_T('z'): opt_sha1=false;opt_md5=false;break;
-	case _TSK_T('?'): usage();break;
-	default:
-	    fprintf(stderr, "Invalid argument: %s\n", argv[OPTIND]);
-	    usage();
-	}
-    }
-
-    if (OPTIND >= argc) usage();
-    argc -= OPTIND;
-    argv += OPTIND;
-    argv1 += OPTIND;
-
-#ifdef TSK_WIN32
-    convert(argv[0],&argv_0);
-    const char *filename = argv_0;
-#else
-    const char *filename = argv[0];
-#endif
-    opt_parent_tracking = true;
-
-    if(!filename){
-	errx(1,"must provide filename");
-    }
-    if(opt_no_data && (opt_md5 || opt_sha1 || opt_save || opt_magic)) {
+    if (opt_no_data && (opt_md5 || opt_sha1 || opt_save || opt_magic)) {
         errx(1, "-g conflicts with options requiring data access (-z may be needed)");
     }
 
-    if(opt_save){
-	if(access(save_outdir.c_str(),F_OK)){
-	    if(mkdir(save_outdir.c_str()
+    if (opt_save){
+	if (access(save_outdir.c_str(),F_OK)){
+	    if (mkdir(save_outdir.c_str()
 #ifdef WIN32
 #else
                      ,0777
@@ -624,19 +413,19 @@ int fiwalk_main(int argc, const char * const *argv1)
                 err(1,"Cannot make directory: %s",save_outdir.c_str());
             }
         }
-        if(access(save_outdir.c_str(),R_OK)){
+        if (access(save_outdir.c_str(),R_OK)){
             err(1,"Cannot access directory: %s",save_outdir.c_str());
         }
     }
 
-    if(text_fn){
-        if(access(text_fn,F_OK)==0) errx(1,"%s: file exists",text_fn);
+    if (text_fn){
+        if (access(text_fn,F_OK)==0) errx(1,"%s: file exists",text_fn);
         t = fopen(text_fn,"w");
-        if(!t) err(1,"%s",text_fn);
+        if (!t) err(1,"%s",text_fn);
     }
 
-    if(arff_fn){
-        if(access(arff_fn,F_OK)==0) errx(1,"%s: file exists",arff_fn);
+    if (arff_fn){
+        if (access(arff_fn,F_OK)==0) errx(1,"%s: file exists",arff_fn);
         a = new arff("fiwalk");		// the ARFF output object
         a->set_outfile(arff_fn);
     }
@@ -648,14 +437,14 @@ int fiwalk_main(int argc, const char * const *argv1)
         x = new xml(std::cout, false);			// default to stdout
     }
     if (xml_fn.size()>0){
-        if(x) errx(1,"Cannot write XML to stdout and file at same time\n");
+        if (x) errx(1,"Cannot write XML to stdout and file at same time\n");
         if (xml_fn == "0"){              // special case of -X0
             string newfn = filename;
             xml_fn = newfn.substr(0,newfn.rfind(".")) + ".xml";
         }
-        if(access(xml_fn.c_str(),F_OK)==0){
-            if(opt_zap){
-                if(unlink(xml_fn.c_str())){
+        if (access(xml_fn.c_str(),F_OK)==0){
+            if (opt_zap){
+                if (unlink(xml_fn.c_str())){
                     err(1,"%s: file exists and cannot unlink",xml_fn.c_str());
                 }
             }
@@ -668,11 +457,11 @@ int fiwalk_main(int argc, const char * const *argv1)
     }
 
     /* If no output file has been specified, output text to stdout */
-    if(a==0 && x==0 && t==0){
+    if (a==0 && x==0 && t==0){
         t = stdout;
     }
 
-    if(strstr(filename,".aff") || strstr(filename,".afd") || strstr(filename,".afm")){
+    if (strstr(filename,".aff") || strstr(filename,".afd") || strstr(filename,".afm")){
 #ifndef HAVE_LIBAFFLIB
         fprintf(stderr,"ERROR: fiwalk was compiled without AFF support.\n");
         exit(0);
@@ -681,7 +470,7 @@ int fiwalk_main(int argc, const char * const *argv1)
     }
 
     /* If we are outputing ARFF, create the ARFF object and set the file types for the file system metadata */
-    if(a){
+    if (a){
         a->add_attribute("id",arff::NUMERIC);
         a->add_attribute("partition",arff::NUMERIC);
         a->add_attribute("filesize",arff::NUMERIC);
@@ -692,12 +481,12 @@ int fiwalk_main(int argc, const char * const *argv1)
         a->add_attribute("frag1startsector",arff::NUMERIC);
         a->add_attribute("frag2startsector",arff::NUMERIC);
         a->add_attribute("filename",arff::STRING);
-        if(opt_md5) a->add_attribute("md5",arff::STRING);
-        if(opt_sha1) a->add_attribute("sha1",arff::STRING);
+        if (opt_md5) a->add_attribute("md5",arff::STRING);
+        if (opt_sha1) a->add_attribute("sha1",arff::STRING);
     }
 
     /* output per-run metadata for XML output */
-    if(x){
+    if (x){
         /* Output Dublin Core information */
         x->push("dfxml",
                 "\n  xmlns='http://www.forensicswiki.org/wiki/Category:Digital_Forensics_XML'"
@@ -714,21 +503,21 @@ int fiwalk_main(int argc, const char * const *argv1)
     }
 
     /* Can't use comment until after here... */
-    if(config_file){
+    if (config_file){
         comment("Reading configuration file %s",config_file);
         config_read(config_file);    /* Read the configuration file */
     }
 
     /* Check that we have a valid file format */
-    if(x) x->push("source");
+    if (x) x->push("source");
     partition_info("image_filename",filename);
 
-    if(!x){
+    if (!x){
         partition_info("fiwalk_version",tsk_version_get_str());
         partition_info("start_time",mytime());
         partition_info("tsk_version",tsk_version_get_str());
     }
-    if(x) x->pop();                     // source
+    if (x) x->pop();                     // source
 
     if (opt_debug) printf("calling tsk_img_open(%s)\n",filename);
 
@@ -737,16 +526,16 @@ int fiwalk_main(int argc, const char * const *argv1)
 #endif
 
 #ifdef TSK_WIN32
-    int count = process_image_file(argc,argv1,audit_file,sector_size);
-    if(count<=0 || sector_size!=512){
+    int count = process_image_file(argc, argv1, audit_file, sector_size);
+    if (count<=0 || sector_size!=512){
         comment("Retrying with 512 byte sector size.");
-        count = process_image_file(argc,argv1,audit_file,512);
+        count = process_image_file(argc, argv1, audit_file, 512);
     }
 #else
-    int count = process_image_file(argc,argv,audit_file,sector_size);
-    if(count<=0 || sector_size!=512){
+    int count = process_image_file(argc, argv, audit_file, sector_size);
+    if (count<=0 || sector_size!=512){
         comment("Retrying with 512 byte sector size.");
-        count = process_image_file(argc,argv,audit_file,512);
+        count = process_image_file(argc, argv, audit_file, 512);
     }
 #endif
 
@@ -755,7 +544,7 @@ int fiwalk_main(int argc, const char * const *argv1)
     char tvbuf[64];
     gettimeofday(&tv1,0);
     tv.tv_sec = tv1.tv_sec - tv0.tv_sec;
-    if(tv1.tv_usec > tv0.tv_usec){
+    if (tv1.tv_usec > tv0.tv_usec){
         tv.tv_usec = tv1.tv_usec - tv0.tv_usec;
     } else {
         tv.tv_sec--;
@@ -772,8 +561,8 @@ int fiwalk_main(int argc, const char * const *argv1)
     /* Print usage information */
     struct rusage ru;
     memset(&ru,0,sizeof(ru));
-    if(getrusage(RUSAGE_SELF,&ru)==0 && opt_variable){
-        if(x) x->push("rusage");
+    if (getrusage(RUSAGE_SELF,&ru)==0 && opt_variable){
+        if (x) x->push("rusage");
         partition_info("utime",ru.ru_utime);
         partition_info("stime",ru.ru_stime);
         partition_info("maxrss",ru.ru_maxrss);
@@ -784,7 +573,7 @@ int fiwalk_main(int argc, const char * const *argv1)
         partition_info("oublock",ru.ru_oublock);
         partition_info("clocktime",tv);
         comment("stop_time: %s",cstr(mytime()));
-        if(x) x->pop();
+        if (x) x->pop();
     }
 #endif
 #endif
@@ -792,18 +581,23 @@ int fiwalk_main(int argc, const char * const *argv1)
 
     // *** Added <finished time="(time_t)" duration="<seconds>" />
 
-    if(a){
+    if (a){
         a->write();
         delete a;
     }
 
-    if(t) comment("=EOF=");
-    if(x) {
+
+    if (t) comment("=EOF=");
+    if (x) {
         x->pop();			// <dfxml>
+
+#define THIS_MAKES_IT_CRASH_ON_SECOND_CALL
+#ifndef THIS_MAKES_IT_CRASH_ON_SECOND_CALL
         delete(x);
         if (xout) {
             delete xout;
         }
+#endif
     }
-    return(0);
+    return 0;
 }

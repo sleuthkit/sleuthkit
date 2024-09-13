@@ -82,16 +82,6 @@ private:
 	    return "copying feature_recorder objects is not implemented.";
 	}
     };
-#if 0
-    xml(const xml &fr):
-#ifdef HAVE_PTHREAD
-	M(),
-#endif
-	out(),tags(),tag_stack(),t0(),
-	make_dtd(),outfilename(){
-	throw new not_impl();
-    }
-#endif
     const xml &operator=(const xml &x){ throw new not_impl(); }
     /****************************************************************/
 #ifdef HAVE_PTHREAD
@@ -109,7 +99,6 @@ private:
     void  spaces();			// print spaces corresponding to tag stack
 public:
     std::stack<TSK_INUM_T> parent_stack;
-
 
     static std::string make_command_line(int argc,const char * const *argv){
 	std::string command_line;
@@ -136,7 +125,7 @@ public:
 #ifdef __GNUC__
     void printf(const char *fmt,...) __attribute__((format(printf, 2, 3))); // "2" because this is "1"
 #else
-	void printf(const char *fmt,...);
+    void printf(const char *fmt,...);
 #endif
 
     void pop();	// close the tag

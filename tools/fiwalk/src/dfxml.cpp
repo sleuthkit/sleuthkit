@@ -264,6 +264,7 @@ void xml::pop()
     spaces();
     tagout("/"+tag,"");
     out << '\n';
+    out.flush();
 }
 
 
