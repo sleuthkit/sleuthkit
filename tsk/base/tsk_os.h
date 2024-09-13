@@ -51,7 +51,10 @@
 #define roundup(x, y)   \
     ( ( ((x)+((y) - 1)) / (y)) * (y) )
 
+#ifndef fseeko
 #define fseeko fseek
+#endif
+
 #define daddr_t int
 #endif
 
@@ -118,7 +121,6 @@ typedef int32_t ssize_t;
 #define fseeko _fseeki64
 
 #endif
-
 
 /* When TSK deals with the outside world (printing / input), the data will 
  * be in either UTF-16 or UTF-8 (Windows or Unix).  TSK_TCHAR is defined 

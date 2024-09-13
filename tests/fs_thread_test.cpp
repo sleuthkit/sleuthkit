@@ -7,7 +7,7 @@
 //
 // To turn this into a thread test, the caller (e.g. Makefile or
 // script) should arrange to run the program as follows:
-// 
+//
 //   run with one thread; produce thread-0.log; rename to base.log
 //   run with N threads; produce thread-0.log, thread-1.log, etc.
 //   diff base.log thread-0.log
@@ -34,10 +34,10 @@ static TSK_WALK_RET_ENUM
 proc_dir(TSK_FS_FILE* fs_file, const char* path, void* stuff)
 {
     FILE* log = (FILE*)stuff;
-    
+
     fprintf(log, "%s%s: flags: %d, addr: %d", path, fs_file->name->name,
             fs_file->meta->flags, (int)fs_file->meta->addr);
-    
+
     // hmm, not sure if the ntfs sid stuff is working at all, but at
     // least call it to detect possible hangs
     if (fs_file->fs_info->fread_owner_sid) {
@@ -63,7 +63,7 @@ proc_dir(TSK_FS_FILE* fs_file, const char* path, void* stuff)
                 len = sizeof(buf);
             }
 
-            int myflags = 0;    
+            int myflags = 0;
             ssize_t cnt = tsk_fs_file_read(fs_file, off, buf, len, (TSK_FS_FILE_READ_FLAG_ENUM)myflags);
             if (cnt == -1) {
                 if (tsk_verbose) {
@@ -128,7 +128,7 @@ public:
         // We rewrite the log on every iteration to prevent truly huge
         // logs files.
         char logname[256];
-        sprintf(logname, "thread-%d.log", m_id);
+        snprintf(logname, sizeof(logname), "thread-%d.log", m_id);
         for (size_t i = 0; i < m_niters; ++i) {
             FILE* log = fopen(logname, "w");
             if (log == 0) {
@@ -162,7 +162,7 @@ usage()
 int
 main(int argc, char** argv1)
 {
-    
+
     TSK_TCHAR **argv;
     TSK_TCHAR *cp;
 
@@ -221,7 +221,7 @@ main(int argc, char** argv1)
         fprintf(stderr, "invalid nthreads\n");
         exit(1);
     }
-    
+
     TSK_IMG_INFO* img = tsk_img_open_sing(image, TSK_IMG_TYPE_DETECT, 0);
     if (img == 0) {
         tsk_error_print(stderr);
@@ -250,7 +250,7 @@ main(int argc, char** argv1)
         delete threads[i];
     }
     delete[] threads;
-    
+
     tsk_fs_close(fs);
     tsk_img_close(img);
     exit(0);

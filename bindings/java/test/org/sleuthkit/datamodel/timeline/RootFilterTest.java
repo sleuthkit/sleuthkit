@@ -22,12 +22,9 @@ import java.util.Collections;
 import java.util.List;
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.sleuthkit.datamodel.PublicTagName;
-import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TimelineFilter;
 import org.sleuthkit.datamodel.TimelineFilter.EventTypeFilter;
 import org.sleuthkit.datamodel.TimelineEventType;
-import org.sleuthkit.datamodel.TskData;
 
 /**
  * Test class for RootFilter

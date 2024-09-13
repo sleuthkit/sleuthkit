@@ -149,9 +149,8 @@ void APFSBlock::decrypt(const uint8_t* key, const uint8_t* key2) noexcept {
 
     dec.decrypt_buffer(_storage.data(), _storage.size(),
         _block_num * APFS_BLOCK_SIZE);
-#else
-    return;
 #endif
+    // TODO: what is the intended behavior here if there is no crypto support.
 }
 
 void APFSBlock::dump() const noexcept {

@@ -1,0 +1,14 @@
+coverage:
+  range: 40..60
+  round: nearest
+  precision: 2
+  status:
+    project:
+      default:
+        target: develop
+
+#fixes:
+#  - "/home/runner/work/sleuthkit/sleuthkit::"
+
+ignore:
+  - "m4/*"

@@ -29,6 +29,7 @@ import java.sql.Types;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Optional;
@@ -133,9 +134,12 @@ public final class OsAccountManager {
 	 *
 	 * @param sid           Account sid/uid, can be null if loginName is
 	 *                      supplied.
+	 *						SID when present will be normalized to uppercase 
 	 * @param loginName     Login name, can be null if sid is supplied.
+	 *						Login name when present will be normalized to lowercase 
 	 * @param realmName     Realm within which the accountId or login name is
 	 *                      unique. Can be null if sid is supplied.
+	 *						Realm when present will be normalized to lowercase
 	 * @param referringHost Host referring the account.
 	 * @param realmScope    Realm scope.
 	 *
@@ -179,6 +183,20 @@ public final class OsAccountManager {
 		}
 		
 		
+		if (StringUtils.isNotBlank(sid)) {
+			// SID Normalized to uppercase
+			sid = sid.toUpperCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(loginName)) {
+			// Windows logon names are case insensitive. saving them in lower case.
+			loginName = loginName.toLowerCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(realmName)) {
+			// Windows realm names are case insensitive. saving them in lower case.
+			realmName = realmName.toLowerCase(Locale.ENGLISH);
+		} 
+		 
+		
 		OsRealmUpdateResult realmUpdateResult;
 		Optional<OsAccountRealm> anotherRealmWithSameName = Optional.empty();
 		Optional<OsAccountRealm> anotherRealmWithSameAddr = Optional.empty();
@@ -199,9 +217,17 @@ public final class OsAccountManager {
 					
 					//1. Check if there is any OTHER realm with the same name, same host but no addr
 					anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, connection);
+					if (anotherRealmWithSameName.isPresent() && anotherRealmWithSameName.get().getRealmAddr().isPresent()) {
+						// realm with same name has addr, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
 					
 					// 2. Check if there is any OTHER realm with same addr and host, but NO name
 					anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, connection);
+					if (anotherRealmWithSameAddr.isPresent() && !anotherRealmWithSameAddr.get().getRealmNames().isEmpty()) {
+						// realm with same addr has name, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
 				}
 			}
 		}
@@ -512,7 +538,7 @@ public final class OsAccountManager {
 				+ " ON accounts.realm_id = realms.id"
 				+ " WHERE " + whereHostClause
 				+ "     AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
-				+ "  AND LOWER(accounts.addr) = LOWER('" + uniqueId + "')";
+				+ "  AND accounts.addr = '" + uniqueId + "'";
 
 		db.acquireSingleUserCaseReadLock();
 		try (Statement s = connection.createStatement();
@@ -544,7 +570,7 @@ public final class OsAccountManager {
 	Optional<OsAccount> getOsAccountByAddr(String uniqueId, OsAccountRealm realm) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE LOWER(addr) = LOWER('" + uniqueId + "')"
+				+ " WHERE addr = '" + uniqueId + "'"
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 				+ " AND realm_id = " + realm.getRealmId();
 
@@ -579,7 +605,7 @@ public final class OsAccountManager {
 	Optional<OsAccount> getOsAccountByLoginName(String loginName, OsAccountRealm realm) throws TskCoreException {
 
 		String queryString = "SELECT * FROM tsk_os_accounts"
-				+ " WHERE LOWER(login_name) = LOWER('" + loginName + "')"
+				+ " WHERE login_name = '" + loginName + "'"
 				+ " AND db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 				+ " AND realm_id = " + realm.getRealmId();
 
@@ -776,8 +802,8 @@ public final class OsAccountManager {
 		// It's possible that we weren't able to load the account instance because it
 		// is already in the database but the instance cache was cleared during an account merge.
 		// Try loading it here and re-adding to the cache.
-		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + osAccountId
-				+ "AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
+		String whereClause = " tsk_os_account_instances.os_account_obj_id = " + osAccountId
+						   + " AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
 		List<OsAccountInstance> instances = getOsAccountInstances(whereClause);
 		if (instances.isEmpty()) {
 			throw new TskCoreException(String.format("Could not get autogen key after row insert or reload instance for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
@@ -943,7 +969,10 @@ public final class OsAccountManager {
 			}
 
 			// Look for matching destination account
-			Optional<OsAccount> matchingDestAccount = getMatchingAccountForMerge(sourceAccount, destinationAccounts);
+			// login name match is set to ignore case here. The current calls to 
+			// this api are from windows realm merges. This "may" fail in case of 
+			// Linux and will require significant refactoring. 
+			Optional<OsAccount> matchingDestAccount = getMatchingAccountForMerge(sourceAccount, destinationAccounts, true);
 
 			// If we found a match, merge the accounts. Otherwise simply update the realm id
 			if (matchingDestAccount.isPresent()) {
@@ -964,9 +993,10 @@ public final class OsAccountManager {
 	 * Checks for matching account in a list of accounts for merging
 	 * @param sourceAccount The account to find matches for
 	 * @param destinationAccounts List of accounts to match against
+	 * @param ignoreCase Provide true if "login name" matching should ignoreCase (Windows)
 	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount is found.
 	 */
-	private Optional<OsAccount> getMatchingAccountForMerge(OsAccount sourceAccount, List<OsAccount> destinationAccounts) {
+	private Optional<OsAccount> getMatchingAccountForMerge(OsAccount sourceAccount, List<OsAccount> destinationAccounts, boolean ignoreCase) {
 		// Look for matching destination account
 		OsAccount matchingDestAccount = null;
 
@@ -988,8 +1018,9 @@ public final class OsAccountManager {
 		if (matchingDestAccount == null && sourceAccount.getLoginName().isPresent()) {
 			List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
 					.filter(p -> p.getLoginName().isPresent())
-					.filter(p -> (p.getLoginName().get().equalsIgnoreCase(sourceAccount.getLoginName().get())
-					&& ((!sourceAccount.getAddr().isPresent()) || (!p.getAddr().isPresent()))))
+					.filter(p -> ( ( ignoreCase ? p.getLoginName().get().equalsIgnoreCase(sourceAccount.getLoginName().get())  // Ignore case match  
+												: p.getLoginName().get().equals(sourceAccount.getLoginName().get()) )
+									&& ((!sourceAccount.getAddr().isPresent()) || (!p.getAddr().isPresent()))))
 					.collect(Collectors.toList());
 			if (!matchingDestAccounts.isEmpty()) {
 				matchingDestAccount = matchingDestAccounts.get(0);
@@ -1003,10 +1034,11 @@ public final class OsAccountManager {
 	 * Checks for matching accounts in the same realm 
 	 * and then merges the accounts if a match is found
 	 * @param account The account to find matches for
+	 * @param ignoreCase Provide true if "login name" matching should ignoreCase (Windows)
 	 * @param trans The current transaction.
 	 * @throws TskCoreException 
 	 */
-	private void mergeOsAccount(OsAccount account, CaseDbTransaction trans) throws TskCoreException {
+	private void mergeOsAccount(OsAccount account, boolean ignoreCase, CaseDbTransaction trans) throws TskCoreException {
 		// Get the realm for the account
 		Long realmId = account.getRealmId();
 		OsAccountRealm realm = db.getOsAccountRealmManager().getRealmByRealmId(realmId,  trans.getConnection());
@@ -1016,7 +1048,7 @@ public final class OsAccountManager {
 		osAccounts.removeIf(acc -> Objects.equals(acc.getId(), account.getId()));
 		
 		// Look for matching account
-		Optional<OsAccount> matchingAccount = getMatchingAccountForMerge(account, osAccounts);
+		Optional<OsAccount> matchingAccount = getMatchingAccountForMerge(account, osAccounts, ignoreCase);
 		
 		// If we find a match, merge the accounts.
 		if (matchingAccount.isPresent()) {
@@ -1234,9 +1266,12 @@ public final class OsAccountManager {
 	 * Gets an OS account using Windows-specific data.
 	 *
 	 * @param sid           Account SID, maybe null if loginName is supplied.
+	 *						SID when present will be normalized to uppercase 
 	 * @param loginName     Login name, maybe null if sid is supplied.
+	 *						Login name when present will be normalized to lowercase 
 	 * @param realmName     Realm within which the accountId or login name is
 	 *                      unique. Can be null if sid is supplied.
+	 *						Realm when present will be normalized to lowercase 
 	 * @param referringHost Host referring the account.
 	 *
 	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount
@@ -1263,6 +1298,20 @@ public final class OsAccountManager {
 			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
 			
 		}
+		
+				
+		if (StringUtils.isNotBlank(sid)) {
+			// SID Normalized to uppercase
+			sid = sid.toUpperCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(loginName)) {
+			// Windows logon names are case insensitive. saving them in lower case.
+			loginName = loginName.toLowerCase(Locale.ENGLISH);
+		} 
+		if (StringUtils.isNotBlank(realmName)) {
+			// Windows realm names are case insensitive. saving them in lower case.
+			realmName = realmName.toLowerCase(Locale.ENGLISH);
+		} 
 			
 		// first get the realm for the given sid
 		Optional<OsAccountRealm> realm = db.getOsAccountRealmManager().getWindowsRealm(sid, realmName, referringHost);
@@ -1484,7 +1533,7 @@ public final class OsAccountManager {
 	 * @throws TskCoreException
 	 */
 	public List<OsAccountInstance> getOsAccountInstances(OsAccount account) throws TskCoreException {
-		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + account.getId();
+		String whereClause = " tsk_os_account_instances.os_account_obj_id = " + account.getId();
 		return getOsAccountInstances(whereClause);
 	}
 
@@ -1762,8 +1811,11 @@ public final class OsAccountManager {
 	 *
 	 * @param osAccount     OsAccount that needs to be updated in the database.
 	 * @param accountSid    Account SID, may be null.
+	 *						Account SID when present will be normalized to uppercase 
 	 * @param loginName     Login name, may be null.
+	 *						Login name when present will be normalized to lowercase 
 	 * @param realmName     Realm name for the account.
+	 *						Realm when present will be normalized to lowercase 
 	 * @param referringHost Host.
 	 *
 	 * @return OsAccountUpdateResult Account update status, and the updated
@@ -1775,6 +1827,20 @@ public final class OsAccountManager {
 	public OsAccountUpdateResult updateCoreWindowsOsAccountAttributes(OsAccount osAccount, String accountSid, String loginName, String realmName, Host referringHost) throws TskCoreException, NotUserSIDException {
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
+			
+			if (StringUtils.isNotBlank(accountSid)) {
+				// SID Normalized to uppercase
+				accountSid = accountSid.toUpperCase(Locale.ENGLISH);
+			}
+			if (StringUtils.isNotBlank(loginName)) {
+				// Windows logon names are case insensitive. saving them in lower case.
+				loginName = loginName.toLowerCase(Locale.ENGLISH);
+			}
+			if (StringUtils.isNotBlank(realmName)) {
+				// Windows realm names are case insensitive. saving them in lower case.
+				realmName = realmName.toLowerCase(Locale.ENGLISH);
+			}
+
 			OsAccountUpdateResult updateStatus = this.updateCoreWindowsOsAccountAttributes(osAccount, accountSid, loginName, realmName, referringHost, trans);
 
 			trans.commit();
@@ -1828,10 +1894,18 @@ public final class OsAccountManager {
 					// say another realm with same name but no SID, or same SID but no name
 					//1. Check if there is any OTHER realm with the same name, same host but no addr
 					Optional<OsAccountRealm> anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, trans.getConnection());
-
+					if (anotherRealmWithSameName.isPresent() && anotherRealmWithSameName.get().getRealmAddr().isPresent()) {
+						// realm with same name has addr, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
+					
 					// 2. Check if there is any OTHER realm with same addr and host, but NO name
 					Optional<OsAccountRealm> anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, trans.getConnection());
-
+					if (anotherRealmWithSameAddr.isPresent() && !anotherRealmWithSameAddr.get().getRealmNames().isEmpty()) {
+						// realm with same addr has name, don't merge
+						anotherRealmWithSameName = Optional.empty();
+					}
+					
 					if (anotherRealmWithSameName.isPresent()) {
 						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realmOptional.get(), trans);
 					}
@@ -1847,9 +1921,9 @@ public final class OsAccountManager {
 		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, resolvedLoginName, trans);
 
 		Optional<OsAccount> updatedAccount = updateStatus.getUpdatedAccount();
-		if (updatedAccount.isPresent()) {
+		if (updatedAccount.isPresent() && updateStatus.updateStatus != OsAccountUpdateStatus.NO_CHANGE) {
 			// After updating account data, check if there is matching account to merge
-			mergeOsAccount(updatedAccount.get(), trans);
+			mergeOsAccount(updatedAccount.get(), true, trans);
 		}
 		
 		return updateStatus;
@@ -1913,7 +1987,7 @@ public final class OsAccountManager {
 		Optional<OsAccount> updatedAccount = updateStatus.getUpdatedAccount();
 		if (updatedAccount.isPresent()) {
 			// After updating account data, check if there is matching account to merge
-			mergeOsAccount(updatedAccount.get(), trans);
+			mergeOsAccount(updatedAccount.get(), false, trans);
 		}
 		
 		return updateStatus;
