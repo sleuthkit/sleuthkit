@@ -31,9 +31,8 @@ getError(libvmdk_error_t * vmdk_error,
     error_string[0] = '\0';
     retval = libvmdk_error_backtrace_sprint(vmdk_error,
         error_string, TSK_VMDK_ERROR_STRING_SIZE);
-    if (retval)
-        return 1;
-    return 0;
+    libvmdk_error_free(&vmdk_error);
+    return retval != 0;
 } 
 
 
@@ -100,14 +99,12 @@ vmdk_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
     vmdk_image_close(TSK_IMG_INFO * img_info)
 {
-    int i;
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
     libvmdk_error_t *vmdk_error = NULL;
     char *errmsg = NULL;
     IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
 
-    if( libvmdk_handle_close(vmdk_info->handle, &vmdk_error ) != 0 )
-    {
+    if (libvmdk_handle_close(vmdk_info->handle, &vmdk_error) != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vmdk_error, error_string))
@@ -118,9 +115,7 @@ static void
         tsk_error_set_errstr("vmdk_image_close: unable to close handle - %s", errmsg);
     }
 
-    libvmdk_handle_free(&(vmdk_info->handle), NULL);
-    if( libvmdk_handle_free(&(vmdk_info->handle), &vmdk_error ) != 1 )
-    {
+    if (libvmdk_handle_free(&(vmdk_info->handle), &vmdk_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
         if (getError(vmdk_error, error_string))
@@ -131,11 +126,6 @@ static void
         tsk_error_set_errstr("vmdk_image_close: unable to free handle - %s", errmsg);
     }
 
-    for (i = 0; i < vmdk_info->img_info.num_img; i++) {
-        free(vmdk_info->img_info.images[i]);
-    }
-    free(vmdk_info->img_info.images);
-
     tsk_deinit_lock(&(vmdk_info->read_lock));
     tsk_img_free(img_info);
 }
@@ -144,9 +134,18 @@ TSK_IMG_INFO *
 vmdk_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
+    if (a_num_img != 1) {
+        tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
+            ": expected one image filename, was given %d", a_images[0], a_num_img);
+
+        if (tsk_verbose) {
+            tsk_fprintf(stderr, "vmdk requires exactly 1 image filename for opening\n");
+        }
+        return NULL;
+    }
+
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
     libvmdk_error_t *vmdk_error = NULL;
-    int i;
 
     IMG_VMDK_INFO *vmdk_info = NULL;
     TSK_IMG_INFO *img_info = NULL;
@@ -163,23 +162,9 @@ vmdk_open(int a_num_img,
     }
     vmdk_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vmdk_info;
- 
-    vmdk_info->img_info.num_img = a_num_img;
-    if ((vmdk_info->img_info.images =
-        (TSK_TCHAR **) tsk_malloc(a_num_img *
-        sizeof(TSK_TCHAR *))) == NULL) {
-            tsk_img_free(vmdk_info);
-            return NULL;
-    }
-    for (i = 0; i < a_num_img; i++) {
-        if ((vmdk_info->img_info.images[i] =
-            (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
-            1) * sizeof(TSK_TCHAR))) == NULL) {
-                tsk_img_free(vmdk_info);
-                return NULL;
-        }
-        TSTRNCPY(vmdk_info->img_info.images[i], a_images[i],
-            TSTRLEN(a_images[i]) + 1);
+
+    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+        goto on_error;
     }
 
     if (libvmdk_handle_initialize(&(vmdk_info->handle), &vmdk_error) != 1) {
@@ -189,14 +174,11 @@ vmdk_open(int a_num_img,
         getError(vmdk_error, error_string);
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
-        libvmdk_error_free(&vmdk_error);
 
-        tsk_img_free(vmdk_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create vmdk handle\n");
         }
-        return (NULL);
+        goto on_error;
     }
 #if defined( TSK_WIN32 )
     if (libvmdk_handle_open_wide(vmdk_info->handle,
@@ -214,17 +196,14 @@ vmdk_open(int a_num_img,
         getError(vmdk_error, error_string);
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
-        libvmdk_error_free(&vmdk_error);
 
-        tsk_img_free(vmdk_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vmdk file\n");
         }
-        return (NULL);
+        goto on_error;
     }
-    if( libvmdk_handle_open_extent_data_files(vmdk_info->handle, &vmdk_error ) != 1 )
-	{
+
+    if (libvmdk_handle_open_extent_data_files(vmdk_info->handle, &vmdk_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
@@ -232,14 +211,11 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error opening extent data files for image (%s)", a_images[0],
             error_string);
-        libvmdk_error_free(&vmdk_error);
 
-        tsk_img_free(vmdk_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vmdk extent data files\n");
         }
-        return (NULL);
+        goto on_error;
     }
     if (libvmdk_handle_get_media_size(vmdk_info->handle,
             (size64_t *) & (img_info->size), &vmdk_error) != 1) {
@@ -250,14 +226,11 @@ vmdk_open(int a_num_img,
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
             ": Error getting size of image (%s)", a_images[0],
             error_string);
-        libvmdk_error_free(&vmdk_error);
 
-        tsk_img_free(vmdk_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of vmdk file\n");
         }
-        return (NULL);
+        goto on_error;
     }
 
     if (a_ssize != 0) {
@@ -274,7 +247,15 @@ vmdk_open(int a_num_img,
     // initialize the read lock
     tsk_init_lock(&(vmdk_info->read_lock));
 
-    return (img_info);
+    return img_info;
+
+on_error:
+    if (vmdk_info->handle) {
+        libvmdk_handle_close(vmdk_info->handle, NULL);
+    }
+    libvmdk_handle_free(&(vmdk_info->handle), NULL);
+    tsk_img_free(vmdk_info);
+    return NULL;
 }
 
 #endif /* HAVE_LIBVMDK */

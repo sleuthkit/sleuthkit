@@ -1995,10 +1995,12 @@ ffs_close(TSK_FS_INFO * fs)
  * @param img_info Disk image to analyze
  * @param offset Byte offset where file system starts
  * @param ftype Specific type of file system
+ * @param a_pass NOT USED
+ * @param test NOT USED
  * @returns NULL on error or if data is not a FFS file system
  */
 TSK_FS_INFO *
-ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint8_t test)
+ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     char *myname = "ffs_open";
     FFS_INFO *ffs;

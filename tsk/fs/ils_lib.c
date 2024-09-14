@@ -1,14 +1,14 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 */
 
@@ -38,8 +38,8 @@
 typedef struct {
     const TSK_TCHAR *image;
 
-/* number of seconds time skew of system 
- * if the system was 100 seconds fast, the value should be +100 
+/* number of seconds time skew of system
+ * if the system was 100 seconds fast, the value should be +100
  */
     int32_t sec_skew;
 
@@ -104,8 +104,6 @@ print_header_mac()
      */
     tsk_printf
         ("md5|file|st_ino|st_ls|st_uid|st_gid|st_size|st_atime|st_mtime|st_ctime|st_crtime\n");
-
-    return;
 }
 
 
@@ -228,7 +226,7 @@ ils_mac_act(TSK_FS_FILE * fs_file, void *ptr)
  * @param skew clock skew in seconds
  * @param img Path to disk image name for header
  *
- * @returns 1 on error and 0 on success 
+ * @returns 1 on error and 0 on success
  */
 uint8_t
 tsk_fs_ils(TSK_FS_INFO * fs, TSK_FS_ILS_FLAG_ENUM lclflags,

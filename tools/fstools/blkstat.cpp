@@ -1,12 +1,12 @@
 /*
 ** blkstat
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Get the details about a data unit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -28,6 +28,7 @@ usage()
         progname);
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -81,7 +82,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:P:uvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:k:o:P:uvV"))) > 0) {
         switch (ch) {
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
@@ -140,6 +141,9 @@ main(int argc, char **argv1)
                 tsk_error_print(stderr);
                 exit(1);
             }
+            break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
             break;
         case _TSK_T('v'):
             tsk_verbose++;
@@ -200,8 +204,14 @@ main(int argc, char **argv1)
             exit(1);
         }
 
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
         img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);

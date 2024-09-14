@@ -32,6 +32,7 @@ TskAuto::TskAuto()
     m_curVsPartDescr = "";
     m_imageWriterEnabled = false;
     m_imageWriterPath = NULL;
+    m_fileSystemPassword = "";
 }
 
 
@@ -467,7 +468,6 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
     else if (retval1 == TSK_FILTER_STOP)
         return TSK_STOP;
 
-    /* Only APFS pools are currently supported */
     if (pool->ctype == TSK_POOL_TYPE_APFS) {
 
         TSK_POOL_VOLUME_INFO *vol_info = pool->vol_list;
@@ -480,15 +480,16 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
             }
 
             if (filterRetval != TSK_FILTER_SKIP) {
-                TSK_IMG_INFO *pool_img = pool->get_img_info(pool, vol_info->block);
-                if (pool_img != NULL) {
-                    TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
+                TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, vol_info->block);
+                if (pool_vol_img != NULL) {
+                    TSK_FS_INFO *fs_info = apfs_open(pool_vol_img, 0, TSK_FS_TYPE_APFS, "");
                     if (fs_info) {
                         TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
                         tsk_fs_close(fs_info);
 
+                        // TODO: what if retval != TSK_STOP, shouldn't pool_vol_img be closed?
                         if (retval == TSK_STOP) {
-                            tsk_img_close(pool_img);
+                            tsk_img_close(pool_vol_img);
                             tsk_pool_close(pool);
                             return TSK_STOP;
                         }
@@ -507,9 +508,12 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                                 "findFilesInPool: Error opening APFS file system");
                             registerError();
                         }
+                        tsk_img_close(pool_vol_img);
+                        tsk_pool_close(pool);
+                        return TSK_ERR;
                     }
 
-                    tsk_img_close(pool_img);
+                    tsk_img_close(pool_vol_img);
                 }
                 else {
                     tsk_pool_close(pool);
@@ -523,6 +527,51 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
             vol_info = vol_info->next;
         }
     }
+#ifdef HAVE_LIBVSLVM
+    if (pool->ctype == TSK_POOL_TYPE_LVM) {
+        TSK_POOL_VOLUME_INFO *vol_info = pool->vol_list;
+        while (vol_info != NULL) {
+
+            // The call to filterPoolVol is needed to ensure the object state is
+            // correctly set for filling the database.
+            TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
+            if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing)) {
+                tsk_pool_close(pool);
+                return TSK_STOP;
+            }
+
+            TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, vol_info->block);
+            if (pool_vol_img == NULL) {
+                tsk_pool_close(pool);
+                tsk_error_set_errstr2(
+                    "findFilesInPool: Error opening LVM logical volume: %" PRIdOFF "",
+                    vol_info->block);
+                registerError();
+                return TSK_ERR;
+            }
+            TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, TSK_FS_TYPE_DETECT);
+            if (fs_info == NULL) {
+                tsk_img_close(pool_vol_img);
+                tsk_pool_close(pool);
+                tsk_error_set_errstr2(
+                    "findFilesInPool: Unable to open file system in LVM logical volume: %" PRIdOFF "",
+                    vol_info->block);
+                registerError();
+                return TSK_ERR;
+            }
+            TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+
+            tsk_fs_close(fs_info);
+            tsk_img_close(pool_vol_img);
+
+            if (retval == TSK_STOP) {
+                tsk_pool_close(pool);
+                return TSK_STOP;
+            }
+            vol_info = vol_info->next;
+        }
+    }
+#endif /* HAVE_LIBVSLVM */
     else {
         tsk_pool_close(pool);
         tsk_error_reset();
@@ -571,7 +620,7 @@ TSK_RETVAL_ENUM
 	}
 
     TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
+    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();
@@ -670,7 +719,7 @@ uint8_t
 	}
 
     TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
+    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();

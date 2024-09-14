@@ -463,6 +463,7 @@ extern "C" {
         TSK_FS_META_MODE_ENUM mode;     ///< Unix-style permissions
         int nlink;              ///< link count (number of file names pointing to this)
         TSK_OFF_T size;         ///< file size (in bytes)
+        TSK_OFF_T start_of_inode;	///< address within file system where inode structure begins
         TSK_UID_T uid;          ///< owner id
         TSK_GID_T gid;          ///< group id
 
@@ -930,6 +931,13 @@ extern "C" {
     };
     typedef enum TSK_FS_ISTAT_FLAG_ENUM TSK_FS_ISTAT_FLAG_ENUM;
 
+    // Not used by APFS
+    enum TSK_FS_ENCRYPTION_TYPE_ENUM {
+        TSK_FS_ENCRYPTION_TYPE_NONE = 0x00,
+        TSK_FS_ENCRYPTION_TYPE_BITLOCKER = 0x01
+    };
+    typedef enum TSK_FS_ENCRYPTION_TYPE_ENUM TSK_FS_ENCRYPTION_TYPE_ENUM;
+
 #define TSK_FS_INFO_TAG  0x10101010
 #define TSK_FS_INFO_FS_ID_LEN   32      // set based on largest file system / volume ID supported
 
@@ -976,7 +984,7 @@ extern "C" {
 
         TSK_FS_TYPE_ENUM ftype; ///< type of file system
         const char *duname;     ///< string "name" of data unit type
-        TSK_FS_INFO_FLAG_ENUM flags;    ///< flags for file system
+        TSK_FS_INFO_FLAG_ENUM flags;         ///< flags for file system
         uint8_t fs_id[TSK_FS_INFO_FS_ID_LEN];   ///< File system id (as reported in boot sector)
         size_t fs_id_used;      ///< Number of bytes in fs_id that are being used
 
@@ -990,6 +998,10 @@ extern "C" {
                                         * after looking for orphans
                                         * or afer a full name_walk is performed.
                                         * (r/w shared - lock) */
+
+        /* Hold encryption type and data structure */
+        TSK_FS_ENCRYPTION_TYPE_ENUM encryption_type;
+        void* encryption_data;
 
         /* orphan_hunt_lock protects orphan_dir */
         tsk_lock_t orphan_dir_lock;     // taken for the duration of orphan hunting (not just when updating orphan_dir)
@@ -1066,6 +1078,7 @@ extern "C" {
     extern void tsk_fs_type_print(FILE *);
     extern const char *tsk_fs_type_toname(TSK_FS_TYPE_ENUM);
     extern TSK_FS_TYPE_ENUM tsk_fs_type_supported();
+    extern void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen);
 
     extern ssize_t tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off,
         char *a_buf, size_t a_len);
@@ -2194,7 +2207,7 @@ class TskFsInfo {
         if (m_fsInfo != NULL)
             return m_fsInfo->flags;
         else
-            return (TSK_FS_INFO_FLAG_ENUM) 0;
+            return (TSK_FS_INFO_FLAG_ENUM)0;
     };
     /**
         * return file system id (as reported in boot sector).  Use getFsIdLen() to determine how many byts in buffer are used.

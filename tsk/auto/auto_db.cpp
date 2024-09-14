@@ -301,6 +301,14 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
         return TSK_FILTER_STOP;
     }
 
+    // populating cache m_savedVsInfo and ObjectInfo
+    TSK_DB_VS_INFO vs_db;
+    vs_db.objId = m_curImgId;
+    vs_db.offset = vs_info->offset;
+    vs_db.vstype = vs_info->vstype;
+    vs_db.block_size = vs_info->block_size;
+    m_savedVsInfo.push_back(vs_db);
+    
     return TSK_FILTER_CONT;
 }
 
@@ -315,6 +323,7 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
             registerError();
             return TSK_FILTER_STOP;
         }
+
         // Save the parent obj ID for the pool
         m_poolOffsetToParentId[pool_info->img_offset] = m_curVolId;
     }
@@ -324,9 +333,22 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
             registerError();
             return TSK_FILTER_STOP;
         }
+
         // Save the parent obj ID for the pool
         m_poolOffsetToParentId[pool_info->img_offset] = m_curImgId;
     }
+
+    // populating cache m_savedVsInfo 
+    TSK_DB_VS_INFO vs_db;
+    vs_db.objId = m_curPoolVs;
+    vs_db.offset = pool_info->img_offset;
+    if (pool_info->ctype == TSK_POOL_TYPE_APFS)
+        vs_db.vstype = TSK_VS_TYPE_APFS;
+    if (pool_info->ctype == TSK_POOL_TYPE_LVM)
+        vs_db.vstype = TSK_VS_TYPE_LVM;    
+    vs_db.block_size = pool_info->block_size;
+    m_savedVsInfo.push_back(vs_db);
+
 
     // Store the volume system object ID for later use
     m_poolOffsetToVsId[pool_info->img_offset] = m_curPoolVs;
@@ -349,7 +371,7 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %lld", pool_info->img_offset);
+            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %lld", (long long int)pool_info->img_offset);
             return TSK_ERR;
         }
         int64_t curPoolVs = m_poolOffsetToVsId[pool_info->img_offset];
@@ -402,6 +424,12 @@ TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
         return TSK_FILTER_STOP;
     }
 
+    TSK_DB_VS_PART_INFO vol_info_db;
+    vol_info_db.objId = m_curPoolVol;   
+    snprintf(vol_info_db.desc, TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1, "%s", pool_vol->desc);  
+    vol_info_db.start = pool_vol->block;                      ///< Starting Block number
+    m_savedVsPartInfo.push_back(vol_info_db);    
+
     return TSK_FILTER_CONT;
 }
 
@@ -412,10 +440,23 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
     m_foundStructure = true;
     m_poolFound = false;
 
+
+
     if (m_db->addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
         registerError();
         return TSK_FILTER_STOP;
     }
+
+    // Save the volume info for creating unallocated blocks later
+    TSK_DB_VS_PART_INFO vs_part_db;
+    vs_part_db.objId = m_curVolId;
+    vs_part_db.addr = vs_part->addr;
+    vs_part_db.start = vs_part->start;
+    vs_part_db.len = vs_part->len;
+    strncpy(vs_part_db.desc, vs_part->desc, TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1);
+    vs_part_db.flags = vs_part->flags;
+    m_savedVsPartInfo.push_back(vs_part_db);
+
 
     return TSK_FILTER_CONT;
 }
@@ -471,6 +512,20 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     }
 
     setFileFilterFlags(filterFlags);
+
+
+    // Save the file system info for creating unallocated blocks later
+    TSK_DB_FS_INFO fs_info_db;
+    fs_info_db.objId = m_curFsId;
+    fs_info_db.imgOffset = fs_info->offset;
+    fs_info_db.fType = fs_info->ftype;
+    fs_info_db.block_size = fs_info->block_size;
+    fs_info_db.block_count = fs_info->block_count;
+    fs_info_db.root_inum = fs_info->root_inum;
+    fs_info_db.first_inum = fs_info->first_inum;
+    fs_info_db.last_inum = fs_info->last_inum;
+    m_savedFsInfo.push_back(fs_info_db);
+
 
     return TSK_FILTER_CONT;
 }
@@ -1103,7 +1158,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 * @param dbFsInfo fs to process
 * @returns TSK_OK on success, TSK_ERR on error
 */
-TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, const TSK_DB_FS_INFO & dbFsInfo) {
 
     // Unalloc space is handled separately for APFS
     if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
@@ -1111,7 +1166,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     }
 
     //open the fs we have from database
-    TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
+    TSK_FS_INFO * fsInfo = tsk_fs_open_img((TSK_IMG_INFO*)curImgInfo, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
         tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %" PRIdOFF, dbFsInfo.imgOffset);
         registerError();
@@ -1201,36 +1256,246 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocSpaceToDb() {
 * @param numFs (out) number of filesystems found
 * @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
 */
+TSK_RETVAL_ENUM TskAutoDb::getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPartInfo){
+    for (vector<TSK_DB_VS_PART_INFO>::iterator curVsPartDbInfo = m_savedVsPartInfo.begin(); curVsPartDbInfo!= m_savedVsPartInfo.end(); ++curVsPartDbInfo) {
+        if (curVsPartDbInfo->objId == objId){
+            vsPartInfo.start = curVsPartDbInfo->start;
+            vsPartInfo.desc = curVsPartDbInfo->desc;
+            vsPartInfo.flags = curVsPartDbInfo->flags;
+            vsPartInfo.len = curVsPartDbInfo->len;   
+
+            return TSK_OK;
+        }
+    }
+    return TSK_ERR;
+}
+
+TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo){    
+    TSK_DB_OBJECT fsObjDbInfo;
+    if ( m_db->getObjectInfo( objId, fsObjDbInfo) == TSK_OK){ //searches for fs object
+        for (vector<TSK_DB_VS_PART_INFO>::iterator curVsPartDbInfo = m_savedVsPartInfo.begin(); curVsPartDbInfo!= m_savedVsPartInfo.end(); ++curVsPartDbInfo) { //searches for vspart parent of fs
+            if (fsObjDbInfo.parObjId == curVsPartDbInfo->objId){
+                TSK_DB_OBJECT vsPartObjDbInfo;
+                if ( m_db->getObjectInfo(curVsPartDbInfo->objId, vsPartObjDbInfo ) == TSK_OK){
+                    for (vector<TSK_DB_VS_INFO>::iterator curVsDbInfo = m_savedVsInfo.begin(); curVsDbInfo!= m_savedVsInfo.end(); ++curVsDbInfo) { //searches for vs parent of vspart
+                        if (vsPartObjDbInfo.parObjId == curVsDbInfo->objId){
+                            vsDbInfo.objId = curVsDbInfo->objId;
+                            vsDbInfo.block_size = curVsDbInfo->block_size;
+                            vsDbInfo.vstype = curVsDbInfo->vstype;
+                            vsDbInfo.offset = curVsDbInfo->offset;
+                            return TSK_OK;                            
+                        }
+                    }
+                    if (tsk_verbose) {
+                        tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)");        
+                    }
+                    return TSK_ERR;
+                }
+            }
+        } 
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (Parent VS_Part not found)");
+        }                   
+        return TSK_ERR;    
+    }
+    else {
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (FS object not found)\n");
+        }
+        return TSK_ERR;
+    }
+}
+
+
+/**
+* Process each file system in the database and add its unallocated sectors to virtual files. 
+* @param numFs (out) number of filesystems found
+* @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
+*/
 TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
-
-    vector<TSK_DB_FS_INFO> fsInfos;
-
+    
     if(m_stopAllProcessing) {
         return TSK_OK;
     }
 
-    uint16_t ret = m_db->getFsInfos(m_curImgId, fsInfos);
-    if (ret) {
-        tsk_error_set_errstr2("addUnallocFsSpaceToDb: error getting fs infos from db");
-        registerError();
-        return TSK_ERR;
-    }
-
-    numFs = fsInfos.size();
-
+    numFs = m_savedFsInfo.size();     
     TSK_RETVAL_ENUM allFsProcessRet = TSK_OK;
-    for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it) {
-        if (m_stopAllProcessing) {
+    
+
+    for (vector<TSK_DB_FS_INFO>::iterator curFsDbInfo = m_savedFsInfo.begin(); curFsDbInfo!= m_savedFsInfo.end(); ++curFsDbInfo) {
+        if (m_stopAllProcessing) 
             break;
+        
+        // finds VS related to the FS
+        TSK_DB_VS_INFO curVsDbInfo; 
+        if(getVsByFsId(curFsDbInfo->objId, curVsDbInfo) == TSK_ERR){
+            // FS is not inside a VS
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDbJava::addUnallocFsSpaceToDb: FS not inside a VS, adding the unnalocated space\n");
+            }
+            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(m_img_info, *curFsDbInfo);
+            if (retval == TSK_ERR)
+                    allFsProcessRet = TSK_ERR;
+        }        
+        else {
+            if ((curVsDbInfo.vstype == TSK_VS_TYPE_APFS)||(curVsDbInfo.vstype == TSK_VS_TYPE_LVM)){ 
+                
+                TSK_DB_OBJECT fsObjInfo;
+                if (m_db->getObjectInfo ( curFsDbInfo->objId, fsObjInfo) == TSK_ERR ) {
+                    tsk_error_set_errstr(
+                            "TskAutoDb::addUnallocFsSpaceToDb: error getting Object by ID"
+                            );              
+                    tsk_error_set_errno(TSK_ERR_AUTO);  
+                    registerError();
+                    return TSK_ERR;
+
+                } 
+                
+                TSK_VS_PART_INFO curVsPartInfo;
+                if (getVsPartById(fsObjInfo.parObjId, curVsPartInfo) == TSK_ERR){
+                    tsk_error_set_errstr(
+                        "TskAutoDb::addUnallocFsSpaceToDb: error getting Volume Part from FSInfo"
+                        );              
+                    tsk_error_set_errno(TSK_ERR_AUTO);  
+                    registerError();
+                    return TSK_ERR;
+                }
+                
+                
+ 
+
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS) {      
+                        const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS);
+                        if (pool == nullptr) {
+                            tsk_error_set_errstr2(
+                                "TskAutoDb::addUnallocFsSpaceToDb:: Error opening pool. ");
+                            tsk_error_set_errstr2("Offset: %" PRIdOFF, curVsDbInfo.offset);
+                            registerError();
+                            allFsProcessRet = TSK_ERR;
+                        }
+                        const auto pool_img = pool->get_img_info(pool, curVsPartInfo.start);
+                            
+                        if (pool_img != NULL) {
+                            TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
+                            if (fs_info) {     
+                                TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, *curFsDbInfo);
+                                if (retval == TSK_ERR)
+                                                allFsProcessRet = TSK_ERR;
+
+                                tsk_fs_close(fs_info);
+                                tsk_img_close(pool_img);
+
+                                if (retval == TSK_STOP) {
+                                    tsk_pool_close(pool);
+                                    allFsProcessRet = TSK_STOP;
+                                }
+                                
+                                
+                            }
+                            else {
+                                if (curVsPartInfo.flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
+                                    tsk_error_reset();
+                                    tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                                    tsk_error_set_errstr(
+                                        "TskAutoDb::addUnallocFsSpaceToDb: Encrypted APFS file system");
+                                    tsk_error_set_errstr2("Block: %" PRIdOFF, curVsPartInfo.start);
+                                    registerError();
+                                }
+                                else {
+                                    tsk_error_set_errstr2(
+                                        "TskAutoDb::addUnallocFsSpaceToDb: Error opening APFS file system");
+                                    registerError();
+                                }
+
+                                tsk_img_close(pool_img);
+                                tsk_pool_close(pool);
+                                allFsProcessRet = TSK_ERR;
+                            }
+                            tsk_img_close(pool_img);
+                        }
+                        else {
+                            tsk_pool_close(pool);
+                            tsk_error_set_errstr2(
+                                "TskAutoDb::addUnallocFsSpaceToDb: Error opening APFS pool");
+                            registerError();
+                            allFsProcessRet = TSK_ERR;
+                        }
+                                              
+                }
+                #ifdef HAVE_LIBVSLVM
+                if ( curVsDbInfo.vstype == TSK_VS_TYPE_LVM) { 
+
+                    const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
+                    if (pool == nullptr) {
+                        tsk_error_set_errstr2(
+                        "findFilesInPool: Error opening pool");
+                        registerError();
+                        allFsProcessRet = TSK_ERR;
+                    }
+                    
+    
+                    TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, curVsPartInfo.start);
+                    if (pool_vol_img == NULL) {                        
+                        tsk_pool_close(pool);                        
+                        tsk_error_set_errstr2(
+                            "TskAutoDb::addUnallocFsSpaceToDb: Error opening LVM logical volume: %" PRIdOFF "",
+                            curVsPartInfo.start);
+                        tsk_error_set_errno(TSK_ERR_FS);
+                        registerError();
+                        allFsProcessRet = TSK_ERR;
+                    } 
+                    else {
+                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo->fType);
+                        if (fs_info == NULL) {
+                            tsk_img_close(pool_vol_img);
+                            tsk_pool_close(pool);
+                            tsk_error_set_errstr2(
+                                "findFilesInPool: Unable to open file system in LVM logical volume: %" PRIdOFF "",
+                                curVsPartInfo.start);
+                            tsk_error_set_errno(TSK_ERR_FS);
+                            registerError();
+                            allFsProcessRet = TSK_ERR;
+                        }
+                        else {
+                            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, *curFsDbInfo);
+                            if (retval == TSK_ERR){
+                                tsk_error_set_errstr2(
+                                        "TskAutoDb::addUnallocFsSpaceToDb: Error getting unallocated space");
+                                tsk_error_set_errno(TSK_ERR_FS);
+                                registerError();
+                                allFsProcessRet = TSK_ERR;
+                            }
+
+                            tsk_fs_close(fs_info);
+                            tsk_img_close(pool_vol_img);
+
+                            if (retval == TSK_STOP) {
+                                tsk_pool_close(pool);
+                                allFsProcessRet = TSK_STOP;
+                            }
+                        }
+                    }
+                    
+                }        
+                #endif /* HAVE_LIBVSLVM */    
+
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_UNSUPP){                                      
+                    tsk_error_set_errstr2(
+                        "TskAutoDb::addUnallocFsSpaceToDb: VS Type not supported");
+                    registerError();
+                    allFsProcessRet = TSK_ERR;
+                }
+            }
+            else {
+                if (addFsInfoUnalloc(m_img_info, *curFsDbInfo) == TSK_ERR){
+                    allFsProcessRet = TSK_ERR;
+                }
+            }    
         }
-        if (addFsInfoUnalloc(*it) == TSK_ERR)
-            allFsProcessRet = TSK_ERR;
     }
-
-    //TODO set parent_path for newly created virt dir/file hierarchy for consistency
-
     return allFsProcessRet;
 }
+
 
 /**
 * Process each volume in the database and add its unallocated sectors to virtual files. 

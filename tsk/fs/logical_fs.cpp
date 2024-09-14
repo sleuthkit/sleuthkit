@@ -26,7 +26,7 @@
 #include "tsk/img/logical_img.h"
 
 #ifdef TSK_WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 using std::vector;
@@ -764,10 +764,11 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	if ((result != TSK_OK) || (!search_helper->target_found)) {
-		free_search_helper(search_helper);
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
 		tsk_error_set_errstr("load_path_from_inum - failed to find path corresponding to inum %" PRIuINUM, search_helper->target_inum);
+                // Free search_helper after using it to format the error string.
+		free_search_helper(search_helper);
 		return NULL;
 	}
 
