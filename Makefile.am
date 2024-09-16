@@ -80,8 +80,6 @@ dist_man_MANS = \
 	man/tsk_recover.1 \
 	man/usnjls.1
 
-SUBDIRS = unit_tests
-
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
 	tsk/auto/tsk_auto.h \
@@ -667,6 +665,33 @@ tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 tests_read_apis_LDADD = $(TSK_LIB)
 tests_read_apis_SOURCES = tests/read_apis.cpp
+
+# Unit tests:
+# Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
+# and link into a single executable.
+# THis makes things easier with codecov.
+
+check_PROGRAMS += unit_tests/runner
+
+unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) $(CATCH2_CPPFLAGS)
+unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+unit_tests_runner_SOURCES = \
+	unit_tests/catch.hpp
+	unit_tests/errors_test.cpp \
+	unit_tests/fiwalk_test.cpp \
+	unit_tests/mult_files_test.cpp \
+	unit_tests/runner.cpp \
+	$(tsk_auto_libtskauto_la_SOURCES) \
+	$(tsk_base_libtskbase_la_SOURCES) \
+	$(tsk_fs_libtskfs_la_SOURCES) \
+	$(tsk_hashdb_libtskhashdb_la_SOURCES) \
+	$(tsk_img_libtskimg_la_SOURCES) \
+	$(tsk_pool_libtskpool_la_SOURCES) \
+	$(tsk_util_libtskutil_la_SOURCES) \
+	$(tsk_vs_libtskvs_la_SOURCES) \
+	$(tools_fiwalk_src_fiwalk_SOURCES)
 
 #
 # Java
