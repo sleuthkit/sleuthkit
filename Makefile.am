@@ -592,21 +592,19 @@ EXTRA_DIST += \
 	tools/timeline/mactime.base \
 	tools/timeline/.perltidyrc
 
-# TODO: use $@ for target file name
-
 tools/timeline/mactime: tools/timeline/mactime.base Makefile
-	@echo "#!$(PERL) -w" > tools/timeline/mactime
-	@echo "my \$$VER=\"$(VERSION)\";" >> tools/timeline/mactime
-	@cat $(srcdir)/tools/timeline/mactime.base >> tools/timeline/mactime
-	@chmod +x tools/timeline/mactime
+	@echo "#!$(PERL) -w" >$@
+	@echo "my \$$VER=\"$(VERSION)\";" >>$@
+	@cat $(srcdir)/tools/timeline/mactime.base >>$@
+	@chmod +x $@
 
 tools/sorter/sorter: tools/sorter/sorter.base Makefile
-	@echo "#!$(PERL) -w" > tools/sorter/sorter
-	@echo "my \$$BIN_DIR=\"$(bindir)\";" >> tools/sorter/sorter
-	@echo "my \$$DATA_DIR=\"$(datadir)\";" >> tools/sorter/sorter
-	@echo "my \$$VER=\"$(VERSION)\";" >> tools/sorter/sorter
-	@cat $(srcdir)/tools/sorter/sorter.base >> tools/sorter/sorter
-	@chmod +x tools/sorter/sorter
+	@echo "#!$(PERL) -w" >$@
+	@echo "my \$$BIN_DIR=\"$(bindir)\";" >>$@
+	@echo "my \$$DATA_DIR=\"$(datadir)\";" >>$@
+	@echo "my \$$VER=\"$(VERSION)\";" >>$@
+	@cat $(srcdir)/tools/sorter/sorter.base >>$@
+	@chmod +x $@
 
 #indent:
 #	pushd sorter ; perltidy -b sorter.base ; popd
