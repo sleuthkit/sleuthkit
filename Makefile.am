@@ -482,8 +482,10 @@ tools/fiwalk/plugins/word_extract.class: tools/fiwalk/plugins/word_extract.java
 tools/fiwalk/plugins/Libextract_plugin.class: tools/fiwalk/plugins/Libextract_plugin.java
 	javac tools/fiwalk/plugins/Libextract_plugin.java
 
-tools_fiwalk_src_fiwalk_LDADD = $(TSK_LIB)
-tools_fiwalk_src_fiwalk_SOURCES = \
+noinst_LTLIBRARIES += tools/fiwalk/src/libfiwalk.la
+
+tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIB)
+tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/arff.cpp \
 	tools/fiwalk/src/arff.h \
 	tools/fiwalk/src/base64.cpp \
@@ -494,7 +496,6 @@ tools_fiwalk_src_fiwalk_SOURCES = \
 	tools/fiwalk/src/dfxml.h \
 	tools/fiwalk/src/fiwalk.cpp  \
 	tools/fiwalk/src/fiwalk.h \
-	tools/fiwalk/src/fiwalk_main.cpp  \
 	tools/fiwalk/src/fiwalk_tsk.cpp \
 	tools/fiwalk/src/hash_t.h \
 	tools/fiwalk/src/hexbuf.c \
@@ -507,6 +508,9 @@ tools_fiwalk_src_fiwalk_SOURCES = \
 	tools/fiwalk/src/unicode_escape.h \
 	tools/fiwalk/src/utils.c \
 	tools/fiwalk/src/utils.h
+
+tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la
+tools_fiwalk_src_fiwalk_SOURCES = tools/fiwalk/src/fiwalk_main.cpp
 
 EXTRA_DIST += tools/fstools/fscheck.cpp
 
@@ -694,7 +698,7 @@ unit_tests_runner_SOURCES = \
 	$(tsk_pool_libtskpool_la_SOURCES) \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES) \
-	$(tools_fiwalk_src_fiwalk_SOURCES)
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
 
 #
 # Java
