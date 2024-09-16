@@ -1,8 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
-AM_CFLAGS += -Wall
-AM_CXXFLAGS += -Wall -Wno-overloaded-virtual
+AM_CFLAGS += -Wall -Wextra -Wno-unused-parameter
+AM_CXXFLAGS += -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
 
 CLEANFILES =
 
@@ -168,7 +168,7 @@ noinst_LTLIBRARIES = \
 	tsk/vs/libtskvs.la
 
 tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo
-tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Wmultichar -Wsign-promo
+tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
 	tsk/auto/auto_db.cpp \
@@ -191,7 +191,6 @@ if !HAVE_LIBSQLITE3
 tsk_auto_libtskauto_la_SOURCES += tsk/auto/sqlite3.c tsk/auto/sqlite3.h
 endif
 
-tsk_base_libtskbase_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_base_libtskbase_la_SOURCES = \
 	tsk/base/crc.c \
 	tsk/base/crc.h \
@@ -214,7 +213,6 @@ tsk_base_libtskbase_la_SOURCES = \
 	tsk/base/XGetopt.c
 
 tsk_fs_libtskfs_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
-tsk_fs_libtskfs_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs_compat.cpp \
 	tsk/fs/apfs.cpp \
@@ -279,7 +277,6 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/walk_cpp.cpp \
 	tsk/fs/yaffs.cpp
 
-tsk_hashdb_libtskhashdb_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
 	tsk/hashdb/encase.c \
@@ -294,7 +291,6 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/tsk_hashdb_i.h \
 	tsk/hashdb/tsk_hash_info.h
 
-tsk_img_libtskimg_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/aff4.c \
 	tsk/img/aff4.h \
@@ -323,8 +319,8 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/vmdk.c \
 	tsk/img/vmdk.h
 
-tsk_pool_libtskpool_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_pool_libtskpool_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/..
+tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
@@ -336,15 +332,15 @@ tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/pool_read.cpp \
 	tsk/pool/pool_types.cpp
 
-tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/..
+tsk_util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
 	tsk/util/file_system_utils.c
 
-tsk_util_Bitlocker_libtskbitlocker_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_util_Bitlocker_libtskbitlocker_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/..
+tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
 	tsk/util/Bitlocker/BitlockerUtils.cpp \
@@ -358,7 +354,6 @@ tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/MetadataValueUnicode.cpp \
 	tsk/util/Bitlocker/MetadataValueVolumeMasterKey.cpp
 
-tsk_vs_libtskvs_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_vs_libtskvs_la_SOURCES = \
 	tsk/vs/bsd.c \
 	tsk/vs/dos.c \

@@ -261,7 +261,6 @@ dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
-
 dnl OpenSSL support for encryption - currently disabled due to automatic test failures
 dnl AX_CHECK_OPENSSL(
 dnl  [ax_openssl=yes]
@@ -272,13 +271,6 @@ dnl  [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with
 dnl )
 dnl For the moment, disable the openssl library so the Travis test will pass
 dnl AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
-
-
-dnl Enable compliation warnings
-WARNINGS='-Wall -Wextra -Wno-unused-parameter'
-
-AC_SUBST(AM_CFLAGS, $WARNINGS)
-AC_SUBST(AM_CXXFLAGS, $WARNINGS)
 
 dnl Use -Wno-unused-command-line-argument only if the compiler understands it
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
