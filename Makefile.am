@@ -1,8 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
-AM_CFLAGS += -Wall
-AM_CXXFLAGS += -Wall -Wno-overloaded-virtual
+AM_CFLAGS = -Wall -Wextra -Wno-unused-parameter
+AM_CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
 
 CLEANFILES =
 
@@ -49,36 +49,6 @@ EXTRA_DIST = \
 	win32/tsk-win.sln \
 	win32/NugetPackages.props \
 	win32/docs/*
-
-dist_man_MANS = \
-	man/blkcalc.1 \
-	man/blkcat.1 \
-	man/blkls.1 \
-	man/blkstat.1 \
-	man/fcat.1 \
-	man/ffind.1 \
-	man/fls.1 \
-	man/fsstat.1 \
-	man/hfind.1 \
-	man/icat.1 \
-	man/ifind.1 \
-	man/ils.1 \
-	man/img_cat.1 \
-	man/img_stat.1 \
-	man/istat.1 \
-	man/jcat.1 \
-	man/jls.1 \
-	man/mactime.1 \
-	man/mmcat.1 \
-	man/mmls.1 \
-	man/mmstat.1 \
-	man/sigfind.1 \
-	man/sorter.1 \
-	man/tsk_comparedir.1 \
-	man/tsk_gettimes.1 \
-	man/tsk_loaddb.1 \
-	man/tsk_recover.1 \
-	man/usnjls.1
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
@@ -167,8 +137,8 @@ noinst_LTLIBRARIES = \
 	tsk/util/Bitlocker/libtskbitlocker.la \
 	tsk/vs/libtskvs.la
 
-tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
-tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar
+tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
 	tsk/auto/auto_db.cpp \
@@ -191,7 +161,6 @@ if !HAVE_LIBSQLITE3
 tsk_auto_libtskauto_la_SOURCES += tsk/auto/sqlite3.c tsk/auto/sqlite3.h
 endif
 
-tsk_base_libtskbase_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_base_libtskbase_la_SOURCES = \
 	tsk/base/crc.c \
 	tsk/base/crc.h \
@@ -213,8 +182,6 @@ tsk_base_libtskbase_la_SOURCES = \
 	tsk/base/tsk_version.c \
 	tsk/base/XGetopt.c
 
-tsk_fs_libtskfs_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
-tsk_fs_libtskfs_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs_compat.cpp \
 	tsk/fs/apfs.cpp \
@@ -279,7 +246,6 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/walk_cpp.cpp \
 	tsk/fs/yaffs.cpp
 
-tsk_hashdb_libtskhashdb_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
 	tsk/hashdb/encase.c \
@@ -294,7 +260,6 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/tsk_hashdb_i.h \
 	tsk/hashdb/tsk_hash_info.h
 
-tsk_img_libtskimg_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/aff4.c \
 	tsk/img/aff4.h \
@@ -323,8 +288,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/vmdk.c \
 	tsk/img/vmdk.h
 
-tsk_pool_libtskpool_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
@@ -336,15 +300,14 @@ tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/pool_read.cpp \
 	tsk/pool/pool_types.cpp
 
-tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
+tsk_util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
 	tsk/util/file_system_utils.c
 
-tsk_util_Bitlocker_libtskbitlocker_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
 	tsk/util/Bitlocker/BitlockerUtils.cpp \
@@ -358,7 +321,6 @@ tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/MetadataValueUnicode.cpp \
 	tsk/util/Bitlocker/MetadataValueVolumeMasterKey.cpp
 
-tsk_vs_libtskvs_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_vs_libtskvs_la_SOURCES = \
 	tsk/vs/bsd.c \
 	tsk/vs/dos.c \
@@ -597,21 +559,19 @@ EXTRA_DIST += \
 	tools/timeline/mactime.base \
 	tools/timeline/.perltidyrc
 
-# TODO: use $@ for target file name
-
 tools/timeline/mactime: tools/timeline/mactime.base Makefile
-	@echo "#!$(PERL) -w" > tools/timeline/mactime
-	@echo "my \$$VER=\"$(VERSION)\";" >> tools/timeline/mactime
-	@cat $(srcdir)/tools/timeline/mactime.base >> tools/timeline/mactime
-	@chmod +x tools/timeline/mactime
+	@echo "#!$(PERL) -w" >$@
+	@echo "my \$$VER=\"$(VERSION)\";" >>$@
+	@cat $(srcdir)/tools/timeline/mactime.base >>$@
+	@chmod +x $@
 
 tools/sorter/sorter: tools/sorter/sorter.base Makefile
-	@echo "#!$(PERL) -w" > tools/sorter/sorter
-	@echo "my \$$BIN_DIR=\"$(bindir)\";" >> tools/sorter/sorter
-	@echo "my \$$DATA_DIR=\"$(datadir)\";" >> tools/sorter/sorter
-	@echo "my \$$VER=\"$(VERSION)\";" >> tools/sorter/sorter
-	@cat $(srcdir)/tools/sorter/sorter.base >> tools/sorter/sorter
-	@chmod +x tools/sorter/sorter
+	@echo "#!$(PERL) -w" >$@
+	@echo "my \$$BIN_DIR=\"$(bindir)\";" >>$@
+	@echo "my \$$DATA_DIR=\"$(datadir)\";" >>$@
+	@echo "my \$$VER=\"$(VERSION)\";" >>$@
+	@cat $(srcdir)/tools/sorter/sorter.base >>$@
+	@chmod +x $@
 
 #indent:
 #	pushd sorter ; perltidy -b sorter.base ; popd
@@ -765,6 +725,36 @@ api-docs:
 
 man-html:
 	cd man; build-html
+
+dist_man_MANS = \
+	man/blkcalc.1 \
+	man/blkcat.1 \
+	man/blkls.1 \
+	man/blkstat.1 \
+	man/fcat.1 \
+	man/ffind.1 \
+	man/fls.1 \
+	man/fsstat.1 \
+	man/hfind.1 \
+	man/icat.1 \
+	man/ifind.1 \
+	man/ils.1 \
+	man/img_cat.1 \
+	man/img_stat.1 \
+	man/istat.1 \
+	man/jcat.1 \
+	man/jls.1 \
+	man/mactime.1 \
+	man/mmcat.1 \
+	man/mmls.1 \
+	man/mmstat.1 \
+	man/sigfind.1 \
+	man/sorter.1 \
+	man/tsk_comparedir.1 \
+	man/tsk_gettimes.1 \
+	man/tsk_loaddb.1 \
+	man/tsk_recover.1 \
+	man/usnjls.1
 
 noinst_PROGRAMS = \
 	samples/callback_cpp_style \
