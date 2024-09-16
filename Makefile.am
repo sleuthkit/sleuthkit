@@ -673,6 +673,8 @@ tests_read_apis_SOURCES = tests/read_apis.cpp
 
 check_PROGRAMS += unit_tests/runner
 
+TESTS += unit_tests/runner
+
 unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) $(CATCH2_CPPFLAGS)
 unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
