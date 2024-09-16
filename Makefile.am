@@ -80,8 +80,6 @@ dist_man_MANS = \
 	man/tsk_recover.1 \
 	man/usnjls.1
 
-SUBDIRS = unit_tests
-
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
 	tsk/auto/tsk_auto.h \
@@ -152,6 +150,10 @@ nobase_dist_data_DATA = \
 	tsk/sorter/solaris.sort \
 	tsk/sorter/windows.sort
 
+#
+# Library
+#
+
 TSK_LIB = tsk/libtsk.la
 
 noinst_LTLIBRARIES = \
@@ -166,7 +168,7 @@ noinst_LTLIBRARIES = \
 	tsk/vs/libtskvs.la
 
 tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
-tsk_5uto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Wmultichar -Wsign-promo -Wno-overloaded-virtual
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
 	tsk/auto/auto_db.cpp \
@@ -398,23 +400,9 @@ nodist_pkgconfig_DATA = tsk/tsk.pc
 
 #EXTRA_DIST = .indent.pro
 
-noinst_PROGRAMS = \
-	samples/callback_cpp_style \
-	samples/callback_style \
-	samples/posix_cpp_style \
-	samples/posix_style
-
-samples_callback_cpp_style_LDADD = $(TSK_LIB)
-samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
-
-samples_callback_style_LDADD = $(TSK_LIB)
-samples_callback_style_SOURCES = samples/callback-style.cpp
-
-samples_posix_cpp_style_LDADD = $(TSK_LIB)
-samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
-
-samples_posix_style_LDADD = $(TSK_LIB)
-samples_posix_style_SOURCES = samples/posix-style.cpp
+#
+# Tools
+#
 
 bin_PROGRAMS = \
 	tools/autotools/tsk_comparedir \
@@ -494,8 +482,10 @@ tools/fiwalk/plugins/word_extract.class: tools/fiwalk/plugins/word_extract.java
 tools/fiwalk/plugins/Libextract_plugin.class: tools/fiwalk/plugins/Libextract_plugin.java
 	javac tools/fiwalk/plugins/Libextract_plugin.java
 
-tools_fiwalk_src_fiwalk_LDADD = $(TSK_LIB)
-tools_fiwalk_src_fiwalk_SOURCES = \
+noinst_LTLIBRARIES += tools/fiwalk/src/libfiwalk.la
+
+tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIB)
+tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/arff.cpp \
 	tools/fiwalk/src/arff.h \
 	tools/fiwalk/src/base64.cpp \
@@ -506,7 +496,6 @@ tools_fiwalk_src_fiwalk_SOURCES = \
 	tools/fiwalk/src/dfxml.h \
 	tools/fiwalk/src/fiwalk.cpp  \
 	tools/fiwalk/src/fiwalk.h \
-	tools/fiwalk/src/fiwalk_main.cpp  \
 	tools/fiwalk/src/fiwalk_tsk.cpp \
 	tools/fiwalk/src/hash_t.h \
 	tools/fiwalk/src/hexbuf.c \
@@ -519,6 +508,9 @@ tools_fiwalk_src_fiwalk_SOURCES = \
 	tools/fiwalk/src/unicode_escape.h \
 	tools/fiwalk/src/utils.c \
 	tools/fiwalk/src/utils.h
+
+tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la
+tools_fiwalk_src_fiwalk_SOURCES = tools/fiwalk/src/fiwalk_main.cpp
 
 EXTRA_DIST += tools/fstools/fscheck.cpp
 
@@ -678,6 +670,40 @@ tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 tests_read_apis_LDADD = $(TSK_LIB)
 tests_read_apis_SOURCES = tests/read_apis.cpp
 
+# Unit tests:
+# Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
+# and link into a single executable.
+# THis makes things easier with codecov.
+
+check_PROGRAMS += unit_tests/runner
+
+# TODO: enable running unit_tests as part of 'make check'
+#TESTS += unit_tests/runner
+
+unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) $(CATCH2_CPPFLAGS)
+unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+unit_tests_runner_SOURCES = \
+	unit_tests/catch.hpp \
+	unit_tests/errors_test.cpp \
+	unit_tests/fiwalk_test.cpp \
+	unit_tests/mult_files_test.cpp \
+	unit_tests/runner.cpp \
+	$(tsk_auto_libtskauto_la_SOURCES) \
+	$(tsk_base_libtskbase_la_SOURCES) \
+	$(tsk_fs_libtskfs_la_SOURCES) \
+	$(tsk_hashdb_libtskhashdb_la_SOURCES) \
+	$(tsk_img_libtskimg_la_SOURCES) \
+	$(tsk_pool_libtskpool_la_SOURCES) \
+	$(tsk_util_libtskutil_la_SOURCES) \
+	$(tsk_vs_libtskvs_la_SOURCES) \
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+#
+# Java
+#
+
 # Compile java bindings if all of the dependencies exist
 if X_JNI
 
@@ -729,9 +755,31 @@ clean-local: $(clean_java)
 
 .PHONY: clean-tsk_jar clean-tsk_caseuco_jar
 
+#
+# Docs
+#
+
 api-docs:
 	doxygen tsk/docs/Doxyfile
 	cd bindings/java/doxygen; doxygen Doxyfile
 
 man-html:
 	cd man; build-html
+
+noinst_PROGRAMS = \
+	samples/callback_cpp_style \
+	samples/callback_style \
+	samples/posix_cpp_style \
+	samples/posix_style
+
+samples_callback_cpp_style_LDADD = $(TSK_LIB)
+samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
+
+samples_callback_style_LDADD = $(TSK_LIB)
+samples_callback_style_SOURCES = samples/callback-style.cpp
+
+samples_posix_cpp_style_LDADD = $(TSK_LIB)
+samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
+
+samples_posix_style_LDADD = $(TSK_LIB)
+samples_posix_style_SOURCES = samples/posix-style.cpp
