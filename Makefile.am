@@ -167,7 +167,7 @@ noinst_LTLIBRARIES = \
 	tsk/util/Bitlocker/libtskbitlocker.la \
 	tsk/vs/libtskvs.la
 
-tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo
+tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar
 tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
