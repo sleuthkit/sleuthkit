@@ -152,6 +152,10 @@ nobase_dist_data_DATA = \
 	tsk/sorter/solaris.sort \
 	tsk/sorter/windows.sort
 
+#
+# Library
+#
+
 TSK_LIB = tsk/libtsk.la
 
 noinst_LTLIBRARIES = \
@@ -398,23 +402,9 @@ nodist_pkgconfig_DATA = tsk/tsk.pc
 
 #EXTRA_DIST = .indent.pro
 
-noinst_PROGRAMS = \
-	samples/callback_cpp_style \
-	samples/callback_style \
-	samples/posix_cpp_style \
-	samples/posix_style
-
-samples_callback_cpp_style_LDADD = $(TSK_LIB)
-samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
-
-samples_callback_style_LDADD = $(TSK_LIB)
-samples_callback_style_SOURCES = samples/callback-style.cpp
-
-samples_posix_cpp_style_LDADD = $(TSK_LIB)
-samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
-
-samples_posix_style_LDADD = $(TSK_LIB)
-samples_posix_style_SOURCES = samples/posix-style.cpp
+#
+# Tools
+#
 
 bin_PROGRAMS = \
 	tools/autotools/tsk_comparedir \
@@ -678,6 +668,10 @@ tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 tests_read_apis_LDADD = $(TSK_LIB)
 tests_read_apis_SOURCES = tests/read_apis.cpp
 
+#
+# Java
+#
+
 # Compile java bindings if all of the dependencies exist
 if X_JNI
 
@@ -729,9 +723,31 @@ clean-local: $(clean_java)
 
 .PHONY: clean-tsk_jar clean-tsk_caseuco_jar
 
+#
+# Docs
+#
+
 api-docs:
 	doxygen tsk/docs/Doxyfile
 	cd bindings/java/doxygen; doxygen Doxyfile
 
 man-html:
 	cd man; build-html
+
+noinst_PROGRAMS = \
+	samples/callback_cpp_style \
+	samples/callback_style \
+	samples/posix_cpp_style \
+	samples/posix_style
+
+samples_callback_cpp_style_LDADD = $(TSK_LIB)
+samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
+
+samples_callback_style_LDADD = $(TSK_LIB)
+samples_callback_style_SOURCES = samples/callback-style.cpp
+
+samples_posix_cpp_style_LDADD = $(TSK_LIB)
+samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
+
+samples_posix_style_LDADD = $(TSK_LIB)
+samples_posix_style_SOURCES = samples/posix-style.cpp
