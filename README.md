@@ -166,6 +166,7 @@ The library uses utilities that were released under MIT and BSD 3-clause.
 ## INSTALL
 For installation instructions, refer to the INSTALL.txt document.
 
+
 ## OTHER DOCS
 The [wiki](http://wiki.sleuthkit.org/index.php?title=Main_Page) contains documents that 
 describe the provided tools in more detail.  The Sleuth Kit Informer is a newsletter that contains
