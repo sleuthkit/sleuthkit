@@ -238,9 +238,9 @@ public:
       .kv("desc", vs_part->desc)
       .kv("flags", vs_part->flags)
       .kv("len", vs_part->len)
-      .kv("slot_num", vs_part->slot_num)
+      .kv("slot_num", static_cast<int>(vs_part->slot_num))
       .kv("start", vs_part->start)
-      .kv("table_num", vs_part->table_num);
+      .kv("table_num", static_cast<int>(vs_part->table_num));
 
     return TSK_FILTER_CONT;
   }
