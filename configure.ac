@@ -280,6 +280,10 @@ WARNINGS='-Wall -Wextra -Wno-unused-parameter'
 AC_SUBST(AM_CFLAGS, $WARNINGS)
 AC_SUBST(AM_CXXFLAGS, $WARNINGS)
 
+dnl Use -Wno-unused-command-line-argument only if the compiler understands it
+AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
+AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CXXFLAGS], [-Werror-unknown-warning])
+
 check_imgs=
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
 AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
