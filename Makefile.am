@@ -168,7 +168,7 @@ noinst_LTLIBRARIES = \
 	tsk/vs/libtskvs.la
 
 tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
-tsk_5uto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Wmultichar -Wsign-promo -Wno-overloaded-virtual
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
 	tsk/auto/auto_db.cpp \
