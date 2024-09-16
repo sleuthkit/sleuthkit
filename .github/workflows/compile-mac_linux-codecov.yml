@@ -87,9 +87,7 @@ jobs:
       - name: Run unit tests with address-sanitizer (Mac and Linux)
         run: |
           ./configure --enable-address-sanitizer --disable-silent-rules
-          pushd unit_tests
           make check || (cat test-suite.log; exit 1)
-          popd
           make distclean
 
       - name: C++ checks with thread-sanitizer on ubuntu are disabled
@@ -100,17 +98,14 @@ jobs:
           make clean
           make $MAKE_OPTS  all
           make check || (cat test-suite.log; exit 1)
-          popd
           make distclean
 
       - name: Prepare C++ executable and make check
         run: |
           bash ./bootstrap
           ./configure CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' --disable-silent-rules
-          pushd unit_tests
-          make $MAKE_OPTS runner
-          ./runner
-          popd
+          make $MAKE_OPTS unit_tests/runner
+          unit_tests/runner
 
       - name: upload codecov report
         if: env.run_codecov == 'true'
