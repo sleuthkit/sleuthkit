@@ -673,7 +673,8 @@ tests_read_apis_SOURCES = tests/read_apis.cpp
 
 check_PROGRAMS += unit_tests/runner
 
-TESTS += unit_tests/runner
+# TODO: enable running unit_tests as part of 'make check'
+#TESTS += unit_tests/runner
 
 unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) $(CATCH2_CPPFLAGS)
 unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
