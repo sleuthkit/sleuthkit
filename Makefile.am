@@ -680,7 +680,7 @@ unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 unit_tests_runner_SOURCES = \
-	unit_tests/catch.hpp
+	unit_tests/catch.hpp \
 	unit_tests/errors_test.cpp \
 	unit_tests/fiwalk_test.cpp \
 	unit_tests/mult_files_test.cpp \
