@@ -1,8 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
-AM_CFLAGS += -Wall -Wno-unused-command-line-argument
-AM_CXXFLAGS += -Wall -Wno-overloaded-virtual -Wno-unused-command-line-argument
+AM_CFLAGS += -Wall
+AM_CXXFLAGS += -Wall -Wno-overloaded-virtual
 
 CLEANFILES =
 
