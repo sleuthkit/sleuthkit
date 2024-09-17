@@ -367,7 +367,7 @@ is_time(uint64_t t)
 /**
  * Process a lsit of index entries and add to FS_DIR
  *
- * @param a_is_del Set to 1 if these entries are for a deleted directory
+ * @param a_is_del Set to 1 if these entries are for a deleted directory or if they correspond to index record that is unallocated according to bitmap attribute
  * @param idxe Buffer with index entries to process
  * @param idxe_len Length of idxe buffer (in bytes)
  * @param used_len Length of data as reported by idexlist header (everything
@@ -417,7 +417,6 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
         endaddr) {
 
         ntfs_attr_fname *fname = (ntfs_attr_fname *) & a_idxe->stream;
-
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -875,7 +874,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_COR;
     }
 
-    
+    uint32_t static_idx_rec_size_b = tsk_getu32(a_fs->endian, idxroot->idxalloc_size_b);
 
     /*
      * NTFS does not have "." and ".." entries in the index trees
@@ -1084,11 +1083,13 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         /* Set the previous pointer to NULL */
         idxrec_p = idxrec = NULL;
+        
+        int prev_idx_record_offset = 0;
 
         /* Loop by cluster size */
         for (off = 0; off < idxalloc_len; off += ntfs->csize_b) {
             uint32_t list_len, rec_len;
-
+            
             // Ensure that there is enough data for an idxrec
             if ((idxalloc_len < sizeof(ntfs_idxrec)) || (off > idxalloc_len - sizeof(ntfs_idxrec))) {
                 tsk_error_reset();
@@ -1098,7 +1099,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 free(idxalloc);
                 return TSK_COR;
             }
-
+            
             idxrec = (ntfs_idxrec *) & idxalloc[off];
 
             if (tsk_verbose)
@@ -1112,13 +1113,14 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     idxrec->magic) != NTFS_IDXREC_MAGIC)
                 continue;
 
-
             /* idxrec_p is only NULL for the first time
              * Set it and start again to find the next one */
             if (idxrec_p == NULL) {
                 idxrec_p = idxrec;
                 continue;
             }
+            
+            prev_idx_record_offset = off-1; //TSK analyzes the previous structure in each iteration, which has offset off-1
 
             /* Process the previous structure */
 
@@ -1164,12 +1166,31 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 free(idxalloc);
                 return TSK_COR;
             }
-
+            
+            /*'idx_record_cursor' assigns number k to current index record (starting from 0).
+             *This number k of the record is supposed to correspond to the k-th bit in the Bitmap attribute, 
+             *which stores what index records are currently allocated.*/
+            int idx_record_cursor = prev_idx_record_offset / static_idx_rec_size_b;
+            const TSK_FS_ATTR *fs_attr_bmap = tsk_fs_attrlist_get(fs_dir->fs_file->meta->attr, TSK_FS_ATTR_TYPE_NTFS_BITMAP); //get bitmap attribute
+            int byte_num = idx_record_cursor / 8; //get byte index of bitmap data that contains the relevant bit
+            char bitmap_byte; //stores the byte containing the bit of interest
+            if (tsk_fs_attr_read(fs_attr_bmap, byte_num, &bitmap_byte, 1, TSK_FS_FILE_READ_FLAG_NONE) == -1){
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("Error: Failed reading bitmap attribute: %"
+                    PRIuINUM, fs_dir->fs_file->meta->addr);
+                free(idxalloc);
+                return TSK_COR;
+            }
+            
+            int bit_num = idx_record_cursor - 8*byte_num; //index of bit of interest relative to start of the byte
+            bool current_record_not_allocated = !(bitmap_byte & 1<<bit_num); //use this boolean when calling ntfs_proc_idxentry as part of third argument
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
                 (fs_dir->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                    flags & TSK_FS_META_FLAG_UNALLOC || current_record_not_allocated) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1240,11 +1261,30 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 free(idxalloc);
                 return TSK_COR;
             }
-
+            
+            /*'idx_record_cursor' assigns number k to current index record (starting from 0).
+             *This number k of the record is supposed to correspond to the k-th bit in the Bitmap attribute, 
+             *which stores what index records are currently allocated.*/
+            int idx_record_cursor = prev_idx_record_offset / static_idx_rec_size_b;
+            const TSK_FS_ATTR *fs_attr_bmap = tsk_fs_attrlist_get(fs_dir->fs_file->meta->attr, TSK_FS_ATTR_TYPE_NTFS_BITMAP); //get bitmap attribute
+            int byte_num = idx_record_cursor / 8; //get byte index of bitmap data that contains the relevant bit
+            char bitmap_byte; //stores the byte containing the bit of interest
+            if (tsk_fs_attr_read(fs_attr_bmap, byte_num, &bitmap_byte, 1, TSK_FS_FILE_READ_FLAG_NONE) == -1){
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("Error: Failed reading bitmap attribute: %"
+                    PRIuINUM, fs_dir->fs_file->meta->addr);
+                free(idxalloc);
+                return TSK_COR;
+            }
+            int bit_num = idx_record_cursor - 8*byte_num; //index of bit of interest relative to start of the byte
+            bool current_record_not_allocated = !(bitmap_byte & 1<<bit_num); //use this boolean when calling ntfs_proc_idxentry as part of third argument
+            
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
                 (fs_dir->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                    flags & TSK_FS_META_FLAG_UNALLOC || current_record_not_allocated) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
