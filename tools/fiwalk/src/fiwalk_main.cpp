@@ -52,6 +52,30 @@ void print_version()
 #endif
 }
 
+#ifdef TSK_WIN32
+
+static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
+{
+    char *opt_arg=*_opt_arg;
+    char *temp = NULL;
+    int arg_len = TSTRLEN(OPTARG);
+    int ret_val = 0;
+
+    opt_arg=(char *)tsk_malloc(TSTRLEN(OPTARG)+2);
+    temp=opt_arg;
+    ret_val =
+        tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
+			(const UTF16 **) &OPTARG, (UTF16 *)(OPTARG+arg_len+1),
+			(UTF8 **)&temp, (UTF8 *)(temp+arg_len+2), TSKlenientConversion);
+    if (ret_val)
+    {
+        printf("Conversion Error ret_val: %d\n", ret_val);
+        return ret_val;
+    }
+    *_opt_arg=opt_arg;
+    return 0;
+}
+#endif
 
 void usage(fiwalk &o)
 {
