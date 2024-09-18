@@ -8,8 +8,6 @@
 
 #include <iostream>
 
-#include <tsk_config.h>
-#include <libtsk.h>
 #include "tools/fiwalk/src/fiwalk.h"
 #include "catch.hpp"
 

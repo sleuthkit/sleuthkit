@@ -272,16 +272,8 @@ AC_SUBST([CXXLD])
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 
-dnl OpenSSL support for encryption - currently disabled due to automatic test failures
-dnl AX_CHECK_OPENSSL(
-dnl  [ax_openssl=yes]
-dnl  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS",
-dnl  AC_SUBST([LIBTSK_LDFLAGS])
-[ax_openssl=no]
-dnl  [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])]
-dnl )
-dnl For the moment, disable the openssl library so the Travis test will pass
-dnl AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
+dnl OpenSSL support for encryption
+TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 
 dnl Use -Wno-unused-command-line-argument only if the compiler understands it
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
@@ -315,6 +307,7 @@ Building:
    libvmdk support:                       $ax_libvmdk
    libvslvm support:                      $ax_libvslvm
 
+   openssl support:                       $ax_libcrypto
    zlib support:                          $ax_zlib
 
 Features:

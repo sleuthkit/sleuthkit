@@ -136,7 +136,7 @@ APFSBlock::APFSBlock(const APFSPool& pool, const apfs_block_num block_num)
 }
 
 void APFSBlock::decrypt(const uint8_t* key, const uint8_t* key2) noexcept {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     // If the data is encrypted via the T2 chip, we can't decrypt it.  This means
     // that if the data wasn't decrypted at acquisition time, then processing will
     // likely fail.  Either way, there is no need to decrypt.
@@ -479,7 +479,7 @@ void APFSFileSystem::init_crypto_info() {
 }
 
 bool APFSFileSystem::unlock(const std::string& password) noexcept {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
   if (_crypto.unlocked) {
     // Already unlocked
     return true;
@@ -642,7 +642,7 @@ apfs_block_num APFSFileSystem::omap_root() const {
 APFSJObjBtreeNode::APFSJObjBtreeNode(const APFSObjectBtreeNode* obj_root,
                                      apfs_block_num block_num,
                                      const uint8_t* key)
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     : APFSBtreeNode(obj_root->pool(), block_num, key), _obj_root{obj_root} {
 #else
     : APFSBtreeNode(obj_root->pool(), block_num, nullptr), _obj_root{ obj_root } {

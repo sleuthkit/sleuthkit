@@ -301,7 +301,7 @@ tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/pool_types.cpp
 
 tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
-tsk_util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
+tsk_util_libtskutil_la_LDFLAGS = $(AM_LDFLAGS) $(OPENSSL_LDFLAGS)
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
@@ -345,7 +345,8 @@ tsk_libtsk_la_LIBADD = \
 	tsk/pool/libtskpool.la \
 	tsk/util/Bitlocker/libtskbitlocker.la \
 	tsk/util/libtskutil.la \
-	tsk/vs/libtskvs.la
+	tsk/vs/libtskvs.la \
+	$(OPENSSL_LIBS)
 
 # current:revision:age
 tsk_libtsk_la_LDFLAGS = -version-info 21:1:2 $(LIBTSK_LDFLAGS)
