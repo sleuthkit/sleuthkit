@@ -162,7 +162,7 @@ private:
 
 #ifdef TSK_WIN32
   void value(wchar_t* v) {
-    value(const_cast<const wchar_t*>(v))
+    value(const_cast<const wchar_t*>(v));
   }
 
   void value(const wchar_t* v) {
