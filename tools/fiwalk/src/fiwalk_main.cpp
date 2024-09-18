@@ -258,7 +258,7 @@ extern "C" int main(int argc, char * const *argv1) {
     o.opt_parent_tracking = true;
 
     o.argc = argc;
-    o.argv = argv;
+    o.argv = argv1;
     o.run();
 
     return(0);
