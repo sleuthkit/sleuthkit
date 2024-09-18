@@ -511,19 +511,11 @@ int fiwalk::run()
 
     if (opt_debug) printf("calling tsk_img_open(%s)\n",filename);
 
-#ifdef TSK_WIN32
-    int count = process_image_file(argc, argv1, audit_file, sector_size);
-    if (count<=0 || sector_size!=512){
-        comment("Retrying with 512 byte sector size.");
-        count = process_image_file(argc, argv1, audit_file, 512);
-    }
-#else
     int count = process_image_file(argc, argv, audit_file, sector_size);
     if (count<=0 || sector_size!=512){
         comment("Retrying with 512 byte sector size.");
         count = process_image_file(argc, argv, audit_file, 512);
     }
-#endif
 
     /* Calculate time elapsed (reported as a comment and with rusage) */
     struct timeval tv;
