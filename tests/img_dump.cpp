@@ -455,7 +455,7 @@ int main(int argc, char** argv) {
   }
 
   std::unique_ptr<TSK_IMG_INFO, void(*)(TSK_IMG_INFO*)> img{
-    tsk_img_open(argc - 1, argv + 1, TSK_IMG_TYPE_DETECT, 0),
+    tsk_img_open_utf8(argc - 1, argv + 1, TSK_IMG_TYPE_DETECT, 0),
     tsk_img_close
   };
 
