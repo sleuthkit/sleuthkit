@@ -8,6 +8,11 @@
 #include <stack>
 #include <string>
 
+#ifdef TSK_WIN32
+#include <cwchar>
+#include <locale>
+#endif
+
 std::string replace(
   const std::string& src,
   const std::string& find,
@@ -155,6 +160,16 @@ private:
     value(std::string(v));
   }
 
+#ifdef TSK_WIN32
+  void value(const wchar_t* v) {
+    auto len = std::wcslen(v);
+    std::string s(len, '\0');
+    auto& f = std::use_facet<std::ctype<wchar_t>>(std::locale());
+    f.narrow(v, v + len, '?', s.data());
+    value(s);
+  }
+#endif
+
   template <class V>
   void value(V v) {
     out << v;
@@ -182,7 +197,7 @@ public:
 
     json.arr();
     for (auto i = 0; i < img->num_img; ++i) {
-      json.v(static_cast<const char*>(img->images[i]));
+      json.v(img->images[i]);
     }
     json.end();
 
