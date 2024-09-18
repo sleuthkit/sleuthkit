@@ -98,6 +98,7 @@
 #include <libewf.h>
 #endif
 
+#include "tsk/tsk_tools_i.h"
 
 #include "hash_t.h"
 #include "utils.h"

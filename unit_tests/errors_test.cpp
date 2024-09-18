@@ -5,8 +5,9 @@
  *      Author: benson
  */
 
-#include <libtsk.h>
-#include <tsk_config.h>
+#include "tsk/tsk_config.h"
+#include "tsk/libtsk.h"
+
 #include <cstring>
 
 #include "catch.hpp"

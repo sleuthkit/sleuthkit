@@ -11,7 +11,6 @@
 #define CATCH_CONFIG_CONSOLE_WIDTH 120
 
 #include <iostream>
-#include "tsk_config.h"
 #include "catch.hpp"
 
 /* This program runs the catch2 test */

@@ -19,7 +19,7 @@
 // safety, but by running enough threads and enough repetitions of
 // the test without error, you can be more confident.
 
-#include <tsk/libtsk.h>
+#include "tsk/libtsk.h"
 
 #include "tsk_thread.h"
 

@@ -31,13 +31,15 @@
  * SUCH DAMAGE.
  */
 
+#include "sha2.h"
+
+#ifndef HAVE_LIBCRYPTO
+
 #if 0
 #define UNROLL_LOOPS /* Enable loops unrolling */
 #endif
 
 #include <string.h>
-
-#include "sha2.h"
 
 #define SHFR(x, n)    (x >> n)
 #define ROTR(x, n)   ((x >> n) | (x << ((sizeof(x) << 3) - n)))
@@ -947,3 +949,4 @@ int main(void)
 
 #endif /* TEST_VECTORS */
 
+#endif

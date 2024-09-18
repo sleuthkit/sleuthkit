@@ -13,9 +13,9 @@
  * This is currently being used only by APFS
  */
 
-#include "../base/tsk_base.h"
+#include "../tsk_config.h"
 
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
 #include <openssl/evp.h>
 
 

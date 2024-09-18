@@ -264,7 +264,7 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
 
 uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
   const auto& pool = fs_info_to_pool(&_fsinfo);
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
   APFSFileSystem vol{pool, to_pool_vol_block(&_fsinfo), _crypto.password};
 #else
   APFSFileSystem vol{ pool, to_pool_vol_block(&_fsinfo) };
@@ -1544,7 +1544,7 @@ uint8_t APFSFSCompat::block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_
 }
 
 uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     try {
         if (_crypto.decryptor) {
             _crypto.decryptor->decrypt_buffer(data, APFS_BLOCK_SIZE,
@@ -1570,7 +1570,7 @@ uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept 
 }
 
 int APFSFSCompat::name_cmp(const char* s1, const char* s2) const noexcept try {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     const APFSFileSystem vol{ fs_info_to_pool(&_fsinfo), to_pool_vol_block(&_fsinfo),
                            _crypto.password};
 #else
