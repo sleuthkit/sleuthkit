@@ -1,5 +1,6 @@
 # This file based on https://gist.github.com/mwouts/9842452d020c08faf9e84a3bba38a66f
 # See: https://help.github.com/en/actions/reference/software-installed-on-github-hosted-runners
+# 2024-09-26 - slg - Simplified matrix strategy to avoid duplicate runs (runs-on was ignoring os: and platform: under the matrix:)
 # 2022-08-06 - slg - Updated os to be 'macos-latest', 'ubuntu-20.04', 'ubuntu-22.04'
 #                    See https://github.com/actions/virtual-environments for details.
 # 2020-06-22 - slg - customized
@@ -7,6 +8,9 @@
 # 2020-07-03 - slg - ported to be13_api; removed python (be13_api doesn't use python)
 # 2021-05-07 - slg - Started work again
 # 2022-02-10 - slg - renamed be20_api. Our work here is done.
+
+# List of self-hosted runners at:
+# https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
 
 name: TSK Tests on MacOS and Ubuntu (c++17)
 
@@ -23,8 +27,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-22.04]
-        platform: [x64, arm64]
+        os: [macos-latest, ubuntu-22.04, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
 
     env:
