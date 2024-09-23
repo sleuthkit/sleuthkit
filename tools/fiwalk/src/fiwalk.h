@@ -23,13 +23,15 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "tsk/tsk_tools_i.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <stdio.h>
-#ifndef WIN32
+#ifndef TSK_WIN32
 #include <pwd.h>
 #endif
 
@@ -97,8 +99,6 @@
 
 #include <libewf.h>
 #endif
-
-#include "tsk/tsk_tools_i.h"
 
 #include "hash_t.h"
 #include "utils.h"
