@@ -585,7 +585,11 @@ check_SCRIPTS = \
 	tests/test_libraries.sh \
 	tests/test_static_tools.sh
 
-TESTS = $(check_SCRIPTS)
+TESTS =	\
+	tests/runtests.sh \
+	tests/test_imgs.sh \
+	tests/test_libraries.sh
+
 if BUILD_STATIC
 TESTS += test_static_tools.sh
 endif
