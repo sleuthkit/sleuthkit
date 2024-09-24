@@ -169,7 +169,7 @@ private:
     auto len = std::wcslen(v);
     std::string s(len, '\0');
     auto& f = std::use_facet<std::ctype<wchar_t>>(std::locale());
-    f.narrow(v, v + len, '?', s.data());
+    f.narrow(v, v + len, '?', &s[0]);
     value(s);
   }
 #endif
