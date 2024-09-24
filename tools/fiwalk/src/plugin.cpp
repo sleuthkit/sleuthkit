@@ -45,7 +45,7 @@
 #include <regex>
 #include <vector>
 
-#include <tsk/libtsk.h>
+#include "tsk/libtsk.h"
 
 #include "fiwalk.h"
 #include "plugin.h"
