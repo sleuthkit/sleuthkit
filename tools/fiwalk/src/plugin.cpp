@@ -42,6 +42,7 @@
 #include <string>
 #include <iostream>
 #include <string>
+#include <regex>
 #include <vector>
 
 #include <tsk/libtsk.h>
@@ -49,14 +50,6 @@
 #include "fiwalk.h"
 #include "plugin.h"
 #include "arff.h"
-
-#ifdef _MSC_VER
-/* TK: A class that uses Microsoft's regex class */
-#else
-extern "C" {
-#include <regex.h>
-}
-#endif
 
 #ifndef HAVE_GETLINE
 
@@ -95,7 +88,7 @@ ssize_t getline(char** lineptr, size_t*, FILE* stream) {
 
 class myglob {
 public:
-  regex_t reg;
+  std::regex reg;
 
   myglob(const std::string &pattern){
     /* Build the regular expression from the pattern */
@@ -113,21 +106,19 @@ public:
       }
     }
     re.push_back('$');
-    if(regcomp(&reg,re.c_str(),REG_EXTENDED|REG_ICASE)){
+
+    try {
+      reg.assign(re, std::regex::extended | std::regex::icase);
+    }
+    catch (const std::regex_error&) {
       std::cerr << "invalid regular expression: " << re << "\n";
       exit(1);
     }
   };
 
   bool match(const std::string &fname){
-    regmatch_t pmatch[10];
-    memset(pmatch,0,sizeof(pmatch));
-    int res = regexec(&reg,fname.c_str(),10,pmatch,0);
-    return (res==0);
-  };
-
-  ~myglob(){
-    regfree(&reg);
+    std::smatch m;
+    return std::regex_match(fname, m, reg);
   };
 };
 
@@ -191,12 +182,8 @@ bool plugin_match(const std::string &fname)
 void fiwalk::plugin_process(const std::string &fname)
 {
   comment("plugin_process",fname.c_str());
-  static bool first = true;
-  static regex_t ncv;
-  if(first){
-    if(regcomp(&ncv,"([-a-zA-Z0-9_]+): +(.*)",REG_EXTENDED)) err(1,"regcomp");
-    first = 0;
-  }
+
+  static const std::regex ncv("([-a-zA-Z0-9_]+): +(.*)", std::regex::extended);
 
   if(current_plugin->method=="dgi"){
     string cmd = current_plugin->path + " " + fname;
@@ -211,19 +198,18 @@ void fiwalk::plugin_process(const std::string &fname)
       }
 
       /* process name: value pairs */
-      regmatch_t pmatch[4];
-      memset(pmatch,0,sizeof(pmatch));
-      if(regexec(&ncv,linebuf,4,pmatch,0)){
+      std::cmatch m;
+      if (!std::regex_match(linebuf, m, ncv)) {
         fprintf(stderr,"*** FILE: %s   line: %u\n",__FILE__,__LINE__);
         fprintf(stderr,"*** plugin %s returned: '%s'\n", current_plugin->path.c_str(),linebuf);
         fprintf(stderr,"*** original command line: %s\n",cmd.c_str());
         fprintf(stderr,"*** %s will not be deleted.\n",fname.c_str());
         exit(1);
       }
-      linebuf[pmatch[1].rm_eo] = 0;
-      linebuf[pmatch[2].rm_eo] = 0;
-      char *name = linebuf+pmatch[1].rm_so;
-      char *value = linebuf+pmatch[2].rm_so;
+      linebuf[m[1].second - linebuf] = '\0';
+      linebuf[m[2].second - linebuf] = '\0';
+      char *name = linebuf + (m[1].first - linebuf);
+      char *value = linebuf + (m[2].first - linebuf);
 
       /* clean any characters in the name */
       for(char *cc=name;*cc;cc++){
@@ -254,8 +240,8 @@ void fiwalk::config_read(const char *fname)
 
   // Compile the regular expression we will use;
   // Unfortunately the POSIX regex has no support for \s
-  regex_t r;
-  if(regcomp(&r,"([^ \t]+)[ \t]+([^ \t]+)[ \t]+([^\t\r\n]+)",REG_EXTENDED)) err(1,"regcomp");
+  const std::regex r("([^ \t]+)[ \t]+([^ \t]+)[ \t]+([^\t\r\n]+)", std::regex::extended);
+
   FILE *f = fopen(fname,"r");
   if(!f) err(1,"%s",fname);
   char linebuf[1024];
@@ -269,22 +255,20 @@ void fiwalk::config_read(const char *fname)
     if(all_whitespace(linebuf)) continue;
 
     /* parse the line */
-    regmatch_t pmatch[10];
-    memset(pmatch,0,sizeof(pmatch));
-    int res = regexec(&r,linebuf,10,pmatch,0);
-    if(res){
+    std::cmatch m;
+    if (!std::regex_match(linebuf, m, r)) {
       fprintf(stderr,"Error in configuration file line %d: %s\n",linenumber,linebuf);
       exit(1);
     }
-    linebuf[pmatch[1].rm_eo] = 0;
-    linebuf[pmatch[2].rm_eo] = 0;
-    linebuf[pmatch[3].rm_eo] = 0;
 
-    class plugins *plug = new plugins(linebuf+pmatch[1].rm_so, linebuf+pmatch[2].rm_so, linebuf+pmatch[3].rm_so);
+    linebuf[m[1].second - linebuf] = '\0';
+    linebuf[m[2].second - linebuf] = '\0';
+    linebuf[m[3].second - linebuf] = '\0';
+
+    class plugins *plug = new plugins(m[1].first, m[2].first, m[3].first);
     plug->glob = new myglob(plug->pattern.c_str());
     comment("pattern: %s  method: %s  path: %s",plug->pattern.c_str(),plug->method.c_str(),plug->path.c_str());
     plugin_list.push_back(plug);
   }
   fclose(f);
-  regfree(&r);
 }
