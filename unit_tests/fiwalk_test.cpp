@@ -26,7 +26,6 @@ TEST_CASE("test_disk_images","[fiwalk]") {
         }
         std::string src_image  = line.substr(0,tab);
         CAPTURE(src_image);
-        const char *src = src_image.c_str();
 
         /* the output XML file should be the XML file with a 2 added.
          * If there is no XML file, then add ".xml2" to the image file.
@@ -41,28 +40,26 @@ TEST_CASE("test_disk_images","[fiwalk]") {
         }
         INFO("test: fiwalk " << src_image)
 
-        int argc_ = 1;
-        char *  *argv_ = (char *  *)calloc(sizeof(char *), argc_+1);
+        const int argc = 1;
+        char* const argv[] = {
+          &src_image[0],
+          nullptr
+        };
 
-        argv_[0] = strdup(src);
-        argv_[1] = 0;
-
-        if (access(src, F_OK)==0){
+        if (access(argv[0], F_OK)==0){
             fiwalk o;
-            o.filename = argv_[0];
-            o.argc = argc_;
-            o.argv = argv_;
+            o.filename = argv[0];
+            o.argc = argc;
+            o.argv = argv;
             o.opt_variable = false;
             o.opt_zap = true;
             o.xml_fn = dfxml2_file;
             o.run();
             CHECK(o.file_count>0);
-            SUCCEED(src << " file count = " << o.file_count);
+            SUCCEED(src_img << " file count = " << o.file_count);
         } else {
-            FAIL(src << " not found");
+            FAIL(src_img << " not found");
         }
         /* XML files are checked by the python driver */
-        free(argv_[0]);
-        free(argv_);
     }
 }
