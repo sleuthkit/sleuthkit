@@ -180,11 +180,11 @@ AC_ARG_ENABLE([offline],
      esac],[offline=false])
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
+
 AM_CONDITIONAL([CUSTOM_DEFAULT_JAR_LOCATION], [test "x$default_jar_location" != "x"])
 AM_COND_IF([CUSTOM_DEFAULT_JAR_LOCATION],
     [AC_SUBST([DEFAULT_JAR_LOCATION], [$default_jar_location])]
 )
-
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
@@ -278,6 +278,10 @@ TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [cryp
 dnl Use -Wno-unused-command-line-argument only if the compiler understands it
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CXXFLAGS], [-Werror-unknown-warning])
+
+TSK_ADDRESS_SANITIZER
+TSK_THREAD_SANITIZER
+TSK_UNDEFINED_SANITIZER
 
 check_imgs=
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
