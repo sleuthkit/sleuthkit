@@ -593,7 +593,7 @@ TESTS =	\
 	tests/test_libraries.sh
 
 if BUILD_STATIC
-TESTS += test_static_tools.sh
+TESTS += tests/test_static_tools.sh
 endif
 
 TEST_EXTENSIONS = .sh
