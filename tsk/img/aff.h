@@ -2,13 +2,13 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
 
-/* 
- * Header files for AFF-specific data structures and functions. 
+/*
+ * Header files for AFF-specific data structures and functions.
  */
 
 #ifndef _AFF_H
@@ -30,8 +30,7 @@
 extern "C" {
 #endif
 
-extern TSK_IMG_INFO *aff_open(const TSK_TCHAR * const images[],
-    unsigned int a_ssize);
+    extern TSK_IMG_INFO *aff_open(int num_img, const TSK_TCHAR * const images[],    unsigned int a_ssize);
 
 /** \internal
  * Stores AFF-specific data

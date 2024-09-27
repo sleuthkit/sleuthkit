@@ -99,6 +99,14 @@ Indication that the source artifact or file contains a keyword. Keywords are gro
 
 
 ---
+## TSK_MALWARE
+Indicates the source file's malware status based on the score.  A notable score means that the file has been detected to be malware. A score of none means that the file has been detected to not be malware.
+
+### REQUIRED ATTRIBUTES
+None
+
+
+---
 ## TSK_OBJECT_DETECTED
 Indicates that an object was detected in a media file. Typically used by computer vision software to classify images.
 

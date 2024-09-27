@@ -383,17 +383,175 @@ public class OsAccountTest {
 		accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getAddr().isPresent() && p.getAddr().get().equals(sid1)).collect(Collectors.toList());
 		assertEquals(accounts.size() == 1, true);
 		
-		// Test that account 3 got moved into the destination realm
-		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(uniqueRealm2Name, destRealm);
+		// Test that account 3 got moved into the destination realm. Tests are currently windows specific
+		Optional<OsAccount> optAcct = caseDB.getOsAccountManager().getWindowsOsAccount(null,uniqueRealm2Name, destRealmName, host);
 		assertEquals(optAcct.isPresent(), true);
 		
-		// Test that data from account 4 was merged into account 2
-		optAcct = caseDB.getOsAccountManager().getOsAccountByLoginName(matchingName, destRealm);
+		// Test that data from account 4 was merged into account 2. Tests are currently windows specific
+		optAcct = caseDB.getOsAccountManager().getWindowsOsAccount(null, matchingName, destRealmName, host);
 		assertEquals(optAcct.isPresent(), true);
 		if (optAcct.isPresent()) {
 			assertEquals(optAcct.get().getCreationTime().isPresent() &&  optAcct.get().getCreationTime().get() == creationTime1, true);
 			assertEquals(optAcct.get().getFullName().isPresent() && fullName1.equalsIgnoreCase(optAcct.get().getFullName().get()), true);
 		}
+	}
+	
+	@Test 
+	public void updateRealmAndMergeTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
+		
+		/**
+		 * Test the scenario where an update of an account triggers an update of 
+		 * a realm and subsequent merge of realms and accounts.
+		 */
+		
+		Host host = caseDB.getHostManager().newHost("updateRealmAndMergeTestHost");
+		
+		
+		
+			// Step 1: create a local account with SID and user name
+			String ownerUid1 = "S-1-5-21-1182664808-117526782-2525957323-13395";
+			String realmName1 = null;
+			String loginName1 = "sandip";
+			
+			OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, loginName1, realmName1, host, OsAccountRealm.RealmScope.LOCAL);
+			OsAccountRealm realm1 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount1.getRealmId());
+			
+			assertEquals(realm1.getRealmAddr().isPresent(), true);	// verify the realm has a SID
+			assertEquals(realm1.getRealmNames().isEmpty(), true);	// verify the realm has no name
+			
+			
+			// Step2: create a local account with domain name and username
+			String ownerUid2 = null;
+			String realmName2 = "CORP";
+			String loginName2 = "sandip";
+			
+			Optional<OsAccount> oOsAccount2 = caseDB.getOsAccountManager().getWindowsOsAccount(ownerUid2, loginName2, realmName2, host);
+			
+			// this account should not exists
+			assertEquals(oOsAccount2.isPresent(), false);
+			
+			// create a new account -  a new realm as there is nothing to tie it to realm1 
+			OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid2, loginName2, realmName2, host, OsAccountRealm.RealmScope.LOCAL);
+			OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount2.getRealmId());
+			
+			assertTrue(osAccount1.getId() != osAccount2.getId());
+			assertTrue(realm1.getRealmId() != realm2.getRealmId());
+			
+			
+			
+			// Step 3: now create/update the account with sid/domain/username
+			// this should return the existing account1, which needs to be updated.
+			String ownerUid3 = "S-1-5-21-1182664808-117526782-2525957323-13395";
+			String realmAddr3 = "S-1-5-21-1182664808-117526782-2525957323";
+			String loginName3 = "sandip";
+			String realmName3 = "CORP";
+			
+			Optional<OsAccount> oOsAccount3 = caseDB.getOsAccountManager().getWindowsOsAccount(ownerUid3, loginName3, realmName3, host);
+
+			assertTrue(oOsAccount3.isPresent());
+			
+            
+			// update the account so that its domain gets updated.
+			OsAccountManager.OsAccountUpdateResult updateResult = caseDB.getOsAccountManager().updateCoreWindowsOsAccountAttributes(oOsAccount3.get(), ownerUid3, loginName3, realmName3, host);
+			Optional<OsAccount> updatedAccount3 = updateResult.getUpdatedAccount();
+			assertTrue(updatedAccount3.isPresent());
+
+			// this should cause the realm1 to be updated - and then realm2 to be merged into realm1 
+			OsAccountRealm realm3 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount3.get().getRealmId());
+
+			assertTrue(realm3.getRealmId() == realm1.getRealmId());
+
+			assertTrue(realm3.getRealmAddr().isPresent());		// verify the realm gets an addr
+			assertTrue(realm3.getRealmAddr().get().equalsIgnoreCase(realmAddr3));
+			
+			assertTrue(realm3.getRealmNames().get(0).equalsIgnoreCase(realmName3));	// verify realm name.
+
+
+			// And now verify that the realm2 has been merged into realm1. 
+			OsAccountRealm realm22 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount2.getRealmId());
+			assertTrue(realm22.getDbStatus() == OsAccountRealm.RealmDbStatus.MERGED);
+
+			//and account2 has been merged into account1
+			OsAccount osAccount22 = caseDB.getOsAccountManager().getOsAccountByObjectId(osAccount2.getId());
+			assertTrue(osAccount22.getOsAccountDbStatus() == OsAccount.OsAccountDbStatus.MERGED);
+				
+	}
+
+	@Test
+	public void updateRealmSameNameTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
+
+		/**
+		 * Test the scenario where an update of an account triggers an update of
+		 * a realm.
+		 * 
+		 * This test case has two realms with same name but different addr
+		 */
+		Host host = caseDB.getHostManager().newHost("updateRealmSameNameTests");
+
+		// Step 1: create an account
+		String ownerUid1 = "S-1-5-21-1182664808-117526782-2525957323-13395";
+		String realmName1 = "CORP";
+		String loginName1 = "sandip";
+
+		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid1, loginName1, realmName1, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm1 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount1.getRealmId());
+
+		// Step 2: create another account with same username but different SID
+		String ownerUid2 = "S-1-5-21-1182664808-117526782-2525957324-13396";
+		String realmName2 = null;
+		String loginName2 = "sandip";
+		
+		Optional<OsAccount> oOsAccount2 = caseDB.getOsAccountManager().getWindowsOsAccount(ownerUid2, loginName2, realmName2, host);
+
+		// this account should not exists
+		assertEquals(false, oOsAccount2.isPresent());
+
+		// create a new account -  a new realm as there is nothing to tie it to realm1 
+		OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(ownerUid2, loginName2, realmName2, host, OsAccountRealm.RealmScope.LOCAL);
+		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount2.getRealmId());
+
+		assertTrue(osAccount1.getId() != osAccount2.getId());
+		assertTrue(realm1.getRealmId() != realm2.getRealmId());
+
+		// Step 3: now create/update the account with sid/domain/username
+		// this should return the existing account2, which needs to be updated.
+		String ownerUid3 = "S-1-5-21-1182664808-117526782-2525957324-13396";
+		String realmAddr3 = "S-1-5-21-1182664808-117526782-2525957324";
+		String loginName3 = "sandip";
+		String realmName3 = "CORP";
+
+		Optional<OsAccount> oOsAccount3 = caseDB.getOsAccountManager().getWindowsOsAccount(ownerUid3, loginName3, realmName3, host);
+
+		assertTrue(oOsAccount3.isPresent());
+
+		// update the account so that its domain gets updated.
+		OsAccountManager.OsAccountUpdateResult updateResult = caseDB.getOsAccountManager().updateCoreWindowsOsAccountAttributes(oOsAccount3.get(), ownerUid3, loginName3, realmName3, host);
+		Optional<OsAccount> updatedAccount3 = updateResult.getUpdatedAccount();
+		assertTrue(updatedAccount3.isPresent());
+
+		// this should not cause the realm1 to be updated - realm2 should not be merged into realm1 because the SID was different
+		OsAccountRealm realm3 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount3.get().getRealmId());
+
+		assertTrue(realm3.getRealmId() != realm1.getRealmId());
+		assertTrue(realm3.getRealmId() == realm2.getRealmId());
+		
+		assertTrue(realm3.getRealmAddr().isPresent()); // verify the realm gets an addr
+		assertTrue(realm3.getRealmAddr().get().equalsIgnoreCase(realmAddr3));
+
+		assertTrue(realm3.getRealmNames().get(0).equalsIgnoreCase(realmName3));	// verify realm name.
+
+		// And now verify that the realms have not been merged
+		OsAccountRealm realm12 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount1.getRealmId());
+		assertTrue(realm12.getDbStatus() != OsAccountRealm.RealmDbStatus.MERGED);
+		OsAccountRealm realm22 = caseDB.getOsAccountRealmManager().getRealmByRealmId(osAccount2.getRealmId());
+		assertTrue(realm22.getDbStatus() != OsAccountRealm.RealmDbStatus.MERGED);
+
+		// And the accounts have not been merged 
+		OsAccount osAccount12 = caseDB.getOsAccountManager().getOsAccountByObjectId(osAccount1.getId());
+		OsAccount osAccount22 = caseDB.getOsAccountManager().getOsAccountByObjectId(osAccount2.getId());
+		assertTrue(osAccount12.getOsAccountDbStatus() != OsAccount.OsAccountDbStatus.MERGED);
+		assertTrue(osAccount22.getOsAccountDbStatus() != OsAccount.OsAccountDbStatus.MERGED);
+
 	}
 	
 	@Test 
@@ -689,6 +847,135 @@ public class OsAccountTest {
 
 	}
 	
+	@Test
+	public void basicLinuxOsAccountTests() throws TskCoreException {
+
+		try {
+			String hostname1 = "linuxTestHost";
+			Host host1 = caseDB.getHostManager().newHost(hostname1);
+			
+			// Create an account with uid and username
+			String uid1 = "501";
+			String loginName1 = "user1";
+			
+			OsAccount osAccount1 = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid1, loginName1, host1);
+			assertEquals(osAccount1.getAddr().orElse("").equalsIgnoreCase(uid1), true);
+			assertEquals(osAccount1.getLoginName().orElse("").equalsIgnoreCase(loginName1), true);
+			
+			Optional<OsAccount> osAccount1loadWithUID = caseDB.getOsAccountManager().getLocalLinuxOsAccount(uid1, null, host1);
+			assertEquals(osAccount1loadWithUID.isPresent(), true);
+			assertEquals(osAccount1loadWithUID.get().getAddr().orElse("").equalsIgnoreCase(uid1), true);
+			assertEquals(osAccount1loadWithUID.get().getLoginName().orElse("").equalsIgnoreCase(loginName1), true);
+				
+			// Create an account with only a UID then update it
+			String uid2 = "502";
+			String loginName2 = "user2";
+			
+			OsAccount osAccount2 = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid2, null, host1);
+			assertEquals(osAccount2.getAddr().orElse("").equalsIgnoreCase(uid2), true);
+			assertEquals(osAccount2.getLoginName().isEmpty(), true);
+			
+			OsAccountManager.OsAccountUpdateResult updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(osAccount2, uid2, loginName2);
+            Optional<OsAccount> oOsAccount2Updated = updateResult.getUpdatedAccount();
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount2Updated.isPresent(), true);
+			assertEquals(oOsAccount2Updated.get().getAddr().orElse("").equalsIgnoreCase(uid2), true);
+			assertEquals(oOsAccount2Updated.get().getLoginName().orElse("").equalsIgnoreCase(loginName2), true);
+			
+			// Test unusual merge case (unusual because we're updating the account with the name, not the UID)
+			String uid3 = "503";
+			String loginName3 = "user3";
+			
+			OsAccount osAccount3uidOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid3, null, host1);
+			OsAccount osAccount3nameOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginName3, host1);
+			
+			updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(osAccount3nameOnly, uid3, loginName3);
+            Optional<OsAccount> oOsAccount3Updated = updateResult.getUpdatedAccount();
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount3Updated.isPresent(), true);
+			assertEquals(oOsAccount3Updated.get().getAddr().orElse("").equalsIgnoreCase(uid3), true);
+			assertEquals(oOsAccount3Updated.get().getLoginName().orElse("").equalsIgnoreCase(loginName3), true);
+			
+			// Test normal merge case
+			String uid4 = "504";
+			String loginName4 = "user4";
+			
+			OsAccount osAccount4uidOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid4, null, host1);
+			OsAccount osAccount4nameOnly = caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginName4, host1);
+			
+			updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(osAccount4uidOnly, uid4, loginName4);
+            Optional<OsAccount> oOsAccount4Updated = updateResult.getUpdatedAccount();
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount4Updated.isPresent(), true);
+			assertEquals(oOsAccount4Updated.get().getAddr().orElse("").equalsIgnoreCase(uid4), true);
+			assertEquals(oOsAccount4Updated.get().getLoginName().orElse("").equalsIgnoreCase(loginName4), true);
+			
+			
+			// Linux user names are case sensitive. 
+			String uid5 = "505";
+			String loginname5 = "user5";
+			String loginName5 = "User5";
+			// creates a user with only id
+			caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid5, null, host1);
+			// Creates a user with name only - lowercase 
+			caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginname5, host1);
+			
+			Optional<OsAccount> oOsAccount5_ = caseDB.getOsAccountManager().getLocalLinuxOsAccount(null, loginname5, host1);
+			assertEquals(oOsAccount5_.isPresent(), true); // Asserting that lowercase login was created		
+			assertEquals(oOsAccount5_.get().getLoginName().orElse(""), loginname5);
+			
+			// Creates a user with name only uppercase   
+			caseDB.getOsAccountManager().newLocalLinuxOsAccount(null, loginName5, host1);
+		
+			// get the osaccount by uid5
+			Optional<OsAccount> oOsAccount5 = caseDB.getOsAccountManager().getLocalLinuxOsAccount(uid5, "", host1);
+			assertEquals(oOsAccount5.isPresent(), true);
+			
+			// Login name was not provided. so should be blank 
+			assertEquals(oOsAccount5.get().getLoginName().orElse("") , "");
+			assertEquals(oOsAccount5.get().getAddr().orElse(""), uid5);
+		
+			// attempt to add an account with uid5 and loginName5 (505, User5) 
+			OsAccount act5 = caseDB.getOsAccountManager().newLocalLinuxOsAccount(uid5, loginName5, host1);
+			
+			// Previous create should not have happened. 
+			assertEquals(act5.getLoginName().orElse("") , "");
+			assertEquals(act5.getAddr().orElse(""), uid5);
+		
+			// Lets try to update the os account uid5 and loginName5 (505, "") to  (505, User5)
+			updateResult = caseDB.getOsAccountManager()
+					.updateCoreLocalLinuxOsAccountAttributes(oOsAccount5.get(), uid5, loginName5);
+			Optional<OsAccount> oOsAccount5Updated = updateResult.getUpdatedAccount();			
+			
+			assertEquals(updateResult.getUpdateStatusCode().equals(OsAccountManager.OsAccountUpdateStatus.UPDATED), true);
+			assertEquals(oOsAccount5Updated.isPresent(), true);
+			assertEquals(oOsAccount5Updated.get().getAddr().orElse(""), uid5);
+			assertEquals(oOsAccount5Updated.get().getLoginName().orElse(""), loginName5);
+			
+						
+			Optional<OsAccount> oOsAccount5_loginName = caseDB.getOsAccountManager().getLocalLinuxOsAccount(null, loginName5, host1);
+			assertEquals(oOsAccount5_loginName.isPresent(), true);  	
+			assertEquals(oOsAccount5_loginName.get().getLoginName().orElse(""), loginName5);
+			assertEquals(oOsAccount5_loginName.get().getAddr().orElse(""), uid5);
+						
+			// Asserting that lowercase login is still there in the database. 	
+			// and did not merge the wrong user. 
+			Optional<OsAccount> oOsAccount5_loginname5 = caseDB.getOsAccountManager().getLocalLinuxOsAccount(null, loginname5, host1);
+			assertEquals(oOsAccount5_loginname5.isPresent(), true); 	
+			assertEquals(oOsAccount5_loginname5.get().getLoginName().orElse(""), loginname5);
+			
+			 
+		} finally {
+			
+		}
+
+	}
 	
 	@Test
 	public void windowsSpecialAccountTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
@@ -1193,11 +1480,43 @@ public class OsAccountTest {
 		assertTrue(updatedAccount2.getLoginName().orElse("").equalsIgnoreCase(loginname2));
 		assertTrue(updatedAccount2.getSignature().equalsIgnoreCase(ownerUid2));	// account signature should now be addr
 		
-		// RAMAN TODO: CT-4284
-//		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount2.getRealmId());
-//		assertTrue(realm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1));
-//		assertTrue(realm2.getSignature().equalsIgnoreCase(realmSignature1));	
+		OsAccountRealm realm2 = caseDB.getOsAccountRealmManager().getRealmByRealmId(updatedAccount2.getRealmId());
+		assertTrue(realm2.getRealmAddr().orElse("").equalsIgnoreCase(realmAddr1));
+		assertTrue(realm2.getSignature().equalsIgnoreCase(realmSignature1));
 	}
 	
+	@Test
+	public void windowsAccountMergeTests() throws TskCoreException, OsAccountManager.NotUserSIDException {
+
+		String hostname1 = "windowsAccountMergeTestHost";
+		Host host1 = caseDB.getHostManager().newHost(hostname1);
 	
+		// 1. Create an account with a SID alone
+		String sid = "S-1-5-21-111111111-222222222-666666666-0001";
+		OsAccount osAccount1 = caseDB.getOsAccountManager().newWindowsOsAccount(sid, null, null, host1, OsAccountRealm.RealmScope.LOCAL);
+		
+		Long realmId = osAccount1.getRealmId();
+		
+		// 2. Create an account with loginName and realmName
+		String loginName = "jdoe";
+		String realmName = "testRealm";
+		OsAccount osAccount2 = caseDB.getOsAccountManager().newWindowsOsAccount(null, loginName, realmName, host1, OsAccountRealm.RealmScope.LOCAL);
+
+		// 3. Lookup account by SID, loginName, and realmName
+		Optional<OsAccount> oOsAccount = caseDB.getOsAccountManager().getWindowsOsAccount(sid, loginName, realmName, host1);
+		assertTrue(oOsAccount.isPresent());
+		
+		// 4. Update this account with all SID, loginName, and realmName
+		caseDB.getOsAccountManager().updateCoreWindowsOsAccountAttributes(oOsAccount.get(), sid, loginName, realmName, host1);
+		
+		// The two accounts should be merged
+		
+		// Test that there is now only one account associated with sid1
+		List<OsAccount> accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(a -> a.getAddr().isPresent() && a.getAddr().get().equals(sid)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 1, true);
+		
+		// Test that there is now only one account associated with loginName
+		accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getLoginName().isPresent() && p.getLoginName().get().equals(loginName)).collect(Collectors.toList());
+		assertEquals(accounts.size() == 1, true);
+	}
 }

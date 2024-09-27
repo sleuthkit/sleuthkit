@@ -17,10 +17,16 @@
 #include "tsk_lvm.hpp"
 
 class LVMPoolCompat : public TSKPoolCompat<LVMPool> {
+  void init_volumes();
+
  public:
   template <typename... Args>
   LVMPoolCompat(Args&&... args)
-      : TSKPoolCompat<LVMPool>(TSK_POOL_TYPE_LVM, std::forward<Args>(args)...) { }
+      : TSKPoolCompat<LVMPool>(TSK_POOL_TYPE_LVM, std::forward<Args>(args)...) {
+    init_volumes();
+  }
+
+  ~LVMPoolCompat();
 
   uint8_t poolstat(FILE* hFile) const noexcept;
   TSK_IMG_INFO * getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept;

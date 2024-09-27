@@ -1,6 +1,6 @@
 /*
-** fcat 
-** The Sleuth Kit 
+** fcat
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2012 Brian Carrier, Basis Technology.  All Rights reserved
@@ -214,8 +214,14 @@ main(int argc, char **argv1)
             exit(1);
         }
 
+         TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
         img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
@@ -239,7 +245,7 @@ main(int argc, char **argv1)
         free(path);
         exit(1);
     }
-    free(path); 
+    free(path);
 
     // @@@ Cannot currently get ADS with this approach
     retval =

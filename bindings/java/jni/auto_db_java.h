@@ -200,7 +200,7 @@ class TskAutoDbJava :public TskAuto {
 
     TSK_RETVAL_ENUM addUnallocatedPoolBlocksToDb(size_t & numPool);
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
-    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_IMG_INFO* curImgInfo, const TSK_DB_FS_INFO & dbFsInfo);
     TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);
     TSK_RETVAL_ENUM addUnallocVsSpaceToDb(size_t & numVsP);
     TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
@@ -235,7 +235,8 @@ class TskAutoDbJava :public TskAuto {
         int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId);
-
+    TSK_RETVAL_ENUM getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPartInfo);
+    TSK_RETVAL_ENUM getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo);
 };
 
 #endif

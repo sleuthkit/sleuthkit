@@ -142,6 +142,7 @@ namespace Rejistry {
         case ValueData::VALTYPE_DWORD:
         case ValueData::VALTYPE_QWORD:
         case ValueData::VALTYPE_BIG_ENDIAN:
+        case ValueData::VALTYPE_FILETIME:
             std::wcout << std::hex << "0x" << data->getAsNumber() << std::endl;
             break;
         default:

@@ -40,6 +40,37 @@ class CaseDatabaseFactory {
 	private final SQLHelper dbQueryHelper;
 	private final DbCreationHelper dbCreationHelper;
 		
+	// ssl=true: enables SSL encryption. 
+	// NonValidatingFactory avoids hostname verification.
+	// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can't be encrypted. 
+	// In this mode, the JDBC driver accepts all server certificates, including self-signed ones.
+	final static String SSL_NONVERIFY_URL = "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+	
+	// ssl=true: enables SSL encryption. 
+	// DefaultJavaSSLFactory: uses application's default JRE keystore to validate server certificate.
+	// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
+	final static String SSL_VERIFY_DEFAULT_URL = "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
+
+	/**
+	 * Creates JDBC URL string for implementations that use custom keystore to
+	 * validate PostgreSQL CA-signed SSL certificates. The class that performs
+	 * SSL certificate validation must extend org.postgresql.ssl.WrappedFactory
+	 * and generally must follow the same logic.
+	 *
+	 * ssl=true: enables SSL encryption. 
+	 * sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA.
+	 *
+	 * @param customSslValidationClassName full canonical name of a Java class
+	 *                                     that performs custom SSL certificate
+	 *                                     validation.
+	 *
+	 * @return JDBS URL string used to connect to PosgreSQL server via CA-signed
+	 *         SSL certificate.
+	 */
+	static String getCustomPostrgesSslVerificationUrl(String customSslValidationClassName) {
+		return "?ssl=true&sslfactory=" + customSslValidationClassName + "&sslmode=verify-ca";
+	}
+		
 	/**
 	 * Create a new SQLite case
 	 * 
@@ -207,6 +238,8 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE)");
 
+		stmt.execute("CREATE TABLE file_collection_status_types (collection_status_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
+		
 		stmt.execute("CREATE TABLE tsk_files (obj_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "fs_obj_id " + dbQueryHelper.getBigIntType() + ", data_source_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "attr_type INTEGER, attr_id INTEGER, " 
@@ -220,10 +253,12 @@ class CaseDatabaseFactory {
 				+ "parent_path TEXT, mime_type TEXT, extension TEXT, "
 				+ "owner_uid TEXT DEFAULT NULL, "
 				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " DEFAULT NULL, "
+				+ "collected INTEGER NOT NULL, "
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
-				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE SET NULL) " ); 
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE SET NULL, "
+				+ "FOREIGN KEY(collected) REFERENCES file_collection_status_types (collection_status_type))" ); 
 
 		stmt.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 
@@ -377,7 +412,13 @@ class CaseDatabaseFactory {
 			
 			stmt.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
 			
-			
+			// For DC support 
+			stmt.execute("CREATE INDEX tsk_os_accounts_login_name_idx  ON tsk_os_accounts(login_name, db_status, realm_id)");
+			stmt.execute("CREATE INDEX tsk_os_accounts_addr_idx  ON tsk_os_accounts(addr, db_status, realm_id)");
+
+			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_name_idx  ON tsk_os_account_realms(realm_name)");
+			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_addr_idx  ON tsk_os_account_realms(realm_addr)");
+		
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);
 		}
@@ -708,6 +749,19 @@ class CaseDatabaseFactory {
 				.append(info.getPort())
 				.append('/') // NON-NLS
 				.append(encodedDbName);
+			
+			if (info.isSslEnabled()) {				
+				if (info.isSslVerify()) {
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						url.append(SSL_VERIFY_DEFAULT_URL);
+					} else {
+						// use custom SSL certificate validation class
+						url.append(getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName()));
+					}
+				} else {
+					url.append(SSL_NONVERIFY_URL);
+				}
+			}
 			
 			Connection conn;
 			try {

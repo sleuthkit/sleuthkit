@@ -297,7 +297,7 @@ extern "C" {
     extern void fatfs_cleanup_ascii(char *);
 
 	extern TSK_FS_INFO 
-    *fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test);
+    *fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, const char* a_pass, uint8_t a_test);
 
     extern uint8_t
     fatfs_fscheck(TSK_FS_INFO *fs, FILE *hFile);

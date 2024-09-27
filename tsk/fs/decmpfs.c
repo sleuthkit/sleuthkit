@@ -223,6 +223,12 @@ decmpfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     }
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
+    if (tableSize <= 0) {
+        error_returned
+           (" %s: table size is zero", __func__);
+        return 0;
+    }
+
     // Each table entry is 8 bytes long
     offsetTableData = tsk_malloc(tableSize * 8);
     if (offsetTableData == NULL) {
@@ -302,6 +308,12 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     }
 
     tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
+
+    if (tableDataSize <= 0) {
+        error_returned
+           (" %s: table size is zero", __func__);
+        return 0;
+    }
 
     offsetTableData = tsk_malloc(tableDataSize);
     if (offsetTableData == NULL) {

@@ -121,7 +121,7 @@ public class TaggingManager {
 								tagName.getDisplayName(),
 								tagName.getDescription(),
 								tagName.getColor(),
-								tagName.getKnownStatus(),
+								tagName.getTagType(),
 								setID,
 								index));
 					}
@@ -285,7 +285,7 @@ public class TaggingManager {
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
 								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
+								TskData.TagType.valueOf(resultSet.getByte("knownStatus")),
 								tagSetId,
 								resultSet.getInt("rank")
 						);
@@ -344,7 +344,7 @@ public class TaggingManager {
 			}
 
 			skCase.getScoringManager().updateAggregateScoreAfterAddition(
-					artifact.getId(), artifact.getDataSourceObjectID(), getTagScore(tagName.getKnownStatus()), trans);
+					artifact.getId(), artifact.getDataSourceObjectID(), getTagScore(tagName.getTagType()), trans);
 
 			trans.commit();
 
@@ -358,48 +358,49 @@ public class TaggingManager {
 	}
 
 	/**
-	 * Translates the known status of a tag defnition into an item score. This
-	 * supports scoring of tagged items.
+	 * Translates the tag type into an item score. This supports scoring of
+	 * tagged items.
 	 *
-	 * @param knownStatus The known status of a tag definition.
+	 * @param tagType The tag type of a tag definition.
 	 *
 	 * @return The corresponding item score.
 	 */
-	static Score getTagScore(TskData.FileKnown knownStatus) {
-		switch (knownStatus) {
+	static Score getTagScore(TskData.TagType tagType) {
+		switch (tagType) {
 			case BAD:
 				/*
-				 * The "bad" known status is used to define tags that are
+				 * The "bad" tag type is used to define tags that are
 				 * "notable." An item tagged with a "notable" tag is scored as
 				 * notable.
 				 */
 				return Score.SCORE_NOTABLE;
+			case SUSPICIOUS:
+				return Score.SCORE_LIKELY_NOTABLE;
 			case UNKNOWN:
 			case KNOWN:
 			default: // N/A
 				/*
-				 * All other known status values have no special significance in
-				 * a tag definition. However, if an item has been tagged at all
-				 * by a user, the item is scored as likely notable.
+				 * All other tag type values have no special significance in
+				 * a tag definition. 
 				 */
-				return Score.SCORE_LIKELY_NOTABLE;
+				return Score.SCORE_UNKNOWN;
 		}
 	}
 
 	/**
-	 * Retrieves the maximum FileKnown status of any tag associated with the
+	 * Retrieves the maximum TagType status of any tag associated with the
 	 * object id.
 	 *
 	 * @param objectId    The object id of the item.
 	 * @param transaction The case db transaction to perform this query.
 	 *
-	 * @return The maximum FileKnown status for this object or empty.
+	 * @return The maximum TagType status for this object or empty.
 	 *
 	 * @throws TskCoreException
 	 */
-	Optional<TskData.FileKnown> getMaxTagKnownStatus(long objectId, CaseDbTransaction transaction) throws TskCoreException {
+	Optional<TskData.TagType> getMaxTagType(long objectId, CaseDbTransaction transaction) throws TskCoreException {
 		// query content tags and blackboard artifact tags for highest 
-		// known status associated with a tag associated with this object id
+		// tag type associated with a tag associated with this object id
 		String queryString = "SELECT tag_names.knownStatus AS knownStatus\n"
 				+ "	FROM (\n"
 				+ "		SELECT ctags.tag_name_id AS tag_name_id FROM content_tags ctags WHERE ctags.obj_id = " + objectId + "\n"
@@ -416,13 +417,13 @@ public class TaggingManager {
 				ResultSet resultSet = transaction.getConnection().executeQuery(statement, queryString);) {
 
 			if (resultSet.next()) {
-				return Optional.ofNullable(TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
+				return Optional.ofNullable(TskData.TagType.valueOf(resultSet.getByte("knownStatus")));
 			} else {
 				return Optional.empty();
 			}
 
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting content tag FileKnown status for content with id: " + objectId);
+			throw new TskCoreException("Error getting content tag TagType for content with id: " + objectId);
 		}
 	}
 
@@ -459,7 +460,7 @@ public class TaggingManager {
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
 								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-								TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
+								TskData.TagType.valueOf(resultSet.getByte("knownStatus")),
 								tagSetId,
 								resultSet.getInt("rank")
 						);
@@ -513,7 +514,7 @@ public class TaggingManager {
 
 			Long dataSourceId = content.getDataSource() != null ? content.getDataSource().getId() : null;
 			skCase.getScoringManager().updateAggregateScoreAfterAddition(
-					content.getId(), dataSourceId, getTagScore(tagName.getKnownStatus()), trans);
+					content.getId(), dataSourceId, getTagScore(tagName.getTagType()), trans);
 
 			trans.commit();
 			return new ContentTagChange(contentTag, removedTags);
@@ -521,6 +522,15 @@ public class TaggingManager {
 			trans.rollback();
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		}
+	}
+	
+	/**
+	 * @return 
+	 * @deprecated TaggingManager.addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.TagType tagType) should be used instead.
+	 */
+	@Deprecated
+	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
+		return addOrUpdateTagName(displayName, description, color, TskData.TagType.convertFileKnownToTagType(knownStatus));
 	}
 
 	/**
@@ -530,14 +540,14 @@ public class TaggingManager {
 	 * @param displayName The display name for the new tag name.
 	 * @param description The description for the new tag name.
 	 * @param color       The HTML color to associate with the new tag name.
-	 * @param knownStatus The TskData.FileKnown value to associate with the new
+	 * @param tagType The TskData.TagType value to associate with the new
 	 *                    tag name.
 	 *
 	 * @return A TagName data transfer object (DTO) for the new row.
 	 *
 	 * @throws TskCoreException
 	 */
-	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
+	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.TagType tagType) throws TskCoreException {
 		String insertQuery = "INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?";
 		boolean isUpdated = false;
 		skCase.acquireSingleUserCaseWriteLock();
@@ -553,11 +563,11 @@ public class TaggingManager {
 				statement.clearParameters();
 				statement.setString(5, description);
 				statement.setString(6, color.getName());
-				statement.setByte(7, knownStatus.getFileKnownValue());
+				statement.setByte(7, tagType.getTagTypeValue());
 				statement.setString(1, displayName);
 				statement.setString(2, description);
 				statement.setString(3, color.getName());
-				statement.setByte(4, knownStatus.getFileKnownValue());
+				statement.setByte(4, tagType.getTagTypeValue());
 				statement.executeUpdate();
 			}
 
@@ -565,7 +575,7 @@ public class TaggingManager {
 				statement.setString(1, displayName);
 				try (ResultSet resultSet = connection.executeQuery(statement)) {
 					resultSet.next();
-					TagName newTag = new TagName(resultSet.getLong("tag_name_id"), displayName, description, color, knownStatus, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
+					TagName newTag = new TagName(resultSet.getLong("tag_name_id"), displayName, description, color, tagType, resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
 
 					if (!isUpdated) {
 						skCase.fireTSKEvent(new TagNamesAddedTskEvent(Collections.singletonList(newTag)));
@@ -606,7 +616,7 @@ public class TaggingManager {
 								resultSet.getString("display_name"),
 								resultSet.getString("description"),
 								TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-								TskData.FileKnown.valueOf(resultSet.getByte("knowStatus")),
+								TskData.TagType.valueOf(resultSet.getByte("knownStatus")),
 								resultSet.getLong("tag_set_id"),
 								resultSet.getInt("rank"));
 					}
@@ -615,7 +625,7 @@ public class TaggingManager {
 		} catch (SQLException ex) {
 			throw new TskCoreException("", ex);
 		} finally {
-			skCase.releaseSingleUserCaseWriteLock();
+			skCase.releaseSingleUserCaseReadLock();
 		}
 
 		return null;
@@ -686,7 +696,7 @@ public class TaggingManager {
 						resultSet.getString("display_name"),
 						resultSet.getString("description"),
 						TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
-						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")),
+						TskData.TagType.valueOf(resultSet.getByte("knownStatus")),
 						tagSetId,
 						resultSet.getInt("rank")));
 			}

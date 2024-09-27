@@ -69,6 +69,11 @@ extern "C" {
 #define setbit(a,i)     (((uint8_t *)(a))[(i)/NBBY] |= (1<<((i)%NBBY)))
 #endif                          /*  */
 
+/* Threshold to prevent the processing of very large directories.
+ * This is the maximum number of entries in a single directory that will be
+ * processed before bailing out */
+#define MAX_DIR_SIZE_TO_PROCESS 1000000
+
 /* Data structure and action to internally load a file */
     typedef struct {
         char *base;
@@ -186,26 +191,26 @@ extern "C" {
 
     /* Specific file system routines */
     extern TSK_FS_INFO *ext2fs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *ffs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *, TSK_OFF_T);
     extern TSK_FS_INFO *swapfs_open(TSK_IMG_INFO *, TSK_OFF_T);
     extern TSK_FS_INFO *iso9660_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *hfs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
 	extern TSK_FS_INFO *logical_fs_open(TSK_IMG_INFO *);
 
     /* Specific pool file system routines */
     extern TSK_FS_INFO *apfs_open_auto_detect(TSK_IMG_INFO*, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *apfs_open(TSK_IMG_INFO*, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, const char*);
 

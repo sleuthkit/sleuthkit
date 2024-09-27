@@ -1,6 +1,6 @@
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
- 
+
 # Bindings dependecies and build folders
 /bindings/java/lib/
 /bindings/java/build/
@@ -35,6 +35,7 @@
 /case-uco/java/nbproject/genfiles.properties
 
 # Windows build folders
+/win32/__pycache__/
 /win32/Debug_NoLibs/
 /win32/*/Debug_NoLibs/
 /win32/Debug/
@@ -47,6 +48,8 @@
 /win32/*/Release_PostgreSQL/
 /win32/Release_NoLibs/
 /win32/*/Release_NoLibs/
+/win32/Release_XPNoLibs/
+/win32/*/Release_XPNoLibs/
 /win32/*/x64/
 /win32/x64/
 /win32/*/*.user
@@ -76,6 +79,7 @@ framework/tools/tsk_validatepipeline/tsk_validatepipeline
 rejistry++/msvcpp/*/Debug
 rejistry++/msvcpp/*/Release
 rejistry++/msvcpp/*/Release_NoLibs
+rejistry++/msvcpp/*/Release_XPNoLibs
 rejistry++/msvcpp/*/x64
 rejistry++/msvcpp/*/*.user
 rejistry++/msvcpp/rejistry++/ipch
@@ -108,6 +112,12 @@ Makefile
 .deps
 .libs
 *.swp
+.dirstamp
+
+# unit tests
+unit_tests/*/*.exe
+unit_tests/*/*.log
+unit_tests/*/*.trs
 
 #javadoc generated
 /bindings/java/javadoc
@@ -128,7 +138,6 @@ m4/libtool.m4
 m4/lt*.m4
 config/*
 
-
 # Executables
 samples/callback_cpp_style
 samples/callback_style
@@ -141,6 +150,9 @@ tests/*.trs
 tests/fs_attrlist_apis
 tests/fs_fname_apis
 tests/fs_thread_test
+tests/img_dump
+tests/imgs_to_dump
+!tests/imgs_to_dump.in
 tests/read_apis
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
@@ -178,23 +190,20 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
-unit_tests/base/*.log
-unit_tests/base/*.trs
 unit_tests/base/test_base
+unit_tests/img/test_img
+
 # EMACS backup files
 *~
 
 # Mac Junk
 .DS_Store
 
-# Test images
-*.img
-*.vhd
-*.E01
-*.vmdk
-
 sleuthkit-*.tar.gz
 
-#Test data folder
-
-tests/data
+# Whitelist test data folder
+!tests/data/*
+.Tpo
+*.gcno
+*.gcda
+wget-log
