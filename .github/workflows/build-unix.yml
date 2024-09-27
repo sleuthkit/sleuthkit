@@ -62,6 +62,20 @@ jobs:
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
 
     steps:
+      - name: Determine number of cores
+        id: cores
+        run: |
+          if [ ${{ startsWith(matrix.runner, 'macos') }} = true ]; then
+            CORES=$(sysctl -n hw.logicalcpu)
+          elif [ ${{ matrix.os == 'mingw' }} = true ]; then
+            # mingw exhausts the memory if too many jobs run concurrently
+            CORES=2
+          else
+            CORES=$(nproc)
+          fi
+          echo "cores=$CORES" >>$GITHUB_OUTPUT
+          echo "Using $CORES cores"
+
       - name: Install packages
         if: ${{ startsWith(matrix.runner, 'macos') }}
         run: |
@@ -115,7 +129,7 @@ jobs:
       - name: Run make
         if: ${{ matrix.os != 'mingw' }}
         run: |
-          make -j check VERBOSE=1
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1
 
       - name: Run make
         if: ${{ matrix.os == 'mingw' }}
@@ -123,7 +137,7 @@ jobs:
           WINEARCH: ${{ matrix.winearch }}
           WINEPATH: ${{ matrix.winepath }}
         run: |
-          make -j check VERBOSE=1 LOG_COMPILER=tests/wine_wrapper.sh
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 LOG_COMPILER=tests/wine_wrapper.sh
 
       - name: Clean up
         if: ${{ matrix.os != 'mingw' }}
