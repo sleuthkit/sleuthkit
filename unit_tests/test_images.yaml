@@ -22,4 +22,4 @@ sources:
       image: ../tests/data/img/image.dd
       xml: ../tests/data/img/image_dd.xml
   - step6:
-      image: https://corp.digitalcorpora.org/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg

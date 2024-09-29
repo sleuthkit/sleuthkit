@@ -49,6 +49,7 @@ jobs:
       - name: Get the test images
         run: |
           bash unit_tests/get_test_images.bash
+          cat unit_tests/test_images.txt
 
       - name: Extract Version from configure.ac
         id: extract_version
