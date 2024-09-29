@@ -2,54 +2,109 @@
 
 """
 This python script gets disk images used in the unit tests.
+Inputs:  test_images.yaml
+Outputs:
+   test images put in the directory specified in the test_images file
+   test_images.txt, which is a tab-delimited file containing the input test image and the DFXML output
+
 """
 
 import os
 import os.path
-from os.path import join,abspath,dirname,basename
+import logging
+import requests
+import yaml
+import zipfile
+import re
+import functools
+import urllib
+import shutil
+from os.path import join,abspath,dirname,basename,splitext
 
-HOME = os.getenv("HOME")
-IMAGE_DIR=join(HOME, "from_brian") # legacy directory
+MYDIR       = abspath( dirname( __file__ ))
+HOME        = os.getenv("HOME")
+TEST_IMAGES_YAML = join(MYDIR, "test_images.yaml")
+TEST_IMAGES_TXT   = join(MYDIR, "test_images.txt")
 
-# Format of IMAGES:
-# [ (source, destination_name) ]
-DFTT='https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/'
-HFSJTEST1 = "https://corp.digitalcorpora.org/corpora/drives/nps-2009-hfsjtest1/"
+@functools.lru_cache(maxsize=1)
+def config():
+    """Returns the YAML config, parsed"""
+    with open(TEST_IMAGES_YAML,"r") as f:
+        return yaml.safe_load(f)
 
-IMAGES =  [ (DFTT + "3-kwsrch-ntfs.zip", "ntfs-img-kw-1.dd"),
-            (DFTT + "3-kwsrch-ntfs.xml", "ntfs-img-kw-1.xml")
-            (DFTT + "imageformat_mmls_1.E01", "imageformat_mmls_1.E01"),
-            (DFTT + "imageformat_mmls_1.E01.xml", "imageformat_mmls_1.E01.xml"),
-            (DFTT + "https://corp.digitalcorpora.org/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg", "image.gen1.dmg")
-            (DFTT + image.gen1.dmg", "image.gen1.dmg")
+@functools.lru_cache(maxsize=1)
+def dest_dir():
+    return os.path.expandvars(config()['dest_dir'])
+
+DEST_DIR = dest_dir()
+
+
+def is_disk_image(name):
+    m = DISK_IMAGE_EXTENSIONS.search( name )
+    if m:
+        return True
+    return False
+
+def getfile(url, dest):
+    """Gets a file from url and puts it in dest. If url is not a URL, it copies the file"""
+    if os.path.exists(dest):
+        logging.info("   already exists: %s",dest)
+        return
+
+    os.makedirs( os.path.dirname(dest), exist_ok=True)
+    o = urllib.parse.urlparse(url)
+    if not o.scheme:
+        logging.info("Copying %s -> %s", o.path, dest)
+        shutil.copyfile(o.path, dest)
+    else:
+        logging.info("Downloading %s -> %s",url, dest)
+        r = requests.get(url)
+        with open( dest, "wb") as f:
+            f.write(r.content)
+
+def get_test_image(source):
+    """Gets each test image and returns a pair of (imagefile,xmlfile)"""
+    for (name,vals) in source.items():
+        logging.info("Getting %s",name)
+        if 'image' in vals:
+            image_url = vals['image']
+            image_fname = join( DEST_DIR, basename(image_url))
+            getfile(image_url, image_fname)
+        elif 'zipfile' in vals:
+            zipfile_url = vals['zipfile']
+            try:
+                unzip_fname = vals['unzip']
+            except KeyError as e:
+                raise RuntimeError(f'no unzip specified in {vals}') from e
+            zipfile_fname = join( DEST_DIR, basename(vals['zipfile']))
+            image_fname  = join( DEST_DIR, basename(unzip_fname))
+
+            getfile(zipfile_url, zipfile_fname)
+            with zipfile.ZipFile(zipfile_fname) as zf:
+                with zf.open(unzip_fname, "r") as myfile:
+                    with open(image_fname, "wb") as out:
+                        out.write(myfile.read())
+        else:
+            raise RuntimeError(f"no 'image' or 'zipfile' in {source}")
+
+        # Now get the DFXML
+        try:
+            xml_source  = vals['xml']
+            xml_fname   = join( DEST_DIR, basename(xml_source))
+            getfile(xml_source, xml_fname)
+        except KeyError:
+            xml_fname = ''
+        return (image_fname, xml_fname)
+
 
 def get_test_images():
-    os.makedirs(IMAGE_DIR, exist_ok=True)
-
+    " Gets all of the test images. Returns"
+    with open(TEST_IMAGES_TXT, 'w') as out:
+        for source in config()['sources']:
+            (image,xml) = get_test_image(source)
+            out.write(f"{image}\t{xml}\n")
 
 if __name__=="__main__":
-
-mkdir -p $IMAGE_DIR
-
-for fn in 3-kwsrch-ntfs.zip imageformat_mmls_1.E01 imageformat_mmls_1.vhd imageformat_mmls_1.vmdk; do
-    if ! test -f $IMAGE_DIR/$fn
-    then
-        curl https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/$fn -o $IMAGE_DIR/$fn
-        if [[ $fn == *.zip ]]; then
-            (cd $IMAGE_DIR; unzip $fn)
-        fi
-    fi
-done
-
-if ! test -f $IMAGE_DIR/ntfs-img-kw-1.dd ; then
-    cp $IMAGE_DIR/3-kwsrch-ntfs/ntfs-img-kw-1.dd $IMAGE_DIR/.
-fi
-
-# Get additional digital corpora files
-for url in https://corp.digitalcorpora.org/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg; do
-    fn=$(basename url)
-    if ! test -f $IMAGE_DIR/$fn
-    then
-        curl $url -o $IMAGE_DIR/$fn
-    fi
-done
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
+    get_test_images()

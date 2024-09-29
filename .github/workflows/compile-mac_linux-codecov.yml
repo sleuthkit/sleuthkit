@@ -100,6 +100,10 @@ jobs:
           make check || (cat test-suite.log; exit 1)
           make distclean
 
+      - name: Get the test images
+        run: |
+          bash unit_tests/get_test_images.bash
+
       - name: Prepare C++ executable and make check
         run: |
           bash ./bootstrap
