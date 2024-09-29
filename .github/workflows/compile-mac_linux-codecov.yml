@@ -66,7 +66,7 @@ jobs:
       - name: "Configure for Ubuntu"
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt install -y autoconf automake g++ flex libexpat1-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
+          sudo apt install -y autoconf automake g++ flex libexpat1-dev libewf libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
           bash ./bootstrap
 
       - name: Report version numbers
