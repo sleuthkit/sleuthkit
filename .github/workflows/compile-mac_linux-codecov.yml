@@ -37,7 +37,7 @@ jobs:
           echo "run_codecov=false" >> $GITHUB_ENV
 
       - name: Enable codecov on ubuntu x64
-        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && true
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           echo "run_codecov=true" >> $GITHUB_ENV
 
