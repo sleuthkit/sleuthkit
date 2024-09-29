@@ -2,6 +2,7 @@
 #
 # Install python virtual environment and run get_test_images.py
 #
+cd $(dirname $0)
 if [ ! -d venv ]; then
     python3 -m venv venv
     source venv/bin/activate
