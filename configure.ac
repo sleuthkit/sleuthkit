@@ -259,7 +259,6 @@ AC_SUBST([CXXLD])
 
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
-AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 dnl OpenSSL support for encryption - currently disabled due to automatic test failures
 dnl AX_CHECK_OPENSSL(
