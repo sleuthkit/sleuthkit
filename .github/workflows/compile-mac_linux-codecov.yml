@@ -29,6 +29,7 @@ jobs:
     env:
       MAKE_OPTS: -j2
       NOHARDFAIL: TRUE
+      TEST_IMAGES: unit_tests/test_images.txt
 
     steps:
       - name: Set make variables
