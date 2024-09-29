@@ -24,12 +24,12 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-22.04]
-        platform: [x64, arm64]
     runs-on: ${{ matrix.os }}
 
     env:
       MAKE_OPTS: -j2
       NOHARDFAIL: TRUE
+      TEST_IMAGES: unit_tests/test_images.txt
 
     steps:
       - name: Set make variables
@@ -37,7 +37,7 @@ jobs:
           echo "run_codecov=false" >> $GITHUB_ENV
 
       - name: Enable codecov on ubuntu x64
-        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.platform, 'x64') && true
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           echo "run_codecov=true" >> $GITHUB_ENV
 
@@ -47,9 +47,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Get regression disk images
+      - name: Get the test images
         run: |
-          bash tests/get_dftt.bash
+          bash unit_tests/get_test_images.bash
+          cat unit_tests/test_images.txt
 
       - name: Extract Version from configure.ac
         id: extract_version
@@ -65,7 +66,7 @@ jobs:
       - name: "Configure for Ubuntu"
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt install -y autoconf automake g++ flex libexpat1-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
+          sudo apt install -y autoconf automake g++ flex libexpat1-dev libewf-dev libre2-dev libssl-dev libtool libxml2-utils make pkg-config zlib1g-dev
           bash ./bootstrap
 
       - name: Report version numbers
