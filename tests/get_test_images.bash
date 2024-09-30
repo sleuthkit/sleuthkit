@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 #
 # Install python virtual environment and run get_test_images.py
 #
