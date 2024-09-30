@@ -9,8 +9,11 @@
 #include <fstream>
 #include <string>
 
-#include "tools/fiwalk/src/fiwalk.h"
+#define CATCH_CONFIG_MAIN
+
 #include "catch.hpp"
+
+#include "tools/fiwalk/src/fiwalk.h"
 
 TEST_CASE("test_disk_images","[fiwalk]") {
     std::ifstream test_images("tests/test_images.txt");
