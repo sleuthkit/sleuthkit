@@ -360,7 +360,7 @@ int af_display_as_hex(const char *segname)
 int fiwalk::run()
 {
     gettimeofday(&tv0,0);
-    std::ofstream *xout = 0;
+    std::ofstream xout;
     if (opt_no_data && (opt_md5 || opt_sha1 || opt_save || opt_magic)) {
         errx(1, "-g conflicts with options requiring data access (-z may be needed)");
     }
@@ -414,11 +414,11 @@ int fiwalk::run()
                 errx(1,"%s: file exists",xml_fn.c_str());
             }
         }
-        xout = new std::ofstream(xml_fn.c_str());
-        if (!xout->is_open()){
+        xout = std::ofstream(xml_fn.c_str());
+        if (!xout.is_open()){
             errx(1,"Cannot open %s: %s",xml_fn.c_str(),strerror(errno));
         }
-        x = new xml(*xout,true);	// we will make DTD going to a file
+        x = new xml(xout,true);	// we will make DTD going to a file
     }
 
     /* If no output file has been specified, output text to stdout */
@@ -547,9 +547,6 @@ int fiwalk::run()
 #define THIS_MAKES_IT_CRASH_ON_SECOND_CALL
 #ifndef THIS_MAKES_IT_CRASH_ON_SECOND_CALL
         delete(x);
-        if (xout) {
-            delete xout;
-        }
 #endif
     }
     return 0;
