@@ -186,7 +186,7 @@ void xml::puts(const string &v)
 
 void xml::spaces()
 {
-    for(u_int i=0;i<tag_stack.size();i++){
+    for(uint32_t i=0;i<tag_stack.size();i++){
 	out << "  ";
     }
 }
