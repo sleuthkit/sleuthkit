@@ -394,10 +394,12 @@ int fiwalk::run()
     }
 
     /* XML initialization */
+    x = nullptr;
 
     if (opt_x){
         x = new xml(std::cout, false);			// default to stdout
     }
+
     if (xml_fn.size()>0){
         if (x) errx(1,"Cannot write XML to stdout and file at same time\n");
         if (xml_fn == "0"){              // special case of -X0
@@ -418,6 +420,7 @@ int fiwalk::run()
         if (!xout.is_open()){
             errx(1,"Cannot open %s: %s",xml_fn.c_str(),strerror(errno));
         }
+        delete x;
         x = new xml(xout,true);	// we will make DTD going to a file
     }
 
