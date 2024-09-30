@@ -546,11 +546,7 @@ int fiwalk::run()
     if (t) comment("=EOF=");
     if (x) {
         x->pop();			// <dfxml>
-
-#define THIS_MAKES_IT_CRASH_ON_SECOND_CALL
-#ifndef THIS_MAKES_IT_CRASH_ON_SECOND_CALL
-        delete(x);
-#endif
     }
+    delete(x);
     return 0;
 }
