@@ -93,14 +93,14 @@ def get_test_image(source):
             getfile(xml_source, xml_fname)
         except KeyError:
             xml_fname = ''
-        return (image_fname, xml_fname)
+        return image_fname, xml_fname
 
 
 def get_test_images():
     " Gets all of the test images. Returns"
     with open(TEST_IMAGES_TXT, 'w') as out:
         for source in config()['sources']:
-            (image,xml) = get_test_image(source)
+            image, xml = get_test_image(source)
             out.write(f"{image}\t{xml}\n")
 
 if __name__=="__main__":
