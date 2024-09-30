@@ -121,11 +121,6 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }}
 
-      - name: Get the test images
-        run: |
-          bash unit_tests/get_test_images.bash
-          cat unit_tests/test_images.txt
-
       - name: Run make
         if: ${{ matrix.os != 'mingw' }}
         run: |

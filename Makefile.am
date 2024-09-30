@@ -589,6 +589,7 @@ check_SCRIPTS = \
 
 TESTS =	\
 	tests/runtests.sh \
+	tests/fiwalk_test \
 	tests/test_imgs.sh \
 	tests/test_libraries.sh
 
@@ -599,13 +600,27 @@ endif
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
 
-# TODO: nothing runs these (except for img_dump)!
+# TODO: nothing runs these (except for img_dump, fiwalk_test)!
 check_PROGRAMS = \
+	tests/fiwalk_test \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
 	tests/fs_thread_test \
 	tests/img_dump \
 	tests/read_apis
+
+tests_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_fiwalk_test_LDADD = $(TSK_LIB)
+tests_fiwalk_test_SOURCES = \
+	tests/fiwalk_test.cpp \
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
+
+tests/test_images.txt:
+	tests/get_test_images.bash
 
 tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -656,7 +671,6 @@ unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 unit_tests_runner_SOURCES = \
 	unit_tests/catch.hpp \
 	unit_tests/errors_test.cpp \
-	unit_tests/fiwalk_test.cpp \
 	unit_tests/mult_files_test.cpp \
 	unit_tests/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
@@ -666,8 +680,7 @@ unit_tests_runner_SOURCES = \
 	$(tsk_img_libtskimg_la_SOURCES) \
 	$(tsk_pool_libtskpool_la_SOURCES) \
 	$(tsk_util_libtskutil_la_SOURCES) \
-	$(tsk_vs_libtskvs_la_SOURCES) \
-	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+	$(tsk_vs_libtskvs_la_SOURCES)
 
 #
 # Java

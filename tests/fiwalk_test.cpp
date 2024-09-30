@@ -13,7 +13,7 @@
 #include "catch.hpp"
 
 TEST_CASE("test_disk_images","[fiwalk]") {
-    std::ifstream test_images("unit_tests/test_images.txt");
+    std::ifstream test_images("tests/test_images.txt");
     CHECK(test_images.is_open());
     std::string line;
     while (std::getline(test_images, line)) {
