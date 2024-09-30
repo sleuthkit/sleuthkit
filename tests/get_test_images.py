@@ -25,15 +25,18 @@ MYDIR       = abspath(dirname( __file__ ))
 TEST_IMAGES_YAML = join(MYDIR, "test_images.yaml")
 TEST_IMAGES_TXT   = join(MYDIR, "test_images.txt")
 
+
 @functools.lru_cache(maxsize=1)
 def config():
     """Returns the YAML config, parsed"""
     with open(TEST_IMAGES_YAML,"r") as f:
         return yaml.safe_load(f)
 
+
 @functools.lru_cache(maxsize=1)
 def dest_dir():
-    return os.path.expandvars(config()['dest_dir'])
+    return abspath(os.path.expandvars(config()['dest_dir']))
+
 
 DEST_DIR = dest_dir()
 
@@ -43,6 +46,7 @@ def is_disk_image(name):
     if m:
         return True
     return False
+
 
 def getfile(url, dest):
     """Gets a file from url and puts it in dest. If url is not a URL, it copies the file"""
@@ -61,8 +65,9 @@ def getfile(url, dest):
         with open( dest, "wb") as f:
             f.write(r.content)
 
+
 def get_test_image(source):
-    """Gets each test image and returns a pair of (imagefile,xmlfile)"""
+    """Gets each test image and returns a pair of (imagefile, xmlfile)"""
     for (name,vals) in source.items():
         logging.info("Getting %s",name)
         if 'image' in vals:
@@ -102,6 +107,7 @@ def get_test_images():
         for source in config()['sources']:
             image, xml = get_test_image(source)
             out.write(f"{image}\t{xml}\n")
+
 
 if __name__=="__main__":
     logging.basicConfig()
