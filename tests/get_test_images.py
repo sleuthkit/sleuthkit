@@ -21,8 +21,7 @@ import urllib
 import shutil
 from os.path import join,abspath,dirname,basename,splitext
 
-MYDIR       = abspath( dirname( __file__ ))
-HOME        = os.getenv("HOME")
+MYDIR       = abspath(dirname( __file__ ))
 TEST_IMAGES_YAML = join(MYDIR, "test_images.yaml")
 TEST_IMAGES_TXT   = join(MYDIR, "test_images.txt")
 
