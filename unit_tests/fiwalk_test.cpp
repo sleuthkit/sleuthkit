@@ -28,13 +28,9 @@ TEST_CASE("test_disk_images","[fiwalk]") {
          * If there is no XML file, then add ".xml2" to the image file.
          */
 
-        std::string dfxml_file = line.substr(tab + 1 );
-        std::string dfxml2_file = src_image + ".xml2";
-        INFO("dfxml_file: " << dfxml_file);
-        if (dfxml_file.back() == '\n') {
-            dfxml_file = dfxml_file.substr(0, dfxml_file.length() - 1);
-            dfxml2_file = dfxml_file + "2";
-        }
+        const std::string dfxml_file = tab + 1 > line.length() ? "" : line.substr(tab + 1);
+        std::string dfxml2_file = dfxml_file.empty() ? src_image + ".xml2" : dfxml_file + "2";
+
         INFO("test: fiwalk " << src_image)
 
         const int argc = 1;
