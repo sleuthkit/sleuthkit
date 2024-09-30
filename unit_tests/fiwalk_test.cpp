@@ -6,7 +6,6 @@
  *
  */
 
-#include <cstdlib>
 #include <fstream>
 #include <string>
 
@@ -14,11 +13,7 @@
 #include "catch.hpp"
 
 TEST_CASE("test_disk_images","[fiwalk]") {
-    const char *disk_images_path = std::getenv("TEST_IMAGES");
-    if (!disk_images_path) {
-        FAIL("Set environment variable TEST_IMAGES");
-    }
-    std::ifstream test_images(disk_images_path);
+    std::ifstream test_images("unit_tests/test_images.txt");
     CHECK(test_images.is_open());
     std::string line;
     while (std::getline(test_images, line)) {
