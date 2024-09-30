@@ -21,7 +21,7 @@ TEST_CASE("test_disk_images","[fiwalk]") {
     std::string line;
     while (std::getline(test_images, line)) {
         auto tab = line.find('\t');
-        if (tab < 0) {
+        if (tab == std::string::npos) {
             FAIL("No tab in line: " << line);
         }
         std::string src_image  = line.substr(0, tab);
