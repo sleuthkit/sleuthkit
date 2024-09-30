@@ -17,7 +17,7 @@
 
 TEST_CASE("test_disk_images","[fiwalk]") {
     std::ifstream test_images("tests/test_images.txt");
-    CHECK(test_images.is_open());
+    REQUIRE(test_images.is_open());
     std::string line;
     while (std::getline(test_images, line)) {
         auto tab = line.find('\t');
