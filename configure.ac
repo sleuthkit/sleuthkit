@@ -143,8 +143,19 @@ dnl Check if we should link with zlib
 TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
 dnl Check if we should link with libbfio
 TSK_OPT_DEP_CHECK([libbfio], [], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
+
 dnl Check if we should link with libewf
 TSK_OPT_DEP_CHECK([libewf], [EWF], [libewf], [libewf.h], [ewf], [libewf_get_version])
+dnl Check for libewf_handle_read_buffer_at_offset, in newer versions of libewf
+AS_IF(
+  [test "x$ax_libewf" != "xno"],
+  [AC_CHECK_LIB(
+    [ewf],
+    [libewf_handle_read_buffer_at_offset],
+    [AC_DEFINE([HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET], [1], [Define to 1 if you have the `libewf_handle_read_buffer_at_offset' function.])]
+  )]
+)
+
 dnl Check if we should link with libqcow
 TSK_OPT_DEP_CHECK([libqcow], [QCOW], [libqcow], [libqcow.h], [qcow], [libqcow_get_version])
 dnl Check if we should link with libvhdi

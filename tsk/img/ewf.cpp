@@ -68,7 +68,7 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 
     tsk_take_lock(&(ewf_info->read_lock));
 #if defined( HAVE_LIBEWF_V2_API )
-#if defined(LIBEWF_VERSION) && LIBEWF_VERSION >= 20141129
+#ifdef HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET
     cnt = libewf_handle_read_buffer_at_offset(
 #else
     cnt = libewf_handle_read_random(
