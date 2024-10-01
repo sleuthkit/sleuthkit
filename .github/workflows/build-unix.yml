@@ -1,5 +1,8 @@
 name: "Build"
 
+# For docker container comparable to Linux build worker:
+#   docker run -it docker.io/library/ubuntu:22.04 bash
+
 on:
   push:
     branches:
