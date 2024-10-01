@@ -35,7 +35,7 @@ def config():
 
 @functools.lru_cache(maxsize=1)
 def dest_dir():
-    return abspath(os.path.expandvars(config()['dest_dir']))
+    return os.path.expandvars(config()['dest_dir'])
 
 
 DEST_DIR = dest_dir()
