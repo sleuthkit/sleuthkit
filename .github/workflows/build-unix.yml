@@ -39,7 +39,7 @@ jobs:
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --enable-shared --disable-static"
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
-            wineprefix: '~/.wine64'
+            wineprefix: '/home/runner/.wine64'
 
           - os: "mingw"
             arch: "x86_64"
@@ -48,7 +48,7 @@ jobs:
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --disable-shared --enable-static"
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
-            wineprefix: '~/.wine64'
+            wineprefix: '/home/runner/.wine64'
 
           - os: "mingw"
             arch: "i686"
@@ -57,7 +57,7 @@ jobs:
             configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --enable-shared --disable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
-            wineprefix: '~/.wine32'
+            wineprefix: '/home/runner/.wine32'
 
           - os: "mingw"
             arch: "i686"
@@ -66,7 +66,7 @@ jobs:
             configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --disable-shared --enable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
-            wineprefix: '~/.wine32'
+            wineprefix: '/home/runner/.wine32'
 
     steps:
       - name: Determine number of cores
