@@ -123,7 +123,7 @@ jobs:
 
       - name: Run make
         run: |
-          make -j${{ steps.cores.outputs.cores }} VERBOSE=1
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 TESTS=
 
       - name: Run make check
         if: ${{ matrix.os != 'mingw' }}
