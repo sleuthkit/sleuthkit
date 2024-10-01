@@ -122,11 +122,15 @@ jobs:
           ./configure ${{ matrix.configure_opts }}
 
       - name: Run make
+        run: |
+          make -j${{ steps.cores.outputs.cores }} VERBOSE=1
+
+      - name: Run make check
         if: ${{ matrix.os != 'mingw' }}
         run: |
           make -j${{ steps.cores.outputs.cores }} check VERBOSE=1
 
-      - name: Run make
+      - name: Run make check
         if: ${{ matrix.os == 'mingw' }}
         env:
           WINEARCH: ${{ matrix.winearch }}
