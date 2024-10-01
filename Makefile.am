@@ -623,6 +623,8 @@ EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
 tests/test_images.txt:
 	tests/get_test_images.bash
 
+CLEANFILES += tests/test_images.txt
+
 tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
