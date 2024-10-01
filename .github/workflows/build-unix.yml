@@ -39,6 +39,7 @@ jobs:
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --enable-shared --disable-static"
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
+            wineprefix: '~/.wine64'
 
           - os: "mingw"
             arch: "x86_64"
@@ -47,6 +48,7 @@ jobs:
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --disable-shared --enable-static"
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
+            wineprefix: '~/.wine64'
 
           - os: "mingw"
             arch: "i686"
@@ -55,6 +57,7 @@ jobs:
             configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --enable-shared --disable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
+            wineprefix: '~/.wine32'
 
           - os: "mingw"
             arch: "i686"
@@ -63,6 +66,7 @@ jobs:
             configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --disable-shared --enable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
+            wineprefix: '~/.wine32'
 
     steps:
       - name: Determine number of cores
@@ -138,6 +142,7 @@ jobs:
         env:
           WINEARCH: ${{ matrix.winearch }}
           WINEPATH: ${{ matrix.winepath }}
+          WINEPREFIX: ${{ matrix.wineprefix }}
         run: |
           make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 LOG_COMPILER=tests/wine_wrapper.sh || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
