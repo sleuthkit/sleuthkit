@@ -284,11 +284,22 @@ TSK_THREAD_SANITIZER
 TSK_UNDEFINED_SANITIZER
 
 check_imgs=
+
+dnl FIXME: check iso on MinGW after fixing timestamp bug
+case "$host" in
+*-*-mingw*)
+  ;;
+*)
+  check_imgs="$check_imgs image.iso"
+  ;;
+esac
+
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
 AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
 AS_IF([test "x$ax_libqcow" != "xno"], [check_imgs="$check_imgs image.qcow"])
 AS_IF([test "x$ax_libvhdi" != "xno"], [check_imgs="$check_imgs image.vhd"])
 AS_IF([test "x$ax_libvmdk" != "xno"], [check_imgs="$check_imgs image.vmdk"])
+
 
 AC_SUBST(CHECK_IMGS, $check_imgs)
 
