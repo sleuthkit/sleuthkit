@@ -600,6 +600,8 @@ endif
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
 
+LOG_COMPILER = scripts/test_runner.sh
+
 # TODO: nothing runs these (except for img_dump, fiwalk_test)!
 check_PROGRAMS = \
 	tests/fiwalk_test \

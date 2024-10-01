@@ -144,7 +144,7 @@ jobs:
           WINEPATH: ${{ matrix.winepath }}
           WINEPREFIX: ${{ matrix.wineprefix }}
         run: |
-          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 LOG_COMPILER=tests/wine_wrapper.sh || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Clean up
         if: ${{ matrix.os != 'mingw' }}
