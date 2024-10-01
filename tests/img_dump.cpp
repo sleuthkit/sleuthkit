@@ -156,6 +156,10 @@ private:
     out << '"' << quote(v) << '"';
   }
 
+  void value(char* v) {
+    value(const_cast<const char*>(v));
+  }
+
   void value(const char* v) {
     value(std::string(v));
   }
