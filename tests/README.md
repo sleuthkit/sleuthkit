@@ -1,12 +1,6 @@
-Legacy tests
-============
-
-Note: This directory contains legacy unit tests. For the new unit test framework, please see [../unit_tests/README.md](../unit_tests/README.md)
-
-
 Disk Images
 -----------
-Unit testing is done with the following disk images:
+Testing is done with the following disk images:
 
 
 All different images:
@@ -26,4 +20,4 @@ data/image/image_dd.xml - DFXML output of running fiwalk on data/image/image.dd
 ```
 Setup:
 
-`get_dfft.bash` - Bash script that gets disk images from digitalcorpora and stores them in `$HOME/from_brian` (which is the legacy location where disk images are stored.
+`get_test_images.py` - Script that gets disk images from digitalcorpora and stores them in `from_brian` (which is the legacy location where disk images are stored.

@@ -180,11 +180,11 @@ AC_ARG_ENABLE([offline],
      esac],[offline=false])
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
+
 AM_CONDITIONAL([CUSTOM_DEFAULT_JAR_LOCATION], [test "x$default_jar_location" != "x"])
 AM_COND_IF([CUSTOM_DEFAULT_JAR_LOCATION],
     [AC_SUBST([DEFAULT_JAR_LOCATION], [$default_jar_location])]
 )
-
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
@@ -266,32 +266,40 @@ else
   CXXLD="$CXX"
 fi
 
+AM_CONDITIONAL([BUILD_STATIC], [test "x$enable_shared" != "xyes"])
 AC_SUBST([CXXLD])
 
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 
-dnl OpenSSL support for encryption - currently disabled due to automatic test failures
-dnl AX_CHECK_OPENSSL(
-dnl  [ax_openssl=yes]
-dnl  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS",
-dnl  AC_SUBST([LIBTSK_LDFLAGS])
-[ax_openssl=no]
-dnl  [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])]
-dnl )
-dnl For the moment, disable the openssl library so the Travis test will pass
-dnl AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
+dnl OpenSSL support for encryption
+TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 
 dnl Use -Wno-unused-command-line-argument only if the compiler understands it
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CXXFLAGS], [-Werror-unknown-warning])
 
+TSK_ADDRESS_SANITIZER
+TSK_THREAD_SANITIZER
+TSK_UNDEFINED_SANITIZER
+
 check_imgs=
+
+dnl FIXME: check iso on MinGW after fixing timestamp bug
+case "$host" in
+*-*-mingw*)
+  ;;
+*)
+  check_imgs="$check_imgs image.iso"
+  ;;
+esac
+
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
 AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
 AS_IF([test "x$ax_libqcow" != "xno"], [check_imgs="$check_imgs image.qcow"])
 AS_IF([test "x$ax_libvhdi" != "xno"], [check_imgs="$check_imgs image.vhd"])
 AS_IF([test "x$ax_libvmdk" != "xno"], [check_imgs="$check_imgs image.vmdk"])
+
 
 AC_SUBST(CHECK_IMGS, $check_imgs)
 
@@ -314,6 +322,7 @@ Building:
    libvmdk support:                       $ax_libvmdk
    libvslvm support:                      $ax_libvslvm
 
+   openssl support:                       $ax_libcrypto
    zlib support:                          $ax_zlib
 
 Features:

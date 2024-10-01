@@ -301,7 +301,7 @@ tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/pool_types.cpp
 
 tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
-tsk_util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
+tsk_util_libtskutil_la_LDFLAGS = $(AM_LDFLAGS) $(OPENSSL_LDFLAGS)
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
@@ -345,7 +345,8 @@ tsk_libtsk_la_LIBADD = \
 	tsk/pool/libtskpool.la \
 	tsk/util/Bitlocker/libtskbitlocker.la \
 	tsk/util/libtskutil.la \
-	tsk/vs/libtskvs.la
+	tsk/vs/libtskvs.la \
+	$(OPENSSL_LIBS)
 
 # current:revision:age
 tsk_libtsk_la_LDFLAGS = -version-info 21:1:2 $(LIBTSK_LDFLAGS)
@@ -580,22 +581,51 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
+	tests/check_static.sh \
 	tests/runtests.sh \
+	tests/test_imgs.sh \
+	tests/test_libraries.sh \
+	tests/test_static_tools.sh
+
+TESTS =	\
+	tests/runtests.sh \
+	tests/fiwalk_test \
 	tests/test_imgs.sh \
 	tests/test_libraries.sh
 
-TESTS = $(check_SCRIPTS)
+if BUILD_STATIC
+TESTS += tests/test_static_tools.sh
+endif
 
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
 
-# TODO: nothing runs these (except for img_dump)!
+LOG_COMPILER = scripts/test_runner.sh
+
+# TODO: nothing runs these (except for img_dump, fiwalk_test)!
 check_PROGRAMS = \
+	tests/fiwalk_test \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
 	tests/fs_thread_test \
 	tests/img_dump \
 	tests/read_apis
+
+tests_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+tests_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_fiwalk_test_LDADD = $(TSK_LIB)
+tests_fiwalk_test_SOURCES = \
+	tests/fiwalk_test.cpp \
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
+
+tests/test_images.txt:
+	tests/get_test_images.bash
+
+CLEANFILES += tests/test_images.txt
 
 tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -637,17 +667,14 @@ tests_read_apis_SOURCES = tests/read_apis.cpp
 
 check_PROGRAMS += unit_tests/runner
 
-# TODO: enable running unit_tests as part of 'make check'
-#TESTS += unit_tests/runner
+TESTS += unit_tests/runner
 
-unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) $(CATCH2_CPPFLAGS)
+unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 unit_tests_runner_SOURCES = \
-	unit_tests/catch.hpp \
 	unit_tests/errors_test.cpp \
-	unit_tests/fiwalk_test.cpp \
 	unit_tests/mult_files_test.cpp \
 	unit_tests/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
@@ -657,8 +684,7 @@ unit_tests_runner_SOURCES = \
 	$(tsk_img_libtskimg_la_SOURCES) \
 	$(tsk_pool_libtskpool_la_SOURCES) \
 	$(tsk_util_libtskutil_la_SOURCES) \
-	$(tsk_vs_libtskvs_la_SOURCES) \
-	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+	$(tsk_vs_libtskvs_la_SOURCES)
 
 #
 # Java
