@@ -135,6 +135,8 @@ AS_IF([test "x$ax_sqlite3" = "xyes"],
       [AC_MSG_RESULT([bundled])])
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
+dnl Check if we should link with OpenSSL
+TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 dnl Check if we should link with afflib
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
 dnl Check if we should link with libaff4
@@ -142,7 +144,7 @@ TSK_OPT_DEP_CHECK([libaff4], [], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
 dnl Check if we should link with zlib
 TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
 dnl Check if we should link with libbfio
-TSK_OPT_DEP_CHECK([libbfio], [], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
+TSK_OPT_DEP_CHECK([libbfio], [BFIO], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
 
 dnl Check if we should link with libewf
 TSK_OPT_DEP_CHECK([libewf], [EWF], [libewf], [libewf.h], [ewf], [libewf_get_version])
@@ -152,7 +154,7 @@ AS_IF(
   [AC_CHECK_LIB(
     [ewf],
     [libewf_handle_read_buffer_at_offset],
-    [AC_DEFINE([HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET], [1], [Define to 1 if you have the `libewf_handle_read_buffer_at_offset' function.])]
+    [AC_DEFINE([HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET], [1], [Define to 1 if you have the libewf_handle_read_buffer_at_offset function.])]
   )]
 )
 
@@ -162,10 +164,15 @@ dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
 TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
+
+dnl Check that libbfio is available if libvslvm was requested
+AS_IF(
+  [test "x$ax_libbfio" = "xno" -a "x$with_libvslvm" != "xno" -a -n "$with_libvslvm"],
+  [AC_MSG_FAILURE([libvslvm requires libbfio])]
+)
+
 dnl Check if we should link with libvslvm
-AS_IF([test "x$ax_libbfio" = "xyes"],
-      [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
-      [ax_libvslvm=no])
+TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])
 
 dnl check for user online input
 AC_ARG_ENABLE([offline],
@@ -272,9 +279,6 @@ AC_SUBST([CXXLD])
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 
-dnl OpenSSL support for encryption
-TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
-
 dnl Use -Wno-unused-command-line-argument only if the compiler understands it
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CXXFLAGS], [-Werror-unknown-warning])
@@ -316,8 +320,9 @@ AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libaff4 support:                       $ax_libaff4
+   libbfio support:                       $ax_libqcow
    libewf support:                        $ax_libewf
-   libqcow support:                       $ax_libqcow
+   libqcow support:                       $ax_libbfio
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
    libvslvm support:                      $ax_libvslvm

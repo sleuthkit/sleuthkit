@@ -24,13 +24,13 @@ jobs:
             arch: "arm64"
             linkage: "shared"
             runner: "macos-latest"
-            configure_opts: "--disable-java"
+            configure_opts: "--with-libewf --disable-java"
 
           - os: "linux"
             arch: "x86_64"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts: "--disable-java"
+            configure_opts: "--with-libewf --disable-java"
 
           - os: "mingw"
             arch: "x86_64"
