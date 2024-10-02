@@ -665,18 +665,18 @@ tests_read_apis_SOURCES = tests/read_apis.cpp
 # and link into a single executable.
 # THis makes things easier with codecov.
 
-check_PROGRAMS += unit_tests/runner
+check_PROGRAMS += test/runner
 
-TESTS += unit_tests/runner
+TESTS += test/runner
 
-unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-unit_tests_runner_SOURCES = \
-	unit_tests/errors_test.cpp \
-	unit_tests/mult_files_test.cpp \
-	unit_tests/runner.cpp \
+test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_runner_SOURCES = \
+	test/errors_test.cpp \
+	test/mult_files_test.cpp \
+	test/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
 	$(tsk_base_libtskbase_la_SOURCES) \
 	$(tsk_fs_libtskfs_la_SOURCES) \
