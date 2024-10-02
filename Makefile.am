@@ -580,11 +580,11 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
-	tests/check_static.sh \
+	test/check_static.sh \
 	tests/runtests.sh \
 	tests/test_imgs.sh \
 	tests/test_libraries.sh \
-	tests/test_static_tools.sh
+	test/test_static_tools.sh
 
 TESTS =	\
 	tests/runtests.sh \
@@ -593,7 +593,7 @@ TESTS =	\
 	tests/test_libraries.sh
 
 if BUILD_STATIC
-TESTS += tests/test_static_tools.sh
+TESTS += test/test_static_tools.sh
 endif
 
 TEST_EXTENSIONS = .sh
