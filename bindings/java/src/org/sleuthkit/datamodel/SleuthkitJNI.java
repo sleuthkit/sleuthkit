@@ -1130,6 +1130,24 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openFs(long imgHandle, long fsOffset, SleuthkitCase skCase) throws TskCoreException {
+		return openFs(imgHandle, fsOffset, "", skCase);
+	}
+	
+	/**
+	 * Get file system Handle Opened handle is cached (transparently) so it does
+	 * not need be reopened next time for the duration of the application
+	 *
+	 * @param imgHandle pointer to imgHandle in sleuthkit
+	 * @param fsOffset  byte offset to the file system
+	 * @param password  image password
+	 * @param skCase    the case containing the file system
+	 *
+	 * @return pointer to a fsHandle structure in the sleuthkit
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static long openFs(long imgHandle, long fsOffset, String password, SleuthkitCase skCase) throws TskCoreException {
 		getTSKReadLock();
 		try {
 			long fsHandle;
@@ -1148,7 +1166,7 @@ public class SleuthkitJNI {
 					//return cached
 					fsHandle = imgOffSetToFsHandle.get(fsOffset);
 				} else {
-					fsHandle = openFsNat(imgHandle, fsOffset);
+					fsHandle = openFsDecryptNat(imgHandle, fsOffset, password);
 					//cache it
 					imgOffSetToFsHandle.put(fsOffset, fsHandle);
 				}
@@ -1931,7 +1949,49 @@ public class SleuthkitJNI {
 	}
 
 	public static boolean isImageSupported(String imagePath) {
-		return isImageSupportedNat(imagePath);
+		// isImageSupportedStringNat returns a blank string if the image is supported or
+		// an error message if the file systems could not be opened
+		return isImageSupportedStringNat(imagePath, "").isBlank();
+	}
+	
+	/**
+	 * Helper class to hold the result of running testOpenImage()
+	 */
+	public static class TestOpenImageResult {
+		boolean testSuccess;
+		String message;
+		
+		TestOpenImageResult(boolean testSuccess, String message) {
+			this.testSuccess = testSuccess;
+			this.message = message;
+		}
+	
+		// True if we were able to open at least one file system in the given image
+		public boolean wasSuccessful() {
+			return testSuccess;
+		}
+		
+		// Contains a user-friendly status message. On success, will contain "Image opened successfully". 
+		// Otherwise it will give our best effort to explain why we were unsuccessful.
+		public String getMessage() {
+			return message;
+		}
+	}
+	
+	/**
+	 * Tries opening the image with the optional password.
+	 *
+	 * @param imagePath  Path to the image (will just be the first for .e01, .001, etc).
+	 * @param password   Password to use when trying to decrypt the volumes. Leave blank for no password.
+	 * 
+	 * @return TestOpenImageResult that will contain whether we were able to open a file system and a user-friendly message
+	 */
+	public static TestOpenImageResult testOpenImage(String imagePath, String password) {
+		String resultStr = isImageSupportedStringNat(imagePath, password);
+		if (resultStr.isBlank()) {
+			return new TestOpenImageResult(true, "Image opened successfully");
+		}
+		return new TestOpenImageResult(false, resultStr);
 	}
 	
 	/** Get the version of the Sleuthkit code in number form.
@@ -2154,6 +2214,8 @@ public class SleuthkitJNI {
 	private static native long getImgInfoForPoolNat(long poolHandle, long poolOffset) throws TskCoreException;
 	
 	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
+	
+	private static native long openFsDecryptNat(long imgHandle, long fsId, String password) throws TskCoreException;
 
 	private static native long openFileNat(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException;
 
@@ -2199,7 +2261,7 @@ public class SleuthkitJNI {
 
 	private static native String getCurDirNat(long process);
 
-	private static native boolean isImageSupportedNat(String imagePath);
+	private static native String isImageSupportedStringNat(String imagePath, String password);
 	
 	private static native long getSleuthkitVersionNat();
 

@@ -40,13 +40,22 @@ static IMG_TYPES img_open_table[] = {
 #if HAVE_LIBEWF
     {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness Format (EnCase)"},
 #endif
+#if HAVE_LIBAFF4
+    {"aff4", TSK_IMG_TYPE_AFF4_AFF4, "Advanced Forensic Format 4 (AFF4)"},
+#endif
 #if HAVE_LIBVMDK
     {"vmdk", TSK_IMG_TYPE_VMDK_VMDK, "Virtual Machine Disk (VmWare, Virtual Box)"},
 #endif
 #if HAVE_LIBVHDI
     {"vhd", TSK_IMG_TYPE_VHD_VHD, "Virtual Hard Drive (Microsoft)"},
 #endif
-    {0,0,""},
+#if HAVE_LIBQCOW
+    {"qcow", TSK_IMG_TYPE_QCOW_QCOW, "QEMU Copy On Write (QCOW)"},
+#endif
+#ifdef TSK_WIN32
+	{"logical", TSK_IMG_TYPE_LOGICAL, "Logical Directory"},
+#endif
+    {NULL, 0, NULL},
 };
 
 

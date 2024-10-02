@@ -556,6 +556,15 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         in_node = NULL;
                         break;
                     }
+                    if (b_offs >= ISO9660_SSIZE_B - sizeof(iso9660_dentry)) {
+                        if (tsk_verbose)
+                            tsk_fprintf(stderr,
+                                        "iso9660_load_inodes_dir: b_offs out of bounds, bailing\n");
+                        free(in_node);
+                        in_node = NULL;
+                        break;
+                    }
+
 
                     name16 =
                         (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry)];
@@ -570,13 +579,18 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     }
                     name8 = (UTF8 *) in_node->inode.fn;
 
+                    if ((dentry->fi_len % 2) != 0 || dentry->fi_len > ISO9660_SSIZE_B - sizeof(iso9660_dentry) - b_offs) {
+                        if (tsk_verbose)
+                            tsk_fprintf(stderr,
+                                        "iso9660_load_inodes_dir: UTF-16 name length out of bounds, bailing\n");
+                        free(in_node);
+                        in_node = NULL;
+                        break;
+                    }
                     retVal =
                         tsk_UTF16toUTF8(fs->endian,
-                        (const UTF16 **) &name16,
-                        (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry) +
-                            dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->inode.
-                            fn[ISO9660_MAXNAMLEN_STD]),
+                        (const UTF16 **) &name16, (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry) + dentry->fi_len],
+                        &name8, (UTF8 *) ((uintptr_t) & in_node->inode.fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -627,14 +641,13 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     file_ver = NULL;
                 }
 
-                // if no extension, remove the final '.'
-                if (in_node->inode.fn[strlen(in_node->inode.fn) - 1] ==
-                    '.')
-                    in_node->inode.fn[strlen(in_node->inode.fn) - 1] =
-                        '\0';
-                
-                
-                if (strlen(in_node->inode.fn) == 0) {
+                size_t name8_len = strnlen(in_node->inode.fn, ISO9660_MAXNAMLEN);
+                if (name8_len > 0 && in_node->inode.fn[name8_len - 1] == '.') {
+                    // if no extension, remove the final '.'
+                    in_node->inode.fn[name8_len - 1] = '\0';
+                    name8_len -= 1;
+                }
+                if (name8_len == 0) {
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: length of name after processing is 0. bailing\n");
@@ -2540,7 +2553,7 @@ load_vol_desc(TSK_FS_INFO * fs)
  */
 TSK_FS_INFO *
 iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     ISO_INFO *iso;
     TSK_FS_INFO *fs;

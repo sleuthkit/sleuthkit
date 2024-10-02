@@ -35,8 +35,10 @@ public:
     virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
+    std::string getMessageForIsImageSupportedNat();
     bool isImageSupported();
     bool isImageEncrypted();
+    std::string getSingleLineErrorMessage();
     void printResults();
     
 private:
@@ -45,7 +47,9 @@ private:
     bool m_wasPossibleEncryptionFound;
     bool m_wasFileSystemFound;
     bool m_wasUnsupported;
+    bool m_bitlockerError;
     char m_encryptionDesc[1024];
     char m_possibleEncryptionDesc[1024];
     char m_unsupportedDesc[1024];
+    char m_bitlockerDesc[1024];
 };

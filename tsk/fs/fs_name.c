@@ -475,8 +475,6 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_print_sanitized(hFile, fs_attr->name);
         }
     }
-
-    return;
 }
 
 /**
@@ -547,12 +545,7 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
         tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID,
             fs_file->meta->gid, fs_file->meta->uid);
     }
-
-    return;
 }
-
-
-
 
 /**
  * \internal

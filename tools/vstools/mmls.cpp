@@ -24,7 +24,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("%s [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
+        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
@@ -187,7 +187,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -199,7 +199,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -228,7 +228,7 @@ main(int argc, char **argv1)
             vstype = tsk_vs_type_toid(OPTARG);
             if (vstype == TSK_VS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported volume system type: %s\n"),
+                    _TSK_T("Unsupported volume system type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }

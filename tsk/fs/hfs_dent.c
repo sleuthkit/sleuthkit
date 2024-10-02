@@ -259,6 +259,22 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         /* This will link the folder to its parent, which is the ".." entry */
         else if (rec_type == HFS_FOLDER_THREAD) {
             hfs_thread *thread = (hfs_thread *) & rec_buf[rec_off2];
+
+            // hfs_thread is of variable size on disk. The minimum size is
+            // 10 bytes (8 for the non-name fields, 2 for the length of an
+            // empty name).
+            const size_t min_hfs_thread_size = sizeof(hfs_thread) - sizeof(hfs_uni_str) + 2;
+
+            // First, check that we can read as far as the name length; then
+            // get the name length and check that the whole record fits into
+            // the buffer.
+            if (rec_off2 > nodesize - min_hfs_thread_size ||
+                rec_off2 > nodesize - (min_hfs_thread_size + tsk_getu16(hfs->fs_info.endian, thread->name.length))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
+
             strcpy(info->fs_name->name, "..");
             info->fs_name->meta_addr =
                 tsk_getu32(hfs->fs_info.endian, thread->parent_cnid);
@@ -268,6 +284,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This is a folder in the folder */
         else if (rec_type == HFS_FOLDER_RECORD) {
+            if ((nodesize < sizeof(hfs_folder)) || (rec_off2 > nodesize - sizeof(hfs_folder))) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
+                return HFS_BTREE_CB_ERR;
+            }
             hfs_folder *folder = (hfs_folder *) & rec_buf[rec_off2];
 
             info->fs_name->meta_addr =
@@ -295,7 +316,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This is a normal file in the folder */
         else if (rec_type == HFS_FILE_RECORD) {
-            if ((nodesize < sizeof(hfs_file)) || (rec_off2 >= nodesize - sizeof(hfs_file))) {
+            if ((nodesize < sizeof(hfs_file)) || (rec_off2 > nodesize - sizeof(hfs_file))) {
                 tsk_error_set_errno(TSK_ERR_FS_GENFS);
                 tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
                 return HFS_BTREE_CB_ERR;

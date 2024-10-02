@@ -73,9 +73,12 @@ tsk_fs_dir_realloc(TSK_FS_DIR * a_fs_dir, size_t a_cnt)
     prev_cnt = a_fs_dir->names_alloc;
 
     a_fs_dir->names_alloc = a_cnt;
+
     if ((a_fs_dir->names =
-            (TSK_FS_NAME *) tsk_realloc((void *) a_fs_dir->names,
-                sizeof(TSK_FS_NAME) * a_fs_dir->names_alloc)) == NULL) {
+        (TSK_FS_NAME *)tsk_realloc((void *)a_fs_dir->names,
+            sizeof(TSK_FS_NAME) * a_fs_dir->names_alloc)) == NULL) {
+        a_fs_dir->names_alloc = 0;
+        a_fs_dir->names_used = 0;
         return 1;
     }
 
@@ -177,6 +180,10 @@ tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr, uint32_t hash)
 static void 
 tsk_fs_dir_free_name_internal(TSK_FS_NAME *fs_name) 
 {
+    if (fs_name == NULL) {
+        return;
+    }
+
     if (fs_name->name) {
 	    free(fs_name->name);
 	    fs_name->name = NULL;
@@ -245,6 +252,15 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     if (fs_name_dest == NULL) {
         // make sure we got the room
         if (a_fs_dir->names_used >= a_fs_dir->names_alloc) {
+
+			// Protect against trying to process very large directories
+			if (a_fs_dir->names_used >= MAX_DIR_SIZE_TO_PROCESS) {
+				tsk_error_reset();
+				tsk_error_set_errno(TSK_ERR_FS_GENFS);
+				tsk_error_set_errstr("tsk_fs_dir_add: Directory too large to process (addr: %" PRIuSIZE")", a_fs_dir->addr);
+				return 1;
+			}
+
             if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 512))
                 return 1;
         }
@@ -374,10 +390,12 @@ tsk_fs_dir_close(TSK_FS_DIR * a_fs_dir)
         return;
     }
 
-    for (i = 0; i < a_fs_dir->names_used; i++) {
-        tsk_fs_dir_free_name_internal(&a_fs_dir->names[i]);
+    if (a_fs_dir->names != NULL) {
+        for (i = 0; i < a_fs_dir->names_used; i++) {
+            tsk_fs_dir_free_name_internal(&a_fs_dir->names[i]);
+        }
+        free(a_fs_dir->names);
     }
-    free(a_fs_dir->names);
 
     if (a_fs_dir->fs_file) {
         tsk_fs_file_close(a_fs_dir->fs_file);
@@ -829,7 +847,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 strncpy(a_dinfo->didx[a_dinfo->depth],
                     fs_file->name->name,
                     DIR_STRSZ - strlen(a_dinfo->dirs));
-                strncat(a_dinfo->dirs, "/", DIR_STRSZ-1);
+                strncat(a_dinfo->dirs, "/", DIR_STRSZ - strlen(a_dinfo->dirs) - 1);
                 depth_added = 1;
                 a_dinfo->depth++;
 
@@ -846,8 +864,20 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
                     a_action, a_ptr, macro_recursion_depth + 1);
                 if (retval == TSK_WALK_ERROR) {
-                    /* If this fails because the directory could not be
-                     * loaded, then we still continue */
+                    /* In most cases we want to continue if a directory 
+                     * did not load, but if we ran out
+                     * of memory we should stop */
+                    if (tsk_error_get_errno() & TSK_ERR_AUX) {
+                        tsk_fs_dir_close(fs_dir);
+                        fs_file->name = NULL;
+                        tsk_fs_file_close(fs_file);
+
+                        if (indexToOrderedIndex != NULL) {
+                            free(indexToOrderedIndex);
+                        }
+                        return TSK_WALK_ERROR;
+                    }
+
                     if (tsk_verbose) {
                         tsk_fprintf(stderr,
                             "tsk_fs_dir_walk_recursive: error reading directory: %"
@@ -1401,6 +1431,12 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
     for (i = 0; i < a_fs_dir->names_used; i++) {
         if (tsk_list_find(data.orphan_subdir_list,
                 a_fs_dir->names[i].meta_addr)) {
+
+            // Unclear what should happen in this situation, but it can happen,
+            // So skipping over this situation for now.
+            if (a_fs_dir->names_used == i + 1) {
+                continue;
+            }
             if (a_fs_dir->names_used > 1) {
                 tsk_fs_name_copy(&a_fs_dir->names[i],
                     &a_fs_dir->names[a_fs_dir->names_used - 1]);

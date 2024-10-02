@@ -26,7 +26,9 @@
 
 #include "tsk_fs_i.h"
 #include "tsk/util/detect_encryption.h"
+#include "encryptionHelper.h"
 #include "tsk/img/unsupported_types.h"
+#include "tsk/img/logical_img.h"
 
 /**
  * \file fs_open.c
@@ -130,7 +132,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     const struct {
         char* name;
         TSK_FS_INFO* (*open)(TSK_IMG_INFO*, TSK_OFF_T,
-                                 TSK_FS_TYPE_ENUM, uint8_t);
+                                 TSK_FS_TYPE_ENUM, const char*, uint8_t);
         // This type should be the _DETECT version because it used
         // during autodetection
         TSK_FS_TYPE_ENUM type;
@@ -146,13 +148,27 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
         { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }
     };
-
     if (a_img_info == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("tsk_fs_open_img: Null image handle");
         return NULL;
     }
+
+	/* If the image is type IMG_DIR_INFO, then the file system is
+	 * automatically the logical directory file system type. It is an
+	 * error to try to use any other file system type in that case.
+	 */
+	if (a_img_info->itype == TSK_IMG_TYPE_LOGICAL) {
+		if (!(a_ftype == TSK_FS_TYPE_DETECT || a_ftype == TSK_FS_TYPE_LOGICAL)) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_ARG);
+			tsk_error_set_errstr("tsk_fs_open_img: Incompatible file system type given for logical file image");
+			return NULL;
+		}
+
+		return logical_fs_open(a_img_info);
+	}
 
     /* We will try different file systems ...
      * We need to try all of them in case more than one matches
@@ -167,9 +183,13 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 "fsopen: Auto detection mode at offset %" PRIdOFF "\n",
                 a_offset);
 
+        int haveErrorToPreserve = 0;
+        uint32_t errorCodeToPreserve;
+        char errorStrToPreserve[TSK_ERROR_STRING_MAX_LENGTH + 1];
+
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
             if ((fs_info = FS_OPENERS[i].open(
-                    a_img_info, a_offset, FS_OPENERS[i].type, 1)) != NULL) {
+                    a_img_info, a_offset, FS_OPENERS[i].type, a_pass, 1)) != NULL) {
                 // fs opens as type i
                 if (fs_first == NULL) {
                     // first success opening fs
@@ -182,7 +202,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                     fs_first->close(fs_first);
                     fs_info->close(fs_info);
                     tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                    tsk_error_set_errno(TSK_ERR_FS_MULTTYPE);
                     tsk_error_set_errstr(
                         "%s or %s", FS_OPENERS[i].name, name_first);
                     return NULL;
@@ -190,8 +210,28 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             }
             else {
                 // fs does not open as type i
+                
+                // TSK_ERR_FS_BITLOCKER_ERROR is used when we get pretty far into the BitLocker processing but
+                // need something different from the user or find something we can't currently parse. We need
+                // to keep trying file systems (we might have a FAT system so we don't want to return after
+                // failing to open as NTFS) but we also want to be able to get the error back to the user.
+                if (tsk_error_get_errno() == TSK_ERR_FS_BITLOCKER_ERROR) {
+                    haveErrorToPreserve = 1;
+                    errorCodeToPreserve = tsk_error_get_errno();
+                    memset(errorStrToPreserve, 0, TSK_ERROR_STRING_MAX_LENGTH + 1);
+                    strncpy(errorStrToPreserve, tsk_error_get_errstr(), TSK_ERROR_STRING_MAX_LENGTH);
+                }
+
                 tsk_error_reset();
             }
+        }
+
+        // If we have an error to report, set it now and return
+        if (haveErrorToPreserve) {
+            tsk_error_reset();
+            tsk_error_set_errno(errorCodeToPreserve);
+            tsk_error_set_errstr("%s", errorStrToPreserve);
+            return NULL;
         }
 
         if (fs_first == NULL) {
@@ -237,22 +277,22 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         return fs_first;
     }
     else if (TSK_FS_TYPE_ISNTFS(a_ftype)) {
-        return ntfs_open(a_img_info, a_offset, a_ftype, 0);
+        return ntfs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (TSK_FS_TYPE_ISFAT(a_ftype)) {
-        return fatfs_open(a_img_info, a_offset, a_ftype, 0);
+        return fatfs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (TSK_FS_TYPE_ISFFS(a_ftype)) {
-        return ffs_open(a_img_info, a_offset, a_ftype, 0);
+        return ffs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (TSK_FS_TYPE_ISEXT(a_ftype)) {
-        return ext2fs_open(a_img_info, a_offset, a_ftype, 0);
+        return ext2fs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (TSK_FS_TYPE_ISHFS(a_ftype)) {
-        return hfs_open(a_img_info, a_offset, a_ftype, 0);
+        return hfs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (TSK_FS_TYPE_ISISO9660(a_ftype)) {
-        return iso9660_open(a_img_info, a_offset, a_ftype, 0);
+        return iso9660_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (TSK_FS_TYPE_ISRAW(a_ftype)) {
         return rawfs_open(a_img_info, a_offset);
@@ -261,7 +301,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         return swapfs_open(a_img_info, a_offset);
     }
     else if (TSK_FS_TYPE_ISYAFFS2(a_ftype)) {
-        return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
+        return yaffs2_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     } 
     else if (TSK_FS_TYPE_ISAPFS(a_ftype)) {
         return apfs_open(a_img_info, a_offset, a_ftype, a_pass);
@@ -315,6 +355,9 @@ tsk_fs_free(TSK_FS_INFO * a_fs_info)
         tsk_list_free(a_fs_info->list_inum_named);
         a_fs_info->list_inum_named = NULL;
     }
+
+    /* Free any encryption structures */
+    freeEncryptionData(a_fs_info);
 
     /* we should probably get the lock, but we're 
      * about to kill the entire object so there are

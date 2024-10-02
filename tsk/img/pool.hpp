@@ -15,7 +15,6 @@
 #define _POOL_H
 
 #include "../pool/tsk_pool.h"
-#include "../fs/tsk_apfs.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +25,8 @@ extern "C" {
 
         const TSK_POOL_INFO *pool_info;
         TSK_DADDR_T pvol_block;
+
+        void *impl;
 
     } IMG_POOL_INFO;
 

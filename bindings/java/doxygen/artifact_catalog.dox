@@ -71,28 +71,16 @@ Indicates that the MD5 hash of a file matches a set of known MD5s (possibly user
 
 
 ---
-## TSK_INTERESTING_ARTIFACT_HIT
-Indicates that the source artifact matches some set of criteria which deem it interesting. Artifacts with this meta artifact will be brought to the attention of the user.
+## TSK_INTERESTING_ITEM
+Indicates that the source item matches some set of criteria which deem it interesting. Items with this meta artifact will be brought to the attention of the user.
 
 ### REQUIRED ATTRIBUTES
-- TSK_ASSOCIATED_ARTIFACT (The source artifact)
-- TSK_SET_NAME (The name of the set of criteria which deemed this artifact interesting)
+- TSK_SET_NAME (The name of the set of criteria which deemed this item interesting)
 
 ### OPTIONAL ATTRIBUTES
-- TSK_COMMENT (Comment on the reason that the source artifact is interesting)
+- TSK_COMMENT (Comment on the reason that the source item is interesting)
 - TSK_CATEGORY (The set membership rule that was satisfied)
-
-
----
-## TSK_INTERESTING_FILE_HIT
-Indication that the source file matches some set of criteria (possibly user defined) which deem it interesting. Files with this artifact will be brought to the attention of the user.
-
-### REQUIRED ATTRIBUTES
-- TSK_SET_NAME (The name of the set of criteria which deemed this file interesting)
-
-### OPTIONAL ATTRIBUTES
-- TSK_COMMENT (Comment on the reason that the source artifact is interesting)
-- TSK_CATEGORY (The set membership rule that was satisfied. I.e. a particular mime)
+- TSK_ASSOCIATED_ARTIFACT (The source artifact when the source item is an artifact)
 
 
 ---
@@ -111,6 +99,14 @@ Indication that the source artifact or file contains a keyword. Keywords are gro
 
 
 ---
+## TSK_MALWARE
+Indicates the source file's malware status based on the score.  A notable score means that the file has been detected to be malware. A score of none means that the file has been detected to not be malware.
+
+### REQUIRED ATTRIBUTES
+None
+
+
+---
 ## TSK_OBJECT_DETECTED
 Indicates that an object was detected in a media file. Typically used by computer vision software to classify images.
 
@@ -119,6 +115,35 @@ Indicates that an object was detected in a media file. Typically used by compute
 
 ### OPTIONAL ATTRIBUTES
 - TSK_DESCRIPTION (Additional comments about the object or observer, e.g., what detected the object)
+
+
+---
+## TSK_PREVIOUSLY_NOTABLE
+Indicates that the file or artifact was previously tagged as "Notable" in another Autopsy case.
+
+### REQUIRED ATTRIBUTES
+- TSK_CORRELATION_TYPE (The correlation type that was previously tagged as notable)
+- TSK_CORRELATION_VALUE (The correlation value that was previously tagged as notable)
+- TSK_OTHER_CASES (The list of cases containing this file or artifact at the time the artifact is created)
+
+
+---
+## TSK_PREVIOUSLY_SEEN
+Indicates that the file or artifact was previously seen in another Autopsy case.
+
+### REQUIRED ATTRIBUTES
+- TSK_CORRELATION_TYPE (The correlation type that was previously seen)
+- TSK_CORRELATION_VALUE (The correlation value that was previously seen)
+- TSK_OTHER_CASES (The list of cases containing this file or artifact at the time the artifact is created)
+
+
+---
+## TSK_PREVIOUSLY_UNSEEN
+Indicates that the file or artifact was previously unseen in another Autopsy case.
+
+### REQUIRED ATTRIBUTES
+- TSK_CORRELATION_TYPE (The correlation type that was previously seen)
+- TSK_CORRELATION_VALUE (The correlation value that was previously seen)
 
 
 ---
@@ -168,16 +193,6 @@ Indicates that the some content of the file was a hit for a YARA rule match.
 
 ---
 ## TSK_METADATA_EXIF
-EXIF metadata found in an image or audio file.
-
-### REQUIRED ATTRIBUTES
-- At least one of:
-- TSK_DATETIME_CREATED (Creation date of the file, in seconds since 1970-01-01T00:00:00Z)
-- TSK_DEVICE_MAKE (Device make, generally the manufacturer, e.g., Apple)
-- TSK_DEVICE_MODEL (Device model, generally the product, e.g., iPhone)
-- TSK_GEO_ALTITUDE (The camera's altitude when the image/audio was taken)
-- TSK_GEO_LATITUDE (The camera's latitude when the image/audio was taken)
-- TSK_GEO_LONGITUDE (The camera's longitude when the image/audio was taken)## TSK_METADATA_EXIF
 EXIF metadata found in an image or audio file.
 
 ### REQUIRED ATTRIBUTES
@@ -387,7 +402,7 @@ A generic information artifact. Each content object will have at most one TSK_GE
 None
 
 ### OPTIONAL ATTRIBUTES
-- TSK_PHOTODNA_HASH (The PhotoDNA hash of an image)
+- TSK_HASH_PHOTODNA (The PhotoDNA hash of an image)
 
 
 ---

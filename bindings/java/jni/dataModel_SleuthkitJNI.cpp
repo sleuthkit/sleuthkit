@@ -1463,19 +1463,55 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForP
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_img_info the pointer to the parent img object
- * @param fs_offset the offset in bytes to the file system 
+ * @param fs_offset the offset in bytes to the file system
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
     (JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset) {
+    TSK_IMG_INFO* img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    TSK_FS_INFO* fs_info;
+    fs_info =
+        tsk_fs_open_img(img_info, (TSK_OFF_T)fs_offset,
+            TSK_FS_TYPE_DETECT);
+    if (fs_info == NULL) {
+        setThrowTskCoreError(env, tsk_error_get());
+    }
+    return (jlong)fs_info;
+}
+
+/*
+ * Open file system with the given offset
+ * @return the created TSK_FS_INFO pointer
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the pointer to the parent img object
+ * @param fs_offset the offset in bytes to the file system 
+ * @param password Password for the file system
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsDecryptNat
+    (JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset, jstring passwordJ) {
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
         //exception already set
         return 0;
     }
+
+    const char* password = NULL;
+    jboolean isCopy;
+    if (passwordJ != NULL) {
+        password = (const char*)env->GetStringUTFChars(passwordJ, &isCopy);  
+    }
+
     TSK_FS_INFO *fs_info;
     fs_info =
-        tsk_fs_open_img(img_info, (TSK_OFF_T) fs_offset,
-        TSK_FS_TYPE_DETECT);
+        tsk_fs_open_img_decrypt(img_info, (TSK_OFF_T) fs_offset,
+        TSK_FS_TYPE_DETECT, password);
+    env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+
     if (fs_info == NULL) {
         setThrowTskCoreError(env, tsk_error_get());
     }
@@ -2268,36 +2304,81 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
  * @return true if the image can be processed, false otherwise
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
-  (JNIEnv * env, jclass obj, jstring imagePathJ) {
-      
+(JNIEnv* env, jclass obj, jstring imagePathJ) {
+
     TskIsImageSupported tskIsImage;
     TSK_TCHAR imagePathT[1024];
     toTCHAR(env, imagePathT, 1024, imagePathJ);
 
     // It seems like passing &imagePathT should work instead of making this new array,
     // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
-    TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
+    TSK_TCHAR** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
     bool result;
     imagePaths[0] = imagePathT;
     if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
         result = false;
-    } else {
+    }
+    else {
         if (tskIsImage.findFilesInImg()) {
             result = false;
-        } else {
+        }
+        else {
             if (tskIsImage.isImageSupported()) {
                 result = true;
             }
             else {
                 result = false;
-            }   
+            }
         }
     }
 
     // Cleanup
     free(imagePaths);
 
-    return (jboolean) result;
+    return (jboolean)result;
+}
+
+/*
+ * Test whether an image is supported
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param imagePathJ the image path
+ * @param passwordJ  the password to try for any file systems found
+ * @return empty string if the image can be processed, error message otherwise
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedStringNat
+  (JNIEnv * env, jclass obj, jstring imagePathJ, jstring passwordJ) {
+      
+    TskIsImageSupported tskIsImage;
+    TSK_TCHAR imagePathT[1024];
+    toTCHAR(env, imagePathT, 1024, imagePathJ);
+
+    jboolean isCopy;
+    const char* password = NULL;
+    if (passwordJ != NULL) {
+        password = (const char*)env->GetStringUTFChars(passwordJ, &isCopy);
+        tskIsImage.setFileSystemPassword(string(password));
+        env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+    }
+
+    jstring resultStr = env->NewStringUTF(""); // This will stay empty if we can open the image/file system
+
+    // It seems like passing &imagePathT should work instead of making this new array,
+    // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
+    TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
+    imagePaths[0] = imagePathT;
+    if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
+        resultStr = env->NewStringUTF("Error opening image");
+    } else {
+        tskIsImage.findFilesInImg();
+        resultStr = env->NewStringUTF(tskIsImage.getMessageForIsImageSupportedNat().c_str());
+    }
+
+    // Cleanup
+    tskIsImage.closeImage();
+    free(imagePaths);
+
+    return resultStr;
 }
 
 /*

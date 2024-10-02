@@ -3006,12 +3006,13 @@ static uint8_t
 * @param img_info Disk image to analyze
 * @param offset Byte offset where file system starts
 * @param ftype Specific type of file system
+* @param a_pass NOT USED
 * @param test Going to use this - 1 if we're doing auto-detect, 0 if not (display more verbose messages if the user specified YAFFS2)
 * @returns NULL on error or if data is not an Yaffs/3 file system
 */
 TSK_FS_INFO *
     yaffs2_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     YAFFSFS_INFO *yaffsfs = NULL;
     TSK_FS_INFO *fs = NULL;

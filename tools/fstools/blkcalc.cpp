@@ -31,7 +31,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-dsu unit_addr] [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images]\n"),
+        ("usage: %" PRIttocTSK " [-dsu unit_addr] [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images]\n"),
         progname);
     tsk_fprintf(stderr, "Slowly calculates the opposite block number\n");
     tsk_fprintf(stderr, "\tOne of the following must be given:\n");
@@ -103,7 +103,7 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
 
@@ -112,7 +112,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -122,7 +122,7 @@ main(int argc, char **argv1)
             type |= TSK_FS_BLKCALC_DD;
             count = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid address: %s\n"), OPTARG);
+                TFPRINTF(stderr, _TSK_T("Invalid address: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             set = 1;
@@ -136,7 +136,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -148,7 +148,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -185,7 +185,7 @@ main(int argc, char **argv1)
             type |= TSK_FS_BLKCALC_SLACK;
             count = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid address: %s\n"), OPTARG);
+                TFPRINTF(stderr, _TSK_T("Invalid address: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             set = 1;
@@ -195,7 +195,7 @@ main(int argc, char **argv1)
             type |= TSK_FS_BLKCALC_BLKLS;
             count = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid address: %s\n"), OPTARG);
+                TFPRINTF(stderr, _TSK_T("Invalid address: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             set = 1;
@@ -262,8 +262,14 @@ main(int argc, char **argv1)
             exit(1);
         }
 
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
         img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL){
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);

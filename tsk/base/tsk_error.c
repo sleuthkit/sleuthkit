@@ -56,6 +56,7 @@ static const char *tsk_err_mm_str[TSK_ERR_VS_MAX] = {
     "Invalid sector address",
     "Invalid API argument",
     "Encryption detected",
+    "Multiple volume system types detected",
 };
 
 static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
@@ -79,6 +80,8 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "Attribute not found in file",
     "Encryption detected",
     "Possible encryption detected",
+    "Multiple file system types detected",   // 20
+    "BitLocker initialization failed",
 };
 
 static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {

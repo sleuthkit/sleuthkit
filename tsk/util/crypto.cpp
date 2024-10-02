@@ -13,7 +13,7 @@
  */
 #include "crypto.hpp"
 
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
 #include <openssl/aes.h>
 #include <openssl/md5.h>
 #include <openssl/opensslv.h>

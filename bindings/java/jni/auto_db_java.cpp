@@ -289,12 +289,40 @@ TskAutoDbJava::addPoolInfoAndVS(const TSK_POOL_INFO *pool_info, int64_t parObjId
     }
     saveObjectInfo(poolObjId, parObjId, TSK_DB_OBJECT_TYPE_POOL);
 
-    // Add the pool volume
-    jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
-        poolObjIdj, TSK_VS_TYPE_APFS, pool_info->img_offset, (uint64_t)pool_info->block_size);
-    objId = (int64_t)objIdj;
 
-    saveObjectInfo(objId, poolObjId, TSK_DB_OBJECT_TYPE_VS);
+
+
+    if (pool_info->ctype == TSK_POOL_TYPE_APFS){
+        // Add the APFS pool volume
+        jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
+            poolObjIdj, TSK_VS_TYPE_APFS, pool_info->img_offset, (uint64_t)pool_info->block_size);
+        objId = (int64_t)objIdj;
+
+        // populating cache m_savedVsInfo and ObjectInfo
+        TSK_DB_VS_INFO vs_db;
+        vs_db.objId = objId;
+        vs_db.offset = pool_info->img_offset;
+        vs_db.vstype = TSK_VS_TYPE_APFS;
+        vs_db.block_size = pool_info->block_size;
+        m_savedVsInfo.push_back(vs_db);
+        saveObjectInfo(objId, poolObjId, TSK_DB_OBJECT_TYPE_VS);
+    } 
+    else if (pool_info->ctype == TSK_POOL_TYPE_LVM){
+        // Add the APFS pool volume
+        jlong objIdj = m_jniEnv->CallLongMethod(m_javaDbObj, m_addVolumeSystemMethodID,
+            poolObjIdj, TSK_VS_TYPE_LVM, pool_info->img_offset, (uint64_t)pool_info->block_size);
+        objId = (int64_t)objIdj;
+
+        // populating cache m_savedVsInfo and objectInfo
+        TSK_DB_VS_INFO vs_db;
+        vs_db.objId = objId;
+        vs_db.offset = pool_info->img_offset;
+        vs_db.vstype = TSK_VS_TYPE_LVM;
+        vs_db.block_size = pool_info->block_size;
+        m_savedVsInfo.push_back(vs_db);
+        saveObjectInfo(objId, poolObjId, TSK_DB_OBJECT_TYPE_VS);
+    } 
+
     return TSK_OK;
 }
 
@@ -321,7 +349,17 @@ TskAutoDbJava::addPoolVolumeInfo(const TSK_POOL_VOLUME_INFO* pool_vol,
         return TSK_ERR;
     }
 
+
+    // here we add pool vol into available vs_part fields
+    // some fields were not directly compatible and were not added
+    TSK_DB_VS_PART_INFO vol_info_db;
+    vol_info_db.objId = objId; ///< set to 0 if unknown (before it becomes a db object)  
+    snprintf(vol_info_db.desc, TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1, "%s", pool_vol->desc);   ///< Description
+    vol_info_db.start = pool_vol->block; ///< Starting Block number
+    m_savedVsPartInfo.push_back(vol_info_db);
+
     saveObjectInfo(objId, parObjId, TSK_DB_OBJECT_TYPE_VOL);
+
     return TSK_OK;
 }
 
@@ -482,7 +520,9 @@ TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, jstring & newJS
 
     if (tsk_UTF8toUTF16((const UTF8 **)&source, (const UTF8 *)&source[input_len], &target, &target[input_len], TSKlenientConversion) != TSKconversionOK) {
         free(utf16_input);
-        return TSK_ERR;
+        // use default JNI method as fallback, fixes https://github.com/sleuthkit/sleuthkit/issues/2723
+        newJString = m_jniEnv->NewStringUTF(input);
+        return TSK_OK;
     }
 
     /*
@@ -1195,7 +1235,7 @@ TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %lld", pool_info->img_offset);
+            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %jd", (intptr_t)pool_info->img_offset);
             return TSK_ERR;
         }
         int64_t curPoolVs = m_poolOffsetToVsId[pool_info->img_offset];
@@ -1228,21 +1268,15 @@ TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         /* Create the unallocated space files */
         TSK_FS_ATTR_RUN * unalloc_runs = tsk_pool_unallocated_runs(pool_info);
         TSK_FS_ATTR_RUN * current_run = unalloc_runs;
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         while (current_run != NULL) {
 
-            TSK_DB_FILE_LAYOUT_RANGE tempRange(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, 0);
-
-            ranges.push_back(tempRange);
-            int64_t fileObjId = 0;
-            if (TSK_ERR == addUnallocBlockFile(unallocVolObjId, 0, current_run->len * pool_info->block_size, ranges, fileObjId, m_curImgId)) {
+            if (addUnallocBlockFileInChunks(current_run->addr * pool_info->block_size, current_run->len * pool_info->block_size, unallocVolObjId, m_curImgId) == TSK_ERR) {
                 registerError();
                 tsk_fs_attr_run_free(unalloc_runs);
                 return TSK_ERR;
             }
 
             current_run = current_run->next;
-            ranges.clear();
         }
         tsk_fs_attr_run_free(unalloc_runs);
     }
@@ -1709,7 +1743,7 @@ TSK_WALK_RET_ENUM TskAutoDbJava::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_blo
 * @param dbFsInfo fs to process
 * @returns TSK_OK on success, TSK_ERR on error
 */
-TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, const TSK_DB_FS_INFO & dbFsInfo) {
 
     // Unalloc space is handled separately for APFS
     if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
@@ -1717,9 +1751,10 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     }
 
     //open the fs we have from database
-    TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
+    TSK_FS_INFO * fsInfo = tsk_fs_open_img((TSK_IMG_INFO*)curImgInfo, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
         tsk_error_set_errstr2("TskAutoDbJava::addFsInfoUnalloc: error opening fs at offset %" PRIdOFF, dbFsInfo.imgOffset);
+        tsk_error_set_errno(TSK_ERR_AUTO);
         registerError();
         return TSK_ERR;
     }
@@ -1727,6 +1762,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     //create a "fake" dir to hold the unalloc files for the fs
     if (addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId, m_curImgId) == TSK_ERR) {
         tsk_error_set_errstr2("addFsInfoUnalloc: error creating dir for unallocated space");
+        tsk_error_set_errno(TSK_ERR_AUTO);
         registerError();
         return TSK_ERR;
     }
@@ -1743,6 +1779,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
         errss << "TskAutoDbJava::addFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
         errss << unallocBlockWlkTrack.fsObjId;
         tsk_error_set_errstr2("%s", errss.str().c_str());
+        tsk_error_set_errno(TSK_ERR_AUTO);
         registerError();
         return TSK_ERR;
     }
@@ -1760,6 +1797,8 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     int64_t fileObjId = 0;
 
     if (addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
+        tsk_error_set_errstr2("addFsInfoUnalloc: error addUnallocBlockFile");
+        tsk_error_set_errno(TSK_ERR_AUTO);
         registerError();
         tsk_fs_close(fsInfo);
         return TSK_ERR;
@@ -1802,6 +1841,57 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocSpaceToDb() {
 }
 
 
+TSK_RETVAL_ENUM TskAutoDbJava::getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPartInfo){
+    for (vector<TSK_DB_VS_PART_INFO>::iterator curVsPartDbInfo = m_savedVsPartInfo.begin(); curVsPartDbInfo!= m_savedVsPartInfo.end(); ++curVsPartDbInfo) {
+        if (curVsPartDbInfo->objId == objId){
+            vsPartInfo.start = curVsPartDbInfo->start;
+            vsPartInfo.desc = curVsPartDbInfo->desc;
+            vsPartInfo.flags = curVsPartDbInfo->flags;
+            vsPartInfo.len = curVsPartDbInfo->len;   
+
+            return TSK_OK;
+        }
+    }
+    return TSK_ERR;
+}
+
+TSK_RETVAL_ENUM TskAutoDbJava::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo){    
+    TSK_DB_OBJECT* fsObjDbInfo = NULL;
+    if ( getObjectInfo( objId, &fsObjDbInfo) == TSK_OK){ //searches for fs object
+        for (vector<TSK_DB_VS_PART_INFO>::iterator curVsPartDbInfo = m_savedVsPartInfo.begin(); curVsPartDbInfo!= m_savedVsPartInfo.end(); ++curVsPartDbInfo) { //searches for vspart parent of fs
+            if (fsObjDbInfo->parObjId == curVsPartDbInfo->objId){
+                TSK_DB_OBJECT* vsPartObjDbInfo = NULL;
+                if ( getObjectInfo(curVsPartDbInfo->objId, &vsPartObjDbInfo ) == TSK_OK){
+                    for (vector<TSK_DB_VS_INFO>::iterator curVsDbInfo = m_savedVsInfo.begin(); curVsDbInfo!= m_savedVsInfo.end(); ++curVsDbInfo) { //searches for vs parent of vspart
+                        if (vsPartObjDbInfo->parObjId == curVsDbInfo->objId){
+                            vsDbInfo.objId = curVsDbInfo->objId;
+                            vsDbInfo.block_size = curVsDbInfo->block_size;
+                            vsDbInfo.vstype = curVsDbInfo->vstype;
+                            vsDbInfo.offset = curVsDbInfo->offset;
+                            return TSK_OK;                            
+                        }
+                    }
+                    if (tsk_verbose) {
+                        tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)");        
+                    }
+                    return TSK_ERR;
+                }
+            }
+        } 
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (Parent VS_Part not found)");
+        }                   
+        return TSK_ERR;    
+    }
+    else {
+        if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (FS object not found)\n");
+        }
+        return TSK_ERR;
+    }
+}
+
+
 /**
 * Process each file system in the database and add its unallocated sectors to virtual files. 
 * @param numFs (out) number of filesystems found
@@ -1815,18 +1905,182 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocFsSpaceToDb(size_t & numFs) {
 
     numFs = m_savedFsInfo.size();
     TSK_RETVAL_ENUM allFsProcessRet = TSK_OK;
-    for (vector<TSK_DB_FS_INFO>::iterator it = m_savedFsInfo.begin(); it!= m_savedFsInfo.end(); ++it) {
-        if (m_stopAllProcessing) {
+    
+
+    for (vector<TSK_DB_FS_INFO>::iterator curFsDbInfo = m_savedFsInfo.begin(); curFsDbInfo!= m_savedFsInfo.end(); ++curFsDbInfo) {
+        if (m_stopAllProcessing) 
             break;
+        // finds VS related to the FS
+        TSK_DB_VS_INFO curVsDbInfo; 
+        if(getVsByFsId(curFsDbInfo->objId, curVsDbInfo) == TSK_ERR){
+            // FS is not inside a VS
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "TskAutoDbJava::addUnallocFsSpaceToDb: FS not inside a VS, adding the unnalocated space\n");
+            }
+            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(m_img_info, *curFsDbInfo);
+            if (retval == TSK_ERR)
+                    allFsProcessRet = TSK_ERR;
+        }        
+        else {
+            if ((curVsDbInfo.vstype == TSK_VS_TYPE_APFS)||(curVsDbInfo.vstype == TSK_VS_TYPE_LVM)){ 
+                
+                TSK_DB_OBJECT* fsObjInfo = NULL;
+                if (getObjectInfo ( curFsDbInfo->objId, &fsObjInfo) == TSK_ERR ) {
+                    tsk_error_set_errstr(
+                            "TskAutoDbJava::addUnallocFsSpaceToDb: error getting Object by ID"
+                            );              
+                    tsk_error_set_errno(TSK_ERR_AUTO);  
+                    registerError();
+                    return TSK_ERR;
+
+                } 
+                
+                TSK_VS_PART_INFO curVsPartInfo;
+                if (getVsPartById(fsObjInfo->parObjId, curVsPartInfo) == TSK_ERR){
+                    tsk_error_set_errstr(
+                        "TskAutoDbJava::addUnallocFsSpaceToDb: error getting Volume Part from FSInfo"
+                        );              
+                    tsk_error_set_errno(TSK_ERR_AUTO);  
+                    registerError();
+                    return TSK_ERR;
+                }
+                
+                
+ 
+
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS) {      
+                        const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS);
+                        if (pool == nullptr) {
+                            tsk_error_set_errstr2(
+                                "TskAutoDbJava::addUnallocFsSpaceToDb:: Error opening pool. ");
+                            tsk_error_set_errstr2("Offset: %" PRIdOFF, curVsDbInfo.offset);
+                            registerError();
+                            allFsProcessRet = TSK_ERR;
+                        }
+                        const auto pool_vol_img = pool->get_img_info(pool, curVsPartInfo.start);
+                            
+                        if (pool_vol_img != NULL) {
+                            TSK_FS_INFO *fs_info = apfs_open(pool_vol_img, 0, TSK_FS_TYPE_APFS, "");
+                            if (fs_info) {     
+                                TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, *curFsDbInfo);
+                                if (retval == TSK_ERR)
+                                                allFsProcessRet = TSK_ERR;
+
+                                tsk_fs_close(fs_info);
+                                tsk_img_close(pool_vol_img);
+
+                                if (retval == TSK_STOP) {
+                                    tsk_pool_close(pool);
+                                    allFsProcessRet = TSK_STOP;
+                                }
+                                
+                                
+                            }
+                            else {
+                                if (curVsPartInfo.flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
+                                    tsk_error_reset();
+                                    tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                                    tsk_error_set_errstr(
+                                        "TskAutoDbJava::addUnallocFsSpaceToDb: Encrypted APFS file system");
+                                    tsk_error_set_errstr2("Block: %" PRIdOFF, curVsPartInfo.start);
+                                    registerError();
+                                }
+                                else {
+                                    tsk_error_set_errstr2(
+                                        "TskAutoDbJava::addUnallocFsSpaceToDb: Error opening APFS file system");
+                                    registerError();
+                                }
+
+                                tsk_img_close(pool_vol_img);
+                                tsk_pool_close(pool);
+                                allFsProcessRet = TSK_ERR;
+                            }
+                            tsk_img_close(pool_vol_img);
+                        }
+                        else {
+                            tsk_pool_close(pool);
+                            tsk_error_set_errstr2(
+                                "TskAutoDbJava::addUnallocFsSpaceToDb: Error opening APFS pool");
+                            registerError();
+                            allFsProcessRet = TSK_ERR;
+                        }
+                                              
+                }
+                #ifdef HAVE_LIBVSLVM
+                if ( curVsDbInfo.vstype == TSK_VS_TYPE_LVM) { 
+
+                    const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
+                    if (pool == nullptr) {
+                        tsk_error_set_errstr2(
+                        "TskAutoDbJava::addUnallocFsSpaceToDb: Error opening pool");
+                        registerError();
+                        allFsProcessRet = TSK_ERR;
+                    }
+                    
+    
+                    TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, curVsPartInfo.start);
+                    if (pool_vol_img == NULL) {                        
+                        tsk_pool_close(pool);                        
+                        tsk_error_set_errstr2(
+                            "TskAutoDbJava::addUnallocFsSpaceToDb: Error opening LVM logical volume: %" PRIdOFF "",
+                            curVsPartInfo.start);
+                        tsk_error_set_errno(TSK_ERR_FS);
+                        registerError();
+                        allFsProcessRet = TSK_ERR;
+                    } 
+                    else {
+                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo->fType);
+                        if (fs_info == NULL) {
+                            tsk_img_close(pool_vol_img);
+                            tsk_pool_close(pool);
+                            tsk_error_set_errstr2(
+                                "TskAutoDbJava::addUnallocFsSpaceToDb: Unable to open file system in LVM logical volume: %" PRIdOFF "",
+                                curVsPartInfo.start);
+                            tsk_error_set_errno(TSK_ERR_FS);
+                            registerError();
+                            allFsProcessRet = TSK_ERR;
+                        }
+                        else {
+                            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, *curFsDbInfo);
+                            if (retval == TSK_ERR){
+                                tsk_error_set_errstr2(
+                                        "TskAutoDb::addUnallocFsSpaceToDb: Error getting unallocated space");
+                                tsk_error_set_errno(TSK_ERR_FS);
+                                registerError();
+                                allFsProcessRet = TSK_ERR;
+                            }
+
+
+                            tsk_fs_close(fs_info);
+                            tsk_img_close(pool_vol_img);
+
+                            if (retval == TSK_STOP) {
+                                tsk_pool_close(pool);
+                                allFsProcessRet = TSK_STOP;
+                            }
+                        }
+                    }
+                    
+                }        
+                #endif /* HAVE_LIBVSLVM */    
+
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_UNSUPP){                                      
+                    tsk_error_set_errstr2(
+                        "TskAutoDbJava::addUnallocFsSpaceToDb: VS Type not supported");
+                    registerError();
+                    allFsProcessRet = TSK_ERR;
+                }
+            }
+            else {
+                if (addFsInfoUnalloc(m_img_info, *curFsDbInfo) == TSK_ERR){
+                    allFsProcessRet = TSK_ERR;
+                }
+            }    
         }
-        if (addFsInfoUnalloc(*it) == TSK_ERR)
-            allFsProcessRet = TSK_ERR;
     }
-
-    //TODO set parent_path for newly created virt dir/file hierarchy for consistency
-
     return allFsProcessRet;
 }
+
 
 /**
 * Process each volume in the database and add its unallocated sectors to virtual files. 
@@ -1918,14 +2172,10 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocVsSpaceToDb(size_t & numVsP) {
             return TSK_ERR;
         }
 
-        // Create an unalloc file with unalloc part, with vs part as parent
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        // Create an unalloc file (or files) with unalloc part, with vs part as parent
         const uint64_t byteStart = vsInfo->offset + vsInfo->block_size * vsPart.start;
-        const uint64_t byteLen = vsInfo->block_size * vsPart.len; 
-        TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
-        ranges.push_back(tempRange);
-        int64_t fileObjId = 0;
-        if (addUnallocBlockFile(vsPart.objId, 0, tempRange.byteLen, ranges, fileObjId, m_curImgId) == TSK_ERR) {
+        const uint64_t byteLen = vsInfo->block_size * vsPart.len;
+        if (addUnallocBlockFileInChunks(byteStart, byteLen, vsPart.objId, m_curImgId) == TSK_ERR) {
             registerError();
             return TSK_ERR;
         }
@@ -1944,7 +2194,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocImageSpaceToDb() {
 
     const TSK_OFF_T imgSize = getImageSize();
     if (imgSize == -1) {
-        tsk_error_set_errstr("addUnallocImageSpaceToDb: error getting current image size, can't create unalloc block file for the image.");
+        tsk_error_set_errstr("addUnallocImageSpaceToDb: error getting curent image size, can't create unalloc block file for the image.");
         registerError();
         return TSK_ERR;
     }
@@ -1953,10 +2203,58 @@ TSK_RETVAL_ENUM TskAutoDbJava::addUnallocImageSpaceToDb() {
         //add unalloc block file for the entire image
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         ranges.push_back(tempRange);
-        int64_t fileObjId = 0;
-        if (TSK_ERR == addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId)) {
+        // int64_t fileObjId = 0;
+
+        if (TSK_ERR == addUnallocBlockFileInChunks(0, imgSize, m_curImgId, m_curImgId)) {
             return TSK_ERR;
         }
+    }
+    return TSK_OK;
+}
+
+/**
+* Adds unallocated block files to the database, chunking if enabled.
+*
+* @returns TSK_OK on success, TSK_ERR on error
+*/
+TSK_RETVAL_ENUM TskAutoDbJava::addUnallocBlockFileInChunks(uint64_t byteStart, TSK_OFF_T totalSize, int64_t parentObjId, int64_t dataSourceObjId) {
+
+    if (m_maxChunkSize <= 0) {
+        // No chunking - write the entire file
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, totalSize, 0);
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+        return addUnallocBlockFile(parentObjId, 0, totalSize, ranges, fileObjId, dataSourceObjId);
+    }
+
+    // We will chunk into separate files with max size m_maxChunkSize
+    uint64_t maxChunkSize = (uint64_t)m_maxChunkSize;
+    uint64_t bytesLeft = (uint64_t)totalSize;
+    uint64_t startingOffset = byteStart;
+    uint64_t chunkSize;
+    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+    while (bytesLeft > 0) {
+
+        if (maxChunkSize >= bytesLeft) {
+            chunkSize = bytesLeft;
+            bytesLeft = 0;
+        }
+        else {
+            chunkSize = maxChunkSize;
+            bytesLeft -= maxChunkSize;
+        }
+
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(startingOffset, chunkSize, 0);
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+
+        TSK_RETVAL_ENUM retval = addUnallocBlockFile(parentObjId, 0, chunkSize, ranges, fileObjId, dataSourceObjId);
+        if (retval != TSK_OK) {
+            return retval;
+        }
+        ranges.clear();
+        startingOffset += chunkSize;
     }
     return TSK_OK;
 }

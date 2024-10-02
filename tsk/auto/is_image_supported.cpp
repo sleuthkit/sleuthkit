@@ -21,6 +21,8 @@
  */
 
 #include "tsk_is_image_supported.h"
+#include <sstream>
+#include <algorithm>
 
 TskIsImageSupported::TskIsImageSupported()
 {
@@ -29,9 +31,11 @@ TskIsImageSupported::TskIsImageSupported()
     m_wasPossibleEncryptionFound = false;
     m_wasFileSystemFound = false;
     m_wasUnsupported = false;
+    m_bitlockerError = false;
     m_encryptionDesc[0] = '\0';
     m_possibleEncryptionDesc[0] = '\0';
     m_unsupportedDesc[0] = '\0';
+    m_bitlockerDesc[0] = '\0';
 }
 
 bool TskIsImageSupported::isImageSupported()
@@ -42,6 +46,48 @@ bool TskIsImageSupported::isImageSupported()
 bool TskIsImageSupported::isImageEncrypted()
 {
     return m_wasEncryptionFound;
+}
+
+/**
+* Idea is to try to give the user a simple error message explaining the most likely 
+* reason the image is not supported
+*/
+std::string TskIsImageSupported::getSingleLineErrorMessage() {
+    // If we have this, we are very confident we have a BitLocker-protected partition
+    // and that we have a message to show the user. Most commonly this is a missing
+    // or incorrect password.
+    if (m_bitlockerError) {
+        if (strnlen(m_bitlockerDesc, 1024) > 0) {
+            return std::string(m_bitlockerDesc);
+        }
+        return "BitLocker error"; // Safety message - we should always have a description saved
+    }
+
+    // Check if we have a known unsupported image type
+    if (strnlen(m_unsupportedDesc, 1024) > 0) {
+        return "Unsupported image type (" + std::string(m_unsupportedDesc) + ")";
+    }
+
+    // Now report any encryption/possible encryption
+    if (m_wasEncryptionFound || m_wasPossibleEncryptionFound) {
+        std::string encDesc = "";
+        if (m_wasEncryptionFound) {
+            encDesc = "Encryption detected";
+            if (strnlen(m_encryptionDesc, 1024) > 0) {
+                encDesc += " (" + std::string(m_encryptionDesc) + ")";
+            }
+        }
+        else {
+            encDesc = "Possible encryption detected";
+            if (strnlen(m_possibleEncryptionDesc, 1024) > 0) {
+                encDesc += " (" + std::string(m_possibleEncryptionDesc) + ")";
+            }
+        }
+        return encDesc;
+    }
+
+    // Default message
+    return "Error loading file systems";
 }
 
 void TskIsImageSupported::printResults() {
@@ -105,6 +151,16 @@ uint8_t TskIsImageSupported::handleError()
             strncpy(m_encryptionDesc, lastError->errstr, 1024);
             m_wasEncryptionFound = true;
         }
+        else if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
+            // This is the case where we're confident we have BitLocker encryption but
+            // failed to initialize it. The most common cause would be a missing
+            // or incorrect password.
+            strncpy(m_encryptionDesc, "BitLocker", 1024);
+            m_wasEncryptionFound = true;
+            m_bitlockerError = true;
+            strncpy(m_bitlockerDesc, "BitLocker status - ", 1024);
+            strncat(m_bitlockerDesc, lastError->errstr, 950);
+        }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
             strncpy(m_possibleEncryptionDesc, lastError->errstr, 1024);
             m_wasPossibleEncryptionFound = true;
@@ -113,8 +169,79 @@ uint8_t TskIsImageSupported::handleError()
             strncpy(m_unsupportedDesc, lastError->errstr, 1024);
             m_wasUnsupported = true;
         }
+        else if (errCode == TSK_ERR_VS_MULTTYPE) {
+            // errstr only contains the "MAC or DOS" part, so add more context
+            strncpy(m_unsupportedDesc, "Multiple volume system types found - ", 1024);
+            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            m_wasUnsupported = true;
+        }
+        else if (errCode == TSK_ERR_FS_MULTTYPE) {
+            // errstr only contains the "UFS or NTFS" part, so add more context
+            strncpy(m_unsupportedDesc, "Multiple file system types found - ", 1024);
+            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            m_wasUnsupported = true;
+        }
+
     }
     return 0;
+}
+
+/**
+* Prepare the result for dataModel_SleuthkitJNI::isImageSupportedNat.
+* There's some complexity here because BitLocker drives appear to have a very small unencrypted
+* volume followed by the encrypted volume. So we need to check for BitLocker errors instead
+* of just going by whether we were able to open a file system. 
+* 
+* @return Empty string if image is supported, error string if not
+*/
+std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
+    // General approach:
+    // - If we have a BitLocker error then report it, even if we opened at least one file system
+    // - If we did open at least one file system and had no Bitlocker errors, return empty string
+    // - Otherwise return the error string
+
+    if (m_bitlockerError) {
+        return getSingleLineErrorMessage();
+    }
+
+    if (isImageSupported()) {
+        return "";
+    }
+
+    // We've seen a lot of issues with .vmdk files. If the image has a .vmdk extension, try to open again
+    // to get a more specific error string.
+    if ((TSTRLEN(m_img_info->images[0]) > 5) && (TSTRICMP(&(m_img_info->images[0][TSTRLEN(m_img_info->images[0]) - 5]), _TSK_T(".vmdk")) == 0)) {
+        TSK_IMG_INFO* tempInfo = tsk_img_open(m_img_info->num_img, m_img_info->images, TSK_IMG_TYPE_VMDK_VMDK, m_img_info->sector_size);
+        if (tempInfo == NULL) {
+            // The vmdk open code failed. The first line should contain everything we need.
+            std::stringstream ss(tsk_error_get_errstr());
+            std::string firstLine = "";
+            std::getline(ss, firstLine);
+            if (!firstLine.empty()) { // The error really shouldn't be empty, but if this somehow happens default to the normal error handling code
+
+                // Remove any trailing newline
+                firstLine.erase(std::remove(firstLine.begin(), firstLine.end(), '\n'), firstLine.cend());
+                firstLine.erase(std::remove(firstLine.begin(), firstLine.end(), '\r'), firstLine.cend());
+
+                // To make the output look nicer make sure any open parens get closed (the close paren was likely on the last line of the original error message)
+                // For example we want to add a close paren to this line:
+                //   vmdk_open file: r:\work\images\renamedVM.vmdke: Error opening (libcfile_file_open_wide_with_error_code: no such file: \\?\R:\work\images\renamedVM.vmdke.
+                int nOpenParens = std::count(firstLine.begin(), firstLine.end(), '(');
+                int nCloseParens = std::count(firstLine.begin(), firstLine.end(), ')');
+                for (int i = nCloseParens; i < nOpenParens; i++) {
+                    firstLine += ")";
+                }
+
+                return std::string("Error opening VMDK (" + firstLine + ")");
+            }
+        }
+        else {
+            // This is the case where we successfully opened the vmdk but it perhaps did not have a file system.
+            tsk_img_close(tempInfo);
+        }
+    }
+
+    return getSingleLineErrorMessage();
 }
 
 TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,

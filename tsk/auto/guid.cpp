@@ -43,7 +43,7 @@ THE SOFTWARE.
 using namespace std;
 
 // overload << so that it's easy to convert to a string
-ostream &operator<<(ostream &s, const Guid &guid)
+ostream &operator<<(ostream &s, const TSKGuid &guid)
 {
   return s << hex << setfill('0')
     << setw(2) << (int)guid._bytes[0]
@@ -69,13 +69,13 @@ ostream &operator<<(ostream &s, const Guid &guid)
 }
 
 // create a guid from vector of bytes
-Guid::Guid(const vector<unsigned char> &bytes)
+TSKGuid::TSKGuid(const vector<unsigned char> &bytes)
 {
   _bytes = bytes;
 }
 
 // create a guid from array of bytes
-Guid::Guid(const unsigned char *bytes)
+TSKGuid::TSKGuid(const unsigned char *bytes)
 {
   _bytes.assign(bytes, bytes + 16);
 }
@@ -102,7 +102,7 @@ unsigned char hexPairToChar(char a, char b)
 }
 
 // create a guid from string
-Guid::Guid(const string &fromString)
+TSKGuid::TSKGuid(const string &fromString)
 {
   _bytes.clear();
 
@@ -133,18 +133,18 @@ Guid::Guid(const string &fromString)
 }
 
 // create empty guid
-Guid::Guid()
+TSKGuid::TSKGuid()
 {
   _bytes = vector<unsigned char>(16, 0);
 }
 
 // copy constructor
-Guid::Guid(const Guid &other)
+TSKGuid::TSKGuid(const TSKGuid &other)
 {
   _bytes = other._bytes;
 }
 
-std::string Guid::str() const {
+std::string TSKGuid::str() const {
   std::stringstream ss;
   ss << (*this);
 
@@ -152,20 +152,20 @@ std::string Guid::str() const {
 }
 
 // overload assignment operator
-Guid &Guid::operator=(const Guid &other)
+TSKGuid &TSKGuid::operator=(const TSKGuid &other)
 {
   _bytes = other._bytes;
   return *this;
 }
 
 // overload equality operator
-bool Guid::operator==(const Guid &other) const
+bool TSKGuid::operator==(const TSKGuid &other) const
 {
   return _bytes == other._bytes;
 }
 
 // overload inequality operator
-bool Guid::operator!=(const Guid &other) const
+bool TSKGuid::operator!=(const TSKGuid &other) const
 {
   return !((*this) == other);
 }
@@ -173,7 +173,7 @@ bool Guid::operator!=(const Guid &other) const
 // This is the linux friendly implementation, but it could work on other
 // systems that have libuuid available
 #ifdef GUID_LIBUUID
-Guid GuidGenerator::newGuid()
+TSKGuid GuidGenerator::newGuid()
 {
   uuid_t id;
   uuid_generate(id);
@@ -183,7 +183,7 @@ Guid GuidGenerator::newGuid()
 
 // this is the mac and ios version
 #ifdef GUID_CFUUID
-Guid GuidGenerator::newGuid()
+TSKGuid GuidGenerator::newGuid()
 {
   CFUUIDRef newId = CFUUIDCreate(NULL);
   CFUUIDBytes bytes = CFUUIDGetUUIDBytes(newId);
@@ -214,7 +214,7 @@ Guid GuidGenerator::newGuid()
 
 // obviously this is the windows version
 #ifdef GUID_WINDOWS
-Guid GuidGenerator::newGuid()
+TSKGuid GuidGenerator::newGuid()
 {
   GUID newId;
   CoCreateGuid(&newId);
@@ -257,7 +257,7 @@ GuidGenerator::GuidGenerator(JNIEnv *env)
   _leastSignificantBitsMethod = env->GetMethodID(_uuidClass, "getLeastSignificantBits", "()J");
 }
 
-Guid GuidGenerator::newGuid()
+TSKGuid GuidGenerator::newGuid()
 {
   jobject javaUuid = _env->CallStaticObjectMethod(_uuidClass, _newGuidMethod);
   jlong mostSignificant = _env->CallLongMethod(javaUuid, _mostSignificantBitsMethod);

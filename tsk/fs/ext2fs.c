@@ -637,7 +637,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
                 // The offset is from the beginning of the entries, i.e., four bytes into the buffer.
                 uint16_t offset = tsk_getu16(fs_file->fs_info->endian, ea_entry->val_off);
                 uint32_t size = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_size);
-                if (4 + offset + size <= ea_buf_len) {
+                if ((ea_buf_len >= 4) && (offset < ea_buf_len - 4) && (size <= ea_buf_len - 4 - offset)) {
                     ea_inline_data = &(ea_buf[4 + offset]);
                     ea_inline_data_len = size;
                     break;
@@ -657,11 +657,16 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
         }
     }
 
+    // Check if resident data size exceeds maximum inode size (1024) - ext4 inode resident data offset (156)
+    if ((fs_meta->size == 0) || (fs_meta->size > (1024 - 156))) {
+        return 1;
+    }
+
     // Combine the two parts of the inline data for the resident attribute. For now, make a
     // buffer for the full file size - this may be different than the length of the data 
     // from the inode if we have sparse data.
-    uint8_t *resident_data;
-    if ((resident_data = (uint8_t*)tsk_malloc(fs_meta->size)) == NULL) {
+    uint8_t *resident_data = (uint8_t*)tsk_malloc(fs_meta->size);
+    if (resident_data == NULL) {
         return 1;
     }
     memset(resident_data, 0, fs_meta->size);
@@ -673,7 +678,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
     // If we need more data and found an extended attribute, append that data
     if ((fs_meta->size > EXT2_INLINE_MAX_DATA_LEN) && (ea_inline_data_len > 0)) {
         // Don't go beyond the size of the file
-        size_t ea_data_len = (inode_data_len + ea_inline_data_len < (uint64_t)fs_meta->size) ? inode_data_len + ea_inline_data_len : fs_meta->size - inode_data_len;
+        size_t ea_data_len = (ea_inline_data_len < (uint64_t)fs_meta->size - inode_data_len) ? ea_inline_data_len : fs_meta->size - inode_data_len;
         memcpy(resident_data + inode_data_len, ea_inline_data, ea_data_len);
     }
 
@@ -1608,7 +1613,7 @@ ext2fs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
 static TSK_OFF_T
 ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
     TSK_FS_ATTR * fs_attr, TSK_FS_ATTR * fs_attr_extent,
-    TSK_DADDR_T idx_block)
+    TSK_DADDR_T idx_block, TSK_DADDR_T * idx_offset)
 {
     ext2fs_extent_header *header;
     TSK_FS_ATTR_RUN *data_run;
@@ -1650,8 +1655,10 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
         free(buf);
         return 1;
     }
+    data_run->offset = *idx_offset;
+    ++*idx_offset;
     data_run->addr = idx_block;
-    data_run->len = fs_blocksize;
+    data_run->len = 1;
 
     if (tsk_fs_attr_add_run(fs_info, fs_attr_extent, data_run)) {
         tsk_fs_attr_run_free(data_run);
@@ -1696,7 +1703,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
                         index->ei_leaf_hi)) << 16) | tsk_getu32(fs_info->
                 endian, index->ei_leaf_lo);
             if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
-                    fs_attr_extent, child_block)) {
+                    fs_attr_extent, child_block, idx_offset)) {
                 free(buf);
                 return 1;
             }
@@ -1741,7 +1748,8 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
         return 0;
     }
 
-    if ((buf = (uint8_t *) tsk_malloc(fs_blocksize)) == NULL) {
+    buf = (uint8_t *) tsk_malloc(fs_blocksize);
+    if (buf == NULL) {
         return -1;
     }
 
@@ -1763,12 +1771,14 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
             }
             tsk_error_set_errstr2("ext2fs_extent_tree_index_count: Block %"
                 PRIuDADDR, block);
+            free(buf);
             return -1;
         }
 
         if ((ret =
                 ext2fs_extent_tree_index_count(fs_info, fs_meta,
                     (ext2fs_extent_header *) buf, recursion_depth + 1)) < 0) {
+            free(buf);
             return -1;
         }
         count += ret;
@@ -1926,6 +1936,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     else {                  /* interior node */
         TSK_FS_ATTR *fs_attr_extent;
         int32_t extent_index_size;
+        TSK_DADDR_T idx_offset;
 
         // Ensure fs_meta->content_ptr is sufficiently large
         // Otherwise indices[i] below can cause an OOB read
@@ -1957,6 +1968,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
         }
         
         indices = (ext2fs_extent_idx *) (header + 1);
+        idx_offset = 0;
         for (i = 0; i < num_entries; i++) {
             ext2fs_extent_idx *index = &indices[i];
             TSK_DADDR_T child_block =
@@ -1965,7 +1977,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
                                     ei_leaf_hi)) << 16) | tsk_getu32(fs_info->
                                                                      endian, index->ei_leaf_lo);
             if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
-                                                  fs_attr_extent, child_block)) {
+                                                  fs_attr_extent, child_block, &idx_offset)) {
                 return 1;
             }
         }
@@ -3456,12 +3468,13 @@ ext2fs_close(TSK_FS_INFO * fs)
  * @param img_info Disk image to analyze
  * @param offset Byte offset where file system starts
  * @param ftype Specific type of file system
+ * @param a_pass NOT USED
  * @param test NOT USED
  * @returns NULL on error or if data is not an Ext2/3 file system
  */
 TSK_FS_INFO *
 ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     EXT2FS_INFO *ext2fs;
     unsigned int len;

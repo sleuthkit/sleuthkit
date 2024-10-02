@@ -1,0 +1,202 @@
+name: "Build"
+
+# For docker container comparable to Linux build worker:
+#   docker run -it docker.io/library/ubuntu:22.04 bash
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    name: ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: "macos"
+            arch: "arm64"
+            linkage: "shared"
+            runner: "macos-latest"
+            configure_opts: "--with-libewf --disable-java"
+
+          - os: "linux"
+            arch: "x86_64"
+            linkage: "shared"
+            runner: "ubuntu-22.04"
+            configure_opts: "--with-libewf --disable-java"
+
+          - os: "mingw"
+            arch: "x86_64"
+            linkage: "shared"
+            runner: "ubuntu-22.04"
+            configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --enable-shared --disable-static"
+            winearch: 'win64'
+            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
+            wineprefix: '/home/runner/.wine64'
+
+          - os: "mingw"
+            arch: "x86_64"
+            linkage: "static"
+            runner: "ubuntu-22.04"
+            configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --disable-shared --enable-static"
+            winearch: 'win64'
+            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
+            wineprefix: '/home/runner/.wine64'
+
+          - os: "mingw"
+            arch: "i686"
+            linkage: "shared"
+            runner: "ubuntu-22.04"
+            configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --enable-shared --disable-static"
+            winearch: 'win32'
+            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
+            wineprefix: '/home/runner/.wine32'
+
+          - os: "mingw"
+            arch: "i686"
+            linkage: "static"
+            runner: "ubuntu-22.04"
+            configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --disable-shared --enable-static"
+            winearch: 'win32'
+            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
+            wineprefix: '/home/runner/.wine32'
+
+    steps:
+      - name: Determine number of cores
+        id: cores
+        run: |
+          if [ ${{ startsWith(matrix.runner, 'macos') }} = true ]; then
+            CORES=$(sysctl -n hw.logicalcpu)
+          elif [ ${{ matrix.os == 'mingw' }} = true ]; then
+            # mingw exhausts the memory if too many jobs run concurrently
+            CORES=2
+          else
+            CORES=$(nproc)
+          fi
+          echo "cores=$CORES" >>$GITHUB_OUTPUT
+          echo "Using $CORES cores"
+
+      - name: Install packages
+        if: ${{ startsWith(matrix.runner, 'macos') }}
+        run: |
+          brew install wget libtool autoconf automake libtool libewf pkg-config
+
+      - name: Update packages
+        if: ${{ matrix.os == 'mingw' }}
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
+
+      - name: Update packages
+        if: ${{ startsWith(matrix.runner, 'ubuntu') }}
+        run: |
+          sudo apt update
+
+      - name: Install packages
+        if: ${{ matrix.os == 'linux' }}
+        run: |
+          sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libtool make pkg-config zlib1g-dev
+
+      - name: Install packages
+        if: ${{ matrix.os == 'mingw' }}
+        run: |
+          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
+
+      - name: Setup for cross-compiling
+        if: ${{ matrix.os == 'mingw' }}
+        run: |
+          sudo update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
+
+      - name: Run bootstrap
+        run: |
+          ./bootstrap
+
+      - name: Run configure
+        run: |
+          ./configure ${{ matrix.configure_opts }}
+
+      - name: Run make
+        run: |
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 TESTS=
+
+      - name: Run make check
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+
+      - name: Run make check
+        if: ${{ matrix.os == 'mingw' }}
+        env:
+          WINEARCH: ${{ matrix.winearch }}
+          WINEPATH: ${{ matrix.winepath }}
+          WINEPREFIX: ${{ matrix.wineprefix }}
+        run: |
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+
+      - name: Clean up
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make distclean
+
+      - name: Run configure with address-sanitizer
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer
+
+      - name: Run make with address-sanitizer
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make -j check VERBOSE=1
+
+      - name: Clean up
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make distclean
+
+      - name: Run configure for codecov
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          ./configure ${{ matrix.configure_opts }} CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage'
+
+      - name: Run make for codecov
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make -j unit_tests/runner
+
+      - name: Run unit tests for codecov
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          unit_tests/runner
+
+      - name: Upload codecov report
+        if: ${{ matrix.os != 'mingw' }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip3 install coverage
+          pushd unit_tests
+          bash <(curl -s https://codecov.io/bash) -B develop
+          popd
+
+#      - name: Run distcheck
+#        run: |
+#          ./configure
+#          make distcheck
+#
+#      - uses: ammaraskar/gcc-problem-matcher@0.2.0
+#        name: GCC Problem Matcher

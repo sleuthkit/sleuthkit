@@ -40,7 +40,7 @@ class TskAutoDb:public TskAuto {
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual void closeImage();
-    virtual void setTz(string tzone);
+    virtual void setTz(std::string tzone);
 
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
@@ -133,9 +133,9 @@ class TskAutoDb:public TskAuto {
     int64_t m_curFileId;    ///< Object ID of file currently being processed
     TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed
     int64_t m_curUnallocDirId;	
-    string m_curDirPath;		//< Path of the current directory being processed
+    std::string m_curDirPath;		//< Path of the current directory being processed
     tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath
-    string m_curImgTZone;
+    std::string m_curImgTZone;
     bool m_blkMapFlag;
     bool m_fileHashFlag;
     bool m_vsFound;
@@ -158,6 +158,12 @@ class TskAutoDb:public TskAuto {
     // store info about them here.
     std::map<int64_t, int64_t> m_poolOffsetToParentId;
     std::map<int64_t, int64_t> m_poolOffsetToVsId;
+
+    // Cached objects
+    vector<TSK_DB_FS_INFO> m_savedFsInfo;    
+    vector<TSK_DB_VS_INFO> m_savedVsInfo;
+    vector<TSK_DB_VS_PART_INFO> m_savedVsPartInfo;
+    vector<TSK_DB_OBJECT> m_savedObjects;
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
@@ -193,12 +199,14 @@ class TskAutoDb:public TskAuto {
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
     TSK_RETVAL_ENUM addUnallocatedPoolBlocksToDb(size_t & numPool);
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
-    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, const TSK_DB_FS_INFO & dbFsInfo);
     TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);
     TSK_RETVAL_ENUM addUnallocVsSpaceToDb(size_t & numVsP);
     TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
     TSK_RETVAL_ENUM addUnallocSpaceToDb();
-
+    TSK_RETVAL_ENUM addUnallocBlockFileInChunks(uint64_t byteStart, TSK_OFF_T totalSize, int64_t parentObjId, int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPartInfo);
+    TSK_RETVAL_ENUM getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo);
 };
 
 

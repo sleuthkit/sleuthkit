@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  * 
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,6 +53,8 @@ public class LocalDirectory extends SpecialDirectory {
 	 * @param size               The size of the local directory, should be
 	 *                           zero.
 	 * @param md5Hash            The MD5 hash for the local directory.
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state for the local directory
 	 * @param parentPath         The parent path for the local directory
 	 */
@@ -62,11 +64,12 @@ public class LocalDirectory extends SpecialDirectory {
 			String name,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			String md5Hash, String sha256Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
 			String parentPath) {
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name,
+		super(db, objId, dataSourceObjectId, null, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name,
 				TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL_DIR, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, null);
+				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, null);
 	}
 	
 	/**
@@ -74,6 +77,7 @@ public class LocalDirectory extends SpecialDirectory {
 	 * Will always be false.
 	 * @return false
 	 */
+	@Override
 	public boolean isDataSource() {
 		return false;
 	}

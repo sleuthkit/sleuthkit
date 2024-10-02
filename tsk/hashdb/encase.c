@@ -129,7 +129,7 @@ uint8_t
 
     /* Status */
     if (tsk_verbose)
-        TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
+        TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%" PRIttocTSK ")\n"),
         hdb_binsrch_info->base.db_fname);
 
     memset(phash, '0', sizeof(phash));
