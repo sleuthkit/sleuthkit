@@ -135,6 +135,8 @@ AS_IF([test "x$ax_sqlite3" = "xyes"],
       [AC_MSG_RESULT([bundled])])
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
+dnl Check if we should link with OpenSSL
+TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 dnl Check if we should link with afflib
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
 dnl Check if we should link with libaff4
@@ -271,9 +273,6 @@ AC_SUBST([CXXLD])
 
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
-
-dnl OpenSSL support for encryption
-TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 
 dnl Use -Wno-unused-command-line-argument only if the compiler understands it
 AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
