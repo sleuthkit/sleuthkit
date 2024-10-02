@@ -164,10 +164,19 @@ dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
 TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
+
 dnl Check if we should link with libvslvm
-AS_IF([test "x$ax_libbfio" = "xyes"],
-      [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
-      [ax_libvslvm=no])
+AS_IF(
+  [test "x$ax_libbfio" != "xno"],
+  [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
+  [
+    AS_IF(
+      [test "x$with_libvslvm" != "xno"],
+      [AC_MSG_FAILURE([libvslvm requires libbfio])]
+    )
+    ax_libvslvm=no
+  ]
+)
 
 dnl check for user online input
 AC_ARG_ENABLE([offline],
