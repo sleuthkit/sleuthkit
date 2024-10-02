@@ -61,7 +61,7 @@ for:
         - job_name: Linux Build
 
     install:
-      - sudo apt install -y autoconf
+      - sudo apt install -y autoconf python3-venv
 
     build_script:
       - cat /etc/os-release
