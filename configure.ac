@@ -154,7 +154,7 @@ AS_IF(
   [AC_CHECK_LIB(
     [ewf],
     [libewf_handle_read_buffer_at_offset],
-    [AC_DEFINE([HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET], [1], [Define to 1 if you have the `libewf_handle_read_buffer_at_offset' function.])]
+    [AC_DEFINE([HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET], [1], [Define to 1 if you have the libewf_handle_read_buffer_at_offset function.])]
   )]
 )
 
