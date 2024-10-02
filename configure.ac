@@ -324,8 +324,9 @@ AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libaff4 support:                       $ax_libaff4
+   libbfio support:                       $ax_libqcow
    libewf support:                        $ax_libewf
-   libqcow support:                       $ax_libqcow
+   libqcow support:                       $ax_libbfio
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
    libvslvm support:                      $ax_libvslvm
