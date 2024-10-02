@@ -50,43 +50,43 @@ void check_image(std::string img_path, std::string dfxml2_path) {
 #ifdef HAVE_LIBEWF
 TEST_CASE("test_disk_images imageformat_mmls_1.E01", "[fiwalk]") {
     check_image(
-      "tests/from_brian/imageformat_mmls_1.E01",
-      "tests/from_brian/imageformat_mmls_1.E01.xml"
+      "test/from_brian/imageformat_mmls_1.E01",
+      "test/from_brian/imageformat_mmls_1.E01.xml"
     );
 }
 #endif
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/ntfs-img-kw-1.dd",
-      "tests/from_brian/3-kwsrch-ntfs.xml"
+      "test/from_brian/ntfs-img-kw-1.dd",
+      "test/from_brian/3-kwsrch-ntfs.xml"
     );
 }
 
 TEST_CASE("test_disk_images ext3-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/ext3-img-kw-1.dd",
+      "test/from_brian/ext3-img-kw-1.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images daylight.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/daylight.dd",
+      "test/from_brian/daylight.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images image.gen1.dmg", "[fiwalk]") {
     check_image(
-      "tests/from_brian/image.gen1.dmg",
+      "test/from_brian/image.gen1.dmg",
       ""
     );
 }
 
 TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/image.dd",
-      "tests/from_brian/image_dd.xml"
+      "test/from_brian/image.dd",
+      "test/from_brian/image_dd.xml"
     );
 }
