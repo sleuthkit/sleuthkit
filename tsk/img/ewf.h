@@ -21,12 +21,6 @@
 #include <libewf.h>
 #include <string>
 
-// libewf version 2 no longer defines LIBEWF_HANDLE
-#undef HAVE_LIBEWF_V2_API
-#if !defined( LIBEWF_HANDLE )
-#define HAVE_LIBEWF_V2_API
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
