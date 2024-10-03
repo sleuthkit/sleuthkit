@@ -166,7 +166,7 @@ char* detectUnsupportedImageType(TSK_IMG_INFO * img_info) {
     }
     else if (detectImageSignature("\x1f\x8b", 2, buf, len)) {
         strcpy(result, "Gzip Archive");
-    } 
+    }
     else if (verifyTarChecksum(buf, len)) {
         strcpy(result, "Tar Archive");
     }

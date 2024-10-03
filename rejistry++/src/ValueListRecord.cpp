@@ -35,7 +35,7 @@
 #include "RejistryException.h"
 
 namespace Rejistry {
-    ValueListRecord::ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues) 
+    ValueListRecord::ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues)
         : Record(buf, offset), _numValues(numValues) {}
 
     VKRecord::VKRecordPtrList ValueListRecord::getValues() const {

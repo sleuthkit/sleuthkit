@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -11,7 +11,7 @@
 
 /*
  * Contains the internal library definitions for the disk image functions.  This should
- * be included by the code in the img library. 
+ * be included by the code in the img library.
  */
 
 // include the base internal header file

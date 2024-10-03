@@ -22,12 +22,12 @@
 #include "BitlockerUtils.h"
 
 /**
-* Parse metadata entries from the given buffer. 
-* 
+* Parse metadata entries from the given buffer.
+*
 * @param metadataEntryBuffer     Data buffer
 * @param metadataEntriesBufSize  Size of metadataEntryBuffer
 * @param entries                 Will hold the parsed entries
-* 
+*
 * @return SUCCESS if all entries were parsed successfully, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS readMetadataEntries(uint8_t* metadataEntryBuffer, size_t metadataEntriesBufSize, list<MetadataEntry*>& entries) {
@@ -55,7 +55,7 @@ BITLOCKER_STATUS readMetadataEntries(uint8_t* metadataEntryBuffer, size_t metada
 
 /**
 * Get all metadata entries matching the given type and value type.
-* 
+*
 * @param entries     Entries to search
 * @param entryType   Entry type
 * @param valueType   Value type
@@ -92,11 +92,11 @@ void getMetadataValues(const list<MetadataEntry*>& entries, BITLOCKER_METADATA_V
 * Create a metadata value of the given type from the buffer.
 * Many of the types will just return a generic object since we don't
 * currently use them in the parser.
-* 
+*
 * @param a_valueType  Value type
 * @param buf          Data buffer
 * @param bufLen       Size of the data buffer
-* 
+*
 * @return The newly created MetadataValue or NULL if an error occurs
 */
 MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen) {
@@ -126,7 +126,7 @@ MetadataValue* createMetadataValue(BITLOCKER_METADATA_VALUE_TYPE valueType, uint
     case BITLOCKER_METADATA_VALUE_TYPE::ERROR_VAL:
         return new MetadataValueGeneric(valueType, buf, bufLen);
 
-    // These are invalid types 
+    // These are invalid types
     case BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN:
     default:
         // Make an unknown entry so we can at least read the entry size to continue parsing

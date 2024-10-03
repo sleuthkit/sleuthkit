@@ -24,7 +24,7 @@ using std::string;
 #define TSK_EWF_ERROR_STRING_SIZE 512
 
 /**
- * Get error string from libewf and make buffer empty if that didn't work. 
+ * Get error string from libewf and make buffer empty if that didn't work.
  * @returns 1 if error message was not set
  */
 static uint8_t
@@ -513,12 +513,12 @@ static char* libewf_read_acquiry_software_version(libewf_handle_t *handle, char*
 std::string ewf_get_details(IMG_EWF_INFO *ewf_info) {
     //Need 1MB for libewf read and extra 100 bytes for header name and formatting
     const size_t buffer_size = 1024100;
-    
+
     char* result = (char*)tsk_malloc(buffer_size);
     if (result == NULL) {
-        return NULL; 
+        return NULL;
     }
-    
+
     string collectionDetails = "";
     //Populate all of the libewf header values for the acquisition details column
     collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));

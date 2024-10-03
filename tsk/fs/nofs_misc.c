@@ -1,9 +1,9 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved
 **
 **
 ** This software is distributed under the Common Public License 1.0
@@ -22,11 +22,11 @@
 
 
 /** \internal
- * Print details about the file system to a file handle. 
+ * Print details about the file system to a file handle.
  *
  * @param a_fs File system to print details on
  * @param hFile File handle to print text to
- * 
+ *
  * @returns 1 on error and 0 on success
  */
 uint8_t

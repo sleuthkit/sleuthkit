@@ -7,7 +7,7 @@
  *
  */
 
-/* 
+/*
  * Header files for QCOW-specific data structures and functions.
  */
 

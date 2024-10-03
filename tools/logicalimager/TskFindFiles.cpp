@@ -106,7 +106,7 @@ TSK_RETVAL_ENUM TskFindFiles::processFile(TSK_FS_FILE *fs_file, const char *path
     /* Update progress - only apply to NTFS.
      * We can calculate progress for NTFS file systems because we have
      * modified TSK to keep track of the number of allocated files.
-     * For NTFS, we increment the file counter for allocated files. 
+     * For NTFS, we increment the file counter for allocated files.
      */
     if (fs_file->fs_info && fs_file->fs_info->ftype == TSK_FS_TYPE_NTFS) {
         if (fs_file->meta && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC && fs_file->meta->type == TSK_FS_META_TYPE_REG)) {

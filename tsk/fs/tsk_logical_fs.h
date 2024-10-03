@@ -29,7 +29,7 @@ extern "C" {
 */
 typedef struct {
 	TSK_FS_INFO fs_info;    /* super class */
-	TSK_TCHAR * base_path;  // Base path - pointer to data in IMG_DIR_INFO 
+	TSK_TCHAR * base_path;  // Base path - pointer to data in IMG_DIR_INFO
 } LOGICALFS_INFO;
 
 typedef enum  {

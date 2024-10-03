@@ -84,9 +84,9 @@ namespace Rejistry {
 
 
         HBIN(const REGFHeader * header, RegistryByteBuffer * buf, uint32_t offset);
-        
+
         virtual ~HBIN() {}
-    
+
         /**
          * Gets the relative offset from the start of this HBIN to the
          * next HBIN structure.
@@ -111,7 +111,7 @@ namespace Rejistry {
         /**
          * Get the cell at the given relative offset into this HBIN.
          * @param offset Relative offset into this HBIN.
-         * @returns A pointer to the Cell at the given offset. The 
+         * @returns A pointer to the Cell at the given offset. The
          * caller is responsible for freeing the memory associated with
          * the Cell.
          */

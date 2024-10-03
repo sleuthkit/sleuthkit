@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * This is a sample file that shows how to use some of the basic C++
  * POSIX-style library functions in The Sleuth Kit (www.sleuthkit.org).
  * There are also callback-style functions that can be used to read
@@ -7,11 +7,11 @@
  *
  * Copyright (c) 2008>, Brian Carrier <carrier <at> sleuthkit <dot> org>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * - Redistributions of source code must retain the above copyright notice,
  *   this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright
@@ -112,9 +112,9 @@ procDir(TskFsInfo * fs_info, TSK_STACK * stack,
             /* Note that we could also cycle through all of the attributes in the
              * file by using one of the tsk_fs_attr_get() functions and reading it
              * with tsk_fs_attr_read().  See the File Systems section of the Library
-             * User's Guide for more details: 
+             * User's Guide for more details:
              * http://www.sleuthkit.org/sleuthkit/docs/api-docs/ */
-            
+
             // read file contents
             if (fs_file->getMeta()->getType() == TSK_FS_META_TYPE_REG) {
                 int myflags = 0;
@@ -190,9 +190,9 @@ procDir(TskFsInfo * fs_info, TSK_STACK * stack,
     return 0;
 }
 
-/** 
+/**
 * Analyze the volume starting at byte offset 'start' and look
-* for a file system.  When found, the files will be analyzed. 
+* for a file system.  When found, the files will be analyzed.
 *
 * @param img Disk image to be analyzed.
 * @param start Byte offset of volume starting location.
@@ -242,11 +242,11 @@ procFs(TskImgInfo * img_info, TSK_OFF_T start)
 
 /**
 * Process the data as a volume system to find the partitions
- * and volumes.  
+ * and volumes.
  * File system analysis will be performed on each partition.
  *
  * @param img Image file information structure for data to analyze
- * @param start Byte offset to start analyzing from. 
+ * @param start Byte offset to start analyzing from.
  *
  * @return 1 on error and 0 on success
  */
@@ -290,7 +290,7 @@ procVs(TskImgInfo * img_info, TSK_OFF_T start)
             else {
                 if (procFs(img_info,
                     const_cast<TskVsPartInfo *>(vs_part)->getStart() * vs_info->getBlockSize())) {
-                    // We could do more fancy error checking here to see the cause 
+                    // We could do more fancy error checking here to see the cause
                     // of the error or consider the allocation status of the volume...
                     tsk_error_reset();
                 }
