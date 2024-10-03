@@ -581,20 +581,19 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
-	tests/check_static.sh \
+	test/check_static.sh \
 	tests/runtests.sh \
 	tests/test_imgs.sh \
 	tests/test_libraries.sh \
-	tests/test_static_tools.sh
+	test/test_static_tools.sh
 
 TESTS =	\
 	tests/runtests.sh \
-	tests/fiwalk_test \
 	tests/test_imgs.sh \
 	tests/test_libraries.sh
 
 if BUILD_STATIC
-TESTS += tests/test_static_tools.sh
+TESTS += test/test_static_tools.sh
 endif
 
 TEST_EXTENSIONS = .sh
@@ -602,30 +601,13 @@ SH_LOG_COMPILER =
 
 LOG_COMPILER = scripts/test_runner.sh
 
-# TODO: nothing runs these (except for img_dump, fiwalk_test)!
+# TODO: nothing runs these (except for img_dump)!
 check_PROGRAMS = \
-	tests/fiwalk_test \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
 	tests/fs_thread_test \
 	tests/img_dump \
 	tests/read_apis
-
-tests_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-tests_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fiwalk_test_LDADD = $(TSK_LIB)
-tests_fiwalk_test_SOURCES = \
-	tests/fiwalk_test.cpp \
-	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
-
-EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
-
-tests/test_images.txt:
-	tests/get_test_images.bash
-
-CLEANFILES += tests/test_images.txt
 
 tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -665,18 +647,19 @@ tests_read_apis_SOURCES = tests/read_apis.cpp
 # and link into a single executable.
 # THis makes things easier with codecov.
 
-check_PROGRAMS += unit_tests/runner
+check_PROGRAMS += test/runner
 
-TESTS += unit_tests/runner
+TESTS += test/runner
 
-unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-unit_tests_runner_SOURCES = \
-	unit_tests/errors_test.cpp \
-	unit_tests/mult_files_test.cpp \
-	unit_tests/runner.cpp \
+test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_runner_SOURCES = \
+	test/errors_test.cpp \
+	test/fiwalk_test.cpp \
+	test/mult_files_test.cpp \
+	test/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
 	$(tsk_base_libtskbase_la_SOURCES) \
 	$(tsk_fs_libtskfs_la_SOURCES) \
@@ -684,7 +667,15 @@ unit_tests_runner_SOURCES = \
 	$(tsk_img_libtskimg_la_SOURCES) \
 	$(tsk_pool_libtskpool_la_SOURCES) \
 	$(tsk_util_libtskutil_la_SOURCES) \
-	$(tsk_vs_libtskvs_la_SOURCES)
+	$(tsk_vs_libtskvs_la_SOURCES) \
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+EXTRA_test_runner_DEPENDENCIES = test/test_images.txt
+
+test/test_images.txt:
+	test/get_test_images.bash
+
+CLEANFILES += test/test_images.txt
 
 #
 # Java
