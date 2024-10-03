@@ -139,7 +139,7 @@ if it is installed.
 the AFFLIB installation (the directory should have 'lib' and 'include'
 directories in it).
 
---without-ewf: Supply this if you want TSK to ignore libewf even
+--without-libewf: Supply this if you want TSK to ignore libewf even
 if it is installed.
 
 --with-libewf=dir: Supply this if you want TSK to look in 'dir' for
