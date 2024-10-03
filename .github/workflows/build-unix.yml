@@ -30,7 +30,7 @@ jobs:
             arch: "x86_64"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --disable-java"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java"
 
           - os: "mingw"
             arch: "x86_64"
@@ -102,7 +102,7 @@ jobs:
       - name: Install packages
         if: ${{ matrix.os == 'linux' }}
         run: |
-          sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libtool make pkg-config zlib1g-dev
+          sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libtool make pkg-config zlib1g-dev
 
       - name: Install packages
         if: ${{ matrix.os == 'mingw' }}
