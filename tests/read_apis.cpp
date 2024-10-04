@@ -1,5 +1,5 @@
 /*
-* The Sleuth Kit 
+* The Sleuth Kit
 *
 *
 *
@@ -15,7 +15,7 @@
  * verifies the data passed to the callback using the fs_file_read()
  * function, fs_read() function, and img_read() function.  Note that
  * not all files can be tested with the latter options because the file
- * could be sparse or compressed. 
+ * could be sparse or compressed.
  */
 #include "tsk/tsk_tools_i.h"
 
@@ -94,7 +94,7 @@ fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
     s_off += a_size;
 
     /* IF the block we were passed is RAW (not BAD, resident, compressed etc.,
-     * then read using the fs_read() API 
+     * then read using the fs_read() API
      */
     if (a_flags & TSK_FS_BLOCK_FLAG_RAW) {
         tmp_off = (a_addr * 42 + 82) % fs->last_block;
@@ -325,7 +325,7 @@ test_fat_slack()
     return 0;
 }
 
-/* This test checks the RECOVER flags 
+/* This test checks the RECOVER flags
  */
 int
 test_fat_recover()
@@ -423,7 +423,7 @@ test_fat_recover()
         tsk_error_reset();
         return 1;
     }
-    // current behavior is to return 0s in "unitialized" space 
+    // current behavior is to return 0s in "unitialized" space
     //if (retval != 0) {
     if (retval != 512) {
         fprintf(stderr,
@@ -559,7 +559,7 @@ test_ntfs_slack_ads()
     }
 
 
-    // try to read past end of file 
+    // try to read past end of file
     retval =
         tsk_fs_file_read(file1, 2001, buf, 32,
         (TSK_FS_FILE_READ_FLAG_ENUM) 0);

@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-// Local includes 
+// Local includes
 #include "RegistryValue.h"
 #include "NKRecord.h"
 

@@ -99,7 +99,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return -1;
     }
 
-    /* cache_lock is used for both the cache in IMG_INFO and 
+    /* cache_lock is used for both the cache in IMG_INFO and
      * the shared variables in the img type specific INFO structs.
      * grab it now so that it is held before any reads.
      */

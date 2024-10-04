@@ -20,7 +20,7 @@
 #define TSK_VHDI_ERROR_STRING_SIZE 512
 
 /**
- * Get error string from libvhdi and make buffer empty if that didn't work. 
+ * Get error string from libvhdi and make buffer empty if that didn't work.
  * @returns 1 if error message was not set
 */
 static uint8_t
@@ -33,7 +33,7 @@ getError(libvhdi_error_t * vhdi_error,
         error_string, TSK_VHDI_ERROR_STRING_SIZE);
     libvhdi_error_free(&vhdi_error);
     return retval ? 1 : 0;
-} 
+}
 
 
 static ssize_t

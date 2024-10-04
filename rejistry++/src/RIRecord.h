@@ -44,7 +44,7 @@ namespace Rejistry {
         static const std::string MAGIC;
 
         RIRecord(RegistryByteBuffer * buf, uint32_t offset);
-        
+
         virtual ~RIRecord() {}
 
         virtual NKRecord::NKRecordPtrList getSubkeys() const;
@@ -52,7 +52,7 @@ namespace Rejistry {
     private:
         static const uint16_t LIST_START_OFFSET = 0x04;
         static const uint16_t LIST_ENTRY_SIZE = 0x04;
-        
+
         RIRecord();
         RIRecord(const RIRecord &);
         RIRecord& operator=(const RIRecord &);

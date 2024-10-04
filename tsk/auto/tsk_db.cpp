@@ -10,7 +10,7 @@
 
 /**
 * \file tsk_db.cpp
-* Contains code related to abstract TSK database handling class. 
+* Contains code related to abstract TSK database handling class.
 */
 
 #include "tsk_db.h"
@@ -33,14 +33,14 @@ TskDb::TskDb(const TSK_TCHAR * /*a_dbFilePath*/, bool /*a_blkMapFlag*/)
 #endif
 
 /*
-* Utility method to break up path into parent folder and folder/file name. 
+* Utility method to break up path into parent folder and folder/file name.
 * @param path Path of folder that we want to analyze
 * @param ret_parent_path pointer to parent path (begins and ends with '/')
 * @param ret_name pointer to final folder/file name
 * @returns 0 on success, 1 on error
 */
 bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path, const char **ret_name){
-    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
+    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder
     // name to match with the 'name' column in tsk_files table
 
     // reset all arrays
@@ -63,13 +63,13 @@ bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path,
         *ret_name = "";
         *ret_parent_path = "/";
         return 0;
-    } 
-    
-    
+    }
+
+
     // step 1, copy everything into parent_path and clean it up
-    // add leading slash if its not in input.  
+    // add leading slash if its not in input.
     if (path[0] != '/') {
-        sprintf(parent_path, "%s", "/");     
+        sprintf(parent_path, "%s", "/");
     }
 
     strncat(parent_path, path, MAX_PATH_LENGTH);
@@ -84,7 +84,7 @@ bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path,
 
     // Step 2, move the final folder/file to parent_file
 
-    // Find the last '/' 
+    // Find the last '/'
     char *chptr = strrchr(parent_path, '/');
     if (chptr) {
         // character found in the string
@@ -99,6 +99,6 @@ bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path,
         // "/" character not found. the entire path is parent file name. parent path is "/"
         *ret_name = parent_path;
         *ret_parent_path = "/";
-    } 
+    }
     return 0;
 }

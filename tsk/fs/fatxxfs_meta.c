@@ -1,12 +1,12 @@
 /*
 ** fatxxfs
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Content and meta data layer support for the FATXX file system 
+** Content and meta data layer support for the FATXX file system
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2013 Brian Carrier, Basis Technology. All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -20,9 +20,9 @@
 
 /**
  * \file fatxxfs.c
- * Contains the internal TSK FATXX (FAT12, FAT16, FAT32) file system code to 
- * handle basic file system processing for opening file system, processing 
- * sectors, and directory entries. 
+ * Contains the internal TSK FATXX (FAT12, FAT16, FAT32) file system code to
+ * handle basic file system processing for opening file system, processing
+ * sectors, and directory entries.
  */
 
 #include "tsk_fatxxfs.h"
@@ -145,9 +145,9 @@ is_83_name(FATXXFS_DENTRY * de)
  *
  * @param [in] a_fatfs Source file system for the directory entry.
  * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_cluster_is_alloc The allocation status, possibly unknown, of the 
- * cluster from which the buffer was filled. 
- * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing. 
+ * @param [in] a_cluster_is_alloc The allocation status, possibly unknown, of the
+ * cluster from which the buffer was filled.
+ * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing.
  * @return 1 if the buffer likely contains a directory entry, 0 otherwise
  */
 uint8_t
@@ -200,11 +200,11 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
                 }
             }
 
-            /* The ctime, cdate, and adate fields are optional and 
+            /* The ctime, cdate, and adate fields are optional and
              * therefore 0 is a valid value
              * We have had scenarios where ISDATE and ISTIME return true,
              * but the unix2dos fail during the conversion.  This has been
-             * useful to detect corrupt entries, so we do both. 
+             * useful to detect corrupt entries, so we do both.
              */
             if ((tsk_getu16(fs->endian, dentry->ctime) != 0) &&
                 (FATFS_ISTIME(tsk_getu16(fs->endian, dentry->ctime)) == 0)) {
@@ -331,7 +331,7 @@ attr2mode(uint16_t attr)
 }
 
 TSK_RETVAL_ENUM
-fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_FS_FILE *a_fs_file)
 {
     const char *func_name = "fatxxfs_dinode_copy";
@@ -541,7 +541,7 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
         /* clean up non-ASCII because we are
          * copying it into a buffer that is supposed to be UTF-8 and
-         * we don't know what encoding it is actually in or if it is 
+         * we don't know what encoding it is actually in or if it is
          * simply junk. */
         fatfs_cleanup_ascii(fs_meta->name2->name);
     }
@@ -577,7 +577,7 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
         /* clean up non-ASCII because we are
          * copying it into a buffer that is supposed to be UTF-8 and
-         * we don't know what encoding it is actually in or if it is 
+         * we don't know what encoding it is actually in or if it is
          * simply junk. */
         fatfs_cleanup_ascii(fs_meta->name2->name);
     }
@@ -662,7 +662,7 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
 /**
  * \internal
- * Populate the TSK_FS_META object of a TSK_FS_FILE object for a 
+ * Populate the TSK_FS_META object of a TSK_FS_FILE object for a
  * given inode address.
  *
  * @param [in] a_fs File system that contains the inode.
@@ -711,11 +711,11 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     }
 
     /* Note that only the sector allocation status is used to choose
-     * between the basic or in-depth version of the inode validity 
-     * test. In other places in the code information about whether or not 
-     * the sector that contains the inode is part of a folder is used to 
-     * make this decision. Here, that information is not available. Thus, 
-     * the test here is less reliable and may result in some false 
+     * between the basic or in-depth version of the inode validity
+     * test. In other places in the code information about whether or not
+     * the sector that contains the inode is part of a folder is used to
+     * make this decision. Here, that information is not available. Thus,
+     * the test here is less reliable and may result in some false
      * positives. */
     if (!fatxxfs_is_dentry(a_fatfs, &dentry, sector_alloc_status, sector_alloc_status)) {
         tsk_error_reset();
@@ -744,7 +744,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
 }
 
 /**
- * Output the file attributes of an exFAT file directory entry in 
+ * Output the file attributes of an exFAT file directory entry in
  * human-readable form.
  *
  * @param a_fatfs Source file system for the directory entry.
@@ -762,11 +762,11 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
         !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name)) {
-        return 1; 
+        return 1;
     }
 
     if (fatfs_dentry_load(a_fatfs, (FATFS_DENTRY*)(&dentry), a_inum)) {
-        return 1; 
+        return 1;
     }
 
     if ((dentry.attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
@@ -796,8 +796,8 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 }
 
 uint8_t
-fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
-    FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
+fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
+    FATFS_DENTRY *a_dentry, unsigned int a_selection_flags,
     int a_cluster_is_alloc)
 {
     const char *func_name = "fatxxfs_inode_walk_should_skip_dentry";
@@ -812,7 +812,7 @@ fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name) ||
         fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
-        return 1; 
+        return 1;
     }
 
     /* If this is a long file name entry, then skip it and
@@ -828,9 +828,9 @@ fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     }
 
     /* Compare directory entry allocation status with the inode selection
-     * flags. Allocation status is determined first by the allocation status 
-     * of the sector that contains the entry, then by the deleted status of 
-     * the file. This is necessary because when a directory is deleted, its 
+     * flags. Allocation status is determined first by the allocation status
+     * of the sector that contains the entry, then by the deleted status of
+     * the file. This is necessary because when a directory is deleted, its
      * contents are not always marked as unallocated. */
     if (a_cluster_is_alloc == 1) {
 		if(FATXXFS_IS_DELETED(dentry->name, a_fatfs)){
@@ -848,7 +848,7 @@ fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         return 1;
     }
 
-    /* If the processing flags call for only processing orphan files, check 
+    /* If the processing flags call for only processing orphan files, check
      * whether or not this inode is in list of non-orphan files found via name
      * walk. */
     if ((dentry_flags & TSK_FS_META_FLAG_UNALLOC) &&

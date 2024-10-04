@@ -1,5 +1,5 @@
 /*
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  */
 
@@ -101,7 +101,7 @@ Rotation is separate from addition to prevent recomputation.
 
 /**
  * \ingroup baselib
- * Initialize a MD5 context structure so that data can be added to it. 
+ * Initialize a MD5 context structure so that data can be added to it.
  * @param context Pointer to context to initialize
  */
 void
@@ -118,7 +118,7 @@ TSK_MD5_Init(TSK_MD5_CTX * context)
 
 /**
  * \ingroup baselib
- * Add data to an initialized MD5 operation.  
+ * Add data to an initialized MD5 operation.
  * @param context Initialized context to add data to
  * @param input Buffer of data to process
  * @param inputLen Number of bytes in input
@@ -163,7 +163,7 @@ TSK_MD5_Update(TSK_MD5_CTX * context, unsigned char *input,
 
 /**
  * \ingroup baselib
- * Calculate the MD5 hash of the data added to this context.   Context 
+ * Calculate the MD5 hash of the data added to this context.   Context
  * will be zeroed after this call.
  * @param digest Buffer to store MD5 value in.
  * @param context Context that has data added to it.

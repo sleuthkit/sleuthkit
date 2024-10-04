@@ -10,7 +10,7 @@
 /**
 * \file tsk_hashdb.h
 * External header file for hash database support.
-* Note that this file is not meant to be directly included.  
+* Note that this file is not meant to be directly included.
 * It is included by both libtsk.h and tsk_hashdb_i.h.
 */
 
@@ -87,9 +87,9 @@ extern "C" {
     typedef enum TSK_HDB_DBTYPE_ENUM TSK_HDB_DBTYPE_ENUM;
 
     /**
-    * String versions of DB types 
+    * String versions of DB types
     */
-#define TSK_HDB_DBTYPE_NSRL_STR "nsrl"           ///< NSRL database 
+#define TSK_HDB_DBTYPE_NSRL_STR "nsrl"           ///< NSRL database
 #define TSK_HDB_DBTYPE_NSRL_MD5_STR	"nsrl-md5"   ///< NSRL database with MD5 index
 #define TSK_HDB_DBTYPE_NSRL_SHA1_STR "nsrl-sha1" ///< NSRL database with SHA1 index
 #define TSK_HDB_DBTYPE_MD5SUM_STR "md5sum"       ///< md5sum
@@ -109,7 +109,7 @@ extern "C" {
         void *);
 
     /**
-    * Represents an open hash database. Instances are created using the 
+    * Represents an open hash database. Instances are created using the
     * tsk_hdb_open() API and are passed to hash database API functions.
     */
     struct TSK_HDB_INFO {
@@ -136,15 +136,15 @@ extern "C" {
         void(*close_db)(TSK_HDB_INFO *);
     };
 
-    /** 
-    * Represents a text-format hash database (NSRL, EnCase, etc.) with the TSK binary search index. 
+    /**
+    * Represents a text-format hash database (NSRL, EnCase, etc.) with the TSK binary search index.
     */
     typedef struct TSK_HDB_BINSRCH_INFO {
         TSK_HDB_INFO base;
         FILE *hDb;  ///< File handle to database (always open)
         uint8_t(*get_entry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset
-        TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in currently open index  
-        uint16_t hash_len;            ///< Length of hash used in currently open index 
+        TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in currently open index
+        uint16_t hash_len;            ///< Length of hash used in currently open index
         TSK_TCHAR *idx_fname;         ///< Name of index file, may be NULL for database without external index
         FILE *hIdx;                   ///< File handle to index (only open during lookups)
         FILE *hIdxTmp;                ///< File handle to temp (unsorted) index file (only open during index creation)
@@ -152,10 +152,10 @@ extern "C" {
         TSK_OFF_T idx_size;           ///< Size of index file
         uint16_t idx_off;             ///< Offset in index file to first index entry
         size_t idx_llen;              ///< Length of each line in index
-        char *idx_lbuf;               ///< Buffer to hold a line from the index  (r/w shared - lock) 
+        char *idx_lbuf;               ///< Buffer to hold a line from the index  (r/w shared - lock)
         TSK_TCHAR *idx_idx_fname;     ///< Name of index of index file, may be NULL
         uint64_t *idx_offsets;        ///< Maps the first three bytes of a hash value to an offset in the index file
-    } TSK_HDB_BINSRCH_INFO;    
+    } TSK_HDB_BINSRCH_INFO;
 
     /**
     * Options for opening a hash database
@@ -179,11 +179,11 @@ extern "C" {
     extern uint8_t tsk_hdb_open_idx(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern int8_t tsk_hdb_lookup_str(TSK_HDB_INFO *, const char *,
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-    extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t, 
+    extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
         TSK_HDB_FLAG_ENUM,  TSK_HDB_LOOKUP_FN, void *);
     extern int8_t tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern uint8_t tsk_hdb_accepts_updates(TSK_HDB_INFO *);
-    extern uint8_t tsk_hdb_add_entry(TSK_HDB_INFO *, const char*, const char*, 
+    extern uint8_t tsk_hdb_add_entry(TSK_HDB_INFO *, const char*, const char*,
         const char*, const char*, const char*);
     extern uint8_t tsk_hdb_begin_transaction(TSK_HDB_INFO *);
     extern uint8_t tsk_hdb_commit_transaction(TSK_HDB_INFO *);
@@ -196,16 +196,16 @@ extern "C" {
 
 #ifdef __cplusplus
 
-/** 
+/**
 * \ingroup hashdblib_cpp
 * Stores information about an open hash database.
 * To use this object, open() should be called first. Otherwise, the other
-* functions will have undefined return values. 
+* functions will have undefined return values.
 */
 class TskHdbInfo{
 private:
     TSK_HDB_INFO * m_hdbInfo;
-    TskHdbInfo(const TskHdbInfo& rhs); 
+    TskHdbInfo(const TskHdbInfo& rhs);
     TskHdbInfo& operator=(const TskHdbInfo& rhs);
 
 public:
@@ -220,7 +220,7 @@ public:
     * Open a hash database. See tsk_hdb_open() for details.
     *
     * @param a_dbFile Path to database.
-    * @param a_flags Flags for opening the database.  
+    * @param a_flags Flags for opening the database.
     *
     * @return 1 on error and 0 on success
     */
@@ -237,7 +237,7 @@ public:
     * @param a_hash Hash value to search for (NULL terminated string)
 
     * @param a_flags Flags to use in lookup
-    * @param a_action Callback function to call for each hash db entry 
+    * @param a_action Callback function to call for each hash db entry
     * (not called if QUICK flag is given)
     * @param a_ptr Pointer to data to pass to each callback
     *
@@ -258,7 +258,7 @@ public:
     * @param a_hash Array with binary hash value to search for
     * @param a_len Number of bytes in binary hash value
     * @param a_flags Flags to use in lookup
-    * @param a_action Callback function to call for each hash db entry 
+    * @param a_action Callback function to call for each hash db entry
     * (not called if QUICK flag is given)
     * @param a_ptr Pointer to data to pass to each callback
     *
