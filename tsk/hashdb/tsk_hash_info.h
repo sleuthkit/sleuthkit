@@ -28,7 +28,7 @@ struct TskHashInfo
     std::string hashSha1;
     std::string hashSha2_256;
     std::vector<std::string> fileNames;
-    std::vector<std::string> comments; 
+    std::vector<std::string> comments;
 };
 
 #endif

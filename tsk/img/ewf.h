@@ -9,8 +9,8 @@
  * Brian Carrier.
  */
 
-/* 
- * Header files for EWF-specific data structures and functions. 
+/*
+ * Header files for EWF-specific data structures and functions.
  */
 
 #ifndef _TSK_IMG_EWF_H
@@ -39,7 +39,7 @@ extern "C" {
         tsk_lock_t read_lock;   ///< Lock for reads since libewf is not thread safe -- only works if you have a single instance of EWF_INFO for all threads.
     } IMG_EWF_INFO;
 
-    
+
 #ifdef __cplusplus
 }
 #endif

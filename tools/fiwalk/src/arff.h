@@ -61,7 +61,7 @@ public:
 	
     typedef std::map<int,string> valueMapT; // attribute number -> value
 
-    vector<string>comments;		// ARFF 
+    vector<string>comments;		// ARFF
     string relation;			// name of the relation
     vector<valueMapT *>values;		// each element of the vector is an ARFF row
 

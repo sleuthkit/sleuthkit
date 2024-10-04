@@ -6,7 +6,7 @@
  *
  * md = sha1_t()
  * string md.hexdigest();
- * md.SIZE		    --- the size of the hash 
+ * md.SIZE		    --- the size of the hash
  * uint8_t md.digest[SIZE]   --- the buffer
  * uint8_t md.final()        --- synonym for md.digest
  */
@@ -23,7 +23,7 @@
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
-#undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER 
+#undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #define  DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #endif
 
@@ -75,7 +75,7 @@ public:
     uint8_t digest[SIZE];
 };
 
-template<typename T> 
+template<typename T>
 class hash__:public T
 {
     static uint8_t hexcharval(char v){
@@ -167,7 +167,7 @@ typedef hash__<sha1_> sha1_t;
 typedef hash__<sha256_> sha256_t;
 typedef hash__<sha512_> sha512_t;
 
-template<typename T> 
+template<typename T>
 class hash_generator__:T { 			/* generates the hash */
     unsigned int ret;
 	void *mdctx;
@@ -197,7 +197,7 @@ public:
     	md_update	= (int (*)(void *, const void *, uint32_t))&TSK_MD5_Update;
 		md_final	= (int (*)(unsigned char*, void *))&TSK_MD5_Final;
 		break;
-	case 20: 
+	case 20:
 		mdctx = malloc(sizeof(TSK_SHA_CTX));
 		memset(mdctx,0,sizeof(TSK_SHA_CTX));
 		md=(unsigned char *)malloc(TSK_SHA_DIGEST_LENGTH);
@@ -206,7 +206,7 @@ public:
 		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&TSK_SHA_Update;
 		md_final	= (int (*)(unsigned char*, void*))&TSK_SHA_Final;
 		break;
-	case 32: 
+	case 32:
 		mdctx = malloc(sizeof(SHA256_CTX));
 		md=(unsigned char *)malloc(SHA256_DIGEST_LENGTH);
 		md_init		= (int(*)(void *))&SHA256_Init;

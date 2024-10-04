@@ -1426,8 +1426,8 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
-            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found
+            // that it was very ineffecient and always resulted in the same linkNum value.
             // We now just use linkNum
             return linkNum;
         }
@@ -1476,8 +1476,8 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
-            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found
+            // that it was very ineffecient and always resulted in the same linkNum value.
             // We now just use linkNum
             return linkNum;
         }

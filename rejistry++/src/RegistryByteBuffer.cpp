@@ -41,9 +41,9 @@
 namespace Rejistry {
 
     std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
-    
+
     /**
-    * Does NOT make a copy of the passed in buffer, but will free the memory when deleted 
+    * Does NOT make a copy of the passed in buffer, but will free the memory when deleted
     */
     RegistryByteBuffer::RegistryByteBuffer(ByteBuffer * buffer) {
         if (buffer == NULL) {
@@ -121,8 +121,8 @@ namespace Rejistry {
 		}
 
 		ByteBuffer::ByteArray &data = getData(offset, length);
-		// There are cases where an odd number of bytes are returned which 
-		// leads to errors during conversion. See CT-2917 test12 for more details. 
+		// There are cases where an odd number of bytes are returned which
+		// leads to errors during conversion. See CT-2917 test12 for more details.
 		if (data.size() % 2 != 0) {
 			data.push_back('\0');
 		}

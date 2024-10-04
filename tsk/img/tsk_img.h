@@ -105,10 +105,10 @@ extern "C" {
         TSK_TCHAR **images;    ///< Image names
 
         tsk_lock_t cache_lock;  ///< Lock for cache and associated values
-        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock) 
-        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock) 
-        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock) 
-        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock) 
+        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock)
+        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock)
+        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock)
+        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock)
 
         ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
         void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
@@ -160,7 +160,7 @@ extern "C" {
 
   private:
      TSK_IMG_INFO * m_imgInfo;
-    bool m_opened;              // true if open() was called and we need to free it    
+    bool m_opened;              // true if open() was called and we need to free it
      TskImgInfo(const TskImgInfo & rhs);
      TskImgInfo & operator=(const TskImgInfo & rhs);
 

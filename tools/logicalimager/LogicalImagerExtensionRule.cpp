@@ -17,7 +17,7 @@
 
 /*
 * Construct a file extension rule.
-* 
+*
 * @param extensions A set of extension strings. The extension should not contain any period.
 * Extension is case-insensitive. It it normalize to lowercase.
 */

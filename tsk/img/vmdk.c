@@ -20,7 +20,7 @@
 
 
 /**
- * Get error string from libvmdk and make buffer empty if that didn't work. 
+ * Get error string from libvmdk and make buffer empty if that didn't work.
  * @returns 1 if error message was not set
 */
 static uint8_t
@@ -33,7 +33,7 @@ getError(libvmdk_error_t * vmdk_error,
         error_string, TSK_VMDK_ERROR_STRING_SIZE);
     libvmdk_error_free(&vmdk_error);
     return retval != 0;
-} 
+}
 
 
 static ssize_t

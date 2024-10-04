@@ -38,7 +38,7 @@ namespace Rejistry {
             throw RegistryParseException("Invalid HBIN magic header.");
         }
     }
-        
+
 
     uint32_t HBIN::getRelativeOffsetNextHBIN() const {
         return getDWord(NEXT_HBIN_OFFSET_OFFSET);

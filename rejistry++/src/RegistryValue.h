@@ -50,7 +50,7 @@ namespace Rejistry {
         RegistryValue(const RegistryValue& );
 
         virtual ~RegistryValue();
-        
+
         /**
          * Get the name of this value.
          * @returns ASCII key name

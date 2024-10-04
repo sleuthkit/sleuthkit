@@ -15,10 +15,10 @@
 
 /**
 * Create a MetadataEntry from the given buffer.
-* 
+*
 * @param buf     Data buffer
 * @param bufLen  Size of data buffer
-* 
+*
 * @return The new MetadataEntry (must be freed by caller). Will return nullptr on failure.
 */
 MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {

@@ -2153,7 +2153,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, cons
     }
 
     // apply some sanity checks before we start using these numbers
-    if ((fs->block_size == 0) || (ffs->ffsbsize_b == 0) || (ffs->ffsbsize_f == 0) 
+    if ((fs->block_size == 0) || (ffs->ffsbsize_b == 0) || (ffs->ffsbsize_f == 0)
         || (fs->block_size % 512) || (ffs->ffsbsize_b % 512)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
@@ -2192,7 +2192,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, cons
         fs->last_block_act =
             (img_info->size - offset) / fs->block_size - 1;
 
-    
+
 
     // Inode / meta data calculations
     if (fs->ftype == TSK_FS_TYPE_FFS2) {
