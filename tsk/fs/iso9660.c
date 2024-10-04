@@ -1880,7 +1880,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             /* copyright is in a file.  TODO: handle this properly */
             snprintf(str, 8, "In file");
         else
-            snprintf(str, 37, "%s\n", s->svd.copy_id);
+            snprintf(str, 37, "%s", s->svd.copy_id);
         cp = &str[36];
         while ((!isprint(*cp) || isspace(*cp)) && (cp != str))
             cp--;
