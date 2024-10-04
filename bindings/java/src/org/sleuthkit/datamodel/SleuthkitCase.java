@@ -13340,7 +13340,7 @@ public class SleuthkitCase {
 	 */
 	private List<? extends BlackboardArtifact> getArtifactsForValues(BlackboardArtifact.Category category, String dbColumn, List<? extends Number> values, CaseDbConnection connection) throws TskCoreException {
 		String where = "";
-		// This look creates the OR statment with the following format:
+		// This look creates the OR statement with the following format:
 		// <dbColumn> = <value> OR <dbColumn> = <value2> OR ...  
 		for (Number value : values) {
 			if (!where.isEmpty()) {

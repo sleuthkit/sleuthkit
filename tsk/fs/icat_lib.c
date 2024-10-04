@@ -1,15 +1,15 @@
 /*
-** icat_lib 
-** The Sleuth Kit 
+** icat_lib
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 
  * LICENSE

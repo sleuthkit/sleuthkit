@@ -1,6 +1,6 @@
 /*
  ** tsk_comparedir
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
@@ -43,7 +43,7 @@ usage()
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
-        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");    
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: The file system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -62,7 +62,7 @@ usage()
 
 
 // Print errors as they are encountered
-uint8_t TskCompareDir::handleError() 
+uint8_t TskCompareDir::handleError()
 {
     fprintf(stderr, "%s", tsk_error_get());
     return 0;
@@ -70,8 +70,8 @@ uint8_t TskCompareDir::handleError()
 
 /**
  * Process a local directory and compare its contents with the image.
- * This will recursively call itself on subdirectories. 
- * @param a_dir Subdirectory of m_lclDir to process. 
+ * This will recursively call itself on subdirectories.
+ * @param a_dir Subdirectory of m_lclDir to process.
  * @returns 1 on error
  */
 uint8_t
@@ -247,16 +247,16 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     //exclude certain types
     if (isDotDir(a_fs_file))
         return TSK_OK;
-    
+
     if (isDir(a_fs_file))
         return TSK_OK;
-    
+
     if ((isNtfsSystemFiles(a_fs_file, a_path)) || (isFATSystemFiles(a_fs_file)))
         return TSK_OK;
-    
+
     if (!a_fs_file->meta)
         return TSK_OK;
-    
+
     //create the full path
     size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
     char *fullPath = (char *) tsk_malloc(len + 1);
@@ -264,11 +264,11 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         registerError();
         return TSK_STOP;
     }
-    
+
     snprintf(fullPath, len, "/");
     strncat(fullPath, a_path, len-strlen(fullPath));
     strncat(fullPath, a_fs_file->name->name, len-strlen(fullPath));
-    
+
     //convert path for win32
 #ifdef WIN32
     for (size_t i = 0; i < strlen(fullPath); i++) {
@@ -276,7 +276,7 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
             fullPath[i] = '\\';
     }
 #endif
-    
+
     //add the path to the internal list/set
     m_filesInImg.insert(fullPath);
     return TSK_OK;
@@ -331,7 +331,7 @@ uint8_t
         for (it = m_filesInImg.begin(); it != m_filesInImg.end(); ++it)
             printf("file: %s not found in directory\n",
                     (char *) * it);
-                
+
     }
 
     return 0;
@@ -348,7 +348,7 @@ main(int argc, char **argv1)
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
     TSK_OFF_T pvol_block = 0;
-    
+
 #ifdef WIN32
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv == NULL) {
@@ -385,7 +385,7 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-                
+
         case _TSK_T('f'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_fs_type_print(stderr);
@@ -398,8 +398,8 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-            
-            
+
+
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_img_type_print(stderr);
@@ -412,7 +412,7 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-            
+
 
         case _TSK_T('n'):
             if (tsk_fs_parse_inum(OPTARG, &inum, NULL, NULL, NULL, NULL)) {
@@ -420,7 +420,7 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-        
+
         case _TSK_T('o'):
             if ((soffset = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
@@ -447,11 +447,11 @@ main(int argc, char **argv1)
                 exit(1);
             }
             break;
-        
+
         case _TSK_T('v'):
             tsk_verbose++;
             break;
-            
+
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);

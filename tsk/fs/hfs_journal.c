@@ -1,6 +1,6 @@
 /*
  * The Sleuth Kit
- * 
+ *
  *  This software is distributed under the Common Public License 1.0
  */
 

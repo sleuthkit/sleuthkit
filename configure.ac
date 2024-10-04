@@ -5,8 +5,6 @@ AC_PREREQ([2.69])
 
 AC_INIT([sleuthkit],[4.12.1])
 AC_CONFIG_AUX_DIR([config])
-m4_include([m4/slg_address_sanitizer.m4])
-m4_include([m4/slg_noopt.m4])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
@@ -137,6 +135,8 @@ AS_IF([test "x$ax_sqlite3" = "xyes"],
       [AC_MSG_RESULT([bundled])])
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
+dnl Check if we should link with OpenSSL
+TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 dnl Check if we should link with afflib
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
 dnl Check if we should link with libaff4
@@ -144,19 +144,35 @@ TSK_OPT_DEP_CHECK([libaff4], [], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
 dnl Check if we should link with zlib
 TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
 dnl Check if we should link with libbfio
-TSK_OPT_DEP_CHECK([libbfio], [], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
+TSK_OPT_DEP_CHECK([libbfio], [BFIO], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
+
 dnl Check if we should link with libewf
 TSK_OPT_DEP_CHECK([libewf], [EWF], [libewf], [libewf.h], [ewf], [libewf_get_version])
+dnl Check for libewf_handle_read_buffer_at_offset, in newer versions of libewf
+AS_IF(
+  [test "x$ax_libewf" != "xno"],
+  [AC_CHECK_LIB(
+    [ewf],
+    [libewf_handle_read_buffer_at_offset],
+    [AC_DEFINE([HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET], [1], [Define to 1 if you have the libewf_handle_read_buffer_at_offset function.])]
+  )]
+)
+
 dnl Check if we should link with libqcow
 TSK_OPT_DEP_CHECK([libqcow], [QCOW], [libqcow], [libqcow.h], [qcow], [libqcow_get_version])
 dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
 TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
+
+dnl Check that libbfio is available if libvslvm was requested
+AS_IF(
+  [test "x$ax_libbfio" = "xno" -a "x$with_libvslvm" != "xno" -a -n "$with_libvslvm"],
+  [AC_MSG_FAILURE([libvslvm requires libbfio])]
+)
+
 dnl Check if we should link with libvslvm
-AS_IF([test "x$ax_libbfio" = "xyes"],
-      [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
-      [ax_libvslvm=no])
+TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])
 
 dnl check for user online input
 AC_ARG_ENABLE([offline],
@@ -171,11 +187,11 @@ AC_ARG_ENABLE([offline],
      esac],[offline=false])
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
+
 AM_CONDITIONAL([CUSTOM_DEFAULT_JAR_LOCATION], [test "x$default_jar_location" != "x"])
 AM_COND_IF([CUSTOM_DEFAULT_JAR_LOCATION],
     [AC_SUBST([DEFAULT_JAR_LOCATION], [$default_jar_location])]
 )
-
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
@@ -257,75 +273,44 @@ else
   CXXLD="$CXX"
 fi
 
+AM_CONDITIONAL([BUILD_STATIC], [test "x$enable_shared" != "xyes"])
 AC_SUBST([CXXLD])
 
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
-AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
+dnl Use -Wno-unused-command-line-argument only if the compiler understands it
+AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
+AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CXXFLAGS], [-Werror-unknown-warning])
 
-dnl OpenSSL support for encryption - currently disabled due to automatic test failures
-dnl AX_CHECK_OPENSSL(
-dnl  [ax_openssl=yes]
-dnl  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS $OPENSSL_LDFLAGS $OPENSSL_LIBS",
-dnl  AC_SUBST([LIBTSK_LDFLAGS])
-[ax_openssl=no]
-dnl  [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])]
-dnl )
-dnl For the moment, disable the openssl library so the Travis test will pass
-dnl AS_IF([test "x$ax_openssl" = xyes], AC_DEFINE(HAVE_LIBOPENSSL,1, [Define if using opensll]), [])
-
-
-dnl Enable compliation warnings
-WARNINGS='-Wall -Wextra -Wno-unused-parameter'
-
-AC_SUBST(AM_CFLAGS, $WARNINGS)
-AC_SUBST(AM_CXXFLAGS, $WARNINGS)
+TSK_ADDRESS_SANITIZER
+TSK_THREAD_SANITIZER
+TSK_UNDEFINED_SANITIZER
 
 check_imgs=
+
+dnl FIXME: check iso on MinGW after fixing timestamp bug
+case "$host" in
+*-*-mingw*)
+  ;;
+*)
+  check_imgs="$check_imgs image.iso"
+  ;;
+esac
+
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
 AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
 AS_IF([test "x$ax_libqcow" != "xno"], [check_imgs="$check_imgs image.qcow"])
 AS_IF([test "x$ax_libvhdi" != "xno"], [check_imgs="$check_imgs image.vhd"])
 AS_IF([test "x$ax_libvmdk" != "xno"], [check_imgs="$check_imgs image.vmdk"])
 
+
 AC_SUBST(CHECK_IMGS, $check_imgs)
 
 AC_CONFIG_FILES([
     Makefile
-    tsk/Makefile
-    tsk/base/Makefile
-    tsk/img/Makefile
-    tsk/vs/Makefile
-    tsk/fs/Makefile
-    tsk/hashdb/Makefile
-    tsk/auto/Makefile
-    tsk/pool/Makefile
-    tsk/util/Makefile
-    tsk/util/Bitlocker/Makefile
-    tools/Makefile
-    tools/imgtools/Makefile
-    tools/vstools/Makefile
-    tools/fstools/Makefile
-    tools/hashtools/Makefile
-    tools/srchtools/Makefile
-    tools/autotools/Makefile
-    tools/pooltools/Makefile
-    tools/sorter/Makefile
-    tools/timeline/Makefile
-    tools/fiwalk/Makefile
-    tools/fiwalk/src/Makefile
-    tools/fiwalk/plugins/Makefile
-    tests/Makefile
-    tests/imgs_to_dump
-    samples/Makefile
-    man/Makefile
-    bindings/java/Makefile
-    bindings/java/jni/Makefile
-    case-uco/java/Makefile
-    unit_tests/Makefile
-    unit_tests/base/Makefile
-    unit_tests/img/Makefile])
+    tsk/tsk.pc
+    tests/imgs_to_dump])
 
 AC_OUTPUT
 
@@ -335,12 +320,14 @@ AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libaff4 support:                       $ax_libaff4
+   libbfio support:                       $ax_libqcow
    libewf support:                        $ax_libewf
-   libqcow support:                       $ax_libqcow
+   libqcow support:                       $ax_libbfio
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
    libvslvm support:                      $ax_libvslvm
 
+   openssl support:                       $ax_libcrypto
    zlib support:                          $ax_zlib
 
 Features:

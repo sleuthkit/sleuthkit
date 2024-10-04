@@ -56,7 +56,7 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
     dnl If --with-lib or --without-lib is given
     [],
     dnl if nothing was specified, default to a test
-    [with_$1=yes]
+    [with_$1=maybe]
   )
 
   dnl check for lib if they did not specify no
@@ -71,7 +71,7 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
       SAVED_LDFLAGS="$LDFLAGS"
       SAVED_LIBS="$LIBS"
 
-      AS_IF([test "x[$]with_$1" = "xyes"],
+      AS_IF([test "x[$]with_$1" = "xyes" -o "x[$]with_$1" = "xmaybe"],
         [
           dnl Check for lib using pkg-config, if we have it
           m4_ifval([$2], [AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
@@ -136,5 +136,10 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
         ]
       )
     ]
+  )
+
+  dnl Report an error if the library was requested but is not usable
+  AS_IF([test "x[$]ax_$1" = "xno" -a "x[$]with_$1" != "xno" -a "x[$]with_$1" != "xmaybe"],
+    [AC_MSG_FAILURE([$1 requested but not available])]
   )
 ])

@@ -23,13 +23,13 @@
  *
  * Open a disk image and process the media management system
  * data.  This calls VS specific code to determine the type and
- * collect data. 
+ * collect data.
  *
  * @param img_info The opened disk image.
  * @param offset Byte offset in the disk image to start analyzing from.
  * @param type Type of volume system (including auto detect)
  *
- * @return NULL on error. 
+ * @return NULL on error.
  */
 TSK_VS_INFO *
 tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
@@ -50,8 +50,8 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
 		return NULL;
 	}
 
-    /* Autodetect mode 
-     * We need to try all of them in case there are multiple 
+    /* Autodetect mode
+     * We need to try all of them in case there are multiple
      * installations
      *
      * NOte that errors that are encountered during the testing process
@@ -68,7 +68,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         else {
             tsk_error_reset();
         }
-        
+
         if ((vs = tsk_vs_bsd_open(img_info, offset)) != NULL) {
             // if (prev_type == NULL) {
             // In this case, BSD takes priority because BSD partitions start off with
@@ -92,7 +92,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         else {
             tsk_error_reset();
         }
-        
+
         if ((vs = tsk_vs_gpt_open(img_info, offset)) != NULL) {
 
             if ((prev_type != NULL) && (strcmp(prev_type, "DOS") == 0) && (vs->is_backup)) {
@@ -190,7 +190,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             tsk_error_reset();
 
             // Check whether the volume system appears to be encrypted.
-            // Note that detectDiskEncryption does not do an entropy calculation - high entropy 
+            // Note that detectDiskEncryption does not do an entropy calculation - high entropy
             // files will be reported by tsk_fs_open_img().
             encryption_detected_result* result = detectDiskEncryption(img_info, offset);
             if (result != NULL) {
@@ -209,7 +209,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
 
         return prev_vs;
     }
-    
+
     // Not autodetect
     else {
 
@@ -238,7 +238,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
 
 /**
  * \ingroup vslib
- * Closes an open volume system 
+ * Closes an open volume system
  * @param a_vs Pointer to the open volume system structure.
  */
 void

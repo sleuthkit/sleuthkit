@@ -115,9 +115,9 @@ Makefile
 .dirstamp
 
 # unit tests
-unit_tests/*/*.exe
-unit_tests/*/*.log
-unit_tests/*/*.trs
+unit_tests/*.exe
+unit_tests/*.log
+unit_tests/*.trs
 
 #javadoc generated
 /bindings/java/javadoc
@@ -204,3 +204,6 @@ sleuthkit-*.tar.gz
 # Whitelist test data folder
 !tests/data/*
 .Tpo
+*.gcno
+*.gcda
+wget-log

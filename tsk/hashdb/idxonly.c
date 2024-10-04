@@ -9,8 +9,8 @@
 
 /**
 * \file idxonly.c
-* Contains the dummy functions that are used when only an index is used for lookups and the 
-* original database is gone. 
+* Contains the dummy functions that are used when only an index is used for lookups and the
+* original database is gone.
 */
 
 #include "tsk_hashdb_i.h"
@@ -21,7 +21,7 @@
 * @param hdb_info the hash database object
 * @returns 1 on error
 */
-static uint8_t 
+static uint8_t
     idxonly_name(TSK_HDB_BINSRCH_INFO *hdb_binsrch_info)
 {
     FILE * hFile;
@@ -64,7 +64,7 @@ static uint8_t
 
 /**
  * @param db_path Path to DB, which probably does not exist. But it gets passed in because we need
- *   it in a bunch of places. 
+ *   it in a bunch of places.
  * @param idx_path Path to index file (should be superset of db_path)
  */
 TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path, const TSK_TCHAR *idx_path)
@@ -100,7 +100,7 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path, const TSK_TCHAR *idx_path)
         tsk_error_set_errstr("idxonly_open: invalid file name (unknown extension): %" PRIttocTSK, idx_path);
         return NULL;
     }
-    
+
     if (hdb_binsrch_open_idx((TSK_HDB_INFO*)hdb_binsrch_info, htype)) {
         return NULL;
     }
@@ -120,7 +120,7 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path, const TSK_TCHAR *idx_path)
         return NULL;
     }
 
-    return (TSK_HDB_INFO*)hdb_binsrch_info;    
+    return (TSK_HDB_INFO*)hdb_binsrch_info;
 }
 
 const TSK_TCHAR *

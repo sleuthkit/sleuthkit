@@ -1,6 +1,6 @@
 /*
  ** The Sleuth Kit
- ** 
+ **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
  **
@@ -11,7 +11,7 @@
 /**
  * \file tsk_is_image_supported.cpp
  * Class to test whether a given image can be processed by tsk
- * 
+ *
  * Usage:
  *  Create a TskIsImageSupported object
  *  Call openImage
@@ -40,7 +40,7 @@ public:
     bool isImageEncrypted();
     std::string getSingleLineErrorMessage();
     void printResults();
-    
+
 private:
     bool m_wasDataFound;
     bool m_wasEncryptionFound;

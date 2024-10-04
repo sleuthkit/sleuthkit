@@ -7,8 +7,8 @@
  *
  */
 
-/* 
- * Header files for VHD-specific data structures and functions. 
+/*
+ * Header files for VHD-specific data structures and functions.
  */
 
 #ifndef _TSK_IMG_VHDI_H

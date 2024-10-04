@@ -19,15 +19,15 @@
 
 /**
 * Test whether the volume is encrypted with BitLocker and initialize the parser and other fields if it is.
-* 
+*
 * The theory behind the return values is that we want to get the wrong password / needs password messages back
 * to the user, which means we don't want to overwrite it with any other error codes.
-* 
+*
 * @param a_fs_info  The TSK_FS_INFO object. Should have the img_info and volume offset set but can otherwise be uninitialized.
 *                      Will be updated if we find an successfully initialize BitLocker.
 * @param a_pass     The password or recovery password to use for decryption. May be empty. If the password is not needed
 *                      (for example if we have clear key) it will be ignored.
-* 
+*
 * @return 0 if:
 * - We didn't find the Bitlocker signature
 * - We found encryption and did all the initialization successfully
@@ -90,11 +90,11 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 
 /**
 * Check if the volume appears to be encrypted and attempt to initialize the encryption object.
-* 
+*
 * @return 0 if:
 * - There was no encryption found
 * - We found encryption and did all the initialization successfully
-* - We found encryption but had an unspecified error in initialization  
+* - We found encryption but had an unspecified error in initialization
 * Returns -1 if:
 * - We found encryption and got far enough that we're confident we should not continue trying to parse the file system and
 *     have potentially useful feedback to give the user (like that the password was incorrect)
@@ -140,7 +140,7 @@ ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T of
 
 /**
 * Copys a summary of the encryption algoritm to a_desc. Expected size of description is under 100 characters.
-* 
+*
 * @param a_fs_info  TSK_FS_INFO object
 * @param a_desc     Output buffer for description
 * @param a_descLen  Size of output buffer (recommended - 256 bytes)
@@ -165,7 +165,7 @@ void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, siz
 
 /**
 * Free any memory being held by encryption objects
-* 
+*
 * @param a_fs_info The TSK_FS_INFO object
 */
 void freeEncryptionData(TSK_FS_INFO* a_fs_info) {
