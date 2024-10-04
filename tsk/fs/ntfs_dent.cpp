@@ -366,7 +366,7 @@ is_time(uint64_t t)
 
 
 /**
- * Process a lsit of index entries and add to FS_DIR
+ * Process a list of index entries and add to FS_DIR
  *
  * @param a_is_del Set to 1 if these entries are for a deleted directory
  * @param idxe Buffer with index entries to process
