@@ -1722,7 +1722,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (p->pvd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", p->pvd.pub_id);
 
@@ -1738,7 +1738,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (p->pvd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", p->pvd.prep_id);
 
@@ -1753,7 +1753,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (p->pvd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", p->pvd.app_id);
         cp = &str[127];
@@ -1767,7 +1767,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (p->pvd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 37, "%s", p->pvd.copy_id);
         cp = &str[36];
@@ -1833,7 +1833,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (s->svd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", s->svd.pub_id);
 
@@ -1849,7 +1849,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (s->svd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", s->svd.prep_id);
 
@@ -1864,7 +1864,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (s->svd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", s->svd.app_id);
         cp = &str[127];
@@ -1878,7 +1878,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (s->svd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 37, "%s\n", s->svd.copy_id);
         cp = &str[36];
