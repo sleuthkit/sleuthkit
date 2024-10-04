@@ -6,8 +6,5 @@ coverage:
 codecov:
   branch: develop
 
-fixes:
-  - "/home/runner/work/sleuthkit/sleuthkit::"
-
 ignore:
   - "m4/*"
