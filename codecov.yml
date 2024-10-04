@@ -2,16 +2,9 @@ coverage:
   range: 40..60
   round: nearest
   precision: 2
-  status:
-    project:
-      default:
-        target: develop
 
 codecov:
-  branch: develop        
-
-#fixes:
-#  - "/home/runner/work/sleuthkit/sleuthkit::"
+  branch: develop
 
 ignore:
   - "m4/*"
