@@ -25,12 +25,14 @@ jobs:
             linkage: "shared"
             runner: "macos-latest"
             configure_opts: "--with-libewf --disable-java"
+            codecov: "yes"
 
           - os: "linux"
             arch: "x86_64"
             linkage: "shared"
             runner: "ubuntu-22.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java"
+            codecov: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -40,6 +42,7 @@ jobs:
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine64'
+            codecov: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -49,6 +52,7 @@ jobs:
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine64'
+            codecov: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -58,6 +62,7 @@ jobs:
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine32'
+            codecov: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -67,6 +72,7 @@ jobs:
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine32'
+            codecov: "no"
 
     steps:
       - name: Determine number of cores
@@ -167,22 +173,22 @@ jobs:
           make distclean
 
       - name: Run configure for codecov
-        if: ${{ matrix.os != 'mingw' }}
+        if: ${{ matrix.codecov == 'yes' }}
         run: |
           ./configure ${{ matrix.configure_opts }} CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage'
 
       - name: Run make for codecov
-        if: ${{ matrix.os != 'mingw' }}
+        if: ${{ matrix.codecov == 'yes' }}
         run: |
           make -j unit_tests/runner
 
       - name: Run unit tests for codecov
-        if: ${{ matrix.os != 'mingw' }}
+        if: ${{ matrix.codecov == 'yes' }}
         run: |
           unit_tests/runner
 
       - name: Upload codecov report
-        if: ${{ matrix.os != 'mingw' }}
+        if: ${{ matrix.codecov == 'yes' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
