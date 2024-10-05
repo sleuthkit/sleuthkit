@@ -40,7 +40,7 @@ jobs:
             compiler: "clang"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clag++"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++"
             codecov: "no"
 
           - os: "mingw"
