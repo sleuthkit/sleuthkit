@@ -63,7 +63,7 @@
 //  In pseudocode:
 //
 //      Let c = source Unicode character
-//      Let table[] = lower case table 
+//      Let table[] = lower case table
 //
 //      lower = table[highbyte(c)]
 //      if (lower == 0)

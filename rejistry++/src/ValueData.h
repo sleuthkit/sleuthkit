@@ -59,7 +59,7 @@ namespace Rejistry {
             VALTYPE_RESOURCE_REQUIREMENTS_LIST,
             VALTYPE_QWORD,
             //https://binaryforay.blogspot.com/2015/01/registry-hive-basics-part-3-vk-records.html
-            VALTYPE_FILETIME = 0x10,     
+            VALTYPE_FILETIME = 0x10,
         };
 
         /// Map the value type enum to a string.
@@ -69,7 +69,7 @@ namespace Rejistry {
             _buf = buf;
             _type = type;
         }
-        
+
         ~ValueData() {
             if (_buf)
                 delete _buf;
@@ -78,19 +78,19 @@ namespace Rejistry {
         VALUE_TYPES getValueType() const { return _type; };
 
         /**
-         * Get the data as a string if the underlying registry data type 
+         * Get the data as a string if the underlying registry data type
          * is compatible.
          * @returns Data as UTF16 little endian string.
-         * @throws 
+         * @throws
          */
         std::wstring getAsString() const;
 
         /**
-         * Get the data as a list of strings if the underlying registry 
+         * Get the data as a list of strings if the underlying registry
          * data type is compatible. Data that can be parsed as a string
          * is returned in a list with one entry
          * @returns Data as a list of UTF16 little endian strings.
-         * @throws 
+         * @throws
          */
         std::vector<std::wstring> getAsStringList() const;
 

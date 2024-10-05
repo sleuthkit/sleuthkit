@@ -9,6 +9,10 @@
  */
 #pragma once
 
+#if HAVE_CONFIG_H
+#include "../tsk_config.h"
+#endif
+
 #include "../util/crypto.hpp"
 #include "apfs_fs.h"
 #include "tsk_apfs.hpp"
@@ -104,7 +108,7 @@ class APFSJObjTree {
 
  protected:
   struct crypto {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     std::unique_ptr<aes_xts_decryptor> decryptor{};
 #endif
     std::unique_ptr<uint8_t[]> key{};

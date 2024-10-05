@@ -1,6 +1,6 @@
 /*
  ** tsk_imageinfo
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2021 Brian Carrier.  All Rights reserved
@@ -30,7 +30,7 @@ usage()
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-    
+
 
     exit(1);
 }
@@ -66,7 +66,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
-            
+
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -97,7 +97,7 @@ main(int argc, char **argv1)
 
         case _TSK_T('V'):
             tsk_version_print(stdout);
-            exit(0);            
+            exit(0);
         }
     }
 
@@ -126,6 +126,6 @@ main(int argc, char **argv1)
     findFilesResult = imageProcessor.findFilesInImg();
 
     imageProcessor.printResults();
-    
+
     exit(0);
 }

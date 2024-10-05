@@ -105,8 +105,8 @@ int    ch;
  int   i;
  ulong uch  = (ulong) ch;
  ulong topbit = BITMASK(p_cm->cm_width-1);
- 
-  
+
+
  if (p_cm->cm_refin) uch = reflect(uch,8);
  p_cm->cm_reg ^= (uch << (p_cm->cm_width-8));
  for (i=0; i<8; i++)
@@ -151,7 +151,7 @@ void crc16(p_cm_t crc_context, unsigned char const *buff, unsigned int size)
     {
         cm_nxt(crc_context, *buff++);
         size--;
-    }   
+    }
 }
 
 
@@ -183,7 +183,7 @@ main()
         printf("\n");
     printf("crc: 0x%04X\n", TestCRC.cm_reg);
     printf("crc: 0x%04X\n", cm_crc(&TestCRC));
- 
+
 }
 
 #endif

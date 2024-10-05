@@ -27,6 +27,10 @@
 #include "ewf.h"
 #endif
 
+#if HAVE_LIBQCOW
+#include "qcow.h"
+#endif
+
 #if HAVE_LIBVMDK
 #include "vmdk.h"
 #endif
@@ -133,7 +137,7 @@ tsk_img_open(int num_img,
          * we try all of the embedded formats
          */
         TSK_IMG_INFO *img_set = NULL;
-#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBAFF4
+#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW || HAVE_LIBAFF4
         const char *set = NULL;
 #endif
 
@@ -243,6 +247,26 @@ tsk_img_open(int num_img,
         }
 #endif
 
+#if HAVE_LIBQCOW
+        if ((img_info = qcow_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "QCOW";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("QCOW or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
         // if any of the non-raw formats were detected, then use it.
         if (img_set != NULL) {
             img_info = img_set;
@@ -265,10 +289,6 @@ tsk_img_open(int num_img,
     case TSK_IMG_TYPE_RAW:
         img_info = raw_open(num_img, images, a_ssize);
         break;
-
-	case TSK_IMG_TYPE_LOGICAL:
-		img_info = logical_open(num_img, images, a_ssize);
-		break;
 
 #if HAVE_LIBAFFLIB
     case TSK_IMG_TYPE_AFF_AFF:
@@ -301,6 +321,16 @@ tsk_img_open(int num_img,
         img_info = aff4_open(num_img, images, a_ssize);
         break;
 #endif
+
+#if HAVE_LIBQCOW
+    case TSK_IMG_TYPE_QCOW_QCOW:
+        img_info = qcow_open(num_img, images, a_ssize);
+        break;
+#endif
+
+    case TSK_IMG_TYPE_LOGICAL:
+		    img_info = logical_open(num_img, images, a_ssize);
+		    break;
 
     default:
         tsk_error_reset();
@@ -429,9 +459,9 @@ tsk_img_open_utf8(int num_img,
 /**
 * \ingroup imglib
  * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer parameter
- * must be castable to a TSK_IMG_INFO pointer.  It is up to 
- * the caller to set the tag value in ext_img_info.  This 
- * method will initialize the cache lock. 
+ * must be castable to a TSK_IMG_INFO pointer.  It is up to
+ * the caller to set the tag value in ext_img_info.  This
+ * method will initialize the cache lock.
  *
  * @param ext_img_info Pointer to the partially initialized disk image
  * structure, having a TSK_IMG_INFO as its first member

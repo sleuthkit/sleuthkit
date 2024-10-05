@@ -8,6 +8,11 @@
 #include <stack>
 #include <string>
 
+#ifdef TSK_WIN32
+#include <cwchar>
+#include <locale>
+#endif
+
 std::string replace(
   const std::string& src,
   const std::string& find,
@@ -151,9 +156,27 @@ private:
     out << '"' << quote(v) << '"';
   }
 
+  void value(char* v) {
+    value(const_cast<const char*>(v));
+  }
+
   void value(const char* v) {
     value(std::string(v));
   }
+
+#ifdef TSK_WIN32
+  void value(wchar_t* v) {
+    value(const_cast<const wchar_t*>(v));
+  }
+
+  void value(const wchar_t* v) {
+    auto len = std::wcslen(v);
+    std::string s(len, '\0');
+    auto& f = std::use_facet<std::ctype<wchar_t>>(std::locale());
+    f.narrow(v, v + len, '?', &s[0]);
+    value(s);
+  }
+#endif
 
   template <class V>
   void value(V v) {
@@ -182,7 +205,7 @@ public:
 
     json.arr();
     for (auto i = 0; i < img->num_img; ++i) {
-      json.v(static_cast<const char*>(img->images[i]));
+      json.v(img->images[i]);
     }
     json.end();
 
@@ -238,9 +261,9 @@ public:
       .kv("desc", vs_part->desc)
       .kv("flags", vs_part->flags)
       .kv("len", vs_part->len)
-      .kv("slot_num", vs_part->slot_num)
+      .kv("slot_num", static_cast<int>(vs_part->slot_num))
       .kv("start", vs_part->start)
-      .kv("table_num", vs_part->table_num);
+      .kv("table_num", static_cast<int>(vs_part->table_num));
 
     return TSK_FILTER_CONT;
   }
@@ -440,7 +463,7 @@ int main(int argc, char** argv) {
   }
 
   std::unique_ptr<TSK_IMG_INFO, void(*)(TSK_IMG_INFO*)> img{
-    tsk_img_open(argc - 1, argv + 1, TSK_IMG_TYPE_DETECT, 0),
+    tsk_img_open_utf8(argc - 1, argv + 1, TSK_IMG_TYPE_DETECT, 0),
     tsk_img_close
   };
 

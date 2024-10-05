@@ -34,6 +34,14 @@
 #ifndef SHA2_H
 #define SHA2_H
 
+#include "tsk/tsk_config.h"
+
+#ifdef HAVE_LIBCRYPTO
+
+#include <openssl/sha.h>
+
+#else
+
 #define SHA224_DIGEST_LENGTH ( 224 / 8)
 #define SHA256_DIGEST_LENGTH ( 256 / 8)
 #define SHA384_DIGEST_LENGTH ( 384 / 8)
@@ -102,6 +110,8 @@ void SHA512(const unsigned char *message, unsigned int len,
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif /* !SHA2_H */

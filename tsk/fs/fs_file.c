@@ -1,6 +1,6 @@
 /*
  * fs_file
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
@@ -11,7 +11,7 @@
 
 /**
 * \file fs_file.c
- * Create, manage, etc. the TSK_FS_FILE structures. 
+ * Create, manage, etc. the TSK_FS_FILE structures.
  */
 
 #include "tsk_fs_i.h"
@@ -78,20 +78,20 @@ tsk_fs_file_close(TSK_FS_FILE * a_fs_file)
 
 
 
-/** 
+/**
 * \ingroup fslib
 *
 * Open a file given its metadata address. This function loads the metadata
 * and returns a handle that can be used to read and process the file.   Note
 * that the returned TSK_FS_FILE structure will not have the file name set because
-* it was not used to load the file and this function does not search the 
+* it was not used to load the file and this function does not search the
 * directory structure to find the name that points to the address.   In general,
-* if you know the metadata address of a file, this function is more efficient 
-* then tsk_fs_file_open, which first maps a file name to the metadata address 
-* and then opens the file using this function. 
+* if you know the metadata address of a file, this function is more efficient
+* then tsk_fs_file_open, which first maps a file name to the metadata address
+* and then opens the file using this function.
 *
 * @param a_fs File system to analyze
-* @param a_fs_file Structure to store file data in or NULL to have one allocated. 
+* @param a_fs_file Structure to store file data in or NULL to have one allocated.
 * @param a_addr Metadata address of file to lookup
 * @returns NULL on error
 */
@@ -135,14 +135,14 @@ tsk_fs_file_open_meta(TSK_FS_INFO * a_fs,
 }
 
 
-/** 
+/**
 * \ingroup fslib
 * Return the handle structure for a specific file, given its full path. Note that
 * if you have the metadata address fo the file, then tsk_fs_file_open_meta() is a
-* more efficient approach. 
+* more efficient approach.
 *
 * @param a_fs File system to analyze
-* @param a_fs_file Structure to store file data in or NULL to have one allocated. 
+* @param a_fs_file Structure to store file data in or NULL to have one allocated.
 * @param a_path Path of file to open
 * @returns NULL on error
 */
@@ -240,7 +240,7 @@ tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, char *a_func)
 }
 
 /** \ingroup fslib
- * Return the number of attributes in the file. 
+ * Return the number of attributes in the file.
  *
  * @param a_fs_file File to return attribute count for
  * @returns number of attributes in file
@@ -295,10 +295,10 @@ tsk_fs_file_attr_get(TSK_FS_FILE * a_fs_file)
 }
 
 /** \ingroup fslib
-* Return a specific type and id attribute for the file.  
+* Return a specific type and id attribute for the file.
 * @param a_fs_file File to get data from
 * @param a_type Type of attribute to load
-* @param a_id Id of attribute to load 
+* @param a_id Id of attribute to load
 * @param a_id_used Set to 1 if ID is actually set or 0 to use default
 * @returns NULL on error
 */
@@ -316,9 +316,9 @@ tsk_fs_file_attr_get_type(TSK_FS_FILE * a_fs_file,
 }
 
 /** \ingroup fslib
-* Return a specific attribute by its ID for the file.  
+* Return a specific attribute by its ID for the file.
 * @param a_fs_file File to get data from
-* @param a_id Id of attribute to load 
+* @param a_id Id of attribute to load
 * @returns NULL on error
 */
 const TSK_FS_ATTR *
@@ -347,16 +347,16 @@ tsk_fs_file_attr_get_id(TSK_FS_FILE * a_fs_file, uint16_t a_id)
 
 /**
 * \ingroup fslib
- * Process a specific attribute in a file and call a callback function with the file contents. The callback will be 
+ * Process a specific attribute in a file and call a callback function with the file contents. The callback will be
  * called with chunks of data that are fs->block_size or less.  The address given in the callback
  * will be correct only for raw files (when the raw file contents were stored in the block).  For
  * compressed and sparse files, the address may be zero. If the file system you are analyzing does
- * not have multiple attributes per file, then you can use tsk_fs_file_walk().  For incomplete or 
+ * not have multiple attributes per file, then you can use tsk_fs_file_walk().  For incomplete or
  * corrupt files, some missing runs will be identified as SPARSE and zeros will be returned in the content.
  *
  * @param a_fs_file File to process
  * @param a_type Attribute type to process
- * @param a_id Id if attribute to process 
+ * @param a_id Id if attribute to process
  * @param a_flags Flags to use while processing file
  * @param a_action Callback action to call with content
  * @param a_ptr Pointer that will passed to callback
@@ -404,7 +404,7 @@ tsk_fs_file_walk_type(TSK_FS_FILE * a_fs_file,
 
 /**
 * \ingroup fslib
- * Process a file and call a callback function with the file contents. The callback will be 
+ * Process a file and call a callback function with the file contents. The callback will be
  * called with chunks of data that are fs->block_size or less.  The address given in the callback
  * will be correct only for raw files (when the raw file contents were stored in the block).  For
  * compressed and sparse files, the address may be zero.  If a file has multiple attributes,
@@ -459,8 +459,8 @@ tsk_fs_file_walk(TSK_FS_FILE * a_fs_file,
 * \ingroup fslib
  * Read the contents of a specific attribute of a file using a typical read() type interface and be
  * able specify a specific attribute to read (applies only to file systems with multiple attributes
- * per file, such as NTFS).  0s are returned for missing runs of files. 
- * 
+ * per file, such as NTFS).  0s are returned for missing runs of files.
+ *
  * @param a_fs_file The file to read from
  * @param a_type The type of attribute to load
  * @param a_id The id of attribute to load (use 0 and set a_flags if you do not care)
@@ -509,8 +509,8 @@ tsk_fs_file_read_type(TSK_FS_FILE * a_fs_file,
 /**
  * \ingroup fslib
  * Read the contents of a specific attribute of a file using a typical read() type interface.
- * 0s are returned for missing runs of files. 
- * 
+ * 0s are returned for missing runs of files.
+ *
  * @param a_fs_file The inode structure of the file to read.
  * @param a_offset The byte offset to start reading from.
  * @param a_buf The buffer to read the data into.
@@ -542,7 +542,7 @@ tsk_fs_file_read(TSK_FS_FILE * a_fs_file,
  * Returns a string representation of the security attributes of a file.
  *
  * @param a_fs_file The file to get security info about.
- * @param sid_str A pointer to a pointer that will contain the SID string.  This function will allocate the string and the caller must free it. 
+ * @param sid_str A pointer to a pointer that will contain the SID string.  This function will allocate the string and the caller must free it.
  * @returns 0 on success or 1 on error.
  */
 uint8_t
@@ -556,7 +556,7 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
     }
 
     // Make sure the function pointer is not NULL.
-    // This function will only work on NTFS filesystems. 
+    // This function will only work on NTFS filesystems.
     if (!a_fs_file->fs_info->fread_owner_sid) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
