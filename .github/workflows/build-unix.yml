@@ -35,6 +35,14 @@ jobs:
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java"
             codecov: "no"
 
+          - os: "linux"
+            arch: "x86_64"
+            compiler: "clang"
+            linkage: "shared"
+            runner: "ubuntu-22.04"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang"
+            codecov: "no"
+
           - os: "mingw"
             arch: "x86_64"
             linkage: "shared"
