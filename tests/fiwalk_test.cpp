@@ -14,7 +14,19 @@
 
 #include "tools/fiwalk/src/fiwalk.h"
 
+#define DEFAULT_HOME "../"
+
 void check_image(std::string img_path, std::string dfxml2_path) {
+#if defined(__MINGW32__) || defined(__MINGW64__)
+    WARN("fiwalk_test disabled under mingw. Will not test "+img_path);
+#else
+    std::string home = getenv("HOME") ? getenv("HOME") : DEFAULT_HOME;
+    if (img_path.substr(0,5)=="$HOME"){
+        img_path.replace(0,5,home);
+    }
+    if (dfxml2_path.substr(0,5)=="$HOME"){
+        dfxml2_path.replace(0,5,home);
+    }
     CAPTURE(img_path);
     INFO("test: fiwalk " << img_path)
 
@@ -47,48 +59,49 @@ void check_image(std::string img_path, std::string dfxml2_path) {
         FAIL(img_path << " not found");
     }
     /* XML files are checked by the python driver */
+#endif
 }
 
 #ifdef HAVE_LIBEWF
 TEST_CASE("test_disk_images imageformat_mmls_1.E01", "[fiwalk]") {
     check_image(
-      "tests/from_brian/imageformat_mmls_1.E01",
-      "tests/from_brian/imageformat_mmls_1.E01.xml"
+      "$HOME/from_brian/imageformat_mmls_1.E01",
+      "$HOME/from_brian/imageformat_mmls_1.E01.xml"
     );
 }
 #endif
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/ntfs-img-kw-1.dd",
-      "tests/from_brian/3-kwsrch-ntfs.xml"
+      "$HOME/from_brian/ntfs-img-kw-1.dd",
+      "$HOME/from_brian/3-kwsrch-ntfs.xml"
     );
 }
 
 TEST_CASE("test_disk_images ext3-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/ext3-img-kw-1.dd",
+      "$HOME/from_brian/ext3-img-kw-1.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images daylight.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/daylight.dd",
+      "$HOME/from_brian/daylight.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images image.gen1.dmg", "[fiwalk]") {
     check_image(
-      "tests/from_brian/image.gen1.dmg",
+      "$HOME/from_brian/image.gen1.dmg",
       ""
     );
 }
 
 TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
     check_image(
-      "tests/from_brian/image.dd",
-      "tests/from_brian/image_dd.xml"
+      "$HOME/from_brian/image.dd",
+      "$HOME/from_brian/image_dd.xml"
     );
 }

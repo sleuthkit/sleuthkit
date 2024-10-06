@@ -189,11 +189,19 @@ jobs:
       - name: Run make for codecov
         if: ${{ matrix.codecov == 'yes' }}
         run: |
-          make -j unit_tests/runner
+          make -j tests/fiwalk_test V=0
+          make -j unit_tests/runner V=0
+
+      - name: Get the disk images
+        if: ${{ matrix.codecov == 'yes' }}
+        run: |
+          make tests/test_images.txt
+          cat tests/test_images.txt
 
       - name: Run unit tests for codecov
         if: ${{ matrix.codecov == 'yes' }}
         run: |
+          tests/fiwalk_test
           unit_tests/runner
 
       - name: Upload codecov report

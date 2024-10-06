@@ -138,7 +138,9 @@ AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 dnl Check if we should link with OpenSSL
 TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 dnl Check if we should link with afflib
+dnl note that afflib/utils.h explicitly checks for openssl/pem.h, so we need to test for it also
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
+AC_CHECK_HEADERS([openssl/pem.h])
 dnl Check if we should link with libaff4
 TSK_OPT_DEP_CHECK([libaff4], [], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
 dnl Check if we should link with zlib

@@ -35,6 +35,7 @@ def config():
 
 @functools.lru_cache(maxsize=1)
 def dest_dir():
+    """Replace $HOME with the home directory"""
     return os.path.expandvars(config()['dest_dir'])
 
 

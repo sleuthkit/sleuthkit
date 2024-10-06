@@ -1,5 +1,5 @@
 # Specifies where the disk images go. Environment variable expansion is okay
-dest_dir: tests/from_brian
+dest_dir: $HOME/from_brian
 
 #
 # Each source needs either an `image` or both a `zipfile` and an `unzip`

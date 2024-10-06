@@ -207,3 +207,6 @@ sleuthkit-*.tar.gz
 *.gcno
 *.gcda
 wget-log
+*.gcov
+test-suite.log
+venv

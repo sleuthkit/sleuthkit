@@ -686,6 +686,7 @@ unit_tests_runner_SOURCES = \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
 
+
 #
 # Java
 #
@@ -933,4 +934,3 @@ mmls_sun_fuzzer_LDADD = \
 	@LIB_FUZZING_ENGINE@ \
 	$(TSK_LIB)
 endif # HAVE_LIB_FUZZING_ENGINE
-
