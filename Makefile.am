@@ -686,10 +686,6 @@ unit_tests_runner_SOURCES = \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
 
-# Target to compile the tests without running them
-check-build:
-    $(MAKE) $(check_PROGRAMS)
-
 
 #
 # Java

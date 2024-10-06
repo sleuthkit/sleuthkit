@@ -189,7 +189,7 @@ jobs:
       - name: Run make for codecov
         if: ${{ matrix.codecov == 'yes' }}
         run: |
-          make -j check-build
+          make -j check-TESTS V=0
 
       - name: Run unit tests for codecov
         if: ${{ matrix.codecov == 'yes' }}
