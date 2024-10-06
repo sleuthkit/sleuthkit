@@ -135,11 +135,6 @@ jobs:
           submodules: recursive
           fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
 
-      - name: Get the disk images
-        run: |
-          make tests/test_images.txt
-          cat tests/test_images.txt
-
       - name: Run bootstrap
         run: |
           ./bootstrap
@@ -147,6 +142,11 @@ jobs:
       - name: Run configure
         run: |
           ./configure ${{ matrix.configure_opts }}
+
+      - name: Get the disk images
+        run: |
+          make tests/test_images.txt
+          cat tests/test_images.txt
 
       - name: Run make
         run: |
