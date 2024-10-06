@@ -17,6 +17,9 @@
 #define DEFAULT_HOME "../"
 
 void check_image(std::string img_path, std::string dfxml2_path) {
+#if defined(__MINGW32__) || defined(__MINGW64__)
+    WARN("fiwalk_test disabled under mingw. Will not test "+img_path")
+#else
     std::string home = getenv("HOME") ? getenv("HOME") : DEFAULT_HOME;
     if (img_path.substr(0,5)=="$HOME"){
         img_path.replace(0,5,home);
@@ -56,6 +59,7 @@ void check_image(std::string img_path, std::string dfxml2_path) {
         FAIL(img_path << " not found");
     }
     /* XML files are checked by the python driver */
+#endif
 }
 
 #ifdef HAVE_LIBEWF
