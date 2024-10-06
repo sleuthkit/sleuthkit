@@ -622,7 +622,7 @@ tests_fiwalk_test_SOURCES = \
 
 EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
 
-tests/test_images.txt: tests/test_images.yaml tests/get_test_images.bash tests/get_test_images.bash
+tests/test_images.txt: tests/test_images.yaml tests/get_test_images.bash tests/get_test_images.py
 	tests/get_test_images.bash
 
 CLEANFILES += tests/test_images.txt
