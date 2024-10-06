@@ -143,6 +143,11 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }}
 
+      - name: Get the disk images
+        run: |
+          make tests/test_images.txt
+          cat tests/test_images.txt
+
       - name: Run make
         run: |
           make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 TESTS=
@@ -191,12 +196,6 @@ jobs:
         run: |
           make -j tests/fiwalk_test V=0
           make -j unit_tests/runner V=0
-
-      - name: Get the disk images
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          make tests/test_images.txt
-          cat tests/test_images.txt
 
       - name: Run unit tests for codecov
         if: ${{ matrix.codecov == 'yes' }}

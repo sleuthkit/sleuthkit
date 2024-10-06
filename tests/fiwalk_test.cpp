@@ -105,3 +105,10 @@ TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
       "$HOME/from_brian/image_dd.xml"
     );
 }
+
+TEST_CASE("test_disk_images iso-dirtree1.iso", "[fiwalk]") {
+    check_image(
+      "$HOME/from_brian/iso-dirtree1.iso",
+      ""
+    );
+}
