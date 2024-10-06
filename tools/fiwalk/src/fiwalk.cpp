@@ -319,35 +319,10 @@ int af_display_as_hex(const char *segname)
 }
 #endif
 
-#ifdef TSK_WIN32
-
-static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
-{
-    char *opt_arg=*_opt_arg;
-    char *temp = NULL;
-    int arg_len = TSTRLEN(OPTARG);
-    int ret_val = 0;
-
-    opt_arg=(char *)tsk_malloc(TSTRLEN(OPTARG)+2);
-    temp=opt_arg;
-    ret_val =
-        tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
-			(const UTF16 **) &OPTARG, (UTF16 *)(OPTARG+arg_len+1),
-			(UTF8 **)&temp, (UTF8 *)(temp+arg_len+2), TSKlenientConversion);
-    if (ret_val)
-    {
-        printf("Conversion Error ret_val: %d\n", ret_val);
-        return ret_val;
-    }
-    *_opt_arg=opt_arg;
-    return 0;
-}
-#endif
-
 int fiwalk::run()
 {
     gettimeofday(&tv0,0);
-    std::ofstream *xout = 0;
+    std::ofstream xout;
     if (opt_no_data && (opt_md5 || opt_sha1 || opt_save || opt_magic)) {
         errx(1, "-g conflicts with options requiring data access (-z may be needed)");
     }
@@ -381,10 +356,12 @@ int fiwalk::run()
     }
 
     /* XML initialization */
+    x = nullptr;
 
     if (opt_x){
         x = new xml(std::cout, false);			// default to stdout
     }
+
     if (xml_fn.size()>0){
         if (x) errx(1,"Cannot write XML to stdout and file at same time\n");
         if (xml_fn == "0"){              // special case of -X0
@@ -401,11 +378,12 @@ int fiwalk::run()
                 errx(1,"%s: file exists",xml_fn.c_str());
             }
         }
-        xout = new std::ofstream(xml_fn.c_str());
-        if (!xout->is_open()){
+        xout = std::ofstream(xml_fn.c_str());
+        if (!xout.is_open()){
             errx(1,"Cannot open %s: %s",xml_fn.c_str(),strerror(errno));
         }
-        x = new xml(*xout,true);	// we will make DTD going to a file
+        delete x;
+        x = new xml(xout,true);	// we will make DTD going to a file
     }
 
     /* If no output file has been specified, output text to stdout */
@@ -473,19 +451,11 @@ int fiwalk::run()
 
     if (opt_debug) printf("calling tsk_img_open(%s)\n",filename);
 
-#ifdef TSK_WIN32
-    int count = process_image_file(argc, argv1, audit_file, sector_size);
-    if (count<=0 || sector_size!=512){
-        comment("Retrying with 512 byte sector size.");
-        count = process_image_file(argc, argv1, audit_file, 512);
-    }
-#else
     int count = process_image_file(argc, argv, audit_file, sector_size);
     if (count<=0 || sector_size!=512){
         comment("Retrying with 512 byte sector size.");
         count = process_image_file(argc, argv, audit_file, 512);
     }
-#endif
 
     /* Calculate time elapsed (reported as a comment and with rusage) */
     struct timeval tv;
@@ -538,14 +508,7 @@ int fiwalk::run()
     if (t) comment("=EOF=");
     if (x) {
         x->pop();			// <dfxml>
-
-#define THIS_MAKES_IT_CRASH_ON_SECOND_CALL
-#ifndef THIS_MAKES_IT_CRASH_ON_SECOND_CALL
-        delete(x);
-        if (xout) {
-            delete xout;
-        }
-#endif
     }
+    delete(x);
     return 0;
 }

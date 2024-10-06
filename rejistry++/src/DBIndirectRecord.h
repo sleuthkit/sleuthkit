@@ -44,7 +44,7 @@ namespace Rejistry {
         typedef DBIndirectRecord * DBIndirectRecordPtr;
 
         DBIndirectRecord(RegistryByteBuffer * buf, uint32_t offset) : Record(buf, offset) {}
-        
+
         virtual ~DBIndirectRecord() {}
 
         /**

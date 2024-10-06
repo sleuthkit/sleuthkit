@@ -17,10 +17,10 @@
 
 /**
 * \ingroup hashdblib
-* Sets hash database name in hdb_info based on database file path. 
+* Sets hash database name in hdb_info based on database file path.
 * @param hdb_info Struct representation of an open hash database.
 */
-void 
+void
     hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
 {
 #ifdef TSK_WIN32
@@ -53,13 +53,13 @@ void
     }
 
     // end points to the byte after the last one we want to use
-    if ((TSTRLEN(hdb_info->db_fname) > 4) && (TSTRICMP(&hdb_info->db_fname[TSTRLEN(hdb_info->db_fname)-4], _TSK_T(".idx")) == 0)) 
+    if ((TSTRLEN(hdb_info->db_fname) > 4) && (TSTRICMP(&hdb_info->db_fname[TSTRLEN(hdb_info->db_fname)-4], _TSK_T(".idx")) == 0))
         end = &hdb_info->db_fname[TSTRLEN(hdb_info->db_fname)-4];
     else
-        end = begin + TSTRLEN(begin);   
+        end = begin + TSTRLEN(begin);
 
     // @@@ This only works for file names with Latin characters. It may need
-    // to be fixed some day. Leave it be for now. 
+    // to be fixed some day. Leave it be for now.
     for(i = 0; i < (end-begin); i++)
     {
         hdb_info->db_name[i] = (char) begin[i];
@@ -72,16 +72,16 @@ void
 * \ingroup hashdblib
 * \internal
 * Initializes TSK_HDB_INFO struct with "base class" method pointers and basic
-* setup of values.  
+* setup of values.
 * @param hdb_info Allocated struct to initialize.
-* @param db_path 
+* @param db_path
 * @return 0 on success, 1 on failure.
 */
-uint8_t 
+uint8_t
     hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
 {
     // copy the database path into the struct
-    size_t path_len = TSTRLEN(db_path); 
+    size_t path_len = TSTRLEN(db_path);
     hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
     if (!hdb_info->db_fname) {
         return 1;
@@ -100,7 +100,7 @@ uint8_t
     hdb_info->get_display_name = hdb_base_get_display_name;
     hdb_info->uses_external_indexes = hdb_base_uses_external_indexes;
     hdb_info->get_index_path = hdb_base_get_index_path;
-    hdb_info->has_index = hdb_base_has_index; 
+    hdb_info->has_index = hdb_base_has_index;
     hdb_info->make_index = hdb_base_make_index;
     hdb_info->open_index = hdb_base_open_index;
     hdb_info->lookup_str = hdb_base_lookup_str;
@@ -146,9 +146,9 @@ const TSK_TCHAR*
 {
     // The "base class" assumption is that the hash database does not have
     // user-accessible external index files (e.g., it is a relational
-    // database). It follows that the hash database path and index path are 
+    // database). It follows that the hash database path and index path are
     // the same, assuming that the hash database is implemented
-    // as a user-accessible file (e.g., it is a SQLite database). 
+    // as a user-accessible file (e.g., it is a SQLite database).
     return hdb_info->db_fname;
 }
 
@@ -156,14 +156,14 @@ uint8_t
     hdb_base_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     // The "base class" assumption is that the hash database does not have
-    // user-accessible external index files (e.g., it is a relational database). 
-    // It follows that the hash database has an index as soon as it is created. 
-    // This implementation of this function also says that look ups for all hash 
+    // user-accessible external index files (e.g., it is a relational database).
+    // It follows that the hash database has an index as soon as it is created.
+    // This implementation of this function also says that look ups for all hash
     // algorithm types are supported.
     return 1;
 }
 
-uint8_t 
+uint8_t
     hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
 {
     // The "base class" assumption is that the hash database does not have
@@ -218,7 +218,7 @@ uint8_t
     hdb_base_accepts_updates()
 {
     // The "base class" assumption is that the database accepts updates (e.g.,
-    // it is a relational database and there is a "derived class override" of 
+    // it is a relational database and there is a "derived class override" of
     // add_entry() function that does INSERTs).
     return 1;
 }
@@ -226,7 +226,7 @@ uint8_t
 uint8_t
     hdb_base_add_entry(TSK_HDB_INFO *hdb_info, const char *file_name, const char *md5, const char *sha1, const char *sha2_256, const char *comment)
 {
-    // This function needs an "override" by "derived classes" unless there is an 
+    // This function needs an "override" by "derived classes" unless there is an
     // "override" of the accepts_updates function that returns 0 (false).
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
@@ -236,7 +236,7 @@ uint8_t
 
 uint8_t hdb_base_begin_transaction(TSK_HDB_INFO *hdb_info)
 {
-    // This function needs an "override" by "derived classes" unless there is an 
+    // This function needs an "override" by "derived classes" unless there is an
     // "override" of the accepts_updates function that returns 0 (false).
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
@@ -246,7 +246,7 @@ uint8_t hdb_base_begin_transaction(TSK_HDB_INFO *hdb_info)
 
 uint8_t hdb_base_commit_transaction(TSK_HDB_INFO *hdb_info)
 {
-    // This function needs an "override" by "derived classes" unless there is an 
+    // This function needs an "override" by "derived classes" unless there is an
     // "override" of the accepts_updates function that returns 0 (false).
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
@@ -256,7 +256,7 @@ uint8_t hdb_base_commit_transaction(TSK_HDB_INFO *hdb_info)
 
 uint8_t hdb_base_rollback_transaction(TSK_HDB_INFO *hdb_info)
 {
-    // This function needs an "override" by "derived classes" unless there is an 
+    // This function needs an "override" by "derived classes" unless there is an
     // "override" of the accepts_updates function that returns 0 (false).
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);

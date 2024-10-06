@@ -1426,8 +1426,8 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
-            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found
+            // that it was very ineffecient and always resulted in the same linkNum value.
             // We now just use linkNum
             return linkNum;
         }
@@ -1476,8 +1476,8 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
-            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found
+            // that it was very ineffecient and always resulted in the same linkNum value.
             // We now just use linkNum
             return linkNum;
         }
@@ -4583,6 +4583,12 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
     mapOffset = tsk_getu32(fs_info->endian, resHead->mapOffset);
     //uint32_t dataLength = tsk_getu32(fs_info->endian, resHead->dataLength);
     mapLength = tsk_getu32(fs_info->endian, resHead->mapLength);
+
+    if (mapLength <= 0) {
+      error_returned
+         ("- hfs_parse_resource_fork: map length is 0");
+      return NULL;
+    }
 
     // Read in the WHOLE map
     map = (char *) tsk_malloc(mapLength);

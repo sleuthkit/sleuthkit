@@ -115,9 +115,9 @@ Makefile
 .dirstamp
 
 # unit tests
-unit_tests/*/*.exe
-unit_tests/*/*.log
-unit_tests/*/*.trs
+unit_tests/*.exe
+unit_tests/*.log
+unit_tests/*.trs
 
 #javadoc generated
 /bindings/java/javadoc
@@ -207,3 +207,6 @@ sleuthkit-*.tar.gz
 *.gcno
 *.gcda
 wget-log
+*.gcov
+test-suite.log
+venv

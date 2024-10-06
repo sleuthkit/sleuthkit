@@ -338,7 +338,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void * that)
 int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 {
     TSK_FS_INFO *fs_info;
-    u_int sector_size = img_info->sector_size;
+    uint32_t sector_size = img_info->sector_size;
 
     /* Try it as a file system */
     fs_info = tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT);
@@ -521,7 +521,7 @@ void fiwalk::process_scalpel_audit_file(TSK_IMG_INFO *img_info,const char *audit
     }
 }
 
-int fiwalk::process_image_file(int argc,char * const *argv,const char *audit_file,u_int sector_size)
+int fiwalk::process_image_file(int argc,char * const *argv,const char *audit_file,uint32_t sector_size)
 {
     TSK_IMG_INFO *img_info;
     int count = 0;

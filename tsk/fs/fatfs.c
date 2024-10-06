@@ -10,8 +10,8 @@
 
 /**
  * \file fatfs.c
- * Contains the internal TSK FAT file system code to handle basic file system 
- * processing for opening file system, processing sectors, and directory entries. 
+ * Contains the internal TSK FAT file system code to handle basic file system
+ * processing for opening file system, processing sectors, and directory entries.
  */
 
 #include "tsk_fs_i.h"
@@ -23,7 +23,7 @@
 
 /**
  * \internal
- * Open part of a disk image as a FAT file system. 
+ * Open part of a disk image as a FAT file system.
  *
  * @param a_img_info Disk image to analyze
  * @param a_offset Byte offset where FAT file system starts
@@ -56,7 +56,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
         return NULL;
     }
 
-	// Allocate an FATFS_INFO and initialize its generic TSK_FS_INFO members. 
+	// Allocate an FATFS_INFO and initialize its generic TSK_FS_INFO members.
     if ((fatfs = (FATFS_INFO*)tsk_fs_malloc(sizeof(FATFS_INFO))) == NULL) {
         return NULL;
 	}
@@ -70,7 +70,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 
     // Check for any volume encryption and initialize if found.
     // A non-zero value will only be returned if we are very confident encryption was found
-    // but encountered an error and should not continue trying to open the volume. 
+    // but encountered an error and should not continue trying to open the volume.
     // In this case we should also have a specific error to get back to the user, such as reporting an incorrect password.
     if (0 != handleVolumeEncryption(fs, a_pass)) {
         tsk_fs_free((TSK_FS_INFO*)fatfs);
@@ -89,7 +89,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
                 break;
             case 1:
 			    // The FATXX backup boot sector is located in sector 6, look there.
-                boot_sector_offset = 6 * fs->img_info->sector_size; 
+                boot_sector_offset = 6 * fs->img_info->sector_size;
                 break;
             case 2:
                 // The exFAT backup boot sector is located in sector 12, look there.
@@ -97,7 +97,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
                 break;
 		}
 
-        // Read in the prospective boot sector. 
+        // Read in the prospective boot sector.
         bytes_read = tsk_fs_read(fs, boot_sector_offset, fatfs->boot_sector_buffer, FATFS_MASTER_BOOT_RECORD_SIZE);
         if (bytes_read != FATFS_MASTER_BOOT_RECORD_SIZE) {
             if (bytes_read >= 0) {
@@ -112,7 +112,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
         // Check it out...
         bootSector = (FATFS_MASTER_BOOT_RECORD*)fatfs->boot_sector_buffer;
         if (tsk_fs_guessu16(fs, bootSector->magic, FATFS_FS_MAGIC) != 0) {
-            // No magic, look for a backup boot sector. 
+            // No magic, look for a backup boot sector.
             if ((tsk_getu16(TSK_LIT_ENDIAN, bootSector->magic) == 0) && (find_boot_sector_attempt < 3)) {
                 continue;
             }
@@ -142,7 +142,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 		(a_ftype == TSK_FS_TYPE_EXFAT && exfatfs_open(fatfs) == 0) ||
 		(fatxxfs_open(fatfs) == 0)) {
     	return (TSK_FS_INFO*)fatfs;
-	} 
+	}
     else {
         tsk_fs_free((TSK_FS_INFO *)fatfs);
 		return NULL;
@@ -150,7 +150,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 }
 
 /* TTL is 0 if the entry has not been used.  TTL of 1 means it was the
- * most recently used, and TTL of FATFS_FAT_CACHE_N means it was the least 
+ * most recently used, and TTL of FATFS_FAT_CACHE_N means it was the least
  * recently used.  This function has a LRU replacement algo
  *
  * Note: This routine assumes &fatfs->cache_lock is locked by the caller.
@@ -232,7 +232,7 @@ getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
 }
 
 /*
- * Set *value to the entry in the File Allocation Table (FAT) 
+ * Set *value to the entry in the File Allocation Table (FAT)
  * for the given cluster
  *
  * *value is in clusters and may need to be converted to
@@ -301,7 +301,7 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
 
         /* special case when the 12-bit value goes across the cache
          * we load the cache to start at this sect.  The cache
-         * size must therefore be at least 2 sectors large 
+         * size must therefore be at least 2 sectors large
          */
         if (offs == (FATFS_FAT_CACHE_B - 1)) {
             ssize_t cnt;
@@ -428,10 +428,10 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
 /**************************************************************************
  *
  * BLOCK WALKING
- * 
+ *
  *************************************************************************/
-/* 
-** Walk the sectors of the partition. 
+/*
+** Walk the sectors of the partition.
 **
 ** NOTE: This is by SECTORS and not CLUSTERS
 ** _flags: TSK_FS_BLOCK_FLAG_ALLOC, TSK_FS_BLOCK_FLAG_UNALLOC, TSK_FS_BLOCK_FLAG_META
@@ -536,7 +536,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                 }
             }
 
-            /* Process the sectors until we get to the clusters, 
+            /* Process the sectors until we get to the clusters,
              * end of target, or end of buffer */
             for (i = 0;
                 i < 8 && (addr) <= a_end_blk
@@ -545,7 +545,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
 
                 myflags = TSK_FS_BLOCK_FLAG_ALLOC;
 
-                /* stuff before the first data sector is the 
+                /* stuff before the first data sector is the
                  * FAT and boot sector */
                 if (addr < fatfs->firstdatasect)
                     myflags |= TSK_FS_BLOCK_FLAG_META;
@@ -601,7 +601,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
      * sectors are too small
      */
 
-    /* Determine the base sector of the cluster where the first 
+    /* Determine the base sector of the cluster where the first
      * sector is located */
     addr = FATFS_CLUST_2_SECT(fatfs, (FATFS_SECT_2_CLUST(fatfs, addr)));
 
@@ -650,7 +650,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
             myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        
+
         /* The final cluster may not be full */
         if (a_end_blk - addr + 1 < fatfs->csize)
             read_size = (size_t) (a_end_blk - addr + 1);
@@ -735,19 +735,19 @@ fatfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     return (TSK_FS_BLOCK_FLAG_ENUM)flags;
 }
 
-/* 
+/*
  * Identifies if a sector is allocated
  *
  * If it is less than the data area, then it is allocated
  * else the FAT table is consulted
  *
- * Return 1 if allocated, 0 if unallocated, and -1 if error 
+ * Return 1 if allocated, 0 if unallocated, and -1 if error
  */
 int8_t
 fatfs_is_sectalloc(FATFS_INFO * fatfs, TSK_DADDR_T sect)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) fatfs;
-    /* If less than the first cluster sector, then it is allocated 
+    /* If less than the first cluster sector, then it is allocated
      * otherwise check the FAT
      */
     if (sect < fatfs->firstclustsect)
@@ -798,7 +798,7 @@ fatfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
     /* Dump Bad Sector Addresses */
 
 
-    /* Dump unused sector addresses 
+    /* Dump unused sector addresses
      * Reserved area, end of FAT, end of Data Area */
 }
 
@@ -829,7 +829,7 @@ void
 fatfs_close(TSK_FS_INFO *fs)
 {
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
- 
+
     fatfs_dir_buf_free(fatfs);
 
     fs->tag = 0;

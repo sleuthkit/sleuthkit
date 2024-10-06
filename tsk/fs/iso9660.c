@@ -124,12 +124,12 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
         /* Identify the entry type -- listed in the order
          * that they are listed in the specs */
 
-        // SUSP Continuation Entry 
+        // SUSP Continuation Entry
         if ((head->sig[0] == 'C') && (head->sig[1] == 'E')) {
             iso9660_susp_ce *ce = (iso9660_susp_ce *) buf;
 
             if ((uintptr_t)buf + sizeof(iso9660_susp_ce) - 1 > (uintptr_t)end) {
-                if (tsk_verbose) 
+                if (tsk_verbose)
                     tsk_fprintf(stderr, "parse_susp: not enough room for CE structure\n");
                 break;
             }
@@ -259,7 +259,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
             iso9660_rr_px_entry *rr_px;
 
             if ((uintptr_t)buf + sizeof(iso9660_rr_px_entry) - 1> (uintptr_t)end) {
-                if (tsk_verbose) 
+                if (tsk_verbose)
                     tsk_fprintf(stderr, "parse_susp: not enough room for POSIX structure\n");
                 break;
             }
@@ -306,7 +306,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
             int len;
 
             if ((uintptr_t)buf + sizeof(iso9660_rr_nm_entry) - 1> (uintptr_t)end) {
-                if (tsk_verbose) 
+                if (tsk_verbose)
                     tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name structure\n");
                 break;
             }
@@ -314,7 +314,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
             rr_nm = (iso9660_rr_nm_entry *) buf;
 
             if ((rr_nm->len < 6) || ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 - 1> (uintptr_t)end)) {
-                if (tsk_verbose) 
+                if (tsk_verbose)
                     tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name\n");
                 break;
             }
@@ -513,7 +513,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     dentry->data_len_m) / ISO9660_SSIZE_B;
                 if (tsk_verbose)
                     tsk_fprintf(stderr, "iso9660_load_inodes_dir: %d number of additional sectors\n", s_cnt);
-                
+
                 // @@@ Should have a sanity check here on s_cnt, but I'm not sure what it would be...
 
                 /* use the specified name instead of "." */
@@ -541,7 +541,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             }
             else {
                 char *file_ver;
-                
+
                 // the entry has a UTF-16 name
                 if (ctype == ISO9660_CTYPE_UTF16) {
                     UTF16 *name16;
@@ -608,7 +608,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     readlen = dentry->fi_len;
                     if (readlen > ISO9660_MAXNAMLEN_STD)
                         readlen = ISO9660_MAXNAMLEN_STD;
-                    
+
                     if (dentry->entry_len < sizeof(iso9660_dentry) + dentry->fi_len) {
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
@@ -654,11 +654,11 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     free(in_node);
                     in_node = NULL;
                     break;
-                    
+
                 }
             }
 
-            
+
 
             // copy the raw dentry data into the node
             memcpy(&(in_node->inode.dr), dentry, sizeof(iso9660_dentry));
@@ -677,7 +677,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             }
             in_node->offset =
                 tsk_getu32(fs->endian, dentry->ext_loc_m) * fs->block_size;
-            
+
             if (tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset > (TSK_OFF_T)(fs->block_count * fs->block_size)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
@@ -691,7 +691,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             in_node->size =
                 tsk_getu32(fs->endian, in_node->inode.dr.data_len_m);
 
-            
+
             in_node->ea_size = dentry->ext_len;
             in_node->dentry_offset = s_offs + b_offs;
 
@@ -721,7 +721,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     in_node = NULL;
                     break;
                 }
-                
+
                 in_node->inode.susp_off =
                     b_offs + sizeof(iso9660_dentry) + dentry->fi_len +
                     s_offs;
@@ -744,7 +744,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     if ((in_node->offset == tmp->offset)
                         && (in_node->size == tmp->size)
                         && (in_node->size) && (is_first == 0)) {
-                        
+
                         // if we found rockridge, then update original if needed.
                         if (in_node->inode.rr) {
                             if (tmp->inode.rr == NULL) {
@@ -1722,7 +1722,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (p->pvd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", p->pvd.pub_id);
 
@@ -1738,7 +1738,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (p->pvd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", p->pvd.prep_id);
 
@@ -1753,7 +1753,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (p->pvd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", p->pvd.app_id);
         cp = &str[127];
@@ -1767,7 +1767,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (p->pvd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 37, "%s", p->pvd.copy_id);
         cp = &str[36];
@@ -1833,7 +1833,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (s->svd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", s->svd.pub_id);
 
@@ -1849,7 +1849,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (s->svd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", s->svd.prep_id);
 
@@ -1864,7 +1864,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (s->svd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
             snprintf(str, 128, "%s", s->svd.app_id);
         cp = &str[127];
@@ -1878,9 +1878,9 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (s->svd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file\n");
+            snprintf(str, 8, "In file");
         else
-            snprintf(str, 37, "%s\n", s->svd.copy_id);
+            snprintf(str, 37, "%s", s->svd.copy_id);
         cp = &str[36];
         while ((!isprint(*cp) || isspace(*cp)) && (cp != str))
             cp--;
@@ -2249,7 +2249,7 @@ iso9660_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile
     }
     else {
         /* since blocks are all contiguous, print them here to simplify file_walk */
-   
+
         int block = tsk_getu32(fs->endian, dinode->dr.ext_loc_m);
         TSK_OFF_T size = fs_file->meta->size;
         int rowcount = 0;
@@ -2649,7 +2649,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         }
     }
 
-    /* We have seen this case on an image that seemed to be only 
+    /* We have seen this case on an image that seemed to be only
      * setting blk_siz_l instead of both blk_sz_m and _l. We should
      * support both in the future, but this prevents a crash later
      * on when we divide by block_size. */
@@ -2670,7 +2670,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
-    
+
     // determine the last block we have in this image
     if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
         fs->block_count)

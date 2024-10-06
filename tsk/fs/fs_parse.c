@@ -1,5 +1,5 @@
 /*
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2005-2011 Brian Carrier.  All Rights reserved
@@ -11,7 +11,7 @@
 
 /**
  * \file fs_parse.c
- * Contains code to parse specific types of data from 
+ * Contains code to parse specific types of data from
  * the command line
  */
 
@@ -20,7 +20,7 @@
  * \ingroup fslib
  * Parse a TSK_TCHAR string of an inode, type, and id pair (not all parts
  * need to be there).  This assumes the string is either:
- * INUM, INUM-TYPE, or INUM-TYPE-ID.  Return the values in integer form. 
+ * INUM, INUM-TYPE, or INUM-TYPE-ID.  Return the values in integer form.
  *
  * @param [in] str Input string to parse
  * @param [out] inum Pointer to location where inode can be stored.
