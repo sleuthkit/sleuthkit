@@ -23,3 +23,6 @@ sources:
       xml: tests/data/img/image_dd.xml
   - step6:
       image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg
+  - iso9660:
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/14-iso9660-1.zip
+      unzip: iso-dirtree1.iso
