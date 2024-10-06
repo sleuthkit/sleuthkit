@@ -14,12 +14,15 @@
 
 #include "tools/fiwalk/src/fiwalk.h"
 
+#define DEFAULT_HOME "../"
+
 void check_image(std::string img_path, std::string dfxml2_path) {
+    std::string home = getenv("HOME") ? getenv("HOME") : DEFAULT_HOME;
     if (img_path.substr(0,5)=="$HOME"){
-        img_path.replace(0,5,getenv("HOME"));
+        img_path.replace(0,5,home);
     }
     if (dfxml2_path.substr(0,5)=="$HOME"){
-        dfxml2_path.replace(0,5,getenv("HOME"));
+        dfxml2_path.replace(0,5,home);
     }
     CAPTURE(img_path);
     INFO("test: fiwalk " << img_path)
