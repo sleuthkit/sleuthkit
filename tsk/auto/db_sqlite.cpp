@@ -1313,7 +1313,7 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
             snprintf(buf,sizeof(buf),"%x%x", (md5[i] >> 4) & 0xf, md5[i] & 0xf);
             md5Text[i*2] = buf[0];
             md5Text[i*2+1] = buf[1];
-            md5Text[i*2+2] = NULL;
+            md5Text[i*2+2] = '\000';
         }
         md5TextPtr = md5Text;
     }

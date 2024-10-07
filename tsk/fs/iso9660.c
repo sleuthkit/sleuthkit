@@ -2325,7 +2325,7 @@ iso9660_get_default_attr_type(const TSK_FS_FILE * a_file)
 static int
 load_vol_desc(TSK_FS_INFO * fs)
 {
-    int count = 0;
+    //int count = 0;  // set but never used
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_OFF_T offs;
     char *myname = "iso_load_vol_desc";
@@ -2435,7 +2435,7 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     ptmp->next = p;
                     p->next = NULL;
-                    count++;
+                    // count++; // set but never used
                 }
             }
 
@@ -2443,7 +2443,7 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->pvd = p;
                 p->next = NULL;
-                count++;
+                // count++; // set but never used
             }
 
             break;
@@ -2468,7 +2468,7 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     stmp->next = s;
                     s->next = NULL;
-                    count++;
+                    // count++;  // set but never used
                 }
             }
 
@@ -2476,7 +2476,7 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->svd = s;
                 s->next = NULL;
-                count++;
+                // count++;   // set but never used
             }
 
             break;
@@ -2527,7 +2527,7 @@ load_vol_desc(TSK_FS_INFO * fs)
                 p->next = NULL;
                 free(p);
                 p = NULL;
-                count--;
+                // count--;   // set but never used
                 break;
             }
         }
