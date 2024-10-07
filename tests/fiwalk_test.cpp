@@ -112,3 +112,17 @@ TEST_CASE("test_disk_images iso-dirtree1.iso", "[fiwalk]") {
       ""
     );
 }
+
+TEST_CASE("test_disk_images fat-img-kw.dd", "[fiwalk]") {
+    check_image(
+      "$HOME/from_brian/fat-img-kw.dd",
+      ""
+    );
+}
+
+TEST_CASE("test_disk_images 6-fat-undel.dd", "[fiwalk]") {
+    check_image(
+      "$HOME/from_brian/6-fat-undel.dd",
+      ""
+    );
+}
