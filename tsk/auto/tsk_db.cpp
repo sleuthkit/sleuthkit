@@ -44,8 +44,8 @@ bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path,
     // name to match with the 'name' column in tsk_files table
 
     // reset all arrays
-    parent_name[0] = '\0';
-    parent_path[0] = '\0';
+    parent_name[0] = '\0';              // instance variable
+    parent_path[0] = '\0';              // instance variable
 
     size_t path_len = strlen(path);
     if (path_len >= MAX_PATH_LENGTH) {
@@ -69,7 +69,7 @@ bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path,
     // step 1, copy everything into parent_path and clean it up
     // add leading slash if its not in input.
     if (path[0] != '/') {
-        sprintf(parent_path, "%s", "/");
+        snprintf(parent_path, sizeof(parent_path), "%s", "/");
     }
 
     strncat(parent_path, path, MAX_PATH_LENGTH);
@@ -90,7 +90,7 @@ bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path,
         // character found in the string
         size_t position = chptr - parent_path;
 
-        sprintf(parent_name, "%s", chptr+1);  // copy everything after slash into parent_name
+        snprintf(parent_name, sizeof(parent_name), "%s", chptr+1);  // copy everything after slash into parent_name
         *ret_name = parent_name;
 
         parent_path[position + 1] = '\0';   // add terminating null after last "/"
