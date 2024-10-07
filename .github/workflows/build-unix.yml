@@ -101,7 +101,8 @@ jobs:
       - name: Install packages
         if: ${{ startsWith(matrix.runner, 'macos') }}
         run: |
-          brew install wget libtool autoconf automake libtool libewf pkg-config
+          brew update
+          brew install wget libtool autoconf automake libtool libewf pkg-config libmagic
 
       - name: Update packages
         if: ${{ matrix.os == 'mingw' }}
@@ -109,20 +110,16 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt update
 
-      - name: Update packages
-        if: ${{ startsWith(matrix.runner, 'ubuntu') }}
-        run: |
-          sudo apt update
-
       - name: Install packages
         if: ${{ matrix.os == 'linux' }}
         run: |
-          sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libtool make pkg-config zlib1g-dev
+          sudo apt update
+          sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
 
       - name: Install packages
         if: ${{ matrix.os == 'mingw' }}
         run: |
-          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
+          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64 mingw-w64-file
 
       - name: Setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
