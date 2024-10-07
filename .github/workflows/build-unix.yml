@@ -122,11 +122,12 @@ jobs:
         if: ${{ matrix.os == 'mingw' }}
         run: |
           sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
-          echo === installing libmagic for mingw ===
-          wget -q https://astron.com/pub/file/file-5.44.tar.gz # Check for the latest version at https://astron.com/pub/file/
-          tar -xzf file-5.44.tar.gz
-          cd file-5.44
-          ./configure -q ${{ matrix.configure_optsnj}} && make V=0 && sudo make install
+          # This is not working; also requires mingw-w64-x86_64-libgnurx
+          # echo === installing libmagic for mingw ===
+          # wget -q https://astron.com/pub/file/file-5.44.tar.gz # Check for the latest version at https://astron.com/pub/file/
+          # tar -xzf file-5.44.tar.gz
+          # cd file-5.44
+          # ./configure -q ${{ matrix.configure_optsnj}} && make V=0 && sudo make install
 
       - name: Setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
