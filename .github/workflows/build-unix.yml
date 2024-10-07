@@ -67,7 +67,8 @@ jobs:
             arch: "i686"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --enable-shared --disable-static"
+            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static --disable-java "
+            configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine32'
@@ -77,7 +78,8 @@ jobs:
             arch: "i686"
             linkage: "static"
             runner: "ubuntu-22.04"
-            configure_opts: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --disable-shared --enable-static"
+            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static --disable-java "
+            configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine32'
@@ -124,7 +126,7 @@ jobs:
           wget -q https://astron.com/pub/file/file-5.44.tar.gz # Check for the latest version at https://astron.com/pub/file/
           tar -xzf file-5.44.tar.gz
           cd file-5.44
-          ./configure -q ${{ matrix.configure_opts}} && make V=0 && sudo make install
+          ./configure -q ${{ matrix.configure_optsnj}} && make V=0 && sudo make install
 
       - name: Setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
