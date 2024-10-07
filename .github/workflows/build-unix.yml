@@ -101,7 +101,7 @@ jobs:
       - name: Install packages
         if: ${{ startsWith(matrix.runner, 'macos') }}
         run: |
-          brew install wget libtool autoconf automake libtool libewf pkg-config
+          brew install libtool autoconf automake libtool libewf
 
       - name: Update packages
         if: ${{ matrix.os == 'mingw' }}
