@@ -32,7 +32,7 @@ jobs:
             arch: "x86_64"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=-Wno-unused-command-line-argument"
             codecov: "no"
 
           - os: "linux"

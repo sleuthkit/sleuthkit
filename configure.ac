@@ -285,10 +285,6 @@ AC_SUBST([CXXLD])
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 
-dnl Use -Wno-unused-command-line-argument only if the compiler understands it
-AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
-AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CXXFLAGS], [-Werror-unknown-warning])
-
 TSK_ADDRESS_SANITIZER
 TSK_THREAD_SANITIZER
 TSK_UNDEFINED_SANITIZER
