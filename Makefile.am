@@ -1,8 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
-AM_CFLAGS += -Wall -Wno-unused-command-line-argument
-AM_CXXFLAGS += -Wall -Wno-overloaded-virtual -Wno-unused-command-line-argument
+AM_CFLAGS = -Wall -Wextra -Wno-unused-parameter
+AM_CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
 
 CLEANFILES =
 
@@ -49,38 +49,6 @@ EXTRA_DIST = \
 	win32/tsk-win.sln \
 	win32/NugetPackages.props \
 	win32/docs/*
-
-dist_man_MANS = \
-	man/blkcalc.1 \
-	man/blkcat.1 \
-	man/blkls.1 \
-	man/blkstat.1 \
-	man/fcat.1 \
-	man/ffind.1 \
-	man/fls.1 \
-	man/fsstat.1 \
-	man/hfind.1 \
-	man/icat.1 \
-	man/ifind.1 \
-	man/ils.1 \
-	man/img_cat.1 \
-	man/img_stat.1 \
-	man/istat.1 \
-	man/jcat.1 \
-	man/jls.1 \
-	man/mactime.1 \
-	man/mmcat.1 \
-	man/mmls.1 \
-	man/mmstat.1 \
-	man/sigfind.1 \
-	man/sorter.1 \
-	man/tsk_comparedir.1 \
-	man/tsk_gettimes.1 \
-	man/tsk_loaddb.1 \
-	man/tsk_recover.1 \
-	man/usnjls.1
-
-SUBDIRS = unit_tests
 
 nobase_include_HEADERS = \
 	tsk/auto/guid.h \
@@ -152,6 +120,10 @@ nobase_dist_data_DATA = \
 	tsk/sorter/solaris.sort \
 	tsk/sorter/windows.sort
 
+#
+# Library
+#
+
 TSK_LIB = tsk/libtsk.la
 
 noinst_LTLIBRARIES = \
@@ -165,8 +137,8 @@ noinst_LTLIBRARIES = \
 	tsk/util/Bitlocker/libtskbitlocker.la \
 	tsk/vs/libtskvs.la
 
-tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar -Wsign-promo -Wno-overloaded-virtual
-tsk_5uto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar
+tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
 	tsk/auto/auto_db.cpp \
@@ -189,7 +161,6 @@ if !HAVE_LIBSQLITE3
 tsk_auto_libtskauto_la_SOURCES += tsk/auto/sqlite3.c tsk/auto/sqlite3.h
 endif
 
-tsk_base_libtskbase_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_base_libtskbase_la_SOURCES = \
 	tsk/base/crc.c \
 	tsk/base/crc.h \
@@ -211,8 +182,6 @@ tsk_base_libtskbase_la_SOURCES = \
 	tsk/base/tsk_version.c \
 	tsk/base/XGetopt.c
 
-tsk_fs_libtskfs_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
-tsk_fs_libtskfs_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs_compat.cpp \
 	tsk/fs/apfs.cpp \
@@ -277,7 +246,6 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/walk_cpp.cpp \
 	tsk/fs/yaffs.cpp
 
-tsk_hashdb_libtskhashdb_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
 	tsk/hashdb/encase.c \
@@ -292,7 +260,6 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/tsk_hashdb_i.h \
 	tsk/hashdb/tsk_hash_info.h
 
-tsk_img_libtskimg_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/aff4.c \
 	tsk/img/aff4.h \
@@ -321,8 +288,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/vmdk.c \
 	tsk/img/vmdk.h
 
-tsk_pool_libtskpool_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
@@ -334,15 +300,14 @@ tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/pool_read.cpp \
 	tsk/pool/pool_types.cpp
 
-tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_util_libtskutil_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_util_libtskutil_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES)
+tsk_util_libtskutil_la_LDFLAGS = $(AM_LDFLAGS) $(OPENSSL_LDFLAGS)
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
 	tsk/util/file_system_utils.c
 
-tsk_util_Bitlocker_libtskbitlocker_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENSSL_INCLUDES) -I$(srcdir)/.. -Wall
-tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra -Werror
+tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
 	tsk/util/Bitlocker/BitlockerUtils.cpp \
@@ -356,7 +321,6 @@ tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/MetadataValueUnicode.cpp \
 	tsk/util/Bitlocker/MetadataValueVolumeMasterKey.cpp
 
-tsk_vs_libtskvs_la_CXXFLAGS = $(AM_CXXFLAGS) -Wextra
 tsk_vs_libtskvs_la_SOURCES = \
 	tsk/vs/bsd.c \
 	tsk/vs/dos.c \
@@ -381,7 +345,8 @@ tsk_libtsk_la_LIBADD = \
 	tsk/pool/libtskpool.la \
 	tsk/util/Bitlocker/libtskbitlocker.la \
 	tsk/util/libtskutil.la \
-	tsk/vs/libtskvs.la
+	tsk/vs/libtskvs.la \
+	$(OPENSSL_LIBS)
 
 # current:revision:age
 tsk_libtsk_la_LDFLAGS = -version-info 21:1:2 $(LIBTSK_LDFLAGS)
@@ -398,23 +363,9 @@ nodist_pkgconfig_DATA = tsk/tsk.pc
 
 #EXTRA_DIST = .indent.pro
 
-noinst_PROGRAMS = \
-	samples/callback_cpp_style \
-	samples/callback_style \
-	samples/posix_cpp_style \
-	samples/posix_style
-
-samples_callback_cpp_style_LDADD = $(TSK_LIB)
-samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
-
-samples_callback_style_LDADD = $(TSK_LIB)
-samples_callback_style_SOURCES = samples/callback-style.cpp
-
-samples_posix_cpp_style_LDADD = $(TSK_LIB)
-samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
-
-samples_posix_style_LDADD = $(TSK_LIB)
-samples_posix_style_SOURCES = samples/posix-style.cpp
+#
+# Tools
+#
 
 bin_PROGRAMS = \
 	tools/autotools/tsk_comparedir \
@@ -494,8 +445,10 @@ tools/fiwalk/plugins/word_extract.class: tools/fiwalk/plugins/word_extract.java
 tools/fiwalk/plugins/Libextract_plugin.class: tools/fiwalk/plugins/Libextract_plugin.java
 	javac tools/fiwalk/plugins/Libextract_plugin.java
 
-tools_fiwalk_src_fiwalk_LDADD = $(TSK_LIB)
-tools_fiwalk_src_fiwalk_SOURCES = \
+noinst_LTLIBRARIES += tools/fiwalk/src/libfiwalk.la
+
+tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIB)
+tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/arff.cpp \
 	tools/fiwalk/src/arff.h \
 	tools/fiwalk/src/base64.cpp \
@@ -506,7 +459,6 @@ tools_fiwalk_src_fiwalk_SOURCES = \
 	tools/fiwalk/src/dfxml.h \
 	tools/fiwalk/src/fiwalk.cpp  \
 	tools/fiwalk/src/fiwalk.h \
-	tools/fiwalk/src/fiwalk_main.cpp  \
 	tools/fiwalk/src/fiwalk_tsk.cpp \
 	tools/fiwalk/src/hash_t.h \
 	tools/fiwalk/src/hexbuf.c \
@@ -519,6 +471,9 @@ tools_fiwalk_src_fiwalk_SOURCES = \
 	tools/fiwalk/src/unicode_escape.h \
 	tools/fiwalk/src/utils.c \
 	tools/fiwalk/src/utils.h
+
+tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la
+tools_fiwalk_src_fiwalk_SOURCES = tools/fiwalk/src/fiwalk_main.cpp
 
 EXTRA_DIST += tools/fstools/fscheck.cpp
 
@@ -605,21 +560,19 @@ EXTRA_DIST += \
 	tools/timeline/mactime.base \
 	tools/timeline/.perltidyrc
 
-# TODO: use $@ for target file name
-
 tools/timeline/mactime: tools/timeline/mactime.base Makefile
-	@echo "#!$(PERL) -w" > tools/timeline/mactime
-	@echo "my \$$VER=\"$(VERSION)\";" >> tools/timeline/mactime
-	@cat $(srcdir)/tools/timeline/mactime.base >> tools/timeline/mactime
-	@chmod +x tools/timeline/mactime
+	@echo "#!$(PERL) -w" >$@
+	@echo "my \$$VER=\"$(VERSION)\";" >>$@
+	@cat $(srcdir)/tools/timeline/mactime.base >>$@
+	@chmod +x $@
 
 tools/sorter/sorter: tools/sorter/sorter.base Makefile
-	@echo "#!$(PERL) -w" > tools/sorter/sorter
-	@echo "my \$$BIN_DIR=\"$(bindir)\";" >> tools/sorter/sorter
-	@echo "my \$$DATA_DIR=\"$(datadir)\";" >> tools/sorter/sorter
-	@echo "my \$$VER=\"$(VERSION)\";" >> tools/sorter/sorter
-	@cat $(srcdir)/tools/sorter/sorter.base >> tools/sorter/sorter
-	@chmod +x tools/sorter/sorter
+	@echo "#!$(PERL) -w" >$@
+	@echo "my \$$BIN_DIR=\"$(bindir)\";" >>$@
+	@echo "my \$$DATA_DIR=\"$(datadir)\";" >>$@
+	@echo "my \$$VER=\"$(VERSION)\";" >>$@
+	@cat $(srcdir)/tools/sorter/sorter.base >>$@
+	@chmod +x $@
 
 #indent:
 #	pushd sorter ; perltidy -b sorter.base ; popd
@@ -628,22 +581,51 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
+	tests/check_static.sh \
 	tests/runtests.sh \
+	tests/test_imgs.sh \
+	tests/test_libraries.sh \
+	tests/test_static_tools.sh
+
+TESTS =	\
+	tests/runtests.sh \
+	tests/fiwalk_test \
 	tests/test_imgs.sh \
 	tests/test_libraries.sh
 
-TESTS = $(check_SCRIPTS)
+if BUILD_STATIC
+TESTS += tests/test_static_tools.sh
+endif
 
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
 
-# TODO: nothing runs these (except for img_dump)!
+LOG_COMPILER = scripts/test_runner.sh
+
+# TODO: nothing runs these (except for img_dump, fiwalk_test)!
 check_PROGRAMS = \
+	tests/fiwalk_test \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
 	tests/fs_thread_test \
 	tests/img_dump \
 	tests/read_apis
+
+tests_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+tests_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+tests_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+tests_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+tests_fiwalk_test_LDADD = $(TSK_LIB)
+tests_fiwalk_test_SOURCES = \
+	tests/fiwalk_test.cpp \
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
+
+tests/test_images.txt: tests/test_images.yaml tests/get_test_images.bash tests/get_test_images.py
+	tests/get_test_images.bash
+
+CLEANFILES += tests/test_images.txt
 
 tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -677,6 +659,37 @@ tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 tests_read_apis_LDADD = $(TSK_LIB)
 tests_read_apis_SOURCES = tests/read_apis.cpp
+
+# Unit tests:
+# Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
+# and link into a single executable.
+# This makes things easier with codecov.
+
+check_PROGRAMS += unit_tests/runner
+
+TESTS += unit_tests/runner
+
+unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+unit_tests_runner_SOURCES = \
+	unit_tests/errors_test.cpp \
+	unit_tests/mult_files_test.cpp \
+	unit_tests/runner.cpp \
+	$(tsk_auto_libtskauto_la_SOURCES) \
+	$(tsk_base_libtskbase_la_SOURCES) \
+	$(tsk_fs_libtskfs_la_SOURCES) \
+	$(tsk_hashdb_libtskhashdb_la_SOURCES) \
+	$(tsk_img_libtskimg_la_SOURCES) \
+	$(tsk_pool_libtskpool_la_SOURCES) \
+	$(tsk_util_libtskutil_la_SOURCES) \
+	$(tsk_vs_libtskvs_la_SOURCES)
+
+
+#
+# Java
+#
 
 # Compile java bindings if all of the dependencies exist
 if X_JNI
@@ -729,9 +742,195 @@ clean-local: $(clean_java)
 
 .PHONY: clean-tsk_jar clean-tsk_caseuco_jar
 
+#
+# Docs
+#
+
 api-docs:
 	doxygen tsk/docs/Doxyfile
 	cd bindings/java/doxygen; doxygen Doxyfile
 
 man-html:
 	cd man; build-html
+
+dist_man_MANS = \
+	man/blkcalc.1 \
+	man/blkcat.1 \
+	man/blkls.1 \
+	man/blkstat.1 \
+	man/fcat.1 \
+	man/ffind.1 \
+	man/fls.1 \
+	man/fsstat.1 \
+	man/hfind.1 \
+	man/icat.1 \
+	man/ifind.1 \
+	man/ils.1 \
+	man/img_cat.1 \
+	man/img_stat.1 \
+	man/istat.1 \
+	man/jcat.1 \
+	man/jls.1 \
+	man/mactime.1 \
+	man/mmcat.1 \
+	man/mmls.1 \
+	man/mmstat.1 \
+	man/sigfind.1 \
+	man/sorter.1 \
+	man/tsk_comparedir.1 \
+	man/tsk_gettimes.1 \
+	man/tsk_loaddb.1 \
+	man/tsk_recover.1 \
+	man/usnjls.1
+
+noinst_PROGRAMS = \
+	samples/callback_cpp_style \
+	samples/callback_style \
+	samples/posix_cpp_style \
+	samples/posix_style
+
+samples_callback_cpp_style_LDADD = $(TSK_LIB)
+samples_callback_cpp_style_SOURCES = samples/callback-cpp-style.cpp
+
+samples_callback_style_LDADD = $(TSK_LIB)
+samples_callback_style_SOURCES = samples/callback-style.cpp
+
+samples_posix_cpp_style_LDADD = $(TSK_LIB)
+samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
+
+samples_posix_style_LDADD = $(TSK_LIB)
+samples_posix_style_SOURCES = samples/posix-style.cpp
+
+#
+# OSSFuzz fuzz targets fuzz targets
+#
+
+if HAVE_LIB_FUZZING_ENGINE
+noinst_PROGRAMS += \
+	fls_apfs_fuzzer \
+	fls_ext_fuzzer \
+	fls_fat_fuzzer \
+	fls_hfs_fuzzer \
+	fls_iso9660_fuzzer \
+	fls_ntfs_fuzzer \
+	mmls_dos_fuzzer \
+	mmls_gpt_fuzzer \
+	mmls_mac_fuzzer \
+	mmls_sun_fuzzer
+
+fls_apfs_fuzzer_SOURCES = \
+	ossfuzz/fls_apfs_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_apfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_ext_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ext_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_EXT_DETECT \
+	$(AM_CPPFLAGS)
+
+fls_ext_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_fat_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_fat_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_FAT_DETECT \
+	$(AM_CPPFLAGS)
+
+fls_fat_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_hfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_hfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_HFS \
+	$(AM_CPPFLAGS)
+
+fls_hfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_iso9660_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_iso9660_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_ISO9660 \
+	$(AM_CPPFLAGS)
+
+fls_iso9660_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_ntfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ntfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_NTFS \
+	$(AM_CPPFLAGS)
+
+fls_ntfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_dos_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_dos_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_DOS \
+	$(AM_CPPFLAGS)
+
+mmls_dos_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_gpt_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_gpt_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_GPT \
+	$(AM_CPPFLAGS)
+
+mmls_gpt_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_mac_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_mac_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_MAC \
+	$(AM_CPPFLAGS)
+
+mmls_mac_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_sun_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_sun_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_SUN \
+	$(AM_CPPFLAGS)
+
+mmls_sun_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+endif # HAVE_LIB_FUZZING_ENGINE

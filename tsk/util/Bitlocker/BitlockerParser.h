@@ -220,7 +220,7 @@ private:
 
     // Offset and size of the original volume header
     uint64_t m_volumeHeaderOffset = 0;
-    uint64_t m_volumeHeaderSize = 0;    
+    uint64_t m_volumeHeaderSize = 0;
 };
 
 #endif

@@ -28,13 +28,7 @@
 #include <sys/time.h>
 #endif
 
-#ifdef _MSC_VER
-  #include "regex.h"  //use regex in src tree
-#else
-  extern "C" {
-    #include <regex.h>
-  }
-#endif
+#include <regex>
 
 #include "arff.h"
 
@@ -73,25 +67,19 @@ bool arff::is_weka_date(const string &s)
 /* microsoft metadata date format: YYYY-MM-DDTHH:MM:SSZ */
 bool arff::is_msword_date(const string &s)
 {
-  //regex_t objects hold the regular expressions
-  static regex_t msdoc_date;
+  static const std::regex msdoc_date("[0-9]{4}-[01]{1}[0-9]{1}-[0123]{1}[0-9]{1}T[012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}Z", std::regex::extended | std::regex::icase);
 
-  regcomp(&msdoc_date, "[0-9]{4}-[01]{1}[0-9]{1}-[0123]{1}[0-9]{1}T[012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}Z", REG_EXTENDED|REG_ICASE);
-
-  return regexec(&msdoc_date, s.c_str(), 0, NULL, 0)==REGEX_MATCH;
-
+  std::smatch m;
+  return std::regex_match(s, m, msdoc_date);
 }
 
 /* exif metadate date format: YYYY:MM:DD HH:MM:SS */
 bool arff::is_exif_date(const string &s)
 {
-  //regex_t objects hold the regular expressions
-  static regex_t exif_date;
+  static const std::regex exif_date("[0-9]{4}:[01]{1}[0-9]{1}:[0123]{1}[0-9]{1} [012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}", std::regex::extended | std::regex::icase);
 
-  regcomp(&exif_date, "[0-9]{4}:[01]{1}[0-9]{1}:[0123]{1}[0-9]{1} [012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}", REG_EXTENDED|REG_ICASE);
-
-  return regexec(&exif_date, s.c_str(), 0, NULL, 0)==REGEX_MATCH;
-
+  std::smatch m;
+  return std::regex_match(s, m, exif_date);
 }
 
 /* checks to see if input string is a recognized date format-- one of

@@ -40,7 +40,7 @@ namespace Rejistry {
         std::vector<uint8_t> data;
 
         uint32_t count = 0;
-        
+
         while (length > 0) {
             uint32_t size = std::min(DB_DATA_SIZE, length);
             uint32_t offset = getDWord(OFFSET_LIST_OFFSET + (count * 4));
@@ -52,13 +52,13 @@ namespace Rejistry {
             }
 
             std::vector<uint8_t> cellData = c->getData();
-            
+
             data.insert(data.end(), cellData.begin(), cellData.begin() + size);
 
             length -= size;
             count += 1;
         }
-        
+
         return data;
     }
 

@@ -1,12 +1,12 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
-** 
+**
 ** This software is distributed under the Common Public License 1.0
 */
 
@@ -188,8 +188,8 @@ extern "C" {
 /*
  * Cylinder Group Descriptor
  *
- * UFS1 and UFS2 are the same for the data that we care about unless we 
- * want the wtime for 'fsstat'.  
+ * UFS1 and UFS2 are the same for the data that we care about unless we
+ * want the wtime for 'fsstat'.
  */
     typedef struct {
         uint8_t f1[4];
@@ -428,7 +428,7 @@ extern "C" {
 	((TSK_DADDR_T)(cgstart_lcl(fsi, fs, c) + tsk_gets32(fsi->endian, (fs)->sb_off)))
 
 /* original:
-** blkstofrags(fs, blks)  
+** blkstofrags(fs, blks)
 **    ((blks) << (fs)->fs_fragshift)
 */
 #define blkstofrags_lcl(fsi, fs, blks)  \

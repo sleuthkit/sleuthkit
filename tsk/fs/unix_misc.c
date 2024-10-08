@@ -1,5 +1,5 @@
 /*
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
@@ -10,7 +10,7 @@
 
 /**
  * \file unix_misc.c
- * Contains code that is common to both UFS1/2 and Ext2/3 file systems. 
+ * Contains code that is common to both UFS1/2 and Ext2/3 file systems.
  */
 
 #include "tsk_fs_i.h"
@@ -58,7 +58,7 @@ unix_make_data_run_direct(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
     run_len = fs_blen;
 
     /* Note that we are lazy about length.  We stop only when a run is past length,
-     * we do not end exactly at length -- although that should happen anyway.  
+     * we do not end exactly at length -- although that should happen anyway.
      */
     for (i = 0; i < addr_len; i++) {
 
@@ -105,7 +105,7 @@ unix_make_data_run_direct(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
 
 
 /** \internal
- * Read an indirect block and process the contents to make a runlist from the pointers. 
+ * Read an indirect block and process the contents to make a runlist from the pointers.
  *
  * @param fs File system to analyze
  * @param fs_attr Structure to save run data into
@@ -331,7 +331,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
 
 
         /* With FFS/UFS a full block contains the addresses, but block_size is
-         * only a fragment.  Figure out the scratch buffer size and the buffers to 
+         * only a fragment.  Figure out the scratch buffer size and the buffers to
          * store the cleaned addresses (endian converted) */
         if (TSK_FS_TYPE_ISFFS(fs->ftype)) {
             FFS_INFO *ffs = (FFS_INFO *) fs;
@@ -357,7 +357,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
          * addresses in.  buf[0] is a special scratch buffer that is used to store
          * raw data from the image (before endian conversions are applied).  It is
          * equal to one block size.  The others will store TSK_DADDR_T structures
-         * and will have a size depending on the FS type. 
+         * and will have a size depending on the FS type.
          */
         if ((fs_attr_indir =
                 tsk_fs_attrlist_getnew(fs_meta->attr,

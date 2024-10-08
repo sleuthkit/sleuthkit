@@ -8,7 +8,7 @@
  */
 
  /*
-  * C header file with GPT and internal data structures. 
+  * C header file with GPT and internal data structures.
   */
 
 #ifndef _TSK_GPT_H

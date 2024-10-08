@@ -1,6 +1,6 @@
 /*
  ** tsk_gettimes
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
@@ -50,7 +50,7 @@ public:
     virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
-    
+
 private:
     int m_curVolAddr;
     int m_curPoolVol;
@@ -76,7 +76,7 @@ TskGetTimes::TskGetTimes(int32_t a_secSkew, bool a_compute_hash)
 }
 
 // Print errors as they are encountered
-uint8_t TskGetTimes::handleError() 
+uint8_t TskGetTimes::handleError()
 {
     fprintf(stderr, "%s", tsk_error_get());
     return 0;
@@ -177,7 +177,7 @@ main(int argc, char **argv1)
                 argv[OPTIND]);
             usage();
 
-            
+
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -188,7 +188,7 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-                
+
 
 
         case _TSK_T('i'):
@@ -203,7 +203,7 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-                
+
         case _TSK_T('s'):
             sec_skew = TATOI(OPTARG);
             break;
@@ -223,7 +223,7 @@ main(int argc, char **argv1)
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
-                
+
         case 'z':
             {
                 TSK_TCHAR envstr[32];
@@ -232,12 +232,12 @@ main(int argc, char **argv1)
                     tsk_fprintf(stderr, "error setting environment");
                     exit(1);
                 }
-                
+
                 /* we should be checking this somehow */
                 TZSET();
             }
             break;
-                
+
         }
     }
 
@@ -255,11 +255,11 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
-    
+
     if (tskGetTimes.findFilesInImg()) {
         // we already logged the errors
         exit(1);
     }
-    
+
     exit(0);
 }

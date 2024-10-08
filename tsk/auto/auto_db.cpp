@@ -212,7 +212,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
    std::string md5 = "";
    std::string sha1 = "";
    std::string collectionDetails = "";
-#if HAVE_LIBEWF 
+#if HAVE_LIBEWF
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
      // @@@ This should really probably be inside of a tsk_img_ method
        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
@@ -223,13 +223,13 @@ TskAutoDb::addImageDetails(const char* deviceId)
            sha1 = ewf_info->sha1hash;
        }
 
-       collectionDetails = ewf_get_details(ewf_info);   
+       collectionDetails = ewf_get_details(ewf_info);
    }
 #endif
 
     std::string devId;
     if (NULL != deviceId) {
-        devId = deviceId; 
+        devId = deviceId;
     } else {
         devId = "";
     }
@@ -267,7 +267,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
         }
         img_ptrs[i] = img2;
     }
-#else 
+#else
     img_ptrs = m_img_info->images;
 #endif
 
@@ -308,7 +308,7 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
     vs_db.vstype = vs_info->vstype;
     vs_db.block_size = vs_info->block_size;
     m_savedVsInfo.push_back(vs_db);
-    
+
     return TSK_FILTER_CONT;
 }
 
@@ -338,14 +338,14 @@ TskAutoDb::filterPool(const TSK_POOL_INFO * pool_info)
         m_poolOffsetToParentId[pool_info->img_offset] = m_curImgId;
     }
 
-    // populating cache m_savedVsInfo 
+    // populating cache m_savedVsInfo
     TSK_DB_VS_INFO vs_db;
     vs_db.objId = m_curPoolVs;
     vs_db.offset = pool_info->img_offset;
     if (pool_info->ctype == TSK_POOL_TYPE_APFS)
         vs_db.vstype = TSK_VS_TYPE_APFS;
     if (pool_info->ctype == TSK_POOL_TYPE_LVM)
-        vs_db.vstype = TSK_VS_TYPE_LVM;    
+        vs_db.vstype = TSK_VS_TYPE_LVM;
     vs_db.block_size = pool_info->block_size;
     m_savedVsInfo.push_back(vs_db);
 
@@ -425,10 +425,10 @@ TskAutoDb::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
     }
 
     TSK_DB_VS_PART_INFO vol_info_db;
-    vol_info_db.objId = m_curPoolVol;   
-    snprintf(vol_info_db.desc, TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1, "%s", pool_vol->desc);  
+    vol_info_db.objId = m_curPoolVol;
+    snprintf(vol_info_db.desc, TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1, "%s", pool_vol->desc);
     vol_info_db.start = pool_vol->block;                      ///< Starting Block number
-    m_savedVsPartInfo.push_back(vol_info_db);    
+    m_savedVsPartInfo.push_back(vol_info_db);
 
     return TSK_FILTER_CONT;
 }
@@ -491,7 +491,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     }
 
 
-    // We won't hit the root directory on the walk, so open it now 
+    // We won't hit the root directory on the walk, so open it now
     if ((file_root = tsk_fs_file_open(fs_info, NULL, "/")) != NULL) {
         processFile(file_root, "");
         tsk_fs_file_close(file_root);
@@ -501,12 +501,12 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
-     
+
     TSK_FS_DIR_WALK_FLAG_ENUM filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM)
         (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC);
 
     //check if to skip processing of FAT orphans
-    if (m_noFatFsOrphans 
+    if (m_noFatFsOrphans
         && TSK_FS_TYPE_ISFAT(fs_info->ftype) ) {
             filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM) (filterFlags | TSK_FS_DIR_WALK_FLAG_NOORPHAN);
     }
@@ -553,7 +553,7 @@ TSK_RETVAL_ENUM
 /**
  * Analyzes the open image and adds image info to a database.
  * Does not deal with transactions and such.  Refer to startAddImage()
- * for more control. 
+ * for more control.
  * @returns 1 if a critical error occurred (DB doesn't exist, no file system, etc.), 2 if errors occurred at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
@@ -567,7 +567,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
     }
 
     // @@@ This seems bad because we are overriding what the user may
-    // have set. We should remove the public API if we are going to 
+    // have set. We should remove the public API if we are going to
     // override it -- presumably this was added so that we always have
     // unallocated volume space...
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC |
@@ -603,7 +603,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
 
 
 /**
- * Start the process to add image/file metadata to database inside of a transaction. 
+ * Start the process to add image/file metadata to database inside of a transaction.
  * User must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
  *
@@ -655,7 +655,7 @@ uint8_t
     if (m_imageWriterEnabled) {
         tsk_img_writer_create(m_img_info, m_imageWriterPath);
     }
-    
+
     if (m_addFileSystems) {
         return addFilesInImgToDb();
     } else {
@@ -733,7 +733,7 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
 
 #ifdef WIN32
 /**
- * Start the process to add image/file metadata to database inside of a transaction. 
+ * Start the process to add image/file metadata to database inside of a transaction.
  * Same functionality as addFilesInImgToDb().  Reverts
  * all changes on error. User must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
@@ -749,9 +749,9 @@ uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
-    if (tsk_verbose) 
+    if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
-   
+
 
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
@@ -799,14 +799,14 @@ uint8_t
 
 
 /**
- * Cancel the running process.  Will not be handled immediately. 
+ * Cancel the running process.  Will not be handled immediately.
  */
 void
  TskAutoDb::stopAddImage()
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::stopAddImage: Stop request received\n");
-    
+
     m_stopped = true;
     setStopProcessing();
     // flag is checked every time processFile() is called
@@ -843,7 +843,7 @@ int
 }
 
 /**
- * Finish the transaction after the startAddImage is finished.  
+ * Finish the transaction after the startAddImage is finished.
  * @returns Id of the image that was added or -1 on error (error was NOT registered in list)
  */
 int64_t
@@ -887,7 +887,7 @@ TskAutoDb::setTz(std::string tzone)
 TSK_RETVAL_ENUM
 TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
-    
+
     // Check if the process has been canceled
      if (m_stopped) {
         if (tsk_verbose)
@@ -899,7 +899,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
      * progress.  If we get a directory, then use its name.  We
      * do this so that when we are searching for orphan files, then
      * we at least show $OrphanFiles as status.  The secondary check
-     * is to grab the parent folder from files once we return back 
+     * is to grab the parent folder from files once we return back
      * into a folder when we are doing our depth-first recursion. */
     if (isDir(fs_file)) {
         m_curDirAddr = fs_file->name->meta_addr;
@@ -915,11 +915,11 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     }
 
     /* process the attributes.  The case of having 0 attributes can occur
-     * with virtual / sparse files and HFS directories.  
+     * with virtual / sparse files and HFS directories.
      * At some point, this can probably be cleaned
-     * up if TSK is more consistent about if there should always be an 
+     * up if TSK is more consistent about if there should always be an
      * attribute or not.  Sometimes, none of the attributes are added
-     * because of their type and we always want to add a reference to 
+     * because of their type and we always want to add a reference to
      * every file. */
     TSK_RETVAL_ENUM retval = TSK_OK;
     m_attributeAdded = false;
@@ -931,18 +931,18 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     if ((retval == TSK_OK) && (m_attributeAdded == false)) {
         retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
     }
-    
+
     // reset the file id
     m_curFileId = 0;
 
     if (retval == TSK_STOP)
         return TSK_STOP;
-    else 
+    else
         return TSK_OK;
 }
 
 
-// we return only OK or STOP -- errors are registered only and OK is returned. 
+// we return only OK or STOP -- errors are registered only and OK is returned.
 TSK_RETVAL_ENUM
 TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
@@ -969,7 +969,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                 if (retval == -1) {
                     registerError();
                     return TSK_OK;
-                } 
+                }
                 else if (retval) {
                     file_known = TSK_DB_FILES_KNOWN_KNOWN;
                 }
@@ -980,7 +980,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                 if (retval == -1) {
                     registerError();
                     return TSK_OK;
-                } 
+                }
                 else if (retval) {
                     file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
                 }
@@ -1075,7 +1075,7 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 
 /**
 * Callback invoked per every unallocated block in the filesystem
-* Creates file ranges and file entries 
+* Creates file ranges and file entries
 * A single file entry per consecutive range of blocks
 * @param a_block block being walked
 * @param a_ptr a pointer to an UNALLOC_BLOCK_WLK_TRACK struct
@@ -1108,9 +1108,9 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     }
 
     // this block is not contiguous with the previous one or we've hit the maximum size; create and add a range object
-    const uint64_t rangeStartOffset = unallocBlockWlkTrack->curRangeStart * unallocBlockWlkTrack->fsInfo.block_size 
+    const uint64_t rangeStartOffset = unallocBlockWlkTrack->curRangeStart * unallocBlockWlkTrack->fsInfo.block_size
         + unallocBlockWlkTrack->fsInfo.offset;
-    const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
+    const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart)
         * unallocBlockWlkTrack->fsInfo.block_size;
     unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, unallocBlockWlkTrack->nextSequenceNo++));
 
@@ -1129,11 +1129,11 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
         unallocBlockWlkTrack->prevBlock = a_block->addr;
         return TSK_WALK_CONT;
     }
-    
+
     // at this point we are either chunking and have reached the chunk limit
     // or we're not chunking. Either way we now add what we've got to the DB
     int64_t fileObjId = 0;
-    if (unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId, 
+    if (unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId,
         unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, unallocBlockWlkTrack->tskAutoDb.m_curImgId) == TSK_ERR) {
             // @@@ Handle error -> Don't have access to registerError() though...
     }
@@ -1147,7 +1147,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 
     //we don't know what the last unalloc block is in advance
     //and will handle the last range in addFsInfoUnalloc()
-    
+
     return TSK_WALK_CONT;
 }
 
@@ -1181,9 +1181,9 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, con
     }
 
     //walk unalloc blocks on the fs and process them
-    //initialize the unalloc block walk tracking 
+    //initialize the unalloc block walk tracking
     UNALLOC_BLOCK_WLK_TRACK unallocBlockWlkTrack(*this, *fsInfo, dbFsInfo.objId, m_minChunkSize, m_maxChunkSize);
-    uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, (TSK_FS_BLOCK_WALK_FLAG_ENUM)(TSK_FS_BLOCK_WALK_FLAG_UNALLOC | TSK_FS_BLOCK_WALK_FLAG_AONLY), 
+    uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, (TSK_FS_BLOCK_WALK_FLAG_ENUM)(TSK_FS_BLOCK_WALK_FLAG_UNALLOC | TSK_FS_BLOCK_WALK_FLAG_AONLY),
         fsWalkUnallocBlocksCb, &unallocBlockWlkTrack);
 
     if (block_walk_ret == 1) {
@@ -1213,11 +1213,11 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, con
         tsk_fs_close(fsInfo);
         return TSK_ERR;
     }
-    
-    //cleanup 
+
+    //cleanup
     tsk_fs_close(fsInfo);
 
-    return TSK_OK; 
+    return TSK_OK;
 }
 
 /**
@@ -1242,8 +1242,8 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocSpaceToDb() {
     if (numVsP == 0 && numFs == 0 && numPool == 0) {
         retImgFile = addUnallocImageSpaceToDb();
     }
-    
-    
+
+
     if (retFsSpace == TSK_ERR || retVsSpace == TSK_ERR || retPoolSpace == TSK_ERR || retImgFile == TSK_ERR)
         return TSK_ERR;
     else
@@ -1252,7 +1252,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocSpaceToDb() {
 
 
 /**
-* Process each file system in the database and add its unallocated sectors to virtual files. 
+* Process each file system in the database and add its unallocated sectors to virtual files.
 * @param numFs (out) number of filesystems found
 * @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
 */
@@ -1262,7 +1262,7 @@ TSK_RETVAL_ENUM TskAutoDb::getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPar
             vsPartInfo.start = curVsPartDbInfo->start;
             vsPartInfo.desc = curVsPartDbInfo->desc;
             vsPartInfo.flags = curVsPartDbInfo->flags;
-            vsPartInfo.len = curVsPartDbInfo->len;   
+            vsPartInfo.len = curVsPartDbInfo->len;
 
             return TSK_OK;
         }
@@ -1270,7 +1270,7 @@ TSK_RETVAL_ENUM TskAutoDb::getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPar
     return TSK_ERR;
 }
 
-TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo){    
+TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo){
     TSK_DB_OBJECT fsObjDbInfo;
     if ( m_db->getObjectInfo( objId, fsObjDbInfo) == TSK_OK){ //searches for fs object
         for (vector<TSK_DB_VS_PART_INFO>::iterator curVsPartDbInfo = m_savedVsPartInfo.begin(); curVsPartDbInfo!= m_savedVsPartInfo.end(); ++curVsPartDbInfo) { //searches for vspart parent of fs
@@ -1283,20 +1283,20 @@ TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo)
                             vsDbInfo.block_size = curVsDbInfo->block_size;
                             vsDbInfo.vstype = curVsDbInfo->vstype;
                             vsDbInfo.offset = curVsDbInfo->offset;
-                            return TSK_OK;                            
+                            return TSK_OK;
                         }
                     }
                     if (tsk_verbose) {
-                        tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)");        
+                        tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS. (Parent VS not Found)");
                     }
                     return TSK_ERR;
                 }
             }
-        } 
+        }
         if (tsk_verbose) {
                 tsk_fprintf(stderr, "TskAutoDb:: GetVsByFsId: error getting VS from FS (Parent VS_Part not found)");
-        }                   
-        return TSK_ERR;    
+        }
+        return TSK_ERR;
     }
     else {
         if (tsk_verbose) {
@@ -1308,26 +1308,26 @@ TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo)
 
 
 /**
-* Process each file system in the database and add its unallocated sectors to virtual files. 
+* Process each file system in the database and add its unallocated sectors to virtual files.
 * @param numFs (out) number of filesystems found
 * @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
 */
 TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
-    
+
     if(m_stopAllProcessing) {
         return TSK_OK;
     }
 
-    numFs = m_savedFsInfo.size();     
+    numFs = m_savedFsInfo.size();
     TSK_RETVAL_ENUM allFsProcessRet = TSK_OK;
-    
+
 
     for (vector<TSK_DB_FS_INFO>::iterator curFsDbInfo = m_savedFsInfo.begin(); curFsDbInfo!= m_savedFsInfo.end(); ++curFsDbInfo) {
-        if (m_stopAllProcessing) 
+        if (m_stopAllProcessing)
             break;
-        
+
         // finds VS related to the FS
-        TSK_DB_VS_INFO curVsDbInfo; 
+        TSK_DB_VS_INFO curVsDbInfo;
         if(getVsByFsId(curFsDbInfo->objId, curVsDbInfo) == TSK_ERR){
             // FS is not inside a VS
             if (tsk_verbose) {
@@ -1336,35 +1336,35 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
             TSK_RETVAL_ENUM retval = addFsInfoUnalloc(m_img_info, *curFsDbInfo);
             if (retval == TSK_ERR)
                     allFsProcessRet = TSK_ERR;
-        }        
+        }
         else {
-            if ((curVsDbInfo.vstype == TSK_VS_TYPE_APFS)||(curVsDbInfo.vstype == TSK_VS_TYPE_LVM)){ 
-                
+            if ((curVsDbInfo.vstype == TSK_VS_TYPE_APFS)||(curVsDbInfo.vstype == TSK_VS_TYPE_LVM)){
+
                 TSK_DB_OBJECT fsObjInfo;
                 if (m_db->getObjectInfo ( curFsDbInfo->objId, fsObjInfo) == TSK_ERR ) {
                     tsk_error_set_errstr(
                             "TskAutoDb::addUnallocFsSpaceToDb: error getting Object by ID"
-                            );              
-                    tsk_error_set_errno(TSK_ERR_AUTO);  
+                            );
+                    tsk_error_set_errno(TSK_ERR_AUTO);
                     registerError();
                     return TSK_ERR;
 
-                } 
-                
+                }
+
                 TSK_VS_PART_INFO curVsPartInfo;
                 if (getVsPartById(fsObjInfo.parObjId, curVsPartInfo) == TSK_ERR){
                     tsk_error_set_errstr(
                         "TskAutoDb::addUnallocFsSpaceToDb: error getting Volume Part from FSInfo"
-                        );              
-                    tsk_error_set_errno(TSK_ERR_AUTO);  
+                        );
+                    tsk_error_set_errno(TSK_ERR_AUTO);
                     registerError();
                     return TSK_ERR;
                 }
-                
-                
- 
 
-                if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS) {      
+
+
+
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS) {
                         const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS);
                         if (pool == nullptr) {
                             tsk_error_set_errstr2(
@@ -1374,10 +1374,10 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                             allFsProcessRet = TSK_ERR;
                         }
                         const auto pool_img = pool->get_img_info(pool, curVsPartInfo.start);
-                            
+
                         if (pool_img != NULL) {
                             TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
-                            if (fs_info) {     
+                            if (fs_info) {
                                 TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, *curFsDbInfo);
                                 if (retval == TSK_ERR)
                                                 allFsProcessRet = TSK_ERR;
@@ -1389,8 +1389,8 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                                     tsk_pool_close(pool);
                                     allFsProcessRet = TSK_STOP;
                                 }
-                                
-                                
+
+
                             }
                             else {
                                 if (curVsPartInfo.flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
@@ -1420,10 +1420,10 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                             registerError();
                             allFsProcessRet = TSK_ERR;
                         }
-                                              
+
                 }
                 #ifdef HAVE_LIBVSLVM
-                if ( curVsDbInfo.vstype == TSK_VS_TYPE_LVM) { 
+                if ( curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
 
                     const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
                     if (pool == nullptr) {
@@ -1432,18 +1432,18 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         registerError();
                         allFsProcessRet = TSK_ERR;
                     }
-                    
-    
+
+
                     TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, curVsPartInfo.start);
-                    if (pool_vol_img == NULL) {                        
-                        tsk_pool_close(pool);                        
+                    if (pool_vol_img == NULL) {
+                        tsk_pool_close(pool);
                         tsk_error_set_errstr2(
                             "TskAutoDb::addUnallocFsSpaceToDb: Error opening LVM logical volume: %" PRIdOFF "",
                             curVsPartInfo.start);
                         tsk_error_set_errno(TSK_ERR_FS);
                         registerError();
                         allFsProcessRet = TSK_ERR;
-                    } 
+                    }
                     else {
                         TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo->fType);
                         if (fs_info == NULL) {
@@ -1475,11 +1475,11 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                             }
                         }
                     }
-                    
-                }        
-                #endif /* HAVE_LIBVSLVM */    
 
-                if (curVsDbInfo.vstype == TSK_VS_TYPE_UNSUPP){                                      
+                }
+                #endif /* HAVE_LIBVSLVM */
+
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_UNSUPP){
                     tsk_error_set_errstr2(
                         "TskAutoDb::addUnallocFsSpaceToDb: VS Type not supported");
                     registerError();
@@ -1490,7 +1490,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                 if (addFsInfoUnalloc(m_img_info, *curFsDbInfo) == TSK_ERR){
                     allFsProcessRet = TSK_ERR;
                 }
-            }    
+            }
         }
     }
     return allFsProcessRet;
@@ -1498,7 +1498,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
 
 
 /**
-* Process each volume in the database and add its unallocated sectors to virtual files. 
+* Process each volume in the database and add its unallocated sectors to virtual files.
 * @param numVsP (out) number of vs partitions found
 * @returns TSK_OK on success, TSK_ERR on error
 */
@@ -1552,7 +1552,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
                    break;
                }
             }
-        
+
             if (hasFs == true) {
                 //skip processing this vspart
                 continue;
@@ -1575,7 +1575,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
         //get sector size and image offset from parent vs info
 
         //get parent id of this vs part
-        TSK_DB_OBJECT vsPartObj;     
+        TSK_DB_OBJECT vsPartObj;
         if (m_db->getObjectInfo(vsPart.objId, vsPartObj) == TSK_ERR) {
             stringstream errss;
             errss << "addUnallocVsSpaceToDb: error getting object info for vs part from db, objId: " << vsPart.objId;
@@ -1595,7 +1595,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
 
         //create an unalloc file (or files) with unalloc part, with vs part as parent
         const uint64_t byteStart = vsInfo.offset + vsInfo.block_size * vsPart.start;
-        const uint64_t byteLen = vsInfo.block_size * vsPart.len; 
+        const uint64_t byteLen = vsInfo.block_size * vsPart.len;
         if (addUnallocBlockFileInChunks(byteStart, byteLen, vsPart.objId, m_curImgId) == TSK_ERR) {
             registerError();
             return TSK_ERR;
@@ -1628,7 +1628,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocImageSpaceToDb() {
 
 /**
 * Adds unallocated block files to the database, chunking if enabled.
-* 
+*
 * @returns TSK_OK on success, TSK_ERR on error
 */
 TSK_RETVAL_ENUM TskAutoDb::addUnallocBlockFileInChunks(uint64_t byteStart, TSK_OFF_T totalSize, int64_t parentObjId, int64_t dataSourceObjId) {
@@ -1659,7 +1659,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocBlockFileInChunks(uint64_t byteStart, TSK_O
             bytesLeft -= maxChunkSize;
         }
 
-        TSK_DB_FILE_LAYOUT_RANGE tempRange(startingOffset, chunkSize, 0);     
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(startingOffset, chunkSize, 0);
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
 

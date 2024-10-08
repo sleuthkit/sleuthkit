@@ -16,10 +16,10 @@
 #include "tsk_dos.h"
 
 
-/* 
- * Process the partition table at the sector address 
- * 
- * It is loaded into the internal sorted list 
+/*
+ * Process the partition table at the sector address
+ *
+ * It is loaded into the internal sorted list
  */
 static uint8_t
 gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)

@@ -1,6 +1,6 @@
 /*
 ** jls
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
@@ -129,7 +129,7 @@ main(int argc, char **argv1)
     }
 
 
-    /* open image - there is an optional inode address at the end of args 
+    /* open image - there is an optional inode address at the end of args
      *
      * Check the final argument and see if it is a number
      */

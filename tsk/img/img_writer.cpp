@@ -102,7 +102,7 @@ static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
 }
 
 /*
- * Use the sector bitmap to determine whether we're done writing data to a given block 
+ * Use the sector bitmap to determine whether we're done writing data to a given block
  */
 static void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
 
@@ -130,7 +130,7 @@ static void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
 }
 
 /*
- * Add a buffer of data to a previously started block in the VHD 
+ * Add a buffer of data to a previously started block in the VHD
  */
 static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer,
     size_t len, TSK_OFF_T blockNum) {
@@ -156,9 +156,9 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
             }
         }
         else {
-            
+
             DWORD bytesWritten;
-            if (FALSE == WriteFile(writer->outputFileHandle, &(buffer[inputOffset]), VHD_SECTOR_SIZE, 
+            if (FALSE == WriteFile(writer->outputFileHandle, &(buffer[inputOffset]), VHD_SECTOR_SIZE,
                     &bytesWritten, NULL)) {
                 int lastError = GetLastError();
                 tsk_error_reset();
@@ -175,9 +175,9 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     if (TSK_OK != seekToOffset(writer, VHD_SECTOR_SIZE * TSK_OFF_T(writer->blockToSectorNumber[blockNum]))) {
         return TSK_ERR;
     }
-    
+
     DWORD bytesWritten;
-    if (FALSE == WriteFile(writer->outputFileHandle, writer->blockToSectorBitmap[blockNum], 
+    if (FALSE == WriteFile(writer->outputFileHandle, writer->blockToSectorBitmap[blockNum],
             writer->sectorBitmapArrayLength, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
@@ -208,7 +208,7 @@ static TSK_RETVAL_ENUM writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T p
     }
 }
 
-/* 
+/*
  * Add a new block to the VHD and copy in the buffer
  */
 static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len, TSK_OFF_T blockNum) {
@@ -336,7 +336,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
 }
 
 /*
- * Add a buffer that fits in a single block of the VHD 
+ * Add a buffer that fits in a single block of the VHD
  */
 static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
     TSK_RETVAL_ENUM result;
@@ -572,7 +572,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
         tsk_fprintf(stderr,
             "tsk_img_writer_close: Closing image writer\n");
     }
-    
+
     if (img_writer->outputFileHandle != 0) {
         CloseHandle(img_writer->outputFileHandle);
         img_writer->outputFileHandle = 0;
@@ -647,7 +647,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
              * another thread running tsk_img_writer_add.
             */
             startOfBlock = i * img_writer->blockSize;
-            for (offset = startOfBlock; offset < img_writer->img_info->size && offset < startOfBlock + img_writer->blockSize; 
+            for (offset = startOfBlock; offset < img_writer->img_info->size && offset < startOfBlock + img_writer->blockSize;
                 offset += TSK_IMG_INFO_CACHE_LEN) {
                 if (img_writer->cancelFinish) {
                     free(buffer);
@@ -692,7 +692,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
             outputFileName);
     }
 
-    /* Everything will break if the buffers coming in are larger than the block 
+    /* Everything will break if the buffers coming in are larger than the block
        size (i.e., they could span three blocks instead of just two)*/
     if (TSK_IMG_INFO_CACHE_LEN > VHD_DEFAULT_BLOCK_SIZE) {
         tsk_error_reset();
@@ -813,7 +813,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
     DWORD bytesWritten;
     unsigned char batBuf[4] = { 0xff, 0xff, 0xff, 0xff };
     for (unsigned int i = 0; i < batLengthOnDisk / 4; i++) {
-        /* My understanding is that Windows will buffer all these making it no less efficient than 
+        /* My understanding is that Windows will buffer all these making it no less efficient than
            writing the whole thing at once */
         if (FALSE == WriteFile(writer->outputFileHandle, batBuf, 4, &bytesWritten, NULL)) {
             int lastError = GetLastError();
@@ -854,7 +854,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
 }
 
 /**
- * Read the remaining sectors into the VHD file. 
+ * Read the remaining sectors into the VHD file.
  */
 TSK_RETVAL_ENUM tsk_img_writer_finish(TSK_IMG_INFO *img_info) {
     if (img_info->itype != TSK_IMG_TYPE_RAW) {

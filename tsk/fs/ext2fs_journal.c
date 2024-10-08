@@ -1,13 +1,13 @@
 /*
    @@@ UNALLOC only if seq is less - alloc can be less than block if it wrapped around ...
 ** ext2fs_journal
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Journaling code for TSK_FS_INFO_TYPE_EXT_3 image
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved
 **
 **
 ** This software is distributed under the Common Public License 1.0
@@ -74,7 +74,7 @@ load_sb_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
 /* Place journal data in *fs
  *
- * Return 0 on success and 1 on error 
+ * Return 0 on success and 1 on error
  * */
 uint8_t
 ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
@@ -125,7 +125,7 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 }
 
 
-/* Limitations: does not use the action or any flags 
+/* Limitations: does not use the action or any flags
  *
  * return 0 on success and 1 on error
  * */
@@ -186,7 +186,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     }
 
 
-    /* Process the journal 
+    /* Process the journal
      * Cycle through each block
      */
     tsk_printf("JBlk\tDescription\n");
@@ -197,7 +197,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
         ext2fs_journ_head *head;
 
 
-        /* if there is no magic, then it is a normal block 
+        /* if there is no magic, then it is a normal block
          * These should be accounted for when we see its corresponding
          * descriptor.  We get the 'unknown' when its desc has
          * been reused, it is in the next batch to be overwritten,
@@ -218,7 +218,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
                 int next_head = 0, next_seq = 0;
                 ext2fs_journ_dentry *dentry;
 
-                /* This occurs when the log cycled around 
+                /* This occurs when the log cycled around
                  * We need to find out where the descriptor is
                  * and where we need to end */
                 b_desc_seen = 1;
@@ -252,7 +252,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
                     }
                 }
 
-                /* We did not find a descriptor in the journ! 
+                /* We did not find a descriptor in the journ!
                  * print unknown for the rest of the journ
                  */
                 if (a == i) {
@@ -478,7 +478,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
 
 
 
-/* 
+/*
  * Limitations for 1st version: start must equal end and action is ignored
  *
  * Return 0 on success and 1 on error
@@ -529,7 +529,7 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
     }
 
 
-    /* Load into buffer and then process it 
+    /* Load into buffer and then process it
      * Only get the minimum needed
      */
     buf1.left = buf1.total = (size_t) ((end + 1) * jinfo->bsize);
@@ -557,8 +557,8 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
 
 
     /* Check if our target block is a journal data structure.
-     * 
-     * If not, 
+     *
+     * If not,
      * we need to look for its descriptor to see if it has been
      * escaped
      */
@@ -584,10 +584,10 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
             if (big_tsk_getu32(head->entry_type) != EXT2_J_ETYPE_DESC)
                 continue;
 
-            /* We now have the previous descriptor 
+            /* We now have the previous descriptor
              *
-             * NOTE: We have no clue if this is the correct 
-             * descriptor if it is not the current 'run' of 
+             * NOTE: We have no clue if this is the correct
+             * descriptor if it is not the current 'run' of
              * transactions, but this is the best we can do
              */
             diff = end - i;

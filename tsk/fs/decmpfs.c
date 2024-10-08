@@ -1,6 +1,6 @@
 /* This file contains decompression routines used by APFS and HFS
  * It has one method derived from public domain ZLIB and others
- * that are TSK-specific. 
+ * that are TSK-specific.
  *
  * It would probably be cleaner to separate these into two files.
  */
@@ -1256,8 +1256,8 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
     // Note, we are loading this as a RESIDENT attribute.
     if (tsk_fs_attr_set_str(fs_file,
                             fs_attr_unc, "DECOMP",
-                            TSK_FS_ATTR_TYPE_HFS_DATA, 
-                            TSK_FS_ATTR_ID_DEFAULT, 
+                            TSK_FS_ATTR_TYPE_HFS_DATA,
+                            TSK_FS_ATTR_ID_DEFAULT,
                             dstBuf,
                             dstSize))
     {

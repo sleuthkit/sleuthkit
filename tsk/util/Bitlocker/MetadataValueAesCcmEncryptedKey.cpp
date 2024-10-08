@@ -38,11 +38,11 @@ MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(BITLOCKER_METAD
 
 /**
 * Decrypt the MetadataValueAesCcmEncryptedKey data using the supplied key and create a MetadataKeyEntry.
-* 
+*
 * @param key      Key bytes
 * @param keyLen   Length of the key
 * @param keyEntry Will hold decrypted keyEntry object on success. Must be freed by caller.
-* 
+*
 * @return SUCCESS if key is successfully decrypted
 *         GENERAL_ERROR if an unspecified error occurs
 *         WRONG_PASSWORD if the supplied key appears to be incorrect
@@ -164,7 +164,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_
     uint8_t mac2[BITLOCKER_KEY_MAC_LEN];
     memset(mac2, 0, BITLOCKER_KEY_MAC_LEN);
 
-    
+
     if (0 != createMessageAuthenticationCode(&aes_context, m_nonce, nonceLenUint8, &(decryptedData[BITLOCKER_KEY_MAC_LEN]),
         encryptedDataLen - BITLOCKER_KEY_MAC_LEN, mac2)) {
         return BITLOCKER_STATUS::GENERAL_ERROR;
@@ -183,17 +183,17 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decryptKey(uint8_t* key, size_
 
 /**
 * Generate message authentication code from decrypted data
-* 
+*
 * @param aes_context_ptr The initialized AES context
 * @param nonce           The nonce
 * @param nonceLen Length of the nonce (should be 12, 13, or 14)
 * @param data     Data to encrypt
 * @param dataLen  Length of data to encrypt
 * @param mac      Decrypted MAC
-* 
+*
 * @return 0 on success, -1 on error
 */
-int MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(mbedtls_aes_context* aes_context_ptr, uint8_t* nonce, uint8_t nonceLen, 
+int MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(mbedtls_aes_context* aes_context_ptr, uint8_t* nonce, uint8_t nonceLen,
     uint8_t* data, size_t dataLen, uint8_t* mac) {
 
     // We should have already checked this

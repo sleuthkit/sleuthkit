@@ -23,13 +23,15 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "tsk/tsk_tools_i.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <stdio.h>
-#ifndef WIN32
+#ifndef TSK_WIN32
 #include <pwd.h>
 #endif
 
@@ -98,7 +100,6 @@
 #include <libewf.h>
 #endif
 
-
 #include "hash_t.h"
 #include "utils.h"
 #include "dfxml.h"
@@ -145,13 +146,13 @@ struct fiwalk {
     string xml_fn;
     struct timeval tv0;
     struct timeval tv1;
-    u_int sector_size;
-    u_int sectorhash_size;		// for the computation of sector hashes
+    uint32_t sector_size;
+    uint32_t sectorhash_size;		// for the computation of sector hashes
     int run();                          // run fiwalk
     int proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start);
     int proc_vs(TSK_IMG_INFO * img_info);
     uint8_t process_tsk_file(TSK_FS_FILE * fs_file, const char *path);
-    int process_image_file(int argc,char *const *argv,const char *audit_file,u_int sector_size);
+    int process_image_file(int argc,char *const *argv,const char *audit_file, uint32_t sector_size);
     void process_scalpel_audit_file(TSK_IMG_INFO *img_info,const char *audit_file);
     class xml *x;
     FILE  *t;				// text output or body file enabled
@@ -201,7 +202,7 @@ struct fiwalk {
              opt_debug(0),
              file_count(0),
              file_count_max(0),
-             next_id(0),
+             next_id(1),
              opt_M(0),
              opt_k(0),
              opt_maxgig(0),

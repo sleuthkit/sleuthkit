@@ -11,7 +11,7 @@
 /**
  * \file tsk_is_image_supported.cpp
  * Class to test whether a given image can be processed by tsk
- * 
+ *
  * Usage:
  *  Create a TskIsImageSupported object
  *  Call openImage
@@ -49,7 +49,7 @@ bool TskIsImageSupported::isImageEncrypted()
 }
 
 /**
-* Idea is to try to give the user a simple error message explaining the most likely 
+* Idea is to try to give the user a simple error message explaining the most likely
 * reason the image is not supported
 */
 std::string TskIsImageSupported::getSingleLineErrorMessage() {
@@ -117,7 +117,7 @@ void TskIsImageSupported::printResults() {
     printf("Encryption Type: ");
     if (strnlen(m_encryptionDesc, 1024) > 0) {
         printf("%s", m_encryptionDesc);
-    } 
+    }
     else if (strnlen(m_possibleEncryptionDesc, 1024) > 0) {
         printf("%s", m_possibleEncryptionDesc);
     }
@@ -140,7 +140,7 @@ void TskIsImageSupported::printResults() {
     printf("\n");
 }
 
-uint8_t TskIsImageSupported::handleError() 
+uint8_t TskIsImageSupported::handleError()
 {
     // If encryption was found, update the flags
     TSK_ERROR_INFO* lastError = tsk_error_get_info();
@@ -190,8 +190,8 @@ uint8_t TskIsImageSupported::handleError()
 * Prepare the result for dataModel_SleuthkitJNI::isImageSupportedNat.
 * There's some complexity here because BitLocker drives appear to have a very small unencrypted
 * volume followed by the encrypted volume. So we need to check for BitLocker errors instead
-* of just going by whether we were able to open a file system. 
-* 
+* of just going by whether we were able to open a file system.
+*
 * @return Empty string if image is supported, error string if not
 */
 std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {

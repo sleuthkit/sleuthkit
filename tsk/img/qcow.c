@@ -20,7 +20,7 @@
 #define TSK_QCOW_ERROR_STRING_SIZE 512
 
 /**
- * Get error string from libqcow and make buffer empty if that didn't work. 
+ * Get error string from libqcow and make buffer empty if that didn't work.
  * @returns 1 if error message was not set
 */
 static uint8_t
@@ -33,7 +33,7 @@ getError(libqcow_error_t * qcow_error,
         error_string, TSK_QCOW_ERROR_STRING_SIZE);
     libqcow_error_free(&qcow_error);
     return retval ? 1 : 0;
-} 
+}
 
 
 static ssize_t

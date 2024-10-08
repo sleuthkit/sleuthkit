@@ -49,9 +49,9 @@ namespace Rejistry {
         typedef std::vector<SubkeyListRecordPtr> SubkeyListRecordPtrList;
 
         SubkeyListRecord(RegistryByteBuffer * buf, uint32_t offset) : Record(buf, offset) {}
-        
+
         virtual ~SubkeyListRecord() {}
-    
+
         /**
          * @returns The number of subkeys this list has.
          */
