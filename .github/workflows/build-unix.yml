@@ -183,12 +183,12 @@ jobs:
           make distclean
 
       - name: Run configure with address-sanitizer
-        if: ${{ address_sanitizer == 'yes' }}
+        if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
           ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer
 
       - name: Run make with address-sanitizer
-        if: ${{ address_sanitizer == 'yes' }}
+        if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
           make -j check VERBOSE=1
 
