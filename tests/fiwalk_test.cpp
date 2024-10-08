@@ -127,3 +127,10 @@ TEST_CASE("test_disk_images 6-fat-undel.dd", "[fiwalk]") {
       ""
     );
 }
+
+TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
+    check_image(
+      "$HOME/from_brian/image.gen1.dmg",
+      ""
+    );
+}
