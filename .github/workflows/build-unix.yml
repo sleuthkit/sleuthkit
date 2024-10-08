@@ -115,7 +115,7 @@ jobs:
           echo "Using $CORES cores"
 
       - name: Install MacOS packages
-        if: ${{ matrix.os == "macos" }}
+        if: ${{ matrix.os == 'macos' }}
         run: |
           brew update
           brew install wget libtool autoconf automake libtool libewf pkg-config libmagic
