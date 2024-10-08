@@ -4,7 +4,7 @@ AM_CPPFLAGS = -I$(srcdir)/tsk
 AM_CFLAGS = -Wall -Wextra -Wno-unused-parameter
 AM_CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
 
-CLEANFILES =
+CLEANFILES = *.gcov
 
 # File that we want to include in the dist
 EXTRA_DIST = \
