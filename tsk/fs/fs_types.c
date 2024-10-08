@@ -1,12 +1,12 @@
 /*
 ** fs_types
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Identify the type of file system being used
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -35,11 +35,11 @@ typedef struct {
  * The table used to parse input strings - supports
  * legacy strings - in order of expected usage
  *
- * All unique TSK_FS_TYPE_ENUM values should be in here with a unique 
- * name so that we can map between values and names. 
+ * All unique TSK_FS_TYPE_ENUM values should be in here with a unique
+ * name so that we can map between values and names.
  */
 static FS_TYPES fs_type_table[] = {
-    {"ntfs", TSK_FS_TYPE_NTFS, "NTFS"}, // NTFS == NTFS_DETECT 
+    {"ntfs", TSK_FS_TYPE_NTFS, "NTFS"}, // NTFS == NTFS_DETECT
     {"fat", TSK_FS_TYPE_FAT_DETECT, "FAT (Auto Detection)"},
     {"ext", TSK_FS_TYPE_EXT_DETECT, "ExtX (Auto Detection)"},
     {"iso9660", TSK_FS_TYPE_ISO9660, "ISO9660 CD"}, // ISO9660 == DETECT
@@ -48,6 +48,7 @@ static FS_TYPES fs_type_table[] = {
 #endif
     {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
+	{"logical", TSK_FS_TYPE_LOGICAL, "Logical Directory"},
     {"ufs", TSK_FS_TYPE_FFS_DETECT, "UFS (Auto Detection)"},
     {"raw", TSK_FS_TYPE_RAW, "Raw Data"}, // RAW == RAW_DETECT
     {"swap", TSK_FS_TYPE_SWAP, "Swap Space"}, // SWAP == SWAP_DETECT
@@ -166,7 +167,7 @@ tsk_fs_type_toname(TSK_FS_TYPE_ENUM ftype)
 
 /**
  * \ingroup fslib
- * Return the supported file system types. 
+ * Return the supported file system types.
  * @returns The bit in the return value is 1 if the type is supported.
  */
 TSK_FS_TYPE_ENUM

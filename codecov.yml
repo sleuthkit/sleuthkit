@@ -1,0 +1,10 @@
+coverage:
+  range: 40..60
+  round: nearest
+  precision: 2
+
+codecov:
+  branch: develop
+
+ignore:
+  - "m4/*"

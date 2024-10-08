@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2019-2020 Basis Technology Corp.
+ * Copyright 2019-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,11 +23,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Account;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
@@ -39,11 +39,8 @@ import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- * Class to help ingest modules create Web Browser artifacts.
- *
- * These include bookmarks, cookies, downloads, history, and web form
- * autofill data.
- *
+ * A class that helps modules to create web browser artifacts: bookmarks,
+ * cookies, downloads, history, and web form address and autofill data.
  */
 public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
@@ -54,17 +51,37 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	private static final BlackboardArtifact.Type WEB_FORM_ADDRESS_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_ADDRESS);
 	private static final BlackboardArtifact.Type WEB_FORM_AUTOFILL_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_FORM_AUTOFILL);
 	private static final BlackboardArtifact.Type WEB_HISTORY_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY);
-		
+
 	/**
-	 * Creates a WebBrowserArtifactsHelper.
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
 	 *
-	 * @param caseDb     Sleuthkit case db.
-	 * @param moduleName Name of module using the helper.
-	 * @param srcContent Source content being processed by the module.
-	 *
+	 * @param caseDb      The case database.
+	 * @param moduleName  The name of the module creating the artifacts.
+	 * @param srcContent  The source/parent content of the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts are being created, may be null.
 	 */
+	public WebBrowserArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
+		super(caseDb, moduleName, srcContent, ingestJobId);
+	}
+
+	/**
+	 * Constructs an instance of a class that helps modules to create web
+	 * browser artifacts: bookmarks, cookies, downloads, history, and web form
+	 * address and autofill data.
+	 *
+	 * @param caseDb     The case database.
+	 * @param moduleName The name of the module creating the artifacts.
+	 * @param srcContent The source/parent content of the artifacts.
+	 *
+	 * @deprecated Use WebBrowserArtifactsHelper(SleuthkitCase caseDb, String
+	 * moduleName, Content srcContent, Long ingestJobId) instead.
+	 */
+	@Deprecated
 	public WebBrowserArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
-		super(caseDb, moduleName, srcContent);
+		this(caseDb, moduleName, srcContent, null);
 	}
 
 	/**
@@ -116,12 +133,13 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		
+
 		Content content = getContent();
 		BlackboardArtifact bookMarkArtifact = content.newDataArtifact(WEB_BOOKMARK_TYPE, attributes);
 
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(bookMarkArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(bookMarkArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return bookMarkArtifact;
@@ -185,12 +203,13 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		
+
 		Content content = getContent();
 		BlackboardArtifact cookieArtifact = content.newDataArtifact(WEB_COOKIE_TYPE, attributes);
-		
+
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(cookieArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(cookieArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return cookieArtifact;
@@ -244,19 +263,20 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		
+
 		Content content = getContent();
 		BlackboardArtifact webDownloadArtifact = content.newDataArtifact(WEB_DOWNLOAD_TYPE, attributes);
-		
+
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(webDownloadArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(webDownloadArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return webDownloadArtifact;
 	}
 
 	/**
-	 * Adds a TSK_WEB_FORM_AUTOFILL artifact.
+	 * Adds a TSK_WEB_FORM_ADDRESS artifact.
 	 *
 	 * @param personName     Person name, required.
 	 * @param email          Email address, may be empty or null.
@@ -302,25 +322,26 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-		
+
 		CommunicationsManager commManager = this.getSleuthkitCase().getCommunicationsManager();
-		
+
+		Optional<Long> ingestJobId = getIngestJobId();
 		if (StringUtils.isNotEmpty(email)) {
 			try {
-			commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent());
+				commManager.createAccountFileInstance(Account.Type.EMAIL, email, this.getModuleName(), this.getContent(), null, ingestJobId.orElse(null));
 			} catch (InvalidAccountIDException ex) {
 				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", email), ex);
 			}
 		}
 
-		if(StringUtils.isNotEmpty(phoneNumber)) {
+		if (StringUtils.isNotEmpty(phoneNumber)) {
 			try {
-			commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent());
+				commManager.createAccountFileInstance(Account.Type.PHONE, phoneNumber, this.getModuleName(), this.getContent(), null, ingestJobId.orElse(null));
 			} catch (InvalidAccountIDException ex) {
 				LOGGER.log(Level.WARNING, String.format("Invalid account identifier %s", phoneNumber), ex);
 			}
 		}
-		
+
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, getModuleName(), personName));
 
@@ -335,9 +356,9 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 		// add artifact
 		Content content = getContent();
 		BlackboardArtifact webFormAddressArtifact = content.newDataArtifact(WEB_FORM_ADDRESS_TYPE, attributes);
-		
+
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(webFormAddressArtifact, getModuleName());
+		getSleuthkitCase().getBlackboard().postArtifact(webFormAddressArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return webFormAddressArtifact;
@@ -383,7 +404,7 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	public BlackboardArtifact addWebFormAutofill(String name, String value,
 			long creationTime, long accessTime, int count,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
-		
+
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
 
 		// construct attributes 
@@ -399,9 +420,10 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		Content content = getContent();
 		BlackboardArtifact webFormAutofillArtifact = content.newDataArtifact(WEB_FORM_AUTOFILL_TYPE, attributes);
-		
+
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(webFormAutofillArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(webFormAutofillArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return webFormAutofillArtifact;
@@ -410,12 +432,12 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 	/**
 	 * Adds a Web History artifact.
 	 *
-	 * @param url          Url visited, required.
-	 * @param accessTime   Last access time, may be 0 if not available.
-	 * @param referrer     Referrer, may be empty or null.
-	 * @param title        Website title, may be empty or null.
-	 * @param programName  Application/program recording the history, may be
-	 *                     empty or null.
+	 * @param url         Url visited, required.
+	 * @param accessTime  Last access time, may be 0 if not available.
+	 * @param referrer    Referrer, may be empty or null.
+	 * @param title       Website title, may be empty or null.
+	 * @param programName Application/program recording the history, may be
+	 *                    empty or null.
 	 *
 	 * @return Web history artifact created.
 	 *
@@ -462,12 +484,13 @@ public final class WebBrowserArtifactsHelper extends ArtifactHelperBase {
 
 		// add attributes to artifact
 		attributes.addAll(otherAttributesList);
-		
+
 		Content content = getContent();
 		BlackboardArtifact webHistoryArtifact = content.newDataArtifact(WEB_HISTORY_TYPE, attributes);
-		
+
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(webHistoryArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(webHistoryArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return webHistoryArtifact;

@@ -1,5 +1,5 @@
 /*
-* The Sleuth Kit 
+* The Sleuth Kit
 *
 *
 * Brian Carrier [carrier <at> sleuthkit [dot] org]
@@ -12,7 +12,7 @@
 
 /* Test and compare the directory entry read apis */
 
-/* TESTS: 
+/* TESTS:
  * Need to uncommen parent addr check in open() check when fs_meta is defined
  */
 
@@ -185,7 +185,7 @@ test_walk_apis(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr)
     return retval;
 }
 
-/* Compare the differences between dir_open_meta and dir_open 
+/* Compare the differences between dir_open_meta and dir_open
  * @param a_path Path of directory to open
  * @param a_addr The metadata address of the same directory as the path
  * @returns 1 if a test failed
@@ -280,7 +280,7 @@ test_dir_open_apis(TSK_FS_INFO * a_fs, const char *a_path,
     }
 
 
-    // compare the first entry in both. 
+    // compare the first entry in both.
     if (tsk_fs_dir_getsize(fs_dir_p) == 0) {
         fprintf(stderr, "directory sizes are 0\n");
         retval = 1;

@@ -46,6 +46,13 @@ extern "C" {
 #define TSK_IMG_TYPE_ISEWF(t) \
     ((((t) & TSK_IMG_TYPE_EWF_EWF))?1:0)
 
+	 /**
+	 * \ingroup imglib
+	 * Macro that takes a image type and returns 1 if the type
+	 * is for a logical directory file format. */
+#define TSK_IMG_TYPE_ISDIR(t) \
+    ((((t) & TSK_IMG_TYPE_LOGICAL))?1:0)
+
 
     /**
      * Flag values for the disk image format type.  Each type has a
@@ -64,13 +71,16 @@ extern "C" {
         TSK_IMG_TYPE_AFF_AFM = 0x0010,  ///< AFM AFF Format
         TSK_IMG_TYPE_AFF_ANY = 0x0020,  ///< Any format supported by AFFLIB (including beta ones)
 
-        TSK_IMG_TYPE_EWF_EWF = 0x0040,   ///< EWF version
-        TSK_IMG_TYPE_VMDK_VMDK = 0x0080, ///< VMDK version
-        TSK_IMG_TYPE_VHD_VHD = 0x0100,   ///< VHD version
-        TSK_IMG_TYPE_EXTERNAL = 0x1000,  ///< external defined format which at least implements TSK_IMG_INFO, used by pytsk
-        TSK_IMG_TYPE_POOL = 0x4000,      ///< Pool
+        TSK_IMG_TYPE_EWF_EWF   = 0x0040,  ///< EWF version
+        TSK_IMG_TYPE_VMDK_VMDK = 0x0080,  ///< VMDK version
+        TSK_IMG_TYPE_VHD_VHD   = 0x0100,  ///< VHD version
+        TSK_IMG_TYPE_AFF4_AFF4 = 0x0200,  ///< AFF4 version
+        TSK_IMG_TYPE_QCOW_QCOW = 0x0400,  ///< QCOW version
+        TSK_IMG_TYPE_EXTERNAL  = 0x1000,  ///< external defined format which at least implements TSK_IMG_INFO, used by pytsk
+        TSK_IMG_TYPE_POOL      = 0x4000,  ///< Pool
+        TSK_IMG_TYPE_LOGICAL   = 0x8000,  ///< Logical directory
 
-        TSK_IMG_TYPE_UNSUPP = 0xffff   ///< Unsupported disk image type
+        TSK_IMG_TYPE_UNSUPP = 0xffff      ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
 
 #define TSK_IMG_INFO_CACHE_NUM  32
@@ -95,10 +105,10 @@ extern "C" {
         TSK_TCHAR **images;    ///< Image names
 
         tsk_lock_t cache_lock;  ///< Lock for cache and associated values
-        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock) 
-        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock) 
-        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock) 
-        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock) 
+        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock)
+        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock)
+        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock)
+        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock)
 
         ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
         void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
@@ -150,7 +160,7 @@ extern "C" {
 
   private:
      TSK_IMG_INFO * m_imgInfo;
-    bool m_opened;              // true if open() was called and we need to free it    
+    bool m_opened;              // true if open() was called and we need to free it
      TskImgInfo(const TskImgInfo & rhs);
      TskImgInfo & operator=(const TskImgInfo & rhs);
 

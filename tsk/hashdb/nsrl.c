@@ -379,7 +379,7 @@ static uint8_t
 * will be found during lookup.
 *
 * @param hdb_info_base Hash database to make index of.
-* @param dbtype Type of database 
+* @param dbtype Type of database
 *
 * @return 1 on error and 0 on success.
 */
@@ -401,7 +401,7 @@ uint8_t
 
     /* Status */
     if (tsk_verbose)
-        TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
+        TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%" PRIttocTSK ")\n"),
         hdb_info_base->db_fname);
 
     /* Allocate a buffer for the previous hash value */
@@ -487,8 +487,8 @@ uint8_t
 * Find the corresponding name at a
 * given offset.  The offset was likely determined from the index.
 * The entries in the DB following the one specified are also processed
-* if they have the same hash value and their name is different. 
-* The callback is called for each entry. 
+* if they have the same hash value and their name is different.
+* The callback is called for each entry.
 *
 * @param hdb_info_base Database to get data from.
 * @param hash MD5/SHA-1 hash value that was searched for
@@ -504,7 +504,7 @@ uint8_t
     TSK_HDB_FLAG_ENUM flags,
     TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
-    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base; 
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base;
     char buf[TSK_HDB_MAXLEN], *name, *cur_hash, pname[TSK_HDB_MAXLEN];
     int found = 0;
     int ver;

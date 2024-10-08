@@ -1,10 +1,10 @@
 /*
 ** fs_attr
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -17,7 +17,7 @@
 /**
  * \file fs_attr.c
  * Functions to allocate and add structures to maintain generic file
- * system attributes and run lists.  
+ * system attributes and run lists.
  */
 
 
@@ -25,14 +25,15 @@
  * The TSK_FS_ATTR structure is motivated by NTFS.  NTFS (and others) allow
  * one to have more than one data area per file.  Furthermore, there is
  * more than one way to store the data (resident in the MFT entry or
- * in the Data Area runs).  To handle this in 
- * a generic format, the TSK_FS_ATTR structure was created.  
+ * in the Data Area runs).  To handle this in
+ * a generic format, the TSK_FS_ATTR structure was created.
  *
  * TSK_FS_ATTR structures have a type and id that describe it and then
  * a flag identifies it as a resident stream or a non-resident run
  * They form a linked list and are added to the TSK_FS_META structure
  */
 #include "tsk_fs_i.h"
+#include "tsk_logical_fs.h"
 
 
 /**
@@ -72,9 +73,9 @@ tsk_fs_attr_run_free(TSK_FS_ATTR_RUN * fs_attr_run)
 
 
 
-/** 
+/**
  * \internal
- * Allocates and initializes a new structure.  
+ * Allocates and initializes a new structure.
  *
  * @param type The type of attribute to create (Resident or Non-resident)
  * @returns NULL on error
@@ -199,7 +200,7 @@ fs_attr_put_name(TSK_FS_ATTR * fs_attr, const char *name)
 
 /**
  * \internal
- * Copy resident data to an attribute. 
+ * Copy resident data to an attribute.
  *
  * @param a_fs_attr Attribute to add data to (cannot be NULL)
  * @param name Name of the attribute to set
@@ -250,7 +251,7 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
 
 /**
  * \internal
- * Set the needed fields along with an initial run list for a data attribute.  To add more 
+ * Set the needed fields along with an initial run list for a data attribute.  To add more
  * runs, use ...._add_run().
  *
  * @param a_fs_file File to add attribute to
@@ -259,10 +260,10 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
  * @param name Name of the attribute (can be NULL)
  * @param type Type of attribute to add run to
  * @param id Id of attribute to add run to
- * @param size Total size of the attribute (can be larger than length of initial run being added) 
+ * @param size Total size of the attribute (can be larger than length of initial run being added)
  * @param init_size Number of bytes in attribute that have been initialized (less then or equal to size)
  * (note that this sets the initialized size for the attribute and it will not be updated as more runs are added).
- * @param alloc_size Allocated size of the attribute (>= size).  Identifies the slack space. 
+ * @param alloc_size Allocated size of the attribute (>= size).  Identifies the slack space.
  * (note that this sets the allocated size for the attribute and it will not be updated as more runs are added).
  * @param flags Flags about compression, sparse etc. of data
  * @param compsize Compression unit size (in case it needs to be created)
@@ -312,7 +313,7 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
 
     /* Add the a_data_run_new to the attribute. */
 
-    /* We support the ODD case where the run is NULL.  In this case, 
+    /* We support the ODD case where the run is NULL.  In this case,
      * we set the attribute size info, but set everything else to NULL.
      */
     if (a_data_run_new == NULL) {
@@ -322,14 +323,14 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     }
 
     /*
-     * If this is not in the beginning, then we need to make a filler 
+     * If this is not in the beginning, then we need to make a filler
      * to account for the cluster numbers we haven't seen yet
      *
      * This commonly happens when we process an MFT entry that
      * is not a base entry and it is referenced in an $ATTR_LIST
      *
      * The $DATA attribute in the non-base have a non-zero
-     * a_data_run_new->offset.  
+     * a_data_run_new->offset.
      */
     if (a_data_run_new->offset != 0) {
         TSK_FS_ATTR_RUN *fill_run = tsk_fs_attr_run_alloc();
@@ -441,7 +442,7 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
                     break;
                 }
             }
-        }    
+        }
 
         if (fs_attr_run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
             tsk_fprintf(hFile, "  Starting address: X, length: %lld  Sparse", run_len);
@@ -450,7 +451,7 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
             tsk_fprintf(hFile, "  Starting address: X, length: %lld  Filler", run_len);
         }
         else {
-            tsk_fprintf(hFile, "  Starting address: %lld, length: %lld  %s", run_start_addr, run_len, 
+            tsk_fprintf(hFile, "  Starting address: %lld, length: %lld  %s", run_start_addr, run_len,
                 (fs_attr_run->flags & TSK_FS_ATTR_RUN_FLAG_ENCRYPTED) ? "Encrypted": "");
         }
         tsk_fprintf(hFile, "\n");
@@ -464,11 +465,11 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
 /**
  * \internal
  * Add a set of consecutive runs to an attribute. This will add and remove FILLER entries
- * as needed and update internal variables. 
+ * as needed and update internal variables.
  *
  * @param a_fs File system run is from
  * @param fs_attr Attribute to add run to
- * @param a_data_run_new The set of runs to add.  
+ * @param a_data_run_new The set of runs to add.
  *
  * @returns 1 on error and 0 on succes
  */
@@ -535,7 +536,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         /* Do we replace this filler spot? */
         if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
 
-            /* This should never happen because we always add 
+            /* This should never happen because we always add
              * the filler to start from VCN 0 */
             if (data_run_cur->offset > a_data_run_new->offset) {
                 tsk_error_reset();
@@ -555,7 +556,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                 a_data_run_new->offset) {
                 TSK_FS_ATTR_RUN *endrun;
 
-                /* if the new starts at the same as the filler, 
+                /* if the new starts at the same as the filler,
                  * replace the pointer */
                 if (data_run_cur->offset == a_data_run_new->offset) {
                     if (data_run_prev)
@@ -592,7 +593,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                     endrun = endrun->next;
 
                 /* if the filler is the same size as the
-                 * new one, replace it 
+                 * new one, replace it
                  */
                 if (run_len == data_run_cur->len) {
                     endrun->next = data_run_cur->next;
@@ -620,20 +621,20 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
     }
 
 
-    /* 
+    /*
      * There is no filler holding the location of this run, so
-     * we will add it to the end of the list 
-     * 
+     * we will add it to the end of the list
+     *
      * we got here because it did not fit in the current list or
      * because the current list is NULL
      *
      * At this point data_run_prev is the end of the existing list or
      * 0 if there is no list
      */
-    /* This is an error condition.  
+    /* This is an error condition.
      * It means that we cycled through the existing runs,
      * ended at a VCN that is larger than what we are adding,
-     * and never found a filler entry to insert it into... 
+     * and never found a filler entry to insert it into...
      */
     if ((data_run_prev)
         && (data_run_prev->offset + data_run_prev->len >
@@ -746,7 +747,7 @@ tsk_fs_attr_append_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
 
 /** \internal
  * Processes a resident TSK_FS_ATTR structure and calls the callback with the associated
- * data. The size of the buffer in the callback will be block_size at max. 
+ * data. The size of the buffer in the callback will be block_size at max.
  *
  * @param a_fs File system being analyzed
  * @param fs_attr Resident data structure to be walked
@@ -827,7 +828,7 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
 
 /** \internal
  * Processes a non-resident TSK_FS_ATTR structure and calls the callback with the associated
- * data. 
+ * data.
  *
  * @param fs_attr Resident data structure to be walked
  * @param a_flags Flags for walking
@@ -923,9 +924,14 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 }
                 else {
                     ssize_t cnt;
-
-                    cnt = tsk_fs_read_block_decrypt
-                        (fs, addr + len_idx, buf, fs->block_size, fs_attr_run->crypto_id + len_idx);
+					if (fs->ftype == TSK_FS_TYPE_LOGICAL) {
+						// We can't read logical files directly from the image.
+						cnt = logicalfs_read_block(fs, fs_attr->fs_file, addr + len_idx, buf);
+					}
+					else {
+						cnt = tsk_fs_read_block_decrypt
+						(fs, addr + len_idx, buf, fs->block_size, fs_attr_run->crypto_id + len_idx);
+					}
                     if (cnt != fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
@@ -1013,7 +1019,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
 
 /**
  * \ingroup fslib
- * Process an attribute and call a callback function with its contents. The callback will be 
+ * Process an attribute and call a callback function with its contents. The callback will be
  * called with chunks of data that are fs->block_size or less.  The address given in the callback
  * will be correct only for raw files (when the raw file contents were stored in the block).  For
  * compressed and sparse attributes, the address may be zero.
@@ -1068,7 +1074,6 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
     }
     // non-resident data
     else if (a_fs_attr->flags & TSK_FS_ATTR_NONRES) {
-		fflush(stderr);
         return tsk_fs_attr_walk_nonres(a_fs_attr, a_flags, a_action,
             a_ptr);
     }
@@ -1085,8 +1090,8 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
 /**
  * \ingroup fslib
  * Read the contents of a given attribute using a typical read() type interface.
- * 0s are returned for missing runs. 
- * 
+ * 0s are returned for missing runs.
+ *
  * @param a_fs_attr The attribute to read.
  * @param a_offset The byte offset to start reading from.
  * @param a_buf The buffer to read the data into.
@@ -1101,13 +1106,18 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
     TSK_FS_INFO *fs;
 
     if ((a_fs_attr == NULL) || (a_fs_attr->fs_file == NULL)
-        || (a_fs_attr->fs_file->fs_info == NULL)) {
+        || (a_fs_attr->fs_file->fs_info == NULL) || (a_buf == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
             ("tsk_fs_attr_read: Attribute has null pointers.");
         return -1;
     }
     fs = a_fs_attr->fs_file->fs_info;
+
+	// Handle logical directories separately
+	if (fs->ftype == TSK_FS_TYPE_LOGICAL) {
+		return logicalfs_read(fs, a_fs_attr->fs_file, a_offset, a_len, a_buf);
+	}
 
     /* for compressed data, call the specialized function */
     if (a_fs_attr->flags & TSK_FS_ATTR_COMP) {
@@ -1195,7 +1205,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 continue;
 
             // We want this run, so find out the offset that we want
-            // we'll start at 0 if we already read data in the last run. 
+            // we'll start at 0 if we already read data in the last run.
             if (data_run_cur->offset < blkoffset_toread)
                 blkoffset_inrun = blkoffset_toread - data_run_cur->offset;
             else
@@ -1220,6 +1230,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
              * info out of order and we did not get all of the run info.  We
              * return 0s if data is read from this type of run. */
             else if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
+                if (a_buf == NULL) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
+                    tsk_error_set_errstr("tsk_fs_attr_read - missing a_buf");
+                    return -1;
+                }
                 memset(&a_buf[len_toread - len_remain], 0, len_inrun);
                 if (tsk_verbose)
                     fprintf(stderr,
@@ -1256,11 +1272,11 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
                 // add the byte offset in the block
                 fs_offset_b += byteoffset_toread;
+				cnt =
+					tsk_fs_read_decrypt(fs, fs_offset_b,
+						&a_buf[len_toread - len_remain], len_inrun,
+						data_run_cur->crypto_id + blkoffset_inrun);
 
-                cnt =
-                    tsk_fs_read_decrypt(fs, fs_offset_b,
-                    &a_buf[len_toread - len_remain], len_inrun, 
-                    data_run_cur->crypto_id + blkoffset_inrun);
                 if (cnt != (ssize_t)len_inrun) {
                     if (cnt >= 0) {
                         tsk_error_reset();
@@ -1292,7 +1308,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
             len_remain -= len_inrun;
 
-            // reset this in case we need to also read from the next run 
+            // reset this in case we need to also read from the next run
             byteoffset_toread = 0;
         }
         return (ssize_t) (len_toread - len_remain);

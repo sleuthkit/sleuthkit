@@ -1,5 +1,5 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2004-2011 Brian Carrier.  All rights reserved
@@ -51,7 +51,10 @@
 #define roundup(x, y)   \
     ( ( ((x)+((y) - 1)) / (y)) * (y) )
 
+#ifndef fseeko
 #define fseeko fseek
+#endif
+
 #define daddr_t int
 #endif
 
@@ -119,11 +122,10 @@ typedef int32_t ssize_t;
 
 #endif
 
-
-/* When TSK deals with the outside world (printing / input), the data will 
- * be in either UTF-16 or UTF-8 (Windows or Unix).  TSK_TCHAR is defined 
- * as the data type needed and the following function map to the required 
- * function. 
+/* When TSK deals with the outside world (printing / input), the data will
+ * be in either UTF-16 or UTF-8 (Windows or Unix).  TSK_TCHAR is defined
+ * as the data type needed and the following function map to the required
+ * function.
  */
 
 #ifdef TSK_WIN32
@@ -160,9 +162,8 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #endif
 
 
-#define PRIcTSK _TSK_T("S")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
-#define PRIwTSK _TSK_T("s")     ///< sprintf macro to print a UTF-16 wchar_t string to TSK_TCHAR buffer
-#define PRIttocTSK  "S"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
+#define PRIcTSK _TSK_T("hs")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
+#define PRIttocTSK  "ls"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
 #define PRIuSIZE "Iu"           ///< printf macro to print a size_t value in Windows printf codes
 
 #define unlink _unlink
@@ -201,8 +202,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TZSET	tzset
 #define TZNAME	tzname
 
-#define PRIcTSK _TSK_T("s")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
-#define PRIwTSK _TSK_T("S")     ///< sprintf macro to print a UTF-16 wchar_t string to TSK_TCHAR buffer
+#define PRIcTSK _TSK_T("hs")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
 #define PRIttocTSK  "s"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
 #define PRIuSIZE "zu"           ///< printf macro to print a size_t value in non-Windows printf codes
 

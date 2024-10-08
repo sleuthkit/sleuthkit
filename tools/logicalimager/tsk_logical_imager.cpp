@@ -398,7 +398,7 @@ static void reportUsers(const std::string &sessionDir, const std::string &driveN
 static void usage() {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-c configPath]\n"),
+        ("usage: %" PRIttocTSK " [-c configPath]\n"),
         progname);
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -440,7 +440,7 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND-1]);
             usage();
 

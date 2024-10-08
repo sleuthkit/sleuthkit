@@ -22,7 +22,7 @@
 
 
 /** \file tsk_unicode.h
- * Contains the definitions for Unicode-based conversion methods. 
+ * Contains the definitions for Unicode-based conversion methods.
  */
 #ifndef _TSK_UNICODE_H
 #define _TSK_UNICODE_H
@@ -153,7 +153,10 @@ extern "C" {
         const UTF8 * sourceEnd);
 
     extern void
-     tsk_cleanupUTF8(char *source, const char replacement);
+        tsk_cleanupUTF8(char *source, const char replacement);
+
+    extern void
+        tsk_cleanupUTF16(TSK_ENDIAN_ENUM endian, wchar_t *source, size_t source_len, const wchar_t replacement);
 #endif
 //@}
 

@@ -27,6 +27,7 @@
  */
 #include <algorithm>
 #include <cstring>
+#include <memory>
 
 // Local includes
 #include "ValueListRecord.h"
@@ -34,7 +35,7 @@
 #include "RejistryException.h"
 
 namespace Rejistry {
-    ValueListRecord::ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues) 
+    ValueListRecord::ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues)
         : Record(buf, offset), _numValues(numValues) {}
 
     VKRecord::VKRecordPtrList ValueListRecord::getValues() const {
@@ -43,7 +44,7 @@ namespace Rejistry {
         for (uint32_t index = 0; index < _numValues; ++index) {
             uint32_t offset = getDWord(VALUE_LIST_OFFSET + (0x4 * index));
             offset += REGFHeader::FIRST_HBIN_OFFSET;
-            std::auto_ptr< Cell > c(new Cell(_buf, offset));
+            std::unique_ptr< Cell > c(new Cell(_buf, offset));
             if (c.get() == NULL) {
                 throw RegistryParseException("Failed to create Cell for value record.");
             }

@@ -92,6 +92,7 @@ public class Volume extends AbstractContent {
         volumeHandle = 0;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -276,7 +277,7 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * @return a list of FileSystem that are direct descendents of this Image.
+	 * @return a list of FileSystem that are direct descendants of this Image.
 	 *
 	 * @throws TskCoreException
 	 */

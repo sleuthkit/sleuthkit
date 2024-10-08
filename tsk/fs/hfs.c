@@ -1020,8 +1020,10 @@ hfs_cat_traverse(HFS_INFO * hfs,
                  */
                 //                rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
+                // The nodesize passed to the callback should contain the available node
+                // data size relative from the start of the key.
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen, nodesize,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key, keylen, nodesize - rec_off,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_LEAF_STOP) {
                     is_done = 1;
@@ -1424,8 +1426,8 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
-            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found
+            // that it was very ineffecient and always resulted in the same linkNum value.
             // We now just use linkNum
             return linkNum;
         }
@@ -1474,8 +1476,8 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
-            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found
+            // that it was very ineffecient and always resulted in the same linkNum value.
             // We now just use linkNum
             return linkNum;
         }
@@ -4582,6 +4584,12 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
     //uint32_t dataLength = tsk_getu32(fs_info->endian, resHead->dataLength);
     mapLength = tsk_getu32(fs_info->endian, resHead->mapLength);
 
+    if (mapLength <= 0) {
+      error_returned
+         ("- hfs_parse_resource_fork: map length is 0");
+      return NULL;
+    }
+
     // Read in the WHOLE map
     map = (char *) tsk_malloc(mapLength);
     if (map == NULL) {
@@ -6420,7 +6428,7 @@ hfs_close(TSK_FS_INFO * fs)
 
 TSK_FS_INFO *
 hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     HFS_INFO *hfs;
     unsigned int len;
@@ -6536,7 +6544,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 return NULL;
             }
             fs_info2 =
-                hfs_open(img_info, offset + hfsplus_offset, ftype, test);
+                hfs_open(img_info, offset + hfsplus_offset, ftype, "", test);
 
             if (fs_info2)
                 ((HFS_INFO *) fs_info2)->hfs_wrapper_offset =
@@ -6558,14 +6566,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->block_count = tsk_getu32(fs->endian, hfs->fs->blk_cnt);
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
-
-    /* this isn't really accurate; fs->block_size reports only the size
-       of the allocation block; the size of the device block has to be
-       found from the device (allocation block size should always be
-       larger than device block size and an even multiple of the device
-       block size) */
-    fs->dev_bsize = fs->block_size =
-        tsk_getu32(fs->endian, hfs->fs->blk_sz);
+	fs->block_size = tsk_getu32(fs->endian, hfs->fs->blk_sz);
+	fs->dev_bsize = fs->img_info->sector_size;
 
     // determine the last block we have in this image
     if (fs->block_size <= 1) {

@@ -254,9 +254,12 @@ public class Report implements Content {
 
 	@Override
 	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		// Get the data source before opening the transaction
+		long dataSourceObjId = getDataSource().getId();
+		
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
-			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objectId, this.getDataSource().getId(), score, conclusion, configuration, justification, attributesList, trans);
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objectId, dataSourceObjId, score, conclusion, configuration, justification, attributesList, trans);
 
 			trans.commit();
 			return resultAdded;
@@ -283,7 +286,8 @@ public class Report implements Content {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
 
-		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
+		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() &&
+				artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
 		}
 		
@@ -293,10 +297,10 @@ public class Report implements Content {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
 
-		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
+		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() &&
+				artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
-		}
-		
+		}		
 		return db.getBlackboard().newDataArtifact(artifactType, objectId, dataSourceId, attributesList, osAccountId);
 	}
 
@@ -314,7 +318,7 @@ public class Report implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifacts(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifacts(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
@@ -380,7 +384,7 @@ public class Report implements Content {
 
 	@Override
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
-		return getArtifactsCount(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifactsCount(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override

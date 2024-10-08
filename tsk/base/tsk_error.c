@@ -56,6 +56,7 @@ static const char *tsk_err_mm_str[TSK_ERR_VS_MAX] = {
     "Invalid sector address",
     "Invalid API argument",
     "Encryption detected",
+    "Multiple volume system types detected",
 };
 
 static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
@@ -79,6 +80,8 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "Attribute not found in file",
     "Encryption detected",
     "Possible encryption detected",
+    "Multiple file system types detected",   // 20
+    "BitLocker initialization failed",
 };
 
 static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {
@@ -309,9 +312,9 @@ tsk_error_set_errno(uint32_t t_errno)
 
 /**
  * \ingroup baselib
- * Retrieve the current, basic error string.  
- * Additional information is in errstr2.  
- * Use tsk_error_get() to get a fully formatted string. 
+ * Retrieve the current, basic error string.
+ * Additional information is in errstr2.
+ * Use tsk_error_get() to get a fully formatted string.
  * @returns the string. This is only valid until the next call to a tsk function.
  */
 char *
@@ -322,7 +325,7 @@ tsk_error_get_errstr()
 
 /**
  * \ingroup baselib
- * Set the error string #1. This should contain the basic message. 
+ * Set the error string #1. This should contain the basic message.
  * @param format the printf-style format string
  */
 void
@@ -363,7 +366,7 @@ tsk_error_get_errstr2()
 /**
  * \ingroup baselib
  * Set the error string #2. This is called by methods who encounter the error,
- * but did not set errno. 
+ * but did not set errno.
  * @param format the printf-style format string
  */
 void

@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/sleuthkit/sleuthkit.svg?branch=develop)](https://travis-ci.org/sleuthkit/sleuthkit)
+[![codecov](https://codecov.io/github/sleuthkit/sleuthkit/branch/develop/graph/badge.svg?token=pfFlgpWdCt)](https://codecov.io/github/sleuthkit/sleuthkit)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/8f7ljj8s2lh5sqfv?svg=true)](https://ci.appveyor.com/project/bcarrier/sleuthkit)
 
@@ -15,8 +15,8 @@ the tool or customize it to specific needs.
 The Sleuth Kit uses code from the file system analysis tools of
 The Coroner's Toolkit (TCT) by Wietse Venema and Dan Farmer.  The
 TCT code was modified for platform independence.  In addition,
-support was added for the NTFS (see [wiki/ntfs](http://wiki.sleuthkit.org/index.php?title=FAT_Implementation_Notes)) 
-and FAT (see [wiki/fat](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes)) file systems.  Previously, The Sleuth Kit was
+support was added for the NTFS (see [wiki/ntfs](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes)) 
+and FAT (see [wiki/fat](http://wiki.sleuthkit.org/index.php?title=FAT_Implementation_Notes)) file systems.  Previously, The Sleuth Kit was
 called The @stake Sleuth Kit (TASK).  The Sleuth Kit is now independent
 of any commercial or academic organizations.
 
