@@ -77,7 +77,7 @@ public:
 };
 
 template<typename T>
-class hash__:public T
+class hash__: public T
 {
   static uint8_t hexcharval(char v) {
     switch(v) {
@@ -116,7 +116,7 @@ public:
   const char *hexdigest(char *hexbuf,size_t bufsize) const {
     const char *hexbuf_start = hexbuf;
     for (unsigned int i = 0; i < this->SIZE && bufsize >= 3; i++) {
-      snprintf(hexbuf,bufsize,"%02x",this->digest[i]);
+      snprintf(hexbuf, bufsize, "%02x", this->digest[i]);
       hexbuf += 2;
       bufsize -= 2;
     }
