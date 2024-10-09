@@ -638,7 +638,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
                 uint16_t offset = tsk_getu16(fs_file->fs_info->endian, ea_entry->val_off);
                 uint32_t size = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_size);
                 if ((ea_buf_len >= 4) && (offset < ea_buf_len - 4) && (size <= ea_buf_len - 4 - offset)) {
-                    ea_inline_data = &(ea_buf[4 + offset]);
+                    ea_inline_data = (const char*) &(ea_buf[4 + offset]);
                     ea_inline_data_len = size;
                     break;
                 }
