@@ -176,7 +176,7 @@ typedef hash__<sha256_> sha256_t;
 typedef hash__<sha512_> sha512_t;
 
 template<typename T>
-class hash_generator__:T {       /* generates the hash */
+class hash_generator__: T {       /* generates the hash */
   unsigned int ret;
   void *mdctx;
   unsigned char *md;
