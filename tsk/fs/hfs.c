@@ -986,7 +986,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     &node[nodesize - (rec + 1) * 2]);
 
                 // Need at least 2 bytes for key_len
-                if (rec_off >= nodesize - 2) {
+                if (rec_off + 2 >= nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%d vs %"
