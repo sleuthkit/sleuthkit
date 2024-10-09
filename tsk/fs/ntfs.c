@@ -3626,7 +3626,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
 		}
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("ntfs_get_sds: SII entry %" PRIu32 " not found");
+		tsk_error_set_errstr("ntfs_get_sds: SII entry %" PRIu32 " not found", sii_secid);
 	}
 
 	// If we never even found an SII entry that matched our secid, update the error state.
