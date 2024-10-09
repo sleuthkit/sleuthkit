@@ -911,7 +911,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 else if ((retval == HFS_BTREE_CB_IDX_LT)
                     || (next_node == 0)) {
                     hfs_btree_index_record *idx_rec;
-                    int keylen =
+                    size_t keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
                             key->key_len), &(hfs->catalog_header));
                     if (keylen > nodesize - rec_off) {
