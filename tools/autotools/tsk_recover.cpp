@@ -445,6 +445,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
         case _TSK_T('a'):
             walkflag = TSK_FS_DIR_WALK_FLAG_ALLOC;
