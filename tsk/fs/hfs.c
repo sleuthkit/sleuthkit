@@ -968,7 +968,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
-                int keylen;
+                size_t keylen;
 
                 // Make sure node is large enough, note that (rec + 1) * 2 is an offset
                 // relative to the end of node
