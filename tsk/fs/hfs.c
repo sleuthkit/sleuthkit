@@ -509,7 +509,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 /* save the info from this record unless it is bigger than cnid */
                 if (cmp <= 0 || next_node == 0) {
                     hfs_btree_index_record *idx_rec;
-                    int keylen =
+                    size_t keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
                             key->key_len), &(hfs->extents_header));
                     if (nodesize < 4 || keylen > nodesize - 4 || rec_off >= nodesize - 4 - keylen) {
