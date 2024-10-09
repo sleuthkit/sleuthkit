@@ -186,14 +186,6 @@ class hash_generator__:T {       /* generates the hash */
   bool initialized;         /* has the context been initialized? */
   bool finalized;
 
-  /* Static function to determine if something is zero */
-  static bool iszero(const uint8_t *buf, size_t bufsize) {
-    for (unsigned int i = 0; i < bufsize; i++) {
-      if (buf[i] != 0) return false;
-    }
-    return true;
-  }
-
 public:
   int64_t hashed_bytes;
 
