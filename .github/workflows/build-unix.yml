@@ -15,7 +15,7 @@ on:
 jobs:
   build:
     timeout-minutes: 30
-    name: ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }}
+    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -27,6 +27,8 @@ jobs:
             runner: "macos-latest"
             configure_opts: "--with-libewf --disable-java"
             codecov: "yes"
+            prefix: "CODECOV"
+            address_sanitizer: "yes"
 
           - os: "linux"
             arch: "x86_64"
@@ -34,6 +36,8 @@ jobs:
             runner: "ubuntu-22.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=-Wno-unused-command-line-argument"
             codecov: "no"
+            prefix: ""
+            address_sanitizer: "yes"
 
           - os: "linux"
             arch: "x86_64"
@@ -42,6 +46,8 @@ jobs:
             runner: "ubuntu-22.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++"
             codecov: "no"
+            prefix: ""
+            address_sanitizer: "yes"
 
           - os: "mingw"
             arch: "x86_64"
@@ -52,6 +58,8 @@ jobs:
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine64'
             codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -62,6 +70,8 @@ jobs:
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine64'
             codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -73,6 +83,8 @@ jobs:
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine32'
             codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -84,6 +96,8 @@ jobs:
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine32'
             codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
 
     steps:
       - name: Determine number of cores
@@ -100,39 +114,31 @@ jobs:
           echo "cores=$CORES" >>$GITHUB_OUTPUT
           echo "Using $CORES cores"
 
-      - name: Install packages
-        if: ${{ startsWith(matrix.runner, 'macos') }}
+      - name: Install MacOS packages
+        if: ${{ matrix.os == 'macos' }}
         run: |
           brew update
           brew install wget libtool autoconf automake libtool libewf pkg-config libmagic
 
-      - name: Update packages
-        if: ${{ matrix.os == 'mingw' }}
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt update
-
-      - name: Install packages
+      - name: Install Linux packages
         if: ${{ matrix.os == 'linux' }}
         run: |
           sudo apt update
           sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
 
-      - name: Install packages
+      - name: Install Mingw packages and setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
         run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
           sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
+          sudo update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
           # This is not working; also requires mingw-w64-x86_64-libgnurx
           # echo === installing libmagic for mingw ===
           # wget -q https://astron.com/pub/file/file-5.44.tar.gz # Check for the latest version at https://astron.com/pub/file/
           # tar -xzf file-5.44.tar.gz
           # cd file-5.44
           # ./configure -q ${{ matrix.configure_optsnj}} && make V=0 && sudo make install
-
-      - name: Setup for cross-compiling
-        if: ${{ matrix.os == 'mingw' }}
-        run: |
-          sudo update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
 
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -157,12 +163,12 @@ jobs:
         run: |
           make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 TESTS=
 
-      - name: Run make check
+      - name: Run make check on Mac/Linux
         if: ${{ matrix.os != 'mingw' }}
         run: |
           make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
-      - name: Run make check
+      - name: Run make check on Mingw
         if: ${{ matrix.os == 'mingw' }}
         env:
           WINEARCH: ${{ matrix.winearch }}
@@ -177,12 +183,12 @@ jobs:
           make distclean
 
       - name: Run configure with address-sanitizer
-        if: ${{ matrix.os != 'mingw' }}
+        if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
           ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer
 
       - name: Run make with address-sanitizer
-        if: ${{ matrix.os != 'mingw' }}
+        if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
           make -j check VERBOSE=1
 
