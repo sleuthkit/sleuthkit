@@ -631,7 +631,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
             if ((ea_entry->nidx == EXT2_EA_IDX_SYSTEM)
                 && (ea_entry->nlen == 4)
                 && (index + sizeof(ext2fs_ea_entry) + strlen("data") < ea_buf_len)
-                && (strncmp(&(ea_entry->name), "data", 4)) == 0) {
+                && (strncmp((const char*) &(ea_entry->name), "data", 4)) == 0) {
 
                 // This is the right attribute. Check that the length and offset are valid.
                 // The offset is from the beginning of the entries, i.e., four bytes into the buffer.
