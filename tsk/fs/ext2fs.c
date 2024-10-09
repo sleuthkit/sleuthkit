@@ -558,7 +558,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
     // Check if we have an extended attribute in the inode
     if (ext2fs->inode_size > EXT2_EA_INODE_OFFSET) {
         // The extended attribute data immediatly follows the standard inode data
-        *ea_buf = (char*)dino_buf + EXT2_EA_INODE_OFFSET;
+        *ea_buf = (uint8_t*)dino_buf + EXT2_EA_INODE_OFFSET;
         *ea_buf_len = ext2fs->inode_size - EXT2_EA_INODE_OFFSET;
     }
     else {
