@@ -107,7 +107,7 @@ TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
     }
 
     TSK_FS_FLS_FLAG_ENUM fls_flags = (TSK_FS_FLS_FLAG_ENUM)(TSK_FS_FLS_MAC | TSK_FS_FLS_DIR | TSK_FS_FLS_FILE | TSK_FS_FLS_FULL);
-    if(m_compute_hash){
+    if (m_compute_hash) {
         fls_flags = (TSK_FS_FLS_FLAG_ENUM)(fls_flags | TSK_FS_FLS_HASH);
     }
 
