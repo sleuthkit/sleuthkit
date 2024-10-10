@@ -165,11 +165,11 @@ TSK_MD5_Update(TSK_MD5_CTX * context, const unsigned char *input,
  * \ingroup baselib
  * Calculate the MD5 hash of the data added to this context.   Context
  * will be zeroed after this call.
- * @param digest Buffer to store MD5 value in.
  * @param context Context that has data added to it.
+ * @param digest Buffer to store MD5 value in.
  */
 void
-TSK_MD5_Final(unsigned char digest[16], TSK_MD5_CTX * context)
+TSK_MD5_Final(TSK_MD5_CTX * context, unsigned char digest[16])
 {
     unsigned char bits[8];
     unsigned int index, padLen;

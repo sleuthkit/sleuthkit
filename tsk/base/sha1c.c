@@ -349,11 +349,11 @@ SHAtoByte(BYTE output[SHS_DIGESTSIZE], UINT4 * input)
 /**
  * \ingroup baselib
  * Calculate the hash of the data added to the context.
- * @param output Buffer to store hash value
  * @param shsInfo Context that has data added to it.
+ * @param output Buffer to store hash value
  */
 void
-TSK_SHA_Final(BYTE* output, TSK_SHA_CTX * shsInfo)
+TSK_SHA_Final(TSK_SHA_CTX * shsInfo, BYTE* output)
 {
     int count;
     BYTE *dataPtr;
