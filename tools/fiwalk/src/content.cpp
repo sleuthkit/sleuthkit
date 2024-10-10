@@ -288,8 +288,8 @@ void content::write_record()
 	}
 	o.file_info_xml2("byte_runs","facet='data'", runs);
 	if (!invalid){
-	    if (o.opt_md5  && h_md5.hashed_bytes>0)   o.file_info(h_md5.final());
-	    if (o.opt_sha1 && h_sha1.hashed_bytes>0)  o.file_info(h_sha1.final());
+	    if (o.opt_md5  && h_md5.hashed_bytes>0)   o.file_info(h_md5.finalize());
+	    if (o.opt_sha1 && h_sha1.hashed_bytes>0)  o.file_info(h_sha1.finalize());
 	}
     }
 
@@ -456,7 +456,7 @@ content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char
         h_sectorhash->update((const uint8_t *)buf,size);
         sectorhash_byte_counter += size;
         if (sectorhash_byte_counter==o.sectorhash_size){
-            add_seg(0,0,sectorhash_initial_offset,sectorhash_byte_counter,flags,h_sectorhash->final().hexdigest());
+            add_seg(0,0,sectorhash_initial_offset,sectorhash_byte_counter,flags,h_sectorhash->finalize().hexdigest());
         }
         if (sectorhash_byte_counter>=o.sectorhash_size){
             delete h_sectorhash;

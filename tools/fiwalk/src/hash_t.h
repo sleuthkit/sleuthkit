@@ -19,7 +19,13 @@
  * For reasons that defy explaination (at the moment), this is required.
  */
 
+#include "tsk/tsk_config.h"
+
+#ifdef HAVE_LIBCRYPTO
+#include <openssl/evp.h>
+#else
 #include "sha2.h"
+#endif
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -27,17 +33,15 @@
 #define  DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #endif
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <iostream>
+#include <cstdint>
 #include <cstring>
+#include <iostream>
+#include <memory>
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -69,11 +73,154 @@ public:
   uint8_t digest[SIZE];
 };
 
-
 class sha512_ {
 public:
   static const size_t SIZE = 64;
   uint8_t digest[SIZE];
+};
+
+class md5_hasher {
+public:
+  using hash_t = md5_;
+
+  md5_hasher(): ctx(new TSK_MD5_CTX) {
+    std::memset(ctx.get(), 0, sizeof(TSK_MD5_CTX));
+  }
+
+  int init() {
+    TSK_MD5_Init(ctx.get());
+    return 0;
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    TSK_MD5_Update(ctx.get(), buf, len);
+    return 0;
+  }
+
+  int finalize(unsigned char* digest) {
+    TSK_MD5_Final(digest, ctx.get());
+    return 0;
+  }
+
+private:
+  std::unique_ptr<TSK_MD5_CTX> ctx;
+};
+
+class sha1_hasher {
+public:
+  using hash_t = sha1_;
+
+  sha1_hasher(): ctx(new TSK_SHA_CTX) {
+    std::memset(ctx.get(), 0, sizeof(TSK_SHA_CTX));
+  }
+
+  int init() {
+    TSK_SHA_Init(ctx.get());
+    return 0;
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    TSK_SHA_Update(ctx.get(), buf, len);
+    return 0;
+  }
+
+  int finalize(unsigned char* digest) {
+    TSK_SHA_Final(digest, ctx.get());
+    return 0;
+  }
+
+private:
+  std::unique_ptr<TSK_SHA_CTX> ctx;
+};
+
+class sha256_hasher {
+public:
+  using hash_t = sha256_;
+
+#ifdef HAVE_LIBCRYPTO
+  sha256_hasher(): ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free) {}
+
+  int init() {
+    return EVP_DigestInit_ex(ctx.get(), EVP_sha256(), nullptr);
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    return EVP_DigestUpdate(ctx.get(), buf, len);
+  }
+
+  int finalize(unsigned char* digest) {
+    return EVP_DigestFinal_ex(ctx.get(), digest, nullptr);
+  }
+
+private:
+  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx;
+
+#else
+  sha256_hasher(): ctx(new SHA256_CTX) {}
+
+  int init() {
+    SHA256_Init(ctx.get());
+    return 0;
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    SHA256_Update(ctx.get(), buf, len);
+    return 0;
+  }
+
+  int finalize(unsigned char* digest) {
+    SHA256_Final(ctx.get(), digest);
+    return 0;
+  }
+
+private:
+  std::unique_ptr<SHA256_CTX> ctx;
+#endif
+};
+
+class sha512_hasher {
+public:
+  using hash_t = sha512_;
+
+#ifdef HAVE_LIBCRYPTO
+  sha512_hasher(): ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free) {}
+
+  int init() {
+    return EVP_DigestInit_ex(ctx.get(), EVP_sha512(), nullptr);
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    return EVP_DigestUpdate(ctx.get(), buf, len);
+  }
+
+  int finalize(unsigned char* digest) {
+    return EVP_DigestFinal_ex(ctx.get(), digest, nullptr);
+  }
+
+private:
+  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx;
+
+#else
+  sha512_hasher(): ctx(new SHA512_CTX) {}
+
+  int init() {
+    SHA512_Init(ctx.get());
+    return 0;
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    SHA512_Update(ctx.get(), buf, len);
+    return 0;
+  }
+
+  int finalize(unsigned char* digest) {
+    SHA512_Final(ctx.get(), digest);
+    return 0;
+  }
+
+private:
+  std::unique_ptr<SHA512_CTX> ctx;
+#endif
 };
 
 template<typename T>
@@ -177,64 +324,18 @@ typedef hash__<sha512_> sha512_t;
 
 template<typename T>
 class hash_generator__: T {       /* generates the hash */
-  unsigned int ret;
-  void *mdctx;
-  unsigned char *md;
-  int (*md_init)(void *);
-  int (*md_update)(void *, const void *, uint32_t);
-  int (*md_final)(unsigned char *, void *);
+private:
   bool initialized;         /* has the context been initialized? */
   bool finalized;
 
 public:
   int64_t hashed_bytes;
 
-  hash_generator__(): initialized(false), finalized(false), hashed_bytes(0) {
-    switch (this->SIZE) {
-    case 16:
-      mdctx = malloc(sizeof(TSK_MD5_CTX));
-      memset(mdctx, 0, sizeof(TSK_MD5_CTX));
-      md = (unsigned char *)malloc(TSK_MD5_DIGEST_LENGTH);
-      memset(md, 0, TSK_MD5_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&TSK_MD5_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))&TSK_MD5_Update;
-      md_final = (int (*)(unsigned char*, void *))&TSK_MD5_Final;
-      break;
-    case 20:
-      mdctx = malloc(sizeof(TSK_SHA_CTX));
-      memset(mdctx, 0, sizeof(TSK_SHA_CTX));
-      md = (unsigned char *)malloc(TSK_SHA_DIGEST_LENGTH);
-      memset(md, 0, TSK_SHA_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&TSK_SHA_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))(void (*)())&TSK_SHA_Update;
-      md_final = (int (*)(unsigned char*, void*))&TSK_SHA_Final;
-      break;
-    case 32:
-      mdctx = malloc(sizeof(SHA256_CTX));
-      md = (unsigned char *)malloc(SHA256_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&SHA256_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))(void (*)())&SHA256_Update;
-      md_final = (int (*)(unsigned char*, void*))&SHA256_Final;
-      break;
-    case 64:
-      mdctx = malloc(sizeof(SHA512_CTX));
-      md = (unsigned char *)malloc(SHA512_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&SHA512_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))(void (*)())&SHA512_Update;
-      md_final = (int (*)(unsigned char*, void*))&SHA512_Final;
-      break;
-    default:
-      assert(0);
-    }
-  }
-
-  ~hash_generator__() {
-    release();
-  }
+  hash_generator__(): initialized(false), finalized(false), hashed_bytes(0) {}
 
   void init() {
     if (initialized == false) {
-      md_init(mdctx);
+      T::init();
       initialized = true;
       finalized = false;
       hashed_bytes = 0;
@@ -247,20 +348,11 @@ public:
       std::cerr << "hashgen_t::update called after finalized\n";
       exit(1);
     }
-    md_update(mdctx, buf, bufsize);
+    T::update(buf, bufsize);
     hashed_bytes += bufsize;
   }
 
-  void release() {      /* free allocated memory */
-    free(md);
-    md = 0;
-    free(mdctx);
-    mdctx = 0;
-    initialized = false;
-    hashed_bytes = 0;
-  }
-
-  hash__<T> final() {
+  hash__<typename T::hash_t> finalize() {
     if (finalized) {
       std::cerr << "currently friendly_geneator does not cache the final value\n";
       assert(0);
@@ -269,8 +361,9 @@ public:
     if (!initialized) {
       init();      /* do it now! */
     }
-    hash__<T> val;
-    md_final(val.digest, mdctx);
+
+    hash__<typename T::hash_t> val;
+    T::finalize(val.digest);
     finalized = true;
     return val;
   }
@@ -280,7 +373,7 @@ public:
     /* First time through find the SHA1 of 512 NULLs */
     hash_generator__ g;
     g.update(buf, bufsize);
-    return g.final();
+    return g.finalize();
   }
 
 #ifdef HAVE_MMAP
@@ -311,9 +404,9 @@ public:
 #endif
 };
 
-typedef hash_generator__<md5_> md5_generator;
-typedef hash_generator__<sha1_> sha1_generator;
-typedef hash_generator__<sha256_> sha256_generator;
-typedef hash_generator__<sha512_> sha512_generator;
+typedef hash_generator__<md5_hasher> md5_generator;
+typedef hash_generator__<sha1_hasher> sha1_generator;
+typedef hash_generator__<sha256_hasher> sha256_generator;
+typedef hash_generator__<sha512_hasher> sha512_generator;
 
 #endif
