@@ -485,7 +485,7 @@ documentation and/or software.
 /* Message digest functions */
 
     void TSK_SHA_Init(TSK_SHA_CTX *);
-    void TSK_SHA_Update(TSK_SHA_CTX *, const BYTE * buffer, int count);
+    void TSK_SHA_Update(TSK_SHA_CTX *, const BYTE * buffer, unsigned int count);
     void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
 
 /* Flags for which type of hash(es) to run */
