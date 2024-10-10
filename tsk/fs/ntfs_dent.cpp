@@ -1039,7 +1039,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         idxalloc_len = fs_attr_idx->nrd.allocsize;
         // default to null unless length is greater than 0
         idxalloc = NULL;
-        if ((idxalloc_len > 0) && ((idxalloc = (char *)tsk_malloc((size_t)idxalloc_len)) == NULL)) {
+        if (idxalloc_len > 0 && (idxalloc = (char *)tsk_malloc((size_t)idxalloc_len) == NULL)) {
             return TSK_ERR;
         }
 
