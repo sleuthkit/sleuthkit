@@ -52,7 +52,7 @@ documentation and/or software.
 #define S43 15
 #define S44 21
 
-static void MD5Transform(UINT4[4], unsigned char[64]);
+static void MD5Transform(UINT4[4], const unsigned char[64]);
 static void Encode(unsigned char *, UINT4 *, unsigned int);
 static void Decode(UINT4 *, unsigned char *, unsigned int);
 static void MD5_memcpy(POINTER, POINTER, unsigned int);
@@ -196,7 +196,7 @@ TSK_MD5_Final(TSK_MD5_CTX * context, unsigned char digest[16])
 /* MD5 basic transformation. Transforms state based on block.
  */
 static void
-MD5Transform(UINT4 state[4], unsigned char block[64])
+MD5Transform(UINT4 state[4], const unsigned char block[64])
 {
     UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
 

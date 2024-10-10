@@ -293,7 +293,7 @@ void
 TSK_SHA_Update(TSK_SHA_CTX * shsInfo, const BYTE * buffer, unsigned int count)
 {
     UINT4 tmp;
-    int dataCount;
+    unsigned int dataCount;
 
     /* Update bitcount */
     tmp = shsInfo->countLo;
