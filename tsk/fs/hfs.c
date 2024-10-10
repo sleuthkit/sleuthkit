@@ -4198,7 +4198,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // make sure the fields we care about are still in the buffer
                 // +2 because key_len doesn't include its own length
                 // +16 for the amount of data we'll read from data
-                if (attrFile.nodeSize < 2 + 16 || keyLength > attrFile.nodeSize - 2 - 16 || recOffset >= attrFile.nodeSize - 2 - 16 - keyLength) {
+                if (attrFile.nodeSize < 2 + 16 || keyLength > attrFile.nodeSize - 2 - 16 || recOffset + 2 + 16 + keyLength >= attrFile.nodeSize) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;
