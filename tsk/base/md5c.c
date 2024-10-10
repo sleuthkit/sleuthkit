@@ -54,7 +54,7 @@ documentation and/or software.
 
 static void MD5Transform(UINT4[4], const unsigned char[64]);
 static void Encode(unsigned char *, UINT4 *, unsigned int);
-static void Decode(UINT4 *, unsigned char *, unsigned int);
+static void Decode(UINT4 *, const unsigned char *, unsigned int);
 static void MD5_memcpy(POINTER, POINTER, unsigned int);
 static void MD5_memset(POINTER, int, unsigned int);
 
@@ -304,7 +304,7 @@ Encode(unsigned char *output, UINT4 *input, unsigned int len)
   a multiple of 4.
  */
 static void
-Decode(UINT4 *output,  unsigned char *input,   unsigned int len)
+Decode(UINT4 *output,  const unsigned char *input,   unsigned int len)
 {
     unsigned int i, j;
 
