@@ -79,69 +79,65 @@ public:
   uint8_t digest[SIZE];
 };
 
-class md5_hasher {
+template<
+  class CTX,
+  void(*INIT)(CTX*),
+  void(*UPDATE)(CTX*, const unsigned char*, unsigned int),
+  void(*FINALIZE)(CTX*, unsigned char*),
+  class H
+>
+class legacy_hasher {
 public:
-  using hash_t = md5_;
+  using hash_t = H;
 
-  md5_hasher(): ctx(new TSK_MD5_CTX) {
-    std::memset(ctx.get(), 0, sizeof(TSK_MD5_CTX));
+  legacy_hasher(): ctx(new CTX) {
+    std::memset(ctx.get(), 0, sizeof(CTX));
   }
 
   int init() {
-    TSK_MD5_Init(ctx.get());
+    INIT(ctx.get());
     return 0;
   }
 
   int update(const unsigned char* buf, size_t len) {
-    TSK_MD5_Update(ctx.get(), buf, len);
+    UPDATE(ctx.get(), buf, len);
     return 0;
   }
 
   int finalize(unsigned char* digest) {
-    TSK_MD5_Final(digest, ctx.get());
+    FINALIZE(ctx.get(), digest);
     return 0;
   }
 
 private:
-  std::unique_ptr<TSK_MD5_CTX> ctx;
+  std::unique_ptr<CTX> ctx;
 };
 
-class sha1_hasher {
-public:
-  using hash_t = sha1_;
+using md5_hasher = legacy_hasher<
+  TSK_MD5_CTX,
+  TSK_MD5_Init,
+  TSK_MD5_Update,
+  TSK_MD5_Final,
+  md5_
+>;
 
-  sha1_hasher(): ctx(new TSK_SHA_CTX) {
-    std::memset(ctx.get(), 0, sizeof(TSK_SHA_CTX));
-  }
-
-  int init() {
-    TSK_SHA_Init(ctx.get());
-    return 0;
-  }
-
-  int update(const unsigned char* buf, size_t len) {
-    TSK_SHA_Update(ctx.get(), buf, len);
-    return 0;
-  }
-
-  int finalize(unsigned char* digest) {
-    TSK_SHA_Final(digest, ctx.get());
-    return 0;
-  }
-
-private:
-  std::unique_ptr<TSK_SHA_CTX> ctx;
-};
-
-class sha256_hasher {
-public:
-  using hash_t = sha256_;
+using sha1_hasher = legacy_hasher<
+  TSK_SHA_CTX,
+  TSK_SHA_Init,
+  TSK_SHA_Update,
+  TSK_SHA_Final,
+  sha1_
+>;
 
 #ifdef HAVE_LIBCRYPTO
-  sha256_hasher(): ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free) {}
+template<const EVP_MD*(*md_src)(), class H>
+class libcrypto_hasher {
+  using hash_t = H;
+
+  libcrypto_hasher(): ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free) {}
 
   int init() {
-    return EVP_DigestInit_ex(ctx.get(), EVP_sha256(), nullptr);
+    return EVP_DigestInit_ex(ctx.get(), md_src(), nullptr);
   }
 
   int update(const unsigned char* buf, size_t len) {
@@ -154,74 +150,30 @@ public:
 
 private:
   std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx;
-
-#else
-  sha256_hasher(): ctx(new SHA256_CTX) {}
-
-  int init() {
-    SHA256_Init(ctx.get());
-    return 0;
-  }
-
-  int update(const unsigned char* buf, size_t len) {
-    SHA256_Update(ctx.get(), buf, len);
-    return 0;
-  }
-
-  int finalize(unsigned char* digest) {
-    SHA256_Final(ctx.get(), digest);
-    return 0;
-  }
-
-private:
-  std::unique_ptr<SHA256_CTX> ctx;
-#endif
 };
 
-class sha512_hasher {
-public:
-  using hash_t = sha512_;
-
-#ifdef HAVE_LIBCRYPTO
-  sha512_hasher(): ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free) {}
-
-  int init() {
-    return EVP_DigestInit_ex(ctx.get(), EVP_sha512(), nullptr);
-  }
-
-  int update(const unsigned char* buf, size_t len) {
-    return EVP_DigestUpdate(ctx.get(), buf, len);
-  }
-
-  int finalize(unsigned char* digest) {
-    return EVP_DigestFinal_ex(ctx.get(), digest, nullptr);
-  }
-
-private:
-  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx;
+using sha256_hasher = libcrypto_hasher<EVP_sha256, sha256_>;
+using sha512_hasher = libcrypto_hasher<EVP_sha512, sha512_>;
 
 #else
-  sha512_hasher(): ctx(new SHA512_CTX) {}
 
-  int init() {
-    SHA512_Init(ctx.get());
-    return 0;
-  }
+using sha256_hasher = legacy_hasher<
+  SHA256_CTX,
+  SHA256_Init,
+  SHA256_Update,
+  SHA256_Final,
+  sha256_
+>;
 
-  int update(const unsigned char* buf, size_t len) {
-    SHA512_Update(ctx.get(), buf, len);
-    return 0;
-  }
+using sha512_hasher = legacy_hasher<
+  SHA512_CTX,
+  SHA512_Init,
+  SHA512_Update,
+  SHA512_Final,
+  sha512_
+>;
 
-  int finalize(unsigned char* digest) {
-    SHA512_Final(ctx.get(), digest);
-    return 0;
-  }
-
-private:
-  std::unique_ptr<SHA512_CTX> ctx;
 #endif
-};
 
 template<typename T>
 class hash__: public T
