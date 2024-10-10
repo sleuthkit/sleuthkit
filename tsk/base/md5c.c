@@ -124,7 +124,7 @@ TSK_MD5_Init(TSK_MD5_CTX * context)
  * @param inputLen Number of bytes in input
  */
 void
-TSK_MD5_Update(TSK_MD5_CTX * context, unsigned char *input,
+TSK_MD5_Update(TSK_MD5_CTX * context, const unsigned char *input,
     unsigned int inputLen)
 {
     unsigned int i, index, partLen;

@@ -466,7 +466,7 @@ documentation and/or software.
     } TSK_MD5_CTX;
 
     void TSK_MD5_Init(TSK_MD5_CTX *);
-    void TSK_MD5_Update(TSK_MD5_CTX *, unsigned char *, unsigned int);
+    void TSK_MD5_Update(TSK_MD5_CTX *, const unsigned char *, unsigned int);
     void TSK_MD5_Final(unsigned char[16], TSK_MD5_CTX *);
 
 
@@ -485,7 +485,7 @@ documentation and/or software.
 /* Message digest functions */
 
     void TSK_SHA_Init(TSK_SHA_CTX *);
-    void TSK_SHA_Update(TSK_SHA_CTX *, BYTE * buffer, int count);
+    void TSK_SHA_Update(TSK_SHA_CTX *, const BYTE * buffer, int count);
     void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
 
 /* Flags for which type of hash(es) to run */

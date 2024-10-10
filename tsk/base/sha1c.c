@@ -290,7 +290,7 @@ longReverse(UINT4 * buffer, int byteCount, int Endianness)
  * @param count Number of bytes in buffer
  */
 void
-TSK_SHA_Update(TSK_SHA_CTX * shsInfo, BYTE * buffer, int count)
+TSK_SHA_Update(TSK_SHA_CTX * shsInfo, const BYTE * buffer, int count)
 {
     UINT4 tmp;
     int dataCount;
