@@ -917,7 +917,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     if (keylen > nodesize - rec_off) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
-                            ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%d vs %"
+                            ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%" PRIu64 " vs %"
                             PRIu16 ")", rec, cur_node,
                             (int) rec_off + keylen, nodesize);
                         free(node);
