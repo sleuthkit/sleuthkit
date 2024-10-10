@@ -3136,6 +3136,7 @@ on_error:
  * @param ptr context for the action callback
  * @return 0 on success, 1 on error
  */
+__attribute__((unused))
 static uint8_t
 hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
@@ -3158,6 +3159,7 @@ hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
  * @param ptr context for the action callback
  * @return 0 on success, 1 on error
  */
+__attribute__((unused))
 static uint8_t
 hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
@@ -3390,6 +3392,7 @@ on_error:
  * @param a_len the length of the buffer
  * @return number of bytes read or -1 on error (incl if offset is past EOF)
  */
+__attribute__((unused))
 static ssize_t
 hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
@@ -3413,6 +3416,7 @@ hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
  * @param a_len the length of the buffer
  * @return number of bytes read or -1 on error (incl if offset is past EOF)
  */
+__attribute__((unused))
 static ssize_t
 hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
@@ -3674,6 +3678,7 @@ on_error:
  * @param uncSize uncompressed size
  * @return 1 on success, 0 on error
  */
+__attribute__((unused))
 static int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
                             uint32_t attributeLength,
@@ -3697,6 +3702,7 @@ static int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
  * @param uncSize uncompressed size
  * @return 1 on success, 0 on error
  */
+__attribute__((unused))
 static int hfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
                             uint32_t attributeLength,
