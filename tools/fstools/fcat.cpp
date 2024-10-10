@@ -173,7 +173,6 @@ main(int argc, char **argv1)
         usage();
     }
 
-
     // copy in path
     len = (TSTRLEN(argv[OPTIND]) + 1) * sizeof(TSK_TCHAR);
     if ((path = (TSK_TCHAR *) tsk_malloc(len)) == NULL) {
@@ -230,7 +229,6 @@ main(int argc, char **argv1)
             exit(1);
         }
     }
-
 
     if (-1 == (retval = tsk_fs_ifind_path(fs, path, &inum))) {
         tsk_error_print(stderr);
