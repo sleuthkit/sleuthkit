@@ -4131,7 +4131,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
 
-            if (attrFile.nodeSize < 2 || recIndx > ((attrFile.nodeSize - 2) / 2)) {
+            if (attrFile.nodeSize < 2 || 2*recIndx + 2 > attrFile.nodeSize) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (recIndx exceeds attrFile.nodeSize)");
                 goto on_error;
