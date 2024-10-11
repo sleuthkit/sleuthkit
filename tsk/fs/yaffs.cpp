@@ -1689,8 +1689,7 @@ static uint8_t
         fs_file->meta->attr = tsk_fs_attrlist_alloc();
     }
 
-    strncpy(fs_file->meta->name2->name, name,
-        TSK_FS_META_NAME_LIST_NSIZE);
+    strncpy(fs_file->meta->name2->name, name, TSK_FS_META_NAME_LIST_NSIZE - 1);
 
     fs_file->meta->size = 0;
     fs_file->meta->attr_state = TSK_FS_META_ATTR_EMPTY;
@@ -1738,8 +1737,7 @@ static uint8_t
     }
 
     fs_file->meta->addr = inode;
-    strncpy(fs_file->meta->name2->name, name,
-        TSK_FS_META_NAME_LIST_NSIZE);
+    strncpy(fs_file->meta->name2->name, name, TSK_FS_META_NAME_LIST_NSIZE - 1);
 
     fs_file->meta->size = 0;
     fs_file->meta->attr_state = TSK_FS_META_ATTR_EMPTY;
