@@ -498,12 +498,13 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 			logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
 
 			// Copy the path
-			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[i].path) + 1));
+      const size_t len = TSTRLEN(logical_img_info->inum_cache[i].path);
+			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 			if (target_path == NULL) {
 				tsk_release_lock(&(img_info->cache_lock));
 				return NULL;
 			}
-			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, TSTRLEN(logical_img_info->inum_cache[i].path) + 1);
+			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, len + 1);
 		}
 		else {
 			// The cache entry was not useful so decrease the age
