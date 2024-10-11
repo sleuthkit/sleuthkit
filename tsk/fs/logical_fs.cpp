@@ -775,12 +775,13 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	// Copy the path
-	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(search_helper->found_path) + 1));
+	const size_t len = TSTRLEN(search_helper->found_path);
+	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 	if (path == NULL) {
 		free_search_helper(search_helper);
 		return NULL;
 	}
-	TSTRNCPY(path, search_helper->found_path, TSTRLEN(search_helper->found_path) + 1);
+	TSTRNCPY(path, search_helper->found_path, len + 1);
 	free_search_helper(search_helper);
 	return path;
 }
