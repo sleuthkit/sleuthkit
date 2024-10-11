@@ -250,8 +250,11 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     FILE *
         hFile;
 
-    snprintf(fbuf, PATH_MAX, "%s/%s/%s", (char *) m_base_dir, m_vsName,
-        a_path);
+    const int ret = snprintf(fbuf, PATH_MAX, "%s/%s/%s", (char *) m_base_dir, m_vsName, a_path);
+    if (ret >= PATH_MAX) {
+        fprintf(stderr, "Error: path '%s/%s/%s' truncated\n", (char *) m_base_dir, m_vsName, a_path);
+        return 1;
+    }
 
     // clean up any control characters in path
     for (size_t i = 0; i < strlen(fbuf); i++) {
