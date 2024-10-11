@@ -165,7 +165,7 @@ uint8_t
     char fullPath[TSK_CD_BUFSIZE];
     struct stat status;
 
-    strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
+    strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE-1);
     strncat(fullPath, a_dir, TSK_CD_BUFSIZE-strlen(fullPath)-1);
 
     if ((dp = opendir(fullPath)) == NULL) {
@@ -174,11 +174,11 @@ uint8_t
     }
 
     while ((dirp = readdir(dp)) != NULL) {
-        strncpy(file, a_dir, TSK_CD_BUFSIZE);
+        strncpy(file, a_dir, TSK_CD_BUFSIZE-1);
         strncat(file, "/", TSK_CD_BUFSIZE-strlen(file)-1);
         strncat(file, dirp->d_name, TSK_CD_BUFSIZE-strlen(file)-1);
 
-        strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
+        strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE-1);
         strncat(fullPath, file, TSK_CD_BUFSIZE-strlen(fullPath)-1);
 
         stat(fullPath, &status);
