@@ -193,7 +193,7 @@ std::unique_ptr<uint8_t[]> hash_buffer(
   EVP_DigestInit_ex(ctx.get(), hfunc, nullptr);
   EVP_DigestUpdate(ctx.get(), input, len);
 
-  auto hash = std::make_unique<uint8_t[]>(EVP_MD_CTX_get_size(ctx.get()));
+  auto hash = std::make_unique<uint8_t[]>(EVP_MD_CTX_size(ctx.get()));
   EVP_DigestFinal_ex(ctx.get(), hash.get(), nullptr);
 
   return hash;
