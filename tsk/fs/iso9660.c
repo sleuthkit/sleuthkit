@@ -440,7 +440,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
     // cycle through each sector -- entries will not cross them
     for (i = 0; i < s_cnt; i++) {
         ssize_t cnt1;
-        int b_offs;             // offset in buffer
+        unsigned int b_offs;             // offset in buffer
         char buf[ISO9660_SSIZE_B];
 
         cnt1 = tsk_fs_read(fs, s_offs, buf, ISO9660_SSIZE_B);

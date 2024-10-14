@@ -314,6 +314,7 @@ tsk_img_open(int num_img,
 #if HAVE_LIBVHDI
     case TSK_IMG_TYPE_VHD_VHD:
         img_info = vhdi_open(num_img, images, a_ssize);
+        break;
 #endif
 
 #if HAVE_LIBAFF4

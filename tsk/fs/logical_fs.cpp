@@ -493,7 +493,7 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 	tsk_take_lock(&(img_info->cache_lock));
 	TSK_TCHAR *target_path = NULL;
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
-		if ((target_path == NULL) && (logical_img_info->inum_cache[i].inum == target_inum)) {
+		if (target_path == NULL && logical_img_info->inum_cache[i].inum == target_inum) {
 			// The cache entry was useful so reset the age
 			logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
 

@@ -282,6 +282,7 @@ main(int argc, char **argv)
                 case 'H':
                 case 'h':
                         usage(stdout, 0);
+                        break;
 
                 case 'n':
                         string_min = integer_arg(optarg);
@@ -336,6 +337,7 @@ main(int argc, char **argv)
 
                 case '?':
                         usage(stderr, 1);
+                        break;
 
                 default:
                         if (string_min < 0)
