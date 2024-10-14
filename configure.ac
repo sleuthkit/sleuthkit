@@ -333,7 +333,6 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
-   Catch2 support:                        $with_catch2
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ])
