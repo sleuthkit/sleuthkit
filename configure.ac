@@ -82,9 +82,10 @@ AC_ARG_ENABLE([multithreading],
 dnl Enable multithreading by default in the presence of pthread
 AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno"], [ax_multithread=yes], [ax_multithread=no])
 
-dnl Add enable/disable option
+dnl Add an option to build the Java (JNI) bindings
 AC_ARG_ENABLE([java],
-    [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
+    [AS_HELP_STRING([--enable-java], [Build the Java (JNI) bindings @<:@default=no@:>@])],
+    [enable_java=$enableval], [enable_java=no])
 
 dnl Checks for libraries.
 
@@ -195,26 +196,28 @@ AM_COND_IF([CUSTOM_DEFAULT_JAR_LOCATION],
     [AC_SUBST([DEFAULT_JAR_LOCATION], [$default_jar_location])]
 )
 
-dnl Test for the various java things that we need for bindings
+dnl Test for the various Java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
     dnl javac is needed to compile the JAR file
     AX_PROG_JAVAC
-    if test "x$JAVAC" != x; then
-        AX_JNI_INCLUDE_DIR
+    AS_IF(
+        [test "x$JAVAC" = x],
+        [enable_java=no],
+        [AX_JNI_INCLUDE_DIR
         for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
         do
             JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
         done
-        dnl Export the paths so that the makefile gets them
+        dnl Export the paths so that the Makefile gets them
         AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
-    fi
 
-    dnl java is needed by ant
-    dnl we had one report of a system with javac and not java
-    AX_PROG_JAVA
+        dnl java is needed by ant
+        dnl we had one report of a system with javac and not java
+        AX_PROG_JAVA
 
-    dnl Test is ant is available
-    AC_PATH_PROG([ANT_FOUND], [ant], [])
+        dnl Test is ant is available
+        AC_PATH_PROG([ANT_FOUND], [ant], [])
+	])
 
 ]) dnl test enable_java
 
