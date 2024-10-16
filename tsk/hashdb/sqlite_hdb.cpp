@@ -12,7 +12,11 @@
 #include "tsk_hashdb_i.h"
 #include "tsk_hash_info.h"
 
-#include "tsk/auto/sqlite3.h"
+#ifdef HAVE_LIBSQLITE3
+  #include <sqlite3.h>
+#else
+  #include "../auto/sqlite3.h"
+#endif
 
 /**
 * \file sqlite_hdb.cpp
