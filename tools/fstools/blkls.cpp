@@ -115,6 +115,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('a'):
             flags |= TSK_FS_BLOCK_WALK_FLAG_ALLOC;
             flags &= ~TSK_FS_BLOCK_WALK_FLAG_UNALLOC;

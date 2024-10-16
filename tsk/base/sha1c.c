@@ -353,7 +353,7 @@ SHAtoByte(BYTE output[SHS_DIGESTSIZE], UINT4 * input)
  * @param shsInfo Context that has data added to it.
  */
 void
-TSK_SHA_Final(BYTE output[SHS_DIGESTSIZE], TSK_SHA_CTX * shsInfo)
+TSK_SHA_Final(BYTE* output, TSK_SHA_CTX * shsInfo)
 {
     int count;
     BYTE *dataPtr;
