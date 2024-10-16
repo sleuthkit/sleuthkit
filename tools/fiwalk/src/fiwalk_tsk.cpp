@@ -150,7 +150,7 @@ uint8_t fiwalk::process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 	char ls[64];
 	tsk_fs_meta_make_ls(fs_file->meta,ls,sizeof(ls));
 	fprintf(t,"%s|%s|%" PRId64 "|%s|%d|%d|%" PRId64 "|%d|%d|%d|%d\n",
-		ci.h_md5.final().hexdigest().c_str(),ci.filename().c_str(),fs_file->meta->addr,
+		ci.h_md5.finalize().hexdigest().c_str(),ci.filename().c_str(),fs_file->meta->addr,
 		ls,fs_file->meta->uid,fs_file->meta->gid,
 		fs_file->meta->size,
 		(uint32_t)(fs_file->meta->atime),

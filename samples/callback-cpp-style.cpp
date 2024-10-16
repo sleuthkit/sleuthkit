@@ -105,7 +105,7 @@ procFile(TskFsFile * fs_file, const char *path)
     else {
         unsigned char hash[16];
 
-        TSK_MD5_Final(hash, &md);
+        TSK_MD5_Final(&md, hash);
 #if 0
         {
             int i;

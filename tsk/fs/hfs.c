@@ -593,7 +593,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 if (sizeof(hfs_btree_key_ext) > nodesize - rec_off) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                    ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %z bytes)", rec, cur_node, nodesize - (int)rec_off,
+                    ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %" PRIu64 " bytes)", rec, cur_node, nodesize - (int)rec_off,
                         sizeof(hfs_btree_key_ext));
                     free(node);
                     return 1;
@@ -880,8 +880,8 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 if ((keylen < 6) || (keylen > nodesize - rec_off)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %d < %"
-                        PRIu16 ")", rec, cur_node, keylen, nodesize - rec_off);
+                        ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %" PRIu64 " < %"
+                        PRIu64 ")", rec, cur_node, keylen, nodesize - rec_off);
                     free(node);
                     return 1;
                 }
@@ -917,7 +917,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     if (keylen > nodesize - rec_off) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
-                            ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%d vs %"
+                            ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%" PRIu64 " vs %"
                             PRIu16 ")", rec, cur_node,
                             (int) rec_off + keylen, nodesize);
                         free(node);
@@ -1003,7 +1003,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 if ((keylen < 6) || (keylen > nodesize - rec_off)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: length of key %d in leaf node %d out of bounds (6 < %d < %"
+                        ("hfs_cat_traverse: length of key %d in leaf node %d out of bounds (6 < %" PRIu64 " < %"
                         PRIu16 ")", rec, cur_node, keylen, nodesize);
                     free(node);
                     return 1;
@@ -4131,7 +4131,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
 
-            if (attrFile.nodeSize < 2 || recIndx > ((attrFile.nodeSize - 2) / 2)) {
+            if (attrFile.nodeSize < 2 || 2*recIndx + 2 > attrFile.nodeSize) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (recIndx exceeds attrFile.nodeSize)");
                 goto on_error;
@@ -4198,7 +4198,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // make sure the fields we care about are still in the buffer
                 // +2 because key_len doesn't include its own length
                 // +16 for the amount of data we'll read from data
-                if ((attrFile.nodeSize < 2 + 16) || (keyLength > attrFile.nodeSize - 2 - 16) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength)) {
+                if (attrFile.nodeSize < 2 + 16 || keyLength > attrFile.nodeSize - 2 - 16 || recOffset + 2 + 16 + keyLength >= attrFile.nodeSize) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;
@@ -4228,7 +4228,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Check the attribute fits in the node
                 //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
-                if (attributeLength > attrFile.nodeSize - 2 - 16 - keyLength || recOffset >= attrFile.nodeSize - 2 - 16 - keyLength - attributeLength) {
+                if (attrFile.nodeSize < attributeLength + 2 + 16 + keyLength||
+
+                    attrFile.nodeSize >= 2 + 16 + keyLength + attributeLength + recOffset) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;

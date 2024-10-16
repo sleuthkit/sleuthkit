@@ -19,7 +19,13 @@
  * For reasons that defy explaination (at the moment), this is required.
  */
 
+#include "tsk/tsk_config.h"
+
+#ifdef HAVE_LIBCRYPTO
+#include <openssl/evp.h>
+#else
 #include "sha2.h"
+#endif
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -27,17 +33,15 @@
 #define  DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #endif
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <iostream>
+#include <cstdint>
 #include <cstring>
+#include <iostream>
+#include <memory>
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -69,12 +73,107 @@ public:
   uint8_t digest[SIZE];
 };
 
-
 class sha512_ {
 public:
   static const size_t SIZE = 64;
   uint8_t digest[SIZE];
 };
+
+template<
+  class CTX,
+  void(*INIT)(CTX*),
+  void(*UPDATE)(CTX*, const unsigned char*, unsigned int),
+  void(*FINALIZE)(CTX*, unsigned char*),
+  class H
+>
+class legacy_hasher {
+public:
+  using hash_t = H;
+
+  legacy_hasher(): ctx(new CTX) {
+    std::memset(ctx.get(), 0, sizeof(CTX));
+  }
+
+  int init() {
+    INIT(ctx.get());
+    return 0;
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    UPDATE(ctx.get(), buf, len);
+    return 0;
+  }
+
+  int finalize(unsigned char* digest) {
+    FINALIZE(ctx.get(), digest);
+    return 0;
+  }
+
+private:
+  std::unique_ptr<CTX> ctx;
+};
+
+using md5_hasher = legacy_hasher<
+  TSK_MD5_CTX,
+  TSK_MD5_Init,
+  TSK_MD5_Update,
+  TSK_MD5_Final,
+  md5_
+>;
+
+using sha1_hasher = legacy_hasher<
+  TSK_SHA_CTX,
+  TSK_SHA_Init,
+  TSK_SHA_Update,
+  TSK_SHA_Final,
+  sha1_
+>;
+
+#ifdef HAVE_LIBCRYPTO
+template<const EVP_MD*(*md_src)(), class H>
+class libcrypto_hasher {
+  using hash_t = H;
+
+  libcrypto_hasher(): ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free) {}
+
+  int init() {
+    return EVP_DigestInit_ex(ctx.get(), md_src(), nullptr);
+  }
+
+  int update(const unsigned char* buf, size_t len) {
+    return EVP_DigestUpdate(ctx.get(), buf, len);
+  }
+
+  int finalize(unsigned char* digest) {
+    return EVP_DigestFinal_ex(ctx.get(), digest, nullptr);
+  }
+
+private:
+  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx;
+};
+
+using sha256_hasher = libcrypto_hasher<EVP_sha256, sha256_>;
+using sha512_hasher = libcrypto_hasher<EVP_sha512, sha512_>;
+
+#else
+
+using sha256_hasher = legacy_hasher<
+  SHA256_CTX,
+  SHA256_Init,
+  SHA256_Update,
+  SHA256_Final,
+  sha256_
+>;
+
+using sha512_hasher = legacy_hasher<
+  SHA512_CTX,
+  SHA512_Init,
+  SHA512_Update,
+  SHA512_Final,
+  sha512_
+>;
+
+#endif
 
 template<typename T>
 class hash__: public T
@@ -177,64 +276,18 @@ typedef hash__<sha512_> sha512_t;
 
 template<typename T>
 class hash_generator__: T {       /* generates the hash */
-  unsigned int ret;
-  void *mdctx;
-  unsigned char *md;
-  int (*md_init)(void *);
-  int (*md_update)(void *, const void *, uint32_t);
-  int (*md_final)(unsigned char *, void *);
+private:
   bool initialized;         /* has the context been initialized? */
   bool finalized;
 
 public:
   int64_t hashed_bytes;
 
-  hash_generator__(): initialized(false), finalized(false), hashed_bytes(0) {
-    switch (this->SIZE) {
-    case 16:
-      mdctx = malloc(sizeof(TSK_MD5_CTX));
-      memset(mdctx, 0, sizeof(TSK_MD5_CTX));
-      md = (unsigned char *)malloc(TSK_MD5_DIGEST_LENGTH);
-      memset(md, 0, TSK_MD5_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&TSK_MD5_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))&TSK_MD5_Update;
-      md_final = (int (*)(unsigned char*, void *))&TSK_MD5_Final;
-      break;
-    case 20:
-      mdctx = malloc(sizeof(TSK_SHA_CTX));
-      memset(mdctx, 0, sizeof(TSK_SHA_CTX));
-      md = (unsigned char *)malloc(TSK_SHA_DIGEST_LENGTH);
-      memset(md, 0, TSK_SHA_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&TSK_SHA_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))(void (*)())&TSK_SHA_Update;
-      md_final = (int (*)(unsigned char*, void*))&TSK_SHA_Final;
-      break;
-    case 32:
-      mdctx = malloc(sizeof(SHA256_CTX));
-      md = (unsigned char *)malloc(SHA256_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&SHA256_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))(void (*)())&SHA256_Update;
-      md_final = (int (*)(unsigned char*, void*))&SHA256_Final;
-      break;
-    case 64:
-      mdctx = malloc(sizeof(SHA512_CTX));
-      md = (unsigned char *)malloc(SHA512_DIGEST_LENGTH);
-      md_init = (int(*)(void *))&SHA512_Init;
-      md_update = (int (*)(void *, const void *, uint32_t))(void (*)())&SHA512_Update;
-      md_final = (int (*)(unsigned char*, void*))&SHA512_Final;
-      break;
-    default:
-      assert(0);
-    }
-  }
-
-  ~hash_generator__() {
-    release();
-  }
+  hash_generator__(): initialized(false), finalized(false), hashed_bytes(0) {}
 
   void init() {
     if (initialized == false) {
-      md_init(mdctx);
+      T::init();
       initialized = true;
       finalized = false;
       hashed_bytes = 0;
@@ -247,20 +300,11 @@ public:
       std::cerr << "hashgen_t::update called after finalized\n";
       exit(1);
     }
-    md_update(mdctx, buf, bufsize);
+    T::update(buf, bufsize);
     hashed_bytes += bufsize;
   }
 
-  void release() {      /* free allocated memory */
-    free(md);
-    md = 0;
-    free(mdctx);
-    mdctx = 0;
-    initialized = false;
-    hashed_bytes = 0;
-  }
-
-  hash__<T> final() {
+  hash__<typename T::hash_t> finalize() {
     if (finalized) {
       std::cerr << "currently friendly_geneator does not cache the final value\n";
       assert(0);
@@ -269,8 +313,9 @@ public:
     if (!initialized) {
       init();      /* do it now! */
     }
-    hash__<T> val;
-    md_final(val.digest, mdctx);
+
+    hash__<typename T::hash_t> val;
+    T::finalize(val.digest);
     finalized = true;
     return val;
   }
@@ -280,7 +325,7 @@ public:
     /* First time through find the SHA1 of 512 NULLs */
     hash_generator__ g;
     g.update(buf, bufsize);
-    return g.final();
+    return g.finalize();
   }
 
 #ifdef HAVE_MMAP
@@ -311,9 +356,9 @@ public:
 #endif
 };
 
-typedef hash_generator__<md5_> md5_generator;
-typedef hash_generator__<sha1_> sha1_generator;
-typedef hash_generator__<sha256_> sha256_generator;
-typedef hash_generator__<sha512_> sha512_generator;
+typedef hash_generator__<md5_hasher> md5_generator;
+typedef hash_generator__<sha1_hasher> sha1_generator;
+typedef hash_generator__<sha256_hasher> sha256_generator;
+typedef hash_generator__<sha512_hasher> sha512_generator;
 
 #endif
