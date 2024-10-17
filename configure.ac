@@ -133,7 +133,9 @@ AC_MSG_CHECKING(which sqlite3 to use)
 AS_IF([test "x$ax_sqlite3" = "xyes"],
       [AC_MSG_RESULT([system])
        PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"],
-      [AC_MSG_RESULT([bundled])])
+      [AC_MSG_RESULT([bundled])
+       CPPFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION"]
+)
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
 dnl Check if we should link with OpenSSL
