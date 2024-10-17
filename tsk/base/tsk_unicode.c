@@ -233,12 +233,15 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
         case 4:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 3:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 2:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 1:
             *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
         }
@@ -344,12 +347,15 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
         case 4:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 3:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 2:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 1:
             *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
         }
@@ -444,12 +450,15 @@ tsk_UTF16WtoUTF8_lclorder(const wchar_t ** sourceStart,
         case 4:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 3:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 2:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 1:
             *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
         }
@@ -485,9 +494,11 @@ isLegalUTF8(const UTF8 * source, int length)
     case 4:
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
+        FALLTHROUGH;
     case 3:
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
+        FALLTHROUGH;
     case 2:
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
@@ -514,6 +525,7 @@ isLegalUTF8(const UTF8 * source, int length)
             if (a < 0x80)
                 return false;
         }
+        FALLTHROUGH;
 
     case 1:
         if (*source >= 0x80 && *source < 0xC2)
@@ -656,18 +668,23 @@ tsk_UTF8toUTF16(const UTF8 ** sourceStart,
         case 5:
             ch += *source++;
             ch <<= 6;           /* remember, illegal UTF-8 */
+            FALLTHROUGH;
         case 4:
             ch += *source++;
             ch <<= 6;           /* remember, illegal UTF-8 */
+            FALLTHROUGH;
         case 3:
             ch += *source++;
             ch <<= 6;
+            FALLTHROUGH;
         case 2:
             ch += *source++;
             ch <<= 6;
+            FALLTHROUGH;
         case 1:
             ch += *source++;
             ch <<= 6;
+            FALLTHROUGH;
         case 0:
             ch += *source++;
         }
