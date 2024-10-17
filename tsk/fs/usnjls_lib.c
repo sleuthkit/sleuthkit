@@ -302,7 +302,7 @@ print_usnjent_act(TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr)
         case TSK_FS_USNJLS_MAC:
             return print_v2_record_mac(a_header, record);
         }
-        __attribute__((fallthrough));
+        FALLTHROUGH;
     }
     default: return TSK_WALK_ERROR;
     }
