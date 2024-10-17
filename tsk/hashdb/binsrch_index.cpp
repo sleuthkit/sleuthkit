@@ -111,20 +111,20 @@ static uint8_t
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
-            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+            _TSK_T("%s-%s.idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
         TSNPRINTF(hdb_binsrch_info->idx_idx_fname, flen,
-            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx2"),
+            _TSK_T("%s-%s.idx2"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
         return 0;
     case TSK_HDB_HTYPE_SHA1_ID:
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
-            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+            _TSK_T("%s-%s.idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
         TSNPRINTF(hdb_binsrch_info->idx_idx_fname, flen,
-            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx2"),
+            _TSK_T("%s-%s.idx2"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
         return 0;
 
@@ -702,7 +702,7 @@ uint8_t
         return 1;
     }
     TSNPRINTF(hdb_binsrch_info->uns_fname, flen,
-        _TSK_T("%s-%") PRIcTSK _TSK_T("-ns.idx"), hdb_binsrch_info->base.db_fname,
+        _TSK_T("%s-%s-ns.idx"), hdb_binsrch_info->base.db_fname,
         TSK_HDB_HTYPE_STR(hdb_binsrch_info->hash_type));
 
 
@@ -1149,9 +1149,7 @@ int8_t
     else if (hdb_binsrch_info->idx_llen == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
-        tsk_error_set_errstr(
-            "%s: Error: Index line length is zero",
-            func_name, hdb_binsrch_info->hash_len, strlen(hash));
+        tsk_error_set_errstr("%s: Error: Index line length is zero", func_name);
         return -1;
     }
 

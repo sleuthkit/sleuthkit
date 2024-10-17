@@ -15,9 +15,8 @@
 
 #ifdef HAVE_LIBCRYPTO
 #include <openssl/aes.h>
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 #include <openssl/opensslv.h>
-#include <openssl/sha.h>
 
 #include <algorithm>
 #include <cstring>
@@ -181,31 +180,32 @@ std::unique_ptr<uint8_t[]> rfc3394_key_unwrap(const uint8_t *key,
   return out;
 }
 
-std::unique_ptr<uint8_t[]> hash_buffer_md5(const void *input,
-                                           size_t len) noexcept {
-  MD5_CTX sha;
-  MD5_Init(&sha);
+std::unique_ptr<uint8_t[]> hash_buffer(
+  const EVP_MD* hfunc,
+  const void *input,
+  size_t len) noexcept
+{
+  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx(
+    EVP_MD_CTX_new(),
+    EVP_MD_CTX_free
+  );
 
-  MD5_Update(&sha, input, len);
+  EVP_DigestInit_ex(ctx.get(), hfunc, nullptr);
+  EVP_DigestUpdate(ctx.get(), input, len);
 
-  auto hash = std::make_unique<uint8_t[]>(MD5_DIGEST_LENGTH);
-
-  MD5_Final(hash.get(), &sha);
+  auto hash = std::make_unique<uint8_t[]>(EVP_MD_CTX_size(ctx.get()));
+  EVP_DigestFinal_ex(ctx.get(), hash.get(), nullptr);
 
   return hash;
 }
 
+std::unique_ptr<uint8_t[]> hash_buffer_md5(const void *input,
+                                           size_t len) noexcept {
+  return hash_buffer(EVP_md5(), input, len);
+}
+
 std::unique_ptr<uint8_t[]> hash_buffer_sha256(const void *input,
                                               size_t len) noexcept {
-  SHA256_CTX sha;
-  SHA256_Init(&sha);
-
-  SHA256_Update(&sha, input, len);
-
-  auto hash = std::make_unique<uint8_t[]>(SHA256_DIGEST_LENGTH);
-
-  SHA256_Final(hash.get(), &sha);
-
-  return hash;
+  return hash_buffer(EVP_sha256(), input, len);
 }
 #endif

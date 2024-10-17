@@ -56,6 +56,7 @@ nobase_include_HEADERS = \
 	tsk/auto/tsk_is_image_supported.h \
 	tsk/base/tsk_base.h \
 	tsk/base/tsk_os.h \
+	tsk/base/tsk_os_cpp.h \
 	tsk/fs/apfs_compat.hpp \
 	tsk/fs/apfs_fs.h \
 	tsk/fs/apfs_fs.hpp \

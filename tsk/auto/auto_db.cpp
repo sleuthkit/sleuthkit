@@ -1060,7 +1060,7 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
         return 1;
     }
 
-    TSK_MD5_Final(md5Hash, &md);
+    TSK_MD5_Final(&md, md5Hash);
     return 0;
 }
 

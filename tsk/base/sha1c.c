@@ -290,10 +290,10 @@ longReverse(UINT4 * buffer, int byteCount, int Endianness)
  * @param count Number of bytes in buffer
  */
 void
-TSK_SHA_Update(TSK_SHA_CTX * shsInfo, BYTE * buffer, int count)
+TSK_SHA_Update(TSK_SHA_CTX * shsInfo, const BYTE * buffer, unsigned int count)
 {
     UINT4 tmp;
-    int dataCount;
+    unsigned int dataCount;
 
     /* Update bitcount */
     tmp = shsInfo->countLo;
@@ -349,11 +349,11 @@ SHAtoByte(BYTE output[SHS_DIGESTSIZE], UINT4 * input)
 /**
  * \ingroup baselib
  * Calculate the hash of the data added to the context.
- * @param output Buffer to store hash value
  * @param shsInfo Context that has data added to it.
+ * @param output Buffer to store hash value
  */
 void
-TSK_SHA_Final(BYTE output[SHS_DIGESTSIZE], TSK_SHA_CTX * shsInfo)
+TSK_SHA_Final(TSK_SHA_CTX * shsInfo, BYTE* output)
 {
     int count;
     BYTE *dataPtr;

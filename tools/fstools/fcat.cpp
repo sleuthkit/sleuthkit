@@ -9,6 +9,8 @@
 **/
 
 #include "tsk/tsk_tools_i.h"
+#include "tsk/base/tsk_os_cpp.h"
+
 #include <locale.h>
 
 /* usage - explain and terminate */
@@ -66,8 +68,7 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     TSK_TCHAR *cp;
     unsigned int ssize = 0;
-    TSK_TCHAR *path = NULL;
-    size_t len;
+    TSK_TSTRING path;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -90,6 +91,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -172,14 +174,8 @@ main(int argc, char **argv1)
         usage();
     }
 
-
     // copy in path
-    len = (TSTRLEN(argv[OPTIND]) + 1) * sizeof(TSK_TCHAR);
-    if ((path = (TSK_TCHAR *) tsk_malloc(len)) == NULL) {
-        tsk_fprintf(stderr, "error allocating memory\n");
-        exit(1);
-    }
-    TSTRNCPY(path, argv[OPTIND], TSTRLEN(argv[OPTIND]) + 1);
+    path = argv[OPTIND];
 
     if ((img =
             tsk_img_open(argc - OPTIND - 1, &argv[OPTIND+1],
@@ -230,22 +226,18 @@ main(int argc, char **argv1)
         }
     }
 
-
-    if (-1 == (retval = tsk_fs_ifind_path(fs, path, &inum))) {
+    if (-1 == (retval = tsk_fs_ifind_path(fs, &path[0], &inum))) {
         tsk_error_print(stderr);
         tsk_fs_close(fs);
         tsk_img_close(img);
-        free(path);
         exit(1);
     }
     else if (retval == 1) {
         tsk_fprintf(stderr, "File not found\n");
         tsk_fs_close(fs);
         tsk_img_close(img);
-        free(path);
         exit(1);
     }
-    free(path);
 
     // @@@ Cannot currently get ADS with this approach
     retval =

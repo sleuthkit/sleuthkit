@@ -43,7 +43,6 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
-	bool do_hash = false;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -66,6 +65,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
@@ -122,8 +122,7 @@ main(int argc, char **argv1)
     }
 
     // Run findFilesInImage to process the image and detect data / encryption
-    int findFilesResult;
-    findFilesResult = imageProcessor.findFilesInImg();
+    imageProcessor.findFilesInImg();
 
     imageProcessor.printResults();
 

@@ -181,7 +181,7 @@ extern "C" int main(int argc, char * const *argv1) {
 	case _TSK_T('G'): o.opt_maxgig = TATOI(OPTARG);break;
 	case _TSK_T('h'): usage(o); break;
 	case _TSK_T('I'): o.opt_ignore_ntfs_system_files=true;break;
-	case _TSK_T('M'): o.opt_md5 = true;
+	case _TSK_T('M'): o.opt_md5 = true; break;
 	case _TSK_T('O'): o.opt_allocated_only=true; break;
 	case _TSK_T('S'):
             o.opt_sector_hash = true;
