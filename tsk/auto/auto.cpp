@@ -1139,3 +1139,18 @@ TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
     else
         return 0;
 }
+
+/**
+ * Utility method to help determine if an attribute is resident
+ *
+ * @returns 1 if the attribute is resident, 0 if not.
+ */
+uint8_t
+TskAuto::isResident(const TSK_FS_ATTR * a_fs_attr)
+{
+    if ((a_fs_attr) && (a_fs_attr->flags & TSK_FS_ATTR_RES))
+        return 1;
+    else
+        return 0;
+}
+

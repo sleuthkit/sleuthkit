@@ -284,6 +284,7 @@ class TskAuto {
     uint8_t isDefaultType(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR * fs_attr);
     uint8_t isNonResident(const TSK_FS_ATTR * fs_attr);
+    uint8_t isResident(const TSK_FS_ATTR * fs_attr);
 	bool m_imageWriterEnabled;
     TSK_TCHAR * m_imageWriterPath;
 

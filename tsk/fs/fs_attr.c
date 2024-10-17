@@ -200,7 +200,8 @@ fs_attr_put_name(TSK_FS_ATTR * fs_attr, const char *name)
 
 /**
  * \internal
- * Copy resident data to an attribute.
+ * Copy resident data to an attribute including the offset when available. 
+ * Overrides the old function tsk_fs_attr_set_str to make implementation optional.
  *
  * @param a_fs_attr Attribute to add data to (cannot be NULL)
  * @param name Name of the attribute to set
@@ -209,12 +210,13 @@ fs_attr_put_name(TSK_FS_ATTR * fs_attr, const char *name)
  * @param res_data Pointer to where resident data is located (data will
  * be copied from here into FS_DATA)
  * @param len Length of resident data
+ * @param offset Offset on disk
  * @return 1 on error and 0 on success
  */
 uint8_t
-tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
+tsk_fs_attr_set_str_offset(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     const char *name, TSK_FS_ATTR_TYPE_ENUM type, uint16_t id,
-    void *res_data, size_t len)
+    void *res_data, size_t len, TSK_OFF_T offset)
 {
     if (a_fs_attr == NULL) {
         tsk_error_reset();
@@ -241,11 +243,34 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
         a_fs_attr->rd.buf_size = len;
     }
 
+    a_fs_attr->rd.offset = offset;
     memset(a_fs_attr->rd.buf, 0, a_fs_attr->rd.buf_size);
     memcpy(a_fs_attr->rd.buf, res_data, len);
     a_fs_attr->size = len;
 
     return 0;
+}
+
+/**
+ * \internal
+ * Copy resident data to an attribute including the offset when available. 
+ *
+ * @param a_fs_attr Attribute to add data to (cannot be NULL)
+ * @param name Name of the attribute to set
+ * @param type Type of the attribute to set
+ * @param id Id of the attribute to set
+ * @param res_data Pointer to where resident data is located (data will
+ * be copied from here into FS_DATA)
+ * @param len Length of resident data
+ * @return 1 on error and 0 on success * 
+*/
+uint8_t
+tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
+    const char *name, TSK_FS_ATTR_TYPE_ENUM type, uint16_t id,
+    void *res_data, size_t len)
+{
+    return tsk_fs_attr_set_str_offset(a_fs_file, a_fs_attr, name, type, id,
+        res_data, len, -1);
 }
 
 
