@@ -61,6 +61,8 @@ for:
         - job_name: Linux Build
 
     install:
+      - sudo apt update
+      - sudo apt list --installed | grep openssl
       - sudo apt install -y autoconf python3-venv
 
     build_script:
