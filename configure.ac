@@ -87,6 +87,13 @@ AC_ARG_ENABLE([java],
     [AS_HELP_STRING([--enable-java], [Build the Java (JNI) bindings @<:@default=no@:>@])],
     [enable_java=$enableval], [enable_java=no])
 
+dnl Add option for building static executables (binaries)
+AC_ARG_ENABLE(
+    [static-executables],
+    [AS_HELP_STRING([--enable-static-executables], [build static executables (binaries) @<:@default=no@:>@])],
+    [static_executables=$enableval],
+    [static_executables=no])
+
 dnl Checks for libraries.
 
 dnl Some platforms will complain about missing included functions if libstdc++ is not included.
@@ -100,7 +107,7 @@ AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header
 AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header]))
 AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header]))
 
-dnl Check for sqlite and its dependencies
+dnl Check for sqlite3 and its dependencies
 AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
   [
     SAVED_AX_PACKAGE_REQUIRES_PRIVATE="$AX_PACKAGE_REQUIRES_PRIVATE"
@@ -117,7 +124,7 @@ AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
   )]
 )
 
-dnl check again for sqlite3 if not found by pkgconfig
+dnl Check for sqlite3 if not found by pkgconfig
 AS_IF([test "x$ax_sqlite3" != "xyes"],
   [
     AC_CHECK_HEADERS(
@@ -128,12 +135,16 @@ AS_IF([test "x$ax_sqlite3" != "xyes"],
   ]
 )
 
-dnl Compile the bundled sqlite if there is no system one installed
-AC_MSG_CHECKING(which sqlite3 to use)
-AS_IF([test "x$ax_sqlite3" = "xyes"],
-      [AC_MSG_RESULT([system])
-       PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"],
-      [AC_MSG_RESULT([bundled])])
+AS_IF([test "x$static_executables" != "xyes"],
+      [dnl Compile the bundled sqlite3 if there is no system one installed
+      AC_MSG_CHECKING(which sqlite3 to use)
+      AS_IF([test "x$ax_sqlite3" = "xyes"],
+            [AC_MSG_RESULT([system])
+             PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"],
+             [AC_MSG_RESULT([bundled])
+              ax_sqlite3="bundled"])
+      ])
+
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
 dnl Check if we should link with OpenSSL
@@ -275,15 +286,17 @@ case "$host" in
   ;;
 esac
 
-dnl ensure static linkage of tools during static builds
-if test "x$enable_shared" != "xyes"; then
-  CXXLD="$CXX -all-static"
-else
-  CXXLD="$CXX"
-fi
+dnl Ensure static linkage of tools during static builds
+AS_IF([test "x$static_executables" != "xyes"],
+      [CXXLD="$CXX"],
+      [CXXLD="$CXX -all-static"
 
-AM_CONDITIONAL([BUILD_STATIC], [test "x$enable_shared" != "xyes"])
+       disable_java=yes
+       enable_shared=no])
+
 AC_SUBST([CXXLD])
+
+AM_CONDITIONAL([BUILD_STATIC], [test "x$static_executables" = "xyes"])
 
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
@@ -333,6 +346,7 @@ Building:
    libvslvm support:                      $ax_libvslvm
 
    openssl support:                       $ax_libcrypto
+   sqlite3 support:                       $ax_sqlite3
    zlib support:                          $ax_zlib
 
 Features:

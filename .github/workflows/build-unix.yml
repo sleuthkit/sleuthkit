@@ -65,7 +65,7 @@ jobs:
             arch: "x86_64"
             linkage: "static"
             runner: "ubuntu-22.04"
-            configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --disable-shared --enable-static"
+            configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --enable-static-executables"
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine64'
@@ -90,8 +90,8 @@ jobs:
             arch: "i686"
             linkage: "static"
             runner: "ubuntu-22.04"
-            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static --disable-java "
-            configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static"
+            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-java --enable-static-executables "
+            configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-static-executables"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
             wineprefix: '/home/runner/.wine32'
