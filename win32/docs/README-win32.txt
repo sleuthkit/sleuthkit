@@ -11,13 +11,13 @@
 ======================================================================
 
 This zip file contains the Microsoft Windows executables for The Sleuth
-Kit.  The full source code (including Visual Studio Solution files) and 
+Kit.  The full source code (including Visual Studio Solution files) and
 documentation can be downloaded from:
 
 http://www.sleuthkit.org
 
-These are distributed under the IBM Public License and the Common 
-Public License, which can be found in the licenses folder. 
+These are distributed under the IBM Public License and the Common
+Public License, which can be found in the licenses folder.
 
 
 NOTES
@@ -34,7 +34,7 @@ to fix the problem.  It can be downloaded from Microsoft:
 http://www.microsoft.com/downloads/en/confirmation.aspx?FamilyID=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en
 
 
-mactime.pl requires a Windows port of Perl to be installed. If you have 
+mactime.pl requires a Windows port of Perl to be installed. If you have
 the ".pl" extension associated with Perl, you should be able to run
 "mactime.pl" from the command line. Otherwise, you may need to run it
 as "perl mactime.pl".  Examples of Windows ports of Perl include:
@@ -44,17 +44,17 @@ as "perl mactime.pl".  Examples of Windows ports of Perl include:
 
 CURRENT LIMITATIONS
 
-The tools do not currently support globbing, which means that you 
+The tools do not currently support globbing, which means that you
 cannot use 'fls img.*' on a split image.  Windows does not automatically
 expand the '*' to all file names.  However, most split images can now
 be used in The Sleuth Kit by simply specifying the first segment's path.
 
-These programs can be run on a live system, if you use the 
+These programs can be run on a live system, if you use the
 \\.\PhysicalDrive0 syntax.  Note though, that you may get errors or the
-file system type may not be detected because the data being read is out 
-of sync with cached versions of the data.  
+file system type may not be detected because the data being read is out
+of sync with cached versions of the data.
 
 Unicode characters are not always properly displayed in the command
 shell.
 
-The AFF image formats are not supported. 
+The AFF image formats are not supported.
