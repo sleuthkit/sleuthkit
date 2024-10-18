@@ -24,6 +24,7 @@
 #define _TSK_BASE_H
 
 // standard C header files
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
