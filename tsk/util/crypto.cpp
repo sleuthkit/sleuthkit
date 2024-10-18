@@ -23,46 +23,11 @@
 #include <string>
 #include <thread>
 
-// This should initialize and cleanup openssl
-static struct _openssl_init {
-  _openssl_init() noexcept {
-    OpenSSL_add_all_algorithms();
-
-// OpenSSL 1.1.0 removed the need for threading callbacks
-#if OPENSSL_VERSION_NUMBER < 0x10100000 && defined(TSK_MULTITHREAD_LIB)
-    CRYPTO_set_locking_callback([](int mode, int n, const char *, int) {
-      static auto mutexes = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
-
-      auto &mutex = mutexes[n];
-
-      if (mode & CRYPTO_LOCK) {
-        mutex.lock();
-      } else {
-        mutex.unlock();
-      }
-    });
-
-    CRYPTO_THREADID_set_callback([](CRYPTO_THREADID *id) {
-      thread_local const auto thread_id =
-          std::hash<std::thread::id>()(std::this_thread::get_id());
-      CRYPTO_THREADID_set_numeric(id, thread_id);
-    });
-#endif
-  }
-
-  ~_openssl_init() noexcept { EVP_cleanup(); }
-} openssl_init{};
-
 aes_xts_decryptor::aes_xts_decryptor(AES_MODE mode, const uint8_t *key1,
                                      const uint8_t *key2,
                                      size_t block_size) noexcept
     : _block_size{block_size} {
-  // EVP_CIPHER_CTX was made opaque in OpenSSL 1.1.0.
-#if OPENSSL_VERSION_NUMBER < 0x10100000
-  _ctx = new EVP_CIPHER_CTX();
-#else
   _ctx = EVP_CIPHER_CTX_new();
-#endif
 
   EVP_CIPHER_CTX_init(_ctx);
 
@@ -94,13 +59,7 @@ aes_xts_decryptor::aes_xts_decryptor(AES_MODE mode, const uint8_t *key1,
 }
 
 aes_xts_decryptor::~aes_xts_decryptor() noexcept {
-  // EVP_CIPHER_CTX was made opaque in OpenSSL 1.1.0.
-#if OPENSSL_VERSION_NUMBER < 0x10100000
-  EVP_CIPHER_CTX_cleanup(_ctx);
-  delete _ctx;
-#else
   EVP_CIPHER_CTX_free(_ctx);
-#endif
 }
 
 int aes_xts_decryptor::decrypt_buffer(void *buffer, size_t length,
