@@ -289,7 +289,6 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/vmdk.c \
 	tsk/img/vmdk.h
 
-tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
@@ -308,7 +307,6 @@ tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/detect_encryption.c \
 	tsk/util/file_system_utils.c
 
-tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
 	tsk/util/Bitlocker/BitlockerUtils.cpp \
