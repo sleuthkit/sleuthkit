@@ -1,5 +1,7 @@
 #include "tsk/util/crypto.hpp"
 
+#ifdef HAVE_LIBCRYPTO
+
 #include <cstring>
 
 #include "catch.hpp"
@@ -44,3 +46,5 @@ TEST_CASE("rf3394_key_unwrap") {
   REQUIRE(out);
   REQUIRE(!std::memcmp(out.get(), wrap_pt, sizeof(wrap_pt)));
 }
+
+#endif
