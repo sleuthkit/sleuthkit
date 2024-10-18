@@ -14,9 +14,7 @@
 #include "crypto.hpp"
 
 #ifdef HAVE_LIBCRYPTO
-#include <openssl/aes.h>
 #include <openssl/evp.h>
-#include <openssl/opensslv.h>
 
 #include <algorithm>
 #include <cstring>
@@ -159,21 +157,57 @@ std::unique_ptr<uint8_t[]> pbkdf2_hmac_sha256(const std::string &password,
   return out;
 }
 
-std::unique_ptr<uint8_t[]> rfc3394_key_unwrap(const uint8_t *key,
-                                              size_t key_len, const void *input,
-                                              size_t input_len,
-                                              const void *iv) noexcept {
-  AES_KEY aes_key;
-  AES_set_decrypt_key(key, key_len * 8, &aes_key);
+std::unique_ptr<uint8_t[]> rfc3394_key_unwrap(
+  const uint8_t *key,
+  size_t key_len,
+  const void *input,
+  size_t input_len,
+  const void *iv) noexcept
+{
+  std::unique_ptr<EVP_CIPHER_CTX, decltype(&EVP_CIPHER_CTX_free)> ctx(
+    EVP_CIPHER_CTX_new(),
+    EVP_CIPHER_CTX_free
+  );
 
-  const int output_len = input_len - 8;
+  if (!ctx) {
+    return nullptr;
+  }
 
-  auto out = std::make_unique<uint8_t[]>(output_len);
+  if (!EVP_DecryptInit_ex(
+    ctx.get(),
+    EVP_aes_256_wrap(),
+    nullptr,
+    key,
+    static_cast<const uint8_t*>(iv))
+  ) {
+    return nullptr;
+  }
 
-  const auto ret = AES_unwrap_key(&aes_key, (const uint8_t *)iv, out.get(),
-                                  (const uint8_t *)input, input_len);
+  const int output_len_exp = input_len - 8;
+  auto out = std::make_unique<uint8_t[]>(output_len_exp);
 
-  if (ret != output_len) {
+  int len;
+  int output_len_act;
+
+  if (!EVP_DecryptUpdate(
+    ctx.get(),
+    out.get(),
+    &len,
+    static_cast<const uint8_t*>(input),
+    input_len)
+  ) {
+    return nullptr;
+  }
+
+  output_len_act = len;
+
+  if (!EVP_DecryptFinal_ex(ctx.get(), out.get() + len, &len)) {
+    return nullptr;
+  }
+
+  output_len_act += len;
+
+  if (output_len_act != output_len_exp) {
     return nullptr;
   }
 
