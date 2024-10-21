@@ -4234,9 +4234,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Check the attribute fits in the node
                 //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
-                if (attrFile.nodeSize < attributeLength + 2 + 16 + keyLength||
-
-                    attrFile.nodeSize >= 2 + 16 + keyLength + attributeLength + recOffset) {
+                if (attributeLength + 2 + 16 + keyLength > attrFile.nodeSize || recOffset + 2 + 16 + keyLength + attributeLength >= attrFile.nodeSize) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;

@@ -34,7 +34,7 @@ jobs:
             arch: "x86_64"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=-Wno-unused-command-line-argument"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=\"-Wno-unused-command-line-argument -Werror\" CXXFLAGS=-Werror"
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
@@ -44,7 +44,7 @@ jobs:
             compiler: "clang"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++ CFLAGS=-Werror CXXFLAGS=-Werror"
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
@@ -77,7 +77,7 @@ jobs:
             arch: "i686"
             linkage: "shared"
             runner: "ubuntu-22.04"
-            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static --disable-java "
+            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static --disable-java"
             configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
@@ -90,7 +90,7 @@ jobs:
             arch: "i686"
             linkage: "static"
             runner: "ubuntu-22.04"
-            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static --disable-java "
+            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static --disable-java"
             configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static"
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
