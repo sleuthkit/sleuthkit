@@ -176,6 +176,11 @@ std::unique_ptr<uint8_t[]> rfc3394_key_unwrap(
     return nullptr;
   }
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000
+  // not needed for OpenSSL >= 3
+  EVP_CIPHER_CTX_set_flags(ctx.get(), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+#endif
+
   if (!EVP_DecryptInit_ex(
     ctx.get(),
     EVP_aes_256_wrap(),
