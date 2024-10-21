@@ -1142,7 +1142,7 @@ int8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-            "%s: Hash passed is different size than expected (%d vs %zd)",
+            "%s: Hash passed is different size than expected (%d vs %" PRIuSIZE ")",
             func_name, hdb_binsrch_info->hash_len, strlen(hash));
         return -1;
     }
