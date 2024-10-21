@@ -279,7 +279,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("addNewBlock: error writing BAT entry",
+        tsk_error_set_errstr("addNewBlock: error writing BAT entry: %d",
             lastError);
         free(fullBuffer);
         free(sectorBitmap);
