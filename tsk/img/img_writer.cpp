@@ -163,7 +163,7 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
                 int lastError = GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-                tsk_error_set_errstr("addToExistingBlock: error writing sector",
+                tsk_error_set_errstr("addToExistingBlock: error writing sector: %d",
                     lastError);
                 return TSK_ERR;
             }
