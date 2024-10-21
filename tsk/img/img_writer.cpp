@@ -471,10 +471,10 @@ static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
 
     DWORD bytesWritten;
     if (FALSE == WriteFile(writer->outputFileHandle, writer->footer, VHD_FOOTER_LENGTH, &bytesWritten, NULL)) {
-        int lastError = GetLastError();
+        const int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("writeFooter: error writing VHD footer",
+        tsk_error_set_errstr("writeFooter: error writing VHD footer: %d",
             lastError);
         return TSK_ERR;
     }
