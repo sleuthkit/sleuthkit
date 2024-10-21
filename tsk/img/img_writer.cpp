@@ -621,7 +621,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
         return TSK_ERR;
     }
 
-    IMG_RAW_INFO * raw_info = (IMG_RAW_INFO *)(img_writer->img_info);
     TSK_OFF_T offset;
     TSK_OFF_T startOfBlock;
 
