@@ -504,10 +504,10 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
 
     DWORD bytesWritten;
     if (FALSE == WriteFile(writer->outputFileHandle, diskHeader, VHD_DISK_HEADER_LENGTH, &bytesWritten, NULL)) {
-        int lastError = GetLastError();
+        const int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("writeFooter: error writing VHD header",
+        tsk_error_set_errstr("writeFooter: error writing VHD header: %d",
             lastError);
         free(diskHeader);
         return TSK_ERR;
