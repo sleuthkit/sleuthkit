@@ -15,6 +15,7 @@
 
 #ifdef HAVE_LIBCRYPTO
 #include <openssl/evp.h>
+#include <openssl/opensslv.h>
 
 #include <algorithm>
 #include <cstring>
@@ -23,6 +24,7 @@
 #include <string>
 #include <thread>
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000
 // This should initialize and cleanup openssl
 static struct _openssl_init {
   _openssl_init() noexcept {
@@ -52,6 +54,7 @@ static struct _openssl_init {
 
   ~_openssl_init() noexcept { EVP_cleanup(); }
 } openssl_init{};
+#endif
 
 aes_xts_decryptor::aes_xts_decryptor(AES_MODE mode, const uint8_t *key1,
                                      const uint8_t *key2,
