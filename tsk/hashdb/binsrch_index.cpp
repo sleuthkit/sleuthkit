@@ -1017,7 +1017,7 @@ uint8_t
 
     // verify it was created
     stat = GetFileAttributes(hdb_binsrch_info->idx_fname);
-    if (stat == -1) {
+    if (stat == INVALID_FILE_ATTRIBUTES) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_PROC);
         tsk_error_set_errstr("hdb_binsrch_finalize: sorted file not created");
