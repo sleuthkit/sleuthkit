@@ -542,7 +542,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
         return TSK_ERR;
     }
 
-    if (addr / writer->blockSize == (addr + len) / writer->blockSize) {
+    if (addr / writer->blockSize == (TSK_OFF_T)(addr + len) / writer->blockSize) {
         /* The buffer is contained in a single block */
         return addBlock(writer, addr, buffer, len);
     }
