@@ -190,6 +190,7 @@ jobs:
       - name: DEBUG - just run fiwalk and see if it hangs
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
+          make -j tests/fiwalk_test VERBOSE=1
           tests/fiwalk_test
 
       - name: Run make with address-sanitizer
