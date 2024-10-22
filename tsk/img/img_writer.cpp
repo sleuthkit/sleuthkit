@@ -818,7 +818,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
             int lastError = GetLastError();
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-            tsk_error_set_errstr("tsk_img_writer_create: Error writing block allocation table", lastError);
+            tsk_error_set_errstr("tsk_img_writer_create: Error writing block allocation table: %d", lastError);
             free(writer->fileName);
             free(raw_info->img_writer);
             return TSK_ERR;
