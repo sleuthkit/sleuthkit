@@ -345,7 +345,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             pname = cur_dir;    // save a copy of the current name pointer
 
             // advance to the next name
-            cur_dir = (char *) strtok_r(NULL, "/", &(strtok_last));
+            cur_dir = (char *) strtok_r(NULL, "/", &strtok_last);
             cur_attr = NULL;
 
             if (tsk_verbose)
