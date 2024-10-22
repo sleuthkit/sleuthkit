@@ -65,12 +65,12 @@ TSK_HDB_INFO *md5sum_open(FILE *hDb, const TSK_TCHAR *db_path)
     hdb_binsrch_info->get_entry = md5sum_getentry;
     hdb_binsrch_info->base.make_index = md5sum_makeindex;
 
-    return (TSK_HDB_INFO*)hdb_binsrch_info;    
+    return (TSK_HDB_INFO*)hdb_binsrch_info;
 }
 
 /**
 * Given a line of text from an MD5sum database, return pointers
-* to the start start of the name and MD5 hash values (original 
+* to the start start of the name and MD5 hash values (original
 * string will have NULL values in it).
 *
 * @param [in]Input string from database -- THIS WILL BE MODIFIED
@@ -287,8 +287,8 @@ uint8_t
 * Find the corresponding name at a
 * given offset.  The offset was likely determined from the index.
 * The entries in the DB following the one specified are also processed
-* if they have the same hash value and their name is different. 
-* The callback is called for each entry. 
+* if they have the same hash value and their name is different.
+* The callback is called for each entry.
 *
 * @param hdb_info Hash database to get data from
 * @param hash MD5 hash value that was searched for

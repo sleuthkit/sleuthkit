@@ -296,7 +296,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             info->fs_name->type = TSK_FS_NAME_TYPE_DIR;
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
-            // Make sure there is enough space in cur_key for the name 
+            // Make sure there is enough space in cur_key for the name
             // (name is unicode so each characters is two bytes; 6 bytes
             // of non-name characters)
             const int32_t nameLength =
@@ -362,7 +362,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             }
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
-            // Make sure there is enough space in cur_key for the name 
+            // Make sure there is enough space in cur_key for the name
             // (name is unicode so each characters is two bytes; 6 bytes
             // of non-name characters)
             const int32_t nameLength =

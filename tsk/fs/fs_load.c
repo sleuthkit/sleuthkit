@@ -1,6 +1,6 @@
-/* 
+/*
  * The Sleuth Kit
- * 
+ *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved
  *
@@ -17,7 +17,7 @@
 #include <string.h>
 
 
-/* File Walk Action to load the journal 
+/* File Walk Action to load the journal
  * TSK_FS_LOAD_FILE is defined in fs_tools.h
 */
 

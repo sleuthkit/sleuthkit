@@ -1,6 +1,6 @@
 /*
 ** blkcalc
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Calculates the corresponding block number between 'blkls' and 'dd' images
 ** when given an 'blkls' block number, it determines the block number it
@@ -31,7 +31,7 @@
 #include "tsk_fs_i.h"
 
 
-/** \internal 
+/** \internal
  * Structure to store data for callbacks.
 */
 typedef struct {
@@ -48,7 +48,7 @@ typedef struct {
 ** keeps a count of unallocated blocks seen thus far
 **
 ** If the specified block is allocated, an error is given, else the
-** count of unalloc blocks is given 
+** count of unalloc blocks is given
 **
 ** This is called for all blocks (alloc and unalloc)
 */

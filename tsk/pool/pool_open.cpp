@@ -39,7 +39,7 @@ const TSK_POOL_INFO *tsk_pool_open_sing(const TSK_VS_PART_INFO *part,
 }
 
 
-/** 
+/**
  * @param num_vols Number of volumes in parts array
  * @param parts List of Volume partitions to review
  * @type Type of pool to open (or auto detect)

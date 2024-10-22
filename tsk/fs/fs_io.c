@@ -54,7 +54,7 @@ fs_prepost_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf,
         TSK_DADDR_T blk = cur_off / a_fs->block_size;
         size_t read_len = a_fs->block_size - cur_off % a_fs->block_size;
 
-        if ((TSK_OFF_T)read_len > end_off - cur_off) 
+        if ((TSK_OFF_T)read_len > end_off - cur_off)
             read_len = (size_t) (end_off - cur_off);
 
         read_off =
@@ -103,7 +103,7 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
  * @return The number of bytes read or -1 on error.
  */
 ssize_t
-tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len, 
+tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len,
     TSK_DADDR_T crypto_id)
 {
     // do a sanity check on the read bounds, but only if the block
@@ -219,7 +219,7 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
             " not a multiple of %d", a_len, a_fs->block_size);
         return -1;
     }
-    
+
     if (a_addr > a_fs->last_block_act) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_READ);

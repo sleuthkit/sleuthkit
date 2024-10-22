@@ -8,7 +8,7 @@ EXIT_SUCCESS=0
 EXIT_FAILURE=1
 EXIT_IGNORE=77
 
-IMAGE_DIR=tests/from_brian
+IMAGE_DIR=$HOME/from_brian
 NTHREADS=1
 NITERS=1
 
@@ -44,7 +44,7 @@ if test -f ${IMAGE_DIR}/ext2fs.dd ; then
     ${FS_THREAD_TEST} -f ext2 ${IMAGE_DIR}/ext2fs.dd 1 1
     mv thread-0.log base.log
     ${FS_THREAD_TEST} -f ext2 ${IMAGE_DIR}/ext2fs.dd ${NTHREADS} ${NITERS}
-    
+
     if ! check_diffs ; then
         exit ${EXIT_FAILURE}
     fi
@@ -59,14 +59,14 @@ if test -f ${IMAGE_DIR}/ext2fs.dd ; then
     ${FS_THREAD_TEST} -f ufs ${IMAGE_DIR}/misc-ufs1.dd 1 1
     mv thread-0.log base.log
     ${FS_THREAD_TEST} -f ufs ${IMAGE_DIR}/misc-ufs1.dd ${NTHREADS} ${NITERS}
-    
+
     if ! check_diffs ; then
         exit ${EXIT_FAILURE}
     fi
 else
     echo ${IMAGE_DIR}/ext2fs.dd missing
     [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE};
-fi    
+fi
 
 
 if test -f ${IMAGE_DIR}/test_hfs.dmg ; then
@@ -75,14 +75,14 @@ if test -f ${IMAGE_DIR}/test_hfs.dmg ; then
     ${FS_THREAD_TEST} -f hfs -o 64 ${IMAGE_DIR}/test_hfs.dmg 1 1
     mv thread-0.log base.log
     ${FS_THREAD_TEST} -f hfs -o 64 ${IMAGE_DIR}/test_hfs.dmg ${NTHREADS} ${NITERS}
-    
+
     if ! check_diffs ; then
         exit ${EXIT_FAILURE}
     fi
 else
     echo ${IMAGE_DIR}/test_hfs.dmg missing
     [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE}
-fi    
+fi
 
 if test -f ${IMAGE_DIR}/ntfs-img-kw-1.dd ; then
     echo testing ${IMAGE_DIR}/ntfs-img-kw-1.dd
@@ -90,14 +90,14 @@ if test -f ${IMAGE_DIR}/ntfs-img-kw-1.dd ; then
     ${FS_THREAD_TEST} -f ntfs ${IMAGE_DIR}/ntfs-img-kw-1.dd 1 1
     mv thread-0.log base.log
     ${FS_THREAD_TEST} -f ntfs ${IMAGE_DIR}/ntfs-img-kw-1.dd ${NTHREADS} ${NITERS}
-    
+
     if ! check_diffs ; then
         exit ${EXIT_FAILURE}
     fi
 else
     echo ${IMAGE_DIR}/ntfs-img-kw-1.dd missing
     [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE}
-fi    
+fi
 
 
 if test -f ${IMAGE_DIR}/fat32.dd ; then
@@ -106,15 +106,14 @@ if test -f ${IMAGE_DIR}/fat32.dd ; then
     ${FS_THREAD_TEST} -f fat ${IMAGE_DIR}/fat32.dd 1 1
     mv thread-0.log base.log
     ${FS_THREAD_TEST} -f fat ${IMAGE_DIR}/fat32.dd ${NTHREADS} ${NITERS}
-    
+
     if ! check_diffs; then
         exit ${EXIT_FAILURE}
     fi
 else
     echo ${IMAGE_DIR}/fat32.dd missing
     [ -z "$NOHARDFAIL" ] && exit ${EXIT_IGNORE}
-fi    
-    
+fi
+
 
 exit ${EXIT_SUCCESS}
-

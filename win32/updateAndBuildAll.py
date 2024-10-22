@@ -19,9 +19,9 @@ from sys import platform as _platform
 import time
 import traceback
 
-MSBUILD_LOCATIONS = ['C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin',
-                     'C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin',
-                     '/cygdrive/c/Program\ Files\ \(x86\)/MSBuild/14.0/Bin/']
+MSBUILD_LOCATIONS = [r'C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin',
+                     r'C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin',
+                     r'/cygdrive/c/Program Files (x86)/MSBuild/14.0/Bin/']
 
 
 

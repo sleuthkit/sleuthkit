@@ -314,6 +314,7 @@ tsk_img_open(int num_img,
 #if HAVE_LIBVHDI
     case TSK_IMG_TYPE_VHD_VHD:
         img_info = vhdi_open(num_img, images, a_ssize);
+        break;
 #endif
 
 #if HAVE_LIBAFF4
@@ -459,9 +460,9 @@ tsk_img_open_utf8(int num_img,
 /**
 * \ingroup imglib
  * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer parameter
- * must be castable to a TSK_IMG_INFO pointer.  It is up to 
- * the caller to set the tag value in ext_img_info.  This 
- * method will initialize the cache lock. 
+ * must be castable to a TSK_IMG_INFO pointer.  It is up to
+ * the caller to set the tag value in ext_img_info.  This
+ * method will initialize the cache lock.
  *
  * @param ext_img_info Pointer to the partially initialized disk image
  * structure, having a TSK_IMG_INFO as its first member

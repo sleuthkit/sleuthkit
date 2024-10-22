@@ -63,11 +63,11 @@ tsk_fs_meta_alloc(size_t a_buf_len)
 /**
  * \internal
  * Resize an existing TSK_FS_META structure -- changes the number of
- * block pointers. 
+ * block pointers.
  *
  * @param fs_meta Structure to resize
  * @param a_buf_len Size of file system specific data that is used to store references to file content
- * @return NULL on error 
+ * @return NULL on error
  */
 TSK_FS_META *
 tsk_fs_meta_realloc(TSK_FS_META * a_fs_meta, size_t a_buf_len)
@@ -193,7 +193,7 @@ tsk_fs_meta_reset(TSK_FS_META * a_fs_meta)
  * \ingroup fslib
  * Walk a range of metadata structures and call a callback for each
  * structure that matches the flags supplied.   For example, it can
- * call the callback on only allocated or unallocated entries. 
+ * call the callback on only allocated or unallocated entries.
  *
  * @param a_fs File system to process
  * @param a_start Metadata address to start walking from

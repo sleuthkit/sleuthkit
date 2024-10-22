@@ -10,7 +10,7 @@
 
 /**
 * \file db_sqlite.cpp
-* Contains code to perform operations against SQLite database. 
+* Contains code to perform operations against SQLite database.
 */
 
 #include "tsk_db_sqlite.h"
@@ -101,7 +101,7 @@ TskDbSqlite::attempt(int resultCode, const char* errfmt)
 
 
 /**
-* Execute a statement and sets TSK error values on error 
+* Execute a statement and sets TSK error values on error
 * @returns 1 on error, 0 on success
 */
 int
@@ -129,7 +129,7 @@ TskDbSqlite::attempt_exec(const char* sql, int (*callback)(void*, int,
 }
 
 /**
-* Execute a statement.  
+* Execute a statement.
 * @returns 1 on error, 0 on success
 */
 int
@@ -188,7 +188,7 @@ TskDbSqlite::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId,
 }
 
 
-/** 
+/**
 * Initialize the open DB: set PRAGMAs, create tables and indexes
 * @returns 1 on error
 */
@@ -453,8 +453,8 @@ TskDbSqlite::initialize()
 	        " data_source_obj_id INTEGER NOT NULL REFERENCES data_source_info(obj_id) ON DELETE CASCADE, "
 	        " content_obj_id INTEGER NOT NULL REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 	        " artifact_id INTEGER REFERENCES blackboard_artifacts(artifact_id) ON DELETE CASCADE, "
-	        " hash_hit INTEGER NOT NULL, " //boolean 
-	        " tagged INTEGER NOT NULL, " //boolean 
+	        " hash_hit INTEGER NOT NULL, " //boolean
+	        " tagged INTEGER NOT NULL, " //boolean
 			" UNIQUE (full_description, content_obj_id, artifact_id))",
 	        "Error creating tsk_event_event_types table: %4\n")
 	    ||
@@ -497,7 +497,7 @@ TskDbSqlite::initialize()
 }
 
 /**
-* Create indexes for the columns that are not primary keys and that we query on. 
+* Create indexes for the columns that are not primary keys and that we query on.
 * @returns 1 on error, 0 on success
 */
 int TskDbSqlite::createIndexes()
@@ -667,7 +667,7 @@ int
  * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @returns 1 on error, 0 on success
  */
-int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, 
+int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5,
     const string& sha1, const string& sha256, const string& deviceId, const string& collectionDetails)
 {
     // Add the data source to the tsk_objects table.
@@ -757,12 +757,12 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO* vs_info, int64_t parObjId,
 }
 
 /**
-* Creates a new tsk_pool_info database entry and a new tsk_vs_info 
+* Creates a new tsk_pool_info database entry and a new tsk_vs_info
 * entry with the tsk_pool_info as its parent.
 *
 * @ param pool_info The pool to save to the database
 * @ param parObjId The ID of the parent of the pool object
-* @ param vsObjId Will be set to the object ID of the new volume system created as a child of 
+* @ param vsObjId Will be set to the object ID of the new volume system created as a child of
 *               the new pool.
 * @returns 1 on error, 0 on success
 */
@@ -935,7 +935,7 @@ TskDbSqlite::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
 * @param fs_file File structure to add
 * @param fs_attr Specific attribute to add
 * @param path Path of parent folder
-* @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
+* @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL
 * @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
 * @param objId ID that was assigned to it from the objects table
@@ -978,7 +978,7 @@ TskDbSqlite::addFsFile(TSK_FS_FILE* fs_file,
 
 /**
 * return a hash of the passed in string. We use this
-* for full paths. 
+* for full paths.
 * From: http://www.cse.yorku.ca/~oz/hash.html
 */
 uint32_t TskDbSqlite::hash(const unsigned char* str)
@@ -999,12 +999,12 @@ uint32_t TskDbSqlite::hash(const unsigned char* str)
 
 /**
 * Store info about a directory in a complex map structure as a cache for the
-* files who are a child of this directory and want to know its object id. 
+* files who are a child of this directory and want to know its object id.
 *
 * @param fsObjId fs id of this directory
 * @param fs_file File for the directory to store
 * @param path Full path (parent and this file) of the directory
-* @param objId object id of the directory 
+* @param objId object id of the directory
 */
 void TskDbSqlite::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_file, const char* path, const int64_t& objId)
 {
@@ -1024,7 +1024,7 @@ void TskDbSqlite::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_file,
     {
         /* Use the sequence stored in meta (which could be one larger than the name value
         * if the directory is deleted. We do this because the par_seq gets added to the
-        * name structure when it is added to the directory based on teh value stored in 
+        * name structure when it is added to the directory based on teh value stored in
         * meta. */
         seq = fs_file->meta->seq;
     }
@@ -1094,7 +1094,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE* fs_file, const char* parent
     // fprintf(stderr, "Miss: %s (%" PRIu64  " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
     //                fs_file->name->par_addr);
 
-    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
+    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder
     // name to match with the 'name' column in tsk_files table
     const char *parent_name = "";
     const char *parent_path = "";
@@ -1309,8 +1309,11 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         // copy the hash as hexidecimal into the buffer
         for (int i = 0; i < 16; i++)
         {
-            sprintf(&(md5Text[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
-                md5[i] & 0xf);
+            char buf[3];
+            snprintf(buf,sizeof(buf),"%x%x", (md5[i] >> 4) & 0xf, md5[i] & 0xf);
+            md5Text[i*2] = buf[0];
+            md5Text[i*2+1] = buf[1];
+            md5Text[i*2+2] = '\000';
         }
         md5TextPtr = md5Text;
     }
@@ -1395,9 +1398,9 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 		&& (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
 		&& (fs_attr->flags & TSK_FS_ATTR_NONRES)
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
-		strncat(name, "-slack", 6);
+		strcat(name, "-slack");
 		if (strlen(extension) > 0) {
-			strncat(extension, "-slack", 6);
+			strcat(extension, "-slack");
 		}
 		TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
@@ -1428,7 +1431,7 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 			fs_file->name->meta_addr, fs_file->name->meta_seq,
 			TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
 			slackSize,
-			(unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+			(unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime,
 			meta_mode, gid, uid, known,
 			escaped_path,extension);
 
@@ -1598,7 +1601,7 @@ TskDbSqlite::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, co
 }
 
 
-/** 
+/**
 * Returns true if database is opened.
 */
 bool

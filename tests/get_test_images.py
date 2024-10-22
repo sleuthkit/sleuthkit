@@ -35,6 +35,7 @@ def config():
 
 @functools.lru_cache(maxsize=1)
 def dest_dir():
+    """Replace $HOME with the home directory"""
     return os.path.expandvars(config()['dest_dir'])
 
 
@@ -77,17 +78,25 @@ def get_test_image(source):
         elif 'zipfile' in vals:
             zipfile_url = vals['zipfile']
             try:
-                unzip_fname = vals['unzip']
+                unzip_fname = vals['unzip_image']
             except KeyError as e:
-                raise RuntimeError(f'no unzip specified in {vals}') from e
+                raise RuntimeError(f'no unzip_image specified in {vals}') from e
             zipfile_fname = join( DEST_DIR, basename(vals['zipfile']))
-            image_fname  = join( DEST_DIR, basename(unzip_fname))
+            image_fname   = join( DEST_DIR, basename(unzip_fname))
 
             getfile(zipfile_url, zipfile_fname)
-            with zipfile.ZipFile(zipfile_fname) as zf:
-                with zf.open(unzip_fname, "r") as myfile:
-                    with open(image_fname, "wb") as out:
-                        out.write(myfile.read())
+            logging.info("Copied %s -> %s",zipfile_url,unzip_fname)
+
+            def unzip_file():
+                with zipfile.ZipFile(zipfile_fname) as zf:
+                    with zf.open(unzip_fname, "r") as myfile:
+                        with open(image_fname, "wb") as out:
+                            out.write(myfile.read())
+                            logging.info("Unzipped %s->%s",image_fname, unzip_fname)
+                            return
+                raise RuntimeError(f"did not file file {unzip_fname} in {zipfile_fname}")
+            unzip_file()
+
         else:
             raise RuntimeError(f"no 'image' or 'zipfile' in {source}")
 

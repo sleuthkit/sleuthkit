@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  * Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
  *
@@ -13,7 +13,7 @@
 #include "tsk_base_i.h"
 
 /** \file tsk_endian.c
- * Contains the routines to read data in different endian orderings. 
+ * Contains the routines to read data in different endian orderings.
  */
 
 /* A temporary data structure with an endian field */
@@ -23,12 +23,12 @@ typedef struct {
 
 /** \internal
  * Analyze an array of bytes and compare it to a target value to
- * determine which byte order the array is stored in. 
+ * determine which byte order the array is stored in.
  *
  * @param flag Pointer to location where proper endian flag should be stored.
  * @param x Pointer to array of bytes to analyze.
  * @param val Target value to compare to
- * @returns 1 if match cannot be made, 0 if it can. 
+ * @returns 1 if match cannot be made, 0 if it can.
  */
 uint8_t
 tsk_guess_end_u16(TSK_ENDIAN_ENUM * flag, uint8_t * x, uint16_t val)
@@ -55,7 +55,7 @@ tsk_guess_end_u16(TSK_ENDIAN_ENUM * flag, uint8_t * x, uint16_t val)
 * @param flag Pointer to location where proper endian flag should be stored.
 * @param x Pointer to array of bytes to analyze.
 * @param val Target value to compare to
-* @returns 1 if match cannot be made, 0 if it can. 
+* @returns 1 if match cannot be made, 0 if it can.
  */
 uint8_t
 tsk_guess_end_u32(TSK_ENDIAN_ENUM * flag, uint8_t * x, uint32_t val)
@@ -81,7 +81,7 @@ tsk_guess_end_u32(TSK_ENDIAN_ENUM * flag, uint8_t * x, uint32_t val)
 * @param flag Pointer to location where proper endian flag should be stored.
 * @param x Pointer to array of bytes to analyze.
 * @param val Target value to compare to
-* @returns 1 if match cannot be made, 0 if it can. 
+* @returns 1 if match cannot be made, 0 if it can.
  */
 uint8_t
 tsk_guess_end_u64(TSK_ENDIAN_ENUM * flag, uint8_t * x, uint64_t val)

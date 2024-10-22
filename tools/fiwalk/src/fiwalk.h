@@ -202,7 +202,7 @@ struct fiwalk {
              opt_debug(0),
              file_count(0),
              file_count_max(0),
-             next_id(0),
+             next_id(1),
              opt_M(0),
              opt_k(0),
              opt_maxgig(0),

@@ -1,12 +1,12 @@
 /*
 ** fatxxfs
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Content and meta data layer support for the FATXX file system 
+** Content and meta data layer support for the FATXX file system
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2013 Brian Carrier, Basis Technology. All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -20,15 +20,15 @@
 
 /**
  * \file fatxxfs.c
- * Contains the internal TSK FATXX (FAT12, FAT16, FAT32) file system code to 
- * handle basic file system processing for opening file system, processing 
- * sectors, and directory entries. 
+ * Contains the internal TSK FATXX (FAT12, FAT16, FAT32) file system code to
+ * handle basic file system processing for opening file system, processing
+ * sectors, and directory entries.
  */
 
 #include "tsk_fatxxfs.h"
 
 /*
- * Implementation NOTES 
+ * Implementation NOTES
  *
  * TSK_FS_META contains the first cluster.  file_walk will return sector
  * values though because the cluster numbers do not start until after
@@ -40,18 +40,18 @@
  * keep consistent with UNIX.  After that, each 32-byte slot is numbered
  * as though it were a directory entry (even if it is not).  Therefore,
  * when an inode walk is performed, not all inode values will be displayed
- * even when '-e' is given for ils. 
+ * even when '-e' is given for ils.
  *
  * Progs like 'ils -e' are very slow because we have to look at each
  * block to see if it is a file system structure.
  */
 
 /**
- * Print details about the file system to a file handle. 
+ * Print details about the file system to a file handle.
  *
  * @param fs File system to print details on
  * @param hFile File handle to print text to
- * 
+ *
  * @returns 1 on error and 0 on success
  */
 static uint8_t
@@ -196,8 +196,8 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         if (tsk_getu16(fs->endian, sb->a.f32.fsinfo)) {
             FATXXFS_FSINFO *fat_info;
             cnt =
-                tsk_fs_read(fs, 
-                    (TSK_DADDR_T) tsk_getu16(fs->endian, sb->a.f32.fsinfo) * fs->block_size, 
+                tsk_fs_read(fs,
+                    (TSK_DADDR_T) tsk_getu16(fs->endian, sb->a.f32.fsinfo) * fs->block_size,
                     fat_fsinfo_buf, sizeof(FATXXFS_FSINFO));
 
             if (cnt != sizeof(FATXXFS_FSINFO)) {
@@ -351,7 +351,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         fatfs->lastclust);
 
 
-    /* cycle via cluster and look at each cluster in the FAT 
+    /* cycle via cluster and look at each cluster in the FAT
      * for clusters marked as bad */
     cnt = 0;
     for (i = 2; i <= fatfs->lastclust; i++) {
@@ -391,7 +391,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     for (i = 2; i <= fatfs->lastclust; i++) {
 
         /* 'send' marks the end sector of the current run, which will extend
-         * when the current cluster continues to the next 
+         * when the current cluster continues to the next
          */
         send = FATFS_CLUST_2_SECT(fatfs, i + 1) - 1;
 
@@ -407,7 +407,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         }
 
         /* The next clust is either further away or the clust is available,
-         * print it if is further away 
+         * print it if is further away
          */
         else if ((next & fatfs->mask)) {
             if (FATFS_ISEOF(next, fatfs->mask))
@@ -472,7 +472,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
         return 1;
     }
 
-    // cluster size 
+    // cluster size
     fatfs->csize = fatsb->csize;
     if ((fatfs->csize != 0x01) &&
         (fatfs->csize != 0x02) &&
@@ -543,8 +543,8 @@ fatxxfs_open(FATFS_INFO *fatfs)
     }
 
     /* Calculate the block info
-     * 
-     * The sector of the beginning of the data area  - which is 
+     *
+     * The sector of the beginning of the data area  - which is
      * after all of the FATs
      *
      * For TSK_FS_TYPE_FAT12 and TSK_FS_TYPE_FAT16, the data area starts with the root
@@ -556,7 +556,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
         fatfs->sectperfat * fatfs->numfat;
 
     /* The sector where the first cluster is located.  It will be used
-     * to translate cluster addresses to sector addresses 
+     * to translate cluster addresses to sector addresses
      *
      * For TSK_FS_TYPE_FAT32, the first cluster is the start of the data area and
      * it is after the root directory for TSK_FS_TYPE_FAT12 and TSK_FS_TYPE_FAT16.  At this
@@ -629,7 +629,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
 
     /* additional sanity checks if we think we are using the backup boot sector.
      * The scenario to prevent here is if fat_open is called 6 sectors before the real start
-     * of the file system, then we want to detect that it was not a backup that we saw.  
+     * of the file system, then we want to detect that it was not a backup that we saw.
      */
     if (fatfs->using_backup_boot_sector) {
         // only FAT32 has backup boot sectors..
@@ -757,7 +757,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
     fs->root_inum = FATFS_ROOTINO;
     fs->first_inum = FATFS_FIRSTINO;
 
-    /* Calculate inode addresses for the virtual files (MBR, one or two FATS) 
+    /* Calculate inode addresses for the virtual files (MBR, one or two FATS)
      * and the virtual orphan files directory. */
     fs->last_inum = (FATFS_SECT_2_INODE(fatfs, fs->last_block_act + 1) - 1) + FATFS_NUM_VIRT_FILES(fatfs);
     fatfs->mbr_virt_inum = fs->last_inum - FATFS_NUM_VIRT_FILES(fatfs) + 1;
@@ -783,7 +783,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
     }
 
     /*
-     * Set the function pointers  
+     * Set the function pointers
      */
 
     fs->block_walk = fatfs_block_walk;

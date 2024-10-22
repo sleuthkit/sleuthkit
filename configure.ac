@@ -82,9 +82,10 @@ AC_ARG_ENABLE([multithreading],
 dnl Enable multithreading by default in the presence of pthread
 AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno"], [ax_multithread=yes], [ax_multithread=no])
 
-dnl Add enable/disable option
+dnl Add an option to build the Java (JNI) bindings
 AC_ARG_ENABLE([java],
-    [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
+    [AS_HELP_STRING([--enable-java], [Build the Java (JNI) bindings @<:@default=no@:>@])],
+    [enable_java=$enableval], [enable_java=no])
 
 dnl Checks for libraries.
 
@@ -138,7 +139,9 @@ AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 dnl Check if we should link with OpenSSL
 TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 dnl Check if we should link with afflib
+dnl note that afflib/utils.h explicitly checks for openssl/pem.h, so we need to test for it also
 TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
+AC_CHECK_HEADERS([openssl/pem.h])
 dnl Check if we should link with libaff4
 TSK_OPT_DEP_CHECK([libaff4], [], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
 dnl Check if we should link with zlib
@@ -193,26 +196,28 @@ AM_COND_IF([CUSTOM_DEFAULT_JAR_LOCATION],
     [AC_SUBST([DEFAULT_JAR_LOCATION], [$default_jar_location])]
 )
 
-dnl Test for the various java things that we need for bindings
+dnl Test for the various Java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
     dnl javac is needed to compile the JAR file
     AX_PROG_JAVAC
-    if test "x$JAVAC" != x; then
-        AX_JNI_INCLUDE_DIR
+    AS_IF(
+        [test "x$JAVAC" = x],
+        [enable_java=no],
+        [AX_JNI_INCLUDE_DIR
         for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
         do
             JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
         done
-        dnl Export the paths so that the makefile gets them
+        dnl Export the paths so that the Makefile gets them
         AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
-    fi
 
-    dnl java is needed by ant
-    dnl we had one report of a system with javac and not java
-    AX_PROG_JAVA
+        dnl java is needed by ant
+        dnl we had one report of a system with javac and not java
+        AX_PROG_JAVA
 
-    dnl Test is ant is available
-    AC_PATH_PROG([ANT_FOUND], [ant], [])
+        dnl Test is ant is available
+        AC_PATH_PROG([ANT_FOUND], [ant], [])
+	])
 
 ]) dnl test enable_java
 
@@ -220,6 +225,10 @@ dnl if we found everything we need, set ax_java_support for the
 dnl status message and set X_JNI for use in Makefile
 AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
 AM_CONDITIONAL([X_JNI],[test "x$ax_java_support" = "xyes"])
+
+dnl Dependencies for OSS-Fuzz
+AM_CONDITIONAL(HAVE_LIB_FUZZING_ENGINE, [test "x${LIB_FUZZING_ENGINE}" != x])
+AC_SUBST([LIB_FUZZING_ENGINE], ["${LIB_FUZZING_ENGINE}"])
 
 AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     [echo "#ifndef _TSK_INCS_H" > tsk/tsk_incs.h
@@ -279,10 +288,6 @@ AC_SUBST([CXXLD])
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 
-dnl Use -Wno-unused-command-line-argument only if the compiler understands it
-AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CFLAGS], [-Werror-unknown-warning])
-AX_APPEND_COMPILE_FLAGS([-Wno-unused-command-line-argument], [CXXFLAGS], [-Werror-unknown-warning])
-
 TSK_ADDRESS_SANITIZER
 TSK_THREAD_SANITIZER
 TSK_UNDEFINED_SANITIZER
@@ -331,7 +336,6 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
-   Catch2 support:                        $with_catch2
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ])

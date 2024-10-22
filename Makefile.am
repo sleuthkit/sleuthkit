@@ -4,7 +4,7 @@ AM_CPPFLAGS = -I$(srcdir)/tsk
 AM_CFLAGS = -Wall -Wextra -Wno-unused-parameter
 AM_CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
 
-CLEANFILES =
+CLEANFILES = *.gcov
 
 # File that we want to include in the dist
 EXTRA_DIST = \
@@ -56,6 +56,7 @@ nobase_include_HEADERS = \
 	tsk/auto/tsk_is_image_supported.h \
 	tsk/base/tsk_base.h \
 	tsk/base/tsk_os.h \
+	tsk/base/tsk_os_cpp.h \
 	tsk/fs/apfs_compat.hpp \
 	tsk/fs/apfs_fs.h \
 	tsk/fs/apfs_fs.hpp \
@@ -288,7 +289,6 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/vmdk.c \
 	tsk/img/vmdk.h
 
-tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
@@ -307,7 +307,6 @@ tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/detect_encryption.c \
 	tsk/util/file_system_utils.c
 
-tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
 	tsk/util/Bitlocker/BitlockerUtils.cpp \
@@ -622,7 +621,7 @@ tests_fiwalk_test_SOURCES = \
 
 EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
 
-tests/test_images.txt:
+tests/test_images.txt: tests/test_images.yaml tests/get_test_images.bash tests/get_test_images.py
 	tests/get_test_images.bash
 
 CLEANFILES += tests/test_images.txt
@@ -663,7 +662,7 @@ tests_read_apis_SOURCES = tests/read_apis.cpp
 # Unit tests:
 # Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
 # and link into a single executable.
-# THis makes things easier with codecov.
+# This makes things easier with codecov.
 
 check_PROGRAMS += unit_tests/runner
 
@@ -674,6 +673,7 @@ unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 unit_tests_runner_SOURCES = \
+	unit_tests/crypto_test.cpp \
 	unit_tests/errors_test.cpp \
 	unit_tests/mult_files_test.cpp \
 	unit_tests/runner.cpp \
@@ -685,6 +685,7 @@ unit_tests_runner_SOURCES = \
 	$(tsk_pool_libtskpool_la_SOURCES) \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
+
 
 #
 # Java
@@ -799,3 +800,137 @@ samples_posix_cpp_style_SOURCES = samples/posix-cpp-style.cpp
 
 samples_posix_style_LDADD = $(TSK_LIB)
 samples_posix_style_SOURCES = samples/posix-style.cpp
+
+#
+# OSSFuzz fuzz targets fuzz targets
+#
+
+if HAVE_LIB_FUZZING_ENGINE
+noinst_PROGRAMS += \
+	fls_apfs_fuzzer \
+	fls_ext_fuzzer \
+	fls_fat_fuzzer \
+	fls_hfs_fuzzer \
+	fls_iso9660_fuzzer \
+	fls_ntfs_fuzzer \
+	mmls_dos_fuzzer \
+	mmls_gpt_fuzzer \
+	mmls_mac_fuzzer \
+	mmls_sun_fuzzer
+
+fls_apfs_fuzzer_SOURCES = \
+	ossfuzz/fls_apfs_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_apfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_ext_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ext_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_EXT_DETECT \
+	$(AM_CPPFLAGS)
+
+fls_ext_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_fat_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_fat_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_FAT_DETECT \
+	$(AM_CPPFLAGS)
+
+fls_fat_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_hfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_hfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_HFS \
+	$(AM_CPPFLAGS)
+
+fls_hfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_iso9660_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_iso9660_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_ISO9660 \
+	$(AM_CPPFLAGS)
+
+fls_iso9660_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_ntfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ntfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_NTFS \
+	$(AM_CPPFLAGS)
+
+fls_ntfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_dos_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_dos_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_DOS \
+	$(AM_CPPFLAGS)
+
+mmls_dos_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_gpt_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_gpt_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_GPT \
+	$(AM_CPPFLAGS)
+
+mmls_gpt_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_mac_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_mac_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_MAC \
+	$(AM_CPPFLAGS)
+
+mmls_mac_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+mmls_sun_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_sun_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_SUN \
+	$(AM_CPPFLAGS)
+
+mmls_sun_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+endif # HAVE_LIB_FUZZING_ENGINE
