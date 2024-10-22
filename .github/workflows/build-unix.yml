@@ -187,6 +187,11 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer
 
+      - name: DEBUG - just run fiwalk and see if it hangs
+        if: ${{ matrix.address_sanitizer == 'yes' }}
+        run: |
+          tests/fiwalk_test
+
       - name: Run make with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
