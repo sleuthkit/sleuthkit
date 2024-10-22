@@ -208,7 +208,7 @@ void fiwalk::file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 
     if(TSK_FS_TYPE_ISFAT(ftype))
     {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (defined(__MINGW32__) && !defined(_UCRT))
         tm_format="%Y-%m-%dT%H:%M:%S";
 #else
         tm_format="%FT%T";
@@ -216,7 +216,7 @@ void fiwalk::file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
     }
     else
     {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (defined(__MINGW32__) && !defined(_UCRT))
         tm_format="%Y-%m-%dT%H:%M:%SZ";
 #else
         tm_format="%FT%TZ";
