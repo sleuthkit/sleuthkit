@@ -198,7 +198,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // ReadFile returns TRUE and sets nread to zero.
         // We need to check if we've reached the end of a file and set nread to
         // the number of bytes read.
-        if (raw_info->is_winobj && nread == 0 && (size_t)(offset_to_read + len_to_read) == raw_info->img_info.size) {
+        if (raw_info->is_winobj && nread == 0 && offset_to_read + len_to_read == (size_t) raw_info->img_info.size) {
             nread = (DWORD)len_to_read;
         }
         cnt = (ssize_t) nread;
