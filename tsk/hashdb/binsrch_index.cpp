@@ -323,7 +323,7 @@ static uint8_t
         HANDLE hWin;
         DWORD szLow, szHi;
 
-        if (GetFileAttributes(hdb_binsrch_info->idx_fname) == -1) {
+        if (GetFileAttributes(hdb_binsrch_info->idx_fname) == INVALID_FILE_ATTRIBUTES) {
             tsk_release_lock(&hdb_binsrch_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
