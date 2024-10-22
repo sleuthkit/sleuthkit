@@ -976,7 +976,7 @@ uint8_t
     PROCESS_INFORMATION pinfo;
 
     stat = GetFileAttributes(sys32);
-    if (stat != -1 && (stat & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+    if (stat != INVALID_FILE_ATTRIBUTES && (stat & FILE_ATTRIBUTE_DIRECTORY) == 0) {
         TSNPRINTF(buf, TSK_HDB_MAXLEN, _TSK_T("%s /o \"%s\" \"%s\""),
             sys32, hdb_binsrch_info->idx_fname, hdb_binsrch_info->uns_fname);
     }
