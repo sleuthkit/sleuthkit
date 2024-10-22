@@ -198,3 +198,9 @@ sleuthkit-*.tar.gz
 #Test data folder
 
 tests/data
+*.gcov
+*.Tpo
+tests/venv
+unit_tests/venv
+tests/wget-log
+unit_tests/test_images.txt
