@@ -198,7 +198,7 @@ static uint8_t
 #ifdef TSK_WIN32
     {
         HANDLE hWin;
-        if (GetFileAttributes(hdb_binsrch_info->idx_idx_fname) == -1) {
+        if (GetFileAttributes(hdb_binsrch_info->idx_idx_fname) == INVALID_FILE_ATTRIBUTES) {
             // The file does not exist. Not a problem.
             return 0;
         }
