@@ -970,7 +970,7 @@ uint8_t
 #ifdef TSK_WIN32
     wchar_t buf[TSK_HDB_MAXLEN];
     /// @@ Expand this to be SYSTEM_ROOT -- GetWindowsDirectory()
-    wchar_t *sys32 = _TSK_T("C:\\WINDOWS\\System32\\sort.exe");
+    const wchar_t *sys32 = _TSK_T("C:\\WINDOWS\\System32\\sort.exe");
     DWORD stat;
     STARTUPINFO myStartInfo;
     PROCESS_INFORMATION pinfo;
