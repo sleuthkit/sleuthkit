@@ -118,7 +118,7 @@ jobs:
         if: ${{ matrix.os == 'macos' }}
         run: |
           brew update
-          brew install wget libtool autoconf automake libtool libewf pkg-config libmagic
+          brew install libtool autoconf automake libtool libewf libmagic
 
       - name: Install Linux packages
         if: ${{ matrix.os == 'linux' }}
