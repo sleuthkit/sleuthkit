@@ -205,7 +205,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
         if (raw_info->img_writer != NULL) {
             /* img_writer is not used with split images, so rel_offset is just the normal offset*/
-            TSK_RETVAL_ENUM result = raw_info->img_writer->add(raw_info->img_writer, offset_to_read, *buf_pointer, cnt);
+            raw_info->img_writer->add(raw_info->img_writer, offset_to_read, *buf_pointer, cnt);
             // If WriteFile returns error in the addNewBlock, hadErrorExtending is 1
             if (raw_info->img_writer->inFinalizeImageWriter && raw_info->img_writer->hadErrorExtending) {
                 if (sector_aligned_buf != NULL) {
