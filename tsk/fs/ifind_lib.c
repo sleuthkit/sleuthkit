@@ -331,7 +331,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         }
 
         // we found a directory, go into it
-        if ((fs_file_alloc) || (fs_file_del)) {
+        if (fs_file_alloc || fs_file_del) {
 
             const char *pname;
             TSK_FS_FILE *fs_file_tmp;
