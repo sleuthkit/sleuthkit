@@ -120,6 +120,16 @@ typedef int32_t ssize_t;
 
 #define fseeko _fseeki64
 
+
+#endif
+
+// Attribute workaround until C++17 and C23
+#ifdef _MSC_VER
+#define FALLTHROUGH
+#define UNUSED
+#else
+#define FALLTHROUGH __attribute__((fallthrough))
+#define UNUSED __attribute__((unused))
 #endif
 
 /* When TSK deals with the outside world (printing / input), the data will

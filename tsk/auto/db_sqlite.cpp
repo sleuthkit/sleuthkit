@@ -1398,9 +1398,9 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 		&& (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
 		&& (fs_attr->flags & TSK_FS_ATTR_NONRES)
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
-		strncat(name, "-slack", 6);
+		strcat(name, "-slack");
 		if (strlen(extension) > 0) {
-			strncat(extension, "-slack", 6);
+			strcat(extension, "-slack");
 		}
 		TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 

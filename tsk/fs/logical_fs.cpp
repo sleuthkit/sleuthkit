@@ -424,13 +424,11 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 			// - The cache entry isn't longer than what we're looking for
 			size_t cache_path_len = TSTRLEN(logical_img_info->inum_cache[i].path);
 			if ((longest_match != target_len) && (cache_path_len > longest_match) && (cache_path_len <= target_len)) {
-				size_t matching_len;
-#ifdef TSK_WIN32
-				matching_len = 0;
-				if (0 == _wcsnicmp(target_path, logical_img_info->inum_cache[i].path, cache_path_len)) {
+				size_t matching_len = 0;
+				if (TSTRICMP(target_path, logical_img_info->inum_cache[i].path) == 0) {
 					matching_len = cache_path_len;
 				}
-#endif
+
 				// Save this path if:
 				// - It is longer than our previous best match
 				// - It is either the full length of the path we're searching for or is a valid
@@ -493,17 +491,18 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 	tsk_take_lock(&(img_info->cache_lock));
 	TSK_TCHAR *target_path = NULL;
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
-		if ((target_path == NULL) && (logical_img_info->inum_cache[i].inum == target_inum)) {
+		if (target_path == NULL && logical_img_info->inum_cache[i].inum == target_inum) {
 			// The cache entry was useful so reset the age
 			logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
 
 			// Copy the path
-			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[i].path) + 1));
+      const size_t len = TSTRLEN(logical_img_info->inum_cache[i].path);
+			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 			if (target_path == NULL) {
 				tsk_release_lock(&(img_info->cache_lock));
 				return NULL;
 			}
-			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, TSTRLEN(logical_img_info->inum_cache[i].path) + 1);
+			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, len + 1);
 		}
 		else {
 			// The cache entry was not useful so decrease the age
@@ -641,10 +640,11 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 	// The directoy name being added should generally be less than 270 characters, but if necessary we will
 	// make more space available.
 	size_t allocated_dir_name_len = 270;
-	TSK_TCHAR* current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(parent_path) + 2 + allocated_dir_name_len));
+  const size_t current_path_len = TSTRLEN(parent_path) + 1 + allocated_dir_name_len;
+	TSK_TCHAR* current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (current_path_len + 1));
 	if (current_path == NULL)
 		return TSK_ERR;
-	TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
+	TSTRNCPY(current_path, parent_path, current_path_len + 1);
 #ifdef TSK_WIN32
 	TSTRNCAT(current_path, L"\\", 2);
 #else
@@ -724,10 +724,11 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	TSK_TCHAR *path = NULL;
 	if (a_addr == logical_fs_info->fs_info.root_inum) {
 		// No need to do a search - it's just the root folder
-		path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_fs_info->base_path) + 1));
+		const size_t len = TSTRLEN(logical_fs_info->base_path);
+		path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 		if (path == NULL)
 			return NULL;
-		TSTRNCPY(path, logical_fs_info->base_path, TSTRLEN(logical_fs_info->base_path) + 1);
+		TSTRNCPY(path, logical_fs_info->base_path, len + 1);
 		return path;
 	}
 
@@ -773,12 +774,13 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	// Copy the path
-	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(search_helper->found_path) + 1));
+	const size_t len = TSTRLEN(search_helper->found_path);
+	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 	if (path == NULL) {
 		free_search_helper(search_helper);
 		return NULL;
 	}
-	TSTRNCPY(path, search_helper->found_path, TSTRLEN(search_helper->found_path) + 1);
+	TSTRNCPY(path, search_helper->found_path, len + 1);
 	free_search_helper(search_helper);
 	return path;
 }

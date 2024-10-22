@@ -26,3 +26,13 @@ sources:
   - iso9660:
       zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/14-iso9660-1.zip
       unzip_image: 14-iso9660-1/iso-dirtree1.iso
+  - fat1:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/2-kwsrch-fat.zip
+      unzip_image: 2-kwsrch-fat/fat-img-kw.dd
+  - fat2:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/6-undel-fat.zip
+      unzip_image: 6-undel-fat/6-fat-undel.dd
+  - hfsjtest1:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.zip
+      unzip_image: image.gen1.dmg
+      unzip_xml: image.gen1.xml

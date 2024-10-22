@@ -24,6 +24,8 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/util/detect_encryption.h"
 
+#include <string>
+
 class TskIsImageSupported:public TskAuto {
 
 
@@ -48,8 +50,8 @@ private:
     bool m_wasFileSystemFound;
     bool m_wasUnsupported;
     bool m_bitlockerError;
-    char m_encryptionDesc[1024];
-    char m_possibleEncryptionDesc[1024];
-    char m_unsupportedDesc[1024];
-    char m_bitlockerDesc[1024];
+    std::string m_encryptionDesc;
+    std::string m_possibleEncryptionDesc;
+    std::string m_unsupportedDesc;
+    std::string m_bitlockerDesc;
 };

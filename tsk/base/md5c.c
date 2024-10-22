@@ -52,9 +52,9 @@ documentation and/or software.
 #define S43 15
 #define S44 21
 
-static void MD5Transform(UINT4[4], unsigned char[64]);
+static void MD5Transform(UINT4[4], const unsigned char[64]);
 static void Encode(unsigned char *, UINT4 *, unsigned int);
-static void Decode(UINT4 *, unsigned char *, unsigned int);
+static void Decode(UINT4 *, const unsigned char *, unsigned int);
 static void MD5_memcpy(POINTER, POINTER, unsigned int);
 static void MD5_memset(POINTER, int, unsigned int);
 
@@ -124,7 +124,7 @@ TSK_MD5_Init(TSK_MD5_CTX * context)
  * @param inputLen Number of bytes in input
  */
 void
-TSK_MD5_Update(TSK_MD5_CTX * context, unsigned char *input,
+TSK_MD5_Update(TSK_MD5_CTX * context, const unsigned char *input,
     unsigned int inputLen)
 {
     unsigned int i, index, partLen;
@@ -165,11 +165,11 @@ TSK_MD5_Update(TSK_MD5_CTX * context, unsigned char *input,
  * \ingroup baselib
  * Calculate the MD5 hash of the data added to this context.   Context
  * will be zeroed after this call.
- * @param digest Buffer to store MD5 value in.
  * @param context Context that has data added to it.
+ * @param digest Buffer to store MD5 value in.
  */
 void
-TSK_MD5_Final(unsigned char digest[16], TSK_MD5_CTX * context)
+TSK_MD5_Final(TSK_MD5_CTX * context, unsigned char digest[16])
 {
     unsigned char bits[8];
     unsigned int index, padLen;
@@ -196,7 +196,7 @@ TSK_MD5_Final(unsigned char digest[16], TSK_MD5_CTX * context)
 /* MD5 basic transformation. Transforms state based on block.
  */
 static void
-MD5Transform(UINT4 state[4], unsigned char block[64])
+MD5Transform(UINT4 state[4], const unsigned char block[64])
 {
     UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
 
@@ -304,7 +304,7 @@ Encode(unsigned char *output, UINT4 *input, unsigned int len)
   a multiple of 4.
  */
 static void
-Decode(UINT4 *output,  unsigned char *input,   unsigned int len)
+Decode(UINT4 *output,  const unsigned char *input,   unsigned int len)
 {
     unsigned int i, j;
 

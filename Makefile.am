@@ -4,7 +4,7 @@ AM_CPPFLAGS = -I$(srcdir)/tsk
 AM_CFLAGS = -Wall -Wextra -Wno-unused-parameter
 AM_CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
 
-CLEANFILES =
+CLEANFILES = *.gcov
 
 # File that we want to include in the dist
 EXTRA_DIST = \
@@ -56,6 +56,7 @@ nobase_include_HEADERS = \
 	tsk/auto/tsk_is_image_supported.h \
 	tsk/base/tsk_base.h \
 	tsk/base/tsk_os.h \
+	tsk/base/tsk_os_cpp.h \
 	tsk/fs/apfs_compat.hpp \
 	tsk/fs/apfs_fs.h \
 	tsk/fs/apfs_fs.hpp \
@@ -288,7 +289,6 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/vmdk.c \
 	tsk/img/vmdk.h
 
-tsk_pool_libtskpool_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
@@ -307,7 +307,6 @@ tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/detect_encryption.c \
 	tsk/util/file_system_utils.c
 
-tsk_util_Bitlocker_libtskbitlocker_la_CXXFLAGS = $(AM_CXXFLAGS) -Werror
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
 	tsk/util/Bitlocker/BitlockerUtils.cpp \
@@ -674,6 +673,7 @@ unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 unit_tests_runner_SOURCES = \
+	unit_tests/crypto_test.cpp \
 	unit_tests/errors_test.cpp \
 	unit_tests/mult_files_test.cpp \
 	unit_tests/runner.cpp \

@@ -92,22 +92,24 @@ TSK_RETVAL_ENUM TskGetTimes::processFile(TSK_FS_FILE * /*fs_file*/, const char *
 TSK_FILTER_ENUM
 TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
 {
-    TSK_TCHAR volName[65];
+    // "vol%d/poolVol%d/" is at most 32 characters long, 12 for the fixed
+    // characters and 10 each for the max int value of 2^31.
+    TSK_TCHAR volName[33];
     if (m_curVolAddr > -1) {
-        TSNPRINTF(volName, 32, _TSK_T("vol%d/"), m_curVolAddr);
+        if (m_curPoolVol > -1) {
+            TSNPRINTF(volName, 33, _TSK_T("vol%d/poolVol%d/"), m_curVolAddr, m_curPoolVol
+            );
+        }
+        else {
+          TSNPRINTF(volName, 33, _TSK_T("vol%d/"), m_curVolAddr);
+        }
     }
     else {
         volName[0] = '\0';
     }
 
-    TSK_TCHAR poolVolName[33];
-    if (m_curPoolVol > -1) {
-        TSNPRINTF(poolVolName, 32, _TSK_T("poolVol%d/"), m_curPoolVol);
-        TSTRNCAT(volName, poolVolName, 32);
-    }
-
     TSK_FS_FLS_FLAG_ENUM fls_flags = (TSK_FS_FLS_FLAG_ENUM)(TSK_FS_FLS_MAC | TSK_FS_FLS_DIR | TSK_FS_FLS_FILE | TSK_FS_FLS_FULL);
-    if(m_compute_hash){
+    if (m_compute_hash) {
         fls_flags = (TSK_FS_FLS_FLAG_ENUM)(fls_flags | TSK_FS_FLS_HASH);
     }
 
@@ -176,7 +178,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
-
+            break;
 
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);

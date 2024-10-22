@@ -165,18 +165,20 @@ uint8_t
     char fullPath[TSK_CD_BUFSIZE];
     struct stat status;
 
-    strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
+    strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE-1);
     strncat(fullPath, a_dir, TSK_CD_BUFSIZE-strlen(fullPath)-1);
+
     if ((dp = opendir(fullPath)) == NULL) {
         fprintf(stderr, "Error opening directory");
         return 1;
     }
+
     while ((dirp = readdir(dp)) != NULL) {
-        strncpy(file, a_dir, TSK_CD_BUFSIZE);
+        strncpy(file, a_dir, TSK_CD_BUFSIZE-1);
         strncat(file, "/", TSK_CD_BUFSIZE-strlen(file)-1);
         strncat(file, dirp->d_name, TSK_CD_BUFSIZE-strlen(file)-1);
 
-        strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
+        strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE-1);
         strncat(fullPath, file, TSK_CD_BUFSIZE-strlen(fullPath)-1);
 
         stat(fullPath, &status);
@@ -374,6 +376,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);

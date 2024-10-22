@@ -97,7 +97,6 @@ vhdi_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
     vhdi_image_close(TSK_IMG_INFO * img_info)
 {
-    int i;
     char error_string[TSK_VHDI_ERROR_STRING_SIZE];
     libvhdi_error_t *vhdi_error = NULL;
     char *errmsg = NULL;
@@ -145,7 +144,6 @@ vhdi_open(int a_num_img,
 
     char error_string[TSK_VHDI_ERROR_STRING_SIZE];
     libvhdi_error_t *vhdi_error = NULL;
-    int i;
 
     IMG_VHDI_INFO *vhdi_info = NULL;
     TSK_IMG_INFO *img_info = NULL;

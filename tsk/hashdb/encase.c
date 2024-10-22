@@ -59,7 +59,7 @@ static void
         return;
     }
 
-    memset(buf, '\0', 40);
+    memset(buf, '\0', sizeof(buf));
 
     fseeko(hFile, 1032, SEEK_SET);
     if (39 != fread(buf, sizeof(wchar_t), 39, hFile)) {
