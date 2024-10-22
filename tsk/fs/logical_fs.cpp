@@ -74,6 +74,7 @@ logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
  *
  * @return The converted timet
  */
+/*
 #ifdef TSK_WIN32
 static time_t
 filetime_to_timet(FILETIME const& ft)
@@ -84,6 +85,7 @@ filetime_to_timet(FILETIME const& ft)
 	return ull.QuadPart / 10000000ULL - 11644473600ULL;
 }
 #endif
+*/
 
 /*
  * Create a LOGICALFS_SEARCH_HELPER that will run a search for
