@@ -166,7 +166,7 @@ jobs:
       - name: Run make check on Mac/Linux
         if: ${{ matrix.os != 'mingw' }}
         run: |
-          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 || result=1 ; for i in {test,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Run make check on Mingw
         if: ${{ matrix.os == 'mingw' }}
@@ -175,7 +175,7 @@ jobs:
           WINEPATH: ${{ matrix.winepath }}
           WINEPREFIX: ${{ matrix.wineprefix }}
         run: |
-          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in {unit_tests,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+          make -j${{ steps.cores.outputs.cores }} check VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in {test,tests}/*.log ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Clean up
         if: ${{ matrix.os != 'mingw' }}
@@ -212,13 +212,13 @@ jobs:
         if: ${{ matrix.codecov == 'yes' }}
         run: |
           make -j tests/fiwalk_test V=0
-          make -j unit_tests/runner V=0
+          make -j test/runner V=0
 
       - name: Run unit tests for codecov
         if: ${{ matrix.codecov == 'yes' }}
         run: |
           tests/fiwalk_test
-          unit_tests/runner
+          test/runner
 
       - name: Upload codecov report
         if: ${{ matrix.codecov == 'yes' }}
