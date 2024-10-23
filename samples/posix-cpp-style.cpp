@@ -87,7 +87,7 @@ procDir(TskFsInfo * fs_info, TSK_STACK * stack,
         // get the entry
         if ((fs_file = fs_dir->getFile(i)) == NULL) {
             fprintf(stderr,
-                "Error getting directory entry %" PRIuSIZE
+                "Error getting directory entry %zu"
                 " in directory %" PRIuINUM "\n", i, dir_inum);
             tsk_error_print(stderr);
 
