@@ -249,7 +249,7 @@ void fiwalk::file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 
 void fiwalk::file_infot(const string name,time_t t0)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (defined(__MINGW32__) && !defined(_UCRT))
 #define TM_FORMAT "%Y-%m-%dT%H:%M:%SZ"
 #else
 #define TM_FORMAT "%FT%TZ"
