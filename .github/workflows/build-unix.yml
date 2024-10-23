@@ -196,6 +196,7 @@ jobs:
       - name: Run make with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
+          ( while true ; do sleep 60 ; ps ; done ) &
           make -j check VERBOSE=1
 
       - name: Clean up
