@@ -141,8 +141,8 @@ procDir(TskFsInfo * fs_info, TSK_STACK * stack,
                     }
                     else if (cnt != (ssize_t) len) {
                         fprintf(stderr,
-                            "Warning: %" PRIuSIZE " of %" PRIuSIZE
-                            " bytes read from %s file %s\n", cnt, len,
+                            "Warning: %zd of %zu bytes read from %s file %s\n",
+                            cnt, len,
                             ((fs_file->getName()->getFlags()
                                     & TSK_FS_NAME_FLAG_UNALLOC)
                                 || (fs_file->getMeta()->getFlags()
