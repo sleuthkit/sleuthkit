@@ -2,7 +2,7 @@
 
 ERROR=0
 
-cd tests
+cd test/img_dump
 
 # find the correct img_dump executable
 if [ -x ./img_dump ]; then
