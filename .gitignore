@@ -144,15 +144,15 @@ samples/callback_style
 samples/posix_cpp_style
 samples/posix_style
 samples/*.exe
+test/img_dump/img_dump
+!test/imgs_to_dump.in
 tests/*.exe
 tests/*.log
 tests/*.trs
 tests/fs_attrlist_apis
 tests/fs_fname_apis
 tests/fs_thread_test
-tests/img_dump
 tests/imgs_to_dump
-!tests/imgs_to_dump.in
 tests/read_apis
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
