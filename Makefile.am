@@ -580,11 +580,11 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
-	tests/check_static.sh \
+	test/check_static.sh \
 	tests/runtests.sh \
 	tests/test_imgs.sh \
 	tests/test_libraries.sh \
-	tests/test_static_tools.sh
+	test/test_static_tools.sh
 
 TESTS =	\
 	tests/runtests.sh \
@@ -593,7 +593,7 @@ TESTS =	\
 	tests/test_libraries.sh
 
 if BUILD_STATIC
-TESTS += tests/test_static_tools.sh
+TESTS += test/test_static_tools.sh
 endif
 
 TEST_EXTENSIONS = .sh
@@ -664,19 +664,19 @@ tests_read_apis_SOURCES = tests/read_apis.cpp
 # and link into a single executable.
 # This makes things easier with codecov.
 
-check_PROGRAMS += unit_tests/runner
+check_PROGRAMS += test/runner
 
-TESTS += unit_tests/runner
+TESTS += test/runner
 
-unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-unit_tests_runner_SOURCES = \
-	unit_tests/crypto_test.cpp \
-	unit_tests/errors_test.cpp \
-	unit_tests/mult_files_test.cpp \
-	unit_tests/runner.cpp \
+test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_runner_SOURCES = \
+	test/tsk/base/test_tsk_error.cpp \
+	test/tsk/img/test_mult_files.cpp \
+	test/tsk/util/test_crypto.cpp \
+	test/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
 	$(tsk_base_libtskbase_la_SOURCES) \
 	$(tsk_fs_libtskfs_la_SOURCES) \
