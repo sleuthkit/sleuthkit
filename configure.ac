@@ -317,7 +317,7 @@ AC_SUBST(CHECK_IMGS, $check_imgs)
 AC_CONFIG_FILES([
     Makefile
     tsk/tsk.pc
-    tests/imgs_to_dump])
+    test/img_dump/imgs_to_dump])
 
 AC_OUTPUT
 
