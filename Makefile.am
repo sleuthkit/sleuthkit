@@ -581,15 +581,15 @@ EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
 	test/check_static.sh \
+	test/test_static_tools.sh \
+	test/img_dump/test_imgs.sh \
 	tests/runtests.sh \
-	tests/test_imgs.sh \
-	tests/test_libraries.sh \
-	test/test_static_tools.sh
+	tests/test_libraries.sh
 
 TESTS =	\
+	test/img_dump/test_imgs.sh \
 	tests/runtests.sh \
 	tests/fiwalk_test \
-	tests/test_imgs.sh \
 	tests/test_libraries.sh
 
 if BUILD_STATIC
@@ -607,7 +607,7 @@ check_PROGRAMS = \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
 	tests/fs_thread_test \
-	tests/img_dump \
+	test/img_dump/img_dump \
 	tests/read_apis
 
 tests_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
@@ -647,11 +647,11 @@ tests_fs_thread_test_SOURCES = \
 	tests/tsk_thread.cpp \
 	tests/tsk_thread.h
 
-tests_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_img_dump_LDADD = $(TSK_LIB)
-tests_img_dump_SOURCES = tests/img_dump.cpp
+test_img_dump_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_img_dump_img_dump_LDADD = $(TSK_LIB)
+test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
 
 tests_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
