@@ -673,9 +673,9 @@ test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 test_runner_SOURCES = \
+	test/tsk/img/test_mult_files.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/errors_test.cpp \
-	test/mult_files_test.cpp \
 	test/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
 	$(tsk_base_libtskbase_la_SOURCES) \
