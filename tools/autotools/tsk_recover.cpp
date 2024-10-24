@@ -195,7 +195,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         path16full[len] = L'\\';
 
     //do name mangling
-    char name8[FILENAME_MAX];
+    char name8[FILENAME_MAX + 1];
     strncpy(name8, a_fs_file->name->name, FILENAME_MAX);
     for (int i = 0; name8[i] != '\0'; i++) {
         if (TSK_IS_CNTRL(name8[i]))
@@ -203,14 +203,14 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     //convert file name from utf8 to utf16
-    wchar_t name16[FILENAME_MAX];
+    wchar_t name16[FILENAME_MAX + 1];
 
     ilen = strlen(name8);
     utf8 = (UTF8 *) name8;
     utf16 = (UTF16 *) name16;
 
     retVal = tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
-        &utf16, &utf16[FILENAME_MAX], TSKlenientConversion);
+        &utf16, &utf16[FILENAME_MAX + 1], TSKlenientConversion);
     *utf16 = '\0';
 
     if (retVal != TSKconversionOK) {
@@ -219,7 +219,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     //append the file name onto the path
-    wcsncat(path16full, name16, FILENAME_MAX-wcslen(path16full));
+    wcsncat(path16full, name16, FILENAME_MAX + 1 - wcslen(path16full));
 
     //create the file
     HANDLE

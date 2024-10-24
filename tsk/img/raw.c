@@ -198,14 +198,14 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // ReadFile returns TRUE and sets nread to zero.
         // We need to check if we've reached the end of a file and set nread to
         // the number of bytes read.
-        if ((raw_info->is_winobj) && (nread == 0) && (offset_to_read + len_to_read == raw_info->img_info.size)) {
+        if (raw_info->is_winobj && nread == 0 && offset_to_read + len_to_read == (size_t) raw_info->img_info.size) {
             nread = (DWORD)len_to_read;
         }
         cnt = (ssize_t) nread;
 
         if (raw_info->img_writer != NULL) {
             /* img_writer is not used with split images, so rel_offset is just the normal offset*/
-            TSK_RETVAL_ENUM result = raw_info->img_writer->add(raw_info->img_writer, offset_to_read, *buf_pointer, cnt);
+            raw_info->img_writer->add(raw_info->img_writer, offset_to_read, *buf_pointer, cnt);
             // If WriteFile returns error in the addNewBlock, hadErrorExtending is 1
             if (raw_info->img_writer->inFinalizeImageWriter && raw_info->img_writer->hadErrorExtending) {
                 if (sector_aligned_buf != NULL) {
@@ -214,7 +214,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                    "\" offset: %" PRIdOFF " tsk_img_writer_add cnt: %" PRIuSIZE " - %d",
+                    "\" offset: %" PRIdOFF " tsk_img_writer_add cnt: %" PRIuSIZE,
                     raw_info->img_info.images[idx], offset_to_read, cnt
                     );
                 return -1;

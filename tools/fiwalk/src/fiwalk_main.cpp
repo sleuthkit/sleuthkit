@@ -236,7 +236,7 @@ extern "C" int main(int argc, char * const *argv1) {
 	case _TSK_T('z'): o.opt_sha1=false; o.opt_md5=false; break;
 	case _TSK_T('?'): usage(o);break;
 	default:
-	    fprintf(stderr, "Invalid argument: %s\n", argv[OPTIND]);
+	    fprintf(stderr, "Invalid argument: %" PRIttocTSK "\n", argv[OPTIND]);
 	    usage(o);
 	}
     }
