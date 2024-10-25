@@ -584,14 +584,14 @@ check_SCRIPTS = \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
 	test/img_dump/test_imgs.sh \
-	tests/runtests.sh
+	test/legacy/runtests.sh
 
 TESTS =	\
 	test/runner \
 	test/test_libraries.sh \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
-	tests/runtests.sh
+	test/legacy/runtests.sh
 
 if BUILD_STATIC
 TESTS += test/test_static_tools.sh
@@ -607,10 +607,10 @@ check_PROGRAMS = \
 	test/runner \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/img_dump \
-	tests/fs_attrlist_apis \
-	tests/fs_fname_apis \
-	tests/fs_thread_test \
-	tests/read_apis
+	test/legacy/fs_attrlist_apis \
+	test/legacy/fs_fname_apis \
+	test/legacy/fs_thread_test \
+	test/legacy/read_apis
 
 # Unit tests:
 # Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
@@ -656,32 +656,32 @@ test_img_dump_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 test_img_dump_img_dump_LDADD = $(TSK_LIB)
 test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
 
-tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_fname_apis_LDADD = $(TSK_LIB)
-tests_fs_fname_apis_SOURCES = tests/fs_fname_apis.cpp
+test_legacy_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_fname_apis_LDADD = $(TSK_LIB)
+test_legacy_fs_fname_apis_SOURCES = test/legacy/fs_fname_apis.cpp
 
-tests_fs_attrlist_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_attrlist_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_attrlist_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_attrlist_apis_LDADD = $(TSK_LIB)
-tests_fs_attrlist_apis_SOURCES = tests/fs_attrlist_apis.cpp
+test_legacy_fs_attrlist_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_attrlist_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_attrlist_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_attrlist_apis_LDADD = $(TSK_LIB)
+test_legacy_fs_attrlist_apis_SOURCES = test/legacy/fs_attrlist_apis.cpp
 
-tests_fs_thread_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_thread_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_thread_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_thread_test_LDADD = $(TSK_LIB)
-tests_fs_thread_test_SOURCES = \
-	tests/fs_thread_test.cpp \
-	tests/tsk_thread.cpp \
-	tests/tsk_thread.h
+test_legacy_fs_thread_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_thread_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_thread_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_thread_test_LDADD = $(TSK_LIB)
+test_legacy_fs_thread_test_SOURCES = \
+	test/legacy/fs_thread_test.cpp \
+	test/legacy/tsk_thread.cpp \
+	test/legacy/tsk_thread.h
 
-tests_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_read_apis_LDADD = $(TSK_LIB)
-tests_read_apis_SOURCES = tests/read_apis.cpp
+test_legacy_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_read_apis_LDADD = $(TSK_LIB)
+test_legacy_read_apis_SOURCES = test/legacy/read_apis.cpp
 
 #
 # Java

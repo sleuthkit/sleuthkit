@@ -148,13 +148,10 @@ test/fiwalk/fiwalk_test
 test/img_dump/img_dump
 test/img_dump/imgs_to_dump
 !test/img_dump/imgs_to_dump.in
-tests/*.exe
-tests/*.log
-tests/*.trs
-tests/fs_attrlist_apis
-tests/fs_fname_apis
-tests/fs_thread_test
-tests/read_apis
+test/legacy/fs_attrlist_apis
+test/legacy/fs_fname_apis
+test/legacy/fs_thread_test
+test/legacy/read_apis
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
 tools/autotools/tsk_imageinfo
@@ -200,15 +197,11 @@ tools/*/*/*.exe
 
 sleuthkit-*.tar.gz
 
-# Whitelist test data folder
-!tests/data/*
 *.Tpo
 *.gcda
 *.gcno
 *.gcov
 *.Tpo
 test-suite.log
-tests/data
-tests/wget-log
 venv
 wget-log
