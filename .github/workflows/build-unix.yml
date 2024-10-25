@@ -156,8 +156,8 @@ jobs:
 
       - name: Get the disk images
         run: |
-          make tests/test_images.txt
-          cat tests/test_images.txt
+          make test/fiwalk/test_images.txt
+          cat test/fiwalk/test_images.txt
 
       - name: Run make
         run: |

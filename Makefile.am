@@ -587,6 +587,7 @@ check_SCRIPTS = \
 	tests/test_libraries.sh
 
 TESTS =	\
+	test/runner \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
 	tests/runtests.sh \
@@ -601,14 +602,37 @@ SH_LOG_COMPILER =
 
 LOG_COMPILER = scripts/test_runner.sh
 
-# TODO: nothing runs these (except for img_dump, fiwalk_test)!
+# TODO: nothing runs fs_attrlist_apis, fs_name_apis, fs_thread_test, read_apis
 check_PROGRAMS = \
+	test/runner \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/img_dump \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
 	tests/fs_thread_test \
 	tests/read_apis
+
+# Unit tests:
+# Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
+# and link into a single executable.
+# This makes things easier with codecov.
+test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_runner_SOURCES = \
+	test/tsk/base/test_tsk_error.cpp \
+	test/tsk/img/test_mult_files.cpp \
+	test/tsk/util/test_crypto.cpp \
+	test/runner.cpp \
+	$(tsk_auto_libtskauto_la_SOURCES) \
+	$(tsk_base_libtskbase_la_SOURCES) \
+	$(tsk_fs_libtskfs_la_SOURCES) \
+	$(tsk_hashdb_libtskhashdb_la_SOURCES) \
+	$(tsk_img_libtskimg_la_SOURCES) \
+	$(tsk_pool_libtskpool_la_SOURCES) \
+	$(tsk_util_libtskutil_la_SOURCES) \
+	$(tsk_vs_libtskvs_la_SOURCES)
 
 test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
@@ -625,6 +649,12 @@ test/fiwalk/test_images.txt: test/fiwalk/test_images.yaml test/fiwalk/get_test_i
 	test/fiwalk/get_test_images.bash
 
 CLEANFILES += test/fiwalk/test_images.txt
+
+test_img_dump_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_img_dump_img_dump_LDADD = $(TSK_LIB)
+test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
 
 tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -647,45 +677,11 @@ tests_fs_thread_test_SOURCES = \
 	tests/tsk_thread.cpp \
 	tests/tsk_thread.h
 
-test_img_dump_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-test_img_dump_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-test_img_dump_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-test_img_dump_img_dump_LDADD = $(TSK_LIB)
-test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
-
 tests_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 tests_read_apis_LDADD = $(TSK_LIB)
 tests_read_apis_SOURCES = tests/read_apis.cpp
-
-# Unit tests:
-# Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
-# and link into a single executable.
-# This makes things easier with codecov.
-
-check_PROGRAMS += test/runner
-
-TESTS += test/runner
-
-test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-test_runner_SOURCES = \
-	test/tsk/base/test_tsk_error.cpp \
-	test/tsk/img/test_mult_files.cpp \
-	test/tsk/util/test_crypto.cpp \
-	test/runner.cpp \
-	$(tsk_auto_libtskauto_la_SOURCES) \
-	$(tsk_base_libtskbase_la_SOURCES) \
-	$(tsk_fs_libtskfs_la_SOURCES) \
-	$(tsk_hashdb_libtskhashdb_la_SOURCES) \
-	$(tsk_img_libtskimg_la_SOURCES) \
-	$(tsk_pool_libtskpool_la_SOURCES) \
-	$(tsk_util_libtskutil_la_SOURCES) \
-	$(tsk_vs_libtskvs_la_SOURCES)
-
 
 #
 # Java
