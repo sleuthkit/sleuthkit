@@ -581,17 +581,17 @@ EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
 	test/check_static.sh \
+	test/test_libraries.sh \
 	test/test_static_tools.sh \
 	test/img_dump/test_imgs.sh \
-	tests/runtests.sh \
-	tests/test_libraries.sh
+	tests/runtests.sh
 
 TESTS =	\
 	test/runner \
+	test/test_libraries.sh \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
-	tests/runtests.sh \
-	tests/test_libraries.sh
+	tests/runtests.sh
 
 if BUILD_STATIC
 TESTS += test/test_static_tools.sh
