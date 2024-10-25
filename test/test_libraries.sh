@@ -13,7 +13,7 @@ EXIT_SKIP=77
 MMLS_CMD=$(realpath tools/vstools/mmls)
 TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
 
-IMGBASE="tests/data/imageformat_mmls_1"
+IMGBASE="test/data/imageformat_mmls_1"
 
 if [ -n "$WINEARCH" ]; then
   MMLS_CMD="wine ${MMLS_CMD}.exe"
@@ -42,7 +42,7 @@ fi
 
 # Use local test files instead of downloading from google drive
 for name in "${TESTS[@]}"; do
-  if [ ! -f "./tests/data/${name}" ]; then
+  if [ ! -f "./test/data/${name}" ]; then
     echo "Missing test $name"
     exit $EXIT_FAILURE
   fi

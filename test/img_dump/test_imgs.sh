@@ -2,7 +2,7 @@
 
 ERROR=0
 
-cd tests
+cd test/img_dump
 
 # find the correct img_dump executable
 if [ -x ./img_dump ]; then
@@ -17,7 +17,7 @@ else
 fi
 
 for i in $(cat imgs_to_dump) ; do
-  diff -b data/dump/$i.json <(TZ=America/New_York $IMG_DUMP data/img/$i) && echo "SUCCESS: img_dump $i" || { echo "FAILED: img_dump $i" ; ERROR=1 ; }
+  diff -b dump/$i.json <(TZ=America/New_York $IMG_DUMP ../data/$i) && echo "SUCCESS: img_dump $i" || { echo "FAILED: img_dump $i" ; ERROR=1 ; }
 done
 
 exit $ERROR

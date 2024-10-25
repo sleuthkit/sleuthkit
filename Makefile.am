@@ -581,16 +581,17 @@ EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
 	test/check_static.sh \
-	tests/runtests.sh \
-	tests/test_imgs.sh \
-	tests/test_libraries.sh \
-	test/test_static_tools.sh
+	test/test_libraries.sh \
+	test/test_static_tools.sh \
+	test/img_dump/test_imgs.sh \
+	test/legacy/runtests.sh
 
 TESTS =	\
-	tests/runtests.sh \
-	tests/fiwalk_test \
-	tests/test_imgs.sh \
-	tests/test_libraries.sh
+	test/runner \
+	test/test_libraries.sh \
+	test/fiwalk/fiwalk_test \
+	test/img_dump/test_imgs.sh \
+	test/legacy/runtests.sh
 
 if BUILD_STATIC
 TESTS += test/test_static_tools.sh
@@ -601,73 +602,20 @@ SH_LOG_COMPILER =
 
 LOG_COMPILER = scripts/test_runner.sh
 
-# TODO: nothing runs these (except for img_dump, fiwalk_test)!
+# TODO: nothing runs fs_attrlist_apis, fs_name_apis, fs_thread_test, read_apis
 check_PROGRAMS = \
-	tests/fiwalk_test \
-	tests/fs_attrlist_apis \
-	tests/fs_fname_apis \
-	tests/fs_thread_test \
-	tests/img_dump \
-	tests/read_apis
-
-tests_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-tests_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fiwalk_test_LDADD = $(TSK_LIB)
-tests_fiwalk_test_SOURCES = \
-	tests/fiwalk_test.cpp \
-	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
-
-EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
-
-tests/test_images.txt: tests/test_images.yaml tests/get_test_images.bash tests/get_test_images.py
-	tests/get_test_images.bash
-
-CLEANFILES += tests/test_images.txt
-
-tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_fname_apis_LDADD = $(TSK_LIB)
-tests_fs_fname_apis_SOURCES = tests/fs_fname_apis.cpp
-
-tests_fs_attrlist_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_attrlist_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_attrlist_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_attrlist_apis_LDADD = $(TSK_LIB)
-tests_fs_attrlist_apis_SOURCES = tests/fs_attrlist_apis.cpp
-
-tests_fs_thread_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_thread_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_thread_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_thread_test_LDADD = $(TSK_LIB)
-tests_fs_thread_test_SOURCES = \
-	tests/fs_thread_test.cpp \
-	tests/tsk_thread.cpp \
-	tests/tsk_thread.h
-
-tests_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_img_dump_LDADD = $(TSK_LIB)
-tests_img_dump_SOURCES = tests/img_dump.cpp
-
-tests_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_read_apis_LDADD = $(TSK_LIB)
-tests_read_apis_SOURCES = tests/read_apis.cpp
+	test/runner \
+	test/fiwalk/fiwalk_test \
+	test/img_dump/img_dump \
+	test/legacy/fs_attrlist_apis \
+	test/legacy/fs_fname_apis \
+	test/legacy/fs_thread_test \
+	test/legacy/read_apis
 
 # Unit tests:
 # Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
 # and link into a single executable.
 # This makes things easier with codecov.
-
-check_PROGRAMS += test/runner
-
-TESTS += test/runner
-
 test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -686,6 +634,54 @@ test_runner_SOURCES = \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
 
+test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_fiwalk_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_fiwalk_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_fiwalk_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_fiwalk_fiwalk_test_LDADD = $(TSK_LIB)
+test_fiwalk_fiwalk_test_SOURCES = \
+	test/fiwalk/fiwalk_test.cpp \
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/fiwalk/test_images.txt
+
+test/fiwalk/test_images.txt: test/fiwalk/test_images.yaml test/fiwalk/get_test_images.bash test/fiwalk/get_test_images.py
+	test/fiwalk/get_test_images.bash
+
+CLEANFILES += test/fiwalk/test_images.txt
+
+test_img_dump_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_img_dump_img_dump_LDADD = $(TSK_LIB)
+test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
+
+test_legacy_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_fname_apis_LDADD = $(TSK_LIB)
+test_legacy_fs_fname_apis_SOURCES = test/legacy/fs_fname_apis.cpp
+
+test_legacy_fs_attrlist_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_attrlist_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_attrlist_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_attrlist_apis_LDADD = $(TSK_LIB)
+test_legacy_fs_attrlist_apis_SOURCES = test/legacy/fs_attrlist_apis.cpp
+
+test_legacy_fs_thread_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_thread_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_thread_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_thread_test_LDADD = $(TSK_LIB)
+test_legacy_fs_thread_test_SOURCES = \
+	test/legacy/fs_thread_test.cpp \
+	test/legacy/tsk_thread.cpp \
+	test/legacy/tsk_thread.h
+
+test_legacy_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_read_apis_LDADD = $(TSK_LIB)
+test_legacy_read_apis_SOURCES = test/legacy/read_apis.cpp
 
 #
 # Java
