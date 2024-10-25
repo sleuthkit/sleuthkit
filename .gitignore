@@ -145,7 +145,8 @@ samples/posix_cpp_style
 samples/posix_style
 samples/*.exe
 test/img_dump/img_dump
-!test/imgs_to_dump.in
+test/img_dump/imgs_to_dump
+!test/img_dump/imgs_to_dump.in
 tests/*.exe
 tests/*.log
 tests/*.trs
