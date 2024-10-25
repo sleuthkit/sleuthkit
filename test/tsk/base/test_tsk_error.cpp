@@ -24,10 +24,7 @@ TEST_CASE("void ErrorsTest::testInitialState()","[errors]") {
 
 TEST_CASE("void ErrorsTest::testLengthChecks()","[errors]") {
   tsk_error_get_info();
-  std::string s;
-  for (unsigned x = 0; x < 4096; x ++) {
-    s = s + std::string("x");
-  }
+  const std::string s(4096, 'x');
   tsk_error_set_errstr("%s", s.c_str());
   std::string es(tsk_error_get_errstr());
   REQUIRE(es.size() < 1025);
