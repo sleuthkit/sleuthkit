@@ -27,10 +27,10 @@ if ! test -d ${IMAGE_DIR} ; then
     exit ${EXIT_IGNORE}
 fi
 
-FS_THREAD_TEST="./fs_thread_test"
+FS_THREAD_TEST="tests/fs_thread_test"
 
 if ! test -x ${FS_THREAD_TEST} ; then
-    FS_THREAD_TEST="./fs_thread_test.exe"
+    FS_THREAD_TEST="tests/fs_thread_test.exe"
 fi
 
 if ! test -x ${FS_THREAD_TEST} ; then
