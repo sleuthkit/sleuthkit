@@ -34,7 +34,7 @@ if ! test -x ${FS_THREAD_TEST} ; then
 fi
 
 if ! test -x ${FS_THREAD_TEST} ; then
-    echo "Missing test executable: ${IMAGE_DIR}"
+    echo "Missing test executable: ${FS_THREAD_TEST}"
     exit ${EXIT_IGNORE};
 fi
 
