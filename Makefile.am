@@ -587,9 +587,9 @@ check_SCRIPTS = \
 	tests/test_libraries.sh
 
 TESTS =	\
+	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
 	tests/runtests.sh \
-	tests/fiwalk_test \
 	tests/test_libraries.sh
 
 if BUILD_STATIC
@@ -603,28 +603,28 @@ LOG_COMPILER = scripts/test_runner.sh
 
 # TODO: nothing runs these (except for img_dump, fiwalk_test)!
 check_PROGRAMS = \
-	tests/fiwalk_test \
+	test/fiwalk/fiwalk_test \
+	test/img_dump/img_dump \
 	tests/fs_attrlist_apis \
 	tests/fs_fname_apis \
 	tests/fs_thread_test \
-	test/img_dump/img_dump \
 	tests/read_apis
 
-tests_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-tests_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fiwalk_test_LDADD = $(TSK_LIB)
-tests_fiwalk_test_SOURCES = \
-	tests/fiwalk_test.cpp \
+test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_fiwalk_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_fiwalk_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_fiwalk_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_fiwalk_fiwalk_test_LDADD = $(TSK_LIB)
+test_fiwalk_fiwalk_test_SOURCES = \
+	test/fiwalk/fiwalk_test.cpp \
 	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
 
-EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
+EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/fiwalk/test_images.txt
 
-tests/test_images.txt: tests/test_images.yaml tests/get_test_images.bash tests/get_test_images.py
-	tests/get_test_images.bash
+test/fiwalk/test_images.txt: test/fiwalk/test_images.yaml test/fiwalk/get_test_images.bash test/fiwalk/get_test_images.py
+	test/fiwalk/get_test_images.bash
 
-CLEANFILES += tests/test_images.txt
+CLEANFILES += test/fiwalk/test_images.txt
 
 tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)

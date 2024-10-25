@@ -144,6 +144,7 @@ samples/callback_style
 samples/posix_cpp_style
 samples/posix_style
 samples/*.exe
+test/fiwalk/fiwalk_test
 test/img_dump/img_dump
 test/img_dump/imgs_to_dump
 !test/img_dump/imgs_to_dump.in
