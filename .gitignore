@@ -115,9 +115,9 @@ Makefile
 .dirstamp
 
 # unit tests
-test/*.exe
-test/*.log
-test/*.trs
+test/**/*.exe
+test/**/*.log
+test/**/*.trs
 
 #javadoc generated
 /bindings/java/javadoc
