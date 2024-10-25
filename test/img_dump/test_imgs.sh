@@ -17,7 +17,7 @@ else
 fi
 
 for i in $(cat imgs_to_dump) ; do
-  diff -b dump/$i.json <(TZ=America/New_York $IMG_DUMP img/$i) && echo "SUCCESS: img_dump $i" || { echo "FAILED: img_dump $i" ; ERROR=1 ; }
+  diff -b dump/$i.json <(TZ=America/New_York $IMG_DUMP ../data/$i) && echo "SUCCESS: img_dump $i" || { echo "FAILED: img_dump $i" ; ERROR=1 ; }
 done
 
 exit $ERROR
