@@ -154,7 +154,6 @@ tests/*.trs
 tests/fs_attrlist_apis
 tests/fs_fname_apis
 tests/fs_thread_test
-tests/imgs_to_dump
 tests/read_apis
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
