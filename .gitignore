@@ -209,7 +209,6 @@ sleuthkit-*.tar.gz
 *.Tpo
 test-suite.log
 tests/data
-tests/venv
 tests/wget-log
 venv
 wget-log
