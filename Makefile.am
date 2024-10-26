@@ -64,6 +64,7 @@ nobase_include_HEADERS = \
 	tsk/fs/encryptionHelper.h \
 	tsk/fs/tsk_apfs.h \
 	tsk/fs/tsk_apfs.hpp \
+	tsk/fs/tsk_btrfs.h \
 	tsk/fs/tsk_exfatfs.h \
 	tsk/fs/tsk_ext2fs.h \
 	tsk/fs/tsk_fatfs.h \
@@ -190,6 +191,8 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs_fs.cpp \
 	tsk/fs/apfs_open.cpp \
 	tsk/fs/dcalc_lib.cpp \
+	tsk/fs/btrfs.cpp \
+	tsk/fs/btrfs_csum.c \
 	tsk/fs/dcat_lib.c \
 	tsk/fs/decmpfs.cpp \
 	tsk/fs/dls_lib.cpp \
@@ -727,9 +730,6 @@ endif
 
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
-
-$(tsk_jar):
-	cd bindings/java ; ant dist $(ant_args)
 
 clean-tsk__jar:
 	cd bindings/java ; ant clean
