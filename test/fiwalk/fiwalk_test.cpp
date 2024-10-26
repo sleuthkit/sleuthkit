@@ -14,19 +14,10 @@
 
 #include "tools/fiwalk/src/fiwalk.h"
 
-#define DEFAULT_HOME "../"
-
 void check_image(std::string img_path, std::string dfxml2_path) {
 #if defined(__MINGW32__) || defined(__MINGW64__)
     WARN("fiwalk_test disabled under mingw. Will not test "+img_path);
 #else
-    std::string home = getenv("HOME") ? getenv("HOME") : DEFAULT_HOME;
-    if (img_path.substr(0,5)=="$HOME"){
-        img_path.replace(0,5,home);
-    }
-    if (dfxml2_path.substr(0,5)=="$HOME"){
-        dfxml2_path.replace(0,5,home);
-    }
     CAPTURE(img_path);
     INFO("test: fiwalk " << img_path)
 
@@ -66,71 +57,71 @@ void check_image(std::string img_path, std::string dfxml2_path) {
 #ifdef HAVE_LIBEWF
 TEST_CASE("test_disk_images imageformat_mmls_1.E01", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/imageformat_mmls_1.E01",
-      "$HOME/from_brian/imageformat_mmls_1.E01.xml"
+      "test/from_brian/imageformat_mmls_1.E01",
+      "test/from_brian/imageformat_mmls_1.E01.xml"
     );
 }
 #endif
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/ntfs-img-kw-1.dd",
-      "$HOME/from_brian/3-kwsrch-ntfs.xml"
+      "test/from_brian/ntfs-img-kw-1.dd",
+      "test/from_brian/3-kwsrch-ntfs.xml"
     );
 }
 
 TEST_CASE("test_disk_images ext3-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/ext3-img-kw-1.dd",
+      "test/from_brian/ext3-img-kw-1.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images daylight.dd", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/daylight.dd",
+      "test/from_brian/daylight.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images image.gen1.dmg", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/image.gen1.dmg",
+      "test/from_brian/image.gen1.dmg",
       ""
     );
 }
 
 TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/image.dd",
-      "$HOME/from_brian/image_dd.xml"
+      "test/from_brian/image.dd",
+      "test/from_brian/image_dd.xml"
     );
 }
 
 TEST_CASE("test_disk_images iso-dirtree1.iso", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/iso-dirtree1.iso",
+      "test/from_brian/iso-dirtree1.iso",
       ""
     );
 }
 
 TEST_CASE("test_disk_images fat-img-kw.dd", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/fat-img-kw.dd",
+      "test/from_brian/fat-img-kw.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images 6-fat-undel.dd", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/6-fat-undel.dd",
+      "test/from_brian/6-fat-undel.dd",
       ""
     );
 }
 
 TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
     check_image(
-      "$HOME/from_brian/image.gen1.dmg",
+      "test/from_brian/image.gen1.dmg",
       ""
     );
 }

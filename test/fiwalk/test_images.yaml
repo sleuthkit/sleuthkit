@@ -1,5 +1,5 @@
 # Specifies where the disk images go. Environment variable expansion is okay
-dest_dir: $HOME/from_brian
+dest_dir: test/from_brian
 
 #
 # Each source needs either an `image` or both a `zipfile` and an `unzip`
@@ -19,8 +19,8 @@ sources:
       zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/5-fat-daylight.zip
       unzip_image: 5-fat-daylight/daylight.dd
   - step5:
-      image: tests/data/img/image.dd
-      xml: tests/data/img/image_dd.xml
+      image: test/data/image.dd
+      xml: test/fiwalk/image_dd.xml
   - step6:
       image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg
   - iso9660:

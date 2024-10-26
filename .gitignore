@@ -115,9 +115,9 @@ Makefile
 .dirstamp
 
 # unit tests
-unit_tests/*.exe
-unit_tests/*.log
-unit_tests/*.trs
+test/**/*.exe
+test/**/*.log
+test/**/*.trs
 
 #javadoc generated
 /bindings/java/javadoc
@@ -144,16 +144,14 @@ samples/callback_style
 samples/posix_cpp_style
 samples/posix_style
 samples/*.exe
-tests/*.exe
-tests/*.log
-tests/*.trs
-tests/fs_attrlist_apis
-tests/fs_fname_apis
-tests/fs_thread_test
-tests/img_dump
-tests/imgs_to_dump
-!tests/imgs_to_dump.in
-tests/read_apis
+test/fiwalk/fiwalk_test
+test/img_dump/img_dump
+test/img_dump/imgs_to_dump
+!test/img_dump/imgs_to_dump.in
+test/legacy/fs_attrlist_apis
+test/legacy/fs_fname_apis
+test/legacy/fs_thread_test
+test/legacy/read_apis
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
 tools/autotools/tsk_imageinfo
@@ -190,8 +188,6 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
-unit_tests/base/test_base
-unit_tests/img/test_img
 
 # EMACS backup files
 *~
@@ -201,18 +197,11 @@ unit_tests/img/test_img
 
 sleuthkit-*.tar.gz
 
-# Whitelist test data folder
-!tests/data/*
 *.Tpo
 *.gcda
 *.gcno
 *.gcov
 *.Tpo
 test-suite.log
-tests/data
-tests/venv
-tests/wget-log
-unit_tests/test_images.txt
-unit_tests/venv
 venv
 wget-log
