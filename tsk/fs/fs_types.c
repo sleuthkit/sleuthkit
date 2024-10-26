@@ -67,7 +67,7 @@ static FS_TYPES fs_type_table[] = {
 #endif
     {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
     {"btrfs", TSK_FS_TYPE_BTRFS, "Btrfs"},
-    {0,0,""}
+    {0,0,""},
 };
 
 static FS_TYPES fs_legacy_type_table[] = {

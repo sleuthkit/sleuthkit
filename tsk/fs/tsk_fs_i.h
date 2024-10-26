@@ -190,25 +190,23 @@ extern "C" {
         const char *s1, const char *s2);
 
     /* Specific file system routines */
-    extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *ffs_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *swapfs_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *iso9660_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *ext2fs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *hfs_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *,
-        TSK_OFF_T, TSK_FS_TYPE_ENUM, const char*, uint8_t);
-    extern TSK_FS_INFO *logical_fs_open(TSK_IMG_INFO *);
+    extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *ffs_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *, TSK_OFF_T);
+    extern TSK_FS_INFO *swapfs_open(TSK_IMG_INFO *, TSK_OFF_T);
+    extern TSK_FS_INFO *iso9660_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *hfs_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+       extern TSK_FS_INFO *logical_fs_open(TSK_IMG_INFO *);
 
     /* Specific pool file system routines */
     extern TSK_FS_INFO *apfs_open_auto_detect(TSK_IMG_INFO*, TSK_OFF_T,

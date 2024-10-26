@@ -272,41 +272,6 @@ public class TskData {
 			}
 			return val;
 		}
-<<<<<<< HEAD
-=======
-
-	}
-
-	/**
-    * These are based on the NTFS type values.
-     * Added types for HFS+.
-    */
-    public enum TSK_FS_ATTR_TYPE_ENUM {
-        TSK_FS_ATTR_TYPE_NOT_FOUND(0x00),      // 0
-        TSK_FS_ATTR_TYPE_DEFAULT(0x01),        // 1
-        TSK_FS_ATTR_TYPE_NTFS_SI(0x10),        // 16
-        TSK_FS_ATTR_TYPE_NTFS_ATTRLIST(0x20),  // 32
-        TSK_FS_ATTR_TYPE_NTFS_FNAME(0x30),     // 48
-        TSK_FS_ATTR_TYPE_NTFS_VVER(0x40),      // 64 (NT)
-        TSK_FS_ATTR_TYPE_NTFS_OBJID(0x40),     // 64 (2K)
-        TSK_FS_ATTR_TYPE_NTFS_SEC(0x50),       // 80
-        TSK_FS_ATTR_TYPE_NTFS_VNAME(0x60),     // 96
-        TSK_FS_ATTR_TYPE_NTFS_VINFO(0x70),     // 112
-        TSK_FS_ATTR_TYPE_NTFS_DATA(0x80),      // 128
-        TSK_FS_ATTR_TYPE_NTFS_IDXROOT(0x90),   // 144
-        TSK_FS_ATTR_TYPE_NTFS_IDXALLOC(0xA0),  // 160
-        TSK_FS_ATTR_TYPE_NTFS_BITMAP(0xB0),    // 176
-        TSK_FS_ATTR_TYPE_NTFS_SYMLNK(0xC0),    // 192 (NT)
-        TSK_FS_ATTR_TYPE_NTFS_REPARSE(0xC0),   // 192 (2K)
-        TSK_FS_ATTR_TYPE_NTFS_EAINFO(0xD0),    // 208
-        TSK_FS_ATTR_TYPE_NTFS_EA(0xE0),        // 224
-        TSK_FS_ATTR_TYPE_NTFS_PROP(0xF0),      //  (NT)
-        TSK_FS_ATTR_TYPE_NTFS_LOG(0x100),      //  (2K)
-        TSK_FS_ATTR_TYPE_UNIX_INDIR(0x1001),   //  Indirect blocks for UFS and ExtX file systems
-        TSK_FS_ATTR_TYPE_UNIX_EXTENT(0x1002),  //  Extents for Ext4 file system
-        TSK_FS_ATTR_TYPE_UNIX_XATTR(0x1003),   //  Extended Attributes for Btrfs file system
->>>>>>> refs/remotes/basicmaster/develop-btrfs
-
 	}
 
 	/**
