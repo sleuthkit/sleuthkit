@@ -794,39 +794,39 @@ extern "C" {
     *
     */
     enum TSK_FS_TYPE_ENUM {
-        TSK_FS_TYPE_DETECT        = 0x00000000,        ///< Use autodetection methods
-        TSK_FS_TYPE_NTFS          = 0x00000001,  ///< NTFS file system
-        TSK_FS_TYPE_NTFS_DETECT   = 0x00000001,   ///< NTFS auto detection
-        TSK_FS_TYPE_FAT12         = 0x00000002, ///< FAT12 file system
-        TSK_FS_TYPE_FAT16         = 0x00000004, ///< FAT16 file system
-        TSK_FS_TYPE_FAT32         = 0x00000008, ///< FAT32 file system
-        TSK_FS_TYPE_EXFAT         = 0x0000000a, ///< exFAT file system
-        TSK_FS_TYPE_FAT_DETECT    = 0x0000000e,    ///< FAT auto detection
-        TSK_FS_TYPE_FFS1          = 0x00000010,  ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
-        TSK_FS_TYPE_FFS1B         = 0x00000020, ///< UFS1b (Solaris - has no type)
-        TSK_FS_TYPE_FFS2          = 0x00000040,  ///< UFS2 - FreeBSD, NetBSD
-        TSK_FS_TYPE_FFS_DETECT    = 0x00000070,    ///< UFS auto detection
-        TSK_FS_TYPE_EXT2          = 0x00000080,  ///< Ext2 file system
-        TSK_FS_TYPE_EXT3          = 0x00000100,  ///< Ext3 file system
-        TSK_FS_TYPE_EXT_DETECT    = 0x00002180,    ///< ExtX auto detection
-        TSK_FS_TYPE_SWAP          = 0x00000200,  ///< SWAP file system
-        TSK_FS_TYPE_SWAP_DETECT   = 0x00000200,   ///< SWAP auto detection
-        TSK_FS_TYPE_RAW           = 0x00000400,   ///< RAW file system
-        TSK_FS_TYPE_RAW_DETECT    = 0x00000400,    ///< RAW auto detection
-        TSK_FS_TYPE_ISO9660       = 0x00000800,       ///< ISO9660 file system
-        TSK_FS_TYPE_ISO9660_DETECT= 0x00000800,        ///< ISO9660 auto detection
-        TSK_FS_TYPE_HFS           = 0x00001000,   ///< HFS+/HFSX file system
-        TSK_FS_TYPE_HFS_DETECT    = 0x00009000,    ///< HFS auto detection
-        TSK_FS_TYPE_EXT4          = 0x00002000,  ///< Ext4 file system
-        TSK_FS_TYPE_YAFFS2        = 0x00004000,        ///< YAFFS2 file system
+        TSK_FS_TYPE_DETECT = 0x00000000,        ///< Use autodetection methods
+        TSK_FS_TYPE_NTFS = 0x00000001,  ///< NTFS file system
+        TSK_FS_TYPE_NTFS_DETECT = 0x00000001,   ///< NTFS auto detection
+        TSK_FS_TYPE_FAT12 = 0x00000002, ///< FAT12 file system
+        TSK_FS_TYPE_FAT16 = 0x00000004, ///< FAT16 file system
+        TSK_FS_TYPE_FAT32 = 0x00000008, ///< FAT32 file system
+        TSK_FS_TYPE_EXFAT = 0x0000000a, ///< exFAT file system
+        TSK_FS_TYPE_FAT_DETECT = 0x0000000e,    ///< FAT auto detection
+        TSK_FS_TYPE_FFS1 = 0x00000010,  ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
+        TSK_FS_TYPE_FFS1B = 0x00000020, ///< UFS1b (Solaris - has no type)
+        TSK_FS_TYPE_FFS2 = 0x00000040,  ///< UFS2 - FreeBSD, NetBSD
+        TSK_FS_TYPE_FFS_DETECT = 0x00000070,    ///< UFS auto detection
+        TSK_FS_TYPE_EXT2 = 0x00000080,  ///< Ext2 file system
+        TSK_FS_TYPE_EXT3 = 0x00000100,  ///< Ext3 file system
+        TSK_FS_TYPE_EXT_DETECT = 0x00002180,    ///< ExtX auto detection
+        TSK_FS_TYPE_SWAP = 0x00000200,  ///< SWAP file system
+        TSK_FS_TYPE_SWAP_DETECT = 0x00000200,   ///< SWAP auto detection
+        TSK_FS_TYPE_RAW = 0x00000400,   ///< RAW file system
+        TSK_FS_TYPE_RAW_DETECT = 0x00000400,    ///< RAW auto detection
+        TSK_FS_TYPE_ISO9660 = 0x00000800,       ///< ISO9660 file system
+        TSK_FS_TYPE_ISO9660_DETECT = 0x00000800,        ///< ISO9660 auto detection
+        TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS+/HFSX file system
+        TSK_FS_TYPE_HFS_DETECT = 0x00009000,    ///< HFS auto detection
+        TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext4 file system
+        TSK_FS_TYPE_YAFFS2 = 0x00004000,        ///< YAFFS2 file system
         TSK_FS_TYPE_YAFFS2_DETECT = 0x00004000, ///< YAFFS2 auto detection
-        TSK_FS_TYPE_HFS_LEGACY    = 0x00008000,   ///< HFS file system
-        TSK_FS_TYPE_APFS          = 0x00010000, ///< APFS file system
-        TSK_FS_TYPE_APFS_DETECT   = 0x00010000, ///< APFS auto detection
-        TSK_FS_TYPE_LOGICAL       = 0x00020000, ///< Logical directory (aut detection not supported)
-        TSK_FS_TYPE_BTRFS         = 0x00008000,        ///< Btrfs file system
-        TSK_FS_TYPE_BTRFS_DETECT  = 0x00008000, ///< Btrfs auto detection
-        TSK_FS_TYPE_UNSUPP        = 0xffffffff,        ///< Unsupported file system
+        TSK_FS_TYPE_HFS_LEGACY= 0x00008000,   ///< HFS file system
+        TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
+        TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
+               TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+        TSK_FS_TYPE_BTRFS = 0x00008000,        ///< Btrfs file system
+        TSK_FS_TYPE_BTRFS_DETECT = 0x00008000, ///< Btrfs auto detection
+        TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
      * with any changes. */
