@@ -3535,7 +3535,7 @@ btrfs_datawalk_read(BTRFS_DATAWALK * a_dw, uint8_t * a_data, const size_t a_len)
  * @param a_fs_attr pointer to a file attribute
  * @param a_offset offset
  * @param a_buf pointer to buffer
- * @param a_len data len
+ * @param a_len data len   (>=0 due to size_t being unsigned)
  * @return amount of read bytes if no error occured, otherwise -1
  */
 static ssize_t
@@ -3555,15 +3555,16 @@ btrfs_file_read_special(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         btrfs_error(TSK_ERR_FS_ARG, "btrfs_file_read_special: called with read offset out of range");
         return -1;
     }
-    if (a_offset + (TSK_OFF_T) a_len > a_fs_attr->size || a_len < 0) {
+    if (a_offset + (TSK_OFF_T) a_len > a_fs_attr->size ) {
         btrfs_error(TSK_ERR_FS_ARG, "btrfs_file_read_special: called with read len out of range");
         return -1;
     }
 
 
     BTRFS_DATAWALK *dw = btrfs_datawalk_alloc(a_fs_attr);
-    if (!dw)
+    if (!dw) {
         return -1;
+    }
 
     // skip offset
     ssize_t result;
