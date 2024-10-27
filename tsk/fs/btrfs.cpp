@@ -3776,7 +3776,8 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
     // handle special virtual inums
     if (meta->addr == BTRFS_SUPERBLOCK_VINUM(fs)) {
         TSK_DADDR_T sb_address = btrfs_superblock_address(btrfs->sb_mirror_index);
-        uint8_t tmp_sb[meta->size];
+        // uint8_t tmp_sb[meta->size];
+        uint8_t *tmp_sb = new uint8_t[meta->size];
 
         ssize_t result = tsk_fs_read(fs, sb_address, (char*) tmp_sb, sizeof(tmp_sb));
         if (result != (signed) sizeof(tmp_sb)) {
@@ -3784,19 +3785,23 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
                 btrfs_error(TSK_ERR_FS_READ, "btrfs_load_attrs: Error reading superblock at physical address: 0x%" PRIxDADDR, sb_address);
             else
                 tsk_error_set_errstr2("btrfs_load_attrs: Error reading superblock at physical address: 0x%" PRIxDADDR, sb_address);
+            delete tmp_sb;
             goto on_error;
         }
 
         attr = tsk_fs_attrlist_getnew(meta->attr, TSK_FS_ATTR_RES);
         if (!attr) {
             tsk_error_set_errstr2("btrfs_load_attrs: Error getting attribute for superblock");
+            delete tmp_sb;
             goto on_error;
         }
         if (tsk_fs_attr_set_str(a_fs_file, attr, NULL,
                 fs->get_default_attr_type(a_fs_file), TSK_FS_ATTR_ID_DEFAULT, tmp_sb, sizeof(tmp_sb))) {
             tsk_error_set_errstr2("btrfs_load_attrs: Error setting attribute for superblock");
+            delete tmp_sb;
             goto on_error;
         }
+        delete tmp_sb;
 
         if (tsk_verbose)
             tsk_fprintf(stderr, "btrfs_load_attrs: Added superblock standard attribute (%" PRIdOFF " bytes)\n", meta->size);
