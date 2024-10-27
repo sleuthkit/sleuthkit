@@ -475,6 +475,8 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\unix_misc.c" />
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp" />
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\btrfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\btrfs_csum.c" />
     <ClCompile Include="..\..\tsk\fs\logical_fs.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto_db.cpp" />

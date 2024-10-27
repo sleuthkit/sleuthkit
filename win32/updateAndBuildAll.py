@@ -23,9 +23,6 @@ MSBUILD_LOCATIONS = [r'C:/Program Files (x86)/Microsoft Visual Studio/2019/Commu
                      r'C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin',
                      r'/cygdrive/c/Program Files (x86)/MSBuild/14.0/Bin/']
 
-
-
-
 MSBUILD = 'MSBuild.exe'
 
 CURRENT_PATH = os.getcwd()
@@ -187,7 +184,8 @@ def main():
     buildTSKAll()
 
 class OS:
-  LINUX, MAC, WIN, CYGWIN = range(4)
+    LINUX, MAC, WIN, CYGWIN = range(4)
+
 if __name__ == "__main__":
     global SYS
     if _platform == "linux" or _platform == "linux2":
