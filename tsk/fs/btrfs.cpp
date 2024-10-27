@@ -1262,7 +1262,8 @@ static bool
 btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     const TSK_DADDR_T a_address, const BTRFS_DIRECTION a_initial_index)
 {
-    uint8_t raw[a_btrfs->sb->nodesize];
+    // was: uint8_t raw[a_btrfs->sb->nodesize];
+    uint8_t *raw = new uint8_t[a_btrfs->sb->nodesize];
 
     // lock remains taken between cache get and a possible put in order to prevent an possible meanwhile cache put by another thread
     tsk_take_lock(&a_btrfs->treenode_cache_lock);
@@ -1274,6 +1275,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         if (!btrfs_address_map(&a_btrfs->chunks->log2phys, NULL, a_address, &phys_address)) {
             btrfs_error(TSK_ERR_FS_BLK_NUM,"btrfs_treenode_push: Could not map logical address: 0x%" PRIxDADDR, a_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
+            delete raw;
             return false;
         }
 
@@ -1285,6 +1287,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
             else
                 tsk_error_set_errstr2("btrfs_treenode_push: Error reading treenode at physical address: 0x%" PRIxDADDR, phys_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
+            delete raw;
             return false;
         }
 
@@ -1294,6 +1297,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
             btrfs_error(TSK_ERR_FS_INODE_COR,
                     "btrfs_treenode_push: treenode checksum invalid at logical / physical address: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, phys_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
+            delete raw;
             return false;
         }
         btrfs_debug("treenode checksum valid\n");
@@ -1315,6 +1319,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         btrfs_error(TSK_ERR_FS_INODE_COR,
                 "btrfs_treenode_push: logical address different to header: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, node->header.logical_address);
         btrfs_treenode_pop(&node);  // NOT btrfs_treenode_free - otherwise the upper levels would also be freed!
+        delete raw;
         return false;
     }
 
@@ -1325,6 +1330,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     btrfs_treenode_set_index(node, true, a_initial_index == BTRFS_FIRST ? 0 : node->header.number_of_items - 1);
 
     *a_node = node;
+    delete raw;
     return true;
 }
 
