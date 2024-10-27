@@ -493,6 +493,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\auto\case_db.cpp" />
     <ClCompile Include="..\..\tsk\auto\db_sqlite.cpp" />
     <ClCompile Include="..\..\vendors\sqlite3.c" />
+    <ClCompile Include="..\..\tsk\base\crc.c" />
     <ClCompile Include="..\..\tsk\base\md5c.c" />
     <ClCompile Include="..\..\tsk\base\mymalloc.c" />
     <ClCompile Include="..\..\tsk\base\sha1c.c" />
@@ -591,6 +592,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\base\tsk_base.h" />
     <ClInclude Include="..\..\tsk\base\tsk_base_i.h" />
     <ClInclude Include="..\..\tsk\base\tsk_os.h" />
+    <ClInclude Include="..\..\tsk\base\crc.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hashdb.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hashdb_i.h" />
     <ClInclude Include="..\..\tsk\img\aff.h" />
