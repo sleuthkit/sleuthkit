@@ -25,7 +25,7 @@
  */
 
 // enable for debug messages
-#define BTRFS_DEBUG
+//#define BTRFS_DEBUG
 
 // enable to also check tree node checksums (otherwise only the superblock checksum is checked)
 #define BTRFS_CHECK_TREENODE_CSUM
@@ -1320,13 +1320,13 @@ static bool
 btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     const TSK_DADDR_T a_address, const BTRFS_DIRECTION a_initial_index)
 {
-    // was: uint8_t raw[a_btrfs->sb->nodesize];
 #ifdef BTRFS_DEBUG
     btrfs_debug(" btrfs_treenode_push a_btrfs=%x\n",a_btrfs);
     btrfs_debug(" btrfs_treenode_push a_btrfs->sb=%x\n",a_btrfs->sb);
     btrfs_debug(" btrfs_treenode_push a_btrfs->sb->nodesize=%d\n",a_btrfs->sb->nodesize);
 #endif
-    uint8_t *raw = new uint8_t[a_btrfs->sb->nodesize];
+    uint8_t raw[a_btrfs->sb->nodesize];
+    // uint8_t *raw = new uint8_t[a_btrfs->sb->nodesize];
 
     // lock remains taken between cache get and a possible put in order to prevent an possible meanwhile cache put by another thread
     tsk_take_lock(&a_btrfs->treenode_cache_lock);
@@ -1345,7 +1345,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
 #ifdef BTRFS_DEBUG
             btrfs_debug("return point 1\n");
 #endif
-            delete[] raw;
+            //delete[] raw;
             return false;
         }
 
@@ -1364,7 +1364,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
 #ifdef BTRFS_DEBUG
             btrfs_debug("return point 2\n");
 #endif
-            delete[] raw;
+            //delete[] raw;
             return false;
         }
 
@@ -1380,7 +1380,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
 #ifdef BTRFS_DEBUG
             btrfs_debug("return point 3\n");
 #endif
-            delete[] raw;
+            //delete[] raw;
             return false;
         }
         btrfs_debug("treenode checksum valid\n");
@@ -1406,7 +1406,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         btrfs_error(TSK_ERR_FS_INODE_COR,
                 "btrfs_treenode_push: logical address different to header: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, node->header.logical_address);
         btrfs_treenode_pop(&node);  // NOT btrfs_treenode_free - otherwise the upper levels would also be freed!
-        delete[] raw;
+        //delete[] raw;
         return false;
     }
 
@@ -1417,7 +1417,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     btrfs_treenode_set_index(node, true, a_initial_index == BTRFS_FIRST ? 0 : node->header.number_of_items - 1);
 
     *a_node = node;
-    delete[] raw;
+    //delete[] raw;
     return true;
 }
 
@@ -3762,9 +3762,9 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
     if (!dw)
         return 1;
 
-    //uint8_t block[a_fs_attr->fs_file->fs_info->block_size];
     const size_t block_size = a_fs_attr->fs_file->fs_info->block_size;
-    uint8_t *block = new uint8_t[block_size];
+    uint8_t block[a_fs_attr->fs_file->fs_info->block_size];
+    //uint8_t *block = new uint8_t[block_size];
     uint8_t *used_block = a_flags & TSK_FS_FILE_WALK_FLAG_AONLY ? NULL : block;
 
     ssize_t result;
@@ -3805,7 +3805,7 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
         TSK_WALK_RET_ENUM cb_result = a_action(a_fs_attr->fs_file, offset, raw_addr, (char*) used_block, result, flags, a_ptr);
         if (cb_result == TSK_WALK_ERROR) {
             btrfs_datawalk_free(dw);
-            delete[] block;
+            //delete[] block;
             return 1;
         }
         if (cb_result == TSK_WALK_STOP)
@@ -3813,7 +3813,7 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
     }
 
     btrfs_datawalk_free(dw);
-    delete[] block;
+    //delete[] block;
     return 0;
 }
 #else
