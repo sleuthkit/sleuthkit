@@ -3766,8 +3766,8 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
         return 1;
 
     const size_t block_size = a_fs_attr->fs_file->fs_info->block_size;
-    uint8_t block[a_fs_attr->fs_file->fs_info->block_size];
-    //uint8_t *block = new uint8_t[block_size];
+    //uint8_t block[a_fs_attr->fs_file->fs_info->block_size];
+    uint8_t *block = new uint8_t[block_size];
     uint8_t *used_block = a_flags & TSK_FS_FILE_WALK_FLAG_AONLY ? NULL : block;
 
     ssize_t result;
@@ -3808,7 +3808,7 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
         TSK_WALK_RET_ENUM cb_result = a_action(a_fs_attr->fs_file, offset, raw_addr, (char*) used_block, result, flags, a_ptr);
         if (cb_result == TSK_WALK_ERROR) {
             btrfs_datawalk_free(dw);
-            //delete[] block;
+            delete[] block;
             return 1;
         }
         if (cb_result == TSK_WALK_STOP)
@@ -3816,7 +3816,7 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
     }
 
     btrfs_datawalk_free(dw);
-    //delete[] block;
+    delete[] block;
     return 0;
 }
 #else
@@ -3902,8 +3902,8 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
         // uint8_t tmp_sb[meta->size];
         uint8_t *tmp_sb = new uint8_t[meta->size];
 
-        ssize_t result = tsk_fs_read(fs, sb_address, (char*) tmp_sb, sizeof(tmp_sb));
-        if (result != (signed) sizeof(tmp_sb)) {
+        ssize_t result = tsk_fs_read(fs, sb_address, (char*) tmp_sb, meta->size);
+        if (result != (signed) meta->size) {
             if (result >= 0)
                 btrfs_error(TSK_ERR_FS_READ, "btrfs_load_attrs: Error reading superblock at physical address: 0x%" PRIxDADDR, sb_address);
             else
@@ -3919,7 +3919,7 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
             goto on_error;
         }
         if (tsk_fs_attr_set_str(a_fs_file, attr, NULL,
-                fs->get_default_attr_type(a_fs_file), TSK_FS_ATTR_ID_DEFAULT, tmp_sb, sizeof(tmp_sb))) {
+                fs->get_default_attr_type(a_fs_file), TSK_FS_ATTR_ID_DEFAULT, tmp_sb, meta->size)) {
             tsk_error_set_errstr2("btrfs_load_attrs: Error setting attribute for superblock");
             delete[] tmp_sb;
             goto on_error;
