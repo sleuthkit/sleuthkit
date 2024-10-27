@@ -470,8 +470,7 @@ public class TskData {
                 TSK_FS_TYPE_BTRFS(0x00040000,  "BTRFS"), ///< Btrfs file system
                 TSK_FS_TYPE_BTRFS_DETECT(0x00040000, bundle.getString("TskData.tskFsTypeEnum.BTRFSautoDetect")),   ///< Btrfs auto detection
 		TSK_FS_TYPE_LOGICAL(0x00020000, "Logical"),
-		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported")),        ///< Unsupported file system
-                TSK_FS_TYPE_UNSUPP(0xffffffff);        ///< Unsupported file system
+		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 
 		private int value;
 		private String displayName;
