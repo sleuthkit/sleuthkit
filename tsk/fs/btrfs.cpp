@@ -4857,7 +4857,11 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->last_block = fs->block_count - 1;
 
     // prevent reading after image end in case of incomplete image
-    fs->last_block_act = MIN(fs->last_block, (fs->img_info->size - fs->offset) / fs->block_size - 1);
+    // was: fs->last_block_act = MIN(fs->last_block, (fs->img_info->size - fs->offset) / fs->block_size - 1);
+    fs->last_block_act = (fs->img_info->size - fs->offset) / fs->block_size - 1;
+    if (fs->last_block_act > fs->last_block) {
+        fs->last_block_act = fs->last_block;
+    }
 
     fs->fs_id_used = sizeof(btrfs->sb->uuid);
     memcpy(fs->fs_id, btrfs->sb->uuid, fs->fs_id_used);
