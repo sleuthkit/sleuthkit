@@ -25,7 +25,7 @@
  */
 
 // enable for debug messages
-//#define BTRFS_DEBUG
+#define BTRFS_DEBUG
 
 // enable to also check tree node checksums (otherwise only the superblock checksum is checked)
 #define BTRFS_CHECK_TREENODE_CSUM
@@ -173,7 +173,7 @@ btrfs_dev_item_rawparse(const uint8_t * a_raw, BTRFS_DEV_ITEM * a_di)
 }
 
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
 static BTRFS_INODE_REF *
 btrfs_inode_ref_fromraw(const uint8_t * a_raw, const uint32_t a_len)
 {
@@ -203,7 +203,7 @@ btrfs_inode_ref_fromraw(const uint8_t * a_raw, const uint32_t a_len)
 #endif
 
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
 static void
 btrfs_inode_ref_free(BTRFS_INODE_REF * a_ir)
 {
@@ -474,7 +474,7 @@ btrfs_tree_header_rawparse(const uint8_t * a_raw, BTRFS_TREE_HEADER * a_th)
  */
 
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
 static inline const char *
 btrfs_decode_item_type(const uint8_t a_item_type)
 {
@@ -770,17 +770,43 @@ btrfs_csum_description(const uint16_t a_csum_type)
  * @param a_data pointer to data
  * @param a_len data len
  * @return true if the checksum is valid, otherwise false
+ *
+ * It looks like the BTRFS checksums start with the checksum and are then followed by the data being summed.
+ * So if the data size is < BTRFS_CSUM_RAWLEN, the checksum cannot be valid
  */
 static bool
 btrfs_csum_valid(const uint16_t a_csum_type, const uint8_t * a_data,
     const int a_len)
 {
+#ifdef BTRFS_DEBUG
+    btrfs_debug("btrfs_csum_valid a_csum_type=%d BTRFS_CSUM_TYPE_CRC32C=%d a_data=%p a_len=%d BTRFS_CSUM_RAWLEN=%d\n",a_csum_type,BTRFS_CSUM_TYPE_CRC32C,a_data,a_len,BTRFS_CSUM_RAWLEN);
+#endif
+    if (a_len < BTRFS_CSUM_RAWLEN){
+#ifdef BTRFS_DEBUG
+        btrfs_debug("a_data is too small\n");
+#endif
+        return false;
+    }
+
+    unsigned long v1=0, v2=0;
     switch (a_csum_type) {
     case BTRFS_CSUM_TYPE_CRC32C:
         // CRC-32C
-        return btrfs_csum_crc32c(a_data + BTRFS_CSUM_RAWLEN, a_len - BTRFS_CSUM_RAWLEN) == tsk_getu32(BTRFS_ENDIAN, a_data);
+        v1 = btrfs_csum_crc32c(a_data + BTRFS_CSUM_RAWLEN, a_len - BTRFS_CSUM_RAWLEN) ;
+#ifdef BTRFS_DEBUG
+        btrfs_debug("v1=%ld\n",v1);
+#endif
+        v2 = tsk_getu32(BTRFS_ENDIAN, a_data);
+#ifdef BTRFS_DEBUG
+        btrfs_debug("v2=%ld\n",v2);
+#endif
+        return v1 == v2;
+    default:
+#ifdef BTRFS_DEBUG
+        btrfs_debug("default\n");
+#endif
+        return false;
     }
-    return false;
 }
 
 
@@ -941,7 +967,7 @@ btrfs_chunks_process_chunk_item(BTRFS_INFO * a_btrfs,
 
     BTRFS_CHUNK_ITEM *ci = btrfs_chunk_item_fromraw(a_ci_raw);
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
     btrfs_debug("Processing chunk for logical address 0x%"  PRIx64 "...\n", a_source_address);
     btrfs_chunk_item_debugprint(ci);
 #endif
@@ -1009,12 +1035,18 @@ static bool
 btrfs_chunk_map(const BTRFS_CACHED_CHUNK * a_cc,
     const TSK_DADDR_T a_source_addr, TSK_DADDR_T * a_target_addr)
 {
+#ifdef BTRFS_DEBUG
+    btrfs_debug("btrfs_chunk_map [enter] a_cc=%x a_source_addr=%x a_target_addr=%x\n",a_cc,a_source_addr,a_target_addr);
+#endif
+
     TSK_OFF_T offset = a_source_addr - a_cc->source_address;
     if (!(offset >= 0 && offset < a_cc->size))
         return false;
 
     *a_target_addr = a_cc->target_address + offset;
-//  btrfs_debug("Mapping address 0x%" PRIxDADDR " to address 0x%" PRIxDADDR "\n", a_source_addr, *a_target_addr);
+#ifdef BTRFS_DEBUG
+    btrfs_debug("btrfs_chunk_map [exit] Mapping address 0x%" PRIxDADDR " to address 0x%" PRIxDADDR "\n", a_source_addr, *a_target_addr);
+#endif
     return true;
 }
 
@@ -1049,6 +1081,11 @@ btrfs_address_map(const btrfs_cached_chunks_t * a_mapping,
     const BTRFS_CACHED_CHUNK ** a_cc, const TSK_DADDR_T a_source_addr,
     TSK_DADDR_T * a_target_addr)
 {
+#ifdef BTRFS_DEBUG
+    btrfs_debug("btrfs_address_map [enter] a_mapping=%x a_cc=%x a_source_addr=%x a_target_addr=%x\n",
+                a_mapping,a_cc,a_source_addr,a_target_addr);
+#endif
+
     // resolve to matching chunk, if possible
     BTRFS_CACHED_CHUNK cc;
     cc.source_address = a_source_addr;
@@ -1118,8 +1155,10 @@ static void
 btrfs_treenode_cache_put(BTRFS_INFO * a_btrfs, const TSK_DADDR_T a_address,
     const uint8_t * a_data)
 {
+#ifdef BTRFS_DEBUG
+    btrfs_debug("btrfs_treenode_cache_put a_btrfs=%x data=%x\n",a_btrfs,a_data);
+#endif
     uint8_t *target_data;
-
     size_t cache_size = a_btrfs->treenode_cache_lru->size();
     if (cache_size < BTRFS_TREENODE_CACHE_SIZE) {
         // add new entry
@@ -1137,7 +1176,13 @@ btrfs_treenode_cache_put(BTRFS_INFO * a_btrfs, const TSK_DADDR_T a_address,
         btrfs_debug("caching address 0x%" PRIxDADDR " (entry count: %zu; entry replaced address 0x%" PRIxDADDR ")\n", a_address, cache_size, old_address);
     }
 
+#ifdef BTRFS_DEBUG
+    btrfs_debug("starting memcpy...\n");
+#endif
     memcpy(target_data, a_data, a_btrfs->sb->nodesize);
+#ifdef BTRFS_DEBUG
+    btrfs_debug("done...\n");
+#endif
     a_btrfs->treenode_cache_map->insert(btrfs_treenode_cache_map_t::value_type(a_address, target_data));
     a_btrfs->treenode_cache_lru->push_front(a_address);
 }
@@ -1165,6 +1210,9 @@ btrfs_treenode_pop(BTRFS_TREENODE ** a_node)
 static void
 btrfs_treenode_free(BTRFS_TREENODE * a_node)
 {
+#ifdef BTRFS_DEBUG
+    btrfs_debug("btrfs_treenode_free...\n");
+#endif
     while (a_node)
         btrfs_treenode_pop(&a_node);
 }
@@ -1273,6 +1321,11 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     const TSK_DADDR_T a_address, const BTRFS_DIRECTION a_initial_index)
 {
     // was: uint8_t raw[a_btrfs->sb->nodesize];
+#ifdef BTRFS_DEBUG
+    btrfs_debug(" btrfs_treenode_push a_btrfs=%x\n",a_btrfs);
+    btrfs_debug(" btrfs_treenode_push a_btrfs->sb=%x\n",a_btrfs->sb);
+    btrfs_debug(" btrfs_treenode_push a_btrfs->sb->nodesize=%d\n",a_btrfs->sb->nodesize);
+#endif
     uint8_t *raw = new uint8_t[a_btrfs->sb->nodesize];
 
     // lock remains taken between cache get and a possible put in order to prevent an possible meanwhile cache put by another thread
@@ -1281,13 +1334,24 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     // on treenode cache miss fetch node from image
     if (!btrfs_treenode_cache_get(a_btrfs, a_address, raw)) {
         // map address
+#ifdef BTRFS_DEBUG
+        btrfs_debug("in loop. raw=%x\n",raw);
+#endif
+
         TSK_DADDR_T phys_address;
         if (!btrfs_address_map(&a_btrfs->chunks->log2phys, NULL, a_address, &phys_address)) {
             btrfs_error(TSK_ERR_FS_BLK_NUM,"btrfs_treenode_push: Could not map logical address: 0x%" PRIxDADDR, a_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
+#ifdef BTRFS_DEBUG
+            btrfs_debug("return point 1\n");
+#endif
             delete[] raw;
             return false;
         }
+
+#ifdef BTRFS_DEBUG
+        btrfs_debug("progress point 1\n");
+#endif
 
         // get node data
         ssize_t result = tsk_fs_read(&a_btrfs->fs_info, phys_address, (char*) raw, sizeof(raw));
@@ -1297,26 +1361,39 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
             else
                 tsk_error_set_errstr2("btrfs_treenode_push: Error reading treenode at physical address: 0x%" PRIxDADDR, phys_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
+#ifdef BTRFS_DEBUG
+            btrfs_debug("return point 2\n");
+#endif
             delete[] raw;
             return false;
         }
 
+#ifdef BTRFS_DEBUG
+        btrfs_debug("progress point 2\n");
+#endif
 #ifdef BTRFS_CHECK_TREENODE_CSUM
         // validate checksum
         if (!btrfs_csum_valid(a_btrfs->sb->csum_type, raw, sizeof(raw))) {
             btrfs_error(TSK_ERR_FS_INODE_COR,
                     "btrfs_treenode_push: treenode checksum invalid at logical / physical address: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, phys_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
+#ifdef BTRFS_DEBUG
+            btrfs_debug("return point 3\n");
+#endif
             delete[] raw;
             return false;
         }
         btrfs_debug("treenode checksum valid\n");
 #endif
-
+#ifdef BTRFS_DEBUG
+        btrfs_debug("progress point 3\n");
+#endif
         btrfs_treenode_cache_put(a_btrfs, a_address, raw);
     }
+#ifdef BTRFS_DEBUG
+    btrfs_debug("loop done\n");
+#endif
     tsk_release_lock(&a_btrfs->treenode_cache_lock);
-
     // append node
     btrfs_debug("treenode push at address 0x%" PRIxDADDR " (logical)\n", a_address);
     BTRFS_TREENODE *node = new BTRFS_TREENODE;
@@ -1358,6 +1435,9 @@ btrfs_treenode_extremum(BTRFS_INFO * a_btrfs, TSK_DADDR_T a_address,
 {
     BTRFS_TREENODE *node = NULL;
     for (;;) {
+#ifdef BTRFS_DEBUG
+        btrfs_debug(" btrfs_treenode_extremum node==%x\n",node);
+#endif
         if (!btrfs_treenode_push(a_btrfs, &node, a_address, a_direction)) {
             btrfs_treenode_free(node);
             return NULL;
@@ -1390,7 +1470,7 @@ btrfs_treenode_search(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     TSK_DADDR_T a_address, const BTRFS_KEY * a_key, const int a_cmp_flags,
     const int a_flags)
 {
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
     btrfs_debug("### search key ###\n");
     btrfs_key_debugprint(a_key);
 #endif
@@ -1406,7 +1486,7 @@ btrfs_treenode_search(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         uint32_t index_max = node->header.number_of_items - 1;
         while (index_min != index_max) {
             btrfs_treenode_set_index(node, true, index_max - (index_max - index_min) / 2);  // rounding up - needed for correct selection of inside nodes!
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
 //          btrfs_debug("min = %d, max = %d, node->index = %d\n", index_min, index_max, node->index);
             btrfs_debug("### level %d node - key (loop  cmp @ index %" PRId32 " of %" PRId32 ") ###\n",
                     node->header.level, node->index, node->header.number_of_items);
@@ -1420,7 +1500,7 @@ btrfs_treenode_search(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         }
         btrfs_treenode_set_index(node, true, index_min);
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
         btrfs_debug("### level %d node - key (final cmp @ index %" PRId32 " of %" PRId32 ") ###\n",
                 node->header.level, node->index, node->header.number_of_items);
         btrfs_key_debugprint(&node->key);
@@ -1617,7 +1697,7 @@ btrfs_root_tree_derive_subtree_address(BTRFS_INFO * a_btrfs,
     BTRFS_ROOT_ITEM root_item;
     btrfs_root_item_rawparse(btrfs_treenode_itemdata(node), &root_item);
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
     btrfs_debug("#####\n");
     btrfs_debug("ROOT_ITEM of object ID 0x%" PRIu64 ":\n", a_obj_id);
     btrfs_root_item_debugprint(&root_item);
@@ -1652,10 +1732,16 @@ btrfs_chunks_from_chunktree(BTRFS_INFO * a_btrfs)
     key.offset = 0; // not used, except at debug output
 
     // iterate through chunk tree
+#ifdef BTRFS_DEBUG
     btrfs_debug("Parsing chunk tree chunks...\n");
+#endif
     BTRFS_TREENODE *node = btrfs_treenode_extremum(a_btrfs, a_btrfs->sb->chunk_tree_root, BTRFS_FIRST);
-    if (!node)
+#ifdef BTRFS_DEBUG
+    btrfs_debug(" node==%x\n",node);
+#endif
+    if (!node) {
         return NULL;
+    }
 
     // first CHUNK_ITEM
     BTRFS_TREENODE_RESULT node_result = btrfs_treenode_step(a_btrfs, &node, &key,
@@ -1668,6 +1754,9 @@ btrfs_chunks_from_chunktree(BTRFS_INFO * a_btrfs)
         return NULL;
     }
 
+#ifdef BTRFS_DEBUG
+    btrfs_debug("Parsing chunk mapping...\n");
+#endif
     BTRFS_CACHED_CHUNK_MAPPING *chunks = new BTRFS_CACHED_CHUNK_MAPPING;
     do {
         btrfs_chunks_process_chunk_item(a_btrfs, chunks, node->key.offset, btrfs_treenode_itemdata(node));
@@ -1896,7 +1985,7 @@ btrfs_subvol_default(BTRFS_INFO * a_btrfs)
         btrfs_dir_entry_free(de);
         return 0;
     }
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
     btrfs_debug("### DIR_ITEM ###\n");
     btrfs_dir_entry_debugprint(de);
 #endif
@@ -2598,7 +2687,7 @@ btrfs_inodewalk_invoke(BTRFS_INODEWALK * a_iw)
 
     // retrieve inode data
     btrfs_inode_rawparse(btrfs_treenode_itemdata(a_iw->node), &a_iw->ii);
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
     btrfs_inode_debugprint(&a_iw->ii);
 #endif
 
@@ -2707,7 +2796,7 @@ btrfs_inodewalk_fillmeta(BTRFS_INODEWALK * a_iw,
         if (node_result == BTRFS_TREENODE_NOT_FOUND)
             break;
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
         btrfs_extent_data_debugprint(ed);
 #endif
 
@@ -3085,7 +3174,7 @@ btrfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_add
 
         if (tsk_verbose)
             tsk_fprintf(stderr, "btrfs_dir_open_meta: Processing DIR_INDEX: %" PRId64 "\n", node->key.offset);
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
         btrfs_debug("### DIR_INDEX ###\n");
         btrfs_dir_entry_debugprint(de);
 #endif
@@ -3392,7 +3481,7 @@ btrfs_datawalk_ed_read(BTRFS_DATAWALK * a_dw, uint8_t * a_data,
 static bool
 btrfs_datawalk_ed_init(BTRFS_DATAWALK * a_dw)
 {
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
     btrfs_extent_data_debugprint(a_dw->ed);
 #endif
 
@@ -3870,7 +3959,7 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
         // iterate over all XATTR_ITEM items
         do {
             de = btrfs_dir_entry_fromraw(btrfs_treenode_itemdata(node), btrfs_treenode_itemsize(node));
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
             btrfs_debug("### XATTR_ITEM ###\n");
             btrfs_dir_entry_debugprint(de);
 #endif
@@ -3930,7 +4019,7 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
         if (node_result == BTRFS_TREENODE_NOT_FOUND)
             break;
 
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
         btrfs_extent_data_debugprint(ed);
 #endif
 
@@ -4795,12 +4884,12 @@ btrfs_inodewalk_test_cb(TSK_FS_FILE * a_file, void *a_ptr)
  * @param img_info image info
  * @param offset byte offset within image
  * @param ftype FS type
- * @param test 1 if just testing for Btrfs, otherwise 0
+ * @param pass - ignored
  * @return pointer to a Btrfs filesystem if no error occured, otherwise NULL
  */
 TSK_FS_INFO *
 btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+           TSK_FS_TYPE_ENUM ftype, const char *pass, uint8_t test)
 {
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -4821,6 +4910,9 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     TSK_FS_INFO *fs = &btrfs->fs_info;
 
     btrfs->test = test;
+#ifdef BTRFS_DEBUG
+    btrfs->test = 1;
+#endif
     fs->img_info = img_info;
     fs->offset = offset;
     fs->ftype = ftype;
@@ -4863,7 +4955,7 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_close(fs);
         return NULL;
     }
-#ifdef DEBUG_BTRFS
+#ifdef BTRFS_DEBUG
     btrfs_superblock_debugprint(btrfs->sb);
 #endif
     if (tsk_verbose)

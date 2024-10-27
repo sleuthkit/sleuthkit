@@ -158,6 +158,7 @@ jobs:
         run: |
           make test/fiwalk/test_images.txt
           cat test/fiwalk/test_images.txt
+          ls -l test/from_brian
 
       - name: Run make
         run: |
