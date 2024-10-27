@@ -1275,7 +1275,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         if (!btrfs_address_map(&a_btrfs->chunks->log2phys, NULL, a_address, &phys_address)) {
             btrfs_error(TSK_ERR_FS_BLK_NUM,"btrfs_treenode_push: Could not map logical address: 0x%" PRIxDADDR, a_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
-            delete raw;
+            delete[] raw;
             return false;
         }
 
@@ -1287,7 +1287,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
             else
                 tsk_error_set_errstr2("btrfs_treenode_push: Error reading treenode at physical address: 0x%" PRIxDADDR, phys_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
-            delete raw;
+            delete[] raw;
             return false;
         }
 
@@ -1297,7 +1297,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
             btrfs_error(TSK_ERR_FS_INODE_COR,
                     "btrfs_treenode_push: treenode checksum invalid at logical / physical address: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, phys_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
-            delete raw;
+            delete[] raw;
             return false;
         }
         btrfs_debug("treenode checksum valid\n");
@@ -1319,7 +1319,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         btrfs_error(TSK_ERR_FS_INODE_COR,
                 "btrfs_treenode_push: logical address different to header: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, node->header.logical_address);
         btrfs_treenode_pop(&node);  // NOT btrfs_treenode_free - otherwise the upper levels would also be freed!
-        delete raw;
+        delete[] raw;
         return false;
     }
 
@@ -1330,7 +1330,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     btrfs_treenode_set_index(node, true, a_initial_index == BTRFS_FIRST ? 0 : node->header.number_of_items - 1);
 
     *a_node = node;
-    delete raw;
+    delete[] raw;
     return true;
 }
 
@@ -3785,23 +3785,23 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
                 btrfs_error(TSK_ERR_FS_READ, "btrfs_load_attrs: Error reading superblock at physical address: 0x%" PRIxDADDR, sb_address);
             else
                 tsk_error_set_errstr2("btrfs_load_attrs: Error reading superblock at physical address: 0x%" PRIxDADDR, sb_address);
-            delete tmp_sb;
+            delete[] tmp_sb;
             goto on_error;
         }
 
         attr = tsk_fs_attrlist_getnew(meta->attr, TSK_FS_ATTR_RES);
         if (!attr) {
             tsk_error_set_errstr2("btrfs_load_attrs: Error getting attribute for superblock");
-            delete tmp_sb;
+            delete[] tmp_sb;
             goto on_error;
         }
         if (tsk_fs_attr_set_str(a_fs_file, attr, NULL,
                 fs->get_default_attr_type(a_fs_file), TSK_FS_ATTR_ID_DEFAULT, tmp_sb, sizeof(tmp_sb))) {
             tsk_error_set_errstr2("btrfs_load_attrs: Error setting attribute for superblock");
-            delete tmp_sb;
+            delete[] tmp_sb;
             goto on_error;
         }
-        delete tmp_sb;
+        delete[] tmp_sb;
 
         if (tsk_verbose)
             tsk_fprintf(stderr, "btrfs_load_attrs: Added superblock standard attribute (%" PRIdOFF " bytes)\n", meta->size);
