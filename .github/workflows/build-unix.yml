@@ -225,8 +225,8 @@ jobs:
       - name: Run unit tests for codecov
         if: ${{ matrix.codecov == 'yes' }}
         run: |
-          test/fiwalk/fiwalk_test
-          test/runner
+          test/fiwalk/fiwalk_test -s
+          test/runner -s
 
       - name: Upload codecov report
         if: ${{ matrix.codecov == 'yes' }}
