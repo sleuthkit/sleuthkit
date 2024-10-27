@@ -173,6 +173,7 @@ btrfs_dev_item_rawparse(const uint8_t * a_raw, BTRFS_DEV_ITEM * a_di)
 }
 
 
+#ifdef DEBUG_BTRFS
 static BTRFS_INODE_REF *
 btrfs_inode_ref_fromraw(const uint8_t * a_raw, const uint32_t a_len)
 {
@@ -199,8 +200,10 @@ btrfs_inode_ref_fromraw(const uint8_t * a_raw, const uint32_t a_len)
         prev_ir->next = NULL;
     return result;
 }
+#endif
 
 
+#ifdef DEBUG_BTRFS
 static void
 btrfs_inode_ref_free(BTRFS_INODE_REF * a_ir)
 {
@@ -213,6 +216,7 @@ btrfs_inode_ref_free(BTRFS_INODE_REF * a_ir)
         delete old_ir;
     }
 }
+#endif
 
 
 static inline int
@@ -470,6 +474,7 @@ btrfs_tree_header_rawparse(const uint8_t * a_raw, BTRFS_TREE_HEADER * a_th)
  */
 
 
+#ifdef DEBUG_BTRFS
 static inline const char *
 btrfs_decode_item_type(const uint8_t a_item_type)
 {
@@ -498,8 +503,10 @@ btrfs_decode_item_type(const uint8_t a_item_type)
         return "(unknown)";
     }
 }
+#endif
 
 
+#ifdef BTRFS_DEBUG
 static void
 btrfs_key_debugprint(const BTRFS_KEY * a_key)
 {
@@ -714,6 +721,7 @@ btrfs_tree_header_debugprint(const BTRFS_TREE_HEADER * a_th)
     btrfs_debug("tree header: number_of_items: %"       PRId32 "\n", a_th->number_of_items);
     btrfs_debug("tree header: level:           %"       PRId8  "\n", a_th->level);
 }
+#endif
 
 
 
@@ -933,8 +941,10 @@ btrfs_chunks_process_chunk_item(BTRFS_INFO * a_btrfs,
 
     BTRFS_CHUNK_ITEM *ci = btrfs_chunk_item_fromraw(a_ci_raw);
 
+#ifdef DEBUG_BTRFS
     btrfs_debug("Processing chunk for logical address 0x%"  PRIx64 "...\n", a_source_address);
     btrfs_chunk_item_debugprint(ci);
+#endif
 
     // check all stripes for affecting our device
     for (uint16_t i = 0; i < ci->number_of_stripes; i++) {
@@ -1380,8 +1390,10 @@ btrfs_treenode_search(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     TSK_DADDR_T a_address, const BTRFS_KEY * a_key, const int a_cmp_flags,
     const int a_flags)
 {
+#ifdef DEBUG_BTRFS
     btrfs_debug("### search key ###\n");
     btrfs_key_debugprint(a_key);
+#endif
 
     BTRFS_TREENODE *node = NULL;
     for (;;) {
@@ -1394,10 +1406,12 @@ btrfs_treenode_search(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         uint32_t index_max = node->header.number_of_items - 1;
         while (index_min != index_max) {
             btrfs_treenode_set_index(node, true, index_max - (index_max - index_min) / 2);  // rounding up - needed for correct selection of inside nodes!
+#ifdef DEBUG_BTRFS
 //          btrfs_debug("min = %d, max = %d, node->index = %d\n", index_min, index_max, node->index);
             btrfs_debug("### level %d node - key (loop  cmp @ index %" PRId32 " of %" PRId32 ") ###\n",
                     node->header.level, node->index, node->header.number_of_items);
             btrfs_key_debugprint(&node->key);
+#endif
 
             if (btrfs_cmp(a_key, &node->key, a_cmp_flags) < 0)
                 index_max = node->index - 1;
@@ -1406,9 +1420,11 @@ btrfs_treenode_search(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         }
         btrfs_treenode_set_index(node, true, index_min);
 
+#ifdef DEBUG_BTRFS
         btrfs_debug("### level %d node - key (final cmp @ index %" PRId32 " of %" PRId32 ") ###\n",
                 node->header.level, node->index, node->header.number_of_items);
         btrfs_key_debugprint(&node->key);
+#endif
 
         int cmp = btrfs_cmp(a_key, &node->key, a_cmp_flags);
         if (node->header.level) {
@@ -1601,9 +1617,11 @@ btrfs_root_tree_derive_subtree_address(BTRFS_INFO * a_btrfs,
     BTRFS_ROOT_ITEM root_item;
     btrfs_root_item_rawparse(btrfs_treenode_itemdata(node), &root_item);
 
+#ifdef DEBUG_BTRFS
     btrfs_debug("#####\n");
     btrfs_debug("ROOT_ITEM of object ID 0x%" PRIu64 ":\n", a_obj_id);
     btrfs_root_item_debugprint(&root_item);
+#endif
 
     *a_node_tree_address = root_item.root_node_block_number;
 
@@ -1878,8 +1896,10 @@ btrfs_subvol_default(BTRFS_INFO * a_btrfs)
         btrfs_dir_entry_free(de);
         return 0;
     }
+#ifdef DEBUG_BTRFS
     btrfs_debug("### DIR_ITEM ###\n");
     btrfs_dir_entry_debugprint(de);
+#endif
 
     // ensure expected name
     if (strcmp(de->name, "default")) {
@@ -2578,7 +2598,9 @@ btrfs_inodewalk_invoke(BTRFS_INODEWALK * a_iw)
 
     // retrieve inode data
     btrfs_inode_rawparse(btrfs_treenode_itemdata(a_iw->node), &a_iw->ii);
+#ifdef DEBUG_BTRFS
     btrfs_inode_debugprint(&a_iw->ii);
+#endif
 
     return (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_USED |
             (a_iw->ii.nlink ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC));
@@ -2685,7 +2707,9 @@ btrfs_inodewalk_fillmeta(BTRFS_INODEWALK * a_iw,
         if (node_result == BTRFS_TREENODE_NOT_FOUND)
             break;
 
+#ifdef DEBUG_BTRFS
         btrfs_extent_data_debugprint(ed);
+#endif
 
         bool ed_is_raw = BTRFS_EXTENT_DATA_IS_RAW(ed);
 
@@ -3061,8 +3085,10 @@ btrfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_add
 
         if (tsk_verbose)
             tsk_fprintf(stderr, "btrfs_dir_open_meta: Processing DIR_INDEX: %" PRId64 "\n", node->key.offset);
+#ifdef DEBUG_BTRFS
         btrfs_debug("### DIR_INDEX ###\n");
         btrfs_dir_entry_debugprint(de);
+#endif
 
         // apply data
         fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
@@ -3366,7 +3392,9 @@ btrfs_datawalk_ed_read(BTRFS_DATAWALK * a_dw, uint8_t * a_data,
 static bool
 btrfs_datawalk_ed_init(BTRFS_DATAWALK * a_dw)
 {
+#ifdef DEBUG_BTRFS
     btrfs_extent_data_debugprint(a_dw->ed);
+#endif
 
     a_dw->ed_resident = a_dw->ed->type == BTRFS_EXTENT_DATA_TYPE_INLINE;
 
@@ -3645,12 +3673,13 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
     if (!dw)
         return 1;
 
-    uint8_t block[a_fs_attr->fs_file->fs_info->block_size];
+    //uint8_t block[a_fs_attr->fs_file->fs_info->block_size];
+    const size_t block_size = a_fs_attr->fs_file->fs_info->block_size;
+    uint8_t *block = new uint8_t[block_size];
     uint8_t *used_block = a_flags & TSK_FS_FILE_WALK_FLAG_AONLY ? NULL : block;
 
     ssize_t result;
     for (TSK_OFF_T offset = 0; offset < dw->size; offset += result) {
-        //size_t read_bytes = MIN(dw->size - offset, sizeof(block));
         size_t read_bytes = 0;
         if (dw->size < offset ) {
             read_bytes = 0;
@@ -3658,8 +3687,8 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
         else {
             read_bytes = dw->size - offset;
         }
-        if (read_bytes > sizeof(block)) {
-            read_bytes = sizeof(block);
+        if (read_bytes > block_size) {
+            read_bytes = block_size;
         }
 
         // read block
@@ -3687,6 +3716,7 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
         TSK_WALK_RET_ENUM cb_result = a_action(a_fs_attr->fs_file, offset, raw_addr, (char*) used_block, result, flags, a_ptr);
         if (cb_result == TSK_WALK_ERROR) {
             btrfs_datawalk_free(dw);
+            delete[] block;
             return 1;
         }
         if (cb_result == TSK_WALK_STOP)
@@ -3694,6 +3724,7 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
     }
 
     btrfs_datawalk_free(dw);
+    delete[] block;
     return 0;
 }
 #else
@@ -3839,8 +3870,10 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
         // iterate over all XATTR_ITEM items
         do {
             de = btrfs_dir_entry_fromraw(btrfs_treenode_itemdata(node), btrfs_treenode_itemsize(node));
+#ifdef DEBUG_BTRFS
             btrfs_debug("### XATTR_ITEM ###\n");
             btrfs_dir_entry_debugprint(de);
+#endif
 
             // iterate over all entries
             for (BTRFS_DIR_ENTRY *de_entry = de; de_entry; de_entry = de_entry->next) {
@@ -3897,8 +3930,9 @@ btrfs_load_attrs(TSK_FS_FILE * a_fs_file)
         if (node_result == BTRFS_TREENODE_NOT_FOUND)
             break;
 
+#ifdef DEBUG_BTRFS
         btrfs_extent_data_debugprint(ed);
-
+#endif
 
         // create attribute at first iteration
         if (!attr) {
@@ -4584,6 +4618,7 @@ btrfs_fscheck(TSK_FS_INFO * a_fs, FILE * a_file)
  */
 
 
+#ifdef BTRFS_DEBUG
 static void
 btrfs_tree_dump(BTRFS_INFO * a_btrfs, const TSK_DADDR_T a_address,
     const char *a_description)
@@ -4690,6 +4725,7 @@ btrfs_tree_dump(BTRFS_INFO * a_btrfs, const TSK_DADDR_T a_address,
 
     btrfs_treenode_free(node);
 }
+#endif
 
 
 
@@ -4827,7 +4863,9 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_close(fs);
         return NULL;
     }
+#ifdef DEBUG_BTRFS
     btrfs_superblock_debugprint(btrfs->sb);
+#endif
     if (tsk_verbose)
         tsk_fprintf(stderr, "btrfs_open: Found valid superblock having generation: %" PRId64 "\n",
                 btrfs->sb->generation);
