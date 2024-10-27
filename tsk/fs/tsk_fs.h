@@ -824,8 +824,8 @@ extern "C" {
         TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
         TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
                TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
-        TSK_FS_TYPE_BTRFS = 0x00008000,        ///< Btrfs file system
-        TSK_FS_TYPE_BTRFS_DETECT = 0x00008000, ///< Btrfs auto detection
+        TSK_FS_TYPE_BTRFS = 0x00040000,        ///< Btrfs file system
+        TSK_FS_TYPE_BTRFS_DETECT = TSK_FS_TYPE_BTRFS, ///< Btrfs auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
