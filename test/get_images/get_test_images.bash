@@ -2,7 +2,8 @@
 #
 # Install python virtual environment and run get_test_images.py
 #
-pushd test/get_images
+MYDIR=$(dirname "$0")
+pushd $MYDIR
 if [ ! -d venv ]; then
     python3 -m venv venv
     source venv/bin/activate
@@ -11,4 +12,4 @@ else
     source venv/bin/activate
 fi
 popd
-python3 test/get_images/get_test_images.py
+python3 get_test_images.py
