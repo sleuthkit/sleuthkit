@@ -126,13 +126,6 @@ TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
     );
 }
 
-TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
-    check_image(
-      "test/from_brian/image.gen1.dmg",
-      ""
-    );
-}
-
 TEST_CASE("test_disk_images btrfs_test_image.E01 btrfs", "[fiwalk]") {
     check_image(
       "test/from_brian/btrfs_testimage_50MB.E01",
