@@ -37,12 +37,7 @@ btrfs_csum_crc32c(const unsigned char *a_data, const int a_len)
     cm.cm_refot = TRUE;
     cm.cm_xorot = 0xFFFFFFFF;
 
-    fprintf(stderr,"calling...cm_ini\n");
     cm_ini(&cm);
-    fprintf(stderr,"calling...cm_blk a_data=%x a_len=%d\n",a_data,a_len);
     cm_blk(&cm, (unsigned char *) a_data, a_len);
-    fprintf(stderr,"calling...cm_crc\n");
-    unsigned long ret = cm_crc(&cm);
-    fprintf(stderr,"ret=%d\n",ret);
-    return ret;
+    return cm_crc(&cm);
 }
