@@ -17,6 +17,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_btrfs.h"
+#include <cassert>
 
 
 
@@ -1325,8 +1326,10 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
     btrfs_debug(" btrfs_treenode_push a_btrfs->sb=%x\n",a_btrfs->sb);
     btrfs_debug(" btrfs_treenode_push a_btrfs->sb->nodesize=%d\n",a_btrfs->sb->nodesize);
 #endif
-    uint8_t raw[a_btrfs->sb->nodesize];
-    // uint8_t *raw = new uint8_t[a_btrfs->sb->nodesize];
+    const size_t nodesize = a_btrfs->sb->nodesize;
+    if (nodesize<=0) return false;
+    //uint8_t raw[nodesize];
+    uint8_t *raw = new uint8_t[nodesize];
 
     // lock remains taken between cache get and a possible put in order to prevent an possible meanwhile cache put by another thread
     tsk_take_lock(&a_btrfs->treenode_cache_lock);
@@ -1345,7 +1348,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
 #ifdef BTRFS_DEBUG
             btrfs_debug("return point 1\n");
 #endif
-            //delete[] raw;
+            delete[] raw;
             return false;
         }
 
@@ -1354,8 +1357,8 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
 #endif
 
         // get node data
-        ssize_t result = tsk_fs_read(&a_btrfs->fs_info, phys_address, (char*) raw, sizeof(raw));
-        if (result != (signed) sizeof(raw)) {
+        ssize_t result = tsk_fs_read(&a_btrfs->fs_info, phys_address, (char*) raw, nodesize);
+        if (result != (signed) nodesize) {
             if (result >= 0)
                 btrfs_error(TSK_ERR_FS_READ, "btrfs_treenode_push: Error reading treenode at physical address: 0x%" PRIxDADDR, phys_address);
             else
@@ -1364,7 +1367,7 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
 #ifdef BTRFS_DEBUG
             btrfs_debug("return point 2\n");
 #endif
-            //delete[] raw;
+            delete[] raw;
             return false;
         }
 
@@ -1373,14 +1376,14 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
 #endif
 #ifdef BTRFS_CHECK_TREENODE_CSUM
         // validate checksum
-        if (!btrfs_csum_valid(a_btrfs->sb->csum_type, raw, sizeof(raw))) {
+        if (!btrfs_csum_valid(a_btrfs->sb->csum_type, raw, nodesize)) {
             btrfs_error(TSK_ERR_FS_INODE_COR,
                     "btrfs_treenode_push: treenode checksum invalid at logical / physical address: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, phys_address);
             tsk_release_lock(&a_btrfs->treenode_cache_lock);
 #ifdef BTRFS_DEBUG
             btrfs_debug("return point 3\n");
 #endif
-            //delete[] raw;
+            delete[] raw;
             return false;
         }
         btrfs_debug("treenode checksum valid\n");
@@ -1406,18 +1409,18 @@ btrfs_treenode_push(BTRFS_INFO * a_btrfs, BTRFS_TREENODE ** a_node,
         btrfs_error(TSK_ERR_FS_INODE_COR,
                 "btrfs_treenode_push: logical address different to header: 0x%" PRIxDADDR " / 0x%" PRIxDADDR, a_address, node->header.logical_address);
         btrfs_treenode_pop(&node);  // NOT btrfs_treenode_free - otherwise the upper levels would also be freed!
-        //delete[] raw;
+        delete[] raw;
         return false;
     }
 
-    size_t data_size = sizeof(raw) - BTRFS_TREE_HEADER_RAWLEN;
+    size_t data_size = nodesize - BTRFS_TREE_HEADER_RAWLEN;
     node->data = new uint8_t[data_size];
     memcpy(node->data, raw + BTRFS_TREE_HEADER_RAWLEN, data_size);
 
     btrfs_treenode_set_index(node, true, a_initial_index == BTRFS_FIRST ? 0 : node->header.number_of_items - 1);
 
     *a_node = node;
-    //delete[] raw;
+    delete[] raw;
     return true;
 }
 
