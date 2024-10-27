@@ -172,6 +172,7 @@ jobs:
         run: |
           make test/get_images/test_images.txt
           cat test/get_images/test_images.txt
+          ls -l test/from_brian
 
       - name: Run make
         run: |

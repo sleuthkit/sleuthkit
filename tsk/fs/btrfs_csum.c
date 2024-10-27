@@ -12,12 +12,13 @@
 
 /*
  * Contains the checksum part for Btrfs file system support.
- * 
+ *
  * This is outsourced to plain C due to the CRC API defining its own bool type
  *  - which collides with the bool of C++
  */
 
 #include "tsk/base/crc.h"
+#include <stdio.h>
 
 /**
  * Returns the CRC32C checksum of a specific amount of data.
@@ -36,7 +37,12 @@ btrfs_csum_crc32c(const unsigned char *a_data, const int a_len)
     cm.cm_refot = TRUE;
     cm.cm_xorot = 0xFFFFFFFF;
 
+    fprintf(stderr,"calling...cm_ini\n");
     cm_ini(&cm);
+    fprintf(stderr,"calling...cm_blk a_data=%x a_len=%d\n",a_data,a_len);
     cm_blk(&cm, (unsigned char *) a_data, a_len);
-    return cm_crc(&cm);
+    fprintf(stderr,"calling...cm_crc\n");
+    unsigned long ret = cm_crc(&cm);
+    fprintf(stderr,"ret=%d\n",ret);
+    return ret;
 }
