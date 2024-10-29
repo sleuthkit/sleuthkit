@@ -850,6 +850,18 @@ fls_apfs_fuzzer_LDADD = \
 	@LIB_FUZZING_ENGINE@ \
 	$(TSK_LIB)
 
+fls_btrfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_btrfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_BTRFS_DETECT \
+	$(AM_CPPFLAGS)
+
+fls_btrfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
 fls_ext_fuzzer_SOURCES = \
 	ossfuzz/fls_fuzzer.cc \
 	ossfuzz/mem_img.h
