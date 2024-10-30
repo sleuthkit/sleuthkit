@@ -619,7 +619,7 @@ check_PROGRAMS = \
 # This makes things easier with codecov.
 test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS) -Wno-overloaded-virtual
 test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 test_runner_SOURCES = \
 	test/tsk/base/test_tsk_error.cpp \
