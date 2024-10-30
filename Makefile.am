@@ -1,8 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
-AM_CFLAGS = -Wall -Wextra -Wno-unused-parameter
-AM_CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
+AM_CFLAGS = -Wall -Wextra
+AM_CXXFLAGS = -Wall -Wextra -Wno-overloaded-virtual
 
 CLEANFILES = *.gcov
 
