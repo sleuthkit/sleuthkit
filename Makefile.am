@@ -292,7 +292,7 @@ tsk_img_libtskimg_la_SOURCES = \
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
-	tsk/pool/img_bfio_handle.c \
+	tsk/pool/img_bfio_handle.cpp \
 	tsk/pool/img_bfio_handle.h \
 	tsk/pool/lvm_pool_compat.cpp \
 	tsk/pool/lvm_pool.cpp \

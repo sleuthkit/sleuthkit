@@ -66,8 +66,8 @@ int img_bfio_handle_initialize(
  * Returns 1 if succesful or -1 on error
  */
 int img_bfio_handle_free(
-     img_bfio_handle_t **img_bfio_handle,
-     libbfio_error_t **error )
+  img_bfio_handle_t **img_bfio_handle,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	if( img_bfio_handle == NULL )
 	{
@@ -87,9 +87,9 @@ int img_bfio_handle_free(
  * Returns 1 if successful or -1 on error
  */
 int img_bfio_handle_open(
-     img_bfio_handle_t *img_bfio_handle,
-     int access_flags,
-     libbfio_error_t **error )
+  img_bfio_handle_t *img_bfio_handle,
+  int access_flags,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	if( img_bfio_handle == NULL )
 	{
@@ -119,8 +119,8 @@ int img_bfio_handle_open(
  * Returns 0 if successful or -1 on error
  */
 int img_bfio_handle_close(
-     img_bfio_handle_t *img_bfio_handle,
-     libbfio_error_t **error )
+  img_bfio_handle_t *img_bfio_handle,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	if( img_bfio_handle == NULL )
 	{
@@ -141,10 +141,10 @@ int img_bfio_handle_close(
  * Returns the number of bytes read if successful, or -1 on error
  */
 ssize_t img_bfio_handle_read(
-         img_bfio_handle_t *img_bfio_handle,
-         uint8_t *buffer,
-         size_t size,
-         libbfio_error_t **error )
+  img_bfio_handle_t *img_bfio_handle,
+  uint8_t *buffer,
+  size_t size,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	ssize_t read_count = 0;
 
@@ -169,10 +169,10 @@ ssize_t img_bfio_handle_read(
  * Returns the offset if the seek is successful or -1 on error
  */
 off64_t img_bfio_handle_seek_offset(
-         img_bfio_handle_t *img_bfio_handle,
-         off64_t offset,
-         int whence,
-         libbfio_error_t **error )
+  img_bfio_handle_t *img_bfio_handle,
+  off64_t offset,
+  int whence,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	if( img_bfio_handle == NULL )
 	{
@@ -192,8 +192,8 @@ off64_t img_bfio_handle_seek_offset(
  * Returns 1 if file exists, 0 if not or -1 on error
  */
 int img_bfio_handle_exists(
-     img_bfio_handle_t *img_bfio_handle,
-     libbfio_error_t **error )
+  img_bfio_handle_t *img_bfio_handle,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	if( img_bfio_handle == NULL )
 	{
@@ -210,8 +210,8 @@ int img_bfio_handle_exists(
  * Returns 1 if open, 0 if not or -1 on error
  */
 int img_bfio_handle_is_open(
-     img_bfio_handle_t *img_bfio_handle,
-     libbfio_error_t **error )
+  img_bfio_handle_t *img_bfio_handle,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	if( img_bfio_handle == NULL )
 	{
@@ -230,9 +230,9 @@ int img_bfio_handle_is_open(
  * Returns 1 if successful or -1 on error
  */
 int img_bfio_handle_get_size(
-     img_bfio_handle_t *img_bfio_handle,
-     size64_t *size,
-     libbfio_error_t **error )
+  img_bfio_handle_t *img_bfio_handle,
+  size64_t *size,
+  [[maybe_unused]] libbfio_error_t **error)
 {
 	if( img_bfio_handle == NULL )
 	{
