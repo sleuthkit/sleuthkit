@@ -66,7 +66,7 @@
     <ClCompile Include="..\..\tsk\fs\dls_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dstat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dstat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ext2fs.c">

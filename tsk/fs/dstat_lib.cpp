@@ -30,7 +30,9 @@
 
 
 static TSK_WALK_RET_ENUM
-blkstat_act(const TSK_FS_BLOCK * fs_block, void *ptr)
+blkstat_act(
+  const TSK_FS_BLOCK * fs_block,
+  [[maybe_unused]] void *ptr)
 {
     tsk_printf("%s: %" PRIuDADDR "\n", fs_block->fs_info->duname,
         fs_block->addr);

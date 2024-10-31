@@ -192,7 +192,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/dcat_lib.c \
 	tsk/fs/decmpfs.cpp \
 	tsk/fs/dls_lib.cpp \
-	tsk/fs/dstat_lib.c \
+	tsk/fs/dstat_lib.cpp \
 	tsk/fs/encryptionHelper.cpp \
 	tsk/fs/exfatfs.c \
 	tsk/fs/exfatfs_dent.c \
