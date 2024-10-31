@@ -73,7 +73,9 @@ print_list_head(TSK_FS_INFO * fs)
 }
 
 static TSK_WALK_RET_ENUM
-print_list(const TSK_FS_BLOCK * fs_block, void *ptr)
+print_list(
+  const TSK_FS_BLOCK * fs_block,
+  [[maybe_unused]] void *ptr)
 {
     tsk_printf("%" PRIuDADDR "|%s\n", fs_block->addr,
         (fs_block->flags & TSK_FS_BLOCK_FLAG_ALLOC) ? "a" : "f");
@@ -84,7 +86,9 @@ print_list(const TSK_FS_BLOCK * fs_block, void *ptr)
 
 /* print_block - write data block to stdout */
 static TSK_WALK_RET_ENUM
-print_block(const TSK_FS_BLOCK * fs_block, void *ptr)
+print_block(
+  const TSK_FS_BLOCK * fs_block,
+  [[maybe_unused]] void *ptr)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "write block %" PRIuDADDR "\n",
@@ -114,8 +118,14 @@ typedef struct {
 /* SLACK SPACE  call backs */
 
 static TSK_WALK_RET_ENUM
-slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+slack_file_act(
+  TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  [[maybe_unused]] TSK_DADDR_T addr,
+  char *buf,
+  size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  void *ptr)
 {
     BLKLS_DATA *data = (BLKLS_DATA *) ptr;
 
