@@ -34,9 +34,13 @@ using std::string;
 using std::wstring;
 
 static uint8_t
-logicalfs_inode_walk(TSK_FS_INFO *fs, TSK_INUM_T start_inum,
-	TSK_INUM_T end_inum, TSK_FS_META_FLAG_ENUM flags,
-	TSK_FS_META_WALK_CB a_action, void *a_ptr)
+logicalfs_inode_walk(
+  [[maybe_unused]] TSK_FS_INFO *fs,
+  [[maybe_unused]] TSK_INUM_T start_inum,
+  [[maybe_unused]] TSK_INUM_T end_inum,
+  [[maybe_unused]] TSK_FS_META_FLAG_ENUM flags,
+  [[maybe_unused]] TSK_FS_META_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -45,9 +49,13 @@ logicalfs_inode_walk(TSK_FS_INFO *fs, TSK_INUM_T start_inum,
 }
 
 static uint8_t
-logicalfs_block_walk(TSK_FS_INFO *a_fs, TSK_DADDR_T a_start_blk,
-	TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
-	TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr)
+logicalfs_block_walk(
+  [[maybe_unused]] TSK_FS_INFO *a_fs,
+  [[maybe_unused]] TSK_DADDR_T a_start_blk,
+  [[maybe_unused]] TSK_DADDR_T a_end_blk,
+  [[maybe_unused]] TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
+  [[maybe_unused]] TSK_FS_BLOCK_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -56,13 +64,15 @@ logicalfs_block_walk(TSK_FS_INFO *a_fs, TSK_DADDR_T a_start_blk,
 }
 
 static TSK_FS_BLOCK_FLAG_ENUM
-logicalfs_block_getflags(TSK_FS_INFO *fs, TSK_DADDR_T a_addr)
+logicalfs_block_getflags(
+  [[maybe_unused]] TSK_FS_INFO *fs,
+  [[maybe_unused]] TSK_DADDR_T a_addr)
 {
 	return TSK_FS_BLOCK_FLAG_UNUSED;
 }
 
 static TSK_FS_ATTR_TYPE_ENUM
-logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
+logicalfs_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 {
 	return TSK_FS_ATTR_TYPE_DEFAULT;
 }

@@ -243,7 +243,7 @@ TskIsImageSupported::filterFs(TSK_FS_INFO * /*fs_info*/)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterPool(const TSK_POOL_INFO * pool_info)
+TskIsImageSupported::filterPool([[maybe_unused]] const TSK_POOL_INFO * pool_info)
 {
     // There's nothing to do, but we need to override this to allow the pool
     // to be processed.
@@ -251,7 +251,7 @@ TskIsImageSupported::filterPool(const TSK_POOL_INFO * pool_info)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
+TskIsImageSupported::filterPoolVol([[maybe_unused]] const TSK_POOL_VOLUME_INFO * pool_vol)
 {
     // There's nothing to do, but we need to override this to allow the pool
     // to be processed.
