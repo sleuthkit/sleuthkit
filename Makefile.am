@@ -190,7 +190,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs_open.cpp \
 	tsk/fs/dcalc_lib.cpp \
 	tsk/fs/dcat_lib.c \
-	tsk/fs/decmpfs.c \
+	tsk/fs/decmpfs.cpp \
 	tsk/fs/dls_lib.c \
 	tsk/fs/dstat_lib.c \
 	tsk/fs/encryptionHelper.cpp \
