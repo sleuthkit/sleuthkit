@@ -312,8 +312,8 @@ TSK_TCHAR * create_search_path(const TSK_TCHAR *base_path) {
 *
 * @return The search path with wildcard appended (must be freed by caller)
 */
-TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 #ifdef TSK_WIN32
+TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 
 	// First convert the base path to an absolute path
 	TCHAR absPath[LOGICAL_MAX_PATH_UNICODE];
@@ -331,11 +331,15 @@ TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 	TSTRNCAT(searchPath, absPath, len + 1);
 	TSTRNCAT(searchPath, L"\\*", 4);
 	return searchPath;
+}
 #else
+TSK_TCHAR * create_search_path_long_path(
+  [[maybe_unused]] const TSK_TCHAR *base_path)
+{
 	// Nothing to do here if it's not Windows
 	return NULL;
-#endif
 }
+#endif
 
 /*
  * Load the names of child files and/or directories into the given vectors.
