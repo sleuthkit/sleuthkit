@@ -17,6 +17,7 @@ static uint8_t print_bytes = 0;
 static uint8_t recurse = 0;
 
 static int recurse_cnt = 0;
+static bool is_csv = false;
 static TSK_DADDR_T recurse_list[64];
 
 void
@@ -24,7 +25,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
+        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrcvV] [-aAmM] [-t vstype] image [images]\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
@@ -37,6 +38,7 @@ usage()
     tsk_fprintf(stderr, "\t-B: print the rounded length in bytes\n");
     tsk_fprintf(stderr,
         "\t-r: recurse and look for other partition tables in partitions (DOS Only)\n");
+    tsk_fprintf(stderr, "\t-c: print CSV-output\n");
     tsk_fprintf(stderr, "\t-v: verbose output\n");
     tsk_fprintf(stderr, "\t-V: print the version\n");
     tsk_fprintf(stderr,
@@ -56,27 +58,46 @@ usage()
 static TSK_WALK_RET_ENUM
 part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
 {
+    char delim = ',';
+
     if (part->flags & TSK_VS_PART_FLAG_META)
-        tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
+        if (is_csv)
+          tsk_printf("%.3" PRIuPNUM "%c%s%c", part->addr, delim, "Meta", delim);
+        else
+          tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
 
     /* Neither table or slot were given */
     else if ((part->table_num == -1) && (part->slot_num == -1))
-        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
+        if (is_csv)
+          tsk_printf("%.3" PRIuPNUM "%c%c", part->addr, delim, delim);
+        else
+          tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
 
     /* Table was not given, but slot was */
     else if ((part->table_num == -1) && (part->slot_num != -1))
-        tsk_printf("%.3" PRIuPNUM ":  %.3" PRIu8 "       ",
-            part->addr, part->slot_num);
+        if (is_csv)
+          tsk_printf("%.3" PRIuPNUM "%c%.3" PRIu8 "%c",
+            part->addr, delim, part->slot_num, delim);
+        else
+          tsk_printf("%.3" PRIuPNUM ":  %.3" PRIu8 "       ",
+              part->addr, part->slot_num);
 
     /* The Table was given, but slot wasn't */
     else if ((part->table_num != -1) && (part->slot_num == -1))
-        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
+        if (is_csv)
+          tsk_printf("%.3" PRIuPNUM "%c%c", part->addr, delim, delim);
+        else
+          tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
 
     /* Both table and slot were given */
-    else if ((part->table_num != -1) && (part->slot_num != -1))
-        tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
-            part->addr, part->table_num, part->slot_num);
-
+    else if ((part->table_num != -1) && (part->slot_num != -1)) {
+        if (is_csv)
+          tsk_printf("%.3" PRIuPNUM "%c%.3d:%.3d%c",
+            part->addr, delim, part->table_num, part->slot_num, delim);
+        else
+          tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
+              part->addr, part->table_num, part->slot_num);
+    }
     if (print_bytes) {
         TSK_OFF_T size;
         char unit = 'B';
@@ -103,17 +124,29 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
         }
 
         /* Print the layout */
-        tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
-            "   %.4" PRIdOFF "%c   %s\n", part->start,
-            (TSK_DADDR_T) (part->start + part->len - 1), part->len, size,
-            unit, part->desc);
+        if (is_csv)
+          tsk_printf("%.10" PRIuDADDR "%c%.10" PRIuDADDR "%c%.10" PRIuDADDR
+              "%c%.4" PRIdOFF "%c%c%s\n", part->start, delim,
+              (TSK_DADDR_T) (part->start + part->len - 1), delim, part->len, delim, size,
+              unit, delim, part->desc);
+        else
+          tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
+              "   %.4" PRIdOFF "%c   %s\n", part->start,
+              (TSK_DADDR_T) (part->start + part->len - 1), part->len, size,
+              unit, part->desc);
     }
     else {
         /* Print the layout */
-        tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
-            "   %s\n", part->start,
-            (TSK_DADDR_T) (part->start + part->len - 1), part->len,
+        if (is_csv)
+          tsk_printf("%.10" PRIuDADDR "%c%.10" PRIuDADDR "%c%.10" PRIuDADDR
+            "%c%s\n", part->start, delim,
+            (TSK_DADDR_T) (part->start + part->len - 1), delim, part->len, delim,
             part->desc);
+        else
+          tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
+              "   %s\n", part->start,
+              (TSK_DADDR_T) (part->start + part->len - 1), part->len,
+              part->desc);
     }
 
     if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)
@@ -129,18 +162,46 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
 static void
 print_header(const TSK_VS_INFO * vs)
 {
-    tsk_printf("%s\n", tsk_vs_type_todesc(vs->vstype));
-    tsk_printf("Offset Sector: %" PRIuDADDR "\n",
-        (TSK_DADDR_T) (vs->offset / vs->block_size));
-    tsk_printf("Units are in %d-byte sectors\n\n", vs->block_size);
+    // Make delim a char* to use it with the ternary operator
+    const char* delim = ",";
+
+    if (!is_csv){
+      tsk_printf("%s\n", tsk_vs_type_todesc(vs->vstype));
+      tsk_printf("Offset Sector: %" PRIuDADDR "\n",
+          (TSK_DADDR_T) (vs->offset / vs->block_size));
+      tsk_printf("Units are in %d-byte sectors\n\n", vs->block_size);
+    }
+
+
     if (print_bytes)
         tsk_printf
-            ("      Slot      Start        End          Length       Size    Description\n");
+            ("%s%s%s%s%s%s%s%s%s%s%s%s",
+             is_csv ? "ID," : "      ",
+             "Slot",
+             is_csv ? delim : "      ",
+             "Start",
+             is_csv ? delim : "        ",
+             "End",
+             is_csv ? delim : "          ",
+             "Length",
+             is_csv ? delim : "       ",
+             "Size",
+             is_csv ? delim : "    ",
+             "Description\n");
     else
         tsk_printf
-            ("      Slot      Start        End          Length       Description\n");
+            ("%s%s%s%s%s%s%s%s%s%s",
+             is_csv ? "ID," : "      ",
+             "Slot",
+             is_csv ? delim : "      ",
+             "Start",
+             is_csv ? delim : "        ",
+             "End",
+             is_csv ? delim : "          ",
+             "Length",
+             is_csv ? delim : "       ",
+             "Description\n");
 }
-
 
 int
 main(int argc, char **argv1)
@@ -171,13 +232,16 @@ main(int argc, char **argv1)
 
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvV"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             flags |= TSK_VS_PART_FLAG_ALLOC;
             break;
         case _TSK_T('A'):
             flags |= TSK_VS_PART_FLAG_UNALLOC;
+            break;
+        case _TSK_T('c'):
+            is_csv = true;
             break;
         case _TSK_T('B'):
             print_bytes = 1;
