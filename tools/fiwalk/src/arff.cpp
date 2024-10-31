@@ -201,7 +201,7 @@ void arff::add_value(string name,const string &value)
  */
 void arff::add_valuet(string name,time_t t)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (defined(__MINGW32__) && !defined(_UCRT))
 #define TM_FORMAT "%Y-%m-%d %H:%M:%S"
 #else
 #define TM_FORMAT "%F %T"

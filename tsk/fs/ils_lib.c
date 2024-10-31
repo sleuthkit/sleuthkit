@@ -28,12 +28,15 @@
  *	Yorktown Heights, NY 10598, USA
  --*/
 
-#include "tsk_fs_i.h"
+#if HAVE_CONFIG_H
+#include "../tsk_config.h"
+#endif
 
 #ifdef TSK_WIN32
 #include <winsock2.h>
 #endif
 
+#include "tsk_fs_i.h"
 
 typedef struct {
     const TSK_TCHAR *image;

@@ -87,7 +87,7 @@ procDir(TskFsInfo * fs_info, TSK_STACK * stack,
         // get the entry
         if ((fs_file = fs_dir->getFile(i)) == NULL) {
             fprintf(stderr,
-                "Error getting directory entry %" PRIuSIZE
+                "Error getting directory entry %zu"
                 " in directory %" PRIuINUM "\n", i, dir_inum);
             tsk_error_print(stderr);
 
@@ -141,8 +141,8 @@ procDir(TskFsInfo * fs_info, TSK_STACK * stack,
                     }
                     else if (cnt != (ssize_t) len) {
                         fprintf(stderr,
-                            "Warning: %" PRIuSIZE " of %" PRIuSIZE
-                            " bytes read from %s file %s\n", cnt, len,
+                            "Warning: %zd of %zu bytes read from %s file %s\n",
+                            cnt, len,
                             ((fs_file->getName()->getFlags()
                                     & TSK_FS_NAME_FLAG_UNALLOC)
                                 || (fs_file->getMeta()->getFlags()

@@ -8,7 +8,9 @@ EXIT_SUCCESS=0
 EXIT_FAILURE=1
 EXIT_IGNORE=77
 
-IMAGE_DIR=$HOME/from_brian
+NOHARDFAIL=yes
+
+IMAGE_DIR=test/from_brian
 NTHREADS=1
 NITERS=1
 
@@ -27,14 +29,14 @@ if ! test -d ${IMAGE_DIR} ; then
     exit ${EXIT_IGNORE}
 fi
 
-FS_THREAD_TEST="./fs_thread_test"
+FS_THREAD_TEST="tests/fs_thread_test"
 
 if ! test -x ${FS_THREAD_TEST} ; then
-    FS_THREAD_TEST="./fs_thread_test.exe"
+    FS_THREAD_TEST="tests/fs_thread_test.exe"
 fi
 
 if ! test -x ${FS_THREAD_TEST} ; then
-    echo "Missing test executable: ${IMAGE_DIR}"
+    echo "Missing test executable: ${FS_THREAD_TEST}"
     exit ${EXIT_IGNORE};
 fi
 
