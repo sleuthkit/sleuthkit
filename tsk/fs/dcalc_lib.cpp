@@ -94,9 +94,14 @@ count_blkls_act(const TSK_FS_BLOCK * fs_block, void *ptr)
 
 /* SLACK SPACE  call backs */
 static TSK_WALK_RET_ENUM
-count_slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
-    TSK_DADDR_T addr, char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags,
-    void *ptr)
+count_slack_file_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  void *ptr)
 {
     BLKCALC_DATA *data = (BLKCALC_DATA *) ptr;
 
