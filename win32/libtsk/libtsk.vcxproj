@@ -522,7 +522,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp" />
     <ClInclude Include="..\..\tsk\fs\encryptionHelper.h" />
-    <ClInclud Include="..\..\tsk\fs\tsk_exfatfs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\img\img_writer.h" />
