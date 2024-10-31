@@ -388,7 +388,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\apfs_compat.cpp" />
     <ClCompile Include="..\..\tsk\fs\apfs_fs.cpp" />
     <ClCompile Include="..\..\tsk\fs\apfs_open.cpp" />
-    <ClCompile Include="..\..\tsk\fs\decmpfs.c" />
+    <ClCompile Include="..\..\tsk\fs\decmpfs.cpp" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
@@ -431,9 +431,9 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\vs\mm_part.c" />
     <ClCompile Include="..\..\tsk\vs\mm_types.c" />
     <ClCompile Include="..\..\tsk\vs\sun.c" />
-    <ClCompile Include="..\..\tsk\fs\dcalc_lib.c" />
+    <ClCompile Include="..\..\tsk\fs\dcalc_lib.cpp" />
     <ClCompile Include="..\..\tsk\fs\dcat_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\dls_lib.c" />
+    <ClCompile Include="..\..\tsk\fs\dls_lib.cpp" />
     <ClCompile Include="..\..\tsk\fs\dstat_lib.c" />
     <ClCompile Include="..\..\tsk\fs\ext2fs.c" />
     <ClCompile Include="..\..\tsk\fs\ext2fs_dent.c" />
