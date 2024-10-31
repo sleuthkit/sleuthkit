@@ -282,7 +282,7 @@
     <ClCompile Include="..\..\tsk\hashdb\encase.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs.cpp">
+    <ClCompile Include="..\..\tsk\fs\exfatfs.c">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
@@ -291,10 +291,10 @@
     <ClCompile Include="..\..\tsk\fs\logical_fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c">
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c">

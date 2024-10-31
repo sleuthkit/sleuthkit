@@ -389,9 +389,9 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\apfs_fs.cpp" />
     <ClCompile Include="..\..\tsk\fs\apfs_open.cpp" />
     <ClCompile Include="..\..\tsk\fs\decmpfs.cpp" />
-    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
-    <ClCompile Include="..\..\tsk\fs\exfatfs.cpp" />
-    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.cpp" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.cpp" />
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
@@ -522,7 +522,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp" />
     <ClInclude Include="..\..\tsk\fs\encryptionHelper.h" />
-    <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
+    <ClInclud Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\img\img_writer.h" />
