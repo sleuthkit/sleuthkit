@@ -486,7 +486,7 @@ static ssize_t read_and_decompress_block(
   char* rawBuf,
   char* uncBuf,
   const CMP_OFFSET_ENTRY* offsetTable,
-  uint32_t offsetTableSize,
+  [[maybe_unused]] uint32_t offsetTableSize,
   uint32_t offsetTableOffset,
   size_t indx,
   int (*decompress_block)(char* rawBuf,
@@ -574,16 +574,24 @@ static ssize_t read_and_decompress_block(
  * @return 0 on success, 1 on error
  */
 static uint8_t
-decmpfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
-    int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr,
-    int (*read_block_table)(const TSK_FS_ATTR *rAttr,
-                            CMP_OFFSET_ENTRY** offsetTableOut,
-                            uint32_t* tableSizeOut,
-                            uint32_t* tableOffsetOut),
-    int (*decompress_block)(char* rawBuf,
-                            uint32_t len,
-                            char* uncBuf,
-                            uint64_t* uncLen))
+decmpfs_attr_walk_compressed_rsrc(
+  const TSK_FS_ATTR * fs_attr,
+  [[maybe_unused]] int flags,
+  TSK_FS_FILE_WALK_CB a_action,
+  void *ptr,
+  int (*read_block_table)(
+    const TSK_FS_ATTR *rAttr,
+    CMP_OFFSET_ENTRY** offsetTableOut,
+    uint32_t* tableSizeOut,
+    uint32_t* tableOffsetOut
+  ),
+  int (*decompress_block)(
+    char* rawBuf,
+    uint32_t len,
+    char* uncBuf,
+    uint64_t* uncLen
+  )
+)
 {
     TSK_FS_INFO *fs;
     TSK_FS_FILE *fs_file;
@@ -1055,7 +1063,14 @@ decmpfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
  * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1
  */
-static int decmpfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
+static int decmpfs_decompress_noncompressed_attr(
+  char* rawBuf,
+  [[maybe_unused]] uint32_t rawSize,
+  uint64_t uncSize,
+  char** dstBuf,
+  uint64_t* dstSize,
+  int* dstBufFree)
+{
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
