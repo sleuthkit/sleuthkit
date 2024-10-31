@@ -483,8 +483,13 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
  * @return TSK_RETVAL_ENUM
 */
 TSK_RETVAL_ENUM
-exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
-    TSK_OFF_T a_buf_len, TSK_DADDR_T *a_sector_addrs, int recursion_depth)
+exfatfs_dent_parse_buf(
+  FATFS_INFO *a_fatfs,
+  TSK_FS_DIR *a_fs_dir,
+  char *a_buf,
+  TSK_OFF_T a_buf_len,
+  TSK_DADDR_T *a_sector_addrs,
+  [[maybe_unused]] int recursion_depth)
 {
     const char *func_name = "exfatfs_parse_directory_buf";
     TSK_FS_INFO *fs = NULL;
