@@ -233,7 +233,7 @@ tsk_fs_blkls(TSK_FS_INFO * fs, TSK_FS_BLKLS_FLAG_ENUM a_blklsflags,
         if (print_list_head(fs))
             return 1;
 
-        a_block_flags |= TSK_FS_BLOCK_WALK_FLAG_AONLY;
+        a_block_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM) (a_block_flags | TSK_FS_BLOCK_WALK_FLAG_AONLY);
         if (tsk_fs_block_walk(fs, bstart, blast, a_block_flags, print_list,
                 &data))
             return 1;
