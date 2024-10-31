@@ -1,23 +1,23 @@
 /*
  * From binutils-2.15 removed getopt_long stuff
- * 
+ *
  */
 
 /*
  * strings -- print the strings of printable characters in files Copyright
  * 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003 Free
  * Software Foundation, Inc.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2, or (at your option) any later
  * version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 59
  * Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -26,29 +26,29 @@
 
 /*
  * Usage: strings [options] file...
- * 
+ *
  * Options: -a -		Do not scan only the initialized data section of
  * object files.
- * 
+ *
  * -f		Print the name of the file before each string.
- * 
+ *
  * -n min-len -min-len	Print graphic char sequences, MIN-LEN or more bytes
  * long, that are followed by a NUL or a newline.  Default is 4.
- * 
+ *
  * -t {o,x,d}	Print the offset within the file before each string, in
  * octal/hex/decimal.
- * 
+ *
  * -o		Like -to.  (Some other implementations have -o like -to,
  * others like -td.  We chose one arbitrarily.)
- * 
+ *
  * -e {s,S,b,l,B,L} Select character encoding: 7-bit-character, 8-bit-character,
  * bigendian 16-bit, littleendian 16-bit, bigendian 32-bit, littleendian
  * 32-bit.
- * 
+ *
  * -h		Print the usage message on the standard output.
- * 
+ *
  * -v		Print the program version number.
- * 
+ *
  * Written by Richard Stallman <rms@gnu.ai.mit.edu> and David MacKenzie
  * <djm@gnu.ai.mit.edu>.
  */
@@ -282,6 +282,7 @@ main(int argc, char **argv)
                 case 'H':
                 case 'h':
                         usage(stdout, 0);
+                        break;
 
                 case 'n':
                         string_min = integer_arg(optarg);
@@ -336,6 +337,7 @@ main(int argc, char **argv)
 
                 case '?':
                         usage(stderr, 1);
+                        break;
 
                 default:
                         if (string_min < 0)
@@ -450,7 +452,7 @@ strings_file(char *file)
  * Read the next character, return EOF if none available. Assume that STREAM
  * is positioned so that the next byte read is at address ADDRESS in the
  * file.
- * 
+ *
  * If STREAM is NULL, do not read from it. The caller can supply a buffer of
  * characters to be processed before the data in STREAM. MAGIC is the address
  * of the buffer and MAGICCOUNT is how many characters are in it.
@@ -516,7 +518,7 @@ get_char(FILE * stream, uint64_t * address, int *magiccount, char **magic)
  * Find the strings in file FILENAME, read from STREAM. Assume that STREAM is
  * positioned so that the next byte read is at address ADDRESS in the file.
  * Stop reading at address STOP_POINT in the file, if nonzero.
- * 
+ *
  * If STREAM is NULL, do not read from it. The caller can supply a buffer of
  * characters to be processed before the data in STREAM. MAGIC is the address
  * of the buffer and MAGICCOUNT is how many characters are in it. Those
@@ -601,7 +603,7 @@ tryline:
 /*
  * Parse string S as an integer, using decimal radix by default, but allowing
  * octal and hex numbers as in C.
- * 
+ *
  * Return 0 on error
  */
 

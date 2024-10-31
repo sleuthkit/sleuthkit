@@ -341,6 +341,13 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
                     || (fs_attr_ok->id > fs_attr_cur->id))
                     fs_attr_ok = fs_attr_cur;
             }
+
+            else if ((name) && (fs_attr_cur->name) && fs_attr_cur->type == TSK_FS_ATTR_TYPE_NTFS_DATA && !strcasecmp(fs_attr_cur->name, name)) {
+                // NTFS data streams should do case insensitive compare
+                // make sure we return the lowest if multiple exist
+                if ((fs_attr_ok == NULL) || (fs_attr_ok->id > fs_attr_cur->id))
+                    fs_attr_ok = fs_attr_cur;
+            }
         }
     }
 

@@ -20,6 +20,7 @@
 #include "tsk_ntfs.h"
 
 #include <ctype.h>
+#include "encryptionHelper.h"
 
 /**
  * \file ntfs.c
@@ -84,6 +85,8 @@
  * subtract the number of seconds between 1601 and 1970
  * i.e. TIME - DELTA
  *
+ * Returns 0 if NT date is outside of Unix range
+ *
  */
 uint32_t
 nt2unixtime(uint64_t ntdate)
@@ -91,8 +94,16 @@ nt2unixtime(uint64_t ntdate)
 // (369*365 + 89) * 24 * 3600 * 10000000
 #define	NSEC_BTWN_1601_1970	(uint64_t)(116444736000000000ULL)
 
+    // return 0 if before 1970
+    if (ntdate < NSEC_BTWN_1601_1970)
+        return 0;
+
     ntdate -= (uint64_t) NSEC_BTWN_1601_1970;
     ntdate /= (uint64_t) 10000000;
+
+    // return if beyond 32-bit epoch range
+    if (ntdate > 0xffffffffULL)
+        return 0;
 
     return (uint32_t) ntdate;
 }
@@ -125,11 +136,12 @@ nt2nano(uint64_t ntdate)
  * @param a_ntfs File system to read from
  * @param a_buf Buffer to save raw data to.  Must be of size NTFS_INFO.mft_rsize_b
  * @param a_mftnum Address of MFT entry to read
+ * @param mft_start_addr Within-file-system byte address of start of MFT entry
  *
  * @returns Error value
  */
 TSK_RETVAL_ENUM
-ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
+ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum, TSK_OFF_T * mft_start_addr)
 {
     TSK_OFF_T mftaddr_b, mftaddr2_b, offset;
     size_t mftaddr_len = 0;
@@ -338,6 +350,11 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
         }
     }
 
+    /* A nonzero address means that mftaddr_b has been requested for export */
+    if (mft_start_addr) {
+        *mft_start_addr = mftaddr_b;
+    }
+
     /* Sanity Check */
 #if 0
     /* This is no longer applied because it caused too many problems
@@ -381,7 +398,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     // Make sure upd_cnt > 0 to prevent an integer wrap around.
     // NOTE: There is a bug here because upd_cnt can be for unused entries.
     // They are now skipped (as of July 2021). We shoudl refactor this code
-    // to allow upd_cnt = 0. 
+    // to allow upd_cnt = 0.
     if ((upd_cnt == 0) || (upd_cnt > (((a_ntfs->mft_rsize_b) / 2) + 1))) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -632,7 +649,7 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
          */
         idx = 0;
 
-        /* Get the length of this run. 
+        /* Get the length of this run.
          * A length of more than eight bytes will not fit in the
          * 64-bit length field (and is likely corrupt)
          */
@@ -946,7 +963,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "ntfs_uncompress_compunit: Start compression block (length=%" PRIuSIZE " index=%" PRIuSIZE 
+                "ntfs_uncompress_compunit: Start compression block (length=%" PRIuSIZE " index=%" PRIuSIZE
                 " compressed buffer size=%" PRIuSIZE ")\n",
                 blk_size, cl_index, comp->comp_len);
 
@@ -1340,7 +1357,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
             return 1;
         }
         retval = TSK_WALK_CONT;
-        
+
         if (fs_attr->nrd.initsize != fs_attr->fs_file->meta->size)
             has_init_size = 1;
 
@@ -1456,7 +1473,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             return 1;
                         }
 
-                        /* if we've passed the initialized size while reading this block, 
+                        /* if we've passed the initialized size while reading this block,
                          * zero out the buffer beyond the initialized size. */
                         if (has_init_size && (off < fs_attr->nrd.initsize)) {
                             const int64_t prev_remanining_init_size = fs_attr->nrd.initsize - off;
@@ -1722,7 +1739,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                             return -1;
                         }
 
-                        /* if we've passed the initialized size while reading this block, 
+                        /* if we've passed the initialized size while reading this block,
                          * zero out the buffer beyond the initialized size
                          */
                         if (has_init_size) {
@@ -1827,7 +1844,7 @@ typedef struct {
  * @param a_attrinum MFT entry address that the attribute sequence came from (diff from fs_file for attribute lists)
  * @param a_attr_map List that maps to new IDs that were assigned by processing
  * the attribute list attribute (if it exists) or NULL if there is no attrlist.
- * @param a_seen_inum_list List of inums that have been previously processed based on attribute lists. 
+ * @param a_seen_inum_list List of inums that have been previously processed based on attribute lists.
  *    Can be NULL when this is called for the first time. Should be non-NULL when this is called recursively by proc_attrlist.
  * @returns Error code
  */
@@ -1861,8 +1878,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
     }
 
 
-    /* Cycle through the list of attributes 
-     * There are 16 bytes in the non-union part of 
+    /* Cycle through the list of attributes
+     * There are 16 bytes in the non-union part of
      * an ntfs_attr, so make sure there is at least room for that */
     for (attr = a_attrseq; ((uintptr_t) attr >= (uintptr_t) a_attrseq)
         && ((uintptr_t) attr + 16 <= ((uintptr_t) a_attrseq + len))
@@ -1886,7 +1903,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
         // Ensure that the name offset doesn't refer to a location beyond
         // the attribute.
-        if (((uintptr_t)attr + tsk_getu16(fs->endian, attr->name_off)) > 
+        if (((uintptr_t)attr + tsk_getu16(fs->endian, attr->name_off)) >
             ((uintptr_t)attr + tsk_getu32(fs->endian, attr->len))) {
             break;
         }
@@ -2234,7 +2251,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         tsk_getu64(fs->endian, attr->c.nr.initsize),
                         alen, data_flag, compsize)) {
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
-                    
+
                     // If the run wasn't saved to the attribute, free it now
                     if (fs_attr_run && (fs_attr->nrd.run == NULL)) {
                         tsk_fs_attr_run_free(fs_attr_run);
@@ -2555,7 +2572,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
  * @param ntfs File system being analyzed
  * @param fs_file Main file that will have attributes added to it.
  * @param fs_attr_attrlist Attrlist attribute that needs to be parsed.
- * @param a_seen_inum_list List of MFT entries (inums) previously 
+ * @param a_seen_inum_list List of MFT entries (inums) previously
  * processed for this file or NULL.
  *
  * @returns status of error, corrupt, or OK
@@ -2737,7 +2754,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         if ((retval =
                 ntfs_dinode_lookup(ntfs, (char *) mft,
-                    mftToDo[a])) != TSK_OK) {
+                    mftToDo[a], 0)) != TSK_OK) {
             // if the entry is corrupt, then continue
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -3059,7 +3076,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     /* Lookup inode and store it in the ntfs structure */
-    if (ntfs_dinode_lookup(ntfs, mft, mftnum) != TSK_OK) {
+    if (ntfs_dinode_lookup(ntfs, mft, mftnum, & (a_fs_file->meta->start_of_inode)) != TSK_OK) {
         free(mft);
         return 1;
     }
@@ -3255,7 +3272,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     }
 
     /* Get data on the bitmap */
-    if (ntfs_dinode_lookup(ntfs, (char *) mft, NTFS_MFT_BMAP) != TSK_OK) {
+    if (ntfs_dinode_lookup(ntfs, (char *) mft, NTFS_MFT_BMAP, 0) != TSK_OK) {
         goto on_error;
     }
 
@@ -3609,7 +3626,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
 		}
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("ntfs_get_sds: SII entry %" PRIu32 " not found");
+		tsk_error_set_errstr("ntfs_get_sds: SII entry %" PRIu32 " not found", sii_secid);
 	}
 
 	// If we never even found an SII entry that matched our secid, update the error state.
@@ -3769,10 +3786,10 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 			// 140014000000000030000400010000001d150000abb032671d150000805a3a0000000000e80000006800000000000000  // Entry of length 0x30. Unclear what the eight final bytes are
 			// 00000000000000001800000003001b00540000000000000067110000a0823200000000003c0100005400000000000000  // I think this is the possibly deleted form of a long entry
 			//
-			// I haven't been able to find any documentation of what's going on - it's all old and says the entry length will be 0x28. The flags 
-			// are also different across these three types but I also can't find any documentation on what they mean. So this is a best guess on 
+			// I haven't been able to find any documentation of what's going on - it's all old and says the entry length will be 0x28. The flags
+			// are also different across these three types but I also can't find any documentation on what they mean. So this is a best guess on
 			// how we should handle things:
-			// - If the length field is 0x30 or the first two fields are null and the length is 0x18, save the entry and advance 0x30 bytes. 
+			// - If the length field is 0x30 or the first two fields are null and the length is 0x18, save the entry and advance 0x30 bytes.
 			//         The last eight bytes on the long entries will be ignored.
 			// - Otherwise save the entry and advance by 0x28 bytes.
 			//
@@ -4261,7 +4278,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         /* read MFT entry in to NTFS_INFO */
         if ((retval2 =
                 ntfs_dinode_lookup(ntfs, (char *) mft,
-                    mftnum)) != TSK_OK) {
+                    mftnum, & (fs_file->meta->start_of_inode))) != TSK_OK) {
             // if the entry is corrupt, then skip to the next one
             if (retval2 == TSK_COR) {
                 if (tsk_verbose)
@@ -4614,7 +4631,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         return 1;
     }
 
-    if (ntfs_dinode_lookup(ntfs, (char *) mft, inum)) {
+    if (ntfs_dinode_lookup(ntfs, (char *) mft, inum, 0)) {
         free(mft);
         return 1;
     }
@@ -4829,7 +4846,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         }
         /* Make sure it is NULL Terminated */
         else if ((uintptr_t) name8 >=
-            (uintptr_t) name8buf + NTFS_MAXNAMLEN_UTF8) 
+            (uintptr_t) name8buf + NTFS_MAXNAMLEN_UTF8)
             name8buf[NTFS_MAXNAMLEN_UTF8] = '\0';
         else
             *name8 = '\0';
@@ -5057,7 +5074,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                     if (print_addr.idx != 0)
                         tsk_fprintf(hFile, "\n");
                 }
-                
+
             }
             else {
                 tsk_fprintf(hFile,
@@ -5209,12 +5226,13 @@ process_kape_boot_format(NTFS_INFO* ntfs_info) {
  * @param img_info Disk image to analyze
  * @param offset Byte offset where NTFS file system starts
  * @param ftype Specific type of NTFS file system
+ * @param a_pass (Optional) bitlocker password
  * @param test NOT USED
  * @returns NULL on error or if data is not an NTFS file system
  */
 TSK_FS_INFO *
 ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     char *myname = "ntfs_open";
     NTFS_INFO *ntfs = NULL;
@@ -5255,6 +5273,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->loading_the_MFT = 0;
     ntfs->bmap = NULL;
     ntfs->bmap_buf = NULL;
+
+    // Check for any volume encryption and initialize if found.
+    // A non-zero value will only be returned if we are very confident encryption was found
+    // but encountered an error and should not continue trying to open the volume.
+    // In this case we should also have a specific error to get back to the user, such as reporting an incorrect password.
+    if (0 != handleVolumeEncryption((TSK_FS_INFO*)ntfs, a_pass)) {
+        goto on_error;
+    }
 
     /* Read the boot sector */
     len = roundup(sizeof(ntfs_sb), img_info->sector_size);
@@ -5304,13 +5330,25 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         goto on_error;
     }
 
-    if ((ntfs->fs->csize != 0x01) &&
-        (ntfs->fs->csize != 0x02) &&
-        (ntfs->fs->csize != 0x04) &&
-        (ntfs->fs->csize != 0x08) &&
-        (ntfs->fs->csize != 0x10) &&
-        (ntfs->fs->csize != 0x20) && (ntfs->fs->csize != 0x40)
-        && (ntfs->fs->csize != 0x80)) {
+    uint32_t csize = ntfs->fs->csize;
+    if (ntfs->fs->csize > 0x80) {
+      csize = 1 << -(int8_t)ntfs->fs->csize;
+    }
+
+    if ((csize != 0x01) &&
+      (csize != 0x02) &&
+      (csize != 0x04) &&
+      (csize != 0x08) &&
+      (csize != 0x10) &&
+      (csize != 0x20) &&
+      (csize != 0x40) &&
+      (csize != 0x80) &&
+      (csize != 0x100) &&
+      (csize != 0x200) &&
+      (csize != 0x400) &&
+      (csize != 0x800) &&
+      (csize != 0x1000)
+      ) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -5322,14 +5360,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         goto on_error;
     }
 
-    ntfs->csize_b = ntfs->fs->csize * ntfs->ssize_b;
+    ntfs->csize_b = csize * ntfs->ssize_b;
     fs->first_block = 0;
     /* This field is defined as 64-bits but according to the
      * NTFS drivers in Linux, old Windows versions used only 32-bits
      */
     fs->block_count =
         (TSK_DADDR_T) tsk_getu64(fs->endian,
-        ntfs->fs->vol_size_s) / ntfs->fs->csize;
+        ntfs->fs->vol_size_s) / csize;
     if (fs->block_count == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
@@ -5522,7 +5560,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             "ssize: %" PRIu16
             " csize: %d serial: %" PRIx64 "\n",
             tsk_getu16(fs->endian, ntfs->fs->ssize),
-            ntfs->fs->csize, tsk_getu64(fs->endian, ntfs->fs->serial));
+            csize, tsk_getu64(fs->endian, ntfs->fs->serial));
         tsk_fprintf(stderr,
             "mft_rsize: %d idx_rsize: %d vol: %d mft: %"
             PRIu64 " mft_mir: %" PRIu64 "\n",

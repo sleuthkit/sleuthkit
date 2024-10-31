@@ -31,7 +31,7 @@ uint8_t
     if (8 != fread(buf, sizeof(char), 8, hFile))
         return 0;
 
-    if (memcmp(buf, "HASH\x0d\x0a\xff\x00", 8)) 
+    if (memcmp(buf, "HASH\x0d\x0a\xff\x00", 8))
         return 0;
 
     return 1;
@@ -59,7 +59,7 @@ static void
         return;
     }
 
-    memset(buf, '\0', 40);
+    memset(buf, '\0', sizeof(buf));
 
     fseeko(hFile, 1032, SEEK_SET);
     if (39 != fread(buf, sizeof(wchar_t), 39, hFile)) {
@@ -99,7 +99,7 @@ TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
     hdb_binsrch_info->base.make_index = encase_make_index;
     hdb_binsrch_info->get_entry = encase_get_entry;
 
-    return (TSK_HDB_INFO*)hdb_binsrch_info;    
+    return (TSK_HDB_INFO*)hdb_binsrch_info;
 }
 
 /**
@@ -239,7 +239,7 @@ uint8_t
         }
 
         snprintf(hash_str, TSK_HDB_HTYPE_MD5_LEN+1, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], 
+            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
             buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
 
         /* Is this the one that we want? */

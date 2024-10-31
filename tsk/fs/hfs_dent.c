@@ -258,12 +258,23 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         /* This will link the folder to its parent, which is the ".." entry */
         else if (rec_type == HFS_FOLDER_THREAD) {
-            if ((nodesize < sizeof(hfs_thread)) || (rec_off2 > nodesize - sizeof(hfs_thread))) {
+            hfs_thread *thread = (hfs_thread *) & rec_buf[rec_off2];
+
+            // hfs_thread is of variable size on disk. The minimum size is
+            // 10 bytes (8 for the non-name fields, 2 for the length of an
+            // empty name).
+            const size_t min_hfs_thread_size = sizeof(hfs_thread) - sizeof(hfs_uni_str) + 2;
+
+            // First, check that we can read as far as the name length; then
+            // get the name length and check that the whole record fits into
+            // the buffer.
+            if (rec_off2 > nodesize - min_hfs_thread_size ||
+                rec_off2 > nodesize - (min_hfs_thread_size + tsk_getu16(hfs->fs_info.endian, thread->name.length))) {
                 tsk_error_set_errno(TSK_ERR_FS_GENFS);
                 tsk_error_set_errstr("hfs_dir_open_meta: nodesize value out of bounds");
                 return HFS_BTREE_CB_ERR;
             }
-            hfs_thread *thread = (hfs_thread *) & rec_buf[rec_off2];
+
             strcpy(info->fs_name->name, "..");
             info->fs_name->meta_addr =
                 tsk_getu32(hfs->fs_info.endian, thread->parent_cnid);
@@ -285,7 +296,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             info->fs_name->type = TSK_FS_NAME_TYPE_DIR;
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
-            // Make sure there is enough space in cur_key for the name 
+            // Make sure there is enough space in cur_key for the name
             // (name is unicode so each characters is two bytes; 6 bytes
             // of non-name characters)
             const int32_t nameLength =
@@ -351,7 +362,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             }
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
-            // Make sure there is enough space in cur_key for the name 
+            // Make sure there is enough space in cur_key for the name
             // (name is unicode so each characters is two bytes; 6 bytes
             // of non-name characters)
             const int32_t nameLength =

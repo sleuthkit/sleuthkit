@@ -7,8 +7,8 @@
  *
  */
 
-/* 
- * Header files for VMDK-specific data structures and functions. 
+/*
+ * Header files for VMDK-specific data structures and functions.
  */
 
 #ifndef _TSK_IMG_VMDK_H

@@ -1995,10 +1995,12 @@ ffs_close(TSK_FS_INFO * fs)
  * @param img_info Disk image to analyze
  * @param offset Byte offset where file system starts
  * @param ftype Specific type of file system
+ * @param a_pass NOT USED
+ * @param test NOT USED
  * @returns NULL on error or if data is not a FFS file system
  */
 TSK_FS_INFO *
-ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint8_t test)
+ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
     char *myname = "ffs_open";
     FFS_INFO *ffs;
@@ -2151,7 +2153,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint
     }
 
     // apply some sanity checks before we start using these numbers
-    if ((fs->block_size == 0) || (ffs->ffsbsize_b == 0) || (ffs->ffsbsize_f == 0) 
+    if ((fs->block_size == 0) || (ffs->ffsbsize_b == 0) || (ffs->ffsbsize_f == 0)
         || (fs->block_size % 512) || (ffs->ffsbsize_b % 512)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
@@ -2190,7 +2192,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint
         fs->last_block_act =
             (img_info->size - offset) / fs->block_size - 1;
 
-    
+
 
     // Inode / meta data calculations
     if (fs->ftype == TSK_FS_TYPE_FFS2) {

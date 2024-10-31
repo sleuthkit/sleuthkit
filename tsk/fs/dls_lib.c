@@ -3,7 +3,7 @@
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -30,13 +30,17 @@
  *	Yorktown Heights, NY 10598, USA
  */
 
-#include "tsk_fs_i.h"
+#if HAVE_CONFIG_H
+#include "../tsk_config.h"
+#endif
 
 #ifdef TSK_WIN32
 #include <winsock2.h>
 #endif
 
-/* call backs for listing details 
+#include "tsk_fs_i.h"
+
+/* call backs for listing details
  *
  * return 1 on error
  * */
@@ -99,7 +103,7 @@ print_block(const TSK_FS_BLOCK * fs_block, void *ptr)
 }
 
 
-/** \internal 
+/** \internal
 * Structure to store data for callbacks.
 */
 typedef struct {
@@ -127,7 +131,7 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     }
     /* We have passed the end of the allocated space */
     else {
-        /* This is the last data unit and there is unused space 
+        /* This is the last data unit and there is unused space
          * reset the used space */
         if (data->flen != 0) {
             memset(buf, 0, (size_t) data->flen);

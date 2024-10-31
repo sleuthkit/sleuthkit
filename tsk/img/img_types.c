@@ -1,17 +1,17 @@
 /*
 ** img_types
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Identify the type of image file being used
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2011 Brian Carrier.  All rights reserved 
+** Copyright (c) 2006-2011 Brian Carrier.  All rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 */
 
 /** \file img_types.c
- * Contains basic functions to parse and print the names of the supported disk image types. 
+ * Contains basic functions to parse and print the names of the supported disk image types.
  */
 #include "tsk_img_i.h"
 
@@ -25,7 +25,7 @@ typedef struct {
 } IMG_TYPES;
 
 /** \internal
- * The table used to parse input strings 
+ * The table used to parse input strings
  * - in order of expected usage
  */
 static IMG_TYPES img_open_table[] = {
@@ -40,24 +40,30 @@ static IMG_TYPES img_open_table[] = {
 #if HAVE_LIBEWF
     {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness Format (EnCase)"},
 #endif
+#if HAVE_LIBAFF4
+    {"aff4", TSK_IMG_TYPE_AFF4_AFF4, "Advanced Forensic Format 4 (AFF4)"},
+#endif
 #if HAVE_LIBVMDK
     {"vmdk", TSK_IMG_TYPE_VMDK_VMDK, "Virtual Machine Disk (VmWare, Virtual Box)"},
 #endif
 #if HAVE_LIBVHDI
     {"vhd", TSK_IMG_TYPE_VHD_VHD, "Virtual Hard Drive (Microsoft)"},
 #endif
+#if HAVE_LIBQCOW
+    {"qcow", TSK_IMG_TYPE_QCOW_QCOW, "QEMU Copy On Write (QCOW)"},
+#endif
 #ifdef TSK_WIN32
 	{"logical", TSK_IMG_TYPE_LOGICAL, "Logical Directory"},
 #endif
-    {0,0,""},
+    {NULL, 0, NULL},
 };
 
 
 /**
  * \ingroup imglib
- * Parses a string that specifies an image format to determine the 
+ * Parses a string that specifies an image format to determine the
  * associated type ID.  This is used by the TSK command line tools to
- * parse the type given on the command line. 
+ * parse the type given on the command line.
  *
  * @param str String of image format type, always UTF-8
  * @return ID of image type
@@ -78,9 +84,9 @@ tsk_img_type_toid_utf8(const char *str)
 
 /**
  * \ingroup imglib
- * Parses a string that specifies an image format to determine the 
+ * Parses a string that specifies an image format to determine the
  * associated type ID.  This is used by the TSK command line tools to
- * parse the type given on the command line. 
+ * parse the type given on the command line.
  *
  * @param str String of image format type
  * @return ID of image type

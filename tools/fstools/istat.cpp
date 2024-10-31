@@ -107,6 +107,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('N'):
             numblock = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || numblock < 1) {
@@ -216,12 +217,6 @@ main(int argc, char **argv1)
         usage();
     }
 
-    /* Passwords only work if the file system type has been specified */
-    if (strlen(password) > 0 && fstype == TSK_FS_TYPE_DETECT) {
-        tsk_fprintf(stderr, "File system type must be specified to use a password\n");
-        usage();
-    }
-
     /* if we are given the inode in the inode-type-id form, then ignore
      * the other stuff w/out giving an error
      *
@@ -250,7 +245,7 @@ main(int argc, char **argv1)
     }
 
     if (pvol_block == 0) {
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, 
+        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size,
                                           fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
@@ -268,8 +263,14 @@ main(int argc, char **argv1)
             exit(1);
         }
 
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
         img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);

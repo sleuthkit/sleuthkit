@@ -1,10 +1,10 @@
 /*
 ** blkcat
-** The  Sleuth Kit 
+** The  Sleuth Kit
 **
 ** Given an image , block number, and size, display the contents
 ** of the block to stdout.
-** 
+**
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
@@ -32,7 +32,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %" PRIttocTSK " [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-u usize] image [images] unit_addr [num]\n"),
+        ("usage: %" PRIttocTSK " [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-k password] [-u usize] image [images] unit_addr [num]\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: displays in all ASCII \n");
     tsk_fprintf(stderr, "\t-h: displays in hexdump-like fashion\n");
@@ -48,6 +48,7 @@ usage()
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
     tsk_fprintf(stderr,
         "\t-s: display basic block stats such as unit size, fragments, etc.\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -101,7 +102,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:f:hi:o:P:su:vVw"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:f:hi:k:o:P:su:vVw"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             format |= TSK_FS_BLKCAT_ASCII;
@@ -194,6 +195,9 @@ main(int argc, char **argv1)
             break;
         case _TSK_T('w'):
             format |= TSK_FS_BLKCAT_HTML;
+            break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
             break;
         case _TSK_T('?'):
         default:
@@ -323,8 +327,14 @@ main(int argc, char **argv1)
             exit(1);
         }
 
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
         img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);

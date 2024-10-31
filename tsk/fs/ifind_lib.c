@@ -176,7 +176,6 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     char *cur_attr;             // The "current" attribute of the dir we are looking for
     TSK_INUM_T next_meta;
     uint8_t is_done;
-    char *strtok_last;
     *a_result = 0;
 
     // copy path to a buffer that we can modify
@@ -187,6 +186,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     strncpy(cpath, a_path, clen);
 
     // Get the first part of the directory path.
+    UNUSED char *strtok_last; // not actually unused; some compilers complain
     cur_dir = (char *) strtok_r(cpath, "/", &strtok_last);
     cur_attr = NULL;
 
@@ -331,7 +331,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         }
 
         // we found a directory, go into it
-        if ((fs_file_alloc) || (fs_file_del)) {
+        if (fs_file_alloc || fs_file_del) {
 
             const char *pname;
             TSK_FS_FILE *fs_file_tmp;
@@ -345,7 +345,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             pname = cur_dir;    // save a copy of the current name pointer
 
             // advance to the next name
-            cur_dir = (char *) strtok_r(NULL, "/", &(strtok_last));
+            cur_dir = (char *) strtok_r(NULL, "/", &strtok_last);
             cur_attr = NULL;
 
             if (tsk_verbose)

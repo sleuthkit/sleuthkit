@@ -283,7 +283,7 @@ public class HostAddressManager {
 	 *
 	 * @return List of addresses, may be empty.
 	 */
-	List<HostAddress> getHostAddressesAssignedTo(Host host) throws TskCoreException {
+	public List<HostAddress> getHostAddressesAssignedTo(Host host) throws TskCoreException {
 
 		String queryString = "SELECT addr_obj_id FROM tsk_host_address_map "
 				+ " WHERE host_id = " + host.getHostId();

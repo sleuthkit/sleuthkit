@@ -1,6 +1,6 @@
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
- 
+
 # Bindings dependecies and build folders
 /bindings/java/lib/
 /bindings/java/build/
@@ -35,6 +35,7 @@
 /case-uco/java/nbproject/genfiles.properties
 
 # Windows build folders
+/win32/__pycache__/
 /win32/Debug_NoLibs/
 /win32/*/Debug_NoLibs/
 /win32/Debug/
@@ -47,6 +48,8 @@
 /win32/*/Release_PostgreSQL/
 /win32/Release_NoLibs/
 /win32/*/Release_NoLibs/
+/win32/Release_XPNoLibs/
+/win32/*/Release_XPNoLibs/
 /win32/*/x64/
 /win32/x64/
 /win32/*/*.user
@@ -76,6 +79,7 @@ framework/tools/tsk_validatepipeline/tsk_validatepipeline
 rejistry++/msvcpp/*/Debug
 rejistry++/msvcpp/*/Release
 rejistry++/msvcpp/*/Release_NoLibs
+rejistry++/msvcpp/*/Release_XPNoLibs
 rejistry++/msvcpp/*/x64
 rejistry++/msvcpp/*/*.user
 rejistry++/msvcpp/rejistry++/ipch
@@ -108,6 +112,12 @@ Makefile
 .deps
 .libs
 *.swp
+.dirstamp
+
+# unit tests
+test/**/*.exe
+test/**/*.log
+test/**/*.trs
 
 #javadoc generated
 /bindings/java/javadoc
@@ -128,20 +138,20 @@ m4/libtool.m4
 m4/lt*.m4
 config/*
 
-
 # Executables
 samples/callback_cpp_style
 samples/callback_style
 samples/posix_cpp_style
 samples/posix_style
 samples/*.exe
-tests/*.exe
-tests/*.log
-tests/*.trs
-tests/fs_attrlist_apis
-tests/fs_fname_apis
-tests/fs_thread_test
-tests/read_apis
+test/fiwalk/fiwalk_test
+test/img_dump/img_dump
+test/img_dump/imgs_to_dump
+!test/img_dump/imgs_to_dump.in
+test/legacy/fs_attrlist_apis
+test/legacy/fs_fname_apis
+test/legacy/fs_thread_test
+test/legacy/read_apis
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
 tools/autotools/tsk_imageinfo
@@ -178,29 +188,20 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
-unit_tests/base/*.log
-unit_tests/base/*.trs
-unit_tests/base/test_base
+
 # EMACS backup files
 *~
 
 # Mac Junk
 .DS_Store
 
-# Test images
-*.img
-*.vhd
-*.E01
-*.vmdk
-
 sleuthkit-*.tar.gz
 
-#Test data folder
-
-tests/data
+*.Tpo
+*.gcda
+*.gcno
 *.gcov
 *.Tpo
-tests/venv
-unit_tests/venv
-tests/wget-log
-unit_tests/test_images.txt
+test-suite.log
+venv
+wget-log
