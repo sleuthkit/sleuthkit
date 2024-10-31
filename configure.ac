@@ -150,6 +150,7 @@ dnl Check if we should link with zlib
 TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
 dnl Check if we should link with libbfio
 TSK_OPT_DEP_CHECK([libbfio], [BFIO], [libbfio], [libbfio.h], [bfio], [libbfio_get_version])
+
 dnl Check if we should link with libewf
 TSK_OPT_DEP_CHECK([libewf], [EWF], [libewf], [libewf.h], [ewf], [libewf_get_version])
 dnl Check for libewf_handle_read_buffer_at_offset, in newer versions of libewf
@@ -168,10 +169,6 @@ dnl Check if we should link with libvhdi
 TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
 dnl Check if we should link with libvmdk
 TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
-dnl Check if we should link with libvslvm
-AS_IF([test "x$ax_libbfio" = "xyes"],
-      [TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])],
-      [ax_libvslvm=no])
 
 dnl Check that libbfio is available if libvslvm was requested
 AS_IF(
