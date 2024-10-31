@@ -35,8 +35,8 @@
 * Returns -1 if:
 * - We got far enough to be confident that it's Bitlocker and have a specific error message to get back to the user
 */
-int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 #ifdef HAVE_LIBMBEDTLS
+int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	BitlockerParser* bitlockerParser = new BitlockerParser();
 	BITLOCKER_STATUS status = bitlockerParser->initialize(a_fs_info->img_info, a_fs_info->offset, a_pass);
 	if (status == BITLOCKER_STATUS::NOT_BITLOCKER) {
@@ -84,9 +84,16 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 	a_fs_info->block_size = bitlockerParser->getSectorSize();
 	// We don't set a_fs_info->decrypt_block here because Bitlocker needs to handle both reading in the block
 	// and doing the decryption since some sectors may have been relocated
-#endif
 	return 0;
 }
+#else
+int handleBitlocker(
+  [[maybe_unused]] TSK_FS_INFO* a_fs_info,
+  [[maybe_unused]] const char* a_pass)
+{
+  return 0;
+}
+#endif
 
 /**
 * Check if the volume appears to be encrypted and attempt to initialize the encryption object.
@@ -99,14 +106,18 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 * - We found encryption and got far enough that we're confident we should not continue trying to parse the file system and
 *     have potentially useful feedback to give the user (like that the password was incorrect)
 */
-int handleVolumeEncryption(TSK_FS_INFO* a_fs_info, const char* a_pass) {
-	int ret = 0;
 #ifdef HAVE_LIBMBEDTLS
-	ret = handleBitlocker(a_fs_info, a_pass);
-#endif
-
-	return ret;
+int handleVolumeEncryption(TSK_FS_INFO* a_fs_info, const char* a_pass) {
+  return handleBitlocker(a_fs_info, a_pass);
 }
+#else
+int handleVolumeEncryption(
+  [[maybe_unused]] TSK_FS_INFO* a_fs_info,
+  [[maybe_unused]] const char* a_pass)
+{
+  return 0;
+}
+#endif
 
 /**
 * Reads and decrypts one or more sectors starting at the given offset.
@@ -168,8 +179,8 @@ void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, siz
 *
 * @param a_fs_info The TSK_FS_INFO object
 */
-void freeEncryptionData(TSK_FS_INFO* a_fs_info) {
 #ifdef HAVE_LIBMBEDTLS
+void freeEncryptionData(TSK_FS_INFO* a_fs_info) {
 	if (a_fs_info->encryption_type == TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
 		&& a_fs_info->encryption_data != NULL) {
 
@@ -178,5 +189,7 @@ void freeEncryptionData(TSK_FS_INFO* a_fs_info) {
 		a_fs_info->encryption_data = NULL;
 	}
 	a_fs_info->encryption_type = TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_NONE;
-#endif
 }
+#else
+void freeEncryptionData([[maybe_unused]] TSK_FS_INFO* a_fs_info) {}
+#endif
