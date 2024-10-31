@@ -660,7 +660,11 @@ exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry)
  * @return 1 if the buffer likely contains a directory entry, 0 otherwise
  */
 uint8_t
-exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
+exfatfs_is_dentry(
+  FATFS_INFO *a_fatfs,
+  FATFS_DENTRY *a_dentry,
+  FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc,
+  [[maybe_unused]] uint8_t a_do_basic_tests_only)
 {
     const char *func_name = "exfatfs_is_dentry";
 
