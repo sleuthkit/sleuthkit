@@ -149,6 +149,29 @@ ssize_t read_and_decrypt_bitlocker_blocks(TSK_FS_INFO* a_fs_info, TSK_DADDR_T of
 }
 #endif
 
+#ifdef HAVE_LIBMBEDTLS
+void fillEncryptionDescription(
+  TSK_FS_INFO* a_fs_info,
+  char* a_desc,
+  size_t a_descLen)
+{
+	if (a_fs_info->encryption_type == TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
+		&& a_fs_info->encryption_data != NULL) {
+
+		BitlockerParser* parser = (BitlockerParser*)a_fs_info->encryption_data;
+		string descStr = parser->getDescription();
+		strncpy(a_desc, descStr.c_str(), a_descLen - 1);
+	}
+}
+#else
+void fillEncryptionDescription(
+  [[maybe_unused]] TSK_FS_INFO* a_fs_info,
+  [[maybe_unused]] char* a_desc,
+  [[maybe_unused]] size_t a_descLen)
+{
+}
+#endif
+
 /**
 * Copys a summary of the encryption algoritm to a_desc. Expected size of description is under 100 characters.
 *
@@ -162,16 +185,7 @@ void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, siz
 	}
 
 	memset(a_desc, 0, a_descLen);
-
-#ifdef HAVE_LIBMBEDTLS
-	if (a_fs_info->encryption_type == TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
-		&& a_fs_info->encryption_data != NULL) {
-
-		BitlockerParser* parser = (BitlockerParser*)a_fs_info->encryption_data;
-		string descStr = parser->getDescription();
-		strncpy(a_desc, descStr.c_str(), a_descLen - 1);
-	}
-#endif
+  fillEncryptionDescription(a_fs_info, a_desc, a_descLen);
 }
 
 /**
