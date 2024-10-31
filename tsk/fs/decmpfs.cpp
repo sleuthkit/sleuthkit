@@ -6,6 +6,7 @@
  */
 
 #include <cstdint>
+#include <memory>
 
 extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
 extern "C" void error_returned(const char* errstr, ...);
@@ -293,17 +294,11 @@ on_error:
  */
 static int
 decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
-    ssize_t attrReadResult;
-    char fourBytes[4];
-    uint32_t tableDataSize;
-    uint32_t tableSize;         // Size of the offset table
-    char *offsetTableData = NULL;
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
-
     // The offset table is a sequence of 4-byte offsets of compressed
     // blocks. The first 4 bytes is thus the offset of the first block,
     // but also 4 times the number of entries in the table.
-    attrReadResult = tsk_fs_attr_read(rAttr, 0, fourBytes, 4,
+    char fourBytes[4];
+    ssize_t attrReadResult = tsk_fs_attr_read(rAttr, 0, fourBytes, 4,
                                       TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != 4) {
         error_returned
@@ -312,7 +307,7 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
         return 0;
     }
 
-    tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
+    const uint32_t tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
     if (tableDataSize <= 0) {
         error_returned
@@ -320,33 +315,32 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
         return 0;
     }
 
-    offsetTableData = (char*) tsk_malloc(tableDataSize);
-    if (offsetTableData == NULL) {
+    std::unique_ptr<char[]> offsetTableData(new char[tableDataSize]);
+    if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
         return 0;
     }
 
+    // Size of the offset table
     // table entries are 4 bytes, last entry is end of data
-    tableSize = tableDataSize / 4 - 1;
+    const uint32_t tableSize = tableDataSize / 4 - 1;
 
-    offsetTable =
-        (CMP_OFFSET_ENTRY *) tsk_malloc(tableSize *
-        sizeof(CMP_OFFSET_ENTRY));
-    if (offsetTable == NULL) {
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable(new CMP_OFFSET_ENTRY[tableSize]);
+    if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
-        goto on_error;
+        return 0;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, 0,
-        offsetTableData, tableDataSize, TSK_FS_FILE_READ_FLAG_NONE);
+        offsetTableData.get(), tableDataSize, TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != (ssize_t) tableDataSize) {
         error_returned
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
             tableDataSize);
-        goto on_error;
+        return 0;
     }
 
     uint32_t a = tableDataSize;
@@ -354,23 +348,16 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     size_t i;
 
     for (i = 0; i < tableSize; ++i) {
-        b = tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + 4*(i+1));
+        b = tsk_getu32(TSK_LIT_ENDIAN, offsetTableData.get() + 4*(i+1));
         offsetTable[i].offset = a;
         offsetTable[i].length = b - a;
         a = b;
     }
 
-    free(offsetTableData);
-
-    *offsetTableOut = offsetTable;
+    *offsetTableOut = offsetTable.release();
     *tableSizeOut = tableSize;
     *tableOffsetOut = 0;
     return 1;
-
-on_error:
-    free(offsetTable);
-    free(offsetTableData);
-    return 0;
 }
 
 /**
