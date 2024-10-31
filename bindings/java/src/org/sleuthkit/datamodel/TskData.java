@@ -153,6 +153,7 @@ public class TskData {
 	 */
 	public enum TSK_FS_NAME_FLAG_ENUM {
 
+		UNKNOWN(0, bundle.getString("TskData.tskFsNameFlagEnum.unknown")), ///< Unknown
 		ALLOC(1, bundle.getString("TskData.tskFsNameFlagEnum.allocated")), ///< Name is in an allocated state
 		UNALLOC(2, bundle.getString("TskData.tskFsNameFlagEnum.unallocated"));    ///< Name is in an unallocated state
 
@@ -191,8 +192,8 @@ public class TskData {
 					return flag;
 				}
 			}
-			throw new IllegalArgumentException(
-					MessageFormat.format(bundle.getString("TskData.tskFsNameFlagEnum.exception.msg1.text"), dirFlag));
+
+			return TSK_FS_NAME_FLAG_ENUM.UNKNOWN;
 		}
 	}
 
@@ -203,6 +204,7 @@ public class TskData {
 	 */
 	public enum TSK_FS_META_FLAG_ENUM {
 
+		UNKNOWN(0, bundle.getString("TskData.tskFsMetaFlagEnum.unknown")), ///< Unknown
 		ALLOC(1, bundle.getString("TskData.tskFsMetaFlagEnum.allocated")), ///< Metadata structure is currently in an allocated state
 		UNALLOC(2, bundle.getString("TskData.tskFsMetaFlagEnum.unallocated")), ///< Metadata structure is currently in an unallocated state
 		USED(4, bundle.getString("TskData.tskFsMetaFlagEnum.used")), ///< Metadata structure has been allocated at least once
@@ -247,6 +249,11 @@ public class TskData {
 		public static Set<TSK_FS_META_FLAG_ENUM> valuesOf(short metaFlags) {
 			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
 
+			if (metaFlags == TSK_FS_META_FLAG_ENUM.UNKNOWN.getValue()) {
+				matchedFlags.add(TSK_FS_META_FLAG_ENUM.UNKNOWN);
+				return matchedFlags;
+			}
+			
 			for (TSK_FS_META_FLAG_ENUM v : TSK_FS_META_FLAG_ENUM.values()) {
 				long flag = v.getValue();
 
@@ -254,7 +261,7 @@ public class TskData {
 					matchedFlags.add(v);
 				}
 			}
-
+			
 			return matchedFlags;
 		}
 
@@ -887,6 +894,48 @@ public class TskData {
 			}
 			throw new IllegalArgumentException(
 					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
+		}
+	}
+	
+	/**
+	 * CollectedStatus stores where the data for a file can be found or the
+     * reason no data for the file exists.
+	 */
+	public enum CollectedStatus{
+
+		UNKNOWN(0),
+		NO_SAVE_ERROR(1),
+		NO_EMPTY_FILE(2),
+		NO_NOT_FOUND(3),
+		NO_UNRESOLVED(4),
+		NO_READ_ERROR(5),
+		NO_READ_ERROR_PARTIAL(6),
+		NO_NOT_ATTEMPTED(7),
+		NO_NOT_REGULAR_FILE(8),
+		NO_FILE_TOO_LARGE(9),
+		NO_ONLY_HASH_COLLECTED(10),
+		NO_UNSUPPORTED_COMPRESSION(11),
+		YES_TSK(12),
+		YES_REPO(13);
+
+		private final int type;
+		
+		private CollectedStatus(int type){
+			this.type = type;
+		}
+		
+		public int getType(){
+			return type;
+		}
+		
+		public static CollectedStatus valueOf(int type) {
+			for (CollectedStatus v : CollectedStatus.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.collectedStatus.exception.msg1.text"), type));
 		}
 	}
 	

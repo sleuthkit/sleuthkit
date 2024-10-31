@@ -94,7 +94,7 @@ public class Directory extends FsContent {
 			String md5Hash, String sha256Hash, String sha1Hash, 
 			FileKnown knownState, String parentPath, 
 			String ownerUid, Long osAccountObjId) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, null, null, ownerUid, osAccountObjId, Collections.emptyList());
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, null, null, ownerUid, osAccountObjId, TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 	}
 
 	/**

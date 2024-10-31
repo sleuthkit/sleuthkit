@@ -38,6 +38,8 @@ import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALU
 import org.sleuthkit.datamodel.OsAccount.OsAccountStatus;
 import org.sleuthkit.datamodel.OsAccount.OsAccountType;
 import org.sleuthkit.datamodel.OsAccount.OsAccountAttribute;
+import org.sleuthkit.datamodel.OsAccountRealmManager.OsRealmUpdateResult;
+import org.sleuthkit.datamodel.OsAccountRealmManager.OsRealmUpdateStatus;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskEvent.OsAccountsUpdatedTskEvent;
@@ -175,18 +177,58 @@ public final class OsAccountManager {
 			sid = WindowsAccountUtils.getWindowsWellKnownAccountSid(loginName, realmName);
 		}
 		
+		
+		OsRealmUpdateResult realmUpdateResult;
+		Optional<OsAccountRealm> anotherRealmWithSameName = Optional.empty();
+		Optional<OsAccountRealm> anotherRealmWithSameAddr = Optional.empty();
+		
 		// get the realm for the account, and update it if it is missing addr or name.
-		Optional<OsAccountRealm> realmOptional;
+		OsAccountRealm realm = null;
 		try (CaseDbConnection connection = db.getConnection()) {
-			realmOptional = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(sid, realmName, referringHost, connection);
+			realmUpdateResult = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(sid, realmName, referringHost, connection);
+			
+			Optional<OsAccountRealm> realmOptional = realmUpdateResult.getUpdatedRealm();
+			if (realmOptional.isPresent()) {
+				realm = realmOptional.get();
+				
+				if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
+
+					// Check if update of the realm triggers a merge with any other realm, 
+					// say another realm with same name but no SID, or same SID but no name
+					
+					//1. Check if there is any OTHER realm with the same name, same host but no addr
+					anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, connection);
+					
+					// 2. Check if there is any OTHER realm with same addr and host, but NO name
+					anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, connection);
+				}
+			}
 		}
-		OsAccountRealm realm;
-		if (realmOptional.isPresent()) {
-			realm = realmOptional.get();
-		} else {
+		
+		if (null == realm) {
 			// realm was not found, create it.
 			realm = db.getOsAccountRealmManager().newWindowsRealm(sid, realmName, referringHost, realmScope);
+		} else if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
+			// if the realm already existed and was updated, and there are other realms with same  name or addr that should now be merged into the updated realm
+			if (anotherRealmWithSameName.isPresent() || anotherRealmWithSameAddr.isPresent()) {
+
+				CaseDbTransaction trans = this.db.beginTransaction();
+				try {
+					if (anotherRealmWithSameName.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realm, trans);
+					}
+					if (anotherRealmWithSameAddr.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameAddr.get(), realm, trans);
+					}
+
+					trans.commit();
+				} catch (TskCoreException ex) {
+					trans.rollback();
+					throw ex;	// rethrow
+				}
+			}
 		}
+		
 
 		return newWindowsOsAccount(sid, loginName, realm);
 	}
@@ -643,8 +685,6 @@ public final class OsAccountManager {
 					Optional<OsAccountInstance> existingInstanceRetry = cachedAccountInstance(osAccountId, dataSourceObjId, instanceType);
 					if (existingInstanceRetry.isPresent()) {
 						return existingInstanceRetry.get();
-					} else {
-						throw new TskCoreException(String.format("Could not get autogen key after row insert for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));	
 					}
 				}
 			}
@@ -653,6 +693,30 @@ public final class OsAccountManager {
 		} finally {
 			db.releaseSingleUserCaseWriteLock();
 		}
+		
+		// It's possible that we weren't able to load the account instance because it
+		// is already in the database but the instance cache was cleared during an account merge.
+		// Try loading it here and re-adding to the cache.
+		String whereClause = "tsk_os_account_instances.os_account_obj_id = " + osAccountId
+				+ "AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
+		List<OsAccountInstance> instances = getOsAccountInstances(whereClause);
+		if (instances.isEmpty()) {
+			throw new TskCoreException(String.format("Could not get autogen key after row insert or reload instance for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
+		}
+		
+		OsAccountInstance accountInstance = instances.get(0);
+		synchronized (osAcctInstancesCacheLock) {
+			OsAccountInstanceKey key = new OsAccountInstanceKey(osAccountId, dataSourceObjId);
+			// remove from cache any instances less significant (higher ordinal) than this instance
+			for (OsAccountInstance.OsAccountInstanceType type : OsAccountInstance.OsAccountInstanceType.values()) {
+				if (accountInstance.getInstanceType().compareTo(type) < 0) {
+					osAccountInstanceCache.remove(key);
+				}
+			}
+			// add the most significant instance to the cache
+			osAccountInstanceCache.put(key, accountInstance);
+		}
+		return accountInstance;
 	}
 
 	/**
@@ -800,35 +864,11 @@ public final class OsAccountManager {
 			}
 
 			// Look for matching destination account
-			OsAccount matchingDestAccount = null;
-
-			// First look for matching unique id
-			if (sourceAccount.getAddr().isPresent()) {
-				List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
-						.filter(p -> p.getAddr().equals(sourceAccount.getAddr()))
-						.collect(Collectors.toList());
-				if (!matchingDestAccounts.isEmpty()) {
-					matchingDestAccount = matchingDestAccounts.get(0);
-				}
-			}
-
-			// If a match wasn't found yet, look for a matching login name.
-			// We will merge only if:
-			// - We didn't already find a unique ID match
-			// - The source account has no unique ID OR the destination account has no unique ID
-			if (matchingDestAccount == null && sourceAccount.getLoginName().isPresent()) {
-				List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
-						.filter(p -> (p.getLoginName().equals(sourceAccount.getLoginName())
-						&& ((!sourceAccount.getAddr().isPresent()) || (!p.getAddr().isPresent()))))
-						.collect(Collectors.toList());
-				if (!matchingDestAccounts.isEmpty()) {
-					matchingDestAccount = matchingDestAccounts.get(0);
-				}
-			}
+			Optional<OsAccount> matchingDestAccount = getMatchingAccountForMerge(sourceAccount, destinationAccounts);
 
 			// If we found a match, merge the accounts. Otherwise simply update the realm id
-			if (matchingDestAccount != null) {
-				mergeOsAccounts(sourceAccount, matchingDestAccount, trans);
+			if (matchingDestAccount.isPresent()) {
+				mergeOsAccounts(sourceAccount, matchingDestAccount.get(), trans);
 			} else {
 				String query = "UPDATE tsk_os_accounts SET realm_id = " + destRealm.getRealmId() + " WHERE os_account_obj_id = " + sourceAccount.getId();
 				try (Statement s = trans.getConnection().createStatement()) {
@@ -838,6 +878,70 @@ public final class OsAccountManager {
 				}
 				trans.registerChangedOsAccount(sourceAccount);
 			}
+		}
+	}
+	
+	/**
+	 * Checks for matching account in a list of accounts for merging
+	 * @param sourceAccount The account to find matches for
+	 * @param destinationAccounts List of accounts to match against
+	 * @return Optional with OsAccount, Optional.empty if no matching OsAccount is found.
+	 */
+	private Optional<OsAccount> getMatchingAccountForMerge(OsAccount sourceAccount, List<OsAccount> destinationAccounts) {
+		// Look for matching destination account
+		OsAccount matchingDestAccount = null;
+
+		// First look for matching unique id
+		if (sourceAccount.getAddr().isPresent()) {
+			List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
+					.filter(p -> p.getAddr().equals(sourceAccount.getAddr()))
+					.collect(Collectors.toList());
+			if (!matchingDestAccounts.isEmpty()) {
+				matchingDestAccount = matchingDestAccounts.get(0);
+			}
+		}
+
+		// If a match wasn't found yet, look for a matching login name.
+		// We will merge only if:
+		// - We didn't already find a unique ID match
+		// - The source account has no unique ID OR the destination account has no unique ID
+		// - destination account has a login name and matches the source account login name
+		if (matchingDestAccount == null && sourceAccount.getLoginName().isPresent()) {
+			List<OsAccount> matchingDestAccounts = destinationAccounts.stream()
+					.filter(p -> p.getLoginName().isPresent())
+					.filter(p -> (p.getLoginName().get().equalsIgnoreCase(sourceAccount.getLoginName().get())
+					&& ((!sourceAccount.getAddr().isPresent()) || (!p.getAddr().isPresent()))))
+					.collect(Collectors.toList());
+			if (!matchingDestAccounts.isEmpty()) {
+				matchingDestAccount = matchingDestAccounts.get(0);
+			}
+		}
+		
+		return Optional.ofNullable(matchingDestAccount);
+	}
+	
+	/**
+	 * Checks for matching accounts in the same realm 
+	 * and then merges the accounts if a match is found
+	 * @param account The account to find matches for
+	 * @param trans The current transaction.
+	 * @throws TskCoreException 
+	 */
+	private void mergeOsAccount(OsAccount account, CaseDbTransaction trans) throws TskCoreException {
+		// Get the realm for the account
+		Long realmId = account.getRealmId();
+		OsAccountRealm realm = db.getOsAccountRealmManager().getRealmByRealmId(realmId,  trans.getConnection());
+		
+		// Get all users in the realm (excluding the account)
+		List<OsAccount> osAccounts = getOsAccounts(realm, trans.getConnection());
+		osAccounts.removeIf(acc -> Objects.equals(acc.getId(), account.getId()));
+		
+		// Look for matching account
+		Optional<OsAccount> matchingAccount = getMatchingAccountForMerge(account, osAccounts);
+		
+		// If we find a match, merge the accounts.
+		if (matchingAccount.isPresent()) {
+			mergeOsAccounts(matchingAccount.get(), account, trans);
 		}
 	}
 
@@ -891,6 +995,10 @@ public final class OsAccountManager {
 			query = makeOsAccountUpdateQuery("tsk_data_artifacts", sourceAccount, destAccount);
 			s.executeUpdate(query);
 
+			
+			// register the merged accounts with the transaction to fire off an event
+			trans.registerMergedOsAccount(sourceAccount.getId(), destAccount.getId());
+			
 			// Update the source account. Make a dummy signature to prevent problems with the unique constraint.
 			String mergedSignature = makeMergedOsAccountSignature();
 			query = "UPDATE tsk_os_accounts SET merged_into = " + destAccount.getId()
@@ -1415,12 +1523,12 @@ public final class OsAccountManager {
 			}
 
 			if (Objects.nonNull(accountType)) {
-				updateAccountColumn(osAccount.getId(), "type", accountType, connection);
+				updateAccountColumn(osAccount.getId(), "type", accountType.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
 			if (Objects.nonNull(accountStatus)) {
-				updateAccountColumn(osAccount.getId(), "status", accountStatus, connection);
+				updateAccountColumn(osAccount.getId(), "status", accountStatus.getId(), connection);
 				updateStatusCode = OsAccountUpdateStatus.UPDATED;
 			}
 
@@ -1580,13 +1688,45 @@ public final class OsAccountManager {
 		if ((!StringUtils.isBlank(accountSid) && !accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) || !StringUtils.isBlank(realmName)) {
 			// If the SID is a well known SID, ensure we use the well known english name
 			String resolvedRealmName = WindowsAccountUtils.toWellknownEnglishRealmName(realmName);
-			db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, resolvedRealmName, referringHost, trans.getConnection());
+			
+			
+			OsRealmUpdateResult realmUpdateResult = db.getOsAccountRealmManager().getAndUpdateWindowsRealm(accountSid, resolvedRealmName, referringHost, trans.getConnection());
+			
+			
+			Optional<OsAccountRealm> realmOptional = realmUpdateResult.getUpdatedRealm();
+
+			if (realmOptional.isPresent()) {
+				
+				if (realmUpdateResult.getUpdateStatus() == OsRealmUpdateStatus.UPDATED) {
+
+					// Check if update of the realm triggers a merge with any other realm, 
+					// say another realm with same name but no SID, or same SID but no name
+					//1. Check if there is any OTHER realm with the same name, same host but no addr
+					Optional<OsAccountRealm> anotherRealmWithSameName = db.getOsAccountRealmManager().getAnotherRealmByName(realmOptional.get(), realmName, referringHost, trans.getConnection());
+
+					// 2. Check if there is any OTHER realm with same addr and host, but NO name
+					Optional<OsAccountRealm> anotherRealmWithSameAddr = db.getOsAccountRealmManager().getAnotherRealmByAddr(realmOptional.get(), realmName, referringHost, trans.getConnection());
+
+					if (anotherRealmWithSameName.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameName.get(), realmOptional.get(), trans);
+					}
+					if (anotherRealmWithSameAddr.isPresent()) {
+						db.getOsAccountRealmManager().mergeRealms(anotherRealmWithSameAddr.get(), realmOptional.get(), trans);
+					}
+				}
+			}
 		}
 
 		// now update the account core data
 		String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
 		OsAccountUpdateResult updateStatus = this.updateOsAccountCore(osAccount, accountSid, resolvedLoginName, trans);
 
+		Optional<OsAccount> updatedAccount = updateStatus.getUpdatedAccount();
+		if (updatedAccount.isPresent()) {
+			// After updating account data, check if there is matching account to merge
+			mergeOsAccount(updatedAccount.get(), trans);
+		}
+		
 		return updateStatus;
 	}
 

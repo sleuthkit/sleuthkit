@@ -82,6 +82,7 @@ import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALU
 import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TimelineManager.TimelineEventAddedEvent;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.ObjectType;
@@ -104,7 +105,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 3);
+			= new CaseDbSchemaVersionNumber(9, 4);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -142,6 +143,7 @@ public class SleuthkitCase {
 			"blackboard_attribute_types",
 			"data_source_info",
 			"file_encoding_types",
+			"file_collection_status_types",
 			"ingest_module_types",
 			"ingest_job_status_types",
 			"ingest_modules",
@@ -202,7 +204,9 @@ public class SleuthkitCase {
 	private final Map<RootDirectoryKey, Long> rootDirectoryMap = new HashMap<>();
 	private final Cache<Long, Boolean> isRootDirectoryCache
 			= CacheBuilder.newBuilder().maximumSize(200000).expireAfterAccess(5, TimeUnit.MINUTES).build();
-
+	// custom provider for file bytes (can be null)
+	private final ContentStreamProvider contentProvider;
+	
 	/*
 	 * First parameter is used to specify the SparseBitSet to use, as object IDs
 	 * can be larger than the max size of a SparseBitSet
@@ -331,10 +335,11 @@ public class SleuthkitCase {
 	 * @param caseHandle A handle to a case database object in the native code
 	 *                   SleuthKit layer.
 	 * @param dbType     The type of database we're dealing with
+	 * @param contentProvider Custom provider for file content (can be null).
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
@@ -344,6 +349,7 @@ public class SleuthkitCase {
 		this.connections = new SQLiteConnections(dbPath);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+		this.contentProvider = contentProvider;
 		init();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -362,10 +368,11 @@ public class SleuthkitCase {
 	 * @param dbType      The type of database we're dealing with SleuthKit
 	 *                    layer.
 	 * @param caseDirPath The path to the root case directory.
+	 * @param contentProvider Custom provider for file content (can be null).
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
+	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType, ContentStreamProvider contentProvider) throws Exception {
 		this.dbPath = "";
 		this.databaseName = dbName;
 		this.dbType = dbType;
@@ -373,6 +380,7 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+		this.contentProvider = contentProvider;
 		init();
 	}
 
@@ -387,6 +395,7 @@ public class SleuthkitCase {
 			initIngestStatusTypes(connection);
 			initReviewStatuses(connection);
 			initEncodingTypes(connection);
+			initCollectedStatusTypes(connection);
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
@@ -403,6 +412,17 @@ public class SleuthkitCase {
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this);
+	}
+	
+	/**
+	 * Returns the custom content provider for this case if one exists.
+	 * Otherwise, returns null.
+	 *
+	 * @return The custom content provider for this case if one exists.
+	 *         Otherwise, returns null.
+	 */
+	ContentStreamProvider getContentProvider() {
+		return this.contentProvider;
 	}
 
 	/**
@@ -628,7 +648,11 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (IngestModuleType type : IngestModuleType.values()) {
 				try {
-					statement.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+					String query = "INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT ingest_module_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_module_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
 					resultSet.next();
@@ -661,7 +685,11 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (IngestJobStatusType type : IngestJobStatusType.values()) {
 				try {
-					statement.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+					String query = "INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT ingest_job_status_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_job_status_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
 					resultSet.next();
@@ -693,8 +721,12 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (BlackboardArtifact.ReviewStatus status : BlackboardArtifact.ReviewStatus.values()) {
 				try {
-					statement.execute("INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
-							+ "VALUES (" + status.getID() + ",'" + status.getName() + "','" + status.getDisplayName() + "')"); //NON-NLS
+					String query = "INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
+							+ "VALUES (" + status.getID() + ",'" + status.getName() + "','" + status.getDisplayName() + "')";
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT review_statuses_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM review_statuses WHERE review_status_id = " + status.getID()); //NON-NLS
 					resultSet.next();
@@ -727,9 +759,50 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (TskData.EncodingType type : TskData.EncodingType.values()) {
 				try {
-					statement.execute("INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+					String query = "INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT file_encoding_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
+				}
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Put the collected status types into the table. This must be called after the
+	 * database upgrades or the file_collection_status_types table will not exist.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private void initCollectedStatusTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			for (TskData.CollectedStatus type : TskData.CollectedStatus.values()) {
+				try {
+					String query = "INSERT INTO file_collection_status_types (collection_status_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"; // NON-NLS
+					if (getDatabaseType().equals(DbType.POSTGRESQL)) {
+						query += " ON CONFLICT ON CONSTRAINT file_collection_status_types_pkey DO NOTHING"; // NON-NLS
+					}
+					statement.execute(query);
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_collection_status_types WHERE collection_status_type = " + type.getType()); //NON-NLS
 					resultSet.next();
 					if (resultSet.getLong("count") == 0) {
 						throw ex;
@@ -920,6 +993,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot0toSchema9dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot1toSchema9dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot2toSchema9dot3(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot3toSchema9dot4(dbSchemaVersion, connection);
 				
 				
 
@@ -2688,6 +2762,34 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	private CaseDbSchemaVersionNumber updateFromSchema9dot3toSchema9dot4(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 3) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// Add file_collection_status_types table
+			statement.execute("CREATE TABLE file_collection_status_types (collection_status_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
+			initCollectedStatusTypes(connection);
+			
+			// add a new column 'collected' to tsk_files
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN collected INTEGER NOT NULL DEFAULT " + 
+					TskData.CollectedStatus.UNKNOWN.getType() + ";");
+
+			return new CaseDbSchemaVersionNumber(9, 4);
+
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
 
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
@@ -2886,9 +2988,24 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase openCase(String dbPath) throws TskCoreException {
+		return openCase(dbPath, null);
+	}
+	
+	/**
+	 * Open an existing case database.
+	 *
+	 * @param dbPath Path to SQLite case database.
+	 * @param contentProvider Custom provider for file content bytes (can be null).
+	 *
+	 * @return Case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, provider);
 		} catch (TskUnsupportedSchemaVersionException ex) {
 			//don't wrap in new TskCoreException
 			throw ex;
@@ -2909,6 +3026,23 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is a problem opening the database.
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
+		return openCase(databaseName, info, caseDir, null);
+	}
+	
+	/**
+	 * Open an existing multi-user case database.
+	 *
+	 * @param databaseName The name of the database.
+	 * @param info         Connection information for the the database.
+	 * @param caseDir      The folder where the case metadata fils is stored.
+	 * @param contentProvider Custom provider for file content bytes (can be null).
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws TskCoreException If there is a problem opening the database.
+	 */
+	@Beta
+	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir, ContentStreamProvider contentProvider) throws TskCoreException {
 		try {
 			/*
 			 * The flow of this method involves trying to open case and if
@@ -2923,7 +3057,7 @@ public class SleuthkitCase {
 			 * are able, but do not lose any information if unable.
 			 */
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
+			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType(), contentProvider);
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -2946,12 +3080,27 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase newCase(String dbPath) throws TskCoreException {
+		return newCase(dbPath, null);
+	}
+	
+	/**
+	 * Creates a new SQLite case database.
+	 *
+	 * @param dbPath Path to where SQlite case database should be created.
+	 * @param contentProvider Custom provider for file bytes (can be null).
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider) throws TskCoreException {
 		try {
 			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
 			factory.createCaseDatabase();
 
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -2973,6 +3122,28 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+		return newCase(caseName, info, caseDirPath, null);
+	}
+	
+	
+	/**
+	 * Creates a new PostgreSQL case database.
+	 *
+	 * @param caseName    The name of the case. It will be used to create a case
+	 *                    database name that can be safely used in SQL commands
+	 *                    and will not be subject to name collisions on the case
+	 *                    database server. Use getDatabaseName to get the
+	 *                    created name.
+	 * @param info        The information to connect to the database.
+	 * @param caseDirPath The case directory path.
+	 * @param contentProvider Custom provider for file bytes (can be null).
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath, ContentStreamProvider contentProvider) throws TskCoreException {
 		String databaseName = createCaseDataBaseName(caseName);
 		try {
 			/**
@@ -2992,7 +3163,7 @@ public class SleuthkitCase {
 
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
-					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType());
+					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType(), contentProvider);
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -6318,6 +6489,7 @@ public class SleuthkitCase {
 
 			statement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			statement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			connection.executeUpdate(statement);
 
@@ -6455,6 +6627,7 @@ public class SleuthkitCase {
 
 			statement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			statement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 
 			connection.executeUpdate(statement);
 
@@ -6571,6 +6744,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(22, null); //extension, just set it to null
 			preparedStatement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			preparedStatement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			preparedStatement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			
 			connection.executeUpdate(preparedStatement);
@@ -7048,7 +7222,71 @@ public class SleuthkitCase {
 			Content parent, String ownerUid,
 			OsAccount osAccount, List<Attribute> fileAttributes, 
 			CaseDbTransaction transaction) throws TskCoreException {
-
+		return addFileSystemFile(dataSourceObjId, fsObjId,
+				fileName,
+				metaAddr, metaSeq,
+				attrType, attrId,
+				dirFlag, metaFlags, size,
+				ctime, crtime, atime, mtime,
+				md5Hash, sha256Hash, sha1Hash,
+				mimeType,
+				isFile, parent, ownerUid,
+				osAccount, TskData.CollectedStatus.UNKNOWN, fileAttributes,
+				transaction);
+	}
+	
+	/**
+	 * Add a file system file.
+	 *
+	 * @param dataSourceObjId The object id of the root data source of this
+	 *                        file.
+	 * @param fsObjId         The file system object id.
+	 * @param fileName        The name of the file.
+	 * @param metaAddr        The meta address of the file.
+	 * @param metaSeq         The meta address sequence of the file.
+	 * @param attrType        The attributed type of the file.
+	 * @param attrId          The attribute id.
+	 * @param dirFlag         The allocated status from the name structure
+	 * @param metaFlags       The allocated status of the file, usually as
+	 *                        reported in the metadata structure of the file
+	 *                        system.
+	 * @param size            The size of the file in bytes.
+	 * @param ctime           The changed time of the file.
+	 * @param crtime          The creation time of the file.
+	 * @param atime           The accessed time of the file
+	 * @param mtime           The modified time of the file.
+	 * @param md5Hash         The MD5 hash of the file
+	 * @param sha256Hash      The SHA256 hash of the file
+	 * @param sha1Hash        SHA1 Hash of the file. May be null.
+	 * @param mimeType        The MIME type of the file
+	 * @param isFile          True, unless the file is a directory.
+	 * @param parent          The parent of the file (e.g., a virtual
+	 *                        directory).
+	 * @param ownerUid        UID of the file owner as found in the file system,
+	 *                        can be null.
+	 * @param osAccount       OS account of owner, may be null.
+	 * @param collected       Collected status for file content, may be null
+	 * @param fileAttributes  A list of file attributes. May be empty.
+	 
+	 * @param transaction     A caller-managed transaction within which the add
+	 *                        file operations are performed.
+	 *
+	 * @return Newly created file
+	 *
+	 * @throws TskCoreException
+	 */
+	public FsContent addFileSystemFile(long dataSourceObjId, long fsObjId,
+			String fileName,
+			long metaAddr, int metaSeq,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash, String sha256Hash, String sha1Hash,
+			String mimeType, boolean isFile,
+			Content parent, String ownerUid,
+			OsAccount osAccount, TskData.CollectedStatus collected,
+			List<Attribute> fileAttributes, 
+			CaseDbTransaction transaction) throws TskCoreException {
 		TimelineManager timelineManager = getTimelineManager();
 
 		Statement queryStatement = null;
@@ -7107,6 +7345,7 @@ public class SleuthkitCase {
 			} else {
 				statement.setNull(27, java.sql.Types.BIGINT); // osAccountObjId
 			}
+			statement.setLong(28, collected.getType());
 			
 			connection.executeUpdate(statement);
 
@@ -7133,7 +7372,7 @@ public class SleuthkitCase {
 					dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime,
 					(short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, null, parentPath, mimeType,
-					extension, ownerUid, osAccountId, fileAttributes);
+					extension, ownerUid, osAccountId, collected, fileAttributes);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
@@ -7278,6 +7517,7 @@ public class SleuthkitCase {
 
 				prepStmt.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 				prepStmt.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+				prepStmt.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 				
 				connection.executeUpdate(prepStmt);
 
@@ -7644,6 +7884,7 @@ public class SleuthkitCase {
 
 				prepStmt.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 				prepStmt.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+				prepStmt.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 				
 				connection.executeUpdate(prepStmt);
 
@@ -7846,6 +8087,7 @@ public class SleuthkitCase {
 
 			statement.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			statement.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			connection.executeUpdate(statement);
 
@@ -8268,6 +8510,8 @@ public class SleuthkitCase {
 				statement.setNull(24, java.sql.Types.BIGINT);
 			}
 			
+			statement.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
+			
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
 			LocalFile localFile = new LocalFile(this,
@@ -8532,6 +8776,7 @@ public class SleuthkitCase {
 
 			prepStmt.setString(23, OsAccount.NO_OWNER_ID); // ownerUid
 			prepStmt.setNull(24, java.sql.Types.BIGINT); // osAccountObjId
+			prepStmt.setLong(25, TskData.CollectedStatus.UNKNOWN.getType()); // collected
 			
 			connection.executeUpdate(prepStmt);
 
@@ -9821,34 +10066,50 @@ public class SleuthkitCase {
 	 *                          within tsk core and the update fails
 	 */
 	public void setImagePaths(long obj_id, List<String> paths) throws TskCoreException {
-		CaseDbConnection connection = null;
-		acquireSingleUserCaseWriteLock();
-		PreparedStatement statement;
+		CaseDbTransaction transaction = beginTransaction();
 		try {
-			connection = connections.getConnection();
-			connection.beginTransaction();
-			statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_IMAGE_NAME);
-			statement.clearParameters();
-			statement.setLong(1, obj_id);
-			connection.executeUpdate(statement);
-			for (int i = 0; i < paths.size(); i++) {
-				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
-				statement.clearParameters();
-				statement.setLong(1, obj_id);
-				statement.setString(2, paths.get(i));
-				statement.setLong(3, i);
-				connection.executeUpdate(statement);
-			}
-			connection.commitTransaction();
-		} catch (SQLException ex) {
-			rollbackTransaction(connection);
-			throw new TskCoreException("Error updating image paths.", ex);
+			setImagePaths(obj_id, paths, transaction);
+			transaction.commit();
+			transaction = null;
 		} finally {
-			closeConnection(connection);
-			releaseSingleUserCaseWriteLock();
+			if (transaction != null) {
+				transaction.rollback();
+			}
 		}
 	}
-
+	
+	/**
+	 * Set the file paths for the image given by obj_id
+	 *
+	 * @param obj_id the ID of the image to update
+	 * @param paths  the fully qualified path to the files that make up the
+	 *               image
+	 * @param trans  The case database transaction.
+	 *
+	 * @throws TskCoreException exception thrown when critical error occurs
+	 *                          within tsk core and the update fails
+	 */
+	@Beta
+	public void setImagePaths(long objId, List<String> paths, CaseDbTransaction trans) throws TskCoreException {	
+		try {
+			PreparedStatement statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.DELETE_IMAGE_NAME);
+			statement.clearParameters();
+			statement.setLong(1, objId);
+			trans.getConnection().executeUpdate(statement);
+			for (int i = 0; i < paths.size(); i++) {
+				statement = trans.getConnection().getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
+				statement.clearParameters();
+				statement.setLong(1, objId);
+				statement.setString(2, paths.get(i));
+				statement.setLong(3, i);
+				trans.getConnection().executeUpdate(statement);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating image paths.", ex);
+		} 
+	}
+	
+	
 	/**
 	 * Deletes a datasource from the open case, the database has foreign keys
 	 * with a delete cascade so that all the tables that have a datasource
@@ -10043,7 +10304,7 @@ public class SleuthkitCase {
 				rs.getString("md5"), rs.getString("sha256"), rs.getString("sha1"), 
 				FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension"), rs.getString("owner_uid"), 
-				osAccountObjId, Collections.emptyList()); //NON-NLS
+				osAccountObjId, TskData.CollectedStatus.valueOf(rs.getInt("collected")), Collections.emptyList()); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -10698,7 +10959,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
+	
 	/**
 	 * Store the md5Hash for the file in the database
 	 *
@@ -12890,10 +13151,10 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
-		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id) " //NON-NLS
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
+		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id, collected) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id, collected)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), // NON-NLS
 		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
@@ -13695,8 +13956,10 @@ public class SleuthkitCase {
 		// Score changes are stored as a map keyed by objId to prevent duplicates.
 		private Map<Long, ScoreChange> scoreChangeMap = new HashMap<>();
 		private List<Host> hostsAdded = new ArrayList<>();
+		private List<TimelineEventAddedEvent> timelineEvents = new ArrayList<>();
 		private List<OsAccount> accountsChanged = new ArrayList<>();
 		private List<OsAccount> accountsAdded = new ArrayList<>();
+		private List<TskEvent.MergedAccountsPair> accountsMerged = new ArrayList<>();
 
 		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
 		private List<Long> deletedResultObjectIds = new ArrayList<>();
@@ -13741,6 +14004,16 @@ public class SleuthkitCase {
 		void registerScoreChange(ScoreChange scoreChange) {
 			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
 		}
+		
+		/**
+		 * Register timeline event to be fired when transaction finishes.
+		 * @param timelineEvent The timeline event.
+		 */
+		void registerTimelineEvent(TimelineEventAddedEvent timelineEvent) {
+			if (timelineEvent != null) {
+				timelineEvents.add(timelineEvent);
+			}
+		}
 
 		/**
 		 * Saves a host that has been added as a part of this transaction.
@@ -13782,6 +14055,16 @@ public class SleuthkitCase {
 			if (account != null) {
 				accountsAdded.add(account);
 			}
+		}
+
+		/**
+		 * Saves an account that has been merged as part of this transaction.
+		 *
+		 * @param sourceOsAccountObjId
+		 * @param destinationOsAccountObjId
+		 */
+		void registerMergedOsAccount(long sourceOsAccountObjId, long destinationOsAccountObjId) {
+			accountsMerged.add(new TskEvent.MergedAccountsPair(sourceOsAccountObjId, destinationOsAccountObjId));
 		}
 
 		/**
@@ -13829,6 +14112,11 @@ public class SleuthkitCase {
 						sleuthkitCase.fireTSKEvent(new TskEvent.AggregateScoresChangedEvent(entry.getKey(), ImmutableSet.copyOf(entry.getValue())));
 					}
 				}
+				if (!timelineEvents.isEmpty()) {
+					for (TimelineEventAddedEvent evt : timelineEvents) {
+						sleuthkitCase.fireTSKEvent(evt);
+					}
+				}
 				if (!hostsAdded.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.HostsAddedTskEvent(hostsAdded));
 				}
@@ -13837,6 +14125,9 @@ public class SleuthkitCase {
 				}
 				if (!accountsChanged.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsUpdatedTskEvent(accountsChanged));
+				}
+				if (!accountsMerged.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsMergedTskEvent(accountsMerged));
 				}
 				if (!deletedOsAccountObjectIds.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.OsAccountsDeletedTskEvent(deletedOsAccountObjectIds));

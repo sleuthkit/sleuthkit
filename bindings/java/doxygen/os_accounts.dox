@@ -29,6 +29,8 @@ A realm has two core fields:
 - Address that the OS uses internally, such as part of a Windows SID
 - Name that is what users more often see
 
+A local realm also defines the single host that the realm works on. 
+
 When searching for realms, the address has priority over the name. Often times with Windows systems, we may have a realm address from SIDs but not a specific realm name. 
 
 Realms are managed by org.sleuthkit.datamodel.OsAccountRealmManager.

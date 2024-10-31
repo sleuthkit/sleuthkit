@@ -396,6 +396,10 @@ class TskCaseDbBridge {
 					} catch (NotUserSIDException ex) {
 						// if the owner SID is not a user SID, set the owner account to null
 						ownerIdToAccountMap.put(ownerUid, null);
+					} catch (Exception ex) {
+						// catch other exceptions to avoid skiping add batched files loop below
+						logger.log(Level.WARNING, "Error mapping ownerId " + ownerUid + " to account", ex);
+						ownerIdToAccountMap.put(ownerUid, null);
 					}
 				}
 			}
@@ -484,7 +488,7 @@ class TskCaseDbBridge {
                 // Exception firewall to prevent unexpected return to the native code
                 logger.log(Level.SEVERE, "Unexpected error from files added callback", ex);
             }
-        } catch (TskCoreException ex) {
+        } catch (Throwable ex) {
             logger.log(Level.SEVERE, "Error adding batched files to database", ex);
             revertTransaction();
             return -1;
@@ -879,8 +883,8 @@ class TskCaseDbBridge {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			long objectId = caseDb.addObject(parentObjId, TskData.ObjectType.ABSTRACTFILE.getObjectType(), connection);
 				
-			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, owner_uid, os_account_obj_id)"
-				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
+			String fileInsert = "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension, has_layout, owner_uid, os_account_obj_id, collected)"
+				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // NON-NLS
 			PreparedStatement preparedStatement = connection.getPreparedStatement(fileInsert, Statement.NO_GENERATED_KEYS);			
 			preparedStatement.clearParameters();
 			
@@ -970,6 +974,8 @@ class TskCaseDbBridge {
 			} else {
 				preparedStatement.setNull(28, java.sql.Types.BIGINT);
 			}
+			
+			preparedStatement.setLong(29, TskData.CollectedStatus.UNKNOWN.getType());
 			
 			connection.executeUpdate(preparedStatement);
 

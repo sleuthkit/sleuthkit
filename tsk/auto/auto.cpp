@@ -38,6 +38,7 @@ TskAuto::TskAuto()
 TskAuto::~TskAuto()
 {
     closeImage();
+	m_exteralFsInfoList.clear(); // Don't close the file systems that were passed in
     m_tag = 0;
 }
 
@@ -181,6 +182,17 @@ void
  TskAuto::setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM file_flags)
 {
     m_fileFilterFlags = file_flags;
+}
+
+/**
+ * Store a list of pointers to open file systems to use when calling findFilesInImg
+ * instead of opening a new copy.
+ */
+void
+TskAuto::setExternalFileSystemList(const std::list<TSK_FS_INFO *>& fsInfoList)
+{
+	m_exteralFsInfoList.resize(fsInfoList.size());
+	m_exteralFsInfoList.assign(fsInfoList.begin(), fsInfoList.end());
 }
 
 /**
@@ -495,10 +507,6 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                                 "findFilesInPool: Error opening APFS file system");
                             registerError();
                         }
-
-                        tsk_img_close(pool_img);
-                        tsk_pool_close(pool);
-                        return TSK_ERR;
                     }
 
                     tsk_img_close(pool_img);
@@ -549,6 +557,18 @@ TSK_RETVAL_ENUM
         registerError();
         return TSK_ERR;
     }
+
+	// If we already have an open copy of this file system, use it
+	for (auto itr = m_exteralFsInfoList.begin(); itr != m_exteralFsInfoList.end(); itr++) {
+		if ((*itr)->offset == a_start) {
+			TSK_FS_INFO *fs_info = *itr;
+			TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+			if (m_errors.empty() == false)
+				return TSK_ERR;
+			else
+				return retval;
+		}
+	}
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
@@ -636,6 +656,18 @@ uint8_t
         registerError();
         return 1;
     }
+
+	// If we already have an open copy of this file system, use it
+	for (auto itr = m_exteralFsInfoList.begin(); itr != m_exteralFsInfoList.end(); itr++) {
+		if ((*itr)->offset == a_start) {
+			TSK_FS_INFO *fs_info = *itr;
+			TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+			if (m_errors.empty() == false)
+				return TSK_ERR;
+			else
+				return retval;
+		}
+	}
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {

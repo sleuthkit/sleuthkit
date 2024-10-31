@@ -523,6 +523,54 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
+	 * Creates a prepared statement object for the purposes of running an update
+	 * statement. The given SQL should not include the starting "UPDATE" 
+	 * or the name of the table.
+	 *
+	 * @param tableName The name of the table being updated.
+	 * @param sql       The insert statement without the starting "UPDATE (table name)" part.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareUpdate(String tableName, String sql, CaseDbTransaction trans) throws TskCoreException {
+		validateTableName(tableName);
+		validateSQL(sql);
+
+		String updateSQL = "UPDATE " + tableName + " " + sql; // NON-NLS
+	
+		try {
+			return new CaseDbPreparedStatement(StatementType.UPDATE, updateSQL, trans);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating update prepared statement for query:\n" + updateSQL, ex);
+		}
+	}
+	
+	/**
+	 * Performs an update statement query with the given case prepared statement.
+	 *
+	 * @param preparedStatement The case prepared statement.
+	 * 
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void update(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+		
+		if (!preparedStatement.getType().equals(StatementType.UPDATE)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for update operation");
+		}
+		
+		try {
+			preparedStatement.getStatement().executeUpdate();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating row in table " + "" + " with sql = "+ "", ex);
+		}
+	}	
+	
+	/**
 	 * Updates row(s) in the specified table.
 	 * 
 	 * @param tableName - table to insert into.
@@ -634,6 +682,31 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
 		}
 	}
+	
+	/**
+	 * Creates a prepared statement object for the purposes of running a select
+	 * statement. The given SQL should not include the starting "SELECT" keyword.
+	 *
+	 * @param sql       The select statement without the starting select keyword.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareSelect(String sql, CaseDbTransaction trans) throws TskCoreException {
+		validateSQL(sql);
+
+		String selectSQL = "SELECT " + sql; // NON-NLS
+
+		try {
+			return new CaseDbPreparedStatement(StatementType.SELECT, selectSQL, trans);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error creating select prepared statement for query:\n" + selectSQL, ex);
+		}
+	}
+
 
 	/**
 	 * Performs a select statement query with the given case prepared statement.
@@ -798,7 +871,8 @@ public final class CaseDbAccessManager {
 	 */
 	private enum StatementType {
 		SELECT,
-		INSERT;
+		INSERT,
+		UPDATE;
 	}
 	
 	/**

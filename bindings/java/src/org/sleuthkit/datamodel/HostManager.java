@@ -295,7 +295,7 @@ public final class HostManager {
 
 			return dataSources;
 		} catch (SQLException | TskDataException ex) {
-			throw new TskCoreException(String.format("Error getting data sources for host " + host.getName()), ex);
+			throw new TskCoreException(String.format("Error getting data sources for host %s", host.getName()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}

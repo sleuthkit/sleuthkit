@@ -101,7 +101,7 @@ public class SlackFile extends FsContent {
 			String extension,
 			String ownerUid,
 			Long osAccountObjId) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 	}
 
 	/**
@@ -117,7 +117,7 @@ public class SlackFile extends FsContent {
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
-	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
+	protected synchronized int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		if (offset == 0 && size == 0) {
 			//special case for 0-size file
 			return 0;

@@ -657,11 +657,16 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
         }
     }
 
+    // Check if resident data size exceeds maximum inode size (1024) - ext4 inode resident data offset (156)
+    if ((fs_meta->size == 0) || (fs_meta->size > (1024 - 156))) {
+        return 1;
+    }
+
     // Combine the two parts of the inline data for the resident attribute. For now, make a
     // buffer for the full file size - this may be different than the length of the data 
     // from the inode if we have sparse data.
-    uint8_t *resident_data;
-    if ((resident_data = (uint8_t*)tsk_malloc(fs_meta->size)) == NULL) {
+    uint8_t *resident_data = (uint8_t*)tsk_malloc(fs_meta->size);
+    if (resident_data == NULL) {
         return 1;
     }
     memset(resident_data, 0, fs_meta->size);
@@ -1741,7 +1746,8 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
         return 0;
     }
 
-    if ((buf = (uint8_t *) tsk_malloc(fs_blocksize)) == NULL) {
+    buf = (uint8_t *) tsk_malloc(fs_blocksize);
+    if (buf == NULL) {
         return -1;
     }
 
@@ -1763,12 +1769,14 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
             }
             tsk_error_set_errstr2("ext2fs_extent_tree_index_count: Block %"
                 PRIuDADDR, block);
+            free(buf);
             return -1;
         }
 
         if ((ret =
                 ext2fs_extent_tree_index_count(fs_info, fs_meta,
                     (ext2fs_extent_header *) buf, recursion_depth + 1)) < 0) {
+            free(buf);
             return -1;
         }
         count += ret;

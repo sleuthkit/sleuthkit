@@ -50,7 +50,7 @@ public abstract class SpecialDirectory extends AbstractFile {
 			String mimeType) {
 		super(db, objId, dataSourceObjectId, fileSystemObjectId, attrType, attrId, name,
 				fileType, metaAddr, metaSeq, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 	}
 
 	/**
