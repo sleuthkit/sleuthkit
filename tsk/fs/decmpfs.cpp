@@ -5,6 +5,11 @@
  * It would probably be cleaner to separate these into two files.
  */
 
+#include <cstdint>
+
+extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
+extern "C" void error_returned(const char* errstr, ...);
+
 #include "../libtsk.h"
 #include "tsk_fs_i.h"
 #include "decmpfs.h"
