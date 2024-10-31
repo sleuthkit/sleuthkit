@@ -23,8 +23,12 @@ TSK_FS_INFO* apfs_open_auto_detect(
     return apfs_open(img_info, offset, fstype, a_pass);
 }
 
-TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-                       TSK_FS_TYPE_ENUM fstype, const char* pass) {
+TSK_FS_INFO* apfs_open(
+  TSK_IMG_INFO * img_info,
+  [[maybe_unused]] TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM fstype,
+  const char* pass)
+{
   tsk_error_reset();
 
   if (img_info->itype != TSK_IMG_TYPE_POOL) {

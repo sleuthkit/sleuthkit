@@ -1002,8 +1002,11 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 }
 
 static TSK_RETVAL_ENUM
-logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
-	TSK_INUM_T a_addr, int recursion_depth)
+logicalfs_dir_open_meta(
+  TSK_FS_INFO *a_fs,
+  TSK_FS_DIR ** a_fs_dir,
+  TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
 	TSK_FS_DIR *fs_dir;
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
@@ -1669,8 +1672,13 @@ logicalfs_fscheck(TSK_FS_INFO * /*fs*/, FILE * /*hFile*/)
 * @returns 1 on error and 0 on success
 */
 static uint8_t
-logicalfs_istat(TSK_FS_INFO *fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
-	TSK_DADDR_T numblock, int32_t sec_skew)
+logicalfs_istat(
+  [[maybe_unused]] TSK_FS_INFO *fs,
+  [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM flags,
+  [[maybe_unused]] FILE * hFile,
+  [[maybe_unused]] TSK_INUM_T inum,
+  [[maybe_unused]] TSK_DADDR_T numblock,
+  [[maybe_unused]] int32_t sec_skew)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
