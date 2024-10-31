@@ -230,7 +230,7 @@ decmpfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     }
 
     // Each table entry is 8 bytes long
-    offsetTableData = tsk_malloc(tableSize * 8);
+    offsetTableData = (char*) tsk_malloc(tableSize * 8);
     if (offsetTableData == NULL) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
@@ -315,7 +315,7 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
         return 0;
     }
 
-    offsetTableData = tsk_malloc(tableDataSize);
+    offsetTableData = (char*) tsk_malloc(tableDataSize);
     if (offsetTableData == NULL) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
