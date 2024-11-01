@@ -2438,7 +2438,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
 
         ssize_t bytes_read;
 
-        a_fs_meta->link = tsk_malloc((size_t) a_fs_meta->size + 1);
+        a_fs_meta->link = (char*) tsk_malloc((size_t) a_fs_meta->size + 1);
         if (a_fs_meta->link == NULL)
             return 1;
 
@@ -2626,7 +2626,7 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
     // Each table entry is 8 bytes long
-    offsetTableData = tsk_malloc(tableSize * 8);
+    offsetTableData = (char*) tsk_malloc(tableSize * 8);
     if (offsetTableData == NULL) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
@@ -2706,7 +2706,7 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
-    offsetTableData = tsk_malloc(tableDataSize);
+    offsetTableData = (char*) tsk_malloc(tableDataSize);
     if (offsetTableData == NULL) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
@@ -4281,7 +4281,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     goto on_error;
                 }
 
-                buffer = tsk_malloc(attributeLength);
+                buffer = (char*) tsk_malloc(attributeLength);
                 if (buffer == NULL) {
                     error_detected(TSK_ERR_AUX_MALLOC,
                         "hfs_load_extended_attrs: Could not malloc space for the attribute.");
@@ -4684,7 +4684,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
             if (hasNameList && nameOffset != -1) {
                 char *name = nameListBegin + nameOffset;
                 uint8_t nameLen = (uint8_t) name[0];
-                nameBuffer = tsk_malloc(nameLen + 1);
+                nameBuffer = (char*) tsk_malloc(nameLen + 1);
                 if (nameBuffer == NULL) {
                     error_returned
                         ("hfs_parse_resource_fork: allocating space for the name of a resource");
@@ -4695,7 +4695,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
                 nameBuffer[nameLen] = (char) 0;
             }
             else {
-                nameBuffer = tsk_malloc(7);
+                nameBuffer = (char*) tsk_malloc(7);
                 if (nameBuffer == NULL) {
                     error_returned
                         ("hfs_parse_resource_fork: allocating space for the (null) name of a resource");
@@ -5405,7 +5405,7 @@ hfs_get_inode_name(TSK_FS_INFO * fs, TSK_INUM_T inum)
     if (hfs_cat_file_lookup(hfs, inum, &entry, FALSE))
         return NULL;
 
-    fn = malloc(HFS_MAXNAMLEN + 1);
+    fn = (char*) malloc(HFS_MAXNAMLEN + 1);
     if (fn == NULL)
         return NULL;
 
