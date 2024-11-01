@@ -149,7 +149,8 @@ TSK_HDB_INFO *
     // such "index only" databases, the path to where the hash database is
     // normally required to be is still needed because of the way the code for
     // text-format hash databases has been written.
-    db_path = (TSK_TCHAR*)tsk_malloc((TSTRLEN(file_path) + 1) * sizeof(TSK_TCHAR));
+    const size_t db_path_len = TSTRLEN(file_path);
+    db_path = (TSK_TCHAR*)tsk_malloc((db_path_len + 1) * sizeof(TSK_TCHAR));
     if (NULL == db_path) {
         return NULL;
     }
@@ -167,7 +168,7 @@ TSK_HDB_INFO *
             TSTRNCPY(db_path, file_path, (ext - file_path));
     }
     else {
-        TSTRNCPY(db_path, file_path, TSTRLEN(file_path));
+        TSTRNCPY(db_path, file_path, db_path_len + 1);
     }
 
     // Determine the database type.
