@@ -86,8 +86,11 @@ parse_record_header(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
  * Returns 0 on success, 1 otherwise
  */
 static uint8_t
-parse_v2_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
-                TSK_USN_RECORD_V2 *record, TSK_ENDIAN_ENUM endian)
+parse_v2_record(
+  const unsigned char *buf,
+  [[maybe_unused]] TSK_USN_RECORD_HEADER *header,
+  TSK_USN_RECORD_V2 *record,
+  TSK_ENDIAN_ENUM endian)
 {
     uint64_t timestamp = 0;
     uint16_t name_offset = 0, name_length = 0;
