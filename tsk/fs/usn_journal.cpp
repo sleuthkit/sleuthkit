@@ -106,10 +106,10 @@ parse_v2_record(
     record->time_sec = nt2unixtime(timestamp);
     record->time_nsec = nt2nano(timestamp);
 
-    record->reason = tsk_getu32(endian, &buf[40]);
-    record->source_info = tsk_getu32(endian, &buf[44]);
+    record->reason = (TSK_FS_USN_REASON) tsk_getu32(endian, &buf[40]);
+    record->source_info = (TSK_FS_USN_SOURCE_INFO) tsk_getu32(endian, &buf[44]);
     record->security = tsk_getu32(endian, &buf[48]);
-    record->attributes = tsk_getu32(endian, &buf[52]);
+    record->attributes = (TSK_FS_NTFS_FILE_ATTRIBUTES) tsk_getu32(endian, &buf[52]);
 
     /* Extract file name */
     name_length = tsk_getu16(endian, &buf[56]);
