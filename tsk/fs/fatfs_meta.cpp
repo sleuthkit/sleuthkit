@@ -1118,7 +1118,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     TSK_INUM_T a_end_inum, TSK_FS_META_FLAG_ENUM a_selection_flags,
     TSK_FS_META_WALK_CB a_action, void *a_ptr)
 {
-    char *func_name = "fatfs_inode_walk";
+    const char *func_name = "fatfs_inode_walk";
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
     unsigned int flags = a_selection_flags;
     TSK_INUM_T end_inum_tmp = 0;
