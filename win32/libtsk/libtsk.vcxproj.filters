@@ -120,7 +120,7 @@
     <ClCompile Include="..\..\tsk\fs\fs_load.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_name.c">
+    <ClCompile Include="..\..\tsk\fs\fs_name.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_open.c">
