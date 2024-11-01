@@ -252,7 +252,7 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/encase.cpp \
 	tsk/hashdb/hashkeeper.c \
 	tsk/hashdb/hdb_base.cpp \
-	tsk/hashdb/idxonly.c \
+	tsk/hashdb/idxonly.cpp \
 	tsk/hashdb/md5sum.c \
 	tsk/hashdb/nsrl.c \
 	tsk/hashdb/sqlite_hdb.cpp \
