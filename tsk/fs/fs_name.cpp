@@ -54,7 +54,7 @@ tsk_fs_name_alloc(size_t norm_namelen, size_t shrt_namelen)
     }
     fs_name->name_size = norm_namelen;
 
-    fs_name->flags = 0;
+    fs_name->flags = (TSK_FS_NAME_FLAG_ENUM) 0;
 
     fs_name->shrt_name_size = shrt_namelen;
     if (shrt_namelen == 0) {
@@ -118,8 +118,8 @@ tsk_fs_name_reset(TSK_FS_NAME * a_fs_name)
     a_fs_name->meta_seq = 0;
     a_fs_name->par_addr = 0;
     a_fs_name->par_seq = 0;
-    a_fs_name->type = 0;
-    a_fs_name->flags = 0;
+    a_fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
+    a_fs_name->flags = (TSK_FS_NAME_FLAG_ENUM) 0;
 }
 
 /**
