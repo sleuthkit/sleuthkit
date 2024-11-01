@@ -191,7 +191,7 @@ fs_attr_put_name(TSK_FS_ATTR * fs_attr, const char *name)
     }
 
     if (fs_attr->name_size < (strlen(name) + 1)) {
-        fs_attr->name = tsk_realloc(fs_attr->name, strlen(name) + 1);
+        fs_attr->name = (char*) tsk_realloc(fs_attr->name, strlen(name) + 1);
         if (fs_attr->name == NULL)
             return 1;
         fs_attr->name_size = strlen(name) + 1;
@@ -786,7 +786,7 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
         buf_len = fs->block_size;
 
     if ((a_flags & TSK_FS_FILE_WALK_FLAG_AONLY) == 0) {
-        if ((buf = tsk_malloc(buf_len)) == NULL) {
+        if ((buf = (char*) tsk_malloc(buf_len)) == NULL) {
             return 1;
         }
     }
