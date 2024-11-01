@@ -476,8 +476,10 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
  * @returns 1 on error and 0 on succes
  */
 uint8_t
-tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
-    TSK_FS_ATTR_RUN * a_data_run_new)
+tsk_fs_attr_add_run(
+  [[maybe_unused]] TSK_FS_INFO * a_fs,
+  TSK_FS_ATTR * a_fs_attr,
+  TSK_FS_ATTR_RUN * a_data_run_new)
 {
     TSK_FS_ATTR_RUN *data_run_cur, *data_run_prev;
     TSK_DADDR_T run_len;
@@ -709,8 +711,10 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
  * @param a_data_run Data run to append.
  */
 void
-tsk_fs_attr_append_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
-    TSK_FS_ATTR_RUN * a_data_run)
+tsk_fs_attr_append_run(
+  [[maybe_unused]] TSK_FS_INFO * a_fs,
+  TSK_FS_ATTR * a_fs_attr,
+  TSK_FS_ATTR_RUN * a_data_run)
 {
     TSK_FS_ATTR_RUN *data_run_cur;
 
