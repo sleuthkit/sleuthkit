@@ -1058,7 +1058,7 @@ iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum,
 }
 
 
-static uint16_t
+static TSK_FS_META_MODE_ENUM
 isomode2tskmode(uint16_t a_mode)
 {
     uint16_t mode = 0;
@@ -1084,7 +1084,7 @@ isomode2tskmode(uint16_t a_mode)
     if (a_mode & ISO_EA_IXOTH)
         mode |= TSK_FS_META_MODE_IXOTH;
 
-    return mode;
+    return (TSK_FS_META_MODE_ENUM) mode;
 }
 
 /**
