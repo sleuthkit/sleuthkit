@@ -95,7 +95,7 @@ tsk_fs_attr_alloc(TSK_FS_ATTR_FLAG_ENUM type)
     }
 
     if (type == TSK_FS_ATTR_NONRES) {
-        fs_attr->flags = (TSK_FS_ATTR_NONRES | TSK_FS_ATTR_INUSE);
+        fs_attr->flags = (TSK_FS_ATTR_FLAG_ENUM) (TSK_FS_ATTR_NONRES | TSK_FS_ATTR_INUSE);
     }
     else if (type == TSK_FS_ATTR_RES) {
         fs_attr->rd.buf_size = 1024;
@@ -104,7 +104,7 @@ tsk_fs_attr_alloc(TSK_FS_ATTR_FLAG_ENUM type)
             free(fs_attr->name);
             return NULL;
         }
-        fs_attr->flags = (TSK_FS_ATTR_RES | TSK_FS_ATTR_INUSE);
+        fs_attr->flags = (TSK_FS_ATTR_FLAG_ENUM) (TSK_FS_ATTR_RES | TSK_FS_ATTR_INUSE);
     }
     else {
         tsk_error_reset();
@@ -224,7 +224,7 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     }
 
     a_fs_attr->fs_file = a_fs_file;
-    a_fs_attr->flags = (TSK_FS_ATTR_INUSE | TSK_FS_ATTR_RES);
+    a_fs_attr->flags = (TSK_FS_ATTR_FLAG_ENUM) (TSK_FS_ATTR_INUSE | TSK_FS_ATTR_RES);
     a_fs_attr->type = type;
     a_fs_attr->id = id;
     a_fs_attr->nrd.compsize = 0;
@@ -299,7 +299,7 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     }
 
     a_fs_attr->fs_file = a_fs_file;
-    a_fs_attr->flags = (TSK_FS_ATTR_INUSE | TSK_FS_ATTR_NONRES | flags);
+    a_fs_attr->flags = (TSK_FS_ATTR_FLAG_ENUM) (TSK_FS_ATTR_INUSE | TSK_FS_ATTR_NONRES | flags);
     a_fs_attr->type = type;
     a_fs_attr->id = id;
     a_fs_attr->size = size;
@@ -810,8 +810,8 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
             memcpy(buf, &fs_attr->rd.buf[off], read_len);
         }
         retval =
-            a_action(fs_attr->fs_file, off, 0, buf, read_len, myflags,
-            a_ptr);
+            a_action(fs_attr->fs_file, off, 0, buf, read_len,
+              (TSK_FS_BLOCK_FLAG_ENUM) myflags, a_ptr);
 
         if (retval != TSK_WALK_CONT)
             break;
@@ -975,7 +975,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                     (fs_attr_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ||
                     (off > fs_attr->nrd.initsize)) {
                     myflags = fs->block_getflags(fs, 0);
-                    myflags |= TSK_FS_BLOCK_FLAG_SPARSE;
+                    myflags = (TSK_FS_BLOCK_FLAG_ENUM) (myflags | TSK_FS_BLOCK_FLAG_SPARSE);
                     if ((a_flags & TSK_FS_FILE_WALK_FLAG_NOSPARSE) == 0) {
                         retval =
                             a_action(fs_attr->fs_file, off, 0,
@@ -984,7 +984,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 }
                 else {
                     myflags = fs->block_getflags(fs, addr + len_idx);
-                    myflags |= TSK_FS_BLOCK_FLAG_RAW;
+                    myflags = (TSK_FS_BLOCK_FLAG_ENUM) (myflags | TSK_FS_BLOCK_FLAG_RAW);
 
                     retval =
                         a_action(fs_attr->fs_file, off, addr + len_idx,
