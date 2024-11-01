@@ -893,11 +893,11 @@ ntfs_uncompress_setup(TSK_FS_INFO * fs, NTFS_COMP_INFO * comp,
         return 1;
     }
 
-    if ((comp->uncomp_buf = tsk_malloc(comp->buf_size_b)) == NULL) {
+    if ((comp->uncomp_buf = (char*) tsk_malloc(comp->buf_size_b)) == NULL) {
         comp->buf_size_b = 0;
         return 1;
     }
-    if ((comp->comp_buf = tsk_malloc(comp->buf_size_b)) == NULL) {
+    if ((comp->comp_buf = (char*) tsk_malloc(comp->buf_size_b)) == NULL) {
         free(comp->uncomp_buf);
         comp->uncomp_buf = NULL;
         comp->buf_size_b = 0;
@@ -2617,7 +2617,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     /* Get a copy of the attribute list stream using the above action */
     load_file.left = load_file.total = (size_t) fs_attr_attrlist->size;
     load_file.base = load_file.cur = buf =
-        tsk_malloc((size_t) fs_attr_attrlist->size);
+        (char*) tsk_malloc((size_t) fs_attr_attrlist->size);
     if (buf == NULL) {
         free(mft);
         free(map);
@@ -3164,7 +3164,7 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
 
     /* Get a copy of the attribute list stream using the above action */
     load_file.left = load_file.total = (size_t) fs_attr->size;
-    load_file.base = load_file.cur = tsk_malloc((size_t) fs_attr->size);
+    load_file.base = load_file.cur = (char*) tsk_malloc((size_t) fs_attr->size);
     if (load_file.cur == NULL) {
         tsk_fs_file_close(fs_file);
         return 1;
@@ -3925,7 +3925,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
                 sii_buffer.size);
         return 0;
     }
-    if ((sii_buffer.buffer = tsk_malloc(sii_buffer.size)) == NULL) {
+    if ((sii_buffer.buffer = (char*) tsk_malloc(sii_buffer.size)) == NULL) {
         return 1;
     }
 
@@ -4978,7 +4978,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         /* Get a copy of the attribute list stream  */
         load_file.total = load_file.left = (size_t) fs_attr->size;
         load_file.cur = load_file.base = buf =
-            tsk_malloc((size_t) fs_attr->size);
+            (char*) tsk_malloc((size_t) fs_attr->size);
         if (buf == NULL) {
             free(mft);
             return 1;
