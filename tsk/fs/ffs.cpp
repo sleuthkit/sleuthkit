@@ -844,7 +844,7 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum, TSK_FS_META_FLAG_ENUM a_flags,
     TSK_FS_META_WALK_CB action, void *ptr)
 {
-    char *myname = "ffs_inode_walk";
+    const char *myname = "ffs_inode_walk";
     FFS_INFO *ffs = (FFS_INFO *) fs;
     ffs_cgd *cg = NULL;
     TSK_INUM_T inum;
@@ -1138,7 +1138,7 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
     TSK_FS_BLOCK_WALK_CB action, void *ptr)
 {
-    char *myname = "ffs_block_walk";
+    const char *myname = "ffs_block_walk";
     FFS_INFO *ffs = (FFS_INFO *) fs;
     TSK_FS_BLOCK *fs_block;
     TSK_DADDR_T addr;
@@ -2003,7 +2003,7 @@ ffs_close(TSK_FS_INFO * fs)
 TSK_FS_INFO *
 ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
 {
-    char *myname = "ffs_open";
+    const char *myname = "ffs_open";
     FFS_INFO *ffs;
     unsigned int len;
     TSK_FS_INFO *fs;
