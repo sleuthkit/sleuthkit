@@ -226,8 +226,11 @@ ffs_dent_parse_block(FFS_INFO * ffs, TSK_FS_DIR * fs_dir, uint8_t a_is_del,
  * @returns error, corruption, ok etc.
  */
 TSK_RETVAL_ENUM
-ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr, int recursion_depth)
+ffs_dir_open_meta(
+  TSK_FS_INFO * a_fs,
+  TSK_FS_DIR ** a_fs_dir,
+  TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
     TSK_OFF_T size;
     FFS_INFO *ffs = (FFS_INFO *) a_fs;
