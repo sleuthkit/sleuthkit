@@ -102,7 +102,7 @@ ffs_dent_copy(FFS_INFO * ffs, char *ffs_dent, TSK_FS_NAME * fs_name)
         return 1;
     }
 
-    fs_name->flags = 0;
+    fs_name->flags = (TSK_FS_NAME_FLAG_ENUM) 0;
     return 0;
 }
 
