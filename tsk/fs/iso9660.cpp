@@ -1511,7 +1511,7 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
     /* Sanity check on flags -- make sure at least one ALLOC is set */
     if (((flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM) 
+        flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
             (flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
