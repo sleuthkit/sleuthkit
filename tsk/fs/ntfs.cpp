@@ -2627,7 +2627,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         return TSK_ERR;
     }
     endaddr = (uintptr_t) buf + (uintptr_t) fs_attr_attrlist->size;
-    if (tsk_fs_attr_walk(fs_attr_attrlist, 0, tsk_fs_load_file_action,
+    if (tsk_fs_attr_walk(fs_attr_attrlist, TSK_FS_FILE_WALK_FLAG_NONE, tsk_fs_load_file_action,
             (void *) &load_file)) {
         tsk_error_errstr2_concat("- processing attrlist");
         free(mft);
@@ -2939,7 +2939,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
         a_fs_file->meta->type = TSK_FS_META_TYPE_DIR;
     else
         a_fs_file->meta->type = TSK_FS_META_TYPE_REG;
-    a_fs_file->meta->mode = 0;  // will be set by proc_attrseq
+    a_fs_file->meta->mode = TSK_FS_META_MODE_UNSPECIFIED;  // will be set by proc_attrseq
 
     /* the following will be changed once we find the correct attribute,
      * but initialize them now just in case
@@ -3175,7 +3175,7 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
     ntfs->attrdef = (ntfs_attrdef *) load_file.base;
 
     if (tsk_fs_attr_walk(fs_attr,
-            0, tsk_fs_load_file_action, (void *) &load_file)) {
+            TSK_FS_FILE_WALK_FLAG_NONE, tsk_fs_load_file_action, (void *) &load_file)) {
         tsk_error_errstr2_concat(" - load_attrdef");
         tsk_fs_file_close(fs_file);
         free(ntfs->attrdef);
