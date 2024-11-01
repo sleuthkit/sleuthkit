@@ -499,7 +499,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c" />
     <ClCompile Include="..\..\tsk\hashdb\idxonly.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\md5sum.cpp" />
-    <ClCompile Include="..\..\tsk\hashdb\nsrl.c" />
+    <ClCompile Include="..\..\tsk\hashdb\nsrl.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp" />
     <ClCompile Include="..\..\tsk\img\aff.c" />
