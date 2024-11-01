@@ -28,7 +28,7 @@
 #include "tsk_exfatfs.h"
 
 TSK_FS_ATTR_TYPE_ENUM
-fatfs_get_default_attr_type(const TSK_FS_FILE * a_file)
+fatfs_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 {
     return TSK_FS_ATTR_TYPE_DEFAULT;
 }
@@ -890,8 +890,14 @@ typedef struct {
  * of a file, used for istat
  */
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+print_addr_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM a_flags,
+  void *a_ptr)
 {
     FATFS_PRINT_ADDR *print = (FATFS_PRINT_ADDR *) a_ptr;
 
@@ -1055,9 +1061,14 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
 
 /* Mark the sector used in the bitmap */
 static TSK_WALK_RET_ENUM
-inode_walk_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
-    TSK_DADDR_T addr, char *buf, size_t size,
-    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+inode_walk_file_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM a_flags,
+  void *a_ptr)
 {
     setbit((uint8_t *) a_ptr, addr);
     return TSK_WALK_CONT;
@@ -1065,7 +1076,10 @@ inode_walk_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
 
 /* The inode_walk call back for each file.  we want only the directories */
 static TSK_WALK_RET_ENUM
-inode_walk_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *a_ptr)
+inode_walk_dent_act(
+  TSK_FS_FILE * fs_file,
+  [[maybe_unused]] const char *a_path,
+  void *a_ptr)
 {
     unsigned int flags = TSK_FS_FILE_WALK_FLAG_SLACK | TSK_FS_FILE_WALK_FLAG_AONLY;
 
