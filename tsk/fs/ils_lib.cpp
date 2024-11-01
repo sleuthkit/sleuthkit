@@ -240,20 +240,20 @@ tsk_fs_ils(TSK_FS_INFO * fs, TSK_FS_ILS_FLAG_ENUM lclflags,
 
     /* If orphan is desired, then make sure LINK flags are set */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        lclflags |= (TSK_FS_ILS_LINK | TSK_FS_ILS_UNLINK);
+        lclflags = (TSK_FS_ILS_FLAG_ENUM) (lclflags | TSK_FS_ILS_LINK | TSK_FS_ILS_UNLINK);
     }
     /* if OPEN lcl flag is given, then make sure ALLOC is not and UNALLOC is */
     if (lclflags & TSK_FS_ILS_OPEN) {
-        flags |= TSK_FS_META_FLAG_UNALLOC;
-        flags &= ~TSK_FS_META_FLAG_ALLOC;
-        lclflags |= TSK_FS_ILS_LINK;
-        lclflags &= ~TSK_FS_ILS_UNLINK;
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_UNALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_ALLOC);
+        lclflags = (TSK_FS_ILS_FLAG_ENUM) (lclflags | TSK_FS_ILS_LINK);
+        lclflags = (TSK_FS_ILS_FLAG_ENUM) (lclflags & ~TSK_FS_ILS_UNLINK);
     }
     else {
         /* If LINK is not set at all, then set them */
         if (((lclflags & TSK_FS_ILS_LINK) == 0)
             && ((lclflags & TSK_FS_ILS_UNLINK) == 0))
-            lclflags |= (TSK_FS_ILS_LINK | TSK_FS_ILS_UNLINK);
+            lclflags = (TSK_FS_ILS_FLAG_ENUM) (lclflags | TSK_FS_ILS_LINK | TSK_FS_ILS_UNLINK);
     }
 
     data.flags = lclflags;
