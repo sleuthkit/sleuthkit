@@ -4065,7 +4065,7 @@ ntfs_block_walk(TSK_FS_INFO * fs,
     TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags, TSK_FS_BLOCK_WALK_CB a_action,
     void *a_ptr)
 {
-    char *myname = "ntfs_block_walk";
+    const char *myname = "ntfs_block_walk";
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     TSK_DADDR_T addr;
     TSK_FS_BLOCK *fs_block;
@@ -5269,7 +5269,7 @@ ntfs_open(
   const char* a_pass,
   [[maybe_unused]] uint8_t test)
 {
-    char *myname = "ntfs_open";
+    const char *myname = "ntfs_open";
     NTFS_INFO *ntfs = NULL;
     TSK_FS_INFO *fs = NULL;
     unsigned int len = 0;
