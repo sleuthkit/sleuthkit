@@ -46,7 +46,7 @@ parse_fname(const unsigned char *buf, uint16_t nlen,
     UTF8 *temp_name = NULL;
     size_t src_len = (size_t) nlen, dst_len = (size_t) nlen * 2;
 
-    record->fname = tsk_malloc(dst_len + 1);
+    record->fname = (char*) tsk_malloc(dst_len + 1);
     if (record->fname == NULL)
         return 1;
 
@@ -252,7 +252,7 @@ tsk_ntfs_usnjopen(TSK_FS_INFO *fs, TSK_INUM_T inum)
     }
 
     /* Initialize usnjinfo support structure */
-    ntfs->usnjinfo = tsk_malloc(sizeof *ntfs->usnjinfo);
+    ntfs->usnjinfo = (NTFS_USNJINFO*) tsk_malloc(sizeof *ntfs->usnjinfo);
     if (ntfs->usnjinfo == NULL)
         return 1;
 
@@ -310,7 +310,7 @@ tsk_ntfs_usnjentry_walk(TSK_FS_INFO *fs, TSK_FS_USNJENTRY_WALK_CB action,
         return 1;
     }
 
-    buf = tsk_malloc(ntfs->usnjinfo->bsize);
+    buf = (unsigned char*) tsk_malloc(ntfs->usnjinfo->bsize);
     if (buf == NULL)
         return 1;
 
