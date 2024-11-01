@@ -353,7 +353,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         // cache the extents file header
         cnt = tsk_fs_attr_read(hfs->extents_attr, 14,
             (char *) &(hfs->extents_header),
-            sizeof(hfs_btree_header_record), 0);
+            sizeof(hfs_btree_header_record), TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt != sizeof(hfs_btree_header_record)) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -418,7 +418,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 " at offset %" PRIdOFF "\n", cur_node, cur_off);
 
         cnt = tsk_fs_attr_read(hfs->extents_attr, cur_off,
-            node, nodesize, 0);
+            node, nodesize, TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt != nodesize) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -798,7 +798,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
         // read the current node
         cur_off = (TSK_OFF_T)cur_node * nodesize;
         cnt = tsk_fs_attr_read(hfs->catalog_attr, cur_off,
-            node, nodesize, 0);
+            node, nodesize,  TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt != nodesize) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -1144,7 +1144,7 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
     ssize_t cnt;
 
     memset(thread, 0, sizeof(hfs_thread));
-    cnt = tsk_fs_attr_read(hfs->catalog_attr, off, (char *) thread, 10, 0);
+    cnt = tsk_fs_attr_read(hfs->catalog_attr, off, (char *) thread, 10, TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != 10) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -1177,7 +1177,7 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
 
     cnt =
         tsk_fs_attr_read(hfs->catalog_attr, off + 10,
-        (char *) thread->name.unicode, uni_len * 2, 0);
+        (char *) thread->name.unicode, uni_len * 2, TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != uni_len * 2) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -1210,7 +1210,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
 
     memset(record, 0, sizeof(hfs_file_folder));
 
-    cnt = tsk_fs_attr_read(hfs->catalog_attr, off, rec_type, 2, 0);
+    cnt = tsk_fs_attr_read(hfs->catalog_attr, off, rec_type, 2, TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != 2) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -1225,7 +1225,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
     if (tsk_getu16(fs->endian, rec_type) == HFS_FOLDER_RECORD) {
         cnt =
             tsk_fs_attr_read(hfs->catalog_attr, off, (char *) record,
-            sizeof(hfs_folder), 0);
+            sizeof(hfs_folder), TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt != sizeof(hfs_folder)) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -1240,7 +1240,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
     else if (tsk_getu16(fs->endian, rec_type) == HFS_FILE_RECORD) {
         cnt =
             tsk_fs_attr_read(hfs->catalog_attr, off, (char *) record,
-            sizeof(hfs_file), 0);
+            sizeof(hfs_file), TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt != sizeof(hfs_file)) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -1775,7 +1775,7 @@ static uint8_t
 hfs_make_specialbase(TSK_FS_FILE * fs_file)
 {
     fs_file->meta->type = TSK_FS_META_TYPE_REG;
-    fs_file->meta->mode = 0;
+    fs_file->meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
     fs_file->meta->nlink = 1;
     fs_file->meta->flags =
         (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
@@ -1860,7 +1860,7 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, HFS_FS_ATTR_ID_DATA,
             tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz),
-            tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz), 0, 0)) {
+            tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz), TSK_FS_ATTR_FLAG_NONE, 0)) {
         error_returned(" - hfs_make_catalog");
         tsk_fs_attr_run_free(attr_run);
         return 1;
@@ -1938,7 +1938,7 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, HFS_FS_ATTR_ID_DATA,
             tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz),
-            tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz), 0, 0)) {
+            tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz), TSK_FS_ATTR_FLAG_NONE, 0)) {
         error_returned(" - hfs_make_extents");
         tsk_fs_attr_run_free(attr_run);
         return 1;
@@ -2007,7 +2007,7 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, HFS_FS_ATTR_ID_DATA,
             tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz),
-            tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz), 0, 0)) {
+            tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz), TSK_FS_ATTR_FLAG_NONE, 0)) {
         error_returned(" - hfs_make_blockmap");
         tsk_fs_attr_run_free(attr_run);
         return 1;
@@ -2088,7 +2088,7 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, HFS_FS_ATTR_ID_DATA,
             tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz),
-            tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz), 0, 0)) {
+            tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz), TSK_FS_ATTR_FLAG_NONE, 0)) {
         error_returned(" - hfs_make_startfile");
         tsk_fs_attr_run_free(attr_run);
         return 1;
@@ -2166,7 +2166,7 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, HFS_FS_ATTR_ID_DATA,
             tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz),
-            tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz), 0, 0)) {
+            tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz), TSK_FS_ATTR_FLAG_NONE, 0)) {
         error_returned(" - hfs_make_attrfile");
         tsk_fs_attr_run_free(attr_run);
         return 1;
@@ -2230,7 +2230,7 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, HFS_FS_ATTR_ID_DATA,
             fs_file->meta->size, fs_file->meta->size, fs_file->meta->size,
-            0, 0)) {
+            TSK_FS_ATTR_FLAG_NONE, 0)) {
         error_returned(" - hfs_make_badblockfile");
         return 1;
     }
@@ -2369,7 +2369,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
      * Use default values (as defined in spec) if mode is not defined.
      */
     if ((hfsmode & HFS_IN_IFMT) == 0) {
-        a_fs_meta->mode = 0;
+        a_fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
         a_fs_meta->uid = 99;
         a_fs_meta->gid = 99;
     }
@@ -4890,8 +4890,8 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                             "", TSK_FS_ATTR_TYPE_HFS_DATA,
                             HFS_FS_ATTR_ID_DATA, logicalSize, logicalSize,
                             (TSK_OFF_T) tsk_getu32(fs->endian,
-                                forkx->total_blk) * fs->block_size, 0,
-                            0)) {
+                                forkx->total_blk) * fs->block_size,
+                                TSK_FS_ATTR_FLAG_NONE, 0)) {
                         error_returned(" - hfs_load_attrs (DATA)");
                         tsk_fs_attr_run_free(attr_run);
                         return 1;
@@ -4912,7 +4912,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                     // so, it should have a DATA fork attribute of zero length.
                     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "",
                             TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
-                            0, 0, 0, 0, 0)) {
+                            0, 0, 0, TSK_FS_ATTR_FLAG_NONE, 0)) {
                         error_returned(" - hfs_load_attrs (non-file)");
                         return 1;
                     }
@@ -4971,7 +4971,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                     tsk_getu64(fs->endian, forkx->logic_sz),
                     tsk_getu64(fs->endian, forkx->logic_sz),
                     (TSK_OFF_T) tsk_getu32(fs->endian,
-                        forkx->total_blk) * fs->block_size, 0, 0)) {
+                        forkx->total_blk) * fs->block_size, TSK_FS_ATTR_FLAG_NONE, 0)) {
                 error_returned(" - hfs_load_attrs (RSRC)");
                 tsk_fs_attr_run_free(attr_run);
                 return 1;
@@ -5149,7 +5149,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
         || (hfs->blockmap_cache_start + hfs->blockmap_cache_len <= (size_t) b)) {
         ssize_t cnt = tsk_fs_attr_read(hfs->blockmap_attr, b,
             hfs->blockmap_cache,
-            sizeof(hfs->blockmap_cache), 0);
+            sizeof(hfs->blockmap_cache), TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt < 1) {
             tsk_error_set_errstr2
                 ("hfs_block_is_alloc: Error reading block bitmap at offset %"
@@ -6459,7 +6459,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->ftype = TSK_FS_TYPE_HFS;
     fs->duname = "Allocation Block";
     fs->tag = TSK_FS_INFO_TAG;
-    fs->flags = 0;
+    fs->flags = TSK_FS_INFO_FLAG_NONE;
 
     fs->img_info = img_info;
     fs->offset = offset;
@@ -6682,7 +6682,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // cache the catalog file header
     cnt = tsk_fs_attr_read(hfs->catalog_attr, 14,
         (char *) &(hfs->catalog_header),
-        sizeof(hfs_btree_header_record), 0);
+        sizeof(hfs_btree_header_record), TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != sizeof(hfs_btree_header_record)) {
         if (cnt >= 0) {
             tsk_error_reset();
