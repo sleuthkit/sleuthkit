@@ -76,7 +76,7 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
 
     if (type_used) {
         if (id_used == 0) {
-            flags |= TSK_FS_FILE_WALK_FLAG_NOID;
+            flags = (TSK_FS_FILE_WALK_FLAG_ENUM) (flags | TSK_FS_FILE_WALK_FLAG_NOID);
         }
         if (tsk_fs_file_walk_type(fs_file, type, id, flags, icat_action,
                 NULL)) {
