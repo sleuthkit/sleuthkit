@@ -117,8 +117,13 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
  * @param a_is_del Set to 1 if block is from a deleted directory.
  */
 static TSK_RETVAL_ENUM
-ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
-    uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, int len)
+ext2fs_dent_parse_block(
+  EXT2FS_INFO * ext2fs,
+  TSK_FS_DIR * a_fs_dir,
+  uint8_t a_is_del,
+  [[maybe_unused]] TSK_LIST ** list_seen,
+  char *buf,
+  int len)
 {
     TSK_FS_INFO *fs = &(ext2fs->fs_info);
 
@@ -237,8 +242,11 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
 */
 
 TSK_RETVAL_ENUM
-ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr, int recursion_depth)
+ext2fs_dir_open_meta(
+  TSK_FS_INFO * a_fs,
+  TSK_FS_DIR ** a_fs_dir,
+  TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) a_fs;
     char *dirbuf;
