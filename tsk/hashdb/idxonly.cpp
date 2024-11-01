@@ -70,7 +70,6 @@ static uint8_t
 TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path, const TSK_TCHAR *idx_path)
 {
     TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = NULL;
-    TSK_TCHAR *ext;
     TSK_HDB_HTYPE_ENUM htype;
 
     hdb_binsrch_info = hdb_binsrch_open(NULL, db_path);
@@ -81,7 +80,7 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path, const TSK_TCHAR *idx_path)
     hdb_binsrch_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
 
     // open the index
-    ext = TSTRRCHR(idx_path, _TSK_T('-'));
+    const TSK_TCHAR *ext = TSTRRCHR(idx_path, _TSK_T('-'));
     if (ext == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
