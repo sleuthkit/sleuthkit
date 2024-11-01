@@ -169,7 +169,7 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, const char *buf,
 
             // copy the data in fs_name for loading
             fs_name->meta_addr = in->inum;
-            strncpy(fs_name->name, in->inode.fn, ISO9660_MAXNAMLEN);
+            strncpy(fs_name->name, in->inode.fn, ISO9660_MAXNAMLEN + 1);
 
             if (dd->flags & ISO9660_FLAG_DIR)
                 fs_name->type = TSK_FS_NAME_TYPE_DIR;
