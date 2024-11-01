@@ -889,7 +889,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
             int i;
 
             if ((fs_meta->link =
-                    tsk_malloc((size_t) (fs_meta->size + 1))) == NULL)
+                    (char*) tsk_malloc((size_t) (fs_meta->size + 1))) == NULL)
                 return 1;
 
             /* it is located directly in the pointers */
@@ -916,9 +916,9 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
                 char *data_buf = NULL;
                 char *a_ptr = fs_meta->link;
                 unsigned int total_read = 0;
-                TSK_DADDR_T *addr_ptr = fs_meta->content_ptr;;
+                TSK_DADDR_T *addr_ptr = (TSK_DADDR_T*) fs_meta->content_ptr;;
 
-                if ((data_buf = tsk_malloc(fs->block_size)) == NULL) {
+                if ((data_buf = (char*) tsk_malloc(fs->block_size)) == NULL) {
                     return 1;
                 }
 
@@ -3041,7 +3041,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         ext2fs_ea_entry *ea_entry;
         ssize_t cnt;
 
-        if ((buf = tsk_malloc(fs->block_size)) == NULL) {
+        if ((buf = (char*) tsk_malloc(fs->block_size)) == NULL) {
             tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
