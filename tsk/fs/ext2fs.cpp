@@ -1555,7 +1555,9 @@ ext2fs_block_walk(TSK_FS_INFO * a_fs, TSK_DADDR_T a_start_blk,
 }
 
 static uint8_t
-ext2fs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+ext2fs_fscheck(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2829,8 +2831,14 @@ typedef struct {
 
 /* Callback for istat to print the block addresses */
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *a_ptr)
+print_addr_act(
+  TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  size_t size,
+  TSK_FS_BLOCK_FLAG_ENUM flags,
+  void *a_ptr)
 {
     TSK_FS_INFO *fs = fs_file->fs_info;
     EXT2FS_PRINT_ADDR *print = (EXT2FS_PRINT_ADDR *) a_ptr;
@@ -3473,8 +3481,12 @@ ext2fs_close(TSK_FS_INFO * fs)
  * @returns NULL on error or if data is not an Ext2/3 file system
  */
 TSK_FS_INFO *
-ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
+ext2fs_open(
+  TSK_IMG_INFO * img_info,
+  TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM ftype,
+  [[maybe_unused]] const char* a_pass,
+  [[maybe_unused]] uint8_t test)
 {
     EXT2FS_INFO *ext2fs;
     unsigned int len;
