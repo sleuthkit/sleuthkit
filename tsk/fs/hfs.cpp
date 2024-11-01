@@ -1722,32 +1722,32 @@ hfs_mode_to_tsk_mode(uint16_t a_mode)
     TSK_FS_META_MODE_ENUM mode = TSK_FS_META_MODE_UNSPECIFIED;
 
     if (a_mode & HFS_IN_ISUID)
-        mode |= TSK_FS_META_MODE_ISUID;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_ISUID);
     if (a_mode & HFS_IN_ISGID)
-        mode |= TSK_FS_META_MODE_ISGID;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_ISGID);
     if (a_mode & HFS_IN_ISVTX)
-        mode |= TSK_FS_META_MODE_ISVTX;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_ISVTX);
 
     if (a_mode & HFS_IN_IRUSR)
-        mode |= TSK_FS_META_MODE_IRUSR;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IRUSR);
     if (a_mode & HFS_IN_IWUSR)
-        mode |= TSK_FS_META_MODE_IWUSR;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IWUSR);
     if (a_mode & HFS_IN_IXUSR)
-        mode |= TSK_FS_META_MODE_IXUSR;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IXUSR);
 
     if (a_mode & HFS_IN_IRGRP)
-        mode |= TSK_FS_META_MODE_IRGRP;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IRGRP);
     if (a_mode & HFS_IN_IWGRP)
-        mode |= TSK_FS_META_MODE_IWGRP;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IWGRP);
     if (a_mode & HFS_IN_IXGRP)
-        mode |= TSK_FS_META_MODE_IXGRP;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IXGRP);
 
     if (a_mode & HFS_IN_IROTH)
-        mode |= TSK_FS_META_MODE_IROTH;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IROTH);
     if (a_mode & HFS_IN_IWOTH)
-        mode |= TSK_FS_META_MODE_IWOTH;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IWOTH);
     if (a_mode & HFS_IN_IXOTH)
-        mode |= TSK_FS_META_MODE_IXOTH;
+        mode = (TSK_FS_META_MODE_ENUM) (mode | TSK_FS_META_MODE_IXOTH);
 
     return mode;
 }
@@ -1787,7 +1787,7 @@ hfs_make_specialbase(TSK_FS_FILE * fs_file)
     fs_file->meta->type = TSK_FS_META_TYPE_REG;
     fs_file->meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
     fs_file->meta->nlink = 1;
-    fs_file->meta->flags =
+    fs_file->meta->flags = (TSK_FS_META_FLAG_ENUM)
         (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
     fs_file->meta->uid = fs_file->meta->gid = 0;
     fs_file->meta->mtime = fs_file->meta->atime = fs_file->meta->ctime =
@@ -2413,10 +2413,10 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     a_fs_meta->addr = tsk_getu32(fs->endian, std->cnid);
 
     // All entries here are used.
-    a_fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
+    a_fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED);
 
     if (std->perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)
-        a_fs_meta->flags |= TSK_FS_META_FLAG_COMP;
+        a_fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (a_fs_meta->flags | TSK_FS_META_FLAG_COMP);
 
     // We copy this inum (or cnid) here, because this file *might* have been a hard link.  In
     // that case, we want to make sure that a_fs_file points consistently to the target of the
@@ -5081,7 +5081,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                         logicalSize,
                         (TSK_OFF_T) tsk_getu32(fs->endian,
                             forkx->total_blk) * fs->block_size,
-                        TSK_FS_ATTR_COMP | TSK_FS_ATTR_NONRES, 0)) {
+                        (TSK_FS_ATTR_FLAG_ENUM) (TSK_FS_ATTR_COMP | TSK_FS_ATTR_NONRES), 0)) {
                     error_returned
                         (" - hfs_load_attrs (RSRC loading as DATA)");
                     tsk_fs_attr_run_free(attr_run);
@@ -5238,14 +5238,14 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
     /* Sanity check on flags -- make sure at least one ALLOC is set */
     if (((flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        flags =  (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
     if (((flags & TSK_FS_BLOCK_WALK_FLAG_META) == 0) &&
         ((flags & TSK_FS_BLOCK_WALK_FLAG_CONT) == 0)) {
-        flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
+        flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (flags | TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
     }
 
     if ((fs_block = tsk_fs_block_alloc(fs)) == NULL) {
@@ -5329,16 +5329,16 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     /* If ORPHAN is wanted, then make sure that the flags are correct */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        flags |= TSK_FS_META_FLAG_UNALLOC;
-        flags &= ~TSK_FS_META_FLAG_ALLOC;
-        flags |= TSK_FS_META_FLAG_USED;
-        flags &= ~TSK_FS_META_FLAG_UNUSED;
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_UNALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_ALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_UNUSED);
     }
 
     else {
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
-            flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
+            flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
         /* If neither of the USED or UNUSED flags are set, then set them
@@ -5346,7 +5346,7 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          */
         if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-            flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
+            flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
 
@@ -6145,7 +6145,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
                 if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
-                    (TSK_FS_FILE_WALK_FLAG_AONLY |
+                    (TSK_FS_FILE_WALK_FLAG_ENUM) (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
                         (void *)&print)) {
                     tsk_fprintf(hFile, "\nError reading file data fork\n");
@@ -6174,7 +6174,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
                 if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_RSRC, HFS_FS_ATTR_ID_RSRC,
-                    (TSK_FS_FILE_WALK_FLAG_AONLY |
+                    (TSK_FS_FILE_WALK_FLAG_ENUM) (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
                         (void *)&print)) {
                     tsk_fprintf(hFile, "\nError reading file resource fork\n");
