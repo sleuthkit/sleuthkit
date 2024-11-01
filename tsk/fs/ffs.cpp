@@ -1079,14 +1079,14 @@ ffs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 
     // sparse
     if (a_addr == 0)
-        return TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC;
+        return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC);
 
     grp_num = dtog_lcl(a_fs, ffs->fs.sb1, a_addr);
 
     tsk_take_lock(&ffs->lock);
     if (ffs_group_load(ffs, grp_num)) {
         tsk_release_lock(&ffs->lock);
-        return 0;
+        return TSK_FS_BLOCK_FLAG_UNUSED;
     }
 
     cg = (ffs_cgd *) ffs->grp_buf;
@@ -2032,7 +2032,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, cons
     fs = &(ffs->fs_info);
 
     fs->ftype = ftype;
-    fs->flags = 0;
+    fs->flags = TSK_FS_INFO_FLAG_NONE;
     fs->duname = "Fragment";
     fs->tag = TSK_FS_INFO_TAG;
 
