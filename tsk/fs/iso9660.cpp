@@ -1267,7 +1267,7 @@ static uint8_t
 iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB action, void *ptr)
 {
-    char *myname = "iso9660_inode_walk";
+    const char *myname = "iso9660_inode_walk";
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_INUM_T inum, end_inum_tmp;
     TSK_FS_FILE *fs_file;
@@ -1477,7 +1477,7 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
     TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB action,
     void *ptr)
 {
-    char *myname = "iso9660_block_walk";
+    const char *myname = "iso9660_block_walk";
     TSK_DADDR_T addr;
     TSK_FS_BLOCK *fs_block;
 
@@ -2330,7 +2330,7 @@ load_vol_desc(TSK_FS_INFO * fs)
     //int count = 0;  // set but never used
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_OFF_T offs;
-    char *myname = "iso_load_vol_desc";
+    const char *myname = "iso_load_vol_desc";
     ssize_t cnt;
     iso9660_pvd_node *p;
     iso9660_svd_node *s;
