@@ -62,7 +62,7 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
      * 4.4BSD <ufs/ffs/fs.h> include file).
      */
     if (ffs->grp_buf == NULL) {
-        if ((ffs->grp_buf = tsk_malloc(ffs->ffsbsize_b)) == NULL) {
+        if ((ffs->grp_buf = (char*) tsk_malloc(ffs->ffsbsize_b)) == NULL) {
             return 1;
         }
     }
@@ -132,7 +132,7 @@ ffs_dinode_load(FFS_INFO * ffs, TSK_INUM_T inum, ffs_inode * dino_buf)
     tsk_take_lock(&ffs->lock);
 
     if (ffs->itbl_buf == NULL) {
-        if ((ffs->itbl_buf = tsk_malloc(ffs->ffsbsize_b)) == NULL) {
+        if ((ffs->itbl_buf = (char*) tsk_malloc(ffs->ffsbsize_b)) == NULL) {
             tsk_release_lock(&ffs->lock);
             return 1;
         }
@@ -387,7 +387,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
             && (fs_meta->size >= 0)) {
             int i;
 
-            fs_meta->link = tsk_malloc((size_t) fs_meta->size + 1);
+            fs_meta->link = (char*) tsk_malloc((size_t) fs_meta->size + 1);
             if (fs_meta->link == NULL) {
                 return 1;
             }
@@ -554,7 +554,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
                     return 1;
 
                 fs_meta->link = ptr =
-                    tsk_malloc((size_t) fs_meta->size + 1);
+                    (char*) tsk_malloc((size_t) fs_meta->size + 1);
                 if (fs_meta->link == NULL) {
                     free(buf);
                     return 1;
@@ -649,7 +649,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
             && (fs_meta->size < FFS_MAXPATHLEN)
             && (fs_meta->size >= 0)) {
 
-            fs_meta->link = tsk_malloc((size_t) fs_meta->size + 1);
+            fs_meta->link = (char*) tsk_malloc((size_t) fs_meta->size + 1);
             if (fs_meta->link == NULL) {
                 return 1;
             }
@@ -1188,7 +1188,7 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     if ((fs_block = tsk_fs_block_alloc(fs)) == NULL) {
         return 1;
     }
-    if ((cache_blk_buf = tsk_malloc(ffs->ffsbsize_b)) == NULL) {
+    if ((cache_blk_buf = (char*) tsk_malloc(ffs->ffsbsize_b)) == NULL) {
         return 1;
     }
     cache_len_f = 0;
@@ -1772,7 +1772,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
             char name[257];
             char *blk_buf;
 
-            if ((blk_buf = tsk_malloc(ffs->ffsbsize_b)) == NULL) {
+            if ((blk_buf = (char*) tsk_malloc(ffs->ffsbsize_b)) == NULL) {
                 tsk_fs_file_close(fs_file);
                 free(dino_buf);
                 return 1;
