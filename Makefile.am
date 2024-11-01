@@ -209,7 +209,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/fatxxfs_meta.cpp \
 	tsk/fs/ffind_lib.c \
 	tsk/fs/ffs.c \
-	tsk/fs/ffs_dent.c \
+	tsk/fs/ffs_dent.cpp \
 	tsk/fs/fls_lib.c \
 	tsk/fs/fs_attr.c \
 	tsk/fs/fs_attrlist.c \
