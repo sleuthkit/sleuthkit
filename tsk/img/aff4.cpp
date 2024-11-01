@@ -151,8 +151,10 @@ aff4_check_file_signature(const char* filename)
 */
 
 TSK_IMG_INFO*
-aff4_open(int a_num_img,
-    const TSK_TCHAR* const a_images[], unsigned int a_ssize)
+aff4_open(
+  int a_num_img,
+  const TSK_TCHAR* const a_images[],
+  [[maybe_unused]] unsigned int a_ssize)
 {
    if (a_num_img != 1) {
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
