@@ -256,7 +256,7 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/md5sum.c \
 	tsk/hashdb/nsrl.c \
 	tsk/hashdb/sqlite_hdb.cpp \
-	tsk/hashdb/tsk_hashdb.c \
+	tsk/hashdb/tsk_hashdb.cpp \
 	tsk/hashdb/tsk_hashdb.h \
 	tsk/hashdb/tsk_hashdb_i.h \
 	tsk/hashdb/tsk_hash_info.h
