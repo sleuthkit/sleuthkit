@@ -174,7 +174,7 @@ ext2fs_jentry_walk(
 
     /* Load the journal into a buffer */
     buf1.left = buf1.total = (size_t) jinfo->fs_file->meta->size;
-    journ = buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    journ = buf1.cur = buf1.base = (char*) tsk_malloc(buf1.left);
     if (journ == NULL) {
         return 1;
     }
@@ -547,7 +547,7 @@ ext2fs_jblk_walk(
      * Only get the minimum needed
      */
     buf1.left = buf1.total = (size_t) ((end + 1) * jinfo->bsize);
-    buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    buf1.cur = buf1.base = (char*) tsk_malloc(buf1.left);
     journ = (uint8_t*) buf1.cur;
     if (journ == NULL) {
         return 1;
