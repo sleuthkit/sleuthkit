@@ -1658,7 +1658,7 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             a_fs_file->meta->size, a_fs_file->meta->size,
             roundup(a_fs_file->meta->size + dd.ext_len,
-                fs->block_size) - dd.ext_len, 0, 0)) {
+                fs->block_size) - dd.ext_len, TSK_FS_ATTR_FLAG_NONE, 0)) {
         return 1;
     }
 
