@@ -279,7 +279,7 @@
     <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\encase.c">
+    <ClCompile Include="..\..\tsk\hashdb\encase.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\exfatfs.c">

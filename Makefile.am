@@ -249,7 +249,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
-	tsk/hashdb/encase.c \
+	tsk/hashdb/encase.cpp \
 	tsk/hashdb/hashkeeper.c \
 	tsk/hashdb/hdb_base.c \
 	tsk/hashdb/idxonly.c \
