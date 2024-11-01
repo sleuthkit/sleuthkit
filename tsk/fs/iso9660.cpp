@@ -1151,7 +1151,7 @@ iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta, TSK_INUM_T inum,
     else {
         fs_meta->uid = 0;
         fs_meta->gid = 0;
-        fs_meta->mode = 0;
+        fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
         fs_meta->nlink = 1;
     }
 
@@ -2589,7 +2589,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     fs->ftype = TSK_FS_TYPE_ISO9660;
     fs->duname = "Block";
-    fs->flags = 0;
+    fs->flags = TSK_FS_INFO_FLAG_NONE;
     fs->tag = TSK_FS_INFO_TAG;
     fs->img_info = img_info;
     fs->offset = offset;
