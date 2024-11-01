@@ -3403,7 +3403,7 @@ ntfs_load_ver(NTFS_INFO * ntfs)
     }
 
     /* cache the data attribute */
-    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, NTFS_ATYPE_VINFO);
+    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_VINFO);
     if (!fs_attr) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -3894,7 +3894,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
 
     // Get the $SII attribute.
     fs_attr_sii =
-        tsk_fs_attrlist_get_name_type(fs_meta->attr, NTFS_ATYPE_IDXALLOC,
+        tsk_fs_attrlist_get_name_type(fs_meta->attr, (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_IDXALLOC,
         "$SII\0");
     if (!fs_attr_sii) {
         if (tsk_verbose)
@@ -4094,14 +4094,14 @@ ntfs_block_walk(TSK_FS_INFO * fs,
     /* Sanity check on a_flags -- make sure at least one ALLOC is set */
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_META) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_CONT) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
     }
 
 
@@ -4223,16 +4223,16 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     /* If ORPHAN is wanted, then make sure that the flags are correct */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        flags |= TSK_FS_META_FLAG_UNALLOC;
-        flags &= ~TSK_FS_META_FLAG_ALLOC;
-        flags |= TSK_FS_META_FLAG_USED;
-        flags &= ~TSK_FS_META_FLAG_UNUSED;
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_UNALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_ALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_UNUSED);
     }
 
     else {
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
-            flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
+            flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
         /* If neither of the USED or UNUSED flags are set, then set them
@@ -4240,7 +4240,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          */
         if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-            flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
+            flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
 
@@ -4444,7 +4444,7 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         return 1;
     }
 
-    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, NTFS_ATYPE_VNAME);
+    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_VNAME);
     if (!fs_attr) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -4683,7 +4683,7 @@ ntfs_istat(
     tsk_fprintf(hFile, "Links: %u\n", fs_file->meta->nlink);
 
     /* STANDARD_INFORMATION info */
-    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, NTFS_ATYPE_SI);
+    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_SI);
     if (fs_attr) {
         ntfs_attr_si *si = (ntfs_attr_si *) fs_attr->rd.buf;
         char *sid_str;
@@ -4918,7 +4918,7 @@ ntfs_istat(
 
 
     /* $OBJECT_ID Information */
-    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, NTFS_ATYPE_OBJID);
+    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_OBJID);
     if (fs_attr) {
         ntfs_attr_objid *objid = (ntfs_attr_objid *) fs_attr->rd.buf;
         uint64_t id1, id2;
@@ -4985,7 +4985,7 @@ ntfs_istat(
 
     /* Attribute List Information */
     fs_attr =
-        tsk_fs_attrlist_get(fs_file->meta->attr, NTFS_ATYPE_ATTRLIST);
+        tsk_fs_attrlist_get(fs_file->meta->attr,  (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_ATTRLIST);
     if (fs_attr) {
         char *buf;
         ntfs_attrlist *list;
@@ -5005,7 +5005,7 @@ ntfs_istat(
 
         endaddr = (uintptr_t) buf + (uintptr_t) fs_attr->size;
         if (tsk_fs_attr_walk(fs_attr,
-                0, tsk_fs_load_file_action, (void *) &load_file)) {
+                TSK_FS_FILE_WALK_FLAG_NONE, tsk_fs_load_file_action, (void *) &load_file)) {
             tsk_fprintf(hFile, "error reading attribute list buffer\n");
             tsk_error_reset();
             goto egress;
@@ -5085,6 +5085,7 @@ ntfs_istat(
                     print_addr.hFile = hFile;
                     if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
                         fs_attr->id,
+                        (TSK_FS_FILE_WALK_FLAG_ENUM)
                         (TSK_FS_FILE_WALK_FLAG_AONLY |
                             TSK_FS_FILE_WALK_FLAG_SLACK),
                         print_addr_act, (void *)&print_addr)) {
@@ -5533,7 +5534,7 @@ ntfs_open(
      * should be quick
      */
     ntfs->mft_data =
-        tsk_fs_attrlist_get(ntfs->mft_file->meta->attr, NTFS_ATYPE_DATA);
+        tsk_fs_attrlist_get(ntfs->mft_file->meta->attr, (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_DATA);
     if (!ntfs->mft_data) {
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
