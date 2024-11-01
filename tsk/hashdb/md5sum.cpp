@@ -252,7 +252,7 @@ uint8_t
             idx_cnt++;
 
             /* Set the previous has value */
-            strncpy(phash, hash, TSK_HDB_HTYPE_MD5_LEN + 1);
+            strncpy(phash, hash, TSK_HDB_HTYPE_MD5_LEN);
     }
 
     if (idx_cnt > 0) {
@@ -385,7 +385,7 @@ md5sum_getentry(
                 return 0;
             }
             found = 1;
-            strncpy(pname, name, TSK_HDB_MAXLEN);
+            strncpy(pname, name, TSK_HDB_MAXLEN - 1);
         }
 
         /* Advance to the next row */
