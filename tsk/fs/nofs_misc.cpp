@@ -80,7 +80,7 @@ tsk_fs_nofs_close(TSK_FS_INFO * a_fs)
 TSK_FS_BLOCK_FLAG_ENUM
 tsk_fs_nofs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 {
-    return TSK_FS_BLOCK_FLAG_ALLOC | TSK_FS_BLOCK_FLAG_CONT;
+    return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_ALLOC | TSK_FS_BLOCK_FLAG_CONT);
 }
 
 
@@ -122,8 +122,8 @@ tsk_fs_nofs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     /* Sanity check on a_flags -- make sure at least one ALLOC is set */
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
 
