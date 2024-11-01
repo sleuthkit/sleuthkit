@@ -1072,7 +1072,7 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
     TSK_FS_META * a_fs_meta)
 {
     a_fs_meta->type = TSK_FS_META_TYPE_VIRT_DIR;
-    a_fs_meta->mode = 0;
+    a_fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
     a_fs_meta->nlink = 1;
 
     a_fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
