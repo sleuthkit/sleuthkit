@@ -625,7 +625,7 @@ nsrl_getentry(
                 return 1;
 
             found = 1;
-            strncpy(pname, name, TSK_HDB_MAXLEN);
+            strncpy(pname, name, TSK_HDB_MAXLEN - 1);
         }
 
         /* Advance to the next row */
