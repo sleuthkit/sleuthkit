@@ -765,32 +765,32 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
     // set the mode
     fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_ISUID)
-        fs_meta->mode |= TSK_FS_META_MODE_ISUID;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_ISUID);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_ISGID)
-        fs_meta->mode |= TSK_FS_META_MODE_ISGID;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_ISGID);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_ISVTX)
-        fs_meta->mode |= TSK_FS_META_MODE_ISVTX;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_ISVTX);
 
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IRUSR)
-        fs_meta->mode |= TSK_FS_META_MODE_IRUSR;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IRUSR);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IWUSR)
-        fs_meta->mode |= TSK_FS_META_MODE_IWUSR;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IWUSR);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IXUSR)
-        fs_meta->mode |= TSK_FS_META_MODE_IXUSR;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IXUSR);
 
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IRGRP)
-        fs_meta->mode |= TSK_FS_META_MODE_IRGRP;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IRGRP);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IWGRP)
-        fs_meta->mode |= TSK_FS_META_MODE_IWGRP;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IWGRP);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IXGRP)
-        fs_meta->mode |= TSK_FS_META_MODE_IXGRP;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IXGRP);
 
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IROTH)
-        fs_meta->mode |= TSK_FS_META_MODE_IROTH;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IROTH);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IWOTH)
-        fs_meta->mode |= TSK_FS_META_MODE_IWOTH;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IWOTH);
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_IXOTH)
-        fs_meta->mode |= TSK_FS_META_MODE_IXOTH;
+        fs_meta->mode = (TSK_FS_META_MODE_ENUM) (fs_meta->mode | TSK_FS_META_MODE_IXOTH);
 
     fs_meta->nlink = tsk_getu16(fs->endian, dino_buf->i_nlink);
 
@@ -1010,8 +1010,8 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
     /*
      * Apply the used/unused restriction.
      */
-    fs_meta->flags |= (fs_meta->ctime ?
-        TSK_FS_META_FLAG_USED : TSK_FS_META_FLAG_UNUSED);
+    fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (fs_meta->flags | (fs_meta->ctime ?
+        TSK_FS_META_FLAG_USED : TSK_FS_META_FLAG_UNUSED));
 
     return 0;
 }
@@ -1130,15 +1130,15 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     /* If ORPHAN is wanted, then make sure that the flags are correct */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        flags |= TSK_FS_META_FLAG_UNALLOC;
-        flags &= ~TSK_FS_META_FLAG_ALLOC;
-        flags |= TSK_FS_META_FLAG_USED;
-        flags &= ~TSK_FS_META_FLAG_UNUSED;
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_UNALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_ALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_UNUSED);
     }
     else {
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
-            flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
+            flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
         /* If neither of the USED or UNUSED flags are set, then set them
@@ -1146,7 +1146,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          */
         if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-            flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
+            flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
 
@@ -1352,9 +1352,9 @@ ext2fs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     // these blocks are not described in the group descriptors
     // sparse
     if (a_addr == 0)
-        return TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC;
+        return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC);
     if (a_addr < ext2fs->first_data_block)
-        return TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_ALLOC;
+        return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_ALLOC);
 
     grp_num = ext2_dtog_lcl(a_fs, ext2fs->fs, a_addr);
 
@@ -1487,14 +1487,14 @@ ext2fs_block_walk(TSK_FS_INFO * a_fs, TSK_DADDR_T a_start_blk,
     /* Sanity check on a_flags -- make sure at least one ALLOC is set */
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_META) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_CONT) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
     }
 
 
@@ -1530,7 +1530,7 @@ ext2fs_block_walk(TSK_FS_INFO * a_fs, TSK_DADDR_T a_start_blk,
         if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
             myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        if (tsk_fs_block_get_flag(a_fs, fs_block, addr, myflags) == NULL) {
+        if (tsk_fs_block_get_flag(a_fs, fs_block, addr, (TSK_FS_BLOCK_FLAG_ENUM) myflags) == NULL) {
             tsk_error_set_errstr2("ext2fs_block_walk: block %" PRIuDADDR,
                 addr);
             tsk_fs_block_free(fs_block);
@@ -3561,7 +3561,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         if (tsk_getu32(fs->endian, ext2fs->fs->s_feature_incompat) &
             EXT2FS_FEATURE_INCOMPAT_EXTENTS) {
             fs->ftype = TSK_FS_TYPE_EXT4;
-            fs->flags |= TSK_FS_INFO_FLAG_HAVE_NANOSEC;
+            fs->flags = (TSK_FS_INFO_FLAG_ENUM) (fs->flags | TSK_FS_INFO_FLAG_HAVE_NANOSEC);
         }
         else if (tsk_getu32(fs->endian, ext2fs->fs->s_feature_compat) &
             EXT2FS_FEATURE_COMPAT_HAS_JOURNAL)
