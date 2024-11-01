@@ -483,14 +483,14 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     /* Sanity check on a_flags -- make sure at least one ALLOC is set */
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_META) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_CONT) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
     }
 
     if ((fs_block = tsk_fs_block_alloc(fs)) == NULL) {
@@ -565,7 +565,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                     myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
                 tsk_fs_block_set(fs, fs_block, addr,
-                    myflags | TSK_FS_BLOCK_FLAG_RAW,
+                    (TSK_FS_BLOCK_FLAG_ENUM) (myflags | TSK_FS_BLOCK_FLAG_RAW),
                     &data_buf[i * fs->block_size]);
 
                 retval = a_action(fs_block, a_ptr);
@@ -683,7 +683,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                 break;
 
             tsk_fs_block_set(fs, fs_block, addr + i,
-                myflags | TSK_FS_BLOCK_FLAG_RAW,
+                (TSK_FS_BLOCK_FLAG_ENUM) (myflags | TSK_FS_BLOCK_FLAG_RAW),
                 &data_buf[i * fs->block_size]);
 
             retval = a_action(fs_block, a_ptr);
