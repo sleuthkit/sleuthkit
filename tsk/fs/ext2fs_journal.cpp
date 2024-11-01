@@ -36,8 +36,14 @@
  */
 
 static TSK_WALK_RET_ENUM
-load_sb_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+load_sb_action(
+  TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  [[maybe_unused]] TSK_DADDR_T addr,
+  char *buf,
+  size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  [[maybe_unused]] void *ptr)
 {
     TSK_FS_INFO *fs = fs_file->fs_info;
     ext2fs_journ_sb *sb;
@@ -130,8 +136,11 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
  * return 0 on success and 1 on error
  * */
 uint8_t
-ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
-    TSK_FS_JENTRY_WALK_CB action, void *ptr)
+ext2fs_jentry_walk(
+  TSK_FS_INFO * fs,
+  [[maybe_unused]] int flags,
+  [[maybe_unused]] TSK_FS_JENTRY_WALK_CB action,
+  [[maybe_unused]] void *ptr)
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     EXT2FS_JINFO *jinfo = ext2fs->jinfo;
@@ -484,8 +493,13 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
  * Return 0 on success and 1 on error
  */
 uint8_t
-ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
-    int flags, TSK_FS_JBLK_WALK_CB action, void *ptr)
+ext2fs_jblk_walk(
+  TSK_FS_INFO * fs,
+  TSK_DADDR_T start,
+  TSK_DADDR_T end,
+  [[maybe_unused]] int flags,
+  [[maybe_unused]] TSK_FS_JBLK_WALK_CB action,
+  [[maybe_unused]] void *ptr)
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     EXT2FS_JINFO *jinfo = ext2fs->jinfo;
