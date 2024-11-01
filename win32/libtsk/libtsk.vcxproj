@@ -395,7 +395,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
-    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.cpp" />
     <ClCompile Include="..\..\tsk\fs\encryptionHelper.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
