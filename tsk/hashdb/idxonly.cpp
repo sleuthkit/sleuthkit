@@ -123,7 +123,7 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path, const TSK_TCHAR *idx_path)
 }
 
 const TSK_TCHAR *
-    idxonly_get_db_path(TSK_HDB_INFO *hdb_info)
+idxonly_get_db_path([[maybe_unused]] TSK_HDB_INFO *hdb_info)
 {
     // The database path member of the TSK_HDB_INFO is filled in, but that is
     // just for the sake of the common index file name construction algorithm.
@@ -131,9 +131,13 @@ const TSK_TCHAR *
 }
 
 uint8_t
-    idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
-    TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
-    TSK_HDB_LOOKUP_FN action, void *cb_ptr)
+idxonly_getentry(
+  TSK_HDB_INFO * hdb_info,
+  const char *hash,
+  [[maybe_unused]] TSK_OFF_T offset,
+  TSK_HDB_FLAG_ENUM flags,
+  TSK_HDB_LOOKUP_FN action,
+  void *cb_ptr)
 {
     if (!(flags & TSK_HDB_FLAG_QUICK) && (NULL != action)) {
         action(hdb_info, hash, NULL, cb_ptr);
