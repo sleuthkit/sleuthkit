@@ -43,7 +43,7 @@ tsk_fs_nofs_fsstat(TSK_FS_INFO * a_fs, FILE * hFile)
 /** \internal
  */
 TSK_FS_ATTR_TYPE_ENUM
-tsk_fs_nofs_get_default_attr_type(const TSK_FS_FILE * a_fs_file)
+tsk_fs_nofs_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_fs_file)
 {
     return TSK_FS_ATTR_TYPE_DEFAULT;
 }
@@ -78,7 +78,9 @@ tsk_fs_nofs_close(TSK_FS_INFO * a_fs)
 /** \internal
  */
 TSK_FS_BLOCK_FLAG_ENUM
-tsk_fs_nofs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
+tsk_fs_nofs_block_getflags(
+  [[maybe_unused]] TSK_FS_INFO * a_fs,
+  [[maybe_unused]] TSK_DADDR_T a_addr)
 {
     return (TSK_FS_BLOCK_FLAG_ENUM) (TSK_FS_BLOCK_FLAG_ALLOC | TSK_FS_BLOCK_FLAG_CONT);
 }
@@ -170,9 +172,13 @@ tsk_fs_nofs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
 /** \internal
  */
 uint8_t
-tsk_fs_nofs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
-    TSK_INUM_T a_end_inum, TSK_FS_META_FLAG_ENUM a_flags,
-    TSK_FS_META_WALK_CB a_action, void *a_ptr)
+tsk_fs_nofs_inode_walk(
+  TSK_FS_INFO * a_fs,
+  [[maybe_unused]] TSK_INUM_T a_start_inum,
+  [[maybe_unused]] TSK_INUM_T a_end_inum,
+  [[maybe_unused]] TSK_FS_META_FLAG_ENUM a_flags,
+  [[maybe_unused]] TSK_FS_META_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -184,8 +190,10 @@ tsk_fs_nofs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
 /** \internal
  */
 uint8_t
-tsk_fs_nofs_file_add_meta(TSK_FS_INFO * a_fs, TSK_FS_FILE * a_fs_file,
-    TSK_INUM_T inum)
+tsk_fs_nofs_file_add_meta(
+  TSK_FS_INFO * a_fs,
+  [[maybe_unused]] TSK_FS_FILE * a_fs_file,
+  [[maybe_unused]] TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -197,8 +205,13 @@ tsk_fs_nofs_file_add_meta(TSK_FS_INFO * a_fs, TSK_FS_FILE * a_fs_file,
 /** \internal
  */
 uint8_t
-tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
-    TSK_DADDR_T numblock, int32_t sec_skew)
+tsk_fs_nofs_istat(
+  TSK_FS_INFO * a_fs,
+  [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_flags,
+  [[maybe_unused]] FILE * hFile,
+  [[maybe_unused]] TSK_INUM_T inum,
+  [[maybe_unused]] TSK_DADDR_T numblock,
+  [[maybe_unused]] int32_t sec_skew)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -214,8 +227,11 @@ tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *
 /** \internal
  */
 TSK_RETVAL_ENUM
-tsk_fs_nofs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr, int recursion_depth)
+tsk_fs_nofs_dir_open_meta(
+  TSK_FS_INFO * a_fs,
+  [[maybe_unused]] TSK_FS_DIR ** a_fs_dir,
+  [[maybe_unused]] TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -229,7 +245,9 @@ tsk_fs_nofs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 /** \internal
  */
 uint8_t
-tsk_fs_nofs_jopen(TSK_FS_INFO * a_fs, TSK_INUM_T inum)
+tsk_fs_nofs_jopen(
+  TSK_FS_INFO * a_fs,
+  [[maybe_unused]] TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -241,8 +259,11 @@ tsk_fs_nofs_jopen(TSK_FS_INFO * a_fs, TSK_INUM_T inum)
 /** \internal
  */
 uint8_t
-tsk_fs_nofs_jentry_walk(TSK_FS_INFO * a_fs, int a_flags,
-    TSK_FS_JENTRY_WALK_CB a_action, void *a_ptr)
+tsk_fs_nofs_jentry_walk(
+  TSK_FS_INFO * a_fs,
+  [[maybe_unused]] int a_flags,
+  [[maybe_unused]] TSK_FS_JENTRY_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -255,8 +276,13 @@ tsk_fs_nofs_jentry_walk(TSK_FS_INFO * a_fs, int a_flags,
 /** \internal
  */
 uint8_t
-tsk_fs_nofs_jblk_walk(TSK_FS_INFO * a_fs, TSK_INUM_T start, TSK_INUM_T end,
-    int a_flags, TSK_FS_JBLK_WALK_CB a_action, void *a_ptr)
+tsk_fs_nofs_jblk_walk(
+  TSK_FS_INFO * a_fs,
+  [[maybe_unused]] TSK_INUM_T start,
+  [[maybe_unused]] TSK_INUM_T end,
+  [[maybe_unused]] int a_flags,
+  [[maybe_unused]] TSK_FS_JBLK_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -266,7 +292,9 @@ tsk_fs_nofs_jblk_walk(TSK_FS_INFO * a_fs, TSK_INUM_T start, TSK_INUM_T end,
 }
 
 int
-tsk_fs_nofs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1,
+tsk_fs_nofs_name_cmp(
+  [[maybe_unused]] TSK_FS_INFO * a_fs_info,
+  [[maybe_unused]] const char *s1,
     const char *s2)
 {
     return strcmp(s1, s2);
