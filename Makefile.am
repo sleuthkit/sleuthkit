@@ -231,7 +231,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/ifind_lib.cpp \
 	tsk/fs/ils_lib.cpp \
 	tsk/fs/iso9660.cpp \
-	tsk/fs/iso9660_dent.c \
+	tsk/fs/iso9660_dent.cpp \
 	tsk/fs/logical_fs.cpp \
 	tsk/fs/lzvn.c \
 	tsk/fs/lzvn.h \
