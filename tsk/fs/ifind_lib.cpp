@@ -477,9 +477,14 @@ typedef struct {
  * file_walk action for non-ntfs
  */
 static TSK_WALK_RET_ENUM
-ifind_data_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
-    TSK_DADDR_T addr, char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags,
-    void *ptr)
+ifind_data_file_act(
+  TSK_FS_FILE * fs_file,
+  TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  TSK_FS_BLOCK_FLAG_ENUM flags,
+  void *ptr)
 {
     TSK_FS_INFO *fs = fs_file->fs_info;
     IFIND_DATA_DATA *data = (IFIND_DATA_DATA *) ptr;
