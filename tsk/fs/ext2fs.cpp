@@ -1364,7 +1364,7 @@ ext2fs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     /* Lookup bitmap if not loaded */
     if (ext2fs_bmap_load(ext2fs, grp_num)) {
         tsk_release_lock(&ext2fs->lock);
-        return 0;
+        return TSK_FS_BLOCK_FLAG_UNUSED;
     }
 
     /*
@@ -1895,7 +1895,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
 
     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
                             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                            fs_meta->size, fs_meta->size, length, 0, 0)) {
+                            fs_meta->size, fs_meta->size, length, TSK_FS_ATTR_FLAG_NONE, 0)) {
         return 1;
     }
 
@@ -1963,7 +1963,7 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
                                 TSK_FS_ATTR_TYPE_UNIX_EXTENT, TSK_FS_ATTR_ID_DEFAULT,
                                 fs_info->block_size * extent_index_size,
                                 fs_info->block_size * extent_index_size,
-                                fs_info->block_size * extent_index_size, 0, 0)) {
+                                fs_info->block_size * extent_index_size, TSK_FS_ATTR_FLAG_NONE, 0)) {
             return 1;
         }
 
@@ -3504,7 +3504,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs = &(ext2fs->fs_info);
 
     fs->ftype = ftype;
-    fs->flags = 0;
+    fs->flags = TSK_FS_INFO_FLAG_NONE;
     fs->img_info = img_info;
     fs->offset = offset;
     fs->tag = TSK_FS_INFO_TAG;
