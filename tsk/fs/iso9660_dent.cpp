@@ -286,7 +286,7 @@ iso9660_dir_open_meta(
     if ((buf = (char*) tsk_malloc(length)) == NULL)
         return TSK_ERR;
 
-    cnt = tsk_fs_file_read(fs_dir->fs_file, 0, buf, length, 0);
+    cnt = tsk_fs_file_read(fs_dir->fs_file, 0, buf, length, TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != (ssize_t)length) {
         if (cnt >= 0) {
             tsk_error_reset();
