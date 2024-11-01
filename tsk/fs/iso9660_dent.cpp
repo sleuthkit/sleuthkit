@@ -328,7 +328,10 @@ iso9660_dir_open_meta(
 }
 
 int
-iso9660_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
+iso9660_name_cmp(
+  [[maybe_unused]] TSK_FS_INFO * a_fs_info,
+  const char *s1,
+  const char *s2)
 {
     return strcmp(s1, s2);
 }
