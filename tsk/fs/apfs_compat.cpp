@@ -19,8 +19,8 @@
 #include <cstring>
 
 // Forward declarations
-extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
-extern "C" void error_returned(const char* errstr, ...);
+void error_detected(uint32_t errnum, const char* errstr, ...);
+void error_returned(const char* errstr, ...);
 
 static inline const APFSPoolCompat& to_pool(
     const TSK_POOL_INFO* pool_info) noexcept {

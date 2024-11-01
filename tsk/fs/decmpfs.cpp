@@ -8,8 +8,8 @@
 #include <cstdint>
 #include <memory>
 
-extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
-extern "C" void error_returned(const char* errstr, ...);
+void error_detected(uint32_t errnum, const char* errstr, ...);
+void error_returned(const char* errstr, ...);
 
 #include "../libtsk.h"
 #include "tsk_fs_i.h"

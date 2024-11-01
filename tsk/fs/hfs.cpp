@@ -99,8 +99,6 @@ static uint8_t hfs_load_attrs(TSK_FS_FILE * fs_file);
 static uint8_t hfs_load_extended_attrs(TSK_FS_FILE * file,
     unsigned char *isCompressed, unsigned char *cmpType,
     uint64_t * uncSize);
-void error_detected(uint32_t errnum, const char *errstr, ...);
-void error_returned(const char *errstr, ...);
 
 /* may set error up to string 1
  * returns 0 on success, 1 on failure */
