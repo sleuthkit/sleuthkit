@@ -33,7 +33,12 @@
  * @returns NULL on error or if data is not a FAT file system
  */
 TSK_FS_INFO *
-fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, const char* a_pass, uint8_t a_test)
+fatfs_open(
+  TSK_IMG_INFO *a_img_info,
+  TSK_OFF_T a_offset,
+  TSK_FS_TYPE_ENUM a_ftype,
+  const char* a_pass,
+  [[maybe_unused]] uint8_t a_test)
 {
     const char *func_name = "fatfs_open";
     FATFS_INFO *fatfs = NULL;
@@ -763,7 +768,9 @@ fatfs_is_sectalloc(FATFS_INFO * fatfs, TSK_DADDR_T sect)
 
 /* return 1 on error and 0 on success */
 uint8_t
-fatfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
+fatfs_jopen(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -773,7 +780,9 @@ fatfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 
 /* return 1 on error and 0 on success */
 uint8_t
-fatfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+fatfs_fscheck(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -804,8 +813,11 @@ fatfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
 
 /* return 1 on error and 0 on success */
 uint8_t
-fatfs_jentry_walk(TSK_FS_INFO * fs, int a_flags,
-    TSK_FS_JENTRY_WALK_CB a_action, void *a_ptr)
+fatfs_jentry_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] int a_flags,
+  [[maybe_unused]] TSK_FS_JENTRY_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -815,8 +827,13 @@ fatfs_jentry_walk(TSK_FS_INFO * fs, int a_flags,
 
 /* return 1 on error and 0 on success */
 uint8_t
-fatfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
-    int a_flags, TSK_FS_JBLK_WALK_CB a_action, void *a_ptr)
+fatfs_jblk_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_DADDR_T start,
+  [[maybe_unused]] TSK_DADDR_T end,
+  [[maybe_unused]] int a_flags,
+  [[maybe_unused]] TSK_FS_JBLK_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
