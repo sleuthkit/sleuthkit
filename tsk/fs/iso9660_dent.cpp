@@ -283,7 +283,7 @@ iso9660_dir_open_meta(
 
     /* read directory extent into memory */
     length = (size_t) fs_dir->fs_file->meta->size;
-    if ((buf = tsk_malloc(length)) == NULL)
+    if ((buf = (char*) tsk_malloc(length)) == NULL)
         return TSK_ERR;
 
     cnt = tsk_fs_file_read(fs_dir->fs_file, 0, buf, length, 0);
