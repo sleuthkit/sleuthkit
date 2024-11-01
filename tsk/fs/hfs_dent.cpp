@@ -197,9 +197,14 @@ typedef struct {
 } HFS_DIR_OPEN_META_INFO;
 
 static uint8_t
-hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t nodesize,
-    TSK_OFF_T key_off, void *ptr)
+hfs_dir_open_meta_cb(
+  HFS_INFO * hfs,
+  int8_t level_type,
+  const hfs_btree_key_cat * cur_key,
+  int cur_keylen,
+  size_t nodesize,
+  [[maybe_unused]] TSK_OFF_T key_off,
+  void *ptr)
 {
     HFS_DIR_OPEN_META_INFO *info = (HFS_DIR_OPEN_META_INFO *) ptr;
     TSK_FS_INFO *fs = &hfs->fs_info;
@@ -409,8 +414,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 * @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
-hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr, int recursion_depth)
+hfs_dir_open_meta(
+  TSK_FS_INFO * fs,
+  TSK_FS_DIR ** a_fs_dir,
+  TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
     uint32_t cnid;              /* catalog node ID of the entry (= inum) */
