@@ -106,7 +106,7 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
         }
     }
 
-    fs_name->flags = 0;
+    fs_name->flags = (TSK_FS_NAME_FLAG_ENUM) 0;
 
     return 0;
 }
