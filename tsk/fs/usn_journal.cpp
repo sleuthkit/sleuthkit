@@ -178,7 +178,7 @@ parse_buffer(const unsigned char *buf, ssize_t bufsize,
              TSK_ENDIAN_ENUM endian, TSK_FS_USNJENTRY_WALK_CB action, void *ptr)
 {
     TSK_OFF_T offset = 0;
-    TSK_WALK_RET_ENUM ret = 0;
+    TSK_WALK_RET_ENUM ret = TSK_WALK_CONT;
     TSK_USN_RECORD_HEADER header;
 
     while ((offset = search_record(buf, offset, bufsize)) < bufsize) {
