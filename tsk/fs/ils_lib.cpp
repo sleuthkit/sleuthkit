@@ -53,7 +53,7 @@ typedef struct {
 /* print_header - print time machine header */
 
 static void
-print_header(TSK_FS_INFO * fs)
+print_header([[maybe_unused]] TSK_FS_INFO * fs)
 {
     char hostnamebuf[BUFSIZ];
     time_t now;
