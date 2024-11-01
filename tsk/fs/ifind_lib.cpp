@@ -479,7 +479,7 @@ typedef struct {
 static TSK_WALK_RET_ENUM
 ifind_data_file_act(
   TSK_FS_FILE * fs_file,
-  TSK_OFF_T a_off,
+  [[maybe_unused]] TSK_OFF_T a_off,
   TSK_DADDR_T addr,
   [[maybe_unused]] char *buf,
   [[maybe_unused]] size_t size,
