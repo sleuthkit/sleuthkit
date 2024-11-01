@@ -1719,7 +1719,7 @@ hfs_find_highest_inum(HFS_INFO * hfs)
 static TSK_FS_META_MODE_ENUM
 hfs_mode_to_tsk_mode(uint16_t a_mode)
 {
-    TSK_FS_META_MODE_ENUM mode = 0;
+    TSK_FS_META_MODE_ENUM mode = TSK_FS_META_MODE_UNSPECIFIED;
 
     if (a_mode & HFS_IN_ISUID)
         mode |= TSK_FS_META_MODE_ISUID;
