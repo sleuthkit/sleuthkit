@@ -22,9 +22,14 @@
 */
 
 TSK_WALK_RET_ENUM
-tsk_fs_load_file_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
-    TSK_DADDR_T addr, char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags,
-    void *ptr)
+tsk_fs_load_file_action(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  [[maybe_unused]] TSK_DADDR_T addr,
+  char *buf,
+  size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  void *ptr)
 {
     TSK_FS_LOAD_FILE *buf1 = (TSK_FS_LOAD_FILE *) ptr;
 
