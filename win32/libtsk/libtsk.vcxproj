@@ -437,7 +437,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\dstat_lib.cpp" />
     <ClCompile Include="..\..\tsk\fs\ext2fs.c" />
     <ClCompile Include="..\..\tsk\fs\ext2fs_dent.c" />
-    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.c" />
+    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.cpp" />
     <ClCompile Include="..\..\tsk\fs\fatfs.c" />
     <ClCompile Include="..\..\tsk\fs\fatfs_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\fatfs_meta.c" />
