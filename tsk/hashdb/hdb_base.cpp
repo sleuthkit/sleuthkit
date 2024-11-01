@@ -142,7 +142,9 @@ uint8_t
 }
 
 const TSK_TCHAR*
-    hdb_base_get_index_path(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+hdb_base_get_index_path(
+  TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] TSK_HDB_HTYPE_ENUM htype)
 {
     // The "base class" assumption is that the hash database does not have
     // user-accessible external index files (e.g., it is a relational
@@ -153,7 +155,9 @@ const TSK_TCHAR*
 }
 
 uint8_t
-    hdb_base_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+hdb_base_has_index(
+  [[maybe_unused]] TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] TSK_HDB_HTYPE_ENUM htype)
 {
     // The "base class" assumption is that the hash database does not have
     // user-accessible external index files (e.g., it is a relational database).
@@ -164,7 +168,9 @@ uint8_t
 }
 
 uint8_t
-    hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
+hdb_base_make_index(
+  [[maybe_unused]] TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] TSK_TCHAR *htype)
 {
     // The "base class" assumption is that the hash database does not have
     // user-accessible external index files (e.g., it is a relational
@@ -174,7 +180,9 @@ uint8_t
 }
 
 uint8_t
-    hdb_base_open_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+hdb_base_open_index(
+  [[maybe_unused]] TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] TSK_HDB_HTYPE_ENUM htype)
 {
     // The "base class" assumption is that the hash database does not use
     // user-accessible external index files (e.g., it is a relational
@@ -185,7 +193,12 @@ uint8_t
 }
 
 int8_t
-    hdb_base_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash, TSK_HDB_FLAG_ENUM flag, TSK_HDB_LOOKUP_FN callback, void *data)
+hdb_base_lookup_str(
+  TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] const char *hash,
+  [[maybe_unused]] TSK_HDB_FLAG_ENUM flag,
+  [[maybe_unused]] TSK_HDB_LOOKUP_FN callback,
+  [[maybe_unused]] void *data)
 {
     // This function always needs an "override" by "derived classes."
     tsk_error_reset();
@@ -195,7 +208,13 @@ int8_t
 }
 
 int8_t
-    hdb_base_lookup_bin(TSK_HDB_INFO *hdb_info, uint8_t *hash, uint8_t hash_len, TSK_HDB_FLAG_ENUM flag, TSK_HDB_LOOKUP_FN callback, void *data)
+hdb_base_lookup_bin(
+  TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] uint8_t *hash,
+  [[maybe_unused]] uint8_t hash_len,
+  [[maybe_unused]] TSK_HDB_FLAG_ENUM flag,
+  [[maybe_unused]] TSK_HDB_LOOKUP_FN callback,
+  [[maybe_unused]] void *data)
 {
     // This function always needs an "override" by "derived classes."
     tsk_error_reset();
@@ -205,7 +224,10 @@ int8_t
 }
 
 int8_t
-    hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *result)
+hdb_base_lookup_verbose_str(
+  TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] const char *hash,
+  [[maybe_unused]] void *result)
 {
     // This function always needs an "override" by "derived classes."
     tsk_error_reset();
@@ -224,7 +246,13 @@ uint8_t
 }
 
 uint8_t
-    hdb_base_add_entry(TSK_HDB_INFO *hdb_info, const char *file_name, const char *md5, const char *sha1, const char *sha2_256, const char *comment)
+hdb_base_add_entry(
+  TSK_HDB_INFO *hdb_info,
+  [[maybe_unused]] const char *file_name,
+  [[maybe_unused]] const char *md5,
+  [[maybe_unused]] const char *sha1,
+  [[maybe_unused]] const char *sha2_256,
+  [[maybe_unused]] const char *comment)
 {
     // This function needs an "override" by "derived classes" unless there is an
     // "override" of the accepts_updates function that returns 0 (false).
