@@ -523,7 +523,7 @@ set_device_sector_size(IMG_RAW_INFO * raw_info, const TSK_TCHAR * image_name, TS
     }
 
     // First test whether we need to align on sector boundaries
-    char* buf = malloc(max_sector_size);
+    char* buf = (char*) malloc(max_sector_size);
     int needs_sector_alignment = 0;
     if (image_size > raw_info->img_info.sector_size) {
         if (test_sector_read(file_handle, 1, raw_info->img_info.sector_size, buf)) {
