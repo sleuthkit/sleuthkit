@@ -500,9 +500,13 @@ uint8_t
 * @return 1 on error and 0 on success
 */
 uint8_t
-    nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
-    TSK_HDB_FLAG_ENUM flags,
-    TSK_HDB_LOOKUP_FN action, void *cb_ptr)
+nsrl_getentry(
+  TSK_HDB_INFO * hdb_info_base,
+  const char *hash,
+  TSK_OFF_T offset,
+  [[maybe_unused]] TSK_HDB_FLAG_ENUM flags,
+  TSK_HDB_LOOKUP_FN action,
+  void *cb_ptr)
 {
     TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base;
     char buf[TSK_HDB_MAXLEN], *name, *cur_hash, pname[TSK_HDB_MAXLEN];
