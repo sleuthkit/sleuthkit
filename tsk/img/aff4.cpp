@@ -32,7 +32,7 @@ static char* get_messages(AFF4_Message* msg) {
 
     // get message lengths and total length
     const size_t maxlen = 1024;
-    size_t* lengths = tsk_malloc(count * sizeof(size_t));
+    size_t* lengths = (size_t*) tsk_malloc(count * sizeof(size_t));
     size_t total_len = 0;
 
     int i = 0;
