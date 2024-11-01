@@ -151,7 +151,11 @@ is_83_name(FATXXFS_DENTRY * de)
  * @return 1 if the buffer likely contains a directory entry, 0 otherwise
  */
 uint8_t
-fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
+fatxxfs_is_dentry(
+  FATFS_INFO *a_fatfs,
+  FATFS_DENTRY *a_dentry,
+  [[maybe_unused]] FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc,
+  uint8_t a_do_basic_tests_only)
 {
     const char *func_name = "fatxxfs_is_dentry";
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_fatfs->fs_info;
