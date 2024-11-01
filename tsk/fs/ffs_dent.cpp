@@ -291,7 +291,7 @@ ffs_dir_open_meta(
 
     /* dirbuf will only be used to process one block at a time */
     size = roundup(fs_dir->fs_file->meta->size, FFS_DIRBLKSIZ);
-    if ((dirbuf = tsk_malloc((size_t)FFS_DIRBLKSIZ)) == NULL) {
+    if ((dirbuf = (char*) tsk_malloc((size_t)FFS_DIRBLKSIZ)) == NULL) {
         return TSK_ERR;
     }
 
