@@ -223,9 +223,9 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/fs_open.c \
 	tsk/fs/fs_parse.c \
 	tsk/fs/fs_types.c \
-	tsk/fs/hfs.c \
+	tsk/fs/hfs.cpp \
 	tsk/fs/hfs_dent.c \
-	tsk/fs/hfs_journal.c \
+	tsk/fs/hfs_journal.cpp \
 	tsk/fs/hfs_unicompare.c \
 	tsk/fs/icat_lib.cpp \
 	tsk/fs/ifind_lib.cpp \
