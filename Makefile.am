@@ -202,7 +202,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/ext2fs_journal.cpp \
 	tsk/fs/fatfs.cpp \
 	tsk/fs/fatfs_dent.cpp \
-	tsk/fs/fatfs_meta.c \
+	tsk/fs/fatfs_meta.cpp \
 	tsk/fs/fatfs_utils.c \
 	tsk/fs/fatxxfs.c \
 	tsk/fs/fatxxfs_dent.c \
