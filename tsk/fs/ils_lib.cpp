@@ -261,7 +261,7 @@ tsk_fs_ils(TSK_FS_INFO * fs, TSK_FS_ILS_FLAG_ENUM lclflags,
 
     /* Print the data */
     if (lclflags & TSK_FS_ILS_MAC) {
-        TSK_TCHAR *tmpptr;
+        const TSK_TCHAR *tmpptr;
         data.image = img;
 
 #ifdef TSK_WIN32
