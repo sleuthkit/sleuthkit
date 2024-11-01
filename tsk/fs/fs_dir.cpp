@@ -983,8 +983,7 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     /* Sanity check on flags -- make sure at least one ALLOC is set */
     if (((a_flags & TSK_FS_DIR_WALK_FLAG_ALLOC) == 0) &&
         ((a_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC) == 0)) {
-        a_flags |=
-            (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC);
+        a_flags = (TSK_FS_DIR_WALK_FLAG_ENUM) (a_flags | TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC);
     }
 
     /* if the flags are right, we can collect info that may be needed
@@ -1076,7 +1075,7 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
     a_fs_meta->mode = 0;
     a_fs_meta->nlink = 1;
 
-    a_fs_meta->flags = (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
+    a_fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
     a_fs_meta->uid = a_fs_meta->gid = 0;
     a_fs_meta->mtime = a_fs_meta->atime = a_fs_meta->ctime =
         a_fs_meta->crtime = 0;
@@ -1166,8 +1165,7 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
      * be fewer callbacks for UNALLOC than ALLOC.
      */
     if (tsk_fs_dir_walk_internal(a_fs, a_fs->root_inum,
-            TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
-            TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_named_dir_walk_cb, NULL, 0)) {
+            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_named_dir_walk_cb, NULL, 0)) {
         tsk_error_errstr2_concat
             ("- tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
         return TSK_ERR;
@@ -1308,8 +1306,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
                 " to mark contents as seen\n", a_fs_file->meta->addr);
 
         if (tsk_fs_dir_walk_internal(fs, a_fs_file->meta->addr,
-                TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE
-                | TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_orphan_dir_walk_cb,
+                (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_orphan_dir_walk_cb,
                 data, 0)) {
             tsk_error_errstr2_concat
                 (" - find_orphan_meta_walk_cb: identifying inodes allocated by file names");
@@ -1405,7 +1402,7 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             "tsk_fs_dir_find_orphans: Performing inode_walk to find unnamed metadata structures\n");
 
     if (tsk_fs_meta_walk(a_fs, a_fs->first_inum, a_fs->last_inum,
-            TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED,
+            (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED),
             find_orphan_meta_walk_cb, &data)) {
         tsk_fs_name_free(data.fs_name);
         if (data.orphan_subdir_list) {
