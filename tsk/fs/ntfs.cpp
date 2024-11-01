@@ -740,7 +740,7 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         if (((addr_offset == -1) && (prev_addr == 0))
             || ((addr_offset == -1)
                 && (ntfs->ver == NTFS_VINFO_NT))) {
-            data_run->flags |= TSK_FS_ATTR_RUN_FLAG_SPARSE;
+            data_run->flags = (TSK_FS_ATTR_RUN_FLAG_ENUM) (data_run->flags | TSK_FS_ATTR_RUN_FLAG_SPARSE);
             data_run->addr = 0;
             if (tsk_verbose)
                 tsk_fprintf(stderr, "ntfs_make_data_run: Sparse Run\n");
@@ -775,7 +775,7 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
 
         }
         else {
-            data_run->flags |= TSK_FS_ATTR_RUN_FLAG_SPARSE;
+            data_run->flags = (TSK_FS_ATTR_RUN_FLAG_ENUM) (data_run->flags | TSK_FS_ATTR_RUN_FLAG_SPARSE);
             if (tsk_verbose)
                 tsk_fprintf(stderr, "ntfs_make_data_run: Sparse Run\n");
         }
@@ -1544,7 +1544,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         retval =
                             a_action(fs_attr->fs_file, off, comp_unit[i],
                             &comp.uncomp_buf[i * fs->block_size], read_len,
-                            myflags, ptr);
+                            (TSK_FS_BLOCK_FLAG_ENUM) myflags, ptr);
 
                         off += read_len;
 
@@ -2024,7 +2024,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             }
 
             // set the details in the fs_attr structure
-            if (tsk_fs_attr_set_str(fs_file, fs_attr, name, type,
+            if (tsk_fs_attr_set_str(fs_file, fs_attr, name,
+                    (TSK_FS_ATTR_TYPE_ENUM) type,
                     id_new, (void *) ((uintptr_t) attr +
                         tsk_getu16(fs->endian,
                             attr->c.r.soff)), tsk_getu32(fs->endian,
@@ -2104,7 +2105,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             data_flag = 0;
             if (tsk_getu16(fs->endian, attr->flags) & NTFS_ATTR_FLAG_COMP) {
                 data_flag |= TSK_FS_ATTR_COMP;
-                fs_file->meta->flags |= TSK_FS_META_FLAG_COMP;
+                fs_file->meta->flags = (TSK_FS_META_FLAG_ENUM) (fs_file->meta->flags | TSK_FS_META_FLAG_COMP);
             }
 
             if (tsk_getu16(fs->endian, attr->flags) & NTFS_ATTR_FLAG_ENC)
@@ -2200,7 +2201,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             // @@@ This is bad design, we are casting away the const...
             fs_attr =
                 (TSK_FS_ATTR *) tsk_fs_attrlist_get_id(fs_file->meta->attr,
-                type, id_new);
+                (TSK_FS_ATTR_TYPE_ENUM) type, id_new);
             if (fs_attr == NULL) {
                 uint64_t ssize; // size
                 uint64_t alen;  // allocated length
@@ -2247,9 +2248,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
                 if (tsk_fs_attr_set_run(fs_file, fs_attr,
                         fs_attr_run, name,
-                        type, id_new, ssize,
+                        (TSK_FS_ATTR_TYPE_ENUM) type, id_new, ssize,
                         tsk_getu64(fs->endian, attr->c.nr.initsize),
-                        alen, data_flag, compsize)) {
+                        alen, (TSK_FS_ATTR_FLAG_ENUM) data_flag, compsize)) {
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
 
                     // If the run wasn't saved to the attribute, free it now
@@ -2336,17 +2337,17 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 nt2nano(tsk_getu64(fs->endian, si->crtime));
 
             fs_file->meta->uid = tsk_getu32(fs->endian, si->own_id);
-            fs_file->meta->mode |=
-                (TSK_FS_META_MODE_IXUSR | TSK_FS_META_MODE_IXGRP |
-                TSK_FS_META_MODE_IXOTH);
+            fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)
+                (fs_file->meta->mode | TSK_FS_META_MODE_IXUSR |
+                 TSK_FS_META_MODE_IXGRP | TSK_FS_META_MODE_IXOTH);
             if ((tsk_getu32(fs->endian, si->dos) & NTFS_SI_RO) == 0)
-                fs_file->meta->mode |=
-                    (TSK_FS_META_MODE_IRUSR | TSK_FS_META_MODE_IRGRP |
-                    TSK_FS_META_MODE_IROTH);
+                fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)
+                    (fs_file->meta->mode | TSK_FS_META_MODE_IRUSR |
+                    TSK_FS_META_MODE_IRGRP | TSK_FS_META_MODE_IROTH);
             if ((tsk_getu32(fs->endian, si->dos) & NTFS_SI_HID) == 0)
-                fs_file->meta->mode |=
-                    (TSK_FS_META_MODE_IWUSR | TSK_FS_META_MODE_IWGRP |
-                    TSK_FS_META_MODE_IWOTH);
+                fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)
+                    (fs_file->meta->mode | TSK_FS_META_MODE_IWUSR |
+                    TSK_FS_META_MODE_IWGRP | TSK_FS_META_MODE_IWOTH);
         }
 
         /* File Name (always resident) */
@@ -2482,7 +2483,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 return TSK_ERR;
             }
             fs_attr_attrl = tsk_fs_attrlist_get_id(fs_file->meta->attr,
-                NTFS_ATYPE_ATTRLIST, id_new);
+                (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_ATTRLIST, id_new);
             if (fs_attr_attrl == NULL) {
                 tsk_error_errstr2_concat
                     ("- proc_attrseq: getting attribute list");
@@ -2993,9 +2994,9 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     if ((a_fs_file->meta->attr == NULL)
         || (a_fs_file->meta->attr->head == NULL)
         || ((a_fs_file->meta->attr->head->flags & TSK_FS_ATTR_INUSE) == 0))
-        a_fs_file->meta->flags |= TSK_FS_META_FLAG_UNUSED;
+        a_fs_file->meta->flags = (TSK_FS_META_FLAG_ENUM) (a_fs_file->meta->flags | TSK_FS_META_FLAG_UNUSED);
     else
-        a_fs_file->meta->flags |= TSK_FS_META_FLAG_USED;
+        a_fs_file->meta->flags = (TSK_FS_META_FLAG_ENUM) (a_fs_file->meta->flags | TSK_FS_META_FLAG_USED);
 
     return TSK_OK;
 }
@@ -3151,7 +3152,8 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
     if ((fs_file = tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_ATTR)) == NULL)
         return 1;
 
-    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, NTFS_ATYPE_DATA);
+    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, (TSK_FS_ATTR_TYPE_ENUM
+) NTFS_ATYPE_DATA);
     if (!fs_attr) {
         //("Data attribute not found in $Attr");
         tsk_fs_file_close(fs_file);
@@ -3899,7 +3901,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     }
 
     // Get the $SDS attribute.
-    fs_attr_sds = tsk_fs_attrlist_get(fs_meta->attr, NTFS_ATYPE_DATA);
+    fs_attr_sds = tsk_fs_attrlist_get(fs_meta->attr, (TSK_FS_ATTR_TYPE_ENUM) NTFS_ATYPE_DATA);
     if (!fs_attr_sds) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -4040,7 +4042,7 @@ ntfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     else if (retval == 0)
         flags = TSK_FS_BLOCK_FLAG_UNALLOC;
 
-    return flags;
+    return (TSK_FS_BLOCK_FLAG_ENUM) flags;
 }
 
 
