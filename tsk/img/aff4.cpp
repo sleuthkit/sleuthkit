@@ -174,6 +174,9 @@ aff4_open(
     }
     aff4_info->handle = NULL;
 
+    AFF4_Message* msg = NULL;
+    const char* filename;
+
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info;
     img_info->images = NULL;
     img_info->num_img = 0;
@@ -201,9 +204,9 @@ aff4_open(
         goto on_error;
     }
 
-    const char* filename = fn;
+    filename = fn;
 #else
-    const char* filename = a_images[0];
+    filename = a_images[0];
 #endif
 
 /*
@@ -234,8 +237,6 @@ aff4_open(
 */
 
     // Attempt to open the file.
-    AFF4_Message* msg = NULL;
-
     aff4_info->handle = AFF4_open(filename, &msg);
     if (!aff4_info->handle) {
         char* aff4_msgs = get_messages(msg);
