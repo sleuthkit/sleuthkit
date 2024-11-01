@@ -236,7 +236,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/lzvn.c \
 	tsk/fs/lzvn.h \
 	tsk/fs/nofs_misc.cpp \
-	tsk/fs/ntfs.c \
+	tsk/fs/ntfs.cpp \
 	tsk/fs/ntfs_dent.cpp \
 	tsk/fs/rawfs.c \
 	tsk/fs/swapfs.c \
