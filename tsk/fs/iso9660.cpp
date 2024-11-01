@@ -2441,12 +2441,12 @@ load_vol_desc(TSK_FS_INFO * fs)
             if (iso->pvd) {
                 iso9660_pvd_node *ptmp = iso->pvd;
                 /* append to list if path table address not found in list */
-                while ((p->pvd.pt_loc_l != ptmp->pvd.pt_loc_l)
+                while ((&(p->pvd.pt_loc_l)[0] != &(ptmp->pvd.pt_loc_l)[0])
                     && (ptmp->next))
                     ptmp = ptmp->next;
 
                 // we already have it
-                if (p->pvd.pt_loc_l == ptmp->pvd.pt_loc_l) {
+                if (&(p->pvd.pt_loc_l)[0] == &(ptmp->pvd.pt_loc_l)[0]) {
                     free(vd);
                     p = NULL;
                     vd = NULL;
@@ -2474,12 +2474,12 @@ load_vol_desc(TSK_FS_INFO * fs)
             if (iso->svd) {
                 iso9660_svd_node *stmp = iso->svd;
                 /* append to list if path table address not found in list */
-                while ((s->svd.pt_loc_l != stmp->svd.pt_loc_l)
+                while ((&(s->svd.pt_loc_l)[0] != &(stmp->svd.pt_loc_l)[0])
                     && (stmp->next))
                     stmp = stmp->next;
 
                 // we already have it
-                if (s->svd.pt_loc_l == stmp->svd.pt_loc_l) {
+                if (&(s->svd.pt_loc_l)[0] == &(stmp->svd.pt_loc_l)[0]) {
                     free(vd);
                     s = NULL;
                     vd = NULL;
