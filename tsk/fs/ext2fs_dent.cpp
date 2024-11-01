@@ -321,7 +321,7 @@ ext2fs_dir_open_meta(
     }
 
     // We only read in and process a single block at a time
-    if ((dirbuf = tsk_malloc((size_t)a_fs->block_size)) == NULL) {
+    if ((dirbuf = (char*) tsk_malloc((size_t)a_fs->block_size)) == NULL) {
         return TSK_ERR;
     }
     TSK_OFF_T size = 0;
