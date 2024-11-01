@@ -421,7 +421,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.cpp" />
     <ClCompile Include="..\..\tsk\util\crypto.cpp" />
     <ClCompile Include="..\..\tsk\util\detect_encryption.c" />
-    <ClCompile Include="..\..\tsk\util\file_system_utils.c" />
+    <ClCompile Include="..\..\tsk\util\file_system_utils.cpp" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -508,7 +508,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\img\img_open.cpp" />
     <ClCompile Include="..\..\tsk\img\img_types.c" />
     <ClCompile Include="..\..\tsk\img\mult_files.cpp" />
-    <ClCompile Include="..\..\tsk\img\raw.c" />
+    <ClCompile Include="..\..\tsk\img\raw.cpp" />
     <ClCompile Include="..\..\tsk\img\logical_img.cpp" />
   </ItemGroup>
   <ItemGroup>

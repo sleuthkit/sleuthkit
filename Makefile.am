@@ -279,7 +279,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/mult_files.h \
 	tsk/img/qcow.c \
 	tsk/img/qcow.h \
-	tsk/img/raw.c \
+	tsk/img/raw.cpp \
 	tsk/img/raw.h \
 	tsk/img/tsk_img_i.h \
 	tsk/img/unsupported_types.c \
@@ -305,7 +305,7 @@ tsk_util_libtskutil_la_LDFLAGS = $(AM_LDFLAGS) $(OPENSSL_LDFLAGS)
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
-	tsk/util/file_system_utils.c
+	tsk/util/file_system_utils.cpp
 
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \

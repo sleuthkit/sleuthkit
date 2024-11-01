@@ -243,7 +243,7 @@
     <ClCompile Include="..\..\tsk\img\mult_files.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\raw.c">
+    <ClCompile Include="..\..\tsk\img\raw.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\logical_img.cpp">
@@ -375,7 +375,7 @@
     <ClCompile Include="..\..\tsk\util\detect_encryption.c">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\util\file_system_utils.c">
+    <ClCompile Include="..\..\tsk\util\file_system_utils.cpp">
       <Filter>util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\unsupported_types.c">
