@@ -5037,7 +5037,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
                     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "DATA",
                             TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA, 0,
-                            0, 0, 0, 0)) {
+                            0, 0, TSK_FS_ATTR_FLAG_NONE, 0)) {
                         error_returned(" - hfs_load_attrs (non-file)");
                         return 1;
                     }
