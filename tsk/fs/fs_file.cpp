@@ -581,9 +581,14 @@ typedef struct {
  * Helper function for tsk_fs_file_get_md5
  */
 TSK_WALK_RET_ENUM
-tsk_fs_file_hash_calc_callback(TSK_FS_FILE * file, TSK_OFF_T offset,
-    TSK_DADDR_T addr, char *buf, size_t size,
-    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr)
+tsk_fs_file_hash_calc_callback(
+  [[maybe_unused]] TSK_FS_FILE * file,
+  [[maybe_unused]] TSK_OFF_T offset,
+  [[maybe_unused]] TSK_DADDR_T addr,
+  char *buf,
+  size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM a_flags,
+  void *ptr)
 {
     TSK_FS_HASH_DATA *hash_data = (TSK_FS_HASH_DATA *) ptr;
     if (hash_data == NULL)
