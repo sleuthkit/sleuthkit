@@ -37,7 +37,9 @@ static FILE *
 }
 
 static TSK_HDB_DBTYPE_ENUM
-    hdb_determine_db_type(FILE *hDb, const TSK_TCHAR *db_path)
+hdb_determine_db_type(
+  FILE *hDb,
+  [[maybe_unused]] const TSK_TCHAR *db_path)
 {
     TSK_HDB_DBTYPE_ENUM db_type = TSK_HDB_DBTYPE_INVALID_ID;
 
