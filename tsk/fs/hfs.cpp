@@ -4041,7 +4041,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
             uint16_t keyLength;
             int comp;           // comparison result
-            char *compStr;      // comparison result, as a string
+            const char *compStr;      // comparison result, as a string
             uint8_t *recData;   // pointer to the data part of the record
             uint32_t keyFileID;
 
@@ -4172,7 +4172,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
 
             int comp;           // comparison result
-            char *compStr;      // comparison result as a string
+            const char *compStr;      // comparison result as a string
             uint32_t keyFileID;
 
             // make sure the record and first fields are in the buffer
@@ -5202,7 +5202,7 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
     TSK_DADDR_T end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM flags,
     TSK_FS_BLOCK_WALK_CB action, void *ptr)
 {
-    char *myname = "hfs_block_walk";
+    const char *myname = "hfs_block_walk";
     HFS_INFO *hfs = (HFS_INFO *) fs;
     TSK_FS_BLOCK *fs_block;
     TSK_DADDR_T addr;
@@ -5705,7 +5705,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 /**
  * Text encoding names defined in TN1150, Table 2.
  */
-static char *
+static const char *
 text_encoding_name(uint32_t enc)
 {
     switch (enc) {
