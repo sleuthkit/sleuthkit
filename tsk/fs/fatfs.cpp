@@ -448,7 +448,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
     TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr)
 {
-    char *myname = "fatfs_block_walk";
+    const char *myname = "fatfs_block_walk";
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
     char *data_buf = NULL;
     ssize_t cnt;
