@@ -3267,6 +3267,12 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     TSK_FS_INFO *fs = NULL;
     ntfs_mft *mft = NULL;
 
+    uint32_t attr_len = 0;
+    uint32_t attr_type = 0;
+
+    uint64_t run_start_vcn;
+    uint16_t run_off;
+
     if (ntfs == NULL) {
         goto on_error;
     }
@@ -3284,9 +3290,6 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     attr = (ntfs_attr *) ((uintptr_t) mft +
         tsk_getu16(fs->endian, mft->attr_off));
     data_attr = NULL;
-
-    uint32_t attr_len = 0;
-    uint32_t attr_type = 0;
 
     /* cycle through them */
     while ((uintptr_t) attr + sizeof (ntfs_attr) <=
@@ -3319,8 +3322,8 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         goto on_error;
     }
 
-    uint64_t run_start_vcn = tsk_getu64(fs->endian, data_attr->c.nr.start_vcn);
-    uint16_t run_off = tsk_getu16(fs->endian, data_attr->c.nr.run_off);
+    run_start_vcn = tsk_getu64(fs->endian, data_attr->c.nr.start_vcn);
+    run_off = tsk_getu16(fs->endian, data_attr->c.nr.run_off);
 
     if ((run_off < 48) ||
         (run_off >= attr_len) ||
@@ -5288,6 +5291,8 @@ ntfs_open(
         return NULL;
     }
 
+    uint32_t csize;
+
     if ((ntfs = (NTFS_INFO *) tsk_fs_malloc(sizeof(*ntfs))) == NULL) {
         goto on_error;
     }
@@ -5361,7 +5366,7 @@ ntfs_open(
         goto on_error;
     }
 
-    uint32_t csize = ntfs->fs->csize;
+    csize = ntfs->fs->csize;
     if (ntfs->fs->csize > 0x80) {
       csize = 1 << -(int8_t)ntfs->fs->csize;
     }
