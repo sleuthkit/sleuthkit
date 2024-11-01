@@ -198,9 +198,13 @@ uint8_t
 * @return 1 on error and 0 on succuss
 */
 uint8_t
-    encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
-    TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
-    TSK_HDB_LOOKUP_FN action, void *cb_ptr)
+encase_get_entry(
+  TSK_HDB_INFO * hdb_info,
+  const char *hash,
+  TSK_OFF_T offset,
+  [[maybe_unused]] TSK_HDB_FLAG_ENUM flags,
+  TSK_HDB_LOOKUP_FN action,
+  void *cb_ptr)
 {
     TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info;
     int found = 0;
