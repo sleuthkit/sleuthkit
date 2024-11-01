@@ -135,13 +135,13 @@
     <ClCompile Include="..\..\tsk\fs\hfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\hfs_journal.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\icat_lib.cpp">
