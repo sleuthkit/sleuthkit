@@ -1067,9 +1067,14 @@ typedef struct {
 } HFS_CAT_GET_RECORD_OFFSET_DATA;
 
 static uint8_t
-hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t node_size,
-    TSK_OFF_T key_off, void *ptr)
+hfs_cat_get_record_offset_cb(
+  HFS_INFO * hfs,
+  int8_t level_type,
+  const hfs_btree_key_cat * cur_key,
+  int cur_keylen,
+  [[maybe_unused]] size_t node_size,
+  TSK_OFF_T key_off,
+  void *ptr)
 {
     HFS_CAT_GET_RECORD_OFFSET_DATA *offset_data = (HFS_CAT_GET_RECORD_OFFSET_DATA *)ptr;
     const hfs_btree_key_cat *targ_key = offset_data->targ_key;
@@ -1662,9 +1667,14 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 
 
 static uint8_t
-hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
-    const hfs_btree_key_cat * cur_key, int cur_keylen, size_t node_size,
-    TSK_OFF_T key_off, void *ptr)
+hfs_find_highest_inum_cb(
+  HFS_INFO * hfs,
+  [[maybe_unused]] int8_t level_type,
+  const hfs_btree_key_cat * cur_key,
+  int cur_keylen,
+  [[maybe_unused]] size_t node_size,
+  [[maybe_unused]] TSK_OFF_T key_off,
+  void *ptr)
 {
     if (cur_keylen < 6) {
         // Note that it would be better to return an error value here
@@ -2955,16 +2965,24 @@ static ssize_t read_and_decompress_block(
  * @return 0 on success, 1 on error
  */
 static uint8_t
-hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
-    int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr,
-    int (*read_block_table)(const TSK_FS_ATTR *rAttr,
-                            CMP_OFFSET_ENTRY** offsetTableOut,
-                            uint32_t* tableSizeOut,
-                            uint32_t* tableOffsetOut),
-    int (*decompress_block)(char* rawBuf,
-                            uint32_t len,
-                            char* uncBuf,
-                            uint64_t* uncLen))
+hfs_attr_walk_compressed_rsrc(
+    const TSK_FS_ATTR * fs_attr,
+    [[maybe_unused]] int flags,
+    TSK_FS_FILE_WALK_CB a_action,
+    void *ptr,
+    int (*read_block_table)(
+      const TSK_FS_ATTR *rAttr,
+      CMP_OFFSET_ENTRY** offsetTableOut,
+      uint32_t* tableSizeOut,
+      uint32_t* tableOffsetOut
+    ),
+    int (*decompress_block)(
+      char* rawBuf,
+      uint32_t len,
+      char* uncBuf,
+      uint64_t* uncLen
+    )
+)
 {
     TSK_FS_INFO *fs;
     TSK_FS_FILE *fs_file;
@@ -3443,7 +3461,14 @@ hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
  * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1
  */
-static int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
+static int hfs_decompress_noncompressed_attr(
+  char* rawBuf,
+  [[maybe_unused]] uint32_t rawSize,
+  uint64_t uncSize,
+  char** dstBuf,
+  uint64_t* dstSize,
+  int* dstBufFree)
+{
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
@@ -5475,7 +5500,9 @@ print_inode_file(FILE * hFile, TSK_FS_INFO * fs, TSK_INUM_T inum)
 }
 
 static uint8_t
-hfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+hfs_fscheck(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -5797,8 +5824,14 @@ output_print_addr(HFS_PRINT_ADDR * print)
 }
 
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+print_addr_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  void *ptr)
 {
     HFS_PRINT_ADDR *print = (HFS_PRINT_ADDR *) ptr;
 
@@ -6432,8 +6465,12 @@ hfs_close(TSK_FS_INFO * fs)
  * */
 
 TSK_FS_INFO *
-hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
+hfs_open(
+  TSK_IMG_INFO * img_info,
+  TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM ftype,
+  [[maybe_unused]] const char* a_pass,
+  uint8_t test)
 {
     HFS_INFO *hfs;
     unsigned int len;
