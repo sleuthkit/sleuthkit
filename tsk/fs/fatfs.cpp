@@ -605,7 +605,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
      * sector is located */
     addr = FATFS_CLUST_2_SECT(fatfs, (FATFS_SECT_2_CLUST(fatfs, addr)));
 
-    if ((data_buf = tsk_malloc(fs->block_size * fatfs->csize)) == NULL) {
+    if ((data_buf = (char*) tsk_malloc(fs->block_size * fatfs->csize)) == NULL) {
         tsk_fs_block_free(fs_block);
         return 1;
     }
