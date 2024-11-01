@@ -1129,8 +1129,10 @@ tsk_fs_dir_find_inum_named(TSK_FS_INFO * a_fs, TSK_INUM_T a_inum)
 /* callback that is used by tsk_fs_dir_load_inum_named.  It does nothing
  * because each file system has the code needed to make caller happy. */
 static TSK_WALK_RET_ENUM
-load_named_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
-    void *a_ptr)
+load_named_dir_walk_cb(
+  [[maybe_unused]] TSK_FS_FILE * a_fs_file,
+  [[maybe_unused]] const char *a_path,
+  [[maybe_unused]] void *a_ptr)
 {
     return TSK_WALK_CONT;
 }
@@ -1185,8 +1187,10 @@ typedef struct {
 /* Used to process orphan directories and make sure that their contents
  * are now marked as reachable */
 static TSK_WALK_RET_ENUM
-load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
-    void *a_ptr)
+load_orphan_dir_walk_cb(
+  TSK_FS_FILE * a_fs_file,
+  [[maybe_unused]] const char *a_path,
+  void *a_ptr)
 {
     FIND_ORPHAN_DATA *data = (FIND_ORPHAN_DATA *) a_ptr;
 
