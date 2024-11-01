@@ -270,7 +270,7 @@
     <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\hdb_base.c">
+    <ClCompile Include="..\..\tsk\hashdb\hdb_base.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp">

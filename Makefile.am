@@ -251,7 +251,7 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
 	tsk/hashdb/encase.cpp \
 	tsk/hashdb/hashkeeper.c \
-	tsk/hashdb/hdb_base.c \
+	tsk/hashdb/hdb_base.cpp \
 	tsk/hashdb/idxonly.c \
 	tsk/hashdb/md5sum.c \
 	tsk/hashdb/nsrl.c \
