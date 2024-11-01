@@ -301,7 +301,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             fs_meta->size, fs_meta->size, roundup(fs_meta->size,
-                fs->block_size), 0, 0)) {
+                fs->block_size), TSK_FS_ATTR_FLAG_NONE, 0)) {
         return 1;
     }
 
@@ -392,7 +392,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
                 fs_bufsize0 * (numSingIndirect + numDblIndirect +
                     numTripIndirect),
                 fs_bufsize0 * (numSingIndirect + numDblIndirect +
-                    numTripIndirect), 0, 0)) {
+                    numTripIndirect), TSK_FS_ATTR_FLAG_NONE, 0)) {
             return 1;
         }
 
