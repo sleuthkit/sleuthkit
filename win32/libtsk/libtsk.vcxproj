@@ -509,7 +509,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\img\img_types.c" />
     <ClCompile Include="..\..\tsk\img\mult_files.cpp" />
     <ClCompile Include="..\..\tsk\img\raw.c" />
-    <ClCompile Include="..\..\tsk\img\logical_img.c" />
+    <ClCompile Include="..\..\tsk\img\logical_img.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\auto\guid.h" />

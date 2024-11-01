@@ -246,7 +246,7 @@
     <ClCompile Include="..\..\tsk\img\raw.c">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\logical_img.c">
+    <ClCompile Include="..\..\tsk\img\logical_img.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_dent.cpp">

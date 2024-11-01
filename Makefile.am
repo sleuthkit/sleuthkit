@@ -273,7 +273,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/img_types.c \
 	tsk/img/img_writer.cpp \
 	tsk/img/img_writer.h \
-	tsk/img/logical_img.c \
+	tsk/img/logical_img.cpp \
 	tsk/img/logical_img.h \
 	tsk/img/mult_files.cpp \
 	tsk/img/mult_files.h \
