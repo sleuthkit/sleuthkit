@@ -212,7 +212,9 @@ print_usn_attributes(TSK_FS_NTFS_FILE_ATTRIBUTES attributes)
 
 
 static TSK_WALK_RET_ENUM
-print_v2_record(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
+print_v2_record(
+  [[maybe_unused]] TSK_USN_RECORD_HEADER *header,
+  TSK_USN_RECORD_V2 *record)
 {
     tsk_fprintf(stdout, "%" PRIu64 "-%" PRIu32 "\t" "%" PRIu64 "-%" PRIu32 "\t"
                 "%" PRIu32 ".%" PRIu32 "\t",
