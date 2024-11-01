@@ -1458,7 +1458,7 @@ ntfs_attr_walk_special(
 
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
-                            "ntfs_proc_compunit: Decompressing at file offset %"PRIdOFF"\n", off);
+                            "ntfs_proc_compunit: Decompressing at file offset %" PRIdOFF "\n", off);
 
                     // decompress the unit if we have not passed initsize yet.
                     if (!init_size_reached) {
