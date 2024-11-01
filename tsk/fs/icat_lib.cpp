@@ -34,8 +34,14 @@
 /* Call back action for file_walk
  */
 static TSK_WALK_RET_ENUM
-icat_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+icat_action(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  [[maybe_unused]] TSK_DADDR_T addr,
+  char *buf,
+  size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  [[maybe_unused]] void *ptr)
 {
     if (size == 0)
         return TSK_WALK_CONT;
