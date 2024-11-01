@@ -297,7 +297,7 @@ ffsmode2tskmode(uint16_t a_mode)
     if (a_mode & FFS_IN_IXOTH)
         mode |= TSK_FS_META_MODE_IXOTH;
 
-    return mode;
+    return (TSK_FS_META_MODE_ENUM) mode;
 }
 
 /* ffs_dinode_copy - copy cached disk inode to generic inode
@@ -328,7 +328,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
 
-    fs_meta->flags = 0;
+    fs_meta->flags = (TSK_FS_META_FLAG_ENUM) 0;
     fs_meta->seq = 0;
 
     /* If the symlink field is set from a previous run, then free it */
@@ -758,8 +758,8 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
     tsk_release_lock(&ffs->lock);
 
     /* used/unused */
-    fs_meta->flags |= (fs_meta->ctime ?
-        TSK_FS_META_FLAG_USED : TSK_FS_META_FLAG_UNUSED);
+    fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (fs_meta->flags | (fs_meta->ctime ?
+        TSK_FS_META_FLAG_USED : TSK_FS_META_FLAG_UNUSED));
 
     return 0;
 }
@@ -879,15 +879,15 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     /* If ORPHAN is wanted, then make sure that the flags are correct */
     if (a_flags & TSK_FS_META_FLAG_ORPHAN) {
-        a_flags |= TSK_FS_META_FLAG_UNALLOC;
-        a_flags &= ~TSK_FS_META_FLAG_ALLOC;
-        a_flags |= TSK_FS_META_FLAG_USED;
-        a_flags &= ~TSK_FS_META_FLAG_UNUSED;
+        a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags | TSK_FS_META_FLAG_UNALLOC);
+        a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags & ~TSK_FS_META_FLAG_ALLOC);
+        a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags | TSK_FS_META_FLAG_USED);
+        a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags & ~TSK_FS_META_FLAG_UNUSED);
     }
     else {
         if (((a_flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((a_flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
-            a_flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
+            a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags | TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
         /* If neither of the USED or UNUSED flags are set, then set them
@@ -895,7 +895,7 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          */
         if (((a_flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((a_flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-            a_flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
+            a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
 
@@ -1116,7 +1116,7 @@ ffs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     else
         flags |= TSK_FS_BLOCK_FLAG_CONT;
 
-    return flags;
+    return (TSK_FS_BLOCK_FLAG_ENUM) flags;
 }
 
 /**************************************************************************
@@ -1173,14 +1173,14 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     /* Sanity check on flags -- make sure at least one ALLOC is set */
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
     if (((a_flags & TSK_FS_BLOCK_WALK_FLAG_META) == 0) &&
         ((a_flags & TSK_FS_BLOCK_WALK_FLAG_CONT) == 0)) {
-        a_flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
+        a_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (a_flags | TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
     }
 
 
@@ -1256,7 +1256,8 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
 
         // call the callback
         tsk_fs_block_set(fs, fs_block, addr,
-            myflags | TSK_FS_BLOCK_FLAG_RAW, &cache_blk_buf[cache_offset]);
+            (TSK_FS_BLOCK_FLAG_ENUM) (myflags | TSK_FS_BLOCK_FLAG_RAW),
+            &cache_blk_buf[cache_offset]);
         retval = action(fs_block, ptr);
         if (retval == TSK_WALK_STOP) {
             break;
