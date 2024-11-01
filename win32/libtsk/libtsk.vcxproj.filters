@@ -264,7 +264,7 @@
     <ClCompile Include="..\..\tsk\hashdb\idxonly.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\md5sum.c">
+    <ClCompile Include="..\..\tsk\hashdb\md5sum.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
