@@ -763,7 +763,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
     }
 
     // set the mode
-    fs_meta->mode = 0;
+    fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_ISUID)
         fs_meta->mode |= TSK_FS_META_MODE_ISUID;
     if (tsk_getu16(fs->endian, dino_buf->i_mode) & EXT2_IN_ISGID)
