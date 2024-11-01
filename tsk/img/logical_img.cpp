@@ -75,7 +75,11 @@ logical_close(TSK_IMG_INFO * img_info)
 }
 
 static ssize_t
-logical_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
+logical_read(
+  [[maybe_unused]] TSK_IMG_INFO * img_info,
+  [[maybe_unused]] TSK_OFF_T offset,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t len)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_IMG_READ);
@@ -94,8 +98,10 @@ logical_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
  * @return NULL on error
  */
 TSK_IMG_INFO *
-logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
-	unsigned int a_ssize)
+logical_open(
+  int a_num_img,
+  const TSK_TCHAR * const a_images[],
+  [[maybe_unused]] unsigned int a_ssize)
 {
 	IMG_LOGICAL_INFO *logical_info;
 	TSK_IMG_INFO *img_info;
