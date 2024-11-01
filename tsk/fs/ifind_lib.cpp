@@ -532,7 +532,7 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
         data->curid = fs_attr->id;
         if (fs_attr->flags & TSK_FS_ATTR_NONRES) {
             if (tsk_fs_attr_walk(fs_attr,
-                    file_flags, ifind_data_file_act, ptr)) {
+                    (TSK_FS_FILE_WALK_FLAG_ENUM) file_flags, ifind_data_file_act, ptr)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "Error walking file %" PRIuINUM
@@ -571,7 +571,7 @@ tsk_fs_ifind_data(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
     data.block = blk;
 
     if (fs->inode_walk(fs, fs->first_inum, fs->last_inum,
-            TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC,
+            (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC),
             ifind_data_act, &data)) {
         return 1;
     }
