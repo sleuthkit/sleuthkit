@@ -153,8 +153,10 @@ tsk_fs_attr_free(TSK_FS_ATTR * a_fs_attr)
 void
 tsk_fs_attr_clear(TSK_FS_ATTR * a_fs_attr)
 {
-    a_fs_attr->size = a_fs_attr->type =
-        a_fs_attr->id = a_fs_attr->flags = 0;
+    a_fs_attr->size = 0;
+    a_fs_attr->type = TSK_FS_ATTR_TYPE_NOT_FOUND;
+    a_fs_attr->id = 0;
+    a_fs_attr->flags = TSK_FS_ATTR_FLAG_NONE;
     if (a_fs_attr->nrd.run) {
         tsk_fs_attr_run_free(a_fs_attr->nrd.run);
         a_fs_attr->nrd.run = NULL;
