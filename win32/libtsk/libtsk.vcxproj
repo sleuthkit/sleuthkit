@@ -449,7 +449,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\fs_attrlist.c" />
     <ClCompile Include="..\..\tsk\fs\fs_block.c" />
     <ClCompile Include="..\..\tsk\fs\fs_dir.cpp" />
-    <ClCompile Include="..\..\tsk\fs\fs_file.c" />
+    <ClCompile Include="..\..\tsk\fs\fs_file.cpp" />
     <ClCompile Include="..\..\tsk\fs\fs_inode.c" />
     <ClCompile Include="..\..\tsk\fs\fs_io.c" />
     <ClCompile Include="..\..\tsk\fs\fs_load.c" />
