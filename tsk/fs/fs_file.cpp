@@ -205,7 +205,7 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
  * @returns 1 on error
  */
 static int
-tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, char *a_func)
+tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, const char *a_func)
 {
     TSK_FS_INFO *fs;
     // check the FS_INFO, FS_FILE structures
