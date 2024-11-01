@@ -86,7 +86,7 @@
  * @param a_dir_addr The block offset where this directory starts
  * @returns TSK_ERR on error and TSK_OK otherwise
  */
-static uint8_t
+static TSK_RETVAL_ENUM
 iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, const char *buf,
     size_t a_length, TSK_INUM_T a_addr, TSK_OFF_T a_dir_addr)
 {
