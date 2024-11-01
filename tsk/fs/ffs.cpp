@@ -697,7 +697,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
                  */
                 for (i = 0; i < FFS_NDADDR && count < fs_meta->size; i++) {
                     ssize_t cnt;
-                    TSK_DADDR_T *addr_ptr = fs_meta->content_ptr;
+                    TSK_DADDR_T *addr_ptr = (TSK_DADDR_T*) fs_meta->content_ptr;
 
                     /* Do we need the entire block, or just part of it? */
                     int read_count =
