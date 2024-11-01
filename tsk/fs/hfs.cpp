@@ -3327,15 +3327,16 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
     // Read from the indicated comp units
     for (indx = startUnit; indx <= endUnit; ++indx) {
-        uint64_t uncLen;
         char *uncBufPtr = uncBuf;
         size_t bytesToCopy;
 
-        switch ((uncLen = read_and_decompress_block(
-                    rAttr, rawBuf, uncBuf,
-                    offsetTable, offsetTableSize, offsetTableOffset, (size_t)indx,
-                    decompress_block)))
-        {
+        const ssize_t ret = read_and_decompress_block(
+            rAttr, rawBuf, uncBuf,
+            offsetTable, offsetTableSize, offsetTableOffset, (size_t)indx,
+            decompress_block
+        );
+
+        switch (ret) {
         case -1:
             goto on_error;
         case  0:
@@ -3343,6 +3344,8 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
         default:
             break;
         }
+
+        uint64_t uncLen = ret;
 
         // If this is the first comp unit, then we must skip over the
         // startUnitOffset bytes.
