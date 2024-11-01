@@ -1293,8 +1293,11 @@ ntfs_proc_compunit(NTFS_INFO * ntfs, NTFS_COMP_INFO * comp,
  * Currently ignores the SPARSE flag
  */
 static uint8_t
-ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
-    int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
+ntfs_attr_walk_special(
+  const TSK_FS_ATTR * fs_attr,
+  [[maybe_unused]] int flags,
+  TSK_FS_FILE_WALK_CB a_action,
+  void *ptr)
 {
     TSK_FS_INFO *fs;
     NTFS_INFO *ntfs;
@@ -4386,7 +4389,9 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
 
 static uint8_t
-ntfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+ntfs_fscheck(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -4591,8 +4596,14 @@ typedef struct {
     int idx;
 } NTFS_PRINT_ADDR;
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+print_addr_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  void *ptr)
 {
     NTFS_PRINT_ADDR *print = (NTFS_PRINT_ADDR *) ptr;
     tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
@@ -4616,8 +4627,13 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
-    TSK_INUM_T inum, TSK_DADDR_T numblock, int32_t sec_skew)
+ntfs_istat(
+  TSK_FS_INFO * fs,
+  TSK_FS_ISTAT_FLAG_ENUM istat_flags,
+  FILE * hFile,
+  TSK_INUM_T inum,
+  [[maybe_unused]] TSK_DADDR_T numblock,
+  int32_t sec_skew)
 {
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *fs_attr;
@@ -5106,7 +5122,9 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
 /* JOURNAL CODE - MOVE TO NEW FILE AT SOME POINT */
 
 static uint8_t
-ntfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
+ntfs_jopen(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -5115,8 +5133,11 @@ ntfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 }
 
 static uint8_t
-ntfs_jentry_walk(TSK_FS_INFO * fs, int flags,
-    TSK_FS_JENTRY_WALK_CB a_action, void *ptr)
+ntfs_jentry_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] int flags,
+  [[maybe_unused]] TSK_FS_JENTRY_WALK_CB a_action,
+  [[maybe_unused]] void *ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -5124,10 +5145,14 @@ ntfs_jentry_walk(TSK_FS_INFO * fs, int flags,
     return 1;
 }
 
-
 static uint8_t
-ntfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start,
-    TSK_DADDR_T end, int flags, TSK_FS_JBLK_WALK_CB a_action, void *ptr)
+ntfs_jblk_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_DADDR_T start,
+  [[maybe_unused]] TSK_DADDR_T end,
+  [[maybe_unused]] int flags,
+  [[maybe_unused]] TSK_FS_JBLK_WALK_CB a_action,
+  [[maybe_unused]] void *ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -5233,8 +5258,12 @@ process_kape_boot_format(NTFS_INFO* ntfs_info) {
  * @returns NULL on error or if data is not an NTFS file system
  */
 TSK_FS_INFO *
-ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
+ntfs_open(
+  TSK_IMG_INFO * img_info,
+  TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM ftype,
+  const char* a_pass,
+  [[maybe_unused]] uint8_t test)
 {
     char *myname = "ntfs_open";
     NTFS_INFO *ntfs = NULL;
