@@ -401,9 +401,13 @@ tsk_fs_print_day(FILE * hFile, time_t time)
  *  It needs to end with "/"
  */
 void
-tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
-    const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
-    uint8_t print_path)
+tsk_fs_name_print(
+  FILE * hFile,
+  const TSK_FS_FILE * fs_file,
+  const char *a_path,
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  const TSK_FS_ATTR * fs_attr,
+  uint8_t print_path)
 {
     /* type of file - based on dentry type */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
