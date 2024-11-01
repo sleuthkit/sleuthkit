@@ -72,7 +72,7 @@
     <ClCompile Include="..\..\tsk\fs\ext2fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ext2fs_journal.cpp">
