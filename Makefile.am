@@ -227,7 +227,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/hfs_dent.c \
 	tsk/fs/hfs_journal.c \
 	tsk/fs/hfs_unicompare.c \
-	tsk/fs/icat_lib.c \
+	tsk/fs/icat_lib.cpp \
 	tsk/fs/ifind_lib.c \
 	tsk/fs/ils_lib.c \
 	tsk/fs/iso9660.c \
