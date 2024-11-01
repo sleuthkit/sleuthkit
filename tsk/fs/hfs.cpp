@@ -3545,7 +3545,7 @@ static int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t unc
 
         // Dummy is one byte long, so the ptr is not null, but we set the
         // length to zero bytes, so it is never read.
-        static uint8_t dummy[1];
+        static char dummy[1];
 
         *dstBuf = dummy;
         *dstSize = 0;
