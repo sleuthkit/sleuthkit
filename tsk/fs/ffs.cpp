@@ -1281,7 +1281,9 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
  * return 1 on error and 0 on success
  */
 static uint8_t
-ffs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+ffs_fscheck(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -1642,8 +1644,14 @@ typedef struct {
 
 
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr)
+print_addr_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  size_t size,
+  TSK_FS_BLOCK_FLAG_ENUM a_flags,
+  void *ptr)
 {
     TSK_FS_INFO *fs = fs_file->fs_info;
     FFS_PRINT_ADDR *print = (FFS_PRINT_ADDR *) ptr;
@@ -1942,7 +1950,9 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
 /* Return 1 on error and 0 on success */
 uint8_t
-ffs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
+ffs_jopen(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -1951,8 +1961,11 @@ ffs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 }
 
 uint8_t
-ffs_jentry_walk(TSK_FS_INFO * fs, int a_flags,
-    TSK_FS_JENTRY_WALK_CB action, void *ptr)
+ffs_jentry_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] int a_flags,
+  [[maybe_unused]] TSK_FS_JENTRY_WALK_CB action,
+  [[maybe_unused]] void *ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -1962,8 +1975,13 @@ ffs_jentry_walk(TSK_FS_INFO * fs, int a_flags,
 
 
 uint8_t
-ffs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
-    int a_flags, TSK_FS_JBLK_WALK_CB action, void *ptr)
+ffs_jblk_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_DADDR_T start,
+  [[maybe_unused]] TSK_DADDR_T end,
+  [[maybe_unused]] int a_flags,
+  [[maybe_unused]] TSK_FS_JBLK_WALK_CB action,
+  [[maybe_unused]] void *ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2001,7 +2019,12 @@ ffs_close(TSK_FS_INFO * fs)
  * @returns NULL on error or if data is not a FFS file system
  */
 TSK_FS_INFO *
-ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
+ffs_open(
+  TSK_IMG_INFO * img_info,
+  TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM ftype,
+  [[maybe_unused]] const char* a_pass,
+  [[maybe_unused]] uint8_t test)
 {
     const char *myname = "ffs_open";
     FFS_INFO *ffs;
