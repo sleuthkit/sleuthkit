@@ -15,8 +15,6 @@
 
 #include "tsk_hashdb_i.h"
 
-#define STR_EMPTY ""
-
 /**
 * Test the file to see if it is a md5sum database
 *
@@ -82,6 +80,8 @@ TSK_HDB_INFO *md5sum_open(FILE *hDb, const TSK_TCHAR *db_path)
 static uint8_t
     md5sum_parse_md5(char *str, char **md5, char **name)
 {
+    static char STR_EMPTY[1] = "";
+
     char *ptr;
 
     if (strlen(str) < TSK_HDB_HTYPE_MD5_LEN + 1) {
