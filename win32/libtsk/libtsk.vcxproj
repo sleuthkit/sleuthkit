@@ -467,7 +467,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\iso9660.cpp" />
     <ClCompile Include="..\..\tsk\fs\iso9660_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\lzvn.c" />
-    <ClCompile Include="..\..\tsk\fs\nofs_misc.c" />
+    <ClCompile Include="..\..\tsk\fs\nofs_misc.cpp" />
     <ClCompile Include="..\..\tsk\fs\ntfs.c" />
     <ClCompile Include="..\..\tsk\fs\ntfs_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\rawfs.c" />

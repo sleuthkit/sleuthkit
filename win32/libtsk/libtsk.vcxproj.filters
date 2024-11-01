@@ -159,7 +159,7 @@
     <ClCompile Include="..\..\tsk\fs\iso9660_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\nofs_misc.c">
+    <ClCompile Include="..\..\tsk\fs\nofs_misc.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\rawfs.c">
