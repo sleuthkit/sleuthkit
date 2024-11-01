@@ -1093,7 +1093,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum, TSK_FS_META_FLAG_ENUM flags,
     TSK_FS_META_WALK_CB a_action, void *a_ptr)
 {
-    char *myname = "extXfs_inode_walk";
+    const char *myname = "extXfs_inode_walk";
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     TSK_INUM_T inum;
     TSK_INUM_T end_inum_tmp;
@@ -1458,7 +1458,7 @@ ext2fs_block_walk(TSK_FS_INFO * a_fs, TSK_DADDR_T a_start_blk,
     TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
     TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr)
 {
-    char *myname = "extXfs_block_walk";
+    const char *myname = "extXfs_block_walk";
     TSK_FS_BLOCK *fs_block;
     TSK_DADDR_T addr;
 
