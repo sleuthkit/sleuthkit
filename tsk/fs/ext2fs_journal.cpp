@@ -112,7 +112,7 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 //      error("error finding journal inode %" PRIu32, inum);
     }
 
-    if (tsk_fs_file_walk(jinfo->fs_file, 0, load_sb_action, NULL)) {
+    if (tsk_fs_file_walk(jinfo->fs_file, TSK_FS_FILE_WALK_FLAG_NONE, load_sb_action, NULL)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
         tsk_error_set_errstr("Error loading ext3 journal");
@@ -179,8 +179,8 @@ ext2fs_jentry_walk(
         return 1;
     }
 
-    if (tsk_fs_file_walk(jinfo->fs_file,
-            0, tsk_fs_load_file_action, (void *) &buf1)) {
+    if (tsk_fs_file_walk(jinfo->fs_file, TSK_FS_FILE_WALK_FLAG_NONE,
+      tsk_fs_load_file_action, (void *) &buf1)) {
         free(journ);
         return 1;
     }
@@ -553,8 +553,8 @@ ext2fs_jblk_walk(
         return 1;
     }
 
-    if (tsk_fs_file_walk(jinfo->fs_file, 0, tsk_fs_load_file_action,
-            (void *) &buf1)) {
+    if (tsk_fs_file_walk(jinfo->fs_file, TSK_FS_FILE_WALK_FLAG_NONE,
+            tsk_fs_load_file_action, (void *) &buf1)) {
         free(journ);
         return 1;
     }
