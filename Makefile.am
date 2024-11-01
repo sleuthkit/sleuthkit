@@ -214,7 +214,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/fs_attr.c \
 	tsk/fs/fs_attrlist.c \
 	tsk/fs/fs_block.c \
-	tsk/fs/fs_dir.c \
+	tsk/fs/fs_dir.cpp \
 	tsk/fs/fs_file.c \
 	tsk/fs/fs_inode.c \
 	tsk/fs/fs_io.c \

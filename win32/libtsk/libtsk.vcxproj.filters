@@ -105,7 +105,7 @@
     <ClCompile Include="..\..\tsk\fs\fs_block.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_dir.c">
+    <ClCompile Include="..\..\tsk\fs\fs_dir.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_file.c">
