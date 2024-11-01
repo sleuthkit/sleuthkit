@@ -128,17 +128,14 @@ static TSK_WALK_RET_ENUM
 parse_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
              TSK_ENDIAN_ENUM endian, TSK_FS_USNJENTRY_WALK_CB action, void *ptr)
 {
-    TSK_WALK_RET_ENUM ret;
-
     switch (header->major_version) {
     case 2: {
         TSK_USN_RECORD_V2 record;
-
-        ret = parse_v2_record(buf, header, &record, endian);
-        if (ret == 1)
+        if (parse_v2_record(buf, header, &record, endian) == 1) {
             return TSK_WALK_ERROR;
+        }
 
-        ret = (*action)(header, &record, ptr);
+        const TSK_WALK_RET_ENUM ret = (*action)(header, &record, ptr);
 
         free(record.fname);
 
