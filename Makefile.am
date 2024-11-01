@@ -242,7 +242,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/swapfs.c \
 	tsk/fs/tsk_fs_i.h \
 	tsk/fs/unix_misc.cpp \
-	tsk/fs/usnjls_lib.c \
+	tsk/fs/usnjls_lib.cpp \
 	tsk/fs/usn_journal.c \
 	tsk/fs/walk_cpp.cpp \
 	tsk/fs/yaffs.cpp
