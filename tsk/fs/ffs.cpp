@@ -264,7 +264,7 @@ ffsmode2tsktype(uint16_t a_mode)
     }
 }
 
-static uint16_t
+static TSK_FS_META_MODE_ENUM
 ffsmode2tskmode(uint16_t a_mode)
 {
     uint16_t mode = 0;
