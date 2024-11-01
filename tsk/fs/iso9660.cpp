@@ -1673,7 +1673,9 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
 
 
 static uint8_t
-iso9660_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+iso9660_fscheck(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2071,8 +2073,13 @@ iso9660_print_rockridge(FILE * hFile, rockridge_ext * rr)
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-iso9660_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
-    TSK_DADDR_T numblock, int32_t sec_skew)
+iso9660_istat(
+  TSK_FS_INFO * fs,
+  TSK_FS_ISTAT_FLAG_ENUM istat_flags,
+  FILE * hFile,
+  TSK_INUM_T inum,
+  [[maybe_unused]] TSK_DADDR_T numblock,
+  int32_t sec_skew)
 {
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_FS_FILE *fs_file;
@@ -2277,7 +2284,9 @@ iso9660_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile
 
 
 static uint8_t
-iso9660_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
+iso9660_jopen(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2286,8 +2295,11 @@ iso9660_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 }
 
 static uint8_t
-iso9660_jentry_walk(TSK_FS_INFO * fs, int flags,
-    TSK_FS_JENTRY_WALK_CB action, void *ptr)
+iso9660_jentry_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] int flags,
+  [[maybe_unused]] TSK_FS_JENTRY_WALK_CB action,
+  [[maybe_unused]] void *ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2296,8 +2308,13 @@ iso9660_jentry_walk(TSK_FS_INFO * fs, int flags,
 }
 
 static uint8_t
-iso9660_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
-    int flags, TSK_FS_JBLK_WALK_CB action, void *ptr)
+iso9660_jblk_walk(
+  [[maybe_unused]] TSK_FS_INFO * fs,
+  [[maybe_unused]] TSK_DADDR_T start,
+  [[maybe_unused]] TSK_DADDR_T end,
+  [[maybe_unused]] int flags,
+  [[maybe_unused]] TSK_FS_JBLK_WALK_CB action,
+  [[maybe_unused]] void *ptr)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2307,7 +2324,7 @@ iso9660_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
 
 
 static TSK_FS_ATTR_TYPE_ENUM
-iso9660_get_default_attr_type(const TSK_FS_FILE * a_file)
+iso9660_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 {
     return TSK_FS_ATTR_TYPE_DEFAULT;
 }
@@ -2554,8 +2571,12 @@ load_vol_desc(TSK_FS_INFO * fs)
  * really have one.  Volume info is read in with a call to load_vol_descs().
  */
 TSK_FS_INFO *
-iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
+iso9660_open(
+  TSK_IMG_INFO * img_info,
+  TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM ftype,
+  [[maybe_unused]] const char* a_pass,
+  uint8_t test)
 {
     ISO_INFO *iso;
     TSK_FS_INFO *fs;
