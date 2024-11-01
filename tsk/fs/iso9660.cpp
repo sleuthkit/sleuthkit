@@ -1160,10 +1160,12 @@ iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta, TSK_INUM_T inum,
 
     // mark files that were found from other volume descriptors as unalloc so that they
     // come up as orphan files.
-    if (dinode->is_orphan)
-        fs_meta->flags = TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED;
-    else
-        fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
+    if (dinode->is_orphan) {
+        fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED);
+    }
+    else {
+        fs_meta->flags = (TSK_FS_META_FLAG_ENUM) (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED);
+    }
     return 0;
 }
 
@@ -1302,14 +1304,14 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
 
     /* If ORPHAN is wanted, then make sure that the flags are correct */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        flags |= TSK_FS_META_FLAG_UNALLOC;
-        flags &= ~TSK_FS_META_FLAG_ALLOC;
-        flags |= TSK_FS_META_FLAG_USED;
-        flags &= ~TSK_FS_META_FLAG_UNUSED;
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_UNALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_ALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags & ~TSK_FS_META_FLAG_UNUSED);
     }
     else if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
         ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
-        flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
     }
 
     /* If neither of the USED or UNUSED flags are set, then set them
@@ -1317,7 +1319,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
      */
     if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
         ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-        flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
+        flags = (TSK_FS_META_FLAG_ENUM) (flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
     }
 
     /* If we are looking for orphan files and have not yet filled
@@ -1509,14 +1511,14 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
     /* Sanity check on flags -- make sure at least one ALLOC is set */
     if (((flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC) == 0) &&
         ((flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC) == 0)) {
-        flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM) 
+            (flags | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
             TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
     }
     if (((flags & TSK_FS_BLOCK_WALK_FLAG_META) == 0) &&
         ((flags & TSK_FS_BLOCK_WALK_FLAG_CONT) == 0)) {
-        flags |=
-            (TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
+        flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)
+            (flags | TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_META);
     }
 
     if ((fs_block = tsk_fs_block_alloc(fs)) == NULL) {
@@ -1544,7 +1546,7 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
         if (flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
             myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        if (tsk_fs_block_get_flag(fs, fs_block, addr, myflags) == NULL) {
+        if (tsk_fs_block_get_flag(fs, fs_block, addr, (TSK_FS_BLOCK_FLAG_ENUM) myflags) == NULL) {
             tsk_error_set_errstr2("iso_block_walk");
             tsk_fs_block_free(fs_block);
             return 1;
