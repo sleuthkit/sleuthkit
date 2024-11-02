@@ -2,7 +2,8 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (C) 2024 Sleuth Kit Labs, LLC
+ * Copyright (c) 2006-2023 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * mmls - list media management structure contents
@@ -10,6 +11,7 @@
  * This software is distributed under the Common Public License 1.0
  */
 #include "tsk/tsk_tools_i.h"
+#include "mmls.h"
 
 static TSK_TCHAR *progname;
 
@@ -20,7 +22,7 @@ static int recurse_cnt = 0;
 static bool is_csv = false;
 static TSK_DADDR_T recurse_list[64];
 
-void
+static int
 usage()
 {
     TFPRINTF(stderr,
@@ -47,7 +49,7 @@ usage()
     tsk_fprintf(stderr, "\t-A: Show unallocated volumes\n");
     tsk_fprintf(stderr, "\t-m: Show metadata volumes\n");
     tsk_fprintf(stderr, "\t-M: Hide metadata volumes\n");
-    exit(1);
+    return 1;
 }
 
 /*
@@ -204,7 +206,7 @@ print_header(const TSK_VS_INFO * vs)
 }
 
 int
-main(int argc, char **argv1)
+mmls_main(int argc, char **argv1)
 {
     TSK_VS_INFO *vs;
     int ch;
@@ -253,7 +255,7 @@ main(int argc, char **argv1)
                     _TSK_T
                     ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
-                usage();
+                return usage();
             }
             break;
         case _TSK_T('i'):
@@ -265,7 +267,7 @@ main(int argc, char **argv1)
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
                 TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
-                usage();
+                return usage();
             }
             break;
         case _TSK_T('m'):
@@ -294,7 +296,7 @@ main(int argc, char **argv1)
                 TFPRINTF(stderr,
                     _TSK_T("Unsupported volume system type: %" PRIttocTSK "\n"),
                     OPTARG);
-                usage();
+                return usage();
             }
             break;
         case _TSK_T('v'):
@@ -306,7 +308,7 @@ main(int argc, char **argv1)
         case _TSK_T('?'):
         default:
             tsk_fprintf(stderr, "Unknown argument\n");
-            usage();
+            return usage();
         }
     }
 
@@ -324,7 +326,7 @@ main(int argc, char **argv1)
     /* We need at least one more argument */
     if (OPTIND >= argc) {
         tsk_fprintf(stderr, "Missing image name\n");
-        usage();
+        return usage();
     }
 
     /* open the image */
@@ -388,11 +390,11 @@ main(int argc, char **argv1)
 
     tsk_vs_close(vs);
     tsk_img_close(img);
-    exit(0);
+    return(0);
 
 on_error:
     if( img != NULL ) {
         tsk_img_close( img );
     }
-    exit( 1 );
+    return( 1 );
 }

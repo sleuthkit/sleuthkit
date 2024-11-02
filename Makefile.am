@@ -541,7 +541,7 @@ tools_srchtools_sigfind_LDADD = $(TSK_LIB)
 tools_srchtools_sigfind_SOURCES = tools/srchtools/sigfind.cpp
 
 tools_vstools_mmls_LDADD = $(TSK_LIB)
-tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp
+tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp tools/vstools/mmls.h tools/vstools/mmls_main.cpp
 
 tools_vstools_mmstat_LDADD = $(TSK_LIB)
 tools_vstools_mmstat_SOURCES = tools/vstools/mmstat.cpp
