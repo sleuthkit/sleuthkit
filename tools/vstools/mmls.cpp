@@ -25,30 +25,30 @@ static TSK_DADDR_T recurse_list[64];
 static int
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
+    TFPRINTF(tsk_stderr,
+        _TSK_T("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
         progname);
-    tsk_fprintf(stderr,
+    tsk_fprintf(tsk_stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
-    tsk_fprintf(stderr,
+    tsk_fprintf(tsk_stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for list supported types)\n");
-    tsk_fprintf(stderr,
+    tsk_fprintf(tsk_stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
-    tsk_fprintf(stderr,
+    tsk_fprintf(tsk_stderr,
         "\t-o imgoffset: Offset to the start of the volume that contains the partition system (in sectors)\n");
-    tsk_fprintf(stderr, "\t-B: print the rounded length in bytes\n");
-    tsk_fprintf(stderr,
+    tsk_fprintf(tsk_stderr, "\t-B: print the rounded length in bytes\n");
+    tsk_fprintf(tsk_stderr,
         "\t-r: recurse and look for other partition tables in partitions (DOS Only)\n");
-    tsk_fprintf(stderr, "\t-c: print CSV-output\n");
-    tsk_fprintf(stderr, "\t-v: verbose output\n");
-    tsk_fprintf(stderr, "\t-V: print the version\n");
-    tsk_fprintf(stderr,
+    tsk_fprintf(tsk_stderr, "\t-c: print CSV-output\n");
+    tsk_fprintf(tsk_stderr, "\t-v: verbose output\n");
+    tsk_fprintf(tsk_stderr, "\t-V: print the version\n");
+    tsk_fprintf(tsk_stderr, "\t-h: help. print this message\n");
+    tsk_fprintf(tsk_stderr,
         "Unless any of these are specified, all volume types are shown\n");
-    tsk_fprintf(stderr, "\t-a: Show allocated volumes\n");
-    tsk_fprintf(stderr, "\t-A: Show unallocated volumes\n");
-    tsk_fprintf(stderr, "\t-m: Show metadata volumes\n");
-    tsk_fprintf(stderr, "\t-M: Hide metadata volumes\n");
+    tsk_fprintf(tsk_stderr, "\t-a: Show allocated volumes\n");
+    tsk_fprintf(tsk_stderr, "\t-A: Show unallocated volumes\n");
+    tsk_fprintf(tsk_stderr, "\t-m: Show metadata volumes\n");
+    tsk_fprintf(tsk_stderr, "\t-M: Hide metadata volumes\n");
     return 1;
 }
 
@@ -220,11 +220,13 @@ mmls_main(int argc, char **argv1)
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
 
+    if (tsk_stderr==NULL) tsk_stderr = stderr;
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
+        fprintf(tsk_stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
@@ -234,7 +236,7 @@ mmls_main(int argc, char **argv1)
 
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvVh"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             flags |= TSK_VS_PART_FLAG_ALLOC;
@@ -251,21 +253,23 @@ mmls_main(int argc, char **argv1)
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
-                TFPRINTF(stderr,
+                TFPRINTF(tsk_stderr,
                     _TSK_T
                     ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 return usage();
             }
             break;
+        case _TSK_T('h'):
+            return usage();
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_img_type_print(stderr);
+                tsk_img_type_print(tsk_stderr);
                 exit(1);
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
+                TFPRINTF(tsk_stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 return usage();
             }
@@ -279,7 +283,7 @@ mmls_main(int argc, char **argv1)
             break;
         case _TSK_T('o'):
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
-                tsk_error_print(stderr);
+                tsk_error_print(tsk_stderr);
                 exit(1);
             }
             break;
@@ -288,12 +292,12 @@ mmls_main(int argc, char **argv1)
             break;
         case _TSK_T('t'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_vs_type_print(stderr);
+                tsk_vs_type_print(tsk_stderr);
                 exit(1);
             }
             vstype = tsk_vs_type_toid(OPTARG);
             if (vstype == TSK_VS_TYPE_UNSUPP) {
-                TFPRINTF(stderr,
+                TFPRINTF(tsk_stderr,
                     _TSK_T("Unsupported volume system type: %" PRIttocTSK "\n"),
                     OPTARG);
                 return usage();
@@ -307,7 +311,7 @@ mmls_main(int argc, char **argv1)
             exit(0);
         case _TSK_T('?'):
         default:
-            tsk_fprintf(stderr, "Unknown argument\n");
+            tsk_fprintf(tsk_stderr, "Unknown argument\n");
             return usage();
         }
     }
@@ -325,7 +329,7 @@ mmls_main(int argc, char **argv1)
 
     /* We need at least one more argument */
     if (OPTIND >= argc) {
-        tsk_fprintf(stderr, "Missing image name\n");
+        tsk_fprintf(tsk_stderr, "Missing image name\n");
         return usage();
     }
 
@@ -333,11 +337,11 @@ mmls_main(int argc, char **argv1)
     img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize);
 
     if (img == NULL) {
-        tsk_error_print(stderr);
+        tsk_error_print(tsk_stderr);
         goto on_error;
     }
     if ((imgaddr * img->sector_size) >= img->size) {
-        tsk_fprintf(stderr,
+        tsk_fprintf(tsk_stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / img->sector_size);
         goto on_error;
@@ -346,9 +350,9 @@ mmls_main(int argc, char **argv1)
     /* process the partition tables */
     vs = tsk_vs_open(img, imgaddr * img->sector_size, vstype);
     if (vs == NULL) {
-        tsk_error_print(stderr);
+        tsk_error_print(tsk_stderr);
         if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
-            tsk_vs_type_print(stderr);
+            tsk_vs_type_print(tsk_stderr);
         goto on_error;
     }
 
@@ -356,7 +360,7 @@ mmls_main(int argc, char **argv1)
 
     if (tsk_vs_part_walk(vs, 0, vs->part_count - 1,
             (TSK_VS_PART_FLAG_ENUM) flags, part_act, NULL)) {
-        tsk_error_print(stderr);
+        tsk_error_print(tsk_stderr);
         tsk_vs_close(vs);
         goto on_error;
     }

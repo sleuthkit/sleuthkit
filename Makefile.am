@@ -627,6 +627,7 @@ test_runner_SOURCES = \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/vstools/test_mmls.cpp \
 	test/runner.cpp \
+	tools/vstools/mmls.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
 	$(tsk_base_libtskbase_la_SOURCES) \
 	$(tsk_fs_libtskfs_la_SOURCES) \

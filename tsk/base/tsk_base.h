@@ -180,6 +180,7 @@ extern "C" {
 
     // print internal UTF-8 strings to local platform Unicode format
     extern FILE *tsk_stdout;            // used by tsk_printf, allows changing stdout for unit tests
+    extern FILE *tsk_stderr;            // used by tsk_printf, allows changing stdout for unit tests
     extern void tsk_fprintf(FILE * fd, const char *msg, ...);
     extern void tsk_printf(const char *msg, ...);
 

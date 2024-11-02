@@ -21,6 +21,7 @@
 
 
 FILE *tsk_stdout = NULL;         /* set to stdout if NULL and a default printer is called */
+FILE *tsk_stderr = NULL;         /* set to stderr if NULL and tried to be used */
 
 /** \internal
  * Convert the UTF-8 printf arguments to UTF-16 and fill in the
