@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
 AM_CFLAGS = -Wall -Wextra
-AM_CXXFLAGS = -Wall -Wextra -Wno-overloaded-virtual
+AM_CXXFLAGS = -Wall -Wextra
 
 CLEANFILES = *.gcov
 
@@ -139,7 +139,7 @@ noinst_LTLIBRARIES = \
 	tsk/vs/libtskvs.la
 
 tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar
-tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo
+tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo -Wno-error=overloaded-virtual
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
 	tsk/auto/auto_db.cpp \
@@ -410,6 +410,7 @@ tools_autotools_tsk_gettimes_SOURCES = tools/autotools/tsk_gettimes.cpp
 tools_autotools_tsk_imageinfo_LDADD = $(TSK_LIB)
 tools_autotools_tsk_imageinfo_SOURCES = tools/autotools/tsk_imageinfo.cpp
 
+tools_autotools_tsk_loaddb_CXXFLAGS = $(AM_CXXFLAGS) -Wno-error=overloaded-virtual
 tools_autotools_tsk_loaddb_LDADD = $(TSK_LIB)
 tools_autotools_tsk_loaddb_SOURCES = tools/autotools/tsk_loaddb.cpp
 
@@ -618,7 +619,7 @@ check_PROGRAMS = \
 # This makes things easier with codecov.
 test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS) -Wno-error=overloaded-virtual
 test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 test_runner_SOURCES = \
 	test/tsk/base/test_tsk_error.cpp \
