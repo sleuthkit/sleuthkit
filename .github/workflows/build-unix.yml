@@ -15,7 +15,7 @@ on:
 jobs:
   build:
     timeout-minutes: 30
-    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }}
+    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -24,6 +24,7 @@ jobs:
           - os: "macos"
             arch: "arm64"
             linkage: "shared"
+            compiler: "gcc"
             runner: "macos-latest"
             configure_opts: "--with-libewf --disable-java"
             codecov: "yes"
@@ -33,18 +34,19 @@ jobs:
           - os: "linux"
             arch: "x86_64"
             linkage: "shared"
+            compiler: "gcc"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=\"-Wno-unused-command-line-argument -Werror\" CXXFLAGS=-Werror"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=\"-Wno-unused-command-line-argument -Werror -Wno-error=unused-parameter\" CXXFLAGS=\"-Werror -Wno-error=unused-parameter\""
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
 
           - os: "linux"
             arch: "x86_64"
-            compiler: "clang"
             linkage: "shared"
+            compiler: "clang"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++ CFLAGS=-Werror CXXFLAGS=-Werror"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++ CFLAGS=\"-Werror -Wno-error=unused-parameter\" CXXFLAGS=\"-Werror -Wno-error=unused-parameter\""
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
@@ -52,6 +54,7 @@ jobs:
           - os: "mingw"
             arch: "x86_64"
             linkage: "shared"
+            compiler: "gcc"
             runner: "ubuntu-22.04"
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --enable-shared --disable-static"
             winearch: 'win64'
@@ -64,6 +67,7 @@ jobs:
           - os: "mingw"
             arch: "x86_64"
             linkage: "static"
+            compiler: "gcc"
             runner: "ubuntu-22.04"
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --disable-shared --enable-static"
             winearch: 'win64'
@@ -76,6 +80,7 @@ jobs:
           - os: "mingw"
             arch: "i686"
             linkage: "shared"
+            compiler: "gcc"
             runner: "ubuntu-22.04"
             configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static --disable-java"
             configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static"
@@ -90,6 +95,7 @@ jobs:
             arch: "i686"
             linkage: "static"
             runner: "ubuntu-22.04"
+            compiler: "gcc"
             configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static --disable-java"
             configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static"
             winearch: 'win32'
