@@ -4,7 +4,7 @@
 #include <fstream>
 #include <cstdio>
 
-const char *EXFAT1_OUTPUT=
+static const char *EXFAT1_OUTPUT=
     "GUID Partition Table (EFI)\n"
     "Offset Sector: 0\n"
     "Units are in 512-byte sectors\n"
@@ -17,7 +17,7 @@ const char *EXFAT1_OUTPUT=
     "004:  000       0000002048   0000194559   0000192512   disk image\n"
     "005:  -------   0000194560   0000195352   0000000793   Unallocated\n";
 
-const char *EXFAT1_CSV_OUTPUT=
+static const char *EXFAT1_CSV_OUTPUT=
     "ID,Slot,Start,End,Length,Description\n"
     "000,Meta,0000000000,0000000000,0000000001,Safety Table\n"
     "001,,0000000000,0000002047,0000002048,Unallocated\n"
@@ -27,33 +27,96 @@ const char *EXFAT1_CSV_OUTPUT=
     "005,,0000194560,0000195352,0000000793,Unallocated\n";
 
 
-TEST_CASE("mmls", "[vstools]") {
-    int argc = 2;
+static char **setup(const char *a,const char *b,const char *c)
+{
     char**argv;
-    argv = (char **)calloc(3,sizeof(3));
-    argv[0] = strdup("mmls");
-    argv[1] = strdup("-h");
+    argv = (char **)calloc(4,sizeof(char *));
+    argv[0] = strdup(a);
+    argv[1] = strdup(b);
+    argv[2] = strdup(c);
+    argv[3] = NULL;
+    return argv;
+}
+
+static void setdown(char **argv)
+{
+    for(int i=0;i<4;i++){
+        if(argv[i]) free(argv[i]);
+    }
+    free(argv);
+}
+
+TEST_CASE("mmls -h", "[vstools]") {
+    auto hold = OPTIND;
+    char **argv = setup("mmls","-h","");
 
     /* Capture the output */
     char filename[64];
     strcpy(filename,"/tmp/mmls_outXXXXXX");
     mkstemp(filename);
-    printf("filename:%s\n",filename);
     FILE *f = fopen(filename,"w+");
     tsk_stderr = f;
-    CHECK(mmls_main(argc, argv)!=0);
+    CHECK(mmls_main(2, argv)==1);
     fflush(f);
     tsk_stderr = stderr;
     fseeko(f,0L,0);
     /* Now verify at least the first line */
-    char line[1024];
-    line[0] == 0;
-    char *l = fgets(line, sizeof(line), f);
-    printf("line:%s\n",line);
-    CHECK(strncmp(line,"usage:",6)==0);
+    char buf[65536];
+    memset(buf,0,sizeof(buf));
+    char *l = fgets(buf, sizeof(buf), f);
     fclose(f);
-    //unlink(filename);
-    free(argv[1]);
-    free(argv[0]);
-    free(argv);
+    CHECK(strncmp(buf,"usage:",6)==0);
+    unlink(filename);
+    setdown(argv);
+    OPTIND = hold;
+}
+
+TEST_CASE("mmls test/from_brian/exfat1.E01", "[vstools]") {
+    auto hold = OPTIND;
+    char **argv = setup("mmls","test/from_brian/exfat1.E01","");
+
+    /* Capture the output */
+    char filename[64];
+    strcpy(filename,"/tmp/mmls_outXXXXXX");
+    mkstemp(filename);
+    FILE *f = fopen(filename,"w+");
+    tsk_stdout = f;
+    CHECK(mmls_main(2, argv)==0);
+    fflush(f);
+    tsk_stdout = stdout;
+    fseeko(f,0L,0);
+    /* Now verify the data */
+    char buf[65536];
+    memset(buf,0,sizeof(buf));
+    read(fileno(f),buf,sizeof(buf));
+    fclose(f);
+    CHECK(strcmp(buf,EXFAT1_OUTPUT)==0);
+    unlink(filename);
+    setdown(argv);
+    OPTIND = hold;
+}
+
+TEST_CASE("mmls -c test/from_brian/exfat1.E01", "[vstools]") {
+    auto hold = OPTIND;
+    char **argv = setup("mmls","-c","test/from_brian/exfat1.E01");
+
+    /* Capture the output */
+    char filename[64];
+    strcpy(filename,"/tmp/mmls_outXXXXXX");
+    mkstemp(filename);
+    FILE *f = fopen(filename,"w+");
+    tsk_stdout = f;
+    CHECK(mmls_main(3, argv)==0);
+    fflush(f);
+    tsk_stdout = stdout;
+    fseeko(f,0L,0);
+    /* Now verify the data */
+    char buf[65536];
+    memset(buf,0,sizeof(buf));
+    read(fileno(f),buf,sizeof(buf));
+    fclose(f);
+    CHECK(strcmp(buf,EXFAT1_CSV_OUTPUT)==0);
+    unlink(filename);
+    setdown(argv);
+    OPTIND = hold;
 }

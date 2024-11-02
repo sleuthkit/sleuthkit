@@ -233,7 +233,6 @@ mmls_main(int argc, char **argv1)
     argv = (TSK_TCHAR **) argv1;
 #endif
 
-
     progname = argv[0];
 
     while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvVh"))) > 0) {
