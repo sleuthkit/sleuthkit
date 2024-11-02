@@ -12,9 +12,6 @@
 
 /*
  * Contains the checksum part for Btrfs file system support.
- *
- * This is outsourced to plain C due to the CRC API defining its own bool type
- *  - which collides with the bool of C++
  */
 
 #include "tsk/base/crc.h"
