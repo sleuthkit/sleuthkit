@@ -23,7 +23,7 @@
  * @param a_len data len
  * @return calculated checksum
  */
-unsigned long
+extern "C" unsigned long
 btrfs_csum_crc32c(const unsigned char *a_data, const int a_len)
 {
     cm_t cm;

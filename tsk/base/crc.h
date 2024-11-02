@@ -82,6 +82,12 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef CM_DONE
 #define CM_DONE
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+
 /******************************************************************************/
 
 /* The following definitions are extracted from my style header file which    */
@@ -165,7 +171,13 @@ ulong cm_tab P_((p_cm_t p_cm,int index));
 
 void crc16(p_cm_t crc_context, unsigned char const *buff, unsigned int size);
 
+#ifdef __cplusplus
+}
 #endif
+
+
+#endif
+
 
 /******************************************************************************/
 /*                             End of crcmodel.h                              */
