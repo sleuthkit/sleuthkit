@@ -28,9 +28,14 @@ static char *s_root;
 /* Callback that is used to do the testing */
 
 static TSK_WALK_RET_ENUM
-fw_action1(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
-    char *a_buf, size_t a_size, TSK_FS_BLOCK_FLAG_ENUM a_flags,
-    void *a_ptr)
+fw_action1(
+  TSK_FS_FILE * a_fs_file,
+  TSK_OFF_T a_off,
+  TSK_DADDR_T a_addr,
+  char *a_buf,
+  size_t a_size,
+  TSK_FS_BLOCK_FLAG_ENUM a_flags,
+  [[maybe_unused]] void *a_ptr)
 {
     TSK_OFF_T tmp_off;
     ssize_t cnt;

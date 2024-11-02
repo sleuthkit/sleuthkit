@@ -218,11 +218,11 @@ public:
     findFilesInImg();
   }
 
-  virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO* p) override {
+  virtual TSK_FILTER_ENUM filterPool([[maybe_unused]] const TSK_POOL_INFO* p) override {
     return TSK_FILTER_CONT;
   }
 
-  virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO* pv) override {
+  virtual TSK_FILTER_ENUM filterPoolVol([[maybe_unused]] const TSK_POOL_VOLUME_INFO* pv) override {
     return TSK_FILTER_CONT;
   }
 

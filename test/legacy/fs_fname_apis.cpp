@@ -77,7 +77,10 @@ compare_names(const TSK_FS_NAME * fs_name1, const TSK_FS_NAME * fs_name2,
 /* file walk callback that counts how many entries there are in a
  * directory */
 static TSK_WALK_RET_ENUM
-dir_walk_count_cb(TSK_FS_FILE * a_fs_file, const char *a_path, void *a_ptr)
+dir_walk_count_cb(
+  [[maybe_unused]] TSK_FS_FILE * a_fs_file,
+  [[maybe_unused]] const char *a_path,
+  void *a_ptr)
 {
     size_t *a = (size_t *) a_ptr;
     *a = *a + 1;
@@ -88,7 +91,10 @@ dir_walk_count_cb(TSK_FS_FILE * a_fs_file, const char *a_path, void *a_ptr)
 /* file walk callback that looks for an fs_name given as the arg pointer. */
 static int s_found;
 static TSK_WALK_RET_ENUM
-dir_walk_comp_cb(TSK_FS_FILE * a_fs_file, const char *a_path, void *a_ptr)
+dir_walk_comp_cb(
+  TSK_FS_FILE * a_fs_file,
+  [[maybe_unused]] const char *a_path,
+  void *a_ptr)
 {
     const TSK_FS_FILE *fs_file2 = (const TSK_FS_FILE *) a_ptr;
 

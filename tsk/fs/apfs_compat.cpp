@@ -19,8 +19,8 @@
 #include <cstring>
 
 // Forward declarations
-extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
-extern "C" void error_returned(const char* errstr, ...);
+void error_detected(uint32_t errnum, const char* errstr, ...);
+void error_returned(const char* errstr, ...);
 
 static inline const APFSPoolCompat& to_pool(
     const TSK_POOL_INFO* pool_info) noexcept {
@@ -477,10 +477,11 @@ uint8_t tsk_apfs_fsstat(TSK_FS_INFO* fs_info, apfs_fsstat_info* info) try {
   return 1;
 }
 
-TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(TSK_FS_DIR** a_fs_dir,
-                                            TSK_INUM_T inode_num,
-                                            int recursion_depth) const
-    noexcept try {
+TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(
+  TSK_FS_DIR** a_fs_dir,
+  TSK_INUM_T inode_num,
+  [[maybe_unused]] int recursion_depth
+) const noexcept try {
   // Sanity checks
   if (a_fs_dir == NULL) {
     tsk_error_reset();
@@ -1100,8 +1101,14 @@ typedef struct {
 } APFS_PRINT_ADDR;
 
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+print_addr_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  [[maybe_unused]] void *ptr)
 {
     APFS_PRINT_ADDR *print = (APFS_PRINT_ADDR *)ptr;
     tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
