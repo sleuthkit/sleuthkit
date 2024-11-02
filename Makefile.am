@@ -731,6 +731,9 @@ endif
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
+$(tsk_jar):
+	cd bindings/java ; ant dist $(ant_args)
+
 clean-tsk__jar:
 	cd bindings/java ; ant clean
 
