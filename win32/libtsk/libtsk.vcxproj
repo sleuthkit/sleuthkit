@@ -442,7 +442,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\vs\mm_types.c" />
     <ClCompile Include="..\..\tsk\vs\sun.c" />
     <ClCompile Include="..\..\tsk\fs\dcalc_lib.cpp" />
-    <ClCompile Include="..\..\tsk\fs\dcat_lib.c" />
+    <ClCompile Include="..\..\tsk\fs\dcat_lib.cpp" />
     <ClCompile Include="..\..\tsk\fs\dls_lib.cpp" />
     <ClCompile Include="..\..\tsk\fs\dstat_lib.cpp" />
     <ClCompile Include="..\..\tsk\fs\ext2fs.cpp" />

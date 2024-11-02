@@ -60,7 +60,7 @@
     <ClCompile Include="..\..\tsk\fs\dcalc_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dcat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dcat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\dls_lib.cpp">

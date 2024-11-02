@@ -24,7 +24,7 @@
 #include <ctype.h>
 
 /**
- * \file dcat_lib.c
+ * \file dcat_lib.cpp
  * Contains the library API functions used by the TSK blkcat command
  * line tool.
  */
