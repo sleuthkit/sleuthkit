@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.annotations.Beta;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import java.sql.PreparedStatement;
@@ -28,7 +27,6 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +43,6 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 public final class OsAccountRealmManager {
 
 	private static final Logger LOGGER = Logger.getLogger(OsAccountRealmManager.class.getName());
-	private static final String LOCAL_REALM_NAME = "local";
 
 	private final SleuthkitCase db;
 
@@ -88,15 +85,6 @@ public final class OsAccountRealmManager {
 		if ((StringUtils.isBlank(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID)) 
 			&& StringUtils.isBlank(realmName)) {
 			throw new TskCoreException("Either an address or a name is required to create a realm.");
-		}
-
-		if (StringUtils.isNotBlank(accountSid)) {
-			// SID Normalized to uppercase
-			accountSid = accountSid.toUpperCase(Locale.ENGLISH);
-		}
-		if (StringUtils.isNotBlank(realmName)) {
-			// Windows realm names are case insensitive. saving them in lower case.
-			realmName = realmName.toLowerCase(Locale.ENGLISH);
 		}
 		
 		Host scopeHost;
@@ -161,52 +149,6 @@ public final class OsAccountRealmManager {
 	}
 	
 	/**
-	 * Create local realm to use for Linux accounts.
-	 *
-	 * @param referringHost Host where realm reference is found.
-	 *
-	 * @return OsAccountRealm.
-	 *
-	 * @throws TskCoreException                     If there is an error
-	 *                                              creating the realm.
-	 */
-	@Beta
-	public OsAccountRealm newLocalLinuxRealm(Host referringHost) throws TskCoreException {
-
-		if (referringHost == null) {
-			throw new TskCoreException("A referring host is required to create a realm.");
-		}
-		
-		String realmName = LOCAL_REALM_NAME;
-		OsAccountRealm.ScopeConfidence scopeConfidence = OsAccountRealm.ScopeConfidence.KNOWN;		
-		String signature = makeRealmSignature("", realmName, referringHost);
-		
-		// create a realm
-		return newRealm(realmName, "", signature, referringHost, scopeConfidence);
-	}
-	
-	/**
-	 * Get local realm to use for Linux accounts.
-	 *
-	 * @param referringHost Host where realm reference is found.
-	 *
-	 * @return OsAccountRealm.
-	 *
-	 * @throws TskCoreException                     If there is an error
-	 *                                              creating the realm.
-	 */
-	@Beta
-	public Optional<OsAccountRealm> getLocalLinuxRealm(Host referringHost) throws TskCoreException {
-		if (referringHost == null) {
-			throw new TskCoreException("A referring host is required get a realm.");
-		}
-		
-		try (CaseDbConnection connection = this.db.getConnection()) {
-			return getRealmByName(LOCAL_REALM_NAME, referringHost, connection);
-		}
-	}
-	
-	/**
 	 * Get a windows realm by the account SID, or the domain name. The input SID
 	 * is an user/group account SID. The domain SID is extracted from this
 	 * incoming SID.
@@ -233,14 +175,6 @@ public final class OsAccountRealmManager {
 		if ((Strings.isNullOrEmpty(accountSid) || accountSid.equalsIgnoreCase(WindowsAccountUtils.WINDOWS_NULL_SID) )
 				&& Strings.isNullOrEmpty(realmName)) {
 			throw new TskCoreException("Realm address or name is required get a realm.");
-		}
-		if (StringUtils.isNotBlank(accountSid)) {
-			// SID Normalized to uppercase
-			accountSid = accountSid.toUpperCase(Locale.ENGLISH);
-		} 
-		if (StringUtils.isNotBlank(realmName)) {
-			// Windows realm names are case insensitive. saving them in lower case.
-			realmName = realmName.toLowerCase(Locale.ENGLISH);
 		}
 		
 		try (CaseDbConnection connection = this.db.getConnection()) {
@@ -577,7 +511,7 @@ public final class OsAccountRealmManager {
 							? " 1 = 1 " 
 							: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL) ";
 		String queryString = REALM_QUERY_STRING
-						+ " WHERE realms.realm_addr = '"+ realmAddr + "' "
+						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
 						+ " AND " + whereHostClause
 				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 						+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id is at the front
@@ -605,7 +539,7 @@ public final class OsAccountRealmManager {
 							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
 							: " realms.scope_host_id IS NULL ";
 		String queryString = REALM_QUERY_STRING
-						+ " WHERE realms.realm_addr = '"+ realmAddr + "' "
+						+ " WHERE LOWER(realms.realm_addr) = LOWER('"+ realmAddr + "') "
 						+ " AND " + whereHostClause
 						+ " AND realms.id <> " + realm.getRealmId()
 				        + " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
@@ -632,7 +566,7 @@ public final class OsAccountRealmManager {
 				? " 1 = 1 "
 				: " ( realms.scope_host_id = " + host.getHostId() + " OR realms.scope_host_id IS NULL ) ";
 		String queryString = REALM_QUERY_STRING
-				+ " WHERE realms.realm_name = '" + realmName + "'"
+				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
 				+ " AND " + whereHostClause
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
 				+ " ORDER BY realms.scope_host_id IS NOT NULL, realms.scope_host_id";	// ensure that non null host_id are at the front
@@ -660,7 +594,7 @@ public final class OsAccountRealmManager {
 							? " ( realms.scope_host_id = " + realm.getScopeHost().get().getHostId() + " ) " 
 							: " realms.scope_host_id IS NULL ";
 		String queryString = REALM_QUERY_STRING
-				+ " WHERE realms.realm_name = '" + realmName + "'"
+				+ " WHERE LOWER(realms.realm_name) = LOWER('" + realmName + "')"
 				+ " AND " + whereHostClause
 				+ " AND realms.id <> " + realm.getRealmId()
 				+ " AND realms.db_status = " + OsAccountRealm.RealmDbStatus.ACTIVE.getId()
