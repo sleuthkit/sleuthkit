@@ -841,6 +841,7 @@ noinst_PROGRAMS += \
 	fls_hfs_fuzzer \
 	fls_iso9660_fuzzer \
 	fls_ntfs_fuzzer \
+	fls_btrfs_fuzzer \
 	mmls_dos_fuzzer \
 	mmls_gpt_fuzzer \
 	mmls_mac_fuzzer \
