@@ -52,7 +52,7 @@ static void setdown(char **argv)
 
 static void show(int argc,char **argv)
 {
-    printf("============= show argc=%d argv=%x\n",argc,argv);
+    printf("============= show argc=%d argv=%p\n",argc,argv);
     for(int i=0;i<argc;i++){
         printf("argv[%d]=%s\n",i,argv[i]);
     }
