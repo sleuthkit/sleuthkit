@@ -34,8 +34,7 @@ static const std::string EXFAT1_CSV_OUTPUT(
 
 static char **setup(const char *a,const char *b,const char *c)
 {
-    char**argv;
-    argv = (char **)calloc(4,sizeof(char *));
+    char **argv = (char **)calloc(4,sizeof(char *));
     argv[0] = strdup(a);
     argv[1] = strdup(b);
     argv[2] = strdup(c);
@@ -53,6 +52,7 @@ static void setdown(char **argv)
 
 static void show(int argc,char **argv)
 {
+    printf("============= show argc=%d argv=%s\n",argc,argv);
     for(int i=0;i<argc;i++){
         printf("argv[%d]=%s\n",i,argv[i]);
     }
@@ -60,6 +60,7 @@ static void show(int argc,char **argv)
 
 
 TEST_CASE("mmls -h", "[vstools]") {
+    int argc=2;
     char **argv = setup("mmls","-h","");
 
     /* Capture the output */
@@ -67,7 +68,8 @@ TEST_CASE("mmls -h", "[vstools]") {
 
     tsk_stderr = tf.file;
     auto hold = OPTIND;
-    CHECK(mmls_main(2, argv)==1);
+    show(argc,argv);
+    CHECK(mmls_main(argc, argv)==1);
     OPTIND = hold;
     tsk_stderr = stderr;
 
