@@ -3,6 +3,7 @@
 #include "catch.hpp"
 #include <fstream>
 #include <cstdio>
+#include <cstring>
 
 static const char *EXFAT1_OUTPUT=
     "GUID Partition Table (EFI)\n"
