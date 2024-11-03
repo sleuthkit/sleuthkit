@@ -65,6 +65,7 @@ TEST_CASE("mmls -h", "[vstools]") {
     char buf[65536];
     memset(buf,0,sizeof(buf));
     char *l = fgets(buf, sizeof(buf), f);
+    CHECK(l != nullptr);
     fclose(f);
     CHECK(strncmp(buf,"usage:",6)==0);
     unlink(filename);
