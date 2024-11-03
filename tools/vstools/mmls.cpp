@@ -26,7 +26,7 @@ static int
 usage()
 {
     TFPRINTF(tsk_stderr,
-        _TSK_T("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
+        _TSK_T("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BcrvVh] [-aAmM] [-t vstype] image [images]\n"),
         progname);
     tsk_fprintf(tsk_stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
