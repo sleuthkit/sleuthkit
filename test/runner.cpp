@@ -46,7 +46,11 @@ namespace runner {
 
         if (tempdir == std::string("/tmp")) {
             tempdir += "/" + testname + "_" + random_string(8);
+#ifdef _MSC_VER
+            mkdir(tempdir.c_str());
+#else
             mkdir(tempdir.c_str(),0777);
+#endif
             std::cerr << testname << " test results in: " << tempdir << std::endl;
         }
         return tempdir;

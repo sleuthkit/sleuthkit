@@ -51,6 +51,12 @@ static void setdown(char **argv)
     free(argv);
 }
 
+static void show(int argc,char **argv)
+{
+    for(int i=0;i<argc;i++){
+        printf("argv[%d]=%s\n",i,argv[i]);
+    }
+}
 
 
 TEST_CASE("mmls -h", "[vstools]") {
@@ -71,13 +77,15 @@ TEST_CASE("mmls -h", "[vstools]") {
 }
 
 TEST_CASE("mmls test/from_brian/exfat1.E01", "[vstools]") {
+    int argc = 2;
     char **argv = setup("mmls","test/from_brian/exfat1.E01","");
 
     /* Capture the output */
     runner::tempfile tf("mmls_2");
     tsk_stdout = tf.file;
     auto hold = OPTIND;
-    CHECK(mmls_main(2, argv)==0);
+    show(argc,argv);
+    CHECK(mmls_main(argc, argv)==0);
     OPTIND = hold;
     tsk_stdout = stdout;
 
@@ -85,13 +93,15 @@ TEST_CASE("mmls test/from_brian/exfat1.E01", "[vstools]") {
 }
 
 TEST_CASE("mmls -c test/from_brian/exfat1.E01", "[vstools]") {
+    int argc=3;
     char **argv = setup("mmls","-c","test/from_brian/exfat1.E01");
 
     /* Capture the output */
     runner::tempfile tf("mmls_3");
     tsk_stdout = tf.file;
     auto hold = OPTIND;
-    CHECK(mmls_main(3, argv)==0);
+    show(argc,argv);
+    CHECK(mmls_main(argc, argv)==0);
     OPTIND = hold;
     tsk_stdout = stdout;
 
