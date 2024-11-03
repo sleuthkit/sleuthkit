@@ -12,7 +12,11 @@
 
 #include "catch.hpp"
 #include "runner.h"
+#include <iostream>
+#include <fstream>
 #include <memory>
+#include <sys/stat.h>
+#include <stdio.h>
 
 /* This program runs the catch2 test */
 
@@ -38,57 +42,65 @@ namespace runner {
     }
 
     std::string get_tempdir(std::string testname) {
-        static std::filesystem::string tempdir("/");
+        static std::string tempdir("/tmp");
 
-        if (tempdir == std::filesystem::string("/")) {
-            tempdir = std::filesystem::temp_directory_path() + "/" + testname + "_" + random_string(8);
-            std::filesystem::create_directory(tempdir);
+        if (tempdir == std::string("/tmp")) {
+            tempdir += "/" + testname + "_" + random_string(8);
+            mkdir(tempdir.c_str(),0777);
             std::cerr << testname << " test results in: " << tempdir << std::endl;
         }
         return tempdir;
     }
 
-    bool file_contents_is(std::filesystem::path path, std::string contents) {
+    std::string file_contents(std::string path) {
         std::ifstream in(path, std::ios::binary | std::ios::ate);
         REQUIRE (in.is_open());
         auto size = in.tellg();
-        std::unique_ptr<char>memblock = new char [size];
+        std::unique_ptr<char[]>memblock(new char [size]);
         in.seekg (0, std::ios::beg);
-        in.read (memblock, size);
+        in.read (memblock.get(), size);
         in.close();
-        std::string str(memblock,size);
-        return str == contents;
+        return std::string(memblock.get(),size);
+    }
+
+
+    bool file_contents_is(std::string path, std::string contents) {
+        return file_contents(path) == contents;
+    }
+
+    bool file_contains(std::string path, std::string substr) {
+        return contains(file_contents(path), substr);
     }
 
     tempfile::tempfile(std::string testname) {
         tempdir = get_tempdir(testname);
         snprintf(filename,sizeof(filename),"%s/XXXXXX",tempdir.c_str());
         mkstemp(filename);
-        f = fopen(filename,"w+");
-        fd = fileno(f);
+        file = fopen(filename,"w+");
+        fd = fileno(file);
     }
 
     tempfile::~tempfile(){
-        fclose(fd);
+        fclose(file);
         unlink(filename);
-        unlink(tempdir.c.str());
+        unlink(tempdir.c_str());
+    }
+
+    bool tempfile::validate_contains(std::string contents) {
+        fflush(file);
+        fseeko(file,0L,0);
+        return file_contains(filename, contents);
     }
 
     bool tempfile::validate_contents(std::string contents) {
-        fflush(f);
-        fseeko(f,0L,0);
-        return file_contents_is(filename, contents);
-    }
-
-    bool tempfile::validate_contents(std::string contents) {
-        fflush(f);
-        fseeko(f,0L,0);
+        fflush(file);
+        fseeko(file,0L,0);
         return file_contents_is(filename, contents);
     }
 
     std::string tempfile::first_line() {
         char buf[1024];
-        fseek(f,0L,0);
-        return fgets(f,buf,sizeof(buf));
+        fseek(file,0L,0);
+        return fgets(buf,sizeof(buf),file);
     }
 }

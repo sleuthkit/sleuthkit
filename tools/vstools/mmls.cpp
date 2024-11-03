@@ -10,6 +10,9 @@
  *
  * This software is distributed under the Common Public License 1.0
  */
+
+#include <iostream>
+
 #include "tsk/tsk_tools_i.h"
 #include "mmls.h"
 

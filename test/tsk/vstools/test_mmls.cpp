@@ -54,45 +54,46 @@ static void setdown(char **argv)
 
 
 TEST_CASE("mmls -h", "[vstools]") {
-    auto hold = OPTIND;
     char **argv = setup("mmls","-h","");
 
     /* Capture the output */
-    tempfile tf("mmls_1");
+    runner::tempfile tf("mmls_1");
+
     tsk_stderr = tf.file;
+    auto hold = OPTIND;
     CHECK(mmls_main(2, argv)==1);
+    OPTIND = hold;
     tsk_stderr = stderr;
 
     auto first_line = tf.first_line();
     CHECK( first_line.substr(0,6) == "usage:" );
     setdown(argv);
-    OPTIND = hold;
 }
 
 TEST_CASE("mmls test/from_brian/exfat1.E01", "[vstools]") {
-    auto hold = OPTIND;
     char **argv = setup("mmls","test/from_brian/exfat1.E01","");
 
     /* Capture the output */
-    tempfile tf("mmls_2");
+    runner::tempfile tf("mmls_2");
     tsk_stdout = tf.file;
+    auto hold = OPTIND;
     CHECK(mmls_main(2, argv)==0);
+    OPTIND = hold;
     tsk_stdout = stdout;
 
-    CHECK( tf.contains(EXFAT1_OUTPUT));
-    OPTIND = hold;
+    CHECK( tf.validate_contains(EXFAT1_OUTPUT));
 }
 
 TEST_CASE("mmls -c test/from_brian/exfat1.E01", "[vstools]") {
-    auto hold = OPTIND;
     char **argv = setup("mmls","-c","test/from_brian/exfat1.E01");
 
     /* Capture the output */
-    tempfile tf("mmls_3");
+    runner::tempfile tf("mmls_3");
     tsk_stdout = tf.file;
-    CHECK(mmls_main(2, argv)==0);
+    auto hold = OPTIND;
+    CHECK(mmls_main(3, argv)==0);
+    OPTIND = hold;
     tsk_stdout = stdout;
 
-    CHECK( tf.contains(EXFAT1_CSV_OUTPUT));
-    OPTIND = hold;
+    CHECK( tf.validate_contains(EXFAT1_CSV_OUTPUT));
 }
