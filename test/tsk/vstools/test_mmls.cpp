@@ -80,8 +80,8 @@ TEST_CASE("mmls -h", "[vstools]") {
 }
 
 TEST_CASE("mmls test/from_brian/exfat1.E01", "[vstools]") {
-    int argc = 2;
-    char **argv = setup("mmls","test/from_brian/exfat1.E01","");
+    int argc = 3;
+    char **argv = setup("mmls","-r", "test/from_brian/exfat1.E01");
 
     /* Capture the output */
     runner::tempfile tf("mmls_2");
