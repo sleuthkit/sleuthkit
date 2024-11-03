@@ -69,7 +69,7 @@ TEST_CASE("mmls -h", "[vstools]") {
     tsk_stderr = tf.file;
     show(argc,argv);
     {
-        runner::save_getopt save;
+        optind = 1;//        runner::save_getopt save;
         CHECK(mmls_main(argc, argv)==1);
     }
     tsk_stderr = stderr;
@@ -88,7 +88,7 @@ TEST_CASE("mmls test/from_brian/exfat1.E01", "[vstools]") {
     tsk_stdout = tf.file;
     show(argc,argv);
     {
-        runner::save_getopt save;
+        optind = 1; //runner::save_getopt save;
         CHECK(mmls_main(argc, argv)==0);
     }
     tsk_stdout = stdout;
@@ -105,7 +105,7 @@ TEST_CASE("mmls -c test/from_brian/exfat1.E01", "[vstools]") {
     tsk_stdout = tf.file;
     show(argc,argv);
     {
-        runner::save_getopt save;
+        optind = 1; //       runner::save_getopt save;
         CHECK(mmls_main(argc, argv)==0);
     }
     tsk_stdout = stdout;
