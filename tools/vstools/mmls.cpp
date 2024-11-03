@@ -238,7 +238,12 @@ mmls_main(int argc, char **argv1)
 
     progname = argv[0];
 
+    fprintf(stderr,"mmls progname=%s\n",progname); // SLG
+    fprintf(stderr,"mmls argv[0]=%s\n",argv[0]);   // SLG
+    fprintf(stderr,"mmls argv[1]=%s\n",argv[1]);   // SLG
+
     while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvVh"))) > 0) {
+        fprintf(stderr,"ch=%c optind=%d\n",ch,optind);   // SLG
         switch (ch) {
         case _TSK_T('a'):
             flags |= TSK_VS_PART_FLAG_ALLOC;
