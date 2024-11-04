@@ -585,17 +585,6 @@ decmpfs_attr_walk_compressed_rsrc(
   )
 )
 {
-    TSK_FS_INFO *fs;
-    TSK_FS_FILE *fs_file;
-    const TSK_FS_ATTR *rAttr;   // resource fork attribute
-    char *rawBuf = NULL;               // compressed data
-    char *uncBuf = NULL;               // uncompressed data
-    uint32_t offsetTableOffset;
-    uint32_t offsetTableSize;         // The number of table entries
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
-    size_t indx;                // index for looping over the offset table
-    TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
-
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "%s:  Entered, because this is a compressed file with compressed data in the resource fork\n", __func__);
@@ -629,13 +618,13 @@ decmpfs_attr_walk_compressed_rsrc(
         return 1;
     }
 
-    fs = fs_attr->fs_file->fs_info;
-    fs_file = fs_attr->fs_file;
+    TSK_FS_INFO* fs = fs_attr->fs_file->fs_info;
+    TSK_FS_FILE* fs_file = fs_attr->fs_file;
 
     /********  Open the Resource Fork ***********/
 
     // find the attribute for the resource fork
-    rAttr =
+    const TSK_FS_ATTR* rAttr =
         tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_RSRC,
         HFS_FS_ATTR_ID_RSRC, FALSE);
     if (rAttr == NULL) {
@@ -643,6 +632,10 @@ decmpfs_attr_walk_compressed_rsrc(
             (" %s: could not get the attribute for the resource fork of the file", __func__);
         return 1;
     }
+
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
+    uint32_t offsetTableOffset;
+    uint32_t offsetTableSize;         // The number of table entries
 
     // read the offset table from the fork header
     if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
@@ -653,22 +646,26 @@ decmpfs_attr_walk_compressed_rsrc(
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
-    if (rawBuf == NULL) {
+    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        free(offsetTable);
+        return 1;
     }
 
-    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
-    if (uncBuf == NULL) {
+    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        free(offsetTable);
+        return 1;
     }
+
+    TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
 
     // FOR entry in the table DO
-    for (indx = 0; indx < offsetTableSize; ++indx) {
+    for (size_t indx = 0; indx < offsetTableSize; ++indx) {
         ssize_t uncLen;        // uncompressed length
         unsigned int blockSize;
         uint64_t lumpSize;
@@ -676,12 +673,13 @@ decmpfs_attr_walk_compressed_rsrc(
         char *lumpStart;
 
         switch ((uncLen = read_and_decompress_block(
-                    rAttr, rawBuf, uncBuf,
+                    rAttr, rawBuf.get(), uncBuf.get(),
                     offsetTable, offsetTableSize, offsetTableOffset, indx,
                     decompress_block)))
         {
         case -1:
-            goto on_error;
+            free(offsetTable);
+            return 1;
         case  0:
             continue;
         default:
@@ -692,7 +690,7 @@ decmpfs_attr_walk_compressed_rsrc(
         // that are at most the block size.
         blockSize = fs->block_size;
         remaining = uncLen;
-        lumpStart = uncBuf;
+        lumpStart = uncBuf.get();
 
         while (remaining > 0) {
             int retval;         // action return value
@@ -707,7 +705,8 @@ decmpfs_attr_walk_compressed_rsrc(
             if (lumpSize > SIZE_MAX) {
                 error_detected(TSK_ERR_FS_FWALK,
                     " %s: lumpSize is too large for the action", __func__);
-                goto on_error;
+                free(offsetTable);
+                return 1;
             }
 
             retval = a_action(fs_attr->fs_file, off, 0, lumpStart,
@@ -717,7 +716,8 @@ decmpfs_attr_walk_compressed_rsrc(
             if (retval == TSK_WALK_ERROR) {
                 error_detected(TSK_ERR_FS | 201,
                     "%s: callback returned an error", __func__);
-                goto on_error;
+                free(offsetTable);
+                return 1;
             }
             else if (retval == TSK_WALK_STOP) {
                 break;
@@ -730,17 +730,8 @@ decmpfs_attr_walk_compressed_rsrc(
         }
     }
 
-    // Done, so free up the allocated resources.
     free(offsetTable);
-    free(rawBuf);
-    free(uncBuf);
     return 0;
-
-on_error:
-    free(offsetTable);
-    free(rawBuf);
-    free(uncBuf);
-    return 1;
 }
 
 
