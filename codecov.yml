@@ -10,7 +10,7 @@ codecov:
   branch: develop
 
 ignore:
-  - "m4/*"
+  - "m4"
 
 # Code for updating pull request comment on GitHub
 # See https://docs.codecov.com/docs/pull-request-comments
