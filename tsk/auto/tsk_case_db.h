@@ -43,16 +43,16 @@ class TskAutoDb:public TskAuto {
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize) override;
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId);
-    virtual void closeImage();
+    virtual void closeImage() override;
     virtual void setTz(std::string tzone);
 
-    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
-    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
-    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
-    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
-    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
+    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info) override;
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part) override;
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info) override;
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol) override;
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info) override;
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
-        const char *path);
+        const char *path) override;
     virtual void createBlockMap(bool flag);
     const std::string getCurDir();
 
@@ -196,7 +196,7 @@ class TskAutoDb:public TskAuto {
         const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
-        const TSK_FS_ATTR * fs_attr, const char *path);
+        const TSK_FS_ATTR * fs_attr, const char *path) override;
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
