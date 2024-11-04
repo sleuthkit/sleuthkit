@@ -142,7 +142,7 @@ zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uin
             destPtr += have;
             copiedSoFar += have;
 
-        } while ((strm.avail_out == 0) && (ret != Z_STREAM_END));
+        } while (strm.avail_out == 0 && ret != Z_STREAM_END);
 
 
         /* done when inflate() says it's done */
@@ -1030,7 +1030,6 @@ decmpfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
  * @param uncSize expected uncompressed size
  * @param dstBuf destination buffer
  * @param dstSize size of destination buffer
- * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1
  */
 static int decmpfs_decompress_noncompressed_attr(
@@ -1038,8 +1037,7 @@ static int decmpfs_decompress_noncompressed_attr(
   [[maybe_unused]] uint32_t rawSize,
   uint64_t uncSize,
   char** dstBuf,
-  uint64_t* dstSize,
-  int* dstBufFree)
+  uint64_t* dstSize)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -1048,8 +1046,16 @@ static int decmpfs_decompress_noncompressed_attr(
 
     *dstBuf = rawBuf + 1;  // + 1 indicator byte
     *dstSize = uncSize;
-    *dstBufFree = FALSE;
     return 1;
+}
+
+bool decmpfs_is_compressed_zlib_attr(
+  const char* rawBuf,
+  [[maybe_unused]] uint32_t rawSize)
+{
+    // ZLIB blocks cannot start with 0xF as the low nibble, so that's used
+    // as the flag for noncompressed blocks
+    return (rawBuf[0] & 0x0F) != 0x0F;
 }
 
 /**
@@ -1059,80 +1065,75 @@ static int decmpfs_decompress_noncompressed_attr(
  * @param rawBuf source buffer
  * @param rawSize size of source buffer
  * @param uncSize expected uncompressed size
- * @param dstBuf destination buffer
  * @param dstSize size of destination buffer
- * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1 on success, 0 on error
  */
-static int decmpfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+std::unique_ptr<char[]> decmpfs_decompress_zlib_attr(
+  char* rawBuf,
+  uint32_t rawSize,
+  uint64_t uncSize,
+  uint64_t* dstSize)
 {
-    // ZLIB blocks cannot start with 0xF as the low nibble, so that's used
-    // as the flag for noncompressed blocks
-    if ((rawBuf[0] & 0x0F) == 0x0F) {
-        return decmpfs_decompress_noncompressed_attr(
-            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
-    }
-    else {
 #ifdef HAVE_LIBZ
-        char* uncBuf = NULL;
-        uint64_t uLen;
-        unsigned long bytesConsumed;
-        int infResult;
+    uint64_t uLen;
+    unsigned long bytesConsumed;
+    int infResult;
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                        "%s: Uncompressing (inflating) data.", __func__);
-        // Uncompress the remainder of the attribute, and load as 128-0
-        // Note: cast is OK because uncSize will be quite modest, < 4000.
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+                    "%s: Uncompressing (inflating) data.", __func__);
+    // Uncompress the remainder of the attribute, and load as 128-0
+    // Note: cast is OK because uncSize will be quite modest, < 4000.
 
-        uncBuf = (char *) tsk_malloc((size_t) uncSize + 100); // add some extra space
-        if (uncBuf == NULL) {
-            error_returned
-                (" - %s, space for the uncompressed attr", __func__);
-            return 0;
-        }
-
-        infResult = zlib_inflate(rawBuf, (uint64_t) rawSize,
-                                 uncBuf, (uint64_t) (uncSize + 100),
-                                 &uLen, &bytesConsumed);
-        if (infResult != 0) {
-            error_returned
-                (" %s, zlib could not uncompress attr", __func__);
-            free(uncBuf);
-            return 0;
-        }
-
-        if (bytesConsumed != rawSize) {
-            error_detected(TSK_ERR_FS_READ,
-                " %s, decompressor did not consume the whole compressed data",
-                __func__);
-            free(uncBuf);
-            return 0;
-        }
-
-        *dstBuf = uncBuf;
-        *dstSize = uncSize;
-        *dstBufFree = TRUE;
-#else
-        // ZLIB compression library is not available, so we will load a
-        // zero-length default DATA attribute. Without this, icat may
-        // misbehave.
-
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                        "%s: ZLIB not available, so loading an empty default DATA attribute.\n", __func__);
-
-        // Dummy is one byte long, so the ptr is not null, but we set the
-        // length to zero bytes, so it is never read.
-        static char dummy[1];
-
-        *dstBuf = dummy;
-        *dstSize = 0;
-        *dstBufFree = FALSE;
-#endif
+    // add some extra space
+    std::unique_ptr<char[]> uncBuf{new char[uncSize + 100]};
+    if (!uncBuf) {
+        error_returned
+            (" - %s, space for the uncompressed attr", __func__);
+        return nullptr;
     }
 
-    return 1;
+    infResult = zlib_inflate(rawBuf, (uint64_t) rawSize,
+                             uncBuf.get(), (uint64_t) (uncSize + 100),
+                             &uLen, &bytesConsumed);
+    if (infResult != 0) {
+        error_returned
+            (" %s, zlib could not uncompress attr", __func__);
+        return nullptr;
+    }
+
+    if (bytesConsumed != rawSize) {
+        error_detected(TSK_ERR_FS_READ,
+            " %s, decompressor did not consume the whole compressed data",
+            __func__);
+        return nullptr;
+    }
+
+    *dstSize = uncSize;
+    return uncBuf;
+#else
+    // ZLIB compression library is not available, so we will load a
+    // zero-length default DATA attribute. Without this, icat may
+    // misbehave.
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+                    "%s: ZLIB not available, so loading an empty default DATA attribute.\n", __func__);
+
+    // Dummy array is one byte long, so the ptr is not null, but we set the
+    // length to zero bytes, so it is never read.
+    *dstSize = 0;
+    return std::unique_ptr<char[]>{new char[1]};
+#endif
+}
+
+bool decmpfs_is_compressed_lzvn_attr(
+  const char* rawBuf,
+  [[maybe_unused]] uint32_t rawSize)
+{
+    // LZVN blocks cannot start with 0x06, so that's used as the flag for
+    // noncompressed blocks
+    return rawBuf[0] != 0x06;
 }
 
 /**
@@ -1142,26 +1143,18 @@ static int decmpfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t
  * @param rawBuf source buffer
  * @param rawSize size of source buffer
  * @param uncSize expected uncompressed size
- * @param dstBuf destination buffer
  * @param dstSize size of destination buffer
- * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1 on success, 0 on error
  */
-static int decmpfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+std::unique_ptr<char[]> decmpfs_decompress_lzvn_attr(
+  char* rawBuf,
+  uint32_t rawSize,
+  uint64_t uncSize,
+  uint64_t* dstSize)
 {
-    // LZVN blocks cannot start with 0x06, so that's used as the flag for
-    // noncompressed blocks
-    if (rawBuf[0] == 0x06) {
-        return decmpfs_decompress_noncompressed_attr(
-            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
-    }
-
-    char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
-    *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
-    *dstBuf = uncBuf;
-    *dstBufFree = TRUE;
-
-    return 1;
+    std::unique_ptr<char[]> uncBuf{new char[uncSize]};
+    *dstSize = lzvn_decode_buffer(uncBuf.get(), uncSize, rawBuf, rawSize);
+    return uncBuf;
 }
 
 /**
@@ -1177,17 +1170,23 @@ static int decmpfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t
  * @return 1 on success, 0 on error
  */
 static int
-decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
-                              uint8_t cmpType,
-                              char* buffer,
-                              TSK_OFF_T attributeLength,
-                              uint64_t uncSize,
-                              int (*decompress_attr)(char* rawBuf,
-                                                     uint32_t rawSize,
-                                                     uint64_t uncSize,
-                                                     char** dstBuf,
-                                                     uint64_t* dstSize,
-                                                     int* dstBufFree))
+decmpfs_file_read_compressed_attr(
+  TSK_FS_FILE* fs_file,
+  uint8_t cmpType,
+  char* buffer,
+  TSK_OFF_T attributeLength,
+  uint64_t uncSize,
+  bool (*is_compressed)(
+    const char* rawBuf,
+    uint32_t rawSize
+  ),
+  std::unique_ptr<char[]> (*decompress_attr)(
+    char* rawBuf,
+    uint32_t rawSize,
+    uint64_t uncSize,
+    uint64_t* dstSize
+  )
+)
 {
     // Data is inline. We will load the uncompressed data as a
     // resident attribute.
@@ -1216,19 +1215,29 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
         return 0;
     }
 
-    char* dstBuf;
+    char* dstBuf = nullptr;
+    std::unique_ptr<char[]> dstBufStore;
     uint64_t dstSize;
-    int dstBufFree = FALSE;
 
-    if (!decompress_attr(buffer + 16, attributeLength - 16, uncSize,
-                         &dstBuf, &dstSize, &dstBufFree)) {
-        return 0;
+    if (is_compressed(buffer + 16, attributeLength - 16)) {
+        dstBufStore = decompress_attr(
+          buffer + 16, attributeLength - 16, uncSize, &dstSize
+        );
+        if (!dstBufStore) {
+            return 0;
+        }
+        dstBuf = dstBufStore.get();
+    }
+    else {
+        if (!decmpfs_decompress_noncompressed_attr(buffer + 16, attributeLength - 16, uncSize, &dstBuf, &dstSize)) {
+            return 0;
+        }
     }
 
     if (dstSize != uncSize) {
         error_detected(TSK_ERR_FS_READ,
             " %s, actual uncompressed size not equal to the size in the compression record", __func__);
-        goto on_error;
+        return 0;
     }
 
     if (tsk_verbose)
@@ -1247,19 +1256,10 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                             dstSize))
     {
         error_returned(" - %s", __func__);
-        goto on_error;
+        return 0;
     }
 
-    if (dstBufFree) {
-        free(dstBuf);
-    }
     return 1;
-
-on_error:
-    if (dstBufFree) {
-        free(dstBuf);
-    }
-    return 0;
 }
 
 /**
@@ -1280,6 +1280,7 @@ int decmpfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
     return decmpfs_file_read_compressed_attr(
         fs_file, DECMPFS_TYPE_ZLIB_ATTR,
         buffer, attributeLength, uncSize,
+        decmpfs_is_compressed_zlib_attr,
         decmpfs_decompress_zlib_attr
     );
 }
@@ -1302,6 +1303,7 @@ int decmpfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
     return decmpfs_file_read_compressed_attr(
         fs_file, DECMPFS_TYPE_LZVN_ATTR,
         buffer, attributeLength, uncSize,
+        decmpfs_is_compressed_lzvn_attr,
         decmpfs_decompress_lzvn_attr
     );
 }
