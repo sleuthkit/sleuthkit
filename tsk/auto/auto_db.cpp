@@ -154,6 +154,13 @@ uint8_t
     return 0;
 }
 
+uint8_t
+    TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
+{
+    return openImageUtf8(a_num, a_images, a_type, a_ssize, nullptr);
+}
+
 /**
  * Adds an image to the database.
  *
@@ -182,6 +189,13 @@ uint8_t
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
 #endif
+}
+
+uint8_t
+    TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
+{
+    return openImage(a_num, a_images, a_type, a_ssize, nullptr);
 }
 
 /**
