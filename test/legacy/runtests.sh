@@ -32,7 +32,8 @@ fi
 FS_THREAD_TEST="tests/fs_thread_test"
 
 if ! test -x ${FS_THREAD_TEST} ; then
-    FS_THREAD_TEST="tests/fs_thread_test"
+    # We are probably running tests on Windows or via Wine, so try the .exe version
+    FS_THREAD_TEST="tests/fs_thread_test.exe"
 fi
 
 if ! test -x ${FS_THREAD_TEST} ; then
