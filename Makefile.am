@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
 AM_CFLAGS = -Wall -Wextra
-AM_CXXFLAGS = -Wall -Wextra
+AM_CXXFLAGS = -Wall -Wextra -Woverloaded-virtual
 
 CLEANFILES = *.gcov
 
@@ -139,7 +139,7 @@ noinst_LTLIBRARIES = \
 	tsk/vs/libtskvs.la
 
 tsk_auto_libtskauto_la_CFLAGS = $(AM_CFLAGS) -Wmultichar
-tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo -Wno-error=overloaded-virtual
+tsk_auto_libtskauto_la_CXXFLAGS = $(AM_CXXFLAGS) -Wmultichar -Wsign-promo
 tsk_auto_libtskauto_la_SOURCES = \
 	tsk/auto/auto.cpp \
 	tsk/auto/auto_db.cpp \
@@ -188,81 +188,81 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs.cpp \
 	tsk/fs/apfs_fs.cpp \
 	tsk/fs/apfs_open.cpp \
-	tsk/fs/dcalc_lib.c \
+	tsk/fs/dcalc_lib.cpp \
 	tsk/fs/dcat_lib.c \
-	tsk/fs/decmpfs.c \
-	tsk/fs/dls_lib.c \
-	tsk/fs/dstat_lib.c \
+	tsk/fs/decmpfs.cpp \
+	tsk/fs/dls_lib.cpp \
+	tsk/fs/dstat_lib.cpp \
 	tsk/fs/encryptionHelper.cpp \
 	tsk/fs/exfatfs.c \
-	tsk/fs/exfatfs_dent.c \
-	tsk/fs/exfatfs_meta.c \
-	tsk/fs/ext2fs.c \
-	tsk/fs/ext2fs_dent.c \
-	tsk/fs/ext2fs_journal.c \
-	tsk/fs/fatfs.c \
+	tsk/fs/exfatfs_dent.cpp \
+	tsk/fs/exfatfs_meta.cpp \
+	tsk/fs/ext2fs.cpp \
+	tsk/fs/ext2fs_dent.cpp \
+	tsk/fs/ext2fs_journal.cpp \
+	tsk/fs/fatfs.cpp \
 	tsk/fs/fatfs_dent.cpp \
-	tsk/fs/fatfs_meta.c \
+	tsk/fs/fatfs_meta.cpp \
 	tsk/fs/fatfs_utils.c \
 	tsk/fs/fatxxfs.c \
 	tsk/fs/fatxxfs_dent.c \
-	tsk/fs/fatxxfs_meta.c \
+	tsk/fs/fatxxfs_meta.cpp \
 	tsk/fs/ffind_lib.c \
-	tsk/fs/ffs.c \
-	tsk/fs/ffs_dent.c \
+	tsk/fs/ffs.cpp \
+	tsk/fs/ffs_dent.cpp \
 	tsk/fs/fls_lib.c \
-	tsk/fs/fs_attr.c \
+	tsk/fs/fs_attr.cpp \
 	tsk/fs/fs_attrlist.c \
 	tsk/fs/fs_block.c \
-	tsk/fs/fs_dir.c \
-	tsk/fs/fs_file.c \
+	tsk/fs/fs_dir.cpp \
+	tsk/fs/fs_file.cpp \
 	tsk/fs/fs_inode.c \
 	tsk/fs/fs_io.c \
-	tsk/fs/fs_load.c \
-	tsk/fs/fs_name.c \
+	tsk/fs/fs_load.cpp \
+	tsk/fs/fs_name.cpp \
 	tsk/fs/fs_open.c \
 	tsk/fs/fs_parse.c \
 	tsk/fs/fs_types.c \
-	tsk/fs/hfs.c \
-	tsk/fs/hfs_dent.c \
-	tsk/fs/hfs_journal.c \
-	tsk/fs/hfs_unicompare.c \
-	tsk/fs/icat_lib.c \
-	tsk/fs/ifind_lib.c \
-	tsk/fs/ils_lib.c \
-	tsk/fs/iso9660.c \
-	tsk/fs/iso9660_dent.c \
+	tsk/fs/hfs.cpp \
+	tsk/fs/hfs_dent.cpp \
+	tsk/fs/hfs_journal.cpp \
+	tsk/fs/hfs_unicompare.cpp \
+	tsk/fs/icat_lib.cpp \
+	tsk/fs/ifind_lib.cpp \
+	tsk/fs/ils_lib.cpp \
+	tsk/fs/iso9660.cpp \
+	tsk/fs/iso9660_dent.cpp \
 	tsk/fs/logical_fs.cpp \
 	tsk/fs/lzvn.c \
 	tsk/fs/lzvn.h \
-	tsk/fs/nofs_misc.c \
-	tsk/fs/ntfs.c \
+	tsk/fs/nofs_misc.cpp \
+	tsk/fs/ntfs.cpp \
 	tsk/fs/ntfs_dent.cpp \
 	tsk/fs/rawfs.c \
 	tsk/fs/swapfs.c \
 	tsk/fs/tsk_fs_i.h \
-	tsk/fs/unix_misc.c \
-	tsk/fs/usnjls_lib.c \
-	tsk/fs/usn_journal.c \
+	tsk/fs/unix_misc.cpp \
+	tsk/fs/usnjls_lib.cpp \
+	tsk/fs/usn_journal.cpp \
 	tsk/fs/walk_cpp.cpp \
 	tsk/fs/yaffs.cpp
 
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
-	tsk/hashdb/encase.c \
+	tsk/hashdb/encase.cpp \
 	tsk/hashdb/hashkeeper.c \
-	tsk/hashdb/hdb_base.c \
-	tsk/hashdb/idxonly.c \
-	tsk/hashdb/md5sum.c \
-	tsk/hashdb/nsrl.c \
+	tsk/hashdb/hdb_base.cpp \
+	tsk/hashdb/idxonly.cpp \
+	tsk/hashdb/md5sum.cpp \
+	tsk/hashdb/nsrl.cpp \
 	tsk/hashdb/sqlite_hdb.cpp \
-	tsk/hashdb/tsk_hashdb.c \
+	tsk/hashdb/tsk_hashdb.cpp \
 	tsk/hashdb/tsk_hashdb.h \
 	tsk/hashdb/tsk_hashdb_i.h \
 	tsk/hashdb/tsk_hash_info.h
 
 tsk_img_libtskimg_la_SOURCES = \
-	tsk/img/aff4.c \
+	tsk/img/aff4.cpp \
 	tsk/img/aff4.h \
 	tsk/img/aff.c \
 	tsk/img/aff.h \
@@ -273,13 +273,13 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/img_types.c \
 	tsk/img/img_writer.cpp \
 	tsk/img/img_writer.h \
-	tsk/img/logical_img.c \
+	tsk/img/logical_img.cpp \
 	tsk/img/logical_img.h \
 	tsk/img/mult_files.cpp \
 	tsk/img/mult_files.h \
 	tsk/img/qcow.c \
 	tsk/img/qcow.h \
-	tsk/img/raw.c \
+	tsk/img/raw.cpp \
 	tsk/img/raw.h \
 	tsk/img/tsk_img_i.h \
 	tsk/img/unsupported_types.c \
@@ -292,7 +292,7 @@ tsk_img_libtskimg_la_SOURCES = \
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
-	tsk/pool/img_bfio_handle.c \
+	tsk/pool/img_bfio_handle.cpp \
 	tsk/pool/img_bfio_handle.h \
 	tsk/pool/lvm_pool_compat.cpp \
 	tsk/pool/lvm_pool.cpp \
@@ -305,7 +305,7 @@ tsk_util_libtskutil_la_LDFLAGS = $(AM_LDFLAGS) $(OPENSSL_LDFLAGS)
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
-	tsk/util/file_system_utils.c
+	tsk/util/file_system_utils.cpp
 
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
@@ -410,7 +410,6 @@ tools_autotools_tsk_gettimes_SOURCES = tools/autotools/tsk_gettimes.cpp
 tools_autotools_tsk_imageinfo_LDADD = $(TSK_LIB)
 tools_autotools_tsk_imageinfo_SOURCES = tools/autotools/tsk_imageinfo.cpp
 
-tools_autotools_tsk_loaddb_CXXFLAGS = $(AM_CXXFLAGS) -Wno-error=overloaded-virtual
 tools_autotools_tsk_loaddb_LDADD = $(TSK_LIB)
 tools_autotools_tsk_loaddb_SOURCES = tools/autotools/tsk_loaddb.cpp
 
@@ -619,7 +618,7 @@ check_PROGRAMS = \
 # This makes things easier with codecov.
 test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS) -Wno-error=overloaded-virtual
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
 test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
 test_runner_SOURCES = \
 	test/tsk/base/test_tsk_error.cpp \

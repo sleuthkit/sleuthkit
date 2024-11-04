@@ -681,10 +681,18 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
  * @param img_info        the TSK_IMG_INFO object
  * @param outputFileName  path to the VHD
  */
-TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *outputFileName) {
 #ifndef TSK_WIN32
+TSK_RETVAL_ENUM tsk_img_writer_create(
+  [[maybe_unused]] TSK_IMG_INFO *img_info,
+  [[maybe_unused]] const TSK_TCHAR *outputFileName)
+{
     return TSK_ERR;
+}
 #else
+TSK_RETVAL_ENUM tsk_img_writer_create(
+  TSK_IMG_INFO *img_info,
+  const TSK_TCHAR *outputFileName)
+{
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_create: Creating image writer in %" PRIttocTSK"\n",
@@ -849,8 +857,8 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
     }
 
     return TSK_OK;
-#endif
 }
+#endif
 
 /**
  * Read the remaining sectors into the VHD file.

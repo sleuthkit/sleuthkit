@@ -2683,8 +2683,11 @@ static TSK_RETVAL_ENUM
 }
 
 static TSK_RETVAL_ENUM
-    yaffsfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr, int recursion_depth)
+yaffsfs_dir_open_meta(
+  TSK_FS_INFO *a_fs,
+  TSK_FS_DIR ** a_fs_dir,
+  TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
     TSK_FS_DIR *fs_dir;
     TSK_FS_NAME *fs_name;
@@ -3009,8 +3012,12 @@ static uint8_t
 * @returns NULL on error or if data is not an Yaffs/3 file system
 */
 TSK_FS_INFO *
-    yaffs2_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, const char* a_pass, uint8_t test)
+yaffs2_open(
+  TSK_IMG_INFO * img_info,
+  TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM ftype,
+  [[maybe_unused]] const char* a_pass,
+  uint8_t test)
 {
     YAFFSFS_INFO *yaffsfs = NULL;
     TSK_FS_INFO *fs = NULL;

@@ -911,7 +911,7 @@ bool TskAuto::getStopProcessing() const {
 
 
 TSK_RETVAL_ENUM
-TskAuto::enableImageWriter(const char * imagePath) {
+TskAuto::enableImageWriter([[maybe_unused]] const char * imagePath) {
 #ifdef TSK_WIN32
 	m_imageWriterEnabled = false;
 

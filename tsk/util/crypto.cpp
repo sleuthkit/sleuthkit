@@ -118,7 +118,7 @@ std::unique_ptr<uint8_t[]> pbkdf2_hmac_sha256(const std::string &password,
 
 std::unique_ptr<uint8_t[]> rfc3394_key_unwrap(
   const uint8_t *key,
-  size_t key_len,
+  [[maybe_unused]] size_t key_len,
   const void *input,
   size_t input_len,
   const void *iv) noexcept

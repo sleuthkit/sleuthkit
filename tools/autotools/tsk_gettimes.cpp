@@ -129,7 +129,7 @@ TskGetTimes::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 TSK_FILTER_ENUM
-TskGetTimes::filterPool(const TSK_POOL_INFO * pool_info)
+TskGetTimes::filterPool([[maybe_unused]] const TSK_POOL_INFO * pool_info)
 {
     // There's nothing to do, but we need to override this to allow the pool
     // to be processed.
