@@ -21,6 +21,8 @@
 
 #include <string.h>
 
+#include <memory>
+
 static char* get_messages(AFF4_Message* msg) {
     // count the messages
     size_t count = 0;
@@ -166,10 +168,18 @@ aff4_open(
         return nullptr;
     }
 
-    IMG_AFF4_INFO* aff4_info = nullptr;
-    if ((aff4_info =
-            (IMG_AFF4_INFO*) tsk_img_malloc(sizeof(IMG_AFF4_INFO))) ==
-        nullptr) {
+    const auto deleter = [](IMG_AFF4_INFO* aff4_info) {
+      if (aff4_info->handle) {
+        AFF4_close(aff4_info->handle, nullptr);
+      }
+      tsk_img_free(aff4_info);
+    };
+
+    std::unique_ptr<IMG_AFF4_INFO, decltype(deleter)> aff4_info{
+        (IMG_AFF4_INFO*) tsk_img_malloc(sizeof(IMG_AFF4_INFO)),
+        deleter
+    };
+    if (!aff4_info) {
         return nullptr;
     }
     aff4_info->handle = nullptr;
@@ -177,36 +187,35 @@ aff4_open(
     AFF4_Message* msg = nullptr;
     const char* filename;
 
-    TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info;
+    TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info.get();
     img_info->images = nullptr;
     img_info->num_img = 0;
 
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-       goto on_error;
+        return nullptr;
     }
 
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
 #if defined (TSK_WIN32)
     const size_t len = TSTRLEN(a_images[0]) + 1;
-    char* fn = (char*) tsk_malloc(len);
-    if (fn == nullptr) {
-        goto on_error;
+
+    std::unique_ptr<char[]> fn{new char[len]};
+    if (!fn) {
+        return nullptr;
     }
 
-    {
-      UTF8* utf8 = (UTF8*) fn;
-      const UTF16* utf16 = (UTF16*) a_images[0];
+    UTF8* utf8 = (UTF8*) fn.get();
+    const UTF16* utf16 = (UTF16*) a_images[0];
 
-      const int ret = tsk_UTF16toUTF8_lclorder(&utf16, utf16 + len, &utf8, utf8 + len, TSKstrictConversion);
-      if (ret != TSKconversionOK) {
-          tsk_error_reset();
-          tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-          tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
-          goto on_error;
-      }
+    const int ret = tsk_UTF16toUTF8_lclorder(&utf16, utf16 + len, &utf8, utf8 + len, TSKstrictConversion);
+    if (ret != TSKconversionOK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+        tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
+        return nullptr;
     }
 
-    filename = fn;
+    filename = fn.get();
 #else
     filename = a_images[0];
 #endif
@@ -252,12 +261,8 @@ aff4_open(
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening AFF4 file\n");
         }
-        goto on_error;
+        return nullptr;
     }
-
-#if defined (TSK_WIN32)
-    free(fn);
-#endif
 
     AFF4_free_messages(msg);
     msg = nullptr;
@@ -277,7 +282,7 @@ aff4_open(
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of AFF4 file\n");
         }
-        goto on_error;
+        return nullptr;
     }
 
     AFF4_free_messages(msg);
@@ -293,16 +298,6 @@ aff4_open(
     tsk_init_lock(&(aff4_info->read_lock));
 
     return img_info;
-
-on_error:
-#if defined (TSK_WIN32)
-    free(fn);
-#endif
-    if (aff4_info->handle) {
-        AFF4_close(aff4_info->handle, nullptr);
-    }
-    tsk_img_free(aff4_info);
-    return nullptr;
 }
 
 #endif /* HAVE_LIBAFF4 */
