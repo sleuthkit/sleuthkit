@@ -2584,16 +2584,18 @@ typedef struct {
  * @param tableOffsetOut the offset of the block table in the resource fork
  * @return 1 on success, 0 on error
  */
-static int
-hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
+std::unique_ptr<CMP_OFFSET_ENTRY[]>
+hfs_read_zlib_block_table(
+  const TSK_FS_ATTR *rAttr,
+  uint32_t* tableSizeOut,
+  uint32_t* tableOffsetOut)
+{
     ssize_t attrReadResult;
     hfs_resource_fork_header rfHeader;
     uint32_t dataOffset;
     uint32_t offsetTableOffset;
     char fourBytes[4];          // Size of the offset table, little endian
     uint32_t tableSize;         // Size of the offset table
-    char *offsetTableData = NULL;
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;
 
     // Read the resource fork header
@@ -2602,7 +2604,7 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     if (attrReadResult != sizeof(hfs_resource_fork_header)) {
         error_returned
             (" %s: trying to read the resource fork header", __func__);
-        return 0;
+        return nullptr;
     }
 
     // Begin to parse the resource fork. For now, we just need the data offset.
@@ -2621,55 +2623,45 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
         error_returned
             (" %s: trying to read the offset table size, "
             "return value of %u should have been 4", __func__, attrReadResult);
-        return 0;
+        return nullptr;
     }
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
     // Each table entry is 8 bytes long
-    offsetTableData = (char*) tsk_malloc(tableSize * 8);
-    if (offsetTableData == NULL) {
+    std::unique_ptr<char[]> offsetTableData{new char[tableSize * 8]};
+    if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
-        return 0;
+        return nullptr;
     }
 
-    offsetTable =
-        (CMP_OFFSET_ENTRY *) tsk_malloc(tableSize *
-        sizeof(CMP_OFFSET_ENTRY));
-    if (offsetTable == NULL) {
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable{new CMP_OFFSET_ENTRY[tableSize]};
+    if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
-        goto on_error;
+        return nullptr;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, offsetTableOffset + 4,
-        offsetTableData, tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
+        offsetTableData.get(), tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != (ssize_t) tableSize * 8) {
         error_returned
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
             tableSize * 8);
-        goto on_error;
+        return nullptr;
     }
 
     for (indx = 0; indx < tableSize; ++indx) {
         offsetTable[indx].offset =
-            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8);
+            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData.get() + indx * 8);
         offsetTable[indx].length =
-            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8 + 4);
+            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData.get() + indx * 8 + 4);
     }
 
-    free(offsetTableData);
-
-    *offsetTableOut = offsetTable;
     *tableSizeOut = tableSize;
     *tableOffsetOut = offsetTableOffset;
-    return 1;
-
-on_error:
-    free(offsetTable);
-    free(offsetTableData);
-    return 0;
+    return offsetTable;
 }
 
 
@@ -2683,10 +2675,9 @@ on_error:
  * @param tableOffsetOut the offset of the block table in the resource fork
  * @return 1 on success, 0 on error
  */
-static int
+std::unique_ptr<CMP_OFFSET_ENTRY[]>
 hfs_read_lzvn_block_table(
   const TSK_FS_ATTR *rAttr,
-  CMP_OFFSET_ENTRY** offsetTableOut,
   uint32_t* tableSizeOut,
   uint32_t* tableOffsetOut)
 {
@@ -2704,7 +2695,7 @@ hfs_read_lzvn_block_table(
         error_returned
             (" %s: trying to read the offset table size, "
             "return value of %u should have been 4", __func__, attrReadResult);
-        return 0;
+        return nullptr;
     }
 
     tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
@@ -2713,7 +2704,7 @@ hfs_read_lzvn_block_table(
     if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
-        return 0;
+        return nullptr;
     }
 
     // table entries are 4 bytes, last entry is end of data
@@ -2723,7 +2714,7 @@ hfs_read_lzvn_block_table(
     if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
-        return 0;
+        return nullptr;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, 0,
@@ -2733,7 +2724,7 @@ hfs_read_lzvn_block_table(
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
             tableDataSize);
-        return 0;
+        return nullptr;
     }
 
     uint32_t a = tableDataSize;
@@ -2747,10 +2738,9 @@ hfs_read_lzvn_block_table(
         a = b;
     }
 
-    *offsetTableOut = offsetTable.release();
     *tableSizeOut = tableSize;
     *tableOffsetOut = 0;
-    return 1;
+    return offsetTable;
 }
 
 /**
@@ -2964,9 +2954,8 @@ hfs_attr_walk_compressed_rsrc(
     [[maybe_unused]] int flags,
     TSK_FS_FILE_WALK_CB a_action,
     void *ptr,
-    int (*read_block_table)(
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> (*read_block_table)(
       const TSK_FS_ATTR *rAttr,
-      CMP_OFFSET_ENTRY** offsetTableOut,
       uint32_t* tableSizeOut,
       uint32_t* tableOffsetOut
     ),
@@ -2985,7 +2974,6 @@ hfs_attr_walk_compressed_rsrc(
     char *uncBuf = NULL;               // uncompressed data
     uint32_t offsetTableOffset;
     uint32_t offsetTableSize;         // The number of table entries
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;                // index for looping over the offset table
     TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
 
@@ -3038,7 +3026,10 @@ hfs_attr_walk_compressed_rsrc(
     }
 
     // read the offset table from the fork header
-    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable = read_block_table(
+      rAttr, &offsetTableSize, &offsetTableOffset
+    );
+    if (!offsetTable) {
       return 1;
     }
 
@@ -3070,7 +3061,7 @@ hfs_attr_walk_compressed_rsrc(
 
         switch ((uncLen = read_and_decompress_block(
                     rAttr, rawBuf, uncBuf,
-                    offsetTable, offsetTableSize, offsetTableOffset, indx,
+                    offsetTable.get(), offsetTableSize, offsetTableOffset, indx,
                     decompress_block)))
         {
         case -1:
@@ -3124,13 +3115,11 @@ hfs_attr_walk_compressed_rsrc(
     }
 
     // Done, so free up the allocated resources.
-    free(offsetTable);
     free(rawBuf);
     free(uncBuf);
     return 0;
 
 on_error:
-    free(offsetTable);
     free(rawBuf);
     free(uncBuf);
     return 1;
@@ -3199,14 +3188,16 @@ hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
 static ssize_t
 hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len,
-    int (*read_block_table)(const TSK_FS_ATTR *rAttr,
-                            CMP_OFFSET_ENTRY** offsetTableOut,
-                            uint32_t* tableSizeOut,
-                            uint32_t* tableOffsetOut),
-    int (*decompress_block)(char* rawBuf,
-                            uint32_t len,
-                            char* uncBuf,
-                            uint64_t* uncLen))
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> (*read_block_table)(
+      const TSK_FS_ATTR *rAttr,
+      uint32_t* tableSizeOut,
+      uint32_t* tableOffsetOut),
+    int (*decompress_block)(
+      char* rawBuf,
+      uint32_t len,
+      char* uncBuf,
+      uint64_t* uncLen)
+)
 {
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *rAttr;
@@ -3214,7 +3205,6 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     char *uncBuf = NULL;
     uint32_t offsetTableOffset;
     uint32_t offsetTableSize;         // Size of the offset table
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
     TSK_OFF_T indx;                // index for looping over the offset table
     TSK_OFF_T startUnit = 0;
     uint32_t startUnitOffset = 0;
@@ -3285,7 +3275,10 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // read the offset table from the fork header
-    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable =  read_block_table(
+      rAttr, &offsetTableSize, &offsetTableOffset
+    );
+    if (!offsetTable) {
       return -1;
     }
 
@@ -3335,7 +3328,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
         const ssize_t ret = read_and_decompress_block(
             rAttr, rawBuf, uncBuf,
-            offsetTable, offsetTableSize, offsetTableOffset, (size_t)indx,
+            offsetTable.get(), offsetTableSize, offsetTableOffset, (size_t)indx,
             decompress_block
         );
 
@@ -3382,14 +3375,12 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
         memset(a_buf + bytesCopied, 0, a_len - (size_t) bytesCopied);   // cast OK because diff must be < compression unit size
     }
 
-    free(offsetTable);
     free(rawBuf);
     free(uncBuf);
 
     return (ssize_t) bytesCopied;       // cast OK, cannot be greater than a_len which cannot be greater than SIZE_MAX/2 (rounded down).
 
 on_error:
-    free(offsetTable);
     free(rawBuf);
     free(uncBuf);
     return -1;
