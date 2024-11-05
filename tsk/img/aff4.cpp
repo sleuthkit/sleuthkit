@@ -193,15 +193,17 @@ aff4_open(
         goto on_error;
     }
 
-    UTF8* utf8 = (UTF8*) fn;
-    const UTF16* utf16 = (UTF16*) a_images[0];
+    {
+      UTF8* utf8 = (UTF8*) fn;
+      const UTF16* utf16 = (UTF16*) a_images[0];
 
-    const int ret = tsk_UTF16toUTF8_lclorder(&utf16, utf16 + len, &utf8, utf8 + len, TSKstrictConversion);
-    if (ret != TSKconversionOK) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-        tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
-        goto on_error;
+      const int ret = tsk_UTF16toUTF8_lclorder(&utf16, utf16 + len, &utf8, utf8 + len, TSKstrictConversion);
+      if (ret != TSKconversionOK) {
+          tsk_error_reset();
+          tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+          tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
+          goto on_error;
+      }
     }
 
     filename = fn;
