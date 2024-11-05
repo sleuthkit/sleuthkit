@@ -730,7 +730,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
 {
     TSK_FS_INFO *fs = &(hfs->fs_info);
     uint32_t cur_node;          /* node id of the current node */
-    char *node;
 
     uint16_t nodesize;
     uint8_t is_done = 0;
@@ -738,8 +737,10 @@ hfs_cat_traverse(HFS_INFO * hfs,
     tsk_error_reset();
 
     nodesize = tsk_getu16(fs->endian, hfs->catalog_header.nodesize);
-    if ((node = (char *) tsk_malloc(nodesize)) == NULL)
+    std::unique_ptr<char[]> node{new char[nodesize]};
+    if (!node) {
         return 1;
+    }
 
     /* start at root node */
     cur_node = tsk_getu32(fs->endian, hfs->catalog_header.rootNode);
@@ -752,7 +753,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
         if (tsk_verbose)
             tsk_fprintf(stderr, "hfs_cat_traverse: "
                 "empty extents btree\n");
-        free(node);
         return 1;
     }
 
@@ -775,14 +775,13 @@ hfs_cat_traverse(HFS_INFO * hfs,
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr
                 ("hfs_cat_traverse: Node %d too large for file", cur_node);
-            free(node);
             return 1;
         }
 
         // read the current node
         cur_off = (TSK_OFF_T)cur_node * nodesize;
         cnt = tsk_fs_attr_read(hfs->catalog_attr, cur_off,
-            node, nodesize,  TSK_FS_FILE_READ_FLAG_NONE);
+            node.get(), nodesize,  TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt != nodesize) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -791,7 +790,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
             tsk_error_set_errstr2
                 ("hfs_cat_traverse: Error reading node %d at offset %"
                 PRIdOFF, cur_node, cur_off);
-            free(node);
             return 1;
         }
 
@@ -800,10 +798,9 @@ hfs_cat_traverse(HFS_INFO * hfs,
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr
             ("hfs_cat_traverse: Node size %d is too small to be valid", nodesize);
-            free(node);
             return 1;
         }
-        node_desc = (hfs_btree_node *) node;
+        node_desc = (hfs_btree_node *) node.get();
         num_rec = tsk_getu16(fs->endian, node_desc->num_rec);
 
         if (tsk_verbose)
@@ -815,7 +812,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("hfs_cat_traverse: zero records in node %"
                 PRIu32, cur_node);
-            free(node);
             return 1;
         }
 
@@ -838,7 +834,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in leaf node %d too small (%"
                         PRIu16 ")", rec, cur_node, nodesize);
-                    free(node);
                     return 1;
                 }
                 // get the record offset in the node
@@ -853,7 +848,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                         ("hfs_cat_traverse: offset of record %d in index node %d too large (%d vs %"
                         PRIu16 ")", rec, cur_node, (int) rec_off,
                         nodesize);
-                    free(node);
                     return 1;
                 }
 
@@ -866,7 +860,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %" PRIu64 " < %"
                         PRIu64 ")", rec, cur_node, keylen, nodesize - rec_off);
-                    free(node);
                     return 1;
                 }
 
@@ -888,7 +881,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr2
                         ("hfs_cat_traverse: Callback returned error");
-                    free(node);
                     return 1;
                 }
                 // record the closest entry
@@ -904,13 +896,11 @@ hfs_cat_traverse(HFS_INFO * hfs,
                             ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%" PRIu64 " vs %"
                             PRIu16 ")", rec, cur_node,
                             (int) rec_off + keylen, nodesize);
-                        free(node);
                         return 1;
                     }
                     if (sizeof(hfs_btree_index_record) > nodesize - rec_off - keylen) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr("hfs_cat_traverse: truncated btree index record");
-                        free(node);
                         return 1;
                     }
                     idx_rec =
@@ -961,7 +951,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in leaf node %d too small (%"
                         PRIu16 ")", rec, cur_node, nodesize);
-                    free(node);
                     return 1;
                 }
                 // get the record offset in the node
@@ -976,7 +965,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                         ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%d vs %"
                         PRIu16 ")", rec, cur_node, (int) rec_off,
                         nodesize);
-                    free(node);
                     return 1;
                 }
 
@@ -989,7 +977,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: length of key %d in leaf node %d out of bounds (6 < %" PRIu64 " < %"
                         PRIu16 ")", rec, cur_node, keylen, nodesize);
-                    free(node);
                     return 1;
                 }
 
@@ -1016,7 +1003,6 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr2
                         ("hfs_cat_traverse: Callback returned error");
-                    free(node);
                     return 1;
                 }
             }
@@ -1037,11 +1023,10 @@ hfs_cat_traverse(HFS_INFO * hfs,
             tsk_error_set_errstr("hfs_cat_traverse: btree node %" PRIu32
                 " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
                 cur_node, cur_off, node_desc->type);
-            free(node);
             return 1;
         }
     }
-    free(node);
+
     return 0;
 }
 
