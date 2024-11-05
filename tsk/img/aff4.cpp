@@ -21,7 +21,7 @@
 
 #include <memory>
 
-char* get_messages(AFF4_Message* msg) {
+char* get_messages(const AFF4_Message* msg) {
     // count the messages
     size_t count = 0;
     for (const AFF4_Message* m = msg; m; m = m->next, ++count);

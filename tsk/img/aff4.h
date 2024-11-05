@@ -41,7 +41,7 @@ TSK_IMG_INFO *aff4_open(int, const TSK_TCHAR * const images[], unsigned int a_ss
 }
 #endif
 
-char* get_messages(AFF4_Message* msg);
+char* get_messages(const AFF4_Message* msg);
 
 #endif
 #endif
