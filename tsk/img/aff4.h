@@ -22,6 +22,8 @@
 
 #include "tsk_img_i.h"
 
+#include <string>
+
 struct AFF4_Handle;
 struct AFF4_Message;
 
@@ -41,7 +43,7 @@ TSK_IMG_INFO *aff4_open(int, const TSK_TCHAR * const images[], unsigned int a_ss
 }
 #endif
 
-char* get_messages(const AFF4_Message* msg);
+std::string get_messages(const AFF4_Message* msg);
 
 #endif
 #endif
