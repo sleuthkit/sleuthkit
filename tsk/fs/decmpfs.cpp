@@ -142,7 +142,7 @@ zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uin
             destPtr += have;
             copiedSoFar += have;
 
-        } while ((strm.avail_out == 0) && (ret != Z_STREAM_END));
+        } while (strm.avail_out == 0 && ret != Z_STREAM_END);
 
 
         /* done when inflate() says it's done */
@@ -183,21 +183,22 @@ typedef struct {
  * Reads the ZLIB compression block table from the attribute.
  *
  * @param rAtttr the attribute to read
- * @param offsetTableOut block table
  * @param tableSizeOut size of block table
  * @param tableOffsetOut the offset of the block table in the resource fork
  * @return 1 on success, 0 on error
  */
-static int
-decmpfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
+std::unique_ptr<CMP_OFFSET_ENTRY[]>
+decmpfs_read_zlib_block_table(
+  const TSK_FS_ATTR *rAttr,
+  uint32_t* tableSizeOut,
+  uint32_t* tableOffsetOut)
+{
     ssize_t attrReadResult;
     hfs_resource_fork_header rfHeader;
     uint32_t dataOffset;
     uint32_t offsetTableOffset;
     char fourBytes[4];          // Size of the offset table, little endian
     uint32_t tableSize;         // Size of the offset table
-    char *offsetTableData = NULL;
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;
 
     // Read the resource fork header
@@ -206,7 +207,7 @@ decmpfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     if (attrReadResult != sizeof(hfs_resource_fork_header)) {
         error_returned
             (" %s: trying to read the resource fork header", __func__);
-        return 0;
+        return nullptr;
     }
 
     // Begin to parse the resource fork. For now, we just need the data offset.
@@ -225,61 +226,51 @@ decmpfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
         error_returned
             (" %s: trying to read the offset table size, "
             "return value of %u should have been 4", __func__, attrReadResult);
-        return 0;
+        return nullptr;
     }
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
     if (tableSize <= 0) {
         error_returned
            (" %s: table size is zero", __func__);
-        return 0;
+        return nullptr;
     }
 
     // Each table entry is 8 bytes long
-    offsetTableData = (char*) tsk_malloc(tableSize * 8);
-    if (offsetTableData == NULL) {
+    std::unique_ptr<char[]> offsetTableData{new char[tableSize * 8]};
+    if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
-        return 0;
+        return nullptr;
     }
 
-    offsetTable =
-        (CMP_OFFSET_ENTRY *) tsk_malloc(tableSize *
-        sizeof(CMP_OFFSET_ENTRY));
-    if (offsetTable == NULL) {
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable{new CMP_OFFSET_ENTRY[tableSize]};
+    if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
-        goto on_error;
+        return nullptr;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, offsetTableOffset + 4,
-        offsetTableData, tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
+        offsetTableData.get(), tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != (ssize_t) tableSize * 8) {
         error_returned
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
             tableSize * 8);
-        goto on_error;
+        return nullptr;
     }
 
     for (indx = 0; indx < tableSize; ++indx) {
         offsetTable[indx].offset =
-            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8);
+            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData.get() + indx * 8);
         offsetTable[indx].length =
-            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8 + 4);
+            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData.get() + indx * 8 + 4);
     }
 
-    free(offsetTableData);
-
-    *offsetTableOut = offsetTable;
     *tableSizeOut = tableSize;
     *tableOffsetOut = offsetTableOffset;
-    return 1;
-
-on_error:
-    free(offsetTable);
-    free(offsetTableData);
-    return 0;
+    return offsetTable;
 }
 
 /**
@@ -292,8 +283,12 @@ on_error:
  * @param tableOffsetOut the offset of the block table in the resource fork
  * @return 1 on success, 0 on error
  */
-static int
-decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
+std::unique_ptr<CMP_OFFSET_ENTRY[]>
+decmpfs_read_lzvn_block_table(
+  const TSK_FS_ATTR *rAttr,
+  uint32_t* tableSizeOut,
+  uint32_t* tableOffsetOut)
+{
     // The offset table is a sequence of 4-byte offsets of compressed
     // blocks. The first 4 bytes is thus the offset of the first block,
     // but also 4 times the number of entries in the table.
@@ -304,7 +299,7 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
         error_returned
             (" %s: trying to read the offset table size, "
             "return value of %u should have been 4", __func__, attrReadResult);
-        return 0;
+        return nullptr;
     }
 
     const uint32_t tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
@@ -312,14 +307,14 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     if (tableDataSize <= 0) {
         error_returned
            (" %s: table size is zero", __func__);
-        return 0;
+        return nullptr;
     }
 
     std::unique_ptr<char[]> offsetTableData(new char[tableDataSize]);
     if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
-        return 0;
+        return nullptr;
     }
 
     // Size of the offset table
@@ -330,7 +325,7 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
-        return 0;
+        return nullptr;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, 0,
@@ -340,7 +335,7 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
             tableDataSize);
-        return 0;
+        return nullptr;
     }
 
     uint32_t a = tableDataSize;
@@ -354,10 +349,9 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
         a = b;
     }
 
-    *offsetTableOut = offsetTable.release();
     *tableSizeOut = tableSize;
     *tableOffsetOut = 0;
-    return 1;
+    return offsetTable;
 }
 
 /**
@@ -571,9 +565,8 @@ decmpfs_attr_walk_compressed_rsrc(
   [[maybe_unused]] int flags,
   TSK_FS_FILE_WALK_CB a_action,
   void *ptr,
-  int (*read_block_table)(
+  std::unique_ptr<CMP_OFFSET_ENTRY[]> (*read_block_table)(
     const TSK_FS_ATTR *rAttr,
-    CMP_OFFSET_ENTRY** offsetTableOut,
     uint32_t* tableSizeOut,
     uint32_t* tableOffsetOut
   ),
@@ -585,17 +578,6 @@ decmpfs_attr_walk_compressed_rsrc(
   )
 )
 {
-    TSK_FS_INFO *fs;
-    TSK_FS_FILE *fs_file;
-    const TSK_FS_ATTR *rAttr;   // resource fork attribute
-    char *rawBuf = NULL;               // compressed data
-    char *uncBuf = NULL;               // uncompressed data
-    uint32_t offsetTableOffset;
-    uint32_t offsetTableSize;         // The number of table entries
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
-    size_t indx;                // index for looping over the offset table
-    TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
-
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "%s:  Entered, because this is a compressed file with compressed data in the resource fork\n", __func__);
@@ -629,13 +611,13 @@ decmpfs_attr_walk_compressed_rsrc(
         return 1;
     }
 
-    fs = fs_attr->fs_file->fs_info;
-    fs_file = fs_attr->fs_file;
+    TSK_FS_INFO* fs = fs_attr->fs_file->fs_info;
+    TSK_FS_FILE* fs_file = fs_attr->fs_file;
 
     /********  Open the Resource Fork ***********/
 
     // find the attribute for the resource fork
-    rAttr =
+    const TSK_FS_ATTR* rAttr =
         tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_RSRC,
         HFS_FS_ATTR_ID_RSRC, FALSE);
     if (rAttr == NULL) {
@@ -644,8 +626,14 @@ decmpfs_attr_walk_compressed_rsrc(
         return 1;
     }
 
+    uint32_t offsetTableOffset;
+    uint32_t offsetTableSize;         // The number of table entries
+
     // read the offset table from the fork header
-    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable = read_block_table(
+      rAttr, &offsetTableSize, &offsetTableOffset
+    );
+    if (!offsetTable) {
       return 1;
     }
 
@@ -653,22 +641,24 @@ decmpfs_attr_walk_compressed_rsrc(
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
-    if (rawBuf == NULL) {
+    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return 1;
     }
 
-    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
-    if (uncBuf == NULL) {
+    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return 1;
     }
+
+    TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
 
     // FOR entry in the table DO
-    for (indx = 0; indx < offsetTableSize; ++indx) {
+    for (size_t indx = 0; indx < offsetTableSize; ++indx) {
         ssize_t uncLen;        // uncompressed length
         unsigned int blockSize;
         uint64_t lumpSize;
@@ -676,12 +666,12 @@ decmpfs_attr_walk_compressed_rsrc(
         char *lumpStart;
 
         switch ((uncLen = read_and_decompress_block(
-                    rAttr, rawBuf, uncBuf,
-                    offsetTable, offsetTableSize, offsetTableOffset, indx,
+                    rAttr, rawBuf.get(), uncBuf.get(),
+                    offsetTable.get(), offsetTableSize, offsetTableOffset, indx,
                     decompress_block)))
         {
         case -1:
-            goto on_error;
+            return 1;
         case  0:
             continue;
         default:
@@ -692,7 +682,7 @@ decmpfs_attr_walk_compressed_rsrc(
         // that are at most the block size.
         blockSize = fs->block_size;
         remaining = uncLen;
-        lumpStart = uncBuf;
+        lumpStart = uncBuf.get();
 
         while (remaining > 0) {
             int retval;         // action return value
@@ -707,7 +697,7 @@ decmpfs_attr_walk_compressed_rsrc(
             if (lumpSize > SIZE_MAX) {
                 error_detected(TSK_ERR_FS_FWALK,
                     " %s: lumpSize is too large for the action", __func__);
-                goto on_error;
+                return 1;
             }
 
             retval = a_action(fs_attr->fs_file, off, 0, lumpStart,
@@ -717,7 +707,7 @@ decmpfs_attr_walk_compressed_rsrc(
             if (retval == TSK_WALK_ERROR) {
                 error_detected(TSK_ERR_FS | 201,
                     "%s: callback returned an error", __func__);
-                goto on_error;
+                return 1;
             }
             else if (retval == TSK_WALK_STOP) {
                 break;
@@ -730,17 +720,7 @@ decmpfs_attr_walk_compressed_rsrc(
         }
     }
 
-    // Done, so free up the allocated resources.
-    free(offsetTable);
-    free(rawBuf);
-    free(uncBuf);
     return 0;
-
-on_error:
-    free(offsetTable);
-    free(rawBuf);
-    free(uncBuf);
-    return 1;
 }
 
 
@@ -802,24 +782,26 @@ decmpfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
  * @return number of bytes read or -1 on error (incl if offset is past EOF)
  */
 static ssize_t
-decmpfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
-    TSK_OFF_T a_offset, char *a_buf, size_t a_len,
-    int (*read_block_table)(const TSK_FS_ATTR *rAttr,
-                            CMP_OFFSET_ENTRY** offsetTableOut,
-                            uint32_t* tableSizeOut,
-                            uint32_t* tableOffsetOut),
-    int (*decompress_block)(char* rawBuf,
-                            uint32_t len,
-                            char* uncBuf,
-                            uint64_t* uncLen))
+decmpfs_file_read_compressed_rsrc(
+    const TSK_FS_ATTR * a_fs_attr,
+    TSK_OFF_T a_offset,
+    char *a_buf,
+    size_t a_len,
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> (*read_block_table)(
+      const TSK_FS_ATTR *rAttr,
+      uint32_t* tableSizeOut,
+      uint32_t* tableOffsetOut),
+    int (*decompress_block)(
+      char* rawBuf,
+      uint32_t len,
+      char* uncBuf,
+      uint64_t* uncLen)
+)
 {
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *rAttr;
-    char *rawBuf = NULL;
-    char *uncBuf = NULL;
     uint32_t offsetTableOffset;
     uint32_t offsetTableSize;         // Size of the offset table
-    CMP_OFFSET_ENTRY *offsetTable = NULL;
     TSK_OFF_T indx;                // index for looping over the offset table
     TSK_OFF_T startUnit = 0;
     uint32_t startUnitOffset = 0;
@@ -890,7 +872,10 @@ decmpfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // read the offset table from the fork header
-    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable = read_block_table(
+      rAttr, &offsetTableSize, &offsetTableOffset
+    );
+    if (!offsetTable) {
       return -1;
     }
 
@@ -906,7 +891,7 @@ decmpfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
             __func__, a_offset, a_offset + a_len,
             offsetTable[offsetTableSize-1].offset +
             offsetTable[offsetTableSize-1].length);
-        goto on_error;
+        return -1;
     }
 
     if (tsk_verbose)
@@ -919,34 +904,34 @@ decmpfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the zlib data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
-    if (rawBuf == NULL) {
+    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return -1;
     }
 
-    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
-    if (uncBuf == NULL) {
+    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return -1;
     }
 
     // Read from the indicated comp units
     for (indx = startUnit; indx <= endUnit; ++indx) {
-        char *uncBufPtr = uncBuf;
+        char *uncBufPtr = uncBuf.get();
         size_t bytesToCopy;
 
         const ssize_t ret = read_and_decompress_block(
-          rAttr, rawBuf, uncBuf,
-          offsetTable, offsetTableSize, offsetTableOffset, (size_t)indx,
+          rAttr, rawBuf.get(), uncBuf.get(),
+          offsetTable.get(), offsetTableSize, offsetTableOffset, (size_t)indx,
           decompress_block
         );
 
         switch (ret) {
         case -1:
-            goto on_error;
+            return -1;
         case  0:
             continue;
         default:
@@ -987,17 +972,7 @@ decmpfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
         memset(a_buf + bytesCopied, 0, a_len - (size_t) bytesCopied);   // cast OK because diff must be < compression unit size
     }
 
-    free(offsetTable);
-    free(rawBuf);
-    free(uncBuf);
-
     return (ssize_t) bytesCopied;       // cast OK, cannot be greater than a_len which cannot be greater than SIZE_MAX/2 (rounded down).
-
-on_error:
-    free(offsetTable);
-    free(rawBuf);
-    free(uncBuf);
-    return -1;
 }
 
 
@@ -1055,7 +1030,6 @@ decmpfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
  * @param uncSize expected uncompressed size
  * @param dstBuf destination buffer
  * @param dstSize size of destination buffer
- * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1
  */
 static int decmpfs_decompress_noncompressed_attr(
@@ -1063,8 +1037,7 @@ static int decmpfs_decompress_noncompressed_attr(
   [[maybe_unused]] uint32_t rawSize,
   uint64_t uncSize,
   char** dstBuf,
-  uint64_t* dstSize,
-  int* dstBufFree)
+  uint64_t* dstSize)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -1073,8 +1046,16 @@ static int decmpfs_decompress_noncompressed_attr(
 
     *dstBuf = rawBuf + 1;  // + 1 indicator byte
     *dstSize = uncSize;
-    *dstBufFree = FALSE;
     return 1;
+}
+
+bool decmpfs_is_compressed_zlib_attr(
+  const char* rawBuf,
+  [[maybe_unused]] uint32_t rawSize)
+{
+    // ZLIB blocks cannot start with 0xF as the low nibble, so that's used
+    // as the flag for noncompressed blocks
+    return (rawBuf[0] & 0x0F) != 0x0F;
 }
 
 /**
@@ -1084,80 +1065,75 @@ static int decmpfs_decompress_noncompressed_attr(
  * @param rawBuf source buffer
  * @param rawSize size of source buffer
  * @param uncSize expected uncompressed size
- * @param dstBuf destination buffer
  * @param dstSize size of destination buffer
- * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1 on success, 0 on error
  */
-static int decmpfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+std::unique_ptr<char[]> decmpfs_decompress_zlib_attr(
+  char* rawBuf,
+  uint32_t rawSize,
+  uint64_t uncSize,
+  uint64_t* dstSize)
 {
-    // ZLIB blocks cannot start with 0xF as the low nibble, so that's used
-    // as the flag for noncompressed blocks
-    if ((rawBuf[0] & 0x0F) == 0x0F) {
-        return decmpfs_decompress_noncompressed_attr(
-            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
-    }
-    else {
 #ifdef HAVE_LIBZ
-        char* uncBuf = NULL;
-        uint64_t uLen;
-        unsigned long bytesConsumed;
-        int infResult;
+    uint64_t uLen;
+    unsigned long bytesConsumed;
+    int infResult;
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                        "%s: Uncompressing (inflating) data.", __func__);
-        // Uncompress the remainder of the attribute, and load as 128-0
-        // Note: cast is OK because uncSize will be quite modest, < 4000.
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+                    "%s: Uncompressing (inflating) data.", __func__);
+    // Uncompress the remainder of the attribute, and load as 128-0
+    // Note: cast is OK because uncSize will be quite modest, < 4000.
 
-        uncBuf = (char *) tsk_malloc((size_t) uncSize + 100); // add some extra space
-        if (uncBuf == NULL) {
-            error_returned
-                (" - %s, space for the uncompressed attr", __func__);
-            return 0;
-        }
-
-        infResult = zlib_inflate(rawBuf, (uint64_t) rawSize,
-                                 uncBuf, (uint64_t) (uncSize + 100),
-                                 &uLen, &bytesConsumed);
-        if (infResult != 0) {
-            error_returned
-                (" %s, zlib could not uncompress attr", __func__);
-            free(uncBuf);
-            return 0;
-        }
-
-        if (bytesConsumed != rawSize) {
-            error_detected(TSK_ERR_FS_READ,
-                " %s, decompressor did not consume the whole compressed data",
-                __func__);
-            free(uncBuf);
-            return 0;
-        }
-
-        *dstBuf = uncBuf;
-        *dstSize = uncSize;
-        *dstBufFree = TRUE;
-#else
-        // ZLIB compression library is not available, so we will load a
-        // zero-length default DATA attribute. Without this, icat may
-        // misbehave.
-
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                        "%s: ZLIB not available, so loading an empty default DATA attribute.\n", __func__);
-
-        // Dummy is one byte long, so the ptr is not null, but we set the
-        // length to zero bytes, so it is never read.
-        static char dummy[1];
-
-        *dstBuf = dummy;
-        *dstSize = 0;
-        *dstBufFree = FALSE;
-#endif
+    // add some extra space
+    std::unique_ptr<char[]> uncBuf{new char[uncSize + 100]};
+    if (!uncBuf) {
+        error_returned
+            (" - %s, space for the uncompressed attr", __func__);
+        return nullptr;
     }
 
-    return 1;
+    infResult = zlib_inflate(rawBuf, (uint64_t) rawSize,
+                             uncBuf.get(), (uint64_t) (uncSize + 100),
+                             &uLen, &bytesConsumed);
+    if (infResult != 0) {
+        error_returned
+            (" %s, zlib could not uncompress attr", __func__);
+        return nullptr;
+    }
+
+    if (bytesConsumed != rawSize) {
+        error_detected(TSK_ERR_FS_READ,
+            " %s, decompressor did not consume the whole compressed data",
+            __func__);
+        return nullptr;
+    }
+
+    *dstSize = uncSize;
+    return uncBuf;
+#else
+    // ZLIB compression library is not available, so we will load a
+    // zero-length default DATA attribute. Without this, icat may
+    // misbehave.
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+                    "%s: ZLIB not available, so loading an empty default DATA attribute.\n", __func__);
+
+    // Dummy array is one byte long, so the ptr is not null, but we set the
+    // length to zero bytes, so it is never read.
+    *dstSize = 0;
+    return std::unique_ptr<char[]>{new char[1]};
+#endif
+}
+
+bool decmpfs_is_compressed_lzvn_attr(
+  const char* rawBuf,
+  [[maybe_unused]] uint32_t rawSize)
+{
+    // LZVN blocks cannot start with 0x06, so that's used as the flag for
+    // noncompressed blocks
+    return rawBuf[0] != 0x06;
 }
 
 /**
@@ -1167,26 +1143,18 @@ static int decmpfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t
  * @param rawBuf source buffer
  * @param rawSize size of source buffer
  * @param uncSize expected uncompressed size
- * @param dstBuf destination buffer
  * @param dstSize size of destination buffer
- * @param dstBufFree true iff the caller must free the destination buffer
  * @return 1 on success, 0 on error
  */
-static int decmpfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+std::unique_ptr<char[]> decmpfs_decompress_lzvn_attr(
+  char* rawBuf,
+  uint32_t rawSize,
+  uint64_t uncSize,
+  uint64_t* dstSize)
 {
-    // LZVN blocks cannot start with 0x06, so that's used as the flag for
-    // noncompressed blocks
-    if (rawBuf[0] == 0x06) {
-        return decmpfs_decompress_noncompressed_attr(
-            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
-    }
-
-    char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
-    *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
-    *dstBuf = uncBuf;
-    *dstBufFree = TRUE;
-
-    return 1;
+    std::unique_ptr<char[]> uncBuf{new char[uncSize]};
+    *dstSize = lzvn_decode_buffer(uncBuf.get(), uncSize, rawBuf, rawSize);
+    return uncBuf;
 }
 
 /**
@@ -1202,17 +1170,23 @@ static int decmpfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t
  * @return 1 on success, 0 on error
  */
 static int
-decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
-                              uint8_t cmpType,
-                              char* buffer,
-                              TSK_OFF_T attributeLength,
-                              uint64_t uncSize,
-                              int (*decompress_attr)(char* rawBuf,
-                                                     uint32_t rawSize,
-                                                     uint64_t uncSize,
-                                                     char** dstBuf,
-                                                     uint64_t* dstSize,
-                                                     int* dstBufFree))
+decmpfs_file_read_compressed_attr(
+  TSK_FS_FILE* fs_file,
+  uint8_t cmpType,
+  char* buffer,
+  TSK_OFF_T attributeLength,
+  uint64_t uncSize,
+  bool (*is_compressed)(
+    const char* rawBuf,
+    uint32_t rawSize
+  ),
+  std::unique_ptr<char[]> (*decompress_attr)(
+    char* rawBuf,
+    uint32_t rawSize,
+    uint64_t uncSize,
+    uint64_t* dstSize
+  )
+)
 {
     // Data is inline. We will load the uncompressed data as a
     // resident attribute.
@@ -1241,19 +1215,29 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
         return 0;
     }
 
-    char* dstBuf;
+    char* dstBuf = nullptr;
+    std::unique_ptr<char[]> dstBufStore;
     uint64_t dstSize;
-    int dstBufFree = FALSE;
 
-    if (!decompress_attr(buffer + 16, attributeLength - 16, uncSize,
-                         &dstBuf, &dstSize, &dstBufFree)) {
-        return 0;
+    if (is_compressed(buffer + 16, attributeLength - 16)) {
+        dstBufStore = decompress_attr(
+          buffer + 16, attributeLength - 16, uncSize, &dstSize
+        );
+        if (!dstBufStore) {
+            return 0;
+        }
+        dstBuf = dstBufStore.get();
+    }
+    else {
+        if (!decmpfs_decompress_noncompressed_attr(buffer + 16, attributeLength - 16, uncSize, &dstBuf, &dstSize)) {
+            return 0;
+        }
     }
 
     if (dstSize != uncSize) {
         error_detected(TSK_ERR_FS_READ,
             " %s, actual uncompressed size not equal to the size in the compression record", __func__);
-        goto on_error;
+        return 0;
     }
 
     if (tsk_verbose)
@@ -1272,19 +1256,10 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                             dstSize))
     {
         error_returned(" - %s", __func__);
-        goto on_error;
+        return 0;
     }
 
-    if (dstBufFree) {
-        free(dstBuf);
-    }
     return 1;
-
-on_error:
-    if (dstBufFree) {
-        free(dstBuf);
-    }
-    return 0;
 }
 
 /**
@@ -1305,6 +1280,7 @@ int decmpfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
     return decmpfs_file_read_compressed_attr(
         fs_file, DECMPFS_TYPE_ZLIB_ATTR,
         buffer, attributeLength, uncSize,
+        decmpfs_is_compressed_zlib_attr,
         decmpfs_decompress_zlib_attr
     );
 }
@@ -1327,6 +1303,7 @@ int decmpfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
     return decmpfs_file_read_compressed_attr(
         fs_file, DECMPFS_TYPE_LZVN_ATTR,
         buffer, attributeLength, uncSize,
+        decmpfs_is_compressed_lzvn_attr,
         decmpfs_decompress_lzvn_attr
     );
 }
