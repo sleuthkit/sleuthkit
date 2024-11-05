@@ -27,7 +27,7 @@ static char* get_messages(AFF4_Message* msg) {
     for (const AFF4_Message* m = msg; m; m = m->next, ++count);
 
     if (count == 0) {
-      return NULL;
+      return nullptr;
     }
 
     // get message lengths and total length
@@ -72,7 +72,7 @@ aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
     }
 
     IMG_AFF4_INFO* aff4_info = (IMG_AFF4_INFO*) img_info;
-    AFF4_Message* msg = NULL;
+    AFF4_Message* msg = nullptr;
 
     tsk_take_lock(&(aff4_info->read_lock));
     const ssize_t cnt = AFF4_read(aff4_info->handle, offset, buf, len, &msg);
@@ -113,7 +113,7 @@ aff4_image_close(TSK_IMG_INFO* img_info)
     IMG_AFF4_INFO* aff4_info = (IMG_AFF4_INFO*) img_info;
 
     tsk_take_lock(&(aff4_info->read_lock));
-    AFF4_close(aff4_info->handle, NULL);
+    AFF4_close(aff4_info->handle, nullptr);
     tsk_release_lock(&(aff4_info->read_lock));
     tsk_deinit_lock(&(aff4_info->read_lock));
 
@@ -163,22 +163,22 @@ aff4_open(
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "aff4 requires exactly 1 image filename for opening\n");
         }
-        return NULL;
+        return nullptr;
     }
 
-    IMG_AFF4_INFO* aff4_info = NULL;
+    IMG_AFF4_INFO* aff4_info = nullptr;
     if ((aff4_info =
             (IMG_AFF4_INFO*) tsk_img_malloc(sizeof(IMG_AFF4_INFO))) ==
-        NULL) {
-        return NULL;
+        nullptr) {
+        return nullptr;
     }
-    aff4_info->handle = NULL;
+    aff4_info->handle = nullptr;
 
-    AFF4_Message* msg = NULL;
+    AFF4_Message* msg = nullptr;
     const char* filename;
 
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info;
-    img_info->images = NULL;
+    img_info->images = nullptr;
     img_info->num_img = 0;
 
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
@@ -189,7 +189,7 @@ aff4_open(
 #if defined (TSK_WIN32)
     const size_t len = TSTRLEN(a_images[0]) + 1;
     char* fn = (char*) tsk_malloc(len);
-    if (fn == NULL) {
+    if (fn == nullptr) {
         goto on_error;
     }
 
@@ -260,7 +260,7 @@ aff4_open(
 #endif
 
     AFF4_free_messages(msg);
-    msg = NULL;
+    msg = nullptr;
 
     // get image size
     img_info->size = AFF4_object_size(aff4_info->handle, &msg);
@@ -281,7 +281,7 @@ aff4_open(
     }
 
     AFF4_free_messages(msg);
-    msg = NULL;
+    msg = nullptr;
 
     img_info->sector_size = 512;
     img_info->itype = TSK_IMG_TYPE_AFF4_AFF4;
@@ -299,10 +299,10 @@ on_error:
     free(fn);
 #endif
     if (aff4_info->handle) {
-        AFF4_close(aff4_info->handle, NULL);
+        AFF4_close(aff4_info->handle, nullptr);
     }
     tsk_img_free(aff4_info);
-    return NULL;
+    return nullptr;
 }
 
 #endif /* HAVE_LIBAFF4 */
