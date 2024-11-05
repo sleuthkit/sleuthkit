@@ -2684,7 +2684,12 @@ on_error:
  * @return 1 on success, 0 on error
  */
 static int
-hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
+hfs_read_lzvn_block_table(
+  const TSK_FS_ATTR *rAttr,
+  CMP_OFFSET_ENTRY** offsetTableOut,
+  uint32_t* tableSizeOut,
+  uint32_t* tableOffsetOut)
+{
     ssize_t attrReadResult;
     char fourBytes[4];
     uint32_t tableDataSize;
