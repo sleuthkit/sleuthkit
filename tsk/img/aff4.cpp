@@ -11,48 +11,28 @@
  * Internal code for TSK to interface with libaff4.
  */
 
-#include "tsk_img_i.h"
+#include "aff4.h"
 
 #if HAVE_LIBAFF4
-
-#include "aff4.h"
 
 #include <aff4/libaff4-c.h>
 
 #include <string.h>
 
-static char* get_messages(AFF4_Message* msg) {
-    // count the messages
-    size_t count = 0;
-    for (const AFF4_Message* m = msg; m; m = m->next, ++count);
+#include <memory>
 
-    if (count == 0) {
-      return NULL;
+std::string get_messages(const AFF4_Message* msg) {
+    if (!msg) {
+        return "";
     }
 
-    // get message lengths and total length
-    const size_t maxlen = 1024;
-    size_t* lengths = (size_t*) tsk_malloc(count * sizeof(size_t));
-    size_t total_len = 0;
-
-    int i = 0;
-    for (const AFF4_Message* m = msg; m; m = m->next, ++i) {
-        total_len += lengths[i] = strnlen(m->message, maxlen);
+    std::string s;
+    for (const AFF4_Message* m = msg; m; m = m->next) {
+        s += m->message;
+        s += '\n';
     }
 
-    // copy the messages to one string
-    char* ret = (char*) tsk_malloc(total_len + count);
-    char* p = ret;
-    i = 0;
-    for (const AFF4_Message* m = msg; m; m = m->next, ++i) {
-        strncpy(p, m->message, lengths[i]);
-        p += lengths[i];
-        *p++ = '\n';
-    }
-    *(p-1) = '\0';
-
-    free(lengths);
-    return ret;
+    return s;
 }
 
 static ssize_t
@@ -72,24 +52,27 @@ aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
     }
 
     IMG_AFF4_INFO* aff4_info = (IMG_AFF4_INFO*) img_info;
-    AFF4_Message* msg = NULL;
+
+    std::unique_ptr<AFF4_Message, decltype(&AFF4_free_messages)> msg_holder{
+        nullptr,
+        &AFF4_free_messages
+    };
+    AFF4_Message* msg = nullptr;
 
     tsk_take_lock(&(aff4_info->read_lock));
     const ssize_t cnt = AFF4_read(aff4_info->handle, offset, buf, len, &msg);
+    msg_holder.reset(msg);
     if (cnt < 0) {
-        char* aff4_msgs = get_messages(msg);
-        AFF4_free_messages(msg);
+        const std::string aff4_msgs = get_messages(msg);
         tsk_release_lock(&(aff4_info->read_lock));
 
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
         tsk_error_set_errstr("aff4_image_read - offset: %" PRIdOFF
             " - len: %" PRIuSIZE " - %s: %s",
-            offset, len, strerror(errno), aff4_msgs ? aff4_msgs : "");
-        free(aff4_msgs);
+            offset, len, strerror(errno), aff4_msgs.c_str());
         return -1;
     }
-    AFF4_free_messages(msg);
     tsk_release_lock(&(aff4_info->read_lock));
     return cnt;
 }
@@ -113,7 +96,7 @@ aff4_image_close(TSK_IMG_INFO* img_info)
     IMG_AFF4_INFO* aff4_info = (IMG_AFF4_INFO*) img_info;
 
     tsk_take_lock(&(aff4_info->read_lock));
-    AFF4_close(aff4_info->handle, NULL);
+    AFF4_close(aff4_info->handle, nullptr);
     tsk_release_lock(&(aff4_info->read_lock));
     tsk_deinit_lock(&(aff4_info->read_lock));
 
@@ -163,37 +146,44 @@ aff4_open(
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "aff4 requires exactly 1 image filename for opening\n");
         }
-        return NULL;
+        return nullptr;
     }
 
-    IMG_AFF4_INFO* aff4_info = NULL;
-    if ((aff4_info =
-            (IMG_AFF4_INFO*) tsk_img_malloc(sizeof(IMG_AFF4_INFO))) ==
-        NULL) {
-        return NULL;
+    const auto deleter = [](IMG_AFF4_INFO* aff4_info) {
+      if (aff4_info->handle) {
+        AFF4_close(aff4_info->handle, nullptr);
+      }
+      tsk_img_free(aff4_info);
+    };
+
+    std::unique_ptr<IMG_AFF4_INFO, decltype(deleter)> aff4_info{
+        (IMG_AFF4_INFO*) tsk_img_malloc(sizeof(IMG_AFF4_INFO)),
+        deleter
+    };
+    if (!aff4_info) {
+        return nullptr;
     }
-    aff4_info->handle = NULL;
+    aff4_info->handle = nullptr;
 
-    AFF4_Message* msg = NULL;
-    const char* filename;
-
-    TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info;
-    img_info->images = NULL;
+    TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info.get();
+    img_info->images = nullptr;
     img_info->num_img = 0;
 
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-       goto on_error;
+        return nullptr;
     }
 
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
+    const char* filename;
 #if defined (TSK_WIN32)
     const size_t len = TSTRLEN(a_images[0]) + 1;
-    char* fn = tsk_malloc(len);
-    if (fn == NULL) {
-        goto on_error;
+
+    std::unique_ptr<char[]> fn{new char[len]};
+    if (!fn) {
+        return nullptr;
     }
 
-    UTF8* utf8 = (UTF8*) fn;
+    UTF8* utf8 = (UTF8*) fn.get();
     const UTF16* utf16 = (UTF16*) a_images[0];
 
     const int ret = tsk_UTF16toUTF8_lclorder(&utf16, utf16 + len, &utf8, utf8 + len, TSKstrictConversion);
@@ -201,10 +191,10 @@ aff4_open(
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
         tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
-        goto on_error;
+        return nullptr;
     }
 
-    filename = fn;
+    filename = fn.get();
 #else
     filename = a_images[0];
 #endif
@@ -235,51 +225,43 @@ aff4_open(
         // ok!
     }
 */
+    std::unique_ptr<AFF4_Message, decltype(&AFF4_free_messages)> msg_holder{
+        nullptr,
+        &AFF4_free_messages
+    };
+    AFF4_Message* msg = nullptr;
 
     // Attempt to open the file.
     aff4_info->handle = AFF4_open(filename, &msg);
+    msg_holder.reset(msg);
     if (!aff4_info->handle) {
-        char* aff4_msgs = get_messages(msg);
-        AFF4_free_messages(msg);
-
+        const std::string aff4_msgs = get_messages(msg);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
-            ": Error opening%s", a_images[0], aff4_msgs ? aff4_msgs : "");
-        free(aff4_msgs);
+            ": Error opening%s", a_images[0], aff4_msgs.c_str());
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening AFF4 file\n");
         }
-        goto on_error;
+        return nullptr;
     }
 
-#if defined (TSK_WIN32)
-    free(fn);
-#endif
-
-    AFF4_free_messages(msg);
-    msg = NULL;
-
     // get image size
+    msg = nullptr;
     img_info->size = AFF4_object_size(aff4_info->handle, &msg);
+    msg_holder.reset(msg);
     if (img_info->size == 0) {
-        char* aff4_msgs = get_messages(msg);
-        AFF4_free_messages(msg);
-
+        const std::string aff4_msgs = get_messages(msg);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
             ": Error getting size of image%s",
-            a_images[0], aff4_msgs ? aff4_msgs : "");
-        free(aff4_msgs);
+            a_images[0], aff4_msgs.c_str());
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of AFF4 file\n");
         }
-        goto on_error;
+        return nullptr;
     }
-
-    AFF4_free_messages(msg);
-    msg = NULL;
 
     img_info->sector_size = 512;
     img_info->itype = TSK_IMG_TYPE_AFF4_AFF4;
@@ -291,16 +273,6 @@ aff4_open(
     tsk_init_lock(&(aff4_info->read_lock));
 
     return img_info;
-
-on_error:
-#if defined (TSK_WIN32)
-    free(fn);
-#endif
-    if (aff4_info->handle) {
-        AFF4_close(aff4_info->handle, NULL);
-    }
-    tsk_img_free(aff4_info);
-    return NULL;
 }
 
 #endif /* HAVE_LIBAFF4 */
