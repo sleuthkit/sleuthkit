@@ -3160,8 +3160,6 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 {
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *rAttr;
-    char *rawBuf = NULL;
-    char *uncBuf = NULL;
     uint32_t offsetTableOffset;
     uint32_t offsetTableSize;         // Size of the offset table
     TSK_OFF_T indx;                // index for looping over the offset table
@@ -3253,7 +3251,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
             __func__, a_offset, a_offset + a_len,
             offsetTable[offsetTableSize-1].offset +
             offsetTable[offsetTableSize-1].length);
-        goto on_error;
+        return -1;
     }
 
     if (tsk_verbose)
@@ -3266,34 +3264,34 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the zlib data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
-    if (rawBuf == NULL) {
+    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return -1;
     }
 
-    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
-    if (uncBuf == NULL) {
+    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return -1;
     }
 
     // Read from the indicated comp units
     for (indx = startUnit; indx <= endUnit; ++indx) {
-        char *uncBufPtr = uncBuf;
+        char *uncBufPtr = uncBuf.get();
         size_t bytesToCopy;
 
         const ssize_t ret = read_and_decompress_block(
-            rAttr, rawBuf, uncBuf,
+            rAttr, rawBuf.get(), uncBuf.get(),
             offsetTable.get(), offsetTableSize, offsetTableOffset, (size_t)indx,
             decompress_block
         );
 
         switch (ret) {
         case -1:
-            goto on_error;
+            return -1;
         case  0:
             continue;
         default:
@@ -3334,15 +3332,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
         memset(a_buf + bytesCopied, 0, a_len - (size_t) bytesCopied);   // cast OK because diff must be < compression unit size
     }
 
-    free(rawBuf);
-    free(uncBuf);
-
     return (ssize_t) bytesCopied;       // cast OK, cannot be greater than a_len which cannot be greater than SIZE_MAX/2 (rounded down).
-
-on_error:
-    free(rawBuf);
-    free(uncBuf);
-    return -1;
 }
 
 
