@@ -1,3 +1,6 @@
+# validate this with:
+# curl -X POST --data-binary @codecov.yml https://codecov.io/validate
+
 coverage:
   range: 40..60
   round: nearest
