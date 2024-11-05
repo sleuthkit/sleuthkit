@@ -1,5 +1,7 @@
 #include "tsk/img/aff4.h"
 
+#if HAVE_LIBAFF4
+
 #include <aff4/libaff4-c.h>
 
 #include "catch.hpp"
@@ -24,3 +26,5 @@ TEST_CASE("test_get_messages_many") {
   AFF4_Message msg0{0, s0, &msg1};
   CHECK(get_messages(&msg0) == "zero\none\ntwo\n");
 }
+
+#endif
