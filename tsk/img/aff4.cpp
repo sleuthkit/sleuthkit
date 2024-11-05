@@ -52,13 +52,18 @@ aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
     }
 
     IMG_AFF4_INFO* aff4_info = (IMG_AFF4_INFO*) img_info;
+
+    std::unique_ptr<AFF4_Message, decltype(&AFF4_free_messages)> msg_holder{
+        nullptr,
+        &AFF4_free_messages
+    };
     AFF4_Message* msg = nullptr;
 
     tsk_take_lock(&(aff4_info->read_lock));
     const ssize_t cnt = AFF4_read(aff4_info->handle, offset, buf, len, &msg);
+    msg_holder.reset(msg);
     if (cnt < 0) {
         const std::string aff4_msgs = get_messages(msg);
-        AFF4_free_messages(msg);
         tsk_release_lock(&(aff4_info->read_lock));
 
         tsk_error_reset();
@@ -68,7 +73,6 @@ aff4_image_read(TSK_IMG_INFO* img_info, TSK_OFF_T offset, char* buf,
             offset, len, strerror(errno), aff4_msgs.c_str());
         return -1;
     }
-    AFF4_free_messages(msg);
     tsk_release_lock(&(aff4_info->read_lock));
     return cnt;
 }
@@ -161,9 +165,6 @@ aff4_open(
     }
     aff4_info->handle = nullptr;
 
-    AFF4_Message* msg = nullptr;
-    const char* filename;
-
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) aff4_info.get();
     img_info->images = nullptr;
     img_info->num_img = 0;
@@ -173,6 +174,7 @@ aff4_open(
     }
 
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
+    const char* filename;
 #if defined (TSK_WIN32)
     const size_t len = TSTRLEN(a_images[0]) + 1;
 
@@ -223,13 +225,17 @@ aff4_open(
         // ok!
     }
 */
+    std::unique_ptr<AFF4_Message, decltype(&AFF4_free_messages)> msg_holder{
+        nullptr,
+        &AFF4_free_messages
+    };
+    AFF4_Message* msg = nullptr;
 
     // Attempt to open the file.
     aff4_info->handle = AFF4_open(filename, &msg);
+    msg_holder.reset(msg);
     if (!aff4_info->handle) {
         const std::string aff4_msgs = get_messages(msg);
-        AFF4_free_messages(msg);
-
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
@@ -240,15 +246,12 @@ aff4_open(
         return nullptr;
     }
 
-    AFF4_free_messages(msg);
-    msg = nullptr;
-
     // get image size
+    msg = nullptr;
     img_info->size = AFF4_object_size(aff4_info->handle, &msg);
+    msg_holder.reset(msg);
     if (img_info->size == 0) {
         const std::string aff4_msgs = get_messages(msg);
-        AFF4_free_messages(msg);
-
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
@@ -259,9 +262,6 @@ aff4_open(
         }
         return nullptr;
     }
-
-    AFF4_free_messages(msg);
-    msg = nullptr;
 
     img_info->sector_size = 512;
     img_info->itype = TSK_IMG_TYPE_AFF4_AFF4;
