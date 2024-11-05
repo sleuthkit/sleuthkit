@@ -188,7 +188,7 @@ aff4_open(
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
 #if defined (TSK_WIN32)
     const size_t len = TSTRLEN(a_images[0]) + 1;
-    char* fn = tsk_malloc(len);
+    char* fn = (char*) tsk_malloc(len);
     if (fn == NULL) {
         goto on_error;
     }
