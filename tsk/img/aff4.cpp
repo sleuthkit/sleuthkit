@@ -11,11 +11,9 @@
  * Internal code for TSK to interface with libaff4.
  */
 
-#include "tsk_img_i.h"
+#include "aff4.h"
 
 #if HAVE_LIBAFF4
-
-#include "aff4.h"
 
 #include <aff4/libaff4-c.h>
 
@@ -23,7 +21,7 @@
 
 #include <memory>
 
-static char* get_messages(AFF4_Message* msg) {
+char* get_messages(AFF4_Message* msg) {
     // count the messages
     size_t count = 0;
     for (const AFF4_Message* m = msg; m; m = m->next, ++count);
