@@ -309,7 +309,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
     uint16_t nodesize;          /* size of nodes (all, regardless of the name) */
     uint32_t cur_node;          /* node id of the current node */
-    char *node = NULL;
     uint8_t is_done;
     uint8_t desiredType;
 
@@ -367,7 +366,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
     // allocate a node buffer
     nodesize = tsk_getu16(fs->endian, hfs->extents_header.nodesize);
-    if ((node = (char *) tsk_malloc(nodesize)) == NULL) {
+    std::unique_ptr<char[]> node{new char[nodesize]};
+    if (!node) {
         return 1;
     }
 
@@ -382,7 +382,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         if (tsk_verbose)
             tsk_fprintf(stderr, "hfs_ext_find_extent_record: "
                 "empty extents btree\n");
-        free(node);
         return 0;
     }
 
@@ -406,7 +405,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             tsk_error_set_errstr
                 ("hfs_ext_find_extent_record_attr: Node %d too large for file",
                 cur_node);
-            free(node);
             return 1;
         }
 
@@ -418,7 +416,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 " at offset %" PRIdOFF "\n", cur_node, cur_off);
 
         cnt = tsk_fs_attr_read(hfs->extents_attr, cur_off,
-            node, nodesize, TSK_FS_FILE_READ_FLAG_NONE);
+            node.get(), nodesize, TSK_FS_FILE_READ_FLAG_NONE);
         if (cnt != nodesize) {
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -427,7 +425,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             tsk_error_set_errstr2
                 ("hfs_ext_find_extent_record_attr: Error reading node %d at offset %"
                 PRIdOFF, cur_node, cur_off);
-            free(node);
             return 1;
         }
 
@@ -436,10 +433,9 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr
                 ("hfs_ext_find_extent_record_attr: Node size %d is too small to be valid", nodesize);
-            free(node);
             return 1;
         }
-        node_desc = (hfs_btree_node *) node;
+        node_desc = (hfs_btree_node *) node.get();
         num_rec = tsk_getu16(fs->endian, node_desc->num_rec);
 
         if (num_rec == 0) {
@@ -447,10 +443,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             tsk_error_set_errstr
                 ("hfs_ext_find_extent_record: zero records in node %"
                 PRIu32, cur_node);
-            free(node);
             return 1;
         }
-
 
         /* With an index node, find the record with the largest key that is smaller
          * to or equal to cnid */
@@ -476,7 +470,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record: offset of record %d in leaf node %d too small (%"
                         PRIu16 ")", rec, cur_node, nodesize);
-                    free(node);
                     return 1;
                 }
                 // get the record offset in the node
@@ -489,7 +482,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                         ("hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%d vs %"
                         PRIu16 ")", rec, cur_node, (int) rec_off,
                         nodesize);
-                    free(node);
                     return 1;
                 }
                 key = (hfs_btree_key_ext *) & node[rec_off];
@@ -518,7 +510,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                             ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%" PRIu64 " vs %"
                             PRIu16 ")", rec, cur_node,
                             rec_off + keylen, nodesize);
-                        free(node);
                         return 1;
                     }
                     idx_rec =
@@ -571,7 +562,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too small (%"
                         PRIu16 ")", rec, cur_node, nodesize);
-                    free(node);
                     return 1;
                 }
                 // get the record offset in the node
@@ -585,7 +575,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                         ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too large (%d vs %"
                         PRIu16 ")", rec, cur_node, (int) rec_off,
                         nodesize);
-                    free(node);
                     return 1;
                 }
 
@@ -595,7 +584,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     tsk_error_set_errstr
                     ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %" PRIu64 " bytes)", rec, cur_node, nodesize - (int)rec_off,
                         sizeof(hfs_btree_key_ext));
-                    free(node);
                     return 1;
                 }
 
@@ -652,7 +640,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                         ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in leaf node %d too large (%d vs %"
                         PRIu16 ")", rec, cur_node, (int) rec_off + keylen,
                         nodesize);
-                    free(node);
                     return 1;
                 }
 
@@ -667,14 +654,12 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 if ((attr_run == NULL) && (tsk_error_get_errno() != 0)) {
                     tsk_error_errstr2_concat
                         (" - hfs_ext_find_extent_record_attr");
-                    free(node);
                     return 1;
                 }
 
                 if (tsk_fs_attr_add_run(fs, a_attr, attr_run)) {
                     tsk_error_errstr2_concat
                         (" - hfs_ext_find_extent_record_attr");
-                    free(node);
                     return 1;
                 }
             }
@@ -689,11 +674,10 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             tsk_error_set_errstr("hfs_ext_find_extent_record: btree node %"
                 PRIu32 " (%" PRIdOFF ") is neither index nor leaf (%" PRIu8
                 ")", cur_node, cur_off, node_desc->type);
-            free(node);
             return 1;
         }
     }
-    free(node);
+
     return 0;
 }
 
