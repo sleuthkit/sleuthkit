@@ -1,3 +1,6 @@
+# validate this with:
+# curl -X POST --data-binary @codecov.yml https://codecov.io/validate
+
 coverage:
   range: 40..60
   round: nearest
@@ -18,6 +21,3 @@ comment:
   require_base: false        # [true :: must have a base report to post]
   require_head: false        # [true :: must have a head report to post]
   hide_project_coverage: false # [true :: only show coverage on the git diff]
-
-fixes:
-  - "https://github.com/sleuthkit/sleuthkit/"
