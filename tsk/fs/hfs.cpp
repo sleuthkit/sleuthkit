@@ -2970,8 +2970,6 @@ hfs_attr_walk_compressed_rsrc(
     TSK_FS_INFO *fs;
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *rAttr;   // resource fork attribute
-    char *rawBuf = NULL;               // compressed data
-    char *uncBuf = NULL;               // uncompressed data
     uint32_t offsetTableOffset;
     uint32_t offsetTableSize;         // The number of table entries
     size_t indx;                // index for looping over the offset table
@@ -3037,18 +3035,18 @@ hfs_attr_walk_compressed_rsrc(
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
-    if (rawBuf == NULL) {
+    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return 1;
     }
 
-    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
-    if (uncBuf == NULL) {
+    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        goto on_error;
+        return 1;
     }
 
     // FOR entry in the table DO
@@ -3060,12 +3058,12 @@ hfs_attr_walk_compressed_rsrc(
         char *lumpStart;
 
         switch ((uncLen = read_and_decompress_block(
-                    rAttr, rawBuf, uncBuf,
+                    rAttr, rawBuf.get(), uncBuf.get(),
                     offsetTable.get(), offsetTableSize, offsetTableOffset, indx,
                     decompress_block)))
         {
         case -1:
-            goto on_error;
+            return 1;
         case  0:
             continue;
         default:
@@ -3076,7 +3074,7 @@ hfs_attr_walk_compressed_rsrc(
         // that are at most the block size.
         blockSize = fs->block_size;
         remaining = uncLen;
-        lumpStart = uncBuf;
+        lumpStart = uncBuf.get();
 
         while (remaining > 0) {
             int retval;         // action return value
@@ -3091,7 +3089,7 @@ hfs_attr_walk_compressed_rsrc(
             if (lumpSize > SIZE_MAX) {
                 error_detected(TSK_ERR_FS_FWALK,
                     " %s: lumpSize is too large for the action", __func__);
-                goto on_error;
+                return 1;
             }
 
             retval = a_action(fs_attr->fs_file, off, 0, lumpStart,
@@ -3101,7 +3099,7 @@ hfs_attr_walk_compressed_rsrc(
             if (retval == TSK_WALK_ERROR) {
                 error_detected(TSK_ERR_FS | 201,
                     "%s: callback returned an error", __func__);
-                goto on_error;
+                return 1;
             }
             else if (retval == TSK_WALK_STOP) {
                 break;
@@ -3114,15 +3112,7 @@ hfs_attr_walk_compressed_rsrc(
         }
     }
 
-    // Done, so free up the allocated resources.
-    free(rawBuf);
-    free(uncBuf);
     return 0;
-
-on_error:
-    free(rawBuf);
-    free(uncBuf);
-    return 1;
 }
 
 
