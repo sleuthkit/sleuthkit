@@ -41,21 +41,6 @@ namespace runner {
         return line.find(substr) != std::string::npos;
     }
 
-    std::string get_tempdir(std::string testname) {
-        static std::string tempdir("/tmp");
-
-        if (tempdir == std::string("/tmp")) {
-            tempdir += "/" + testname + "_" + random_string(8);
-#ifdef _MSC_VER
-            mkdir(tempdir.c_str());
-#else
-            mkdir(tempdir.c_str(),0777);
-#endif
-            std::cerr << testname << " test results in: " << tempdir << std::endl;
-        }
-        return tempdir;
-    }
-
     std::string file_contents(std::string path) {
         std::ifstream in(path, std::ios::binary | std::ios::ate);
         REQUIRE (in.is_open());
@@ -77,7 +62,7 @@ namespace runner {
     }
 
     tempfile::tempfile(std::string testname) {
-        tempdir = get_tempdir(testname);
+        tempdir = NamedTemporaryDirectory(testname);
         snprintf(filename,sizeof(filename),"%s/XXXXXX",tempdir.c_str());
         mkstemp(filename);
         file = fopen(filename,"w+");
