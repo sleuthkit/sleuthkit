@@ -7,20 +7,60 @@
 #include "catch.hpp"
 #include "test/runner.h"
 
-#include "tools/vstools/mmls.cpp" // Assuming your getopt() logic is in this file
-
-TEST_CASE("Test for running mmls", "[getopt]") {
-    auto mock_getopt = []([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
-        // Implement your mock logic here
-        // For example, return specific values based on the current iteration
-        static int index = 0;
+struct mocker {
+    int index {0};
+    mocker(){};
+    int mocked_getopt([[maybe_unused]] int argc, [[maybe_unused]] char** argv, [[maybe_unused]] const char *option_string) {
         switch (index++) {
-            case 0:
-                return 'h';
-            default:
-                return -1;
+        case 0:
+            return 'h';
+        default:
+            return -1;
         }
     };
+};
 
-    int result = mmls_main(0, nullptr);
+static mocker *mock = nullptr;
+
+#undef GETOPT
+#define GETOPT(x,y,z) mock->mocked_getopt(x,y,z)
+#define mmls_main(x,y) mocked_mmls_main(x,y)
+
+#include "tools/vstools/mmls.cpp" // Assuming your getopt() logic is in this file
+
+static char **setup(const char *a,const char *b,const char *c)
+{
+    char **argv = (char **)calloc(4,sizeof(char *));
+    argv[0] = a ? strdup(a) : NULL;
+    argv[1] = b ? strdup(b) : NULL;
+    argv[2] = c ? strdup(c) : NULL;
+    argv[3] = NULL;
+    return argv;
+}
+
+static void setdown(char **argv)
+{
+    for(int i=0;i<4;i++){
+        if(argv[i]) free(argv[i]);
+    }
+    free(argv);
+}
+
+TEST_CASE("mmls -h", "[vstools]") {
+    int argc=2;
+    char **argv = setup("mmls","-h",nullptr);
+
+    /* Capture the output */
+    runner::tempfile tf("mmls_1");
+
+    tsk_stderr = tf.file;
+    {
+        mock = new mocker();
+        CHECK(mocked_mmls_main(argc, argv)==1);
+    }
+    tsk_stderr = stderr;
+
+    auto first_line = tf.first_line();
+    CHECK( first_line.substr(0,6) == "usage:" );
+    setdown(argv);
 }

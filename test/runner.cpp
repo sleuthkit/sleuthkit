@@ -104,7 +104,10 @@ namespace runner {
 
     std::string tempfile::first_line() {
         char buf[1024];
+        memset(buf,0,sizeof(buf));
         fseek(file,0L,0);
-        return fgets(buf,sizeof(buf),file);
+        fgets(buf,sizeof(buf)-1,file);
+        printf("buf=%s\n",buf);
+        return buf;
     }
 }
