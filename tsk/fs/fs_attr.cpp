@@ -730,9 +730,19 @@ tsk_fs_attr_append_run(
         // just in case this was not updated
         if ((a_fs_attr->nrd.run_end == NULL)
             || (a_fs_attr->nrd.run_end->next != NULL)) {
+
+            int counter = 0;
+
             data_run_cur = a_fs_attr->nrd.run;
             while (data_run_cur->next) {
                 data_run_cur = data_run_cur->next;
+                /* bugfix issue 2268
+                 * "Infinite loop when processing a Linux disk image (tsk_fs_file_attr_getsize) #2268"
+                 * This establishes a counter that breaks out of the loop after a large number of iterations.
+                 */
+                if (++counter > LOGICAL_MAX_ATTR_RUN) {
+                    break;
+                }
             }
             a_fs_attr->nrd.run_end = data_run_cur;
         }
