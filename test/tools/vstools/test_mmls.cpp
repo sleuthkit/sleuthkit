@@ -10,7 +10,9 @@
 struct mocker {
     int index {0};
     mocker(){};
-    int mocked_getopt([[maybe_unused]] int argc, [[maybe_unused]] char** argv, [[maybe_unused]] const char *option_string) {
+    int mocked_getopt([[maybe_unused]] int argc,
+                      [[maybe_unused]] TSK_TCHAR** argv,
+                      [[maybe_unused]] const TSK_TCHAR *option_string) {
         switch (index++) {
         case 0:
             return 'h';
