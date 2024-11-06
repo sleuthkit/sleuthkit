@@ -82,7 +82,7 @@ private:
 	    return "copying feature_recorder objects is not implemented.";
 	}
     };
-    const xml &operator=(const xml &x){ throw new not_impl(); }
+    const xml &operator=([[maybe_unused]] const xml &x){ throw new not_impl(); }
     /****************************************************************/
 #ifdef HAVE_PTHREAD
     pthread_mutex_t M;			// mutext protecting out

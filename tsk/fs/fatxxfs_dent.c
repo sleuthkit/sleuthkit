@@ -59,7 +59,7 @@ TSK_RETVAL_ENUM
 fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
     TSK_OFF_T len, TSK_DADDR_T *addrs, int recursion_depth)
 {
-    char *func_name = "fatxxfs_dent_parse_buf";
+    const char *func_name = "fatxxfs_dent_parse_buf";
     unsigned int idx = 0;
     unsigned int sidx = 0;
     int a = 0;

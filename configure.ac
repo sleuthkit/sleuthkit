@@ -15,7 +15,7 @@ AM_MAINTAINER_MODE
 
 dnl Checks for programs.
 AC_PROG_CXX
-AX_CXX_COMPILE_STDCXX([14], [noext], [mandatory])
+AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
@@ -133,7 +133,9 @@ AC_MSG_CHECKING(which sqlite3 to use)
 AS_IF([test "x$ax_sqlite3" = "xyes"],
       [AC_MSG_RESULT([system])
        PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"],
-      [AC_MSG_RESULT([bundled])])
+      [AC_MSG_RESULT([bundled])
+       CPPFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION"]
+)
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
 dnl Check if we should link with OpenSSL
@@ -315,7 +317,7 @@ AC_SUBST(CHECK_IMGS, $check_imgs)
 AC_CONFIG_FILES([
     Makefile
     tsk/tsk.pc
-    tests/imgs_to_dump])
+    test/img_dump/imgs_to_dump])
 
 AC_OUTPUT
 

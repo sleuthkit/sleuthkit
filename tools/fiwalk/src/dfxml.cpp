@@ -328,7 +328,7 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
 #endif
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (defined(__MINGW32__) && !defined(_UCRT))
 #define TM_FORMAT "%Y-%m-%dT%H:%M:%SZ"
 #else
 #define TM_FORMAT "%FT%TZ"

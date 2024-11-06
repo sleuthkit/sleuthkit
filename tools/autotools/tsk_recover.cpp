@@ -95,9 +95,14 @@ uint8_t TskRecover::handleError()
  * Callback used to walk file content and write the results to the recovery file.
  */
 static TSK_WALK_RET_ENUM
-file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off,
-    TSK_DADDR_T a_addr, char *a_buf, size_t a_len,
-    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+file_walk_cb(
+  [[maybe_unused]] TSK_FS_FILE * a_fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  [[maybe_unused]] TSK_DADDR_T a_addr,
+  char *a_buf,
+  size_t a_len,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM a_flags,
+  void *a_ptr)
 {
     //write to the file
 #ifdef TSK_WIN32
@@ -195,7 +200,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         path16full[len] = L'\\';
 
     //do name mangling
-    char name8[FILENAME_MAX];
+    char name8[FILENAME_MAX + 1];
     strncpy(name8, a_fs_file->name->name, FILENAME_MAX);
     for (int i = 0; name8[i] != '\0'; i++) {
         if (TSK_IS_CNTRL(name8[i]))
@@ -203,14 +208,14 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     //convert file name from utf8 to utf16
-    wchar_t name16[FILENAME_MAX];
+    wchar_t name16[FILENAME_MAX + 1];
 
     ilen = strlen(name8);
     utf8 = (UTF8 *) name8;
     utf16 = (UTF16 *) name16;
 
     retVal = tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
-        &utf16, &utf16[FILENAME_MAX], TSKlenientConversion);
+        &utf16, &utf16[FILENAME_MAX + 1], TSKlenientConversion);
     *utf16 = '\0';
 
     if (retVal != TSKconversionOK) {
@@ -219,7 +224,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     //append the file name onto the path
-    wcsncat(path16full, name16, FILENAME_MAX-wcslen(path16full));
+    wcsncat(path16full, name16, FILENAME_MAX + 1 - wcslen(path16full));
 
     //create the file
     HANDLE

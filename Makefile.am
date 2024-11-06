@@ -1,8 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
-AM_CFLAGS = -Wall -Wextra -Wno-unused-parameter
-AM_CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual
+AM_CFLAGS = -Wall -Wextra
+AM_CXXFLAGS = -Wall -Wextra -Woverloaded-virtual
 
 CLEANFILES = *.gcov
 
@@ -188,81 +188,81 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs.cpp \
 	tsk/fs/apfs_fs.cpp \
 	tsk/fs/apfs_open.cpp \
-	tsk/fs/dcalc_lib.c \
+	tsk/fs/dcalc_lib.cpp \
 	tsk/fs/dcat_lib.c \
-	tsk/fs/decmpfs.c \
-	tsk/fs/dls_lib.c \
-	tsk/fs/dstat_lib.c \
+	tsk/fs/decmpfs.cpp \
+	tsk/fs/dls_lib.cpp \
+	tsk/fs/dstat_lib.cpp \
 	tsk/fs/encryptionHelper.cpp \
 	tsk/fs/exfatfs.c \
-	tsk/fs/exfatfs_dent.c \
-	tsk/fs/exfatfs_meta.c \
-	tsk/fs/ext2fs.c \
-	tsk/fs/ext2fs_dent.c \
-	tsk/fs/ext2fs_journal.c \
-	tsk/fs/fatfs.c \
+	tsk/fs/exfatfs_dent.cpp \
+	tsk/fs/exfatfs_meta.cpp \
+	tsk/fs/ext2fs.cpp \
+	tsk/fs/ext2fs_dent.cpp \
+	tsk/fs/ext2fs_journal.cpp \
+	tsk/fs/fatfs.cpp \
 	tsk/fs/fatfs_dent.cpp \
-	tsk/fs/fatfs_meta.c \
+	tsk/fs/fatfs_meta.cpp \
 	tsk/fs/fatfs_utils.c \
 	tsk/fs/fatxxfs.c \
 	tsk/fs/fatxxfs_dent.c \
-	tsk/fs/fatxxfs_meta.c \
+	tsk/fs/fatxxfs_meta.cpp \
 	tsk/fs/ffind_lib.c \
-	tsk/fs/ffs.c \
-	tsk/fs/ffs_dent.c \
+	tsk/fs/ffs.cpp \
+	tsk/fs/ffs_dent.cpp \
 	tsk/fs/fls_lib.c \
-	tsk/fs/fs_attr.c \
+	tsk/fs/fs_attr.cpp \
 	tsk/fs/fs_attrlist.c \
 	tsk/fs/fs_block.c \
-	tsk/fs/fs_dir.c \
-	tsk/fs/fs_file.c \
+	tsk/fs/fs_dir.cpp \
+	tsk/fs/fs_file.cpp \
 	tsk/fs/fs_inode.c \
 	tsk/fs/fs_io.c \
-	tsk/fs/fs_load.c \
-	tsk/fs/fs_name.c \
+	tsk/fs/fs_load.cpp \
+	tsk/fs/fs_name.cpp \
 	tsk/fs/fs_open.c \
 	tsk/fs/fs_parse.c \
 	tsk/fs/fs_types.c \
-	tsk/fs/hfs.c \
-	tsk/fs/hfs_dent.c \
-	tsk/fs/hfs_journal.c \
-	tsk/fs/hfs_unicompare.c \
-	tsk/fs/icat_lib.c \
-	tsk/fs/ifind_lib.c \
-	tsk/fs/ils_lib.c \
-	tsk/fs/iso9660.c \
-	tsk/fs/iso9660_dent.c \
+	tsk/fs/hfs.cpp \
+	tsk/fs/hfs_dent.cpp \
+	tsk/fs/hfs_journal.cpp \
+	tsk/fs/hfs_unicompare.cpp \
+	tsk/fs/icat_lib.cpp \
+	tsk/fs/ifind_lib.cpp \
+	tsk/fs/ils_lib.cpp \
+	tsk/fs/iso9660.cpp \
+	tsk/fs/iso9660_dent.cpp \
 	tsk/fs/logical_fs.cpp \
 	tsk/fs/lzvn.c \
 	tsk/fs/lzvn.h \
-	tsk/fs/nofs_misc.c \
-	tsk/fs/ntfs.c \
+	tsk/fs/nofs_misc.cpp \
+	tsk/fs/ntfs.cpp \
 	tsk/fs/ntfs_dent.cpp \
 	tsk/fs/rawfs.c \
 	tsk/fs/swapfs.c \
 	tsk/fs/tsk_fs_i.h \
-	tsk/fs/unix_misc.c \
-	tsk/fs/usnjls_lib.c \
-	tsk/fs/usn_journal.c \
+	tsk/fs/unix_misc.cpp \
+	tsk/fs/usnjls_lib.cpp \
+	tsk/fs/usn_journal.cpp \
 	tsk/fs/walk_cpp.cpp \
 	tsk/fs/yaffs.cpp
 
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
-	tsk/hashdb/encase.c \
+	tsk/hashdb/encase.cpp \
 	tsk/hashdb/hashkeeper.c \
-	tsk/hashdb/hdb_base.c \
-	tsk/hashdb/idxonly.c \
-	tsk/hashdb/md5sum.c \
-	tsk/hashdb/nsrl.c \
+	tsk/hashdb/hdb_base.cpp \
+	tsk/hashdb/idxonly.cpp \
+	tsk/hashdb/md5sum.cpp \
+	tsk/hashdb/nsrl.cpp \
 	tsk/hashdb/sqlite_hdb.cpp \
-	tsk/hashdb/tsk_hashdb.c \
+	tsk/hashdb/tsk_hashdb.cpp \
 	tsk/hashdb/tsk_hashdb.h \
 	tsk/hashdb/tsk_hashdb_i.h \
 	tsk/hashdb/tsk_hash_info.h
 
 tsk_img_libtskimg_la_SOURCES = \
-	tsk/img/aff4.c \
+	tsk/img/aff4.cpp \
 	tsk/img/aff4.h \
 	tsk/img/aff.c \
 	tsk/img/aff.h \
@@ -273,13 +273,13 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/img_types.c \
 	tsk/img/img_writer.cpp \
 	tsk/img/img_writer.h \
-	tsk/img/logical_img.c \
+	tsk/img/logical_img.cpp \
 	tsk/img/logical_img.h \
 	tsk/img/mult_files.cpp \
 	tsk/img/mult_files.h \
 	tsk/img/qcow.c \
 	tsk/img/qcow.h \
-	tsk/img/raw.c \
+	tsk/img/raw.cpp \
 	tsk/img/raw.h \
 	tsk/img/tsk_img_i.h \
 	tsk/img/unsupported_types.c \
@@ -292,7 +292,7 @@ tsk_img_libtskimg_la_SOURCES = \
 tsk_pool_libtskpool_la_SOURCES = \
 	tsk/pool/apfs_pool_compat.cpp \
 	tsk/pool/apfs_pool.cpp \
-	tsk/pool/img_bfio_handle.c \
+	tsk/pool/img_bfio_handle.cpp \
 	tsk/pool/img_bfio_handle.h \
 	tsk/pool/lvm_pool_compat.cpp \
 	tsk/pool/lvm_pool.cpp \
@@ -305,7 +305,7 @@ tsk_util_libtskutil_la_LDFLAGS = $(AM_LDFLAGS) $(OPENSSL_LDFLAGS)
 tsk_util_libtskutil_la_SOURCES = \
 	tsk/util/crypto.cpp \
 	tsk/util/detect_encryption.c \
-	tsk/util/file_system_utils.c
+	tsk/util/file_system_utils.cpp
 
 tsk_util_Bitlocker_libtskbitlocker_la_SOURCES = \
 	tsk/util/Bitlocker/BitlockerParser.cpp \
@@ -580,20 +580,21 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 EXTRA_DIST += tests/runtests.sh
 
 check_SCRIPTS = \
-	tests/check_static.sh \
-	tests/runtests.sh \
-	tests/test_imgs.sh \
-	tests/test_libraries.sh \
-	tests/test_static_tools.sh
+	test/check_static.sh \
+	test/test_libraries.sh \
+	test/test_static_tools.sh \
+	test/img_dump/test_imgs.sh \
+	test/legacy/runtests.sh
 
 TESTS =	\
-	tests/runtests.sh \
-	tests/fiwalk_test \
-	tests/test_imgs.sh \
-	tests/test_libraries.sh
+	test/runner \
+	test/test_libraries.sh \
+	test/fiwalk/fiwalk_test \
+	test/img_dump/test_imgs.sh \
+	test/legacy/runtests.sh
 
 if BUILD_STATIC
-TESTS += tests/test_static_tools.sh
+TESTS += test/test_static_tools.sh
 endif
 
 TEST_EXTENSIONS = .sh
@@ -601,82 +602,30 @@ SH_LOG_COMPILER =
 
 LOG_COMPILER = scripts/test_runner.sh
 
-# TODO: nothing runs these (except for img_dump, fiwalk_test)!
+# TODO: nothing runs fs_attrlist_apis, fs_name_apis, fs_thread_test, read_apis
 check_PROGRAMS = \
-	tests/fiwalk_test \
-	tests/fs_attrlist_apis \
-	tests/fs_fname_apis \
-	tests/fs_thread_test \
-	tests/img_dump \
-	tests/read_apis
-
-tests_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-tests_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fiwalk_test_LDADD = $(TSK_LIB)
-tests_fiwalk_test_SOURCES = \
-	tests/fiwalk_test.cpp \
-	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
-
-EXTRA_tests_fiwalk_test_DEPENDENCIES = tests/test_images.txt
-
-tests/test_images.txt: tests/test_images.yaml tests/get_test_images.bash tests/get_test_images.py
-	tests/get_test_images.bash
-
-CLEANFILES += tests/test_images.txt
-
-tests_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_fname_apis_LDADD = $(TSK_LIB)
-tests_fs_fname_apis_SOURCES = tests/fs_fname_apis.cpp
-
-tests_fs_attrlist_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_attrlist_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_attrlist_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_attrlist_apis_LDADD = $(TSK_LIB)
-tests_fs_attrlist_apis_SOURCES = tests/fs_attrlist_apis.cpp
-
-tests_fs_thread_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_thread_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_fs_thread_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_fs_thread_test_LDADD = $(TSK_LIB)
-tests_fs_thread_test_SOURCES = \
-	tests/fs_thread_test.cpp \
-	tests/tsk_thread.cpp \
-	tests/tsk_thread.h
-
-tests_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_img_dump_LDADD = $(TSK_LIB)
-tests_img_dump_SOURCES = tests/img_dump.cpp
-
-tests_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-tests_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-tests_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-tests_read_apis_LDADD = $(TSK_LIB)
-tests_read_apis_SOURCES = tests/read_apis.cpp
+	test/runner \
+	test/fiwalk/fiwalk_test \
+	test/img_dump/img_dump \
+	test/legacy/fs_attrlist_apis \
+	test/legacy/fs_fname_apis \
+	test/legacy/fs_thread_test \
+	test/legacy/read_apis
 
 # Unit tests:
 # Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
 # and link into a single executable.
 # This makes things easier with codecov.
-
-check_PROGRAMS += unit_tests/runner
-
-TESTS += unit_tests/runner
-
-unit_tests_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-unit_tests_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
-unit_tests_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
-unit_tests_runner_SOURCES = \
-	unit_tests/crypto_test.cpp \
-	unit_tests/errors_test.cpp \
-	unit_tests/mult_files_test.cpp \
-	unit_tests/runner.cpp \
+test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_runner_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_runner_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_runner_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_runner_SOURCES = \
+	test/tsk/base/test_tsk_error.cpp \
+	test/tsk/img/test_aff4.cpp \
+	test/tsk/img/test_mult_files.cpp \
+	test/tsk/util/test_crypto.cpp \
+	test/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
 	$(tsk_base_libtskbase_la_SOURCES) \
 	$(tsk_fs_libtskfs_la_SOURCES) \
@@ -686,6 +635,54 @@ unit_tests_runner_SOURCES = \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
 
+test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_fiwalk_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_fiwalk_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_fiwalk_fiwalk_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_fiwalk_fiwalk_test_LDADD = $(TSK_LIB)
+test_fiwalk_fiwalk_test_SOURCES = \
+	test/fiwalk/fiwalk_test.cpp \
+	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/fiwalk/test_images.txt
+
+test/fiwalk/test_images.txt: test/fiwalk/test_images.yaml test/fiwalk/get_test_images.bash test/fiwalk/get_test_images.py
+	test/fiwalk/get_test_images.bash
+
+CLEANFILES += test/fiwalk/test_images.txt
+
+test_img_dump_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_img_dump_img_dump_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_img_dump_img_dump_LDADD = $(TSK_LIB)
+test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
+
+test_legacy_fs_fname_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_fname_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_fname_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_fname_apis_LDADD = $(TSK_LIB)
+test_legacy_fs_fname_apis_SOURCES = test/legacy/fs_fname_apis.cpp
+
+test_legacy_fs_attrlist_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_attrlist_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_attrlist_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_attrlist_apis_LDADD = $(TSK_LIB)
+test_legacy_fs_attrlist_apis_SOURCES = test/legacy/fs_attrlist_apis.cpp
+
+test_legacy_fs_thread_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_thread_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_fs_thread_test_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_fs_thread_test_LDADD = $(TSK_LIB)
+test_legacy_fs_thread_test_SOURCES = \
+	test/legacy/fs_thread_test.cpp \
+	test/legacy/tsk_thread.cpp \
+	test/legacy/tsk_thread.h
+
+test_legacy_read_apis_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_read_apis_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
+test_legacy_read_apis_LDFLAGS = $(AM_LDFLAGS) $(PTHREAD_LIBS)
+test_legacy_read_apis_LDADD = $(TSK_LIB)
+test_legacy_read_apis_SOURCES = test/legacy/read_apis.cpp
 
 #
 # Java
