@@ -110,7 +110,7 @@ namespace runner {
         }
         temp_file_path = tmpl_buf; // put it back
         file = fdopen(fd,"w+");
-        //free(tmpl_buf);
+        free(tmpl_buf);                 //
     }
 
     tempfile::~tempfile(){
