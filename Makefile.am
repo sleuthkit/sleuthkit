@@ -591,7 +591,8 @@ TESTS =	\
 	test/test_libraries.sh \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
-	test/legacy/runtests.sh
+	test/legacy/runtests.sh \
+	test/tools/vstools/test_mmls.sh
 
 if BUILD_STATIC
 TESTS += test/test_static_tools.sh
