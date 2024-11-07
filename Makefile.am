@@ -584,15 +584,19 @@ check_SCRIPTS = \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
 	test/img_dump/test_imgs.sh \
-	test/legacy/runtests.sh
+	test/legacy/runtests.sh \
+	test/tools/vstools/test_mmls.sh
 
 TESTS =	\
 	test/runner \
 	test/test_libraries.sh \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
-	test/legacy/runtests.sh \
-	test/tools/vstools/test_mmls.sh
+	test/legacy/runtests.sh
+
+if !USE_WINE
+TESTS += test/tools/vstools/test_mmls.sh
+endif
 
 if BUILD_STATIC
 TESTS += test/test_static_tools.sh
