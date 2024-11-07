@@ -327,19 +327,9 @@ AM_CONDITIONAL([HAVE_QCOW], [test "x$ax_libqcow" != "xno"])
 AM_CONDITIONAL([HAVE_VHD], [test "x$ax_libvhdi" != "xno"])
 AM_CONDITIONAL([HAVE_VMDK], [test "x$ax_libvmdk" != "xno"])
 
-AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
-AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
-AS_IF([test "x$ax_libqcow" != "xno"], [check_imgs="$check_imgs image.qcow"])
-AS_IF([test "x$ax_libvhdi" != "xno"], [check_imgs="$check_imgs image.vhd"])
-AS_IF([test "x$ax_libvmdk" != "xno"], [check_imgs="$check_imgs image.vmdk"])
-
-
-AC_SUBST(CHECK_IMGS, $check_imgs)
-
 AC_CONFIG_FILES([
     Makefile
-    tsk/tsk.pc
-    test/img_dump/imgs_to_dump])
+    tsk/tsk.pc])
 
 AC_OUTPUT
 
