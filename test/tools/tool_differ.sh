@@ -19,7 +19,7 @@ while IFS= read -r line ; do
   echo -n "checking '$CMD': "
   DIFF_EXIT=0
   # diff, normalizing against basedir
-  RESULT=$(diff -u "$EXP" <($WINE $CMD 2>&1 | sed -e "\|^${basedir}/.*: |d")) || DIFF_EXIT=$?
+  RESULT=$(diff --strip-trailing-cr -u "$EXP" <($WINE $CMD 2>&1 | sed -e "\|^${basedir}/.*: |d")) || DIFF_EXIT=$?
   if [ $DIFF_EXIT -ne 0 ]; then
     err=1
     echo failed
