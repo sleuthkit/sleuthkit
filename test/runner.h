@@ -59,7 +59,7 @@ namespace runner {
         char *temp_file_path_buf;
         bool validate_contents(std::string substr);
         bool validate_contains(std::string substr);
-        std::string first_line();
+        std::string first_tsk_utf8_line();
     };
 }
 

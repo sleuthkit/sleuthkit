@@ -62,7 +62,8 @@ TEST_CASE("mmls -h", "[vstools]") {
     }
     tsk_stderr = stderr;
 
-    auto first_line = tf.first_line();
+    auto first_line = tf.first_tsk_utf8_line();
+
     CHECK( first_line.substr(0,6) == "usage:" );
     setdown(argv);
 }

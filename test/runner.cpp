@@ -18,6 +18,8 @@
 #include <sys/stat.h>
 #include <stdio.h>
 
+#include "utf8.h"
+
 /* This program runs the catch2 test */
 
 /* Support for runners */
@@ -52,7 +54,20 @@ namespace runner {
         return std::string(memblock.get(),size);
     }
 
+    std::u16string file_contents16(std::filesystem::path path) {
+        std::ifstream in(path, std::ios::binary | std::ios::ate);
+        REQUIRE (in.is_open());
+        auto size = in.tellg();
+        std::unique_ptr<char[]>memblock(new char [size]);
+        in.seekg (0, std::ios::beg);
+        in.read (memblock.get(), size);
+        in.close();
+        return std::u16string(reinterpret_cast<const char16_t*>(memblock.get()), size / 2);
+    }
 
+    /* On Mac & Linux, return file contents.
+     * On Windows, convert utf16 file content to utf-8
+     */
     bool file_contents_is(std::filesystem::path path, std::string contents) {
         return file_contents(path) == contents;
     }
@@ -96,12 +111,41 @@ namespace runner {
         return file_contents_is(temp_file_path, contents);
     }
 
-    std::string tempfile::first_line() {
-        char buf[1024];
-        memset(buf,0,sizeof(buf));
-        fseek(file,0L,0);
-        fgets(buf,sizeof(buf)-1,file);
-        printf("buf=%s\n",buf);
-        return buf;
+#ifdef _WIN32
+    /* On windows, TSK is writing out UTF16 lines; convert them */
+    std::string tempfile::first_tsk_utf8_line() {
+        std::ifstream in(temp_file_path );
+        if (!in.is_open()) throw std::runtime_error("cannot open tempfile");
+
+        // Skip BOM if present (UTF-16 LE: 0xFF 0xFE, UTF-16 BE: 0xFE 0xFF)
+        char16_t bom;
+        in.read(reinterpret_cast<char*>(&bom), sizeof(bom));
+        if (bom != 0xFEFF) {
+            // Not a BOM, rewind
+            in.seekg(0);
+        }
+
+        std::u16string line;
+        char16_t ch;
+        while (in.read(reinterpret_cast<char*>(&ch), sizeof(ch))) {
+            if (ch == u'\n') {
+                break;
+            } else {
+                line += ch;
+            }
+        }
+        return utf8::utf16to8( line );
     }
+#else
+    /* On non-windows, TSK is writing out UTF8 lines */
+    std::string tempfile::first_tsk_utf8_line() {
+        std::ifstream in(temp_file_path );
+        if (!in.is_open()) throw std::runtime_error("cannot open tempfile");
+        std::string line;
+        if (std::getline(in, line)) {
+            return line;
+        }
+        throw std::runtime_error("no first line");
+    }
+#endif
 }
