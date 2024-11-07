@@ -53,17 +53,17 @@ TEST_CASE("mmls -h", "[vstools]") {
     char **argv = setup("mmls","-h",nullptr);
 
     /* Capture the output */
-    runner::tempfile tf("mmls_1");
-
-    tsk_stderr = tf.file;
     {
+        runner::tempfile tf("mmls_1");
+        tsk_stderr = tf.file;
         mock = new mocker();
         CHECK(mocked_mmls_main(argc, argv)==1);
+        fflush(tf.file);
+
+        auto first_line = tf.first_tsk_utf8_line();
+        CHECK( first_line.substr(0,6) == "usage:" );
+        tsk_stderr = stderr;
     }
-    tsk_stderr = stderr;
 
-    auto first_line = tf.first_tsk_utf8_line();
-
-    CHECK( first_line.substr(0,6) == "usage:" );
     setdown(argv);
 }

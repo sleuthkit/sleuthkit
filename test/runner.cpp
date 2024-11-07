@@ -24,6 +24,23 @@
 
 /* Support for runners */
 namespace runner {
+    std::filesystem::path NamedTemporaryDirectory(std::string prefix,unsigned long long max_tries = 1000) {
+        std::random_device dev;
+        std::mt19937 prng(dev());
+        std::uniform_int_distribution<uint64_t> rand(0);
+        std::filesystem::path path;
+        for (unsigned int i=0; i<max_tries; i++ ){
+            std::stringstream ss;
+            ss << prefix << "_" << std::hex << rand(prng);
+            path = std::filesystem::temp_directory_path() / ss.str();
+            if (std::filesystem::create_directory(path)) {
+                std::cerr << "named temporary directory: " << path << "\n";
+                return path;
+            }
+        }
+        throw std::runtime_error("could not create NamedTemporaryDirectory");
+    }
+
     // https://inversepalindrome.com/blog/how-to-create-a-random-string-in-cpp
     std::string random_string(std::size_t length) {
         const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -77,24 +94,30 @@ namespace runner {
     }
 
     tempfile::tempfile(std::string testname) {
-        auto temp_file_path = NamedTemporaryDirectory(testname) / (testname + std::string("XXXXXX"));
         // Create a writable copy of the path string for mkstemp
-        auto temp_file_path_string = temp_file_path.string();
-        temp_file_path_buf = (char *)malloc(temp_file_path_string.size()+1);
-        strcpy(temp_file_path_buf,temp_file_path_string.c_str());
+        temp_dir = NamedTemporaryDirectory(testname);
+        auto tmpl        = temp_dir / (testname + std::string("XXXXXX"));
+        auto tmpl_string = tmpl.string();
+        std::cerr << "tmpl_string: " << tmpl_string << "\n";
+        char *tmpl_buf = strdup(tmpl_string.c_str());
 
         // Use mkstemp to create a unique temporary file
-        fd = mkstemp(temp_file_path_buf);
+        std::cerr << "tmpl_buf:" << tmpl_buf << "\n";
+        fd = mkstemp(tmpl_buf);
+        std::cerr << "tmpl_buf:" << tmpl_buf << "\n";
         if (fd == -1) {
             throw std::runtime_error("Failed to create temporary file");
         }
+        temp_file_path = tmpl_buf; // put it back
         file = fdopen(fd,"w+");
+        //free(tmpl_buf);
     }
 
     tempfile::~tempfile(){
-        free(temp_file_path_buf);
         fclose(file);
         close(fd);
+        std::cerr << "remove_all " << temp_file_path << "\n";
+        std::cerr << "remove_all " << temp_dir << "\n";
         std::filesystem::remove_all(temp_file_path);
         std::filesystem::remove_all(temp_dir);
     }
@@ -140,11 +163,18 @@ namespace runner {
     /* On non-windows, TSK is writing out UTF8 lines */
     std::string tempfile::first_tsk_utf8_line() {
         std::ifstream in(temp_file_path );
-        if (!in.is_open()) throw std::runtime_error("cannot open tempfile");
+        std::cerr << "reading " << temp_file_path << "\n";
+        if (!in.is_open()) {
+            std::cerr << "temp_file_path: " << temp_file_path << "\n";
+            std::string msg = std::string("cannot open tempfile ") + std::string(temp_file_path);
+            throw std::runtime_error(msg);
+        }
         std::string line;
         if (std::getline(in, line)) {
+            std::cerr << "line:" << line << "\n";
             return line;
         }
+        std::cerr << "no first line\n";
         throw std::runtime_error("no first line");
     }
 #endif
