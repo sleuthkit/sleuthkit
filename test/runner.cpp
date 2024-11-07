@@ -41,7 +41,7 @@ namespace runner {
         return line.find(substr) != std::string::npos;
     }
 
-    std::string file_contents(std::string path) {
+    std::string file_contents(std::filesystem::path path) {
         std::ifstream in(path, std::ios::binary | std::ios::ate);
         REQUIRE (in.is_open());
         auto size = in.tellg();
@@ -53,11 +53,11 @@ namespace runner {
     }
 
 
-    bool file_contents_is(std::string path, std::string contents) {
+    bool file_contents_is(std::filesystem::path path, std::string contents) {
         return file_contents(path) == contents;
     }
 
-    bool file_contains(std::string path, std::string substr) {
+    bool file_contains(std::filesystem::path path, std::string substr) {
         return contains(file_contents(path), substr);
     }
 
