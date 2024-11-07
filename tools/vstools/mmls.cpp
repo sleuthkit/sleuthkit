@@ -11,8 +11,6 @@
  */
 #include "tsk/tsk_tools_i.h"
 
-static TSK_TCHAR *progname;
-
 static uint8_t print_bytes = 0;
 static uint8_t recurse = 0;
 
@@ -24,8 +22,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
-        progname);
+        ("usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"));
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
@@ -167,9 +164,6 @@ main(int argc, char **argv1)
 #else
     argv = (TSK_TCHAR **) argv1;
 #endif
-
-
-    progname = argv[0];
 
     while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
         switch (ch) {

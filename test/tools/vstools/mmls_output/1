@@ -1,6 +1,6 @@
 /home/juckelman/projects/make_world/world/sleuthkit/tools/vstools/.libs/mmls: invalid option -- 'h'
 Unknown argument
-usage: /home/juckelman/projects/make_world/world/sleuthkit/tools/vstools/.libs/mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]
+usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]
 	-t vstype: The type of volume system (use '-t list' for list of supported types)
 	-i imgtype: The format of the image file (use '-i list' for list supported types)
 	-b dev_sector_size: The size (in bytes) of the device sectors
