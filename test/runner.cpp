@@ -18,6 +18,12 @@
 #include <sys/stat.h>
 #include <stdio.h>
 
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
+
 #include "utf8.h"
 
 /* This program runs the catch2 test */
@@ -104,6 +110,12 @@ namespace runner {
         // Use mkstemp to create a unique temporary file
         std::cerr << "tmpl_buf:" << tmpl_buf << "\n";
         fd = mkstemp(tmpl_buf);
+#ifdef _WIN32
+        // Windows defaults to exclusive access. We do not want that
+        fclose(fd);
+        fd = _open(filename, _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE);
+
+#endif
         std::cerr << "tmpl_buf:" << tmpl_buf << "\n";
         if (fd == -1) {
             throw std::runtime_error("Failed to create temporary file");
@@ -141,8 +153,11 @@ namespace runner {
 #ifdef _WIN32
     /* On windows, TSK is writing out UTF16 lines; convert them */
     std::string tempfile::first_tsk_utf8_line() {
-        std::ifstream in(temp_file_path );
-        if (!in.is_open()) throw std::runtime_error("cannot open tempfile");
+g        std::ifstream in(temp_file_path);
+        if (!in.is_open()){
+            std::cerr << "tempfile: " <<temp_file_path << "\n";
+            throw std::runtime_error("cannot open tempfile");
+        }
 
         // Skip BOM if present (UTF-16 LE: 0xFF 0xFE, UTF-16 BE: 0xFE 0xFF)
         char16_t bom;
