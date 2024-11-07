@@ -9,7 +9,7 @@ while IFS= read -r line ; do
   EXP=${line#*$'\t'}
   CMD=${line%$'\t'*}
   echo -n "checking '$CMD': "
-  RESULT=$(diff -u "$EXP" <($CMD 2>&1))
+  RESULT=$(diff -u "$EXP" <($WINE $CMD 2>&1))
   if [ $? -ne 0 ]; then
     err=1
     echo failed

@@ -271,11 +271,26 @@ case "$host" in
   LIBTSK_LDFLAGS="-no-undefined"
   AC_SUBST([LIBTSK_LDFLAGS])
   ;;
-  *)
+*)
   dnl No additional flags needed.
   AC_MSG_RESULT([no])
   ;;
 esac
+
+dnl Run test executables in Wine if cross-compiling with mingw
+case "$host" in
+*-*-mingw*)
+  case "$build" in
+  *-*-cygwin*|*-*-mingw*)
+    ;;
+  *)
+    use_wine=yes
+    ;;
+  esac
+  ;;
+esac
+
+AM_CONDITIONAL([USE_WINE], [test "x$use_wine" = "xyes"])
 
 dnl ensure static linkage of tools during static builds
 if test "x$enable_shared" != "xyes"; then

@@ -601,6 +601,10 @@ endif
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
 
+if USE_WINE
+TESTS_ENVIRONMENT = WINE=wine
+endif
+
 LOG_COMPILER = scripts/test_runner.sh
 
 # TODO: nothing runs fs_attrlist_apis, fs_name_apis, fs_thread_test, read_apis
