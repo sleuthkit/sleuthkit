@@ -320,6 +320,13 @@ case "$host" in
   ;;
 esac
 
+dnl Defines for supported image types
+AM_CONDITIONAL([HAVE_AFF], [test "x$ax_afflib" != "xno"])
+AM_CONDITIONAL([HAVE_E01], [test "x$ax_libewf" != "xno"])
+AM_CONDITIONAL([HAVE_QCOW], [test "x$ax_libqcow" != "xno"])
+AM_CONDITIONAL([HAVE_VHD], [test "x$ax_libvhdi" != "xno"])
+AM_CONDITIONAL([HAVE_VMDK], [test "x$ax_libvmdk" != "xno"])
+
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
 AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
 AS_IF([test "x$ax_libqcow" != "xno"], [check_imgs="$check_imgs image.qcow"])
