@@ -62,29 +62,36 @@ namespace runner {
     }
 
     tempfile::tempfile(std::string testname) {
-        tempdir = NamedTemporaryDirectory(testname);
-        snprintf(filename,sizeof(filename),"%s/XXXXXX",tempdir.c_str());
-        mkstemp(filename);
-        file = fopen(filename,"w+");
-        fd = fileno(file);
+        auto temp_file_path = NamedTemporaryDirectory(testname) / (testname + std::string("XXXXXX"));
+        // Create a writable copy of the path string for mkstemp
+        std::vector<char> temp_path(temp_file_path.string().begin(), temp_file_path.string().end());
+        temp_path.push_back('\0');  // Null-terminate for mkstemp
+
+        // Use mkstemp to create a unique temporary file
+        fd = mkstemp(temp_path.data());
+        if (fd == -1) {
+            throw std::runtime_error("Failed to create temporary file");
+        }
+        file = fdopen(fd,"w+");
     }
 
     tempfile::~tempfile(){
         fclose(file);
-        unlink(filename);
-        unlink(tempdir.c_str());
+        close(fd);
+        std::filesystem::remove_all(temp_file_path);
+        std::filesystem::remove_all(temp_dir);
     }
 
     bool tempfile::validate_contains(std::string contents) {
         fflush(file);
         fseeko(file,0L,0);
-        return file_contains(filename, contents);
+        return file_contains(temp_file_path, contents);
     }
 
     bool tempfile::validate_contents(std::string contents) {
         fflush(file);
         fseeko(file,0L,0);
-        return file_contents_is(filename, contents);
+        return file_contents_is(temp_file_path, contents);
     }
 
     std::string tempfile::first_line() {

@@ -54,8 +54,8 @@ namespace runner {
         ~tempfile();
         FILE *file;
         int fd;
-        std::string tempdir;
-        char filename[64];
+        std::filesystem::path temp_dir;
+        std::filesystem::path temp_file_path;
         bool validate_contents(std::string substr);
         bool validate_contains(std::string substr);
         std::string first_line();
