@@ -110,21 +110,15 @@ namespace runner {
         // Use mkstemp to create a unique temporary file
         std::cerr << "tmpl_buf:" << tmpl_buf << "\n";
         fd = mkstemp(tmpl_buf);
-#ifdef _WIN32
-        // Windows defaults to exclusive access. We do not want that
-        fclose(fd);
-        fd = _open(filename, _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE);
-
-#endif
         std::cerr << "tmpl_buf:" << tmpl_buf << "\n";
         if (fd == -1) {
             throw std::runtime_error("Failed to create temporary file");
         }
-        close(fd);
-        temp_file_path = tmpl_buf; // put it back
-        file = fdopen(fd,"w+");
+        close(fd);        // Windows defaults to exclusive access. We do not want that
+        temp_file_path = tmpl_buf;      // retain
+        file = fopen(tmpl_buf,"wb+");         // open the FILE
         if (file==NULL) {
-            throw std::runtime_error("fdopen(fd) failed");
+            throw std::runtime_error("fopen() failed");
         }
         free(tmpl_buf);                 //
     }
@@ -153,7 +147,7 @@ namespace runner {
 #ifdef _WIN32
     /* On windows, TSK is writing out UTF16 lines; convert them */
     std::string tempfile::first_tsk_utf8_line() {
-g        std::ifstream in(temp_file_path);
+        std::ifstream in(temp_file_path);
         if (!in.is_open()){
             std::cerr << "tempfile: " <<temp_file_path << "\n";
             throw std::runtime_error("cannot open tempfile");
