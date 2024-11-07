@@ -309,17 +309,6 @@ TSK_ADDRESS_SANITIZER
 TSK_THREAD_SANITIZER
 TSK_UNDEFINED_SANITIZER
 
-check_imgs=
-
-dnl FIXME: check iso on MinGW after fixing timestamp bug
-case "$host" in
-*-*-mingw*)
-  ;;
-*)
-  check_imgs="$check_imgs image.iso"
-  ;;
-esac
-
 dnl Defines for supported image types
 AM_CONDITIONAL([HAVE_AFF], [test "x$ax_afflib" != "xno"])
 AM_CONDITIONAL([HAVE_E01], [test "x$ax_libewf" != "xno"])
