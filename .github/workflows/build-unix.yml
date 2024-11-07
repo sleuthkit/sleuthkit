@@ -129,16 +129,16 @@ jobs:
       - name: Install Linux packages
         if: ${{ matrix.os == 'linux' }}
         run: |
-          sudo apt update
-          sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
+          apt update
+          apt install -y autoconf automake g++ libssl-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
 
       - name: Install Mingw packages and setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt update
-          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
-          sudo update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
+          dpkg --add-architecture i386
+          apt update
+          apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
+          update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
           # This is not working; also requires mingw-w64-x86_64-libgnurx
           # echo === installing libmagic for mingw ===
           # wget -q https://astron.com/pub/file/file-5.44.tar.gz # Check for the latest version at https://astron.com/pub/file/

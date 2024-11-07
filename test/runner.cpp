@@ -64,11 +64,12 @@ namespace runner {
     tempfile::tempfile(std::string testname) {
         auto temp_file_path = NamedTemporaryDirectory(testname) / (testname + std::string("XXXXXX"));
         // Create a writable copy of the path string for mkstemp
-        std::vector<char> temp_path(temp_file_path.string().begin(), temp_file_path.string().end());
-        temp_path.push_back('\0');  // Null-terminate for mkstemp
+        auto temp_file_path_string = temp_file_path.string();
+        temp_file_path_buf = (char *)malloc(temp_file_path_string.size()+1);
+        strcpy(temp_file_path_buf,temp_file_path_string.c_str());
 
         // Use mkstemp to create a unique temporary file
-        fd = mkstemp(temp_path.data());
+        fd = mkstemp(temp_file_path_buf);
         if (fd == -1) {
             throw std::runtime_error("Failed to create temporary file");
         }
@@ -76,6 +77,7 @@ namespace runner {
     }
 
     tempfile::~tempfile(){
+        free(temp_file_path_buf);
         fclose(file);
         close(fd);
         std::filesystem::remove_all(temp_file_path);

@@ -56,6 +56,7 @@ namespace runner {
         int fd;
         std::filesystem::path temp_dir;
         std::filesystem::path temp_file_path;
+        char *temp_file_path_buf;
         bool validate_contents(std::string substr);
         bool validate_contains(std::string substr);
         std::string first_line();
