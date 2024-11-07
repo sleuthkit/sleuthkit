@@ -1,2 +1,2 @@
-tools/vstools/mmls -h	test/tools/vstools/mmls_output/1
-tools/vstools/mmls -r test/from_brian/exfat1.E01	test/tools/vstools/mmls_output/2
+tools/vstools/mmls$EXEEXT -h	test/tools/vstools/mmls_output/1
+tools/vstools/mmls$EXEEXT -r test/from_brian/exfat1.E01	test/tools/vstools/mmls_output/2

@@ -8,9 +8,14 @@ err=0
 # get basedir for normalizing output
 basedir=$(realpath "$(dirname $0)/../..")
 
+if [ -n "$WINE" ]; then
+  EXEEXT=.exe
+fi
+
 while IFS= read -r line ; do
-  EXP=${line#*$'\t'}
-  CMD=${line%$'\t'*}
+  EXP="${line#*$'\t'}"
+  CMD="${line%$'\t'*}"
+  CMD="${CMD/\$EXEEXT/$EXEEXT}"
   echo -n "checking '$CMD': "
   DIFF_EXIT=0
   # diff, normalizing against basedir
