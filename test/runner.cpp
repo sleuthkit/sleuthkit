@@ -108,8 +108,12 @@ namespace runner {
         if (fd == -1) {
             throw std::runtime_error("Failed to create temporary file");
         }
+        close(fd);
         temp_file_path = tmpl_buf; // put it back
         file = fdopen(fd,"w+");
+        if (file==NULL) {
+            throw std::runtime_error("fdopen(fd) failed");
+        }
         free(tmpl_buf);                 //
     }
 
