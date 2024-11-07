@@ -323,7 +323,6 @@ AC_CONFIG_FILES([
 AC_OUTPUT
 
 dnl Print a summary
-dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
