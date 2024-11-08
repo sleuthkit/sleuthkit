@@ -309,17 +309,6 @@ TSK_ADDRESS_SANITIZER
 TSK_THREAD_SANITIZER
 TSK_UNDEFINED_SANITIZER
 
-check_imgs=
-
-dnl FIXME: check iso on MinGW after fixing timestamp bug
-case "$host" in
-*-*-mingw*)
-  ;;
-*)
-  check_imgs="$check_imgs image.iso"
-  ;;
-esac
-
 dnl Defines for supported image types
 AM_CONDITIONAL([HAVE_AFF], [test "x$ax_afflib" != "xno"])
 AM_CONDITIONAL([HAVE_E01], [test "x$ax_libewf" != "xno"])
@@ -327,24 +316,13 @@ AM_CONDITIONAL([HAVE_QCOW], [test "x$ax_libqcow" != "xno"])
 AM_CONDITIONAL([HAVE_VHD], [test "x$ax_libvhdi" != "xno"])
 AM_CONDITIONAL([HAVE_VMDK], [test "x$ax_libvmdk" != "xno"])
 
-AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
-AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])
-AS_IF([test "x$ax_libqcow" != "xno"], [check_imgs="$check_imgs image.qcow"])
-AS_IF([test "x$ax_libvhdi" != "xno"], [check_imgs="$check_imgs image.vhd"])
-AS_IF([test "x$ax_libvmdk" != "xno"], [check_imgs="$check_imgs image.vmdk"])
-
-
-AC_SUBST(CHECK_IMGS, $check_imgs)
-
 AC_CONFIG_FILES([
     Makefile
-    tsk/tsk.pc
-    test/img_dump/imgs_to_dump])
+    tsk/tsk.pc])
 
 AC_OUTPUT
 
 dnl Print a summary
-dnl openssl is disabled, so removed line openssl support: $ax_openssl
 AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib

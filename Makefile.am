@@ -583,8 +583,11 @@ check_SCRIPTS = \
 	test/check_static.sh \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
+	test/img_dump/img_differ.sh \
 	test/img_dump/test_imgs.sh \
+	test/img_dump/test_imgs_E01.sh \
 	test/legacy/runtests.sh \
+	test/tools/tool_differ.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
 
@@ -597,7 +600,9 @@ TESTS =	\
 	test/tools/vstools/test_mmls.sh
 
 if HAVE_E01
-TESTS += test/tools/vstools/test_mmls_E01.sh
+TESTS += \
+	test/img_dump/test_imgs_E01.sh \
+	test/tools/vstools/test_mmls_E01.sh
 endif
 
 if BUILD_STATIC
