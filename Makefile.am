@@ -651,6 +651,8 @@ test_runner_SOURCES = \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
 
+EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
+
 test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 test_fiwalk_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
