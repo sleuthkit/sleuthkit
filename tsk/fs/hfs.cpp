@@ -76,6 +76,7 @@
 #include "decmpfs.h"
 
 #include <memory>
+#include <new>
 
 #include <stdarg.h>
 #ifdef TSK_WIN32
