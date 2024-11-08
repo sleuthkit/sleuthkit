@@ -366,7 +366,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
     // allocate a node buffer
     nodesize = tsk_getu16(fs->endian, hfs->extents_header.nodesize);
-    std::unique_ptr<char[]> node{new char[nodesize]};
+    std::unique_ptr<char[]> node{new(std::nothrow) char[nodesize]};
     if (!node) {
         return 1;
     }
@@ -737,7 +737,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
     tsk_error_reset();
 
     nodesize = tsk_getu16(fs->endian, hfs->catalog_header.nodesize);
-    std::unique_ptr<char[]> node{new char[nodesize]};
+    std::unique_ptr<char[]> node{new(std::nothrow) char[nodesize]};
     if (!node) {
         return 1;
     }
@@ -2597,14 +2597,14 @@ hfs_read_zlib_block_table(
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
     // Each table entry is 8 bytes long
-    std::unique_ptr<char[]> offsetTableData{new char[tableSize * 8]};
+    std::unique_ptr<char[]> offsetTableData{new(std::nothrow) char[tableSize * 8]};
     if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
         return nullptr;
     }
 
-    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable{new CMP_OFFSET_ENTRY[tableSize]};
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable{new(std::nothrow) CMP_OFFSET_ENTRY[tableSize]};
     if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
@@ -2669,7 +2669,7 @@ hfs_read_lzvn_block_table(
 
     tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
-    std::unique_ptr<char[]> offsetTableData(new char[tableDataSize]);
+    std::unique_ptr<char[]> offsetTableData(new(std::nothrow) char[tableDataSize]);
     if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
@@ -2679,7 +2679,7 @@ hfs_read_lzvn_block_table(
     // table entries are 4 bytes, last entry is end of data
     tableSize = tableDataSize / 4 - 1;
 
-    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable(new CMP_OFFSET_ENTRY[tableSize]);
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable(new(std::nothrow) CMP_OFFSET_ENTRY[tableSize]);
     if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
@@ -3004,14 +3004,14 @@ hfs_attr_walk_compressed_rsrc(
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    std::unique_ptr<char[]> rawBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE + 1]};
     if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
         return 1;
     }
 
-    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    std::unique_ptr<char[]> uncBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE]};
     if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
@@ -3264,14 +3264,14 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the zlib data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    std::unique_ptr<char[]> rawBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE + 1]};
     if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
         return -1;
     }
 
-    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    std::unique_ptr<char[]> uncBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE]};
     if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
