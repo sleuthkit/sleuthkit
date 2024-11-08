@@ -273,7 +273,7 @@ aff4_open(
     // initialize the API lock
     tsk_init_lock(&(aff4_info->read_lock));
 
-    return img_info;
+    return (TSK_IMG_INFO*) aff4_info.release();
 }
 
 #endif /* HAVE_LIBAFF4 */
