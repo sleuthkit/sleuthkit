@@ -651,6 +651,8 @@ test_runner_SOURCES = \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
 
+EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
+
 test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 test_fiwalk_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -660,12 +662,12 @@ test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
 	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
 
-EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/fiwalk/test_images.txt
+EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
 
-test/fiwalk/test_images.txt: test/fiwalk/test_images.yaml test/fiwalk/get_test_images.bash test/fiwalk/get_test_images.py
-	test/fiwalk/get_test_images.bash
+test/get_images/test_images.txt: test/get_images/test_images.yaml test/get_images/get_test_images.bash test/get_images/get_test_images.py
+	test/get_images/get_test_images.bash
 
-CLEANFILES += test/fiwalk/test_images.txt
+CLEANFILES += test/get_images/test_images.txt
 
 test_img_dump_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 test_img_dump_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
