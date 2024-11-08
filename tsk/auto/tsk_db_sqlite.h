@@ -25,7 +25,7 @@
 #ifdef HAVE_LIBSQLITE3
   #include <sqlite3.h>
 #else
-  #include "sqlite3.h"
+  #include "../../vendors/sqlite3.h"
 #endif
 
 using std::map;
