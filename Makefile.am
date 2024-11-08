@@ -159,6 +159,7 @@ tsk_auto_libtskauto_la_SOURCES = \
 
 # Compile the bundled sqlite3 if there isn't an existing lib to use
 if !HAVE_LIBSQLITE3
+AM_CPPFLAGS += -Ivendors
 tsk_auto_libtskauto_la_SOURCES += vendors/sqlite3.c vendors/sqlite3.h
 endif
 
