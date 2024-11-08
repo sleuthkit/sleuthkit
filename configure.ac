@@ -271,11 +271,26 @@ case "$host" in
   LIBTSK_LDFLAGS="-no-undefined"
   AC_SUBST([LIBTSK_LDFLAGS])
   ;;
-  *)
+*)
   dnl No additional flags needed.
   AC_MSG_RESULT([no])
   ;;
 esac
+
+dnl Run test executables in Wine if cross-compiling with mingw
+case "$host" in
+*-*-mingw*)
+  case "$build" in
+  *-*-cygwin*|*-*-mingw*)
+    ;;
+  *)
+    use_wine=yes
+    ;;
+  esac
+  ;;
+esac
+
+AM_CONDITIONAL([USE_WINE], [test "x$use_wine" = "xyes"])
 
 dnl ensure static linkage of tools during static builds
 if test "x$enable_shared" != "xyes"; then
@@ -304,6 +319,13 @@ case "$host" in
   check_imgs="$check_imgs image.iso"
   ;;
 esac
+
+dnl Defines for supported image types
+AM_CONDITIONAL([HAVE_AFF], [test "x$ax_afflib" != "xno"])
+AM_CONDITIONAL([HAVE_E01], [test "x$ax_libewf" != "xno"])
+AM_CONDITIONAL([HAVE_QCOW], [test "x$ax_libqcow" != "xno"])
+AM_CONDITIONAL([HAVE_VHD], [test "x$ax_libvhdi" != "xno"])
+AM_CONDITIONAL([HAVE_VMDK], [test "x$ax_libvmdk" != "xno"])
 
 AS_IF([test "x$ax_afflib" != "xno"], [check_imgs="$check_imgs"])
 AS_IF([test "x$ax_libewf" != "xno"], [check_imgs="$check_imgs image.E01"])

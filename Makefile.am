@@ -584,14 +584,21 @@ check_SCRIPTS = \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
 	test/img_dump/test_imgs.sh \
-	test/legacy/runtests.sh
+	test/legacy/runtests.sh \
+	test/tools/vstools/test_mmls.sh \
+	test/tools/vstools/test_mmls_E01.sh
 
 TESTS =	\
 	test/runner \
 	test/test_libraries.sh \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
-	test/legacy/runtests.sh
+	test/legacy/runtests.sh \
+	test/tools/vstools/test_mmls.sh
+
+if HAVE_E01
+TESTS += test/tools/vstools/test_mmls_E01.sh
+endif
 
 if BUILD_STATIC
 TESTS += test/test_static_tools.sh
@@ -599,6 +606,10 @@ endif
 
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
+
+if USE_WINE
+TESTS_ENVIRONMENT = WINE=wine
+endif
 
 LOG_COMPILER = scripts/test_runner.sh
 
