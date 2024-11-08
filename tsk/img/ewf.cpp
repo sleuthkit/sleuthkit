@@ -23,10 +23,8 @@ using std::string;
 
 #define TSK_EWF_ERROR_STRING_SIZE 512
 
-
-#if defined( HAVE_LIBEWF_V2_API )
 /**
- * Get error string from libewf and make buffer empty if that didn't work. 
+ * Get error string from libewf and make buffer empty if that didn't work.
  * @returns 1 if error message was not set
  */
 static uint8_t
@@ -37,18 +35,16 @@ getError(libewf_error_t * ewf_error,
     error_string[0] = '\0';
     retval = libewf_error_backtrace_sprint(ewf_error,
         error_string, TSK_EWF_ERROR_STRING_SIZE);
+    libewf_error_free(&ewf_error);
     return retval <= 0;
 }
-#endif
 
 static ssize_t
 ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     size_t len)
 {
-#if defined( HAVE_LIBEWF_V2_API )
     char error_string[TSK_EWF_ERROR_STRING_SIZE];
     libewf_error_t *ewf_error = NULL;
-#endif
 
     ssize_t cnt;
     IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
@@ -66,9 +62,13 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     }
 
     tsk_take_lock(&(ewf_info->read_lock));
-#if defined( HAVE_LIBEWF_V2_API )
-    cnt = libewf_handle_read_random(ewf_info->handle,
-        buf, len, offset, &ewf_error);
+#ifdef HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET
+    cnt = libewf_handle_read_buffer_at_offset(
+#else
+    cnt = libewf_handle_read_random(
+#endif
+        ewf_info->handle, buf, len, offset, &ewf_error
+    );
     if (cnt < 0) {
         char *errmsg = NULL;
         tsk_error_reset();
@@ -78,22 +78,13 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
         else
             errmsg = error_string;
 
+        libewf_error_free(&ewf_error);
         tsk_error_set_errstr("ewf_image_read - offset: %" PRIdOFF
             " - len: %" PRIuSIZE " - %s", offset, len, errmsg);
         tsk_release_lock(&(ewf_info->read_lock));
         return -1;
     }
-#else
-    cnt = libewf_read_random(ewf_info->handle, buf, len, offset);
-    if (cnt < 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr("ewf_image_read - offset: %" PRIdOFF
-            " - len: %" PRIuSIZE " - %s", offset, len, strerror(errno));
-        tsk_release_lock(&(ewf_info->read_lock));
-        return -1;
-    }
-#endif
+
     tsk_release_lock(&(ewf_info->read_lock));
 
     return cnt;
@@ -114,7 +105,24 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     if (ewf_info->md5hash_isset == 1) {
         tsk_fprintf(hFile, "MD5 hash of data:\t%s\n", ewf_info->md5hash);
     }
-    return;
+}
+
+static void
+ewf_glob_free(IMG_EWF_INFO* ewf_info) {
+    // Freeing img_info->images ourselves is incorrect if we used glob.
+    // v2 of the API has a free method. It's not clear from the docs what we
+    // should do in v1...
+    // @@@ Probably a memory leak in v1 unless libewf_close deals with it
+    if (ewf_info->used_ewf_glob != 0) {
+#ifdef TSK_WIN32
+        libewf_glob_wide_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
+#else
+        libewf_glob_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
+#endif
+        // ensure that tsk_img_free() does not double free images
+        ewf_info->img_info.images = NULL;
+        ewf_info->img_info.num_img = 0;
+    }
 }
 
 static void
@@ -122,32 +130,10 @@ ewf_image_close(TSK_IMG_INFO * img_info)
 {
     IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
 
-#if defined ( HAVE_LIBEWF_V2_API)
     libewf_handle_close(ewf_info->handle, NULL);
     libewf_handle_free(&(ewf_info->handle), NULL);
 
-#else
-    libewf_close(ewf_info->handle);
-#endif
-
-    // this stuff crashes if we used glob. v2 of the API has a free method.
-    // not clear from the docs what we should do in v1...
-    // @@@ Probably a memory leak in v1 unless libewf_close deals with it
-    if (ewf_info->used_ewf_glob == 0) {
-        int i;
-        for (i = 0; i < ewf_info->img_info.num_img; i++) {
-            free(ewf_info->img_info.images[i]);
-        }
-        free(ewf_info->img_info.images);
-    }
-    else {
-        libewf_error_t *error;
-#ifdef TSK_WIN32
-        libewf_glob_wide_free( ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
-#else
-        libewf_glob_free( ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
-#endif
-    }
+    ewf_glob_free(ewf_info);
 
     tsk_deinit_lock(&(ewf_info->read_lock));
     tsk_img_free(ewf_info);
@@ -203,34 +189,25 @@ ewf_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
     int is_error;
-#if defined( HAVE_LIBEWF_V2_API )
     char error_string[TSK_EWF_ERROR_STRING_SIZE];
 
     libewf_error_t *ewf_error = NULL;
     int result = 0;
-#elif !defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 )
-    uint8_t md5_hash[16];
-#endif
 
     IMG_EWF_INFO *ewf_info = NULL;
     TSK_IMG_INFO *img_info = NULL;
-
-#if !defined( HAVE_LIBEWF_V2_API)
-    if (tsk_verbose)
-        libewf_set_notify_values(stderr, 1);
-#endif
 
     if ((ewf_info =
             (IMG_EWF_INFO *) tsk_img_malloc(sizeof(IMG_EWF_INFO))) ==
         NULL) {
         return NULL;
     }
+    ewf_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) ewf_info;
 
     // See if they specified only the first of the set...
     ewf_info->used_ewf_glob = 0;
     if (a_num_img == 1) {
-#if defined( HAVE_LIBEWF_V2_API)
 #ifdef TSK_WIN32
         is_error = (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
                 LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
@@ -247,31 +224,8 @@ ewf_open(int a_num_img,
             getError(ewf_error, error_string);
             tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
                 error_string);
-            libewf_error_free(&ewf_error);
-            tsk_img_free(ewf_info);
-            return NULL;
+            goto on_error;
         }
-
-#else                           //use v1
-
-#ifdef TSK_WIN32
-        ewf_info->img_info.num_img =
-            libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
-            LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images);
-#else
-        ewf_info->img_info.num_img =
-            libewf_glob(a_images[0], TSTRLEN(a_images[0]),
-            LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images);
-#endif
-        if (ewf_info->img_info.num_img <= 0) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-            tsk_error_set_errstr("ewf_open: Not an E01 glob name");
-
-            tsk_img_free(ewf_info);
-            return NULL;
-        }
-#endif                          // end v1
 
         ewf_info->used_ewf_glob = 1;
         if (tsk_verbose)
@@ -280,28 +234,10 @@ ewf_open(int a_num_img,
                 ewf_info->img_info.num_img);
     }
     else {
-        int i;
-        ewf_info->img_info.num_img = a_num_img;
-        if ((ewf_info->img_info.images =
-                (TSK_TCHAR **) tsk_malloc(a_num_img *
-                    sizeof(TSK_TCHAR *))) == NULL) {
-            tsk_img_free(ewf_info);
-            return NULL;
-        }
-        for (i = 0; i < a_num_img; i++) {
-            if ((ewf_info->img_info.images[i] =
-                    (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
-                            1) * sizeof(TSK_TCHAR))) == NULL) {
-                tsk_img_free(ewf_info);
-                return NULL;
-            }
-            TSTRNCPY(ewf_info->img_info.images[i], a_images[i],
-                TSTRLEN(a_images[i]) + 1);
+        if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+            goto on_error;
         }
     }
-
-
-#if defined( HAVE_LIBEWF_V2_API )
 
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
@@ -317,14 +253,11 @@ ewf_open(int a_num_img,
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open: Not an EWF file (%s)",
             error_string);
-        libewf_error_free(&ewf_error);
 
-        tsk_img_free(ewf_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Not an EWF file\n");
         }
-        return (NULL);
+        goto on_error;
     }
 
     if (libewf_handle_initialize(&(ewf_info->handle), &ewf_error) != 1) {
@@ -334,14 +267,11 @@ ewf_open(int a_num_img,
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error initializing handle (%s)", a_images[0], error_string);
-        libewf_error_free(&ewf_error);
 
-        tsk_img_free(ewf_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create EWF handle\n");
         }
-        return (NULL);
+        goto on_error;
     }
 #if defined( TSK_WIN32 )
     is_error = (libewf_handle_open_wide(ewf_info->handle,
@@ -360,14 +290,11 @@ ewf_open(int a_num_img,
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error opening (%s)", a_images[0], error_string);
-        libewf_error_free(&ewf_error);
 
-        tsk_img_free(ewf_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
         }
-        return (NULL);
+        goto on_error;
     }
     if (libewf_handle_get_media_size(ewf_info->handle,
             (size64_t *) & (img_info->size), &ewf_error) != 1) {
@@ -378,14 +305,13 @@ ewf_open(int a_num_img,
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error getting size of image (%s)", a_images[0],
             error_string);
-        libewf_error_free(&ewf_error);
 
-        tsk_img_free(ewf_info);
+        libewf_handle_close(ewf_info->handle, NULL);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
         }
-        return (NULL);
+        goto on_error;
     }
     result = libewf_handle_get_utf8_hash_value_md5(ewf_info->handle,
         (uint8_t *) ewf_info->md5hash, 33, &ewf_error);
@@ -398,14 +324,13 @@ ewf_open(int a_num_img,
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error getting MD5 of image (%s)", a_images[0],
             error_string);
-        libewf_error_free(&ewf_error);
 
-        tsk_img_free(ewf_info);
+        libewf_handle_close(ewf_info->handle, NULL);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting MD5 of EWF file\n");
         }
-        return (NULL);
+        goto on_error;
     }
     ewf_info->md5hash_isset = result;
 
@@ -424,106 +349,12 @@ ewf_open(int a_num_img,
 
         tsk_img_free(ewf_info);
 
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting SHA1 of EWF file\n");
         }
         return NULL;
     }
     ewf_info->sha1hash_isset = result;
-
-
-#else                           // V1 API
-
-    // Check the file signature before we call the library open
-#if defined( TSK_WIN32 )
-    is_error = (libewf_check_file_signature_wide(a_images[0]) != 1);
-#else
-    is_error = (libewf_check_file_signature(a_images[0]) != 1);
-#endif
-    if (is_error)
-    {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-        tsk_error_set_errstr("ewf_open: Not an EWF file");
-        tsk_img_free(ewf_info);
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "Not an EWF file\n");
-
-        return NULL;
-    }
-
-#if defined( TSK_WIN32 )
-    ewf_info->handle = libewf_open_wide(
-        (wchar_t * const *) ewf_info->img_info.images, ewf_info->img_info.num_img,
-        LIBEWF_OPEN_READ);
-#else
-    ewf_info->handle = libewf_open(
-        (char *const *) ewf_info->img_info.images, ewf_info->img_info.num_img,
-        LIBEWF_OPEN_READ);
-#endif
-    if (ewf_info->handle == NULL) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error opening", ewf_info->img_info.images[0]);
-        tsk_img_free(ewf_info);
-
-        if (tsk_verbose != 0) {
-            tsk_fprintf(stderr, "Error opening EWF file\n");
-        }
-        return (NULL);
-    }
-#if defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 )
-    // 2007 version
-    img_info->size = libewf_get_media_size(ewf_info->handle);
-
-    ewf_info->md5hash_isset = libewf_get_stored_md5_hash(ewf_info->handle,
-        ewf_info->md5hash, LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5);
-#else
-    // libewf-20080322 version
-    if (libewf_get_media_size(ewf_info->handle,
-            (size64_t *) & (img_info->size)) != 1) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error getting size of image", ewf_info->img_info.images[0]);
-        tsk_img_free(ewf_info);
-        if (tsk_verbose) {
-            tsk_fprintf(stderr, "Error getting size of EWF file\n");
-        }
-        return (NULL);
-    }
-    if (libewf_get_md5_hash(ewf_info->handle, md5_hash, 16) == 1) {
-        int md5_string_iterator = 0;
-        int md5_hash_iterator = 0;
-
-        for (md5_hash_iterator = 0;
-            md5_hash_iterator < 16; md5_hash_iterator++) {
-            int digit = md5_hash[md5_hash_iterator] / 16;
-
-            if (digit <= 9) {
-                ewf_info->md5hash[md5_string_iterator++] =
-                    '0' + (char) digit;
-            }
-            else {
-                ewf_info->md5hash[md5_string_iterator++] =
-                    'a' + (char) (digit - 10);
-            }
-            digit = md5_hash[md5_hash_iterator] % 16;
-
-            if (digit <= 9) {
-                ewf_info->md5hash[md5_string_iterator++] =
-                    '0' + (char) digit;
-            }
-            else {
-                ewf_info->md5hash[md5_string_iterator++] =
-                    'a' + (char) (digit - 10);
-            }
-        }
-        ewf_info->md5hash_isset = 1;
-    }
-#endif                          /* defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 ) */
-#endif                          /* defined( HAVE_LIBEWF_V2_API ) */
 
     // use what they gave us
     if (a_ssize != 0) {
@@ -533,11 +364,12 @@ ewf_open(int a_num_img,
         uint32_t bytes_per_sector = 512;
         // see if the size is stored in the E01 file
         if (-1 == libewf_handle_get_bytes_per_sector(ewf_info->handle,
-            &bytes_per_sector, &ewf_error)) {
+            &bytes_per_sector, NULL)) {
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ewf_image_read: error getting sector size from E01\n");
             img_info->sector_size = 512;
+            libewf_error_free(&ewf_error);
         }
         else {
             // if E01 had size of 0 or non-512 then consider it junk and ignore
@@ -565,7 +397,16 @@ ewf_open(int a_num_img,
     // initialize the read lock
     tsk_init_lock(&(ewf_info->read_lock));
 
-    return (img_info);
+    return img_info;
+
+on_error:
+    if (ewf_info->handle) {
+        libewf_handle_close(ewf_info->handle, NULL);
+    }
+    libewf_handle_free(&(ewf_info->handle), NULL);
+    ewf_glob_free(ewf_info);
+    tsk_img_free(ewf_info);
+    return NULL;
 }
 
 
@@ -593,11 +434,10 @@ static char* read_libewf_header_value(libewf_handle_t *handle, char* result_buff
     result_buffer[0] = '\0';
     size_t identifier_length = strlen((char *)identifier);
     strcpy(result_buffer, key);
-    libewf_error_t * ewf_error;
     size_t key_len = strlen(key);
 
     //buffer_size - key_len - 1 for the new line at the end
-    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len - 1, &ewf_error);
+    int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len - 1, NULL);
     if (result != -1 && !is_blank(result_buffer + key_len)) {
         strcat(result_buffer, "\n");
     }
@@ -673,12 +513,12 @@ static char* libewf_read_acquiry_software_version(libewf_handle_t *handle, char*
 std::string ewf_get_details(IMG_EWF_INFO *ewf_info) {
     //Need 1MB for libewf read and extra 100 bytes for header name and formatting
     const size_t buffer_size = 1024100;
-    
+
     char* result = (char*)tsk_malloc(buffer_size);
     if (result == NULL) {
-        return NULL; 
+        return NULL;
     }
-    
+
     string collectionDetails = "";
     //Populate all of the libewf header values for the acquisition details column
     collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));

@@ -41,7 +41,7 @@ namespace Rejistry {
         }
 
         /**
-         * Throws exception if position is too large. 
+         * Throws exception if position is too large.
          */
         Buffer& Buffer::position(const uint32_t newPosition) {
             if (newPosition > _limit) {

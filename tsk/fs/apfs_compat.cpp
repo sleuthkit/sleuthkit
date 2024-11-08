@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #include "../libtsk.h"
 
 #include "decmpfs.h"
@@ -10,8 +19,8 @@
 #include <cstring>
 
 // Forward declarations
-extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
-extern "C" void error_returned(const char* errstr, ...);
+void error_detected(uint32_t errnum, const char* errstr, ...);
+void error_returned(const char* errstr, ...);
 
 static inline const APFSPoolCompat& to_pool(
     const TSK_POOL_INFO* pool_info) noexcept {
@@ -173,7 +182,7 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
     _fsinfo.flags |= TSK_FS_INFO_FLAG_ENCRYPTED;
   }
 
-  _fsinfo.img_info = img_info; 
+  _fsinfo.img_info = img_info;
   _fsinfo.offset = pool.first_img_offset();
   _fsinfo.block_count = vol.alloc_blocks();
   _fsinfo.block_size = pool.block_size();
@@ -189,8 +198,8 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   tsk_init_lock(&_fsinfo.orphan_dir_lock);
 
   // Callbacks
-  _fsinfo.block_walk = [](TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, 
-                          TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, 
+  _fsinfo.block_walk = [](TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
+                          TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb,
                           void *ptr) {
       return to_fs(fs).block_walk(fs, start, end, flags, cb, ptr);
   };
@@ -202,7 +211,7 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   _fsinfo.inode_walk = [](TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
                           TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB action,
                           void* ptr) {
-      return to_fs(fs).inode_walk(fs, start_inum, end_inum, flags, action, ptr); 
+      return to_fs(fs).inode_walk(fs, start_inum, end_inum, flags, action, ptr);
   };
 
   _fsinfo.file_add_meta = [](TSK_FS_INFO* fs, TSK_FS_FILE* fs_file,
@@ -217,8 +226,8 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
   };
 
   _fsinfo.dir_open_meta = [](TSK_FS_INFO* fs, TSK_FS_DIR** a_fs_dir,
-                             TSK_INUM_T inode) {
-    return to_fs(fs).dir_open_meta(a_fs_dir, inode);
+                             TSK_INUM_T inode, int recursion_depth) {
+    return to_fs(fs).dir_open_meta(a_fs_dir, inode, recursion_depth);
   };
 
   _fsinfo.fscheck = [](TSK_FS_INFO*, FILE*) {
@@ -255,7 +264,7 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
 
 uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
   const auto& pool = fs_info_to_pool(&_fsinfo);
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
   APFSFileSystem vol{pool, to_pool_vol_block(&_fsinfo), _crypto.password};
 #else
   APFSFileSystem vol{ pool, to_pool_vol_block(&_fsinfo) };
@@ -389,7 +398,7 @@ uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
   }
 
   const auto unmount_log = vol.unmount_log();
-  if (unmount_log.size() != 0) {
+  if (!unmount_log.empty()) {
     tsk_fprintf(hFile, "\n");
     tsk_fprintf(hFile, "Unmount Logs\n");
     tsk_fprintf(hFile, "------------\n");
@@ -468,9 +477,11 @@ uint8_t tsk_apfs_fsstat(TSK_FS_INFO* fs_info, apfs_fsstat_info* info) try {
   return 1;
 }
 
-TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(TSK_FS_DIR** a_fs_dir,
-                                            TSK_INUM_T inode_num) const
-    noexcept try {
+TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(
+  TSK_FS_DIR** a_fs_dir,
+  TSK_INUM_T inode_num,
+  [[maybe_unused]] int recursion_depth
+) const noexcept try {
   // Sanity checks
   if (a_fs_dir == NULL) {
     tsk_error_reset();
@@ -559,7 +570,7 @@ uint8_t APFSFSCompat::inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INU
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("inode_walk: end object id must be >= start object id: "
-            "%" PRIx32 " must be >= %" PRIx32 "",
+            "%" PRIuINUM " must be >= %" PRIuINUM "",
             end_inum, start_inum);
         return 1;
     }
@@ -683,12 +694,15 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
     for (int i = 0; i < num_attrs; i++) {
       const auto attr = tsk_fs_file_attr_get_idx(fs_file, i);
       if (attr->type == TSK_FS_ATTR_TYPE_APFS_EXT_ATTR &&
+          attr->name != NULL &&
           strcmp(attr->name, APFS_XATTR_NAME_SYMLINK) == 0) {
         // We've found our symlink attribute
         fs_file->meta->link = (char*)tsk_malloc(attr->size + 1);
         tsk_fs_attr_read(attr, (TSK_OFF_T)0, fs_file->meta->link, attr->size,
                          TSK_FS_FILE_READ_FLAG_NONE);
-        fs_file->meta->link[attr->size] = 0;
+        if (fs_file->meta->link != NULL) {
+            fs_file->meta->link[attr->size] = 0;
+        }
         break;
       }
     }
@@ -1087,8 +1101,14 @@ typedef struct {
 } APFS_PRINT_ADDR;
 
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+print_addr_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  [[maybe_unused]] void *ptr)
 {
     APFS_PRINT_ADDR *print = (APFS_PRINT_ADDR *)ptr;
     tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
@@ -1420,9 +1440,6 @@ uint8_t tsk_apfs_istat(TSK_FS_FILE* fs_file, apfs_istat_info* info) try {
  */
 TSK_FS_BLOCK_FLAG_ENUM APFSFSCompat::block_getflags(TSK_FS_INFO* fs, TSK_DADDR_T addr) {
 
-    TSK_FS_FILE *fs_file;
-    int result;
-
     if (fs->img_info->itype != TSK_IMG_TYPE_POOL) {
         // No way to return an error
         return TSK_FS_BLOCK_FLAG_UNALLOC;
@@ -1534,7 +1551,7 @@ uint8_t APFSFSCompat::block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_
 }
 
 uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     try {
         if (_crypto.decryptor) {
             _crypto.decryptor->decrypt_buffer(data, APFS_BLOCK_SIZE,
@@ -1560,7 +1577,7 @@ uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept 
 }
 
 int APFSFSCompat::name_cmp(const char* s1, const char* s2) const noexcept try {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     const APFSFileSystem vol{ fs_info_to_pool(&_fsinfo), to_pool_vol_block(&_fsinfo),
                            _crypto.password};
 #else
@@ -1631,7 +1648,7 @@ uint8_t tsk_apfs_free_snapshot_list(apfs_snapshot_list* list) try {
     return 1;
   }
 
-  for (auto i = 0; i < list->num_snapshots; i++) {
+  for (size_t i = 0; i < list->num_snapshots; i++) {
     auto& snapshot = list->snapshots[i];
     delete[] snapshot.name;
   }

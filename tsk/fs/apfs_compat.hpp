@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #pragma once
 
 #include "apfs_fs.hpp"
@@ -47,5 +56,5 @@ class APFSFSCompat : public APFSJObjTree {
   uint8_t decrypt_block(TSK_DADDR_T, void*) noexcept;
   int name_cmp(const char*, const char*) const noexcept;
 
-  TSK_RETVAL_ENUM dir_open_meta(TSK_FS_DIR**, TSK_INUM_T) const noexcept;
+  TSK_RETVAL_ENUM dir_open_meta(TSK_FS_DIR**, TSK_INUM_T, int) const noexcept;
 };

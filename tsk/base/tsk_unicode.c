@@ -1,8 +1,8 @@
 /*
  * Copyright 2001-2004 Unicode, Inc.
- * 
+ *
  * Disclaimer
- * 
+ *
  * This source code is provided as is by Unicode, Inc. No claims are
  * made as to fitness for any particular purpose. No warranties of any
  * kind are expressed or implied. The recipient agrees to determine
@@ -10,9 +10,9 @@
  * purchased on magnetic or optical media from Unicode, Inc., the
  * sole remedy for any claim will be exchange of defective media
  * within 90 days of receipt.
- * 
+ *
  * Limitations on Rights to Redistribute This Code
- * 
+ *
  * Unicode, Inc. hereby grants the right to freely use the information
  * supplied in this file in the creation of products supporting the
  * Unicode Standard, and to make copies of this file in any form
@@ -43,6 +43,7 @@
  */
 
 #include "tsk_base_i.h"
+#include <wchar.h>
 
 /* Some fundamental constants */
 typedef unsigned long UTF32;    /* at least 32 bits */
@@ -131,15 +132,15 @@ static const UTF8 firstByteMark[7] =
 /* --------------------------------------------------------------------- */
 
 
-/** 
+/**
  * \ingroup baselib
- * Convert a UTF-16 string to UTF-8.  
+ * Convert a UTF-16 string to UTF-8.
  * @param endian Endian ordering flag of UTF-16 text
  * @param sourceStart Pointer to pointer to start of UTF-16 string.  Will be updated to last char processed.
  * @param sourceEnd Pointer to one entry past end of UTF-16 string
- * @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to. 
+ * @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to.
  * @param targetEnd Pointer to end of UTF-8 buffer
- * @param flags Flags used during conversion 
+ * @param flags Flags used during conversion
  * @returns error code
  */
 TSKConversionResult
@@ -150,12 +151,15 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
     TSKConversionResult result = TSKconversionOK;
     const UTF16 *source = *sourceStart;
     UTF8 *target = *targetStart;
+
     while (source < sourceEnd) {
         UTF32 ch;
         unsigned short bytesToWrite = 0;
         const UTF32 byteMask = 0xBF;
         const UTF32 byteMark = 0x80;
         const UTF16 *oldSource = source;        /* In case we have to back up because of target overflow. */
+
+        // Need at least 2 bytes
         ch = tsk_getu16(endian, (uint8_t *) source);
         source++;
 
@@ -163,6 +167,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
             if (source < sourceEnd) {
+                // Need at least 2 bytes
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) source);
                 ++source;
 
@@ -228,12 +233,15 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
         case 4:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 3:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 2:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 1:
             *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
         }
@@ -245,14 +253,14 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
 }
 
 
-/** 
+/**
 * \ingroup baselib
-* Convert a UTF-16 string in local endian ordering to UTF-8.  
+* Convert a UTF-16 string in local endian ordering to UTF-8.
 * @param sourceStart Pointer to pointer to start of UTF-16 string.  Will be updated to last char processed.
 * @param sourceEnd Pointer to one entry past end of UTF-16 string
-* @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to. 
+* @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to.
 * @param targetEnd Pointer to end of UTF-8 buffer
-* @param flags Flags used during conversion 
+* @param flags Flags used during conversion
 * @returns error code
 */
 TSKConversionResult
@@ -339,12 +347,15 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
         case 4:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 3:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 2:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 1:
             *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
         }
@@ -439,12 +450,15 @@ tsk_UTF16WtoUTF8_lclorder(const wchar_t ** sourceStart,
         case 4:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 3:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 2:
             *--target = (UTF8) ((ch | byteMark) & byteMask);
             ch >>= 6;
+            FALLTHROUGH;
         case 1:
             *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
         }
@@ -480,9 +494,11 @@ isLegalUTF8(const UTF8 * source, int length)
     case 4:
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
+        FALLTHROUGH;
     case 3:
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
+        FALLTHROUGH;
     case 2:
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
@@ -509,6 +525,7 @@ isLegalUTF8(const UTF8 * source, int length)
             if (a < 0x80)
                 return false;
         }
+        FALLTHROUGH;
 
     case 1:
         if (*source >= 0x80 && *source < 0xC2)
@@ -566,18 +583,62 @@ tsk_cleanupUTF8(char *source, const char replacement)
     }
 }
 
+
+/**
+ * Cleans up the passed in string to replace invalid
+ * UTF-16 values with the passed in character.
+ * @param endian Ordering that data is stored in
+ * @param source String to be cleaned up
+ * @param source_len Number of wchar_t characters in source
+ * @param replacement Character to insert into source as needed.
+ */
+void
+tsk_cleanupUTF16(TSK_ENDIAN_ENUM endian, wchar_t *source, size_t source_len, const wchar_t replacement) {
+
+    size_t cur_idx = 0;
+    while (cur_idx < source_len) {
+        UTF32 ch = tsk_getu16(endian, (uint8_t *) &source[cur_idx]);
+
+        /* If we have a surrogate pair, check out the high part. */
+        if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+            /* If the 16 bits following the high surrogate are in the source buffer... */
+            if (cur_idx + 1 < source_len) {
+                UTF32 ch2 = tsk_getu16(endian, (uint8_t *) &source[cur_idx+1]);
+
+                /* If it's a low surrogate, we're good. */
+                if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
+                    // all good, use both
+                    cur_idx++;
+                }
+                else {
+                    source[cur_idx] = replacement;
+                }
+            }
+            else {   /* We don't have the 16 bits following the high surrogate. */
+                source[cur_idx] = replacement;
+            }
+        }
+        /* UTF-16 surrogate values are illegal in UTF-32 */
+        else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+            source[cur_idx] = replacement;
+        }
+        cur_idx++;
+    }
+}
+
+
 /* --------------------------------------------------------------------- */
 
 
 
-/** 
+/**
 * \ingroup baselib
-* Convert a UTF-8 string to UTF-16 (in local endian ordering).  
+* Convert a UTF-8 string to UTF-16 (in local endian ordering).
 * @param sourceStart Pointer to pointer to start of UTF-8 string.  Will be updated to last char processed.
 * @param sourceEnd Pointer to one entry past end of UTF-8 string
-* @param targetStart Pointer to pointer to place where UTF-16 string should be written.  Will be updated to next place to write to. 
+* @param targetStart Pointer to pointer to place where UTF-16 string should be written.  Will be updated to next place to write to.
 * @param targetEnd Pointer to end of UTF-16 buffer
-* @param flags Flags used during conversion 
+* @param flags Flags used during conversion
 * @returns error code
 */
 TSKConversionResult
@@ -607,18 +668,23 @@ tsk_UTF8toUTF16(const UTF8 ** sourceStart,
         case 5:
             ch += *source++;
             ch <<= 6;           /* remember, illegal UTF-8 */
+            FALLTHROUGH;
         case 4:
             ch += *source++;
             ch <<= 6;           /* remember, illegal UTF-8 */
+            FALLTHROUGH;
         case 3:
             ch += *source++;
             ch <<= 6;
+            FALLTHROUGH;
         case 2:
             ch += *source++;
             ch <<= 6;
+            FALLTHROUGH;
         case 1:
             ch += *source++;
             ch <<= 6;
+            FALLTHROUGH;
         case 0:
             ch += *source++;
         }

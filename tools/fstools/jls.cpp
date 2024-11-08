@@ -1,6 +1,6 @@
 /*
 ** jls
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
@@ -20,7 +20,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [inode]\n"),
+        ("usage: %" PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [inode]\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -70,15 +70,16 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -91,7 +92,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -102,7 +103,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -129,7 +130,7 @@ main(int argc, char **argv1)
     }
 
 
-    /* open image - there is an optional inode address at the end of args 
+    /* open image - there is an optional inode address at the end of args
      *
      * Check the final argument and see if it is a number
      */
@@ -152,7 +153,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
 
@@ -170,7 +171,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
     }
@@ -178,8 +179,8 @@ main(int argc, char **argv1)
     if (fs->jopen == NULL) {
         tsk_fprintf(stderr,
             "Journal support does not exist for this file system\n");
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -187,8 +188,8 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Inode value is too large for image (%" PRIuINUM ")\n",
             fs->last_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
@@ -196,25 +197,25 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Inode value is too small for image (%" PRIuINUM ")\n",
             fs->first_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
     if (fs->jopen(fs, inum)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
     if (fs->jentry_walk(fs, 0, 0, NULL)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
     exit(0);
 }

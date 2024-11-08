@@ -287,7 +287,7 @@ main(int argc, char **argv)
            sig_print);
 
     /* Loop through by blocks  - we will read in block sized chunks
-     * so that we can be used on raw devices 
+     * so that we can be used on raw devices
      */
     cur_offset = (sig_offset / 512) * 512;
     rel_offset = sig_offset % 512;

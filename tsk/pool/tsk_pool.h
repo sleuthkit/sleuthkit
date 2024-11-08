@@ -1,3 +1,13 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
+
 /** \@file Public C API */
 
 #pragma once
@@ -15,6 +25,7 @@ typedef struct TSK_FS_ATTR_RUN TSK_FS_ATTR_RUN;
 typedef enum {
   TSK_POOL_TYPE_DETECT = 0x0000,  ///< Use autodetection methods
   TSK_POOL_TYPE_APFS = 0x0001,    ///< APFS Pooled Volumes
+  TSK_POOL_TYPE_LVM = 0x0002,    ///< Linux LVM volume group
   TSK_POOL_TYPE_UNSUPP = 0xffff,  ///< Unsupported pool container type
 } TSK_POOL_TYPE_ENUM;
 

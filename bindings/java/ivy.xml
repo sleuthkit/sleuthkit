@@ -2,22 +2,26 @@
 	<info organisation="org.sleuthkit" module="datamodel"/>
 	<dependencies>
 		<dependency org="joda-time" name="joda-time" rev="2.4" />
-		<dependency org="com.google.guava" name="guava" rev="19.0"/>
-		<dependency org="org.apache.commons" name="commons-lang3" rev="3.0"/>
+		<dependency org="com.google.guava" name="guava" rev="33.1.0-jre"/>
+		<dependency org="com.google.guava" name="failureaccess" rev="1.0.2"/>
+		<dependency org="org.apache.commons" name="commons-lang3" rev="3.14.0"/>
+		<dependency org="commons-validator" name="commons-validator" rev="1.8.0"/>
 		
-		<dependency org="com.google.code.gson" name="gson" rev="2.8.5"/>
+		<dependency org="com.google.code.gson" name="gson" rev="2.10.1"/>
 		
-		<dependency org="junit" name="junit" rev="4.8.2"/>
-		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
+		<dependency org="junit" name="junit" rev="4.13.2"/>
+		<dependency org="io.github.java-diff-utils" name="java-diff-utils" rev="4.12"/>
 
         <!-- NOTE: When SQLITE version is changed, also change the version number in
           debian/sleuthkit-java.install so that it gets packaged correctly on Linux -->
-		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.25.2"/>
+		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.46.0.0"/>
 
-		<dependency org="org.postgresql" name="postgresql" rev="9.4.1211.jre7" >
+		<dependency org="org.postgresql" name="postgresql" rev="42.7.3" >
 			<artifact name="postgresql" type="jar" />
 		</dependency>
-		<dependency org="com.mchange" name="c3p0" rev="0.9.5" />
+		<dependency conf="default" org="com.mchange" name="c3p0" rev="0.9.5.5" />
+		<dependency conf="default" org="com.mchange" name="mchange-commons-java" rev="0.3.0"/>
+		
 		<dependency org="com.zaxxer" name="SparseBitSet" rev="1.1" />
 	</dependencies>
 </ivy-module>

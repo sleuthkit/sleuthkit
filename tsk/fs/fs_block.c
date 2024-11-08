@@ -8,7 +8,7 @@
  */
 
 /** \file fs_block.c
- * Contains functions to allocate, free, and read data into a TSK_FS_BLOCK structure. 
+ * Contains functions to allocate, free, and read data into a TSK_FS_BLOCK structure.
  */
 
 #include <errno.h>
@@ -16,7 +16,7 @@
 
 /**
  * \internal
- * Allocate a TSK_FS_BLOCK structure.  
+ * Allocate a TSK_FS_BLOCK structure.
  * @param a_fs File system to create block for
  * @returns NULL on error
  */
@@ -44,7 +44,7 @@ tsk_fs_block_alloc(TSK_FS_INFO * a_fs)
 
 /**
  * \ingroup fslib
- * Free the memory associated with the TSK_FS_BLOCK structure. 
+ * Free the memory associated with the TSK_FS_BLOCK structure.
  * @param a_fs_block Block to free
  */
 void
@@ -68,7 +68,7 @@ tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
 /**
  * \ingroup fslib
  * Get the contents and flags of a specific file system block. Note that if the block contains
- * compressed data, then this function will return the compressed data with the RAW flag set. 
+ * compressed data, then this function will return the compressed data with the RAW flag set.
  * The uncompressed data can be obtained only from the file-level functions.
  *
  * @param a_fs The file system to read the block from.
@@ -76,7 +76,7 @@ tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
  * @param a_addr The file system address to read.
  * @param a_flags Flag to assign to the returned TSK_FS_BLOCK (use if you already have it as part of a block_walk-type scenario)
  * @return The TSK_FS_BLOCK with the data or NULL on error.  (If a_fs_block was not NULL, this will
- * be the same structure). 
+ * be the same structure).
  */
 TSK_FS_BLOCK *
 tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
@@ -140,8 +140,8 @@ tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
 
 /**
  * \internal
- * Set the fields of a FS_BLOCk structure.  This is internally used to set the data from a 
- * larger buffer so that larger disk reads can occur. 
+ * Set the fields of a FS_BLOCk structure.  This is internally used to set the data from a
+ * larger buffer so that larger disk reads can occur.
  *
  * @param a_fs File system
  * @param a_fs_block Block to load data into
@@ -175,11 +175,11 @@ tsk_fs_block_set(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
 }
 
 
-/** 
+/**
  * \ingroup fslib
  *
  * Cycle through a range of file system blocks and call the callback function
- * with the contents and allocation status of each. 
+ * with the contents and allocation status of each.
  *
  * @param a_fs File system to analyze
  * @param a_start_blk Block address to start walking from

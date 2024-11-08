@@ -1,15 +1,15 @@
 /*
  * Sleuth Kit Data Model
- * 
+ *
  * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -159,7 +160,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException;
 
 	/**
@@ -171,8 +174,107 @@ public interface Content extends SleuthkitVisitableItem {
 	 *         looked up from this)
 	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
+	 * @deprecated Please use newDataArtifact or newAnalysisResult.
 	 */
+	@Deprecated
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
+
+	/**
+	 * Create and add an analysis result associated with this content.
+	 *
+	 *
+	 * @param artifactType	  Type of analysis result artifact to create.
+	 * @param score          Score associated with this analysis.
+	 * @param conclusion     Conclusion from the analysis, may be empty.
+	 * @param configuration  Configuration element associated with this
+	 *                       analysis, may be empty.
+	 * @param justification	 Justification
+	 * @param attributesList Additional attributes to attach to this analysis
+	 *                       result artifact.
+	 *
+	 * @return AnalysisResultAdded The analysis return added and the current
+	 *         aggregate score of content.
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core.
+	 */
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
+
+	/**
+	 * Create and add an analysis result associated with this content.
+	 *
+	 *
+	 * @param artifactType	  Type of analysis result artifact to create.
+	 * @param score          Score associated with this analysis.
+	 * @param conclusion     Conclusion from the analysis, may be empty.
+	 * @param configuration  Configuration element associated with this
+	 *                       analysis, may be empty.
+	 * @param justification	 Justification
+	 * @param attributesList Additional attributes to attach to this analysis
+	 *                       result artifact.
+	 * @param dataSourceId   The data source for the analysis result
+	 *
+	 * @return AnalysisResultAdded The analysis return added and the current
+	 *         aggregate score of content.
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core.
+	 */
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException;
+
+	/**
+	 * Create and add a data artifact associated with this abstract file. This
+	 * method creates the data artifact with the os account id associated with
+	 * this abstract file if one exists.
+	 *
+	 * @param artifactType   Type of data artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException;
+	
+	
+	/**
+	 * Create and add a data artifact associated with this content.
+	 *
+	 * @param artifactType   Type of analysis result artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 * @param osAccountId    The OS account id associated with the artifact. May
+	 *                       be null.
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException;
+
+	/**
+	 * Create and add a data artifact associated with this content.
+	 *
+	 * @param artifactType   Type of analysis result artifact to create.
+	 * @param attributesList Additional attributes to attach to this data
+	 *                       artifact.
+	 * @param osAccountId    The OS account id associated with the artifact. May
+	 *                       be null.
+	 * @param dataSourceId   The data source id of the artifact
+	 *
+	 * @return DataArtifact New data artifact.
+	 *
+	 * @throws TskCoreException If a critical error occurred within tsk core.
+	 */
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException;
+
+	/**
+	 * Returns the final score for the content object.
+	 *
+	 * @return Score.
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core.
+	 */
+	public Score getAggregateScore() throws TskCoreException;
 
 	/**
 	 * Get all artifacts associated with this content that have the given type
@@ -185,6 +287,18 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException;
+
+	/**
+	 * Get all analysis results associated with this content, that have the
+	 * given type.
+	 *
+	 * @param artifactType Type to look up.
+	 *
+	 * @return A list of analysis result artifacts matching the type.
+	 *
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException;
 
 	/**
 	 * Return the TSK_GEN_INFO artifact for the file so that individual
@@ -252,6 +366,24 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
+
+	/**
+	 * Get all data artifacts associated with this content.
+	 *
+	 * @return A list of data artifacts.
+	 *
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException;
+		
+	/**
+	 * Get all analysis results associated with this content.
+	 *
+	 * @return A list of analysis results.
+	 *
+	 * @throws TskCoreException If critical error occurred within tsk core.
+	 */
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException;
 
 	/**
 	 * Get the names of all the hashsets that this content is in.

@@ -1,4 +1,17 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #pragma once
+
+#if HAVE_CONFIG_H
+#include "../tsk_config.h"
+#endif
 
 #include "../util/crypto.hpp"
 #include "apfs_fs.h"
@@ -95,7 +108,7 @@ class APFSJObjTree {
 
  protected:
   struct crypto {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     std::unique_ptr<aes_xts_decryptor> decryptor{};
 #endif
     std::unique_ptr<uint8_t[]> key{};

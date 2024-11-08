@@ -150,7 +150,9 @@ public abstract class TimelineFilter {
 			if (recursive) {
 				// add subfilters for each subtype
 				for (TimelineEventType subType : rootEventType.getChildren()) {
-					addSubFilter(new EventTypeFilter(subType));
+					if (!subType.isDeprecated()) {
+						addSubFilter(new EventTypeFilter(subType));	
+					}
 				}
 			}
 		}
@@ -655,7 +657,8 @@ public abstract class TimelineFilter {
 			if (notEqual(this.fileTypesFilter, other.getFileTypesFilter())) {
 				return false;
 			}
-			return Objects.equals(this.additionalFilters, other.getSubFilters());
+
+			return Objects.equals(this.additionalFilters, new HashSet<>(other.getSubFilters()));
 		}
 
 	}

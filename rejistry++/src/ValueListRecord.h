@@ -44,9 +44,9 @@ namespace Rejistry {
         typedef ValueListRecord * ValueListRecordPtr;
 
         ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues);
-        
+
         virtual ~ValueListRecord() {}
-    
+
         /**
          * @returns The list of value records. The caller is responsible
          * for freeing these records.
@@ -60,6 +60,11 @@ namespace Rejistry {
          * for freeing this record.
          */
         VKRecord::VKRecordPtr getValue(const std::wstring& name) const;
+
+        /**
+        * @returns The ValueListRecord size
+        */
+        size_t getValuesSize() const { return _numValues; }
 
     private:
         static const uint16_t VALUE_LIST_OFFSET = 0x00;

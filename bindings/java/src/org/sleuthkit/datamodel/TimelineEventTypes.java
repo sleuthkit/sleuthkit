@@ -21,13 +21,12 @@ package org.sleuthkit.datamodel;
 import com.google.common.net.InternetDomainName;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_TRACKPOINTS;
+import org.sleuthkit.datamodel.blackboardutils.attributes.BlackboardJsonAttrUtil;
 import org.sleuthkit.datamodel.blackboardutils.attributes.GeoTrackPoints;
-import org.sleuthkit.datamodel.blackboardutils.attributes.GeoWaypoint.GeoTrackPoint;
 
 /**
  * Container class for various types of timeline events
@@ -57,6 +56,7 @@ class TimelineEventTypes {
 			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
 		}
 
+		@Override
 		TimelineEventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 			/**
 			 * Parses the full description from db, which is the full URL, to a
@@ -99,6 +99,7 @@ class TimelineEventTypes {
 			super(typeID, displayName, eventTypeZoomLevel, superType);
 		}
 
+		@Override
 		TimelineEventDescription parseDescription(String fullDescription, String medDescription, String shortDescription) {
 			return parseFilePathDescription(fullDescription);
 		}
@@ -111,6 +112,7 @@ class TimelineEventTypes {
 			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
 		}
 
+		@Override
 		TimelineEventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 			return parseFilePathDescription(fullDescriptionRaw);
 		}
@@ -122,7 +124,7 @@ class TimelineEventTypes {
 	 * JSON list of waypoints from which a start time can be extracted.
 	 */
 	static class GPSTrackArtifactEventType extends TimelineEventArtifactTypeSingleDescription {
-		
+				
 		GPSTrackArtifactEventType(int typeID, String displayName, TimelineEventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type descriptionAttribute) {
 			// Passing TSK_GEO_TRACKPOINTS as the "time attribute" as more of a place filler, to avoid any null issues
 			super(typeID, displayName, superType, artifactType, new BlackboardAttribute.Type(TSK_GEO_TRACKPOINTS), descriptionAttribute);
@@ -138,15 +140,13 @@ class TimelineEventTypes {
 			}
 			
 			// Get the waypoint list "start time"
-			List<GeoTrackPoint> points = GeoTrackPoints.deserializePoints(attribute.getValueString());
-			Long startTime = null;
-			for (GeoTrackPoint point : points) {
-				// Points are in time order so return the first non-null time stamp
-				startTime = point.getTimeStamp();
-				if (startTime != null) {
-					break;
-				}
-			}
+            GeoTrackPoints pointsList;
+			try {
+			pointsList = BlackboardJsonAttrUtil.fromAttribute(attribute, GeoTrackPoints.class);
+            } catch (BlackboardJsonAttrUtil.InvalidJsonException ex) {
+                throw new TskCoreException("Unable to parse track points in TSK_GEO_TRACKPOINTS attribute", ex);
+            }			
+			Long startTime = pointsList.getStartTime();
 			
 			// If we didn't find a startime do not create an event.
 			if (startTime == null) {

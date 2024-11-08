@@ -1,5 +1,5 @@
 /*
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  */
 
@@ -7,14 +7,14 @@
 
 /* SHA: NIST's Secure Hash Algorithm */
 
-/*	This version written November 2000 by David Ireland of 
+/*	This version written November 2000 by David Ireland of
 	DI Management Services Pty Limited <code@di-mgt.com.au>
 
-	Adapted from code in the Python Cryptography Toolkit, 
+	Adapted from code in the Python Cryptography Toolkit,
 	version 1.0.0 by A.M. Kuchling 1995.
 */
 
-/* AM Kuchling's posting:- 
+/* AM Kuchling's posting:-
    Based on SHA code originally posted to sci.crypt by Peter Gutmann
    in message <30ajo5$oe8@ccu2.auckland.ac.nz>.
    Modified to test for endianness on creation of SHA objects by AMK.
@@ -23,7 +23,7 @@
 */
 
 /* Here's the first paragraph of Peter Gutmann's posting:
-   
+
 The following is my SHA (FIPS 180) code updated to allow use of the "fixed"
 SHA, thanks to Jim Gillogly and an anonymous contributor for the information on
 what's changed in the new version.  The fix is a simple change which involves
@@ -130,7 +130,7 @@ endianTest(int *endian_ness)
 
 /**
  * \ingroup baselib
- * Initialize a SHA-1 context so that data can be added to it. 
+ * Initialize a SHA-1 context so that data can be added to it.
  * @param shsInfo Pointer to context structure to initialize
  */
 void
@@ -157,8 +157,7 @@ TSK_SHA_Init(TSK_SHA_CTX * shsInfo)
    Note that this corrupts the shsInfo->data area */
 
 static void
-SHSTransform(digest, data)
-  UINT4 *digest, *data;
+SHSTransform(UINT4 *digest, UINT4 *data)
 {
     UINT4 A, B, C, D, E;        /* Local vars */
     UINT4 eData[16];            /* Expanded data */
@@ -291,10 +290,10 @@ longReverse(UINT4 * buffer, int byteCount, int Endianness)
  * @param count Number of bytes in buffer
  */
 void
-TSK_SHA_Update(TSK_SHA_CTX * shsInfo, BYTE * buffer, int count)
+TSK_SHA_Update(TSK_SHA_CTX * shsInfo, const BYTE * buffer, unsigned int count)
 {
     UINT4 tmp;
-    int dataCount;
+    unsigned int dataCount;
 
     /* Update bitcount */
     tmp = shsInfo->countLo;
@@ -350,11 +349,11 @@ SHAtoByte(BYTE output[SHS_DIGESTSIZE], UINT4 * input)
 /**
  * \ingroup baselib
  * Calculate the hash of the data added to the context.
- * @param output Buffer to store hash value
  * @param shsInfo Context that has data added to it.
+ * @param output Buffer to store hash value
  */
 void
-TSK_SHA_Final(BYTE output[SHS_DIGESTSIZE], TSK_SHA_CTX * shsInfo)
+TSK_SHA_Final(TSK_SHA_CTX * shsInfo, BYTE* output)
 {
     int count;
     BYTE *dataPtr;

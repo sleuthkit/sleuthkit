@@ -24,6 +24,7 @@
 #define _TSK_BASE_H
 
 // standard C header files
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -39,11 +40,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040800ff
+#define TSK_VERSION_NUM 0x041201ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.8.0"
+#define TSK_VERSION_STR "4.12.1"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -55,6 +56,10 @@
 
 // get some other TSK / OS settings
 #include "tsk_os.h"
+
+#ifdef TSK_WIN32
+#define strncasecmp _strnicmp
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -328,7 +333,9 @@ extern "C" {
 #define TSK_ERR_VS_BUF		(TSK_ERR_VS | 5)
 #define TSK_ERR_VS_BLK_NUM	(TSK_ERR_VS | 6)
 #define TSK_ERR_VS_ARG	    (TSK_ERR_VS | 7)
-#define TSK_ERR_VS_MAX		8
+#define TSK_ERR_VS_ENCRYPTED    (TSK_ERR_VS | 8)
+#define TSK_ERR_VS_MULTTYPE     (TSK_ERR_VS | 9)
+#define TSK_ERR_VS_MAX		10
 
 #define TSK_ERR_POOL_UNKTYPE    (TSK_ERR_POOL | 0)
 #define TSK_ERR_POOL_UNSUPTYPE  (TSK_ERR_IMG | 1)
@@ -354,8 +361,11 @@ extern "C" {
 #define TSK_ERR_FS_GENFS	(TSK_ERR_FS | 15)
 #define TSK_ERR_FS_CORRUPT	(TSK_ERR_FS | 16)
 #define TSK_ERR_FS_ATTR_NOTFOUND (TSK_ERR_FS | 17)
-#define TSK_ERR_FS_MAX		18
-
+#define TSK_ERR_FS_ENCRYPTED    (TSK_ERR_FS | 18)
+#define TSK_ERR_FS_POSSIBLY_ENCRYPTED    (TSK_ERR_FS | 19)
+#define TSK_ERR_FS_MULTTYPE    (TSK_ERR_FS | 20)
+#define TSK_ERR_FS_BITLOCKER_ERROR    (TSK_ERR_FS | 21)
+#define TSK_ERR_FS_MAX		22
 
 #define TSK_ERR_HDB_UNKTYPE     (TSK_ERR_HDB | 0)
 #define TSK_ERR_HDB_UNSUPTYPE   (TSK_ERR_HDB | 1)
@@ -457,8 +467,8 @@ documentation and/or software.
     } TSK_MD5_CTX;
 
     void TSK_MD5_Init(TSK_MD5_CTX *);
-    void TSK_MD5_Update(TSK_MD5_CTX *, unsigned char *, unsigned int);
-    void TSK_MD5_Final(unsigned char[16], TSK_MD5_CTX *);
+    void TSK_MD5_Update(TSK_MD5_CTX *, const unsigned char *, unsigned int);
+    void TSK_MD5_Final(TSK_MD5_CTX *, unsigned char[16]);
 
 
 
@@ -476,8 +486,8 @@ documentation and/or software.
 /* Message digest functions */
 
     void TSK_SHA_Init(TSK_SHA_CTX *);
-    void TSK_SHA_Update(TSK_SHA_CTX *, BYTE * buffer, int count);
-    void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
+    void TSK_SHA_Update(TSK_SHA_CTX *, const BYTE * buffer, unsigned int count);
+    void TSK_SHA_Final(TSK_SHA_CTX *, BYTE * output);
 
 /* Flags for which type of hash(es) to run */
 	typedef enum{

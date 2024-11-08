@@ -1,6 +1,115 @@
+---------------- VERSION 4.12.1 --------------
+C/C++:
+- Bug fixes from Luis Nassif and Joachim Metz
+- Added check to stop for very large folders to prevent memory exhausion
+
+Java:
+- Added File Repository concept for files to be stored in another location
+- Schema updated to 9.4
+- Fixed OS Account merge bug and now fire events when accounts are merged
+
+
+---------------- VERSION 4.12.0 --------------
+- There was a 1-year gap since 4.11.1 and the git log has 441 commits in that timeframe. 
+- Many for small fixes.  
+- This set of release notes is much more of an overview than other releases
+
+What's New:
+- LVM Support (non-Windows) from Joachim Metz
+- Logical File System support (a folder structure is parsed by TSK libraries) from Ann Priestman (Basis)
+
+What's Changed:
+- Lots of bug fixes from the Basis team and Joachim Metz
+- Additional fixes from Eran-YT, msuhanov, Joel Uckelman, Aleks L, dschoemantruter
+- General themes of C/C++ bounds checks and Java improvements to OS Accounts, Ingest jobs, CaseDbAccessManager, and much more.
+
+
+
+---------------- VERSION 4.11.1 --------------
+
+C/C++:
+- Several fixes from Joachim Metz
+- NTFS Decompression bug fix from Kim Stone and Joel Uckelman
+
+Java:
+- Fixed connection leak when making OS Accounts in bridge
+- OsAccount updates for instance types and special Windows SIDs
+- Fixed issue with duplicate value in Japanese timeline translation
+
+
+---------------- VERSION 4.11.0 --------------
+C/C++:
+- Added checks at various layers to detect encrypted file systems and disks to give more useful error messages.
+- Added checks to detect file formats that are not supported (such as AD1, ZIP, etc.) to give more useful error messages.
+- Added tsk_imageinfo tool that detects if an image is supported by TSK and if it is encrypted.
+- Add numerous bound checks from Joachim Metz.
+- Clarified licenses as pointed out by Joachim Metz.
+
+Java:
+- Updated from Schema 8.6 to 9.1.
+- Added tables and classes for OS Accounts and Realms (Domains).
+- Added tables and classes for Host Addresses (IP, MAC, etc.).
+- Added tables and classes for Analysis Results vs Data Artifacts by adding onto BlackboardArtifacts.
+- Added tables and classes for Host and Person to make it easier to group data sources.
+- Added static types for standard artifact types.
+- Added File Attribute table to allow custom information to be stored for each file.
+- Made ordering of getting lock and connection consistent.
+- Made the findFile methods more efficient by using extension (which is indexed).
+
+
+
+---------------- VERSION 4.10.2 --------------
+C/C++
+- Added support for Ext4 inline data
+
+Java
+- New Blackboard Artifacts for ALEAPP/ILEAPP, Yara, Geo Area, etc.
+- Upgraded to PostgreSQL JDBC Driver 42.2.18
+- Added SHA256 to files table in DB and added utility calculation methods.
+- Changed TimelineManager to make events for any artifact with a time stamp
+- Added Japanese translations
+- Fixed sychronization bug in getUniquePath
+
+
+---------------- VERSION 4.10.1 --------------
+C/C++:
+- Changed Windows build to use Nuget for libewf, libvmdk, libvhdi.
+- Fixed compiler warnings 
+- Clarrified licenses and added Apache license to distribution
+- Improved error handling for out of memory issues
+- Rejistry++ memory leak fixes
+
+Java:
+- Localized for Japanese
+
+---------------- VERSION 4.10.0 --------------
+C/C++:
+- Removed PostgreSQL code (that was used only by Java code)
+- Added Java callback support so that database inserts are done in Java.
+
+Java: 
+- Added methods and callbacks as required to allow database population to happen in Java instead of C/C++.
+- Added support to allow Autopsy streaming ingest where files are added in batches. 
+- Added TaggingManager class and concept of a TagSet to support ProjectVic categories. 
+- Fixed changes to normalization and validation of emails and phone numbers.
+- Added a CASE/UCO JAR file that creates JSON-LD based on TSK objects.
+
+
+
 ---------------- VERSION 4.9.0 --------------
 C/C++
-- Removed framework project.  Use Autopsy instead....
+- Removed framework project.  Use Autopsy instead if you need an analysis framework. 
+- Various fixes from Google-based fuzzing.
+- Ensure all reads (even big ones) are sector aligned when reading from Windows device.
+- Ensure all command line tools support new pool command line arguments. 
+- Create virtual files for APFS unallocated space
+- HFS fix to display type
+
+Java:
+- More artifact helper methods
+- More artifacts and attributes for drones and GPS coordinates
+- Updated TimelineManager to insert GPS artifacts into events table
+
 
 ---------------- VERSION 4.8.0 --------------
 C/C++

@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 /** \@file C -> C++ compatability layer */
 #pragma once
 
@@ -7,6 +16,7 @@
 
 template <typename T,
           typename = std::enable_if_t<std::is_base_of<TSKPool, T>::value>>
+
 class TSKPoolCompat : public T {
  protected:
   TSK_POOL_INFO _info{};
@@ -21,6 +31,8 @@ class TSKPoolCompat : public T {
 
  public:
   template <typename... Args>
+
+
   TSKPoolCompat(TSK_POOL_TYPE_ENUM type, Args &&... args) noexcept(
       std::is_nothrow_constructible<T, Args...>::value)
       : T(std::forward<Args>(args)...) {

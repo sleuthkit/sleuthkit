@@ -26,17 +26,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.READ;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.Blackboard.BlackboardException;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 
 /**
  * This is a class that models reports.
  */
 public class Report implements Content {
 
+	private static final BlackboardArtifact.Type KEYWORD_HIT_TYPE = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT);
 	static long ID_NOT_SET = -1;
 	private long objectId = ID_NOT_SET;
 	private final String pathAsString;
@@ -59,7 +63,7 @@ public class Report implements Content {
 	 * @param path        Absolute path to report.
 	 * @param createdTime Created time of report (in UNIX epoch time).
 	 * @param reportName  May be empty
-	 * @param parent	  The parent/source of the Report.
+	 * @param parent	     The parent/source of the Report.
 	 */
 	Report(SleuthkitCase db, long id, String path, long createdTime, String sourceModuleName, String reportName, Content parent) {
 		this.db = db;
@@ -67,11 +71,10 @@ public class Report implements Content {
 		this.pathAsString = path;
 		if (path.startsWith("http")) {
 			this.pathAsPath = null;
-		}
-		else {
+		} else {
 			this.pathAsPath = Paths.get(path);
 		}
-		
+
 		this.createdTime = createdTime;
 		this.sourceModuleName = sourceModuleName;
 		this.reportName = reportName;
@@ -89,7 +92,7 @@ public class Report implements Content {
 	 * @return
 	 */
 	public String getPath() {
-		return (pathAsPath != null ? pathAsPath.toString() : pathAsString);		
+		return (pathAsPath != null ? pathAsPath.toString() : pathAsString);
 	}
 
 	/**
@@ -150,8 +153,9 @@ public class Report implements Content {
 	@Override
 	public void close() {
 		try {
-			if (fileChannel != null) 
+			if (fileChannel != null) {
 				fileChannel.close();
+			}
 		} catch (IOException ex) {
 			LOGGER.log(Level.WARNING, "Failed to close report file.", ex);
 		}
@@ -160,7 +164,7 @@ public class Report implements Content {
 	@Override
 	public long getSize() {
 		try {
-			return (pathAsPath != null ?  Files.size(pathAsPath) : 0);
+			return (pathAsPath != null ? Files.size(pathAsPath) : 0);
 		} catch (IOException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to get size of report.", ex);
 			// If we cannot determine the size of the report, return zero
@@ -228,14 +232,85 @@ public class Report implements Content {
 		return Collections.<Long>emptyList();
 	}
 
+	@Deprecated
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
 		if (artifactTypeID != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
 		}
-		return db.newBlackboardArtifact(artifactTypeID, objectId);
+
+		long fileObjId = getId();
+		long dsObjId = getDataSource() == null ? null : getDataSource().getId();
+
+		try {
+			return db.getBlackboard().newAnalysisResult(
+					KEYWORD_HIT_TYPE, fileObjId, dsObjId, Score.SCORE_UNKNOWN,
+					null, null, null, Collections.emptyList())
+					.getAnalysisResult();
+		} catch (BlackboardException ex) {
+			throw new TskCoreException("Unable to get analysis result for keword hit.", ex);
+		}
 	}
 
+	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		// Get the data source before opening the transaction
+		long dataSourceObjId = getDataSource().getId();
+		
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objectId, dataSourceObjId, score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return resultAdded;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
+	}
+
+	@Override
+	public AnalysisResultAdded newAnalysisResult(BlackboardArtifact.Type artifactType, Score score, String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributesList, long dataSourceId) throws TskCoreException {
+		CaseDbTransaction trans = db.beginTransaction();
+		try {
+			AnalysisResultAdded resultAdded = db.getBlackboard().newAnalysisResult(artifactType, objectId, dataSourceId, score, conclusion, configuration, justification, attributesList, trans);
+
+			trans.commit();
+			return resultAdded;
+		} catch (BlackboardException ex) {
+			trans.rollback();
+			throw new TskCoreException("Error adding analysis result.", ex);
+		}
+	}
+
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId) throws TskCoreException {
+
+		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() &&
+				artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+			throw new TskCoreException("Reports can only have keyword hit artifacts.");
+		}
+		
+		return db.getBlackboard().newDataArtifact(artifactType, objectId, this.getDataSource().getId(), attributesList, osAccountId);
+	}
+
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList, Long osAccountId, long dataSourceId) throws TskCoreException {
+
+		if (artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID() &&
+				artifactType.getTypeID() != BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+			throw new TskCoreException("Reports can only have keyword hit artifacts.");
+		}		
+		return db.getBlackboard().newDataArtifact(artifactType, objectId, dataSourceId, attributesList, osAccountId);
+	}
+
+	@Override
+	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+		return newDataArtifact(artifactType, attributesList, null);
+	}
+	
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return newArtifact(type.getTypeID());
@@ -243,7 +318,7 @@ public class Report implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifacts(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifacts(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
@@ -283,13 +358,33 @@ public class Report implements Content {
 	}
 
 	@Override
+	public List<AnalysisResult> getAllAnalysisResults() throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objectId);
+	}
+	
+	@Override
+	public List<DataArtifact> getAllDataArtifacts() throws TskCoreException {
+		return db.getBlackboard().getDataArtifactsBySource(objectId);
+	}
+
+	@Override
+	public List<AnalysisResult> getAnalysisResults(BlackboardArtifact.Type artifactType) throws TskCoreException {
+		return db.getBlackboard().getAnalysisResults(objectId, artifactType.getTypeID());
+	}
+
+	@Override
+	public Score getAggregateScore() throws TskCoreException {
+		return db.getScoringManager().getAggregateScore(objectId);
+	}
+
+	@Override
 	public Set<String> getHashSetNames() throws TskCoreException {
 		return Collections.<String>emptySet();
 	}
 
 	@Override
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
-		return getArtifactsCount(db.getArtifactType(artifactTypeName).getTypeID());
+		return getArtifactsCount(db.getBlackboard().getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override

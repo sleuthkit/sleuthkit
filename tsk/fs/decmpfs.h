@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
+
 #pragma once
 
 #include <stdint.h>
@@ -7,6 +16,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Contains the structures and function APIs dealing with compressed files
+ * in APFS and HFS+ file systems.
+ */
 
 /*
  * If a file is compressed, then it will have an extended attribute
@@ -44,6 +58,13 @@ typedef enum {
 } DECMPFS_TYPE_ENUM;
 
 #define COMPRESSION_UNIT_SIZE 65536U
+
+extern int zlib_inflate(char* source,
+                        uint64_t sourceLen,
+                        char* dest,
+                        uint64_t destLen,
+                        uint64_t* uncompressedLength,
+                        unsigned long* bytesConsumed);
 
 extern int decmpfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
                             char* buffer,

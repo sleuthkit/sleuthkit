@@ -34,7 +34,7 @@ public class Volume extends AbstractContent {
 	private long flags;
 	private String desc;
 	private volatile long volumeHandle = 0;
-	private String uniquePath;
+	private volatile String uniquePath;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
@@ -92,6 +92,7 @@ public class Volume extends AbstractContent {
         volumeHandle = 0;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -107,18 +108,23 @@ public class Volume extends AbstractContent {
 	}
 
 	@Override
-	public synchronized String getUniquePath() throws TskCoreException {
+	public String getUniquePath() throws TskCoreException {
+		// It is possible that multiple threads could be doing this calculation
+		// simultaneously, but it's worth the potential extra processing to prevent deadlocks.
 		if(uniquePath == null) {
-			uniquePath = "";
+			String tempUniquePath = "";
 			String name = getName();
 			if (!name.isEmpty()) {
-				uniquePath = "/vol_" + name; //NON-NLS
+				tempUniquePath = "/vol_" + name; //NON-NLS
 			}
 
 			Content myParent = getParent();
 			if (myParent != null) {
-				uniquePath = myParent.getUniquePath() + uniquePath;
+				tempUniquePath = myParent.getUniquePath() + tempUniquePath;
 			}
+			
+			// Don't update uniquePath until it is complete.
+			uniquePath = tempUniquePath;
 		}
 		return uniquePath;
 	}
@@ -271,7 +277,7 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * @return a list of FileSystem that are direct descendents of this Image.
+	 * @return a list of FileSystem that are direct descendants of this Image.
 	 *
 	 * @throws TskCoreException
 	 */

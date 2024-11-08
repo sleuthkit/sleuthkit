@@ -50,7 +50,7 @@ namespace USER_ACCOUNT_TYPE {
     enum Enum {
         REGULAR,		// normal user account
         LIMITED,		// Limited/Guest account
-        SERVICE,		// 
+        SERVICE,		//
         UNKNOWN,
     };
     static char String[][100] = {

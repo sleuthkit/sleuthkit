@@ -1,3 +1,12 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2019-2020 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #include "../util/crypto.hpp"
 #include "apfs_fs.hpp"
 #include "tsk_apfs.hpp"
@@ -127,7 +136,7 @@ APFSBlock::APFSBlock(const APFSPool& pool, const apfs_block_num block_num)
 }
 
 void APFSBlock::decrypt(const uint8_t* key, const uint8_t* key2) noexcept {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     // If the data is encrypted via the T2 chip, we can't decrypt it.  This means
     // that if the data wasn't decrypted at acquisition time, then processing will
     // likely fail.  Either way, there is no need to decrypt.
@@ -140,9 +149,8 @@ void APFSBlock::decrypt(const uint8_t* key, const uint8_t* key2) noexcept {
 
     dec.decrypt_buffer(_storage.data(), _storage.size(),
         _block_num * APFS_BLOCK_SIZE);
-#else
-    return;
 #endif
+    // TODO: what is the intended behavior here if there is no crypto support.
 }
 
 void APFSBlock::dump() const noexcept {
@@ -336,9 +344,9 @@ APFSFileSystem::APFSFileSystem(const APFSPool& pool,
   }
 }
 
-APFSFileSystem::wrapped_kek::wrapped_kek(Guid&& id,
+APFSFileSystem::wrapped_kek::wrapped_kek(TSKGuid&& id,
                                          const std::unique_ptr<uint8_t[]>& kp)
-    : uuid{std::forward<Guid>(id)} {
+    : uuid{std::forward<TSKGuid>(id)} {
   // Parse KEK
   wrapped_key_parser wp{kp.get()};
 
@@ -375,11 +383,11 @@ APFSFileSystem::APFSFileSystem(const APFSPool& pool,
 // These are the known special recovery UUIDs.  The ones that are commented out
 // are currently supported.
 static const auto unsupported_recovery_keys = {
-    Guid{"c064ebc6-0000-11aa-aa11-00306543ecac"},  // Institutional Recovery
-    Guid{"2fa31400-baff-4de7-ae2a-c3aa6e1fd340"},  // Institutional User
-    // Guid{"ebc6C064-0000-11aa-aa11-00306543ecac"},  // Personal Recovery
-    Guid{"64c0c6eb-0000-11aa-aa11-00306543ecac"},  // iCould Recovery
-    Guid{"ec1c2ad9-b618-4ed6-bd8d-50f361c27507"},  // iCloud User
+    TSKGuid{"c064ebc6-0000-11aa-aa11-00306543ecac"},  // Institutional Recovery
+    TSKGuid{"2fa31400-baff-4de7-ae2a-c3aa6e1fd340"},  // Institutional User
+    // TSKGuid{"ebc6C064-0000-11aa-aa11-00306543ecac"},  // Personal Recovery
+    TSKGuid{"64c0c6eb-0000-11aa-aa11-00306543ecac"},  // iCould Recovery
+    TSKGuid{"ec1c2ad9-b618-4ed6-bd8d-50f361c27507"},  // iCloud User
 };
 
 void APFSFileSystem::init_crypto_info() {
@@ -471,7 +479,7 @@ void APFSFileSystem::init_crypto_info() {
 }
 
 bool APFSFileSystem::unlock(const std::string& password) noexcept {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
   if (_crypto.unlocked) {
     // Already unlocked
     return true;
@@ -590,7 +598,7 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
 
   const APFSSnapshotMetaBtreeNode snap_tree{_pool, fs()->snap_meta_tree_oid};
 
-  using key_type = struct {
+  struct key_type {
     uint64_t xid_and_type;
 
     inline uint64_t snap_xid() const noexcept {
@@ -634,7 +642,7 @@ apfs_block_num APFSFileSystem::omap_root() const {
 APFSJObjBtreeNode::APFSJObjBtreeNode(const APFSObjectBtreeNode* obj_root,
                                      apfs_block_num block_num,
                                      const uint8_t* key)
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     : APFSBtreeNode(obj_root->pool(), block_num, key), _obj_root{obj_root} {
 #else
     : APFSBtreeNode(obj_root->pool(), block_num, nullptr), _obj_root{ obj_root } {
@@ -991,7 +999,7 @@ APFSKeybag::APFSKeybag(const APFSPool& pool, const apfs_block_num block_num,
   }
 }
 
-std::unique_ptr<uint8_t[]> APFSKeybag::get_key(const Guid& uuid,
+std::unique_ptr<uint8_t[]> APFSKeybag::get_key(const TSKGuid& uuid,
                                                uint16_t type) const {
   if (kb()->num_entries == 0) {
     return nullptr;

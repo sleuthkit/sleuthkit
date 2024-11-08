@@ -1,6 +1,6 @@
 /*
-** fcat 
-** The Sleuth Kit 
+** fcat
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2012 Brian Carrier, Basis Technology.  All Rights reserved
@@ -9,6 +9,8 @@
 **/
 
 #include "tsk/tsk_tools_i.h"
+#include "tsk/base/tsk_os_cpp.h"
+
 #include <locale.h>
 
 /* usage - explain and terminate */
@@ -20,7 +22,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-hRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] file_path image [images]\n"),
+        ("usage: %" PRIttocTSK " [-hRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] file_path image [images]\n"),
         progname);
     tsk_fprintf(stderr, "\t-h: Do not display holes in sparse files\n");
     tsk_fprintf(stderr,
@@ -55,7 +57,7 @@ main(int argc, char **argv1)
     TSK_FS_INFO *fs;
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
-    TSK_DADDR_T pvol_block = 0;
+    TSK_OFF_T pvol_block = 0;
     const char * password = ""; // Not currently used
 
     TSK_INUM_T inum;
@@ -66,8 +68,7 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     TSK_TCHAR *cp;
     unsigned int ssize = 0;
-    TSK_TCHAR *path = NULL;
-    size_t len;
+    TSK_TSTRING path;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -87,15 +88,16 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -108,7 +110,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -122,7 +124,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -172,14 +174,8 @@ main(int argc, char **argv1)
         usage();
     }
 
-
     // copy in path
-    len = (TSTRLEN(argv[OPTIND]) + 1) * sizeof(TSK_TCHAR);
-    if ((path = (TSK_TCHAR *) tsk_malloc(len)) == NULL) {
-        tsk_fprintf(stderr, "error allocating memory\n");
-        exit(1);
-    }
-    TSTRNCPY(path, argv[OPTIND], TSTRLEN(argv[OPTIND]) + 1);
+    path = argv[OPTIND];
 
     if ((img =
             tsk_img_open(argc - OPTIND - 1, &argv[OPTIND+1],
@@ -200,7 +196,7 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
     }
@@ -210,36 +206,38 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_pool_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
 
-        img = pool->get_img_info(pool, pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+         TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
+        img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
+            tsk_img_close(img);
             exit(1);
         }
     }
 
-
-    if (-1 == (retval = tsk_fs_ifind_path(fs, path, &inum))) {
+    if (-1 == (retval = tsk_fs_ifind_path(fs, &path[0], &inum))) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
-        free(path);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
     else if (retval == 1) {
         tsk_fprintf(stderr, "File not found\n");
-        fs->close(fs);
-        img->close(img);
-        free(path);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
-    free(path); 
 
     // @@@ Cannot currently get ADS with this approach
     retval =
@@ -252,13 +250,13 @@ main(int argc, char **argv1)
         }
         else {
             tsk_error_print(stderr);
-            fs->close(fs);
-            img->close(img);
+            tsk_fs_close(fs);
+            tsk_img_close(img);
             exit(1);
         }
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
     exit(0);
 }

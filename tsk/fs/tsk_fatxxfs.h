@@ -1,5 +1,5 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2013 Brian Carrier.  All rights reserved
@@ -24,7 +24,7 @@
 #include "tsk_fatfs.h"
 
 /* Macro to combine the upper and lower 2-byte parts of the starting
- * cluster 
+ * cluster
  */
 #define FATXXFS_DENTRY_CLUST(fsi, de)	\
 	(TSK_DADDR_T)((tsk_getu16(fsi->endian, de->startclust)) | (tsk_getu16(fsi->endian, de->highclust)<<16))
@@ -40,10 +40,10 @@
 #define FATXXFS_IS_DELETED(name, fatfs)	\
 	(fatfs->subtype == TSK_FATFS_SUBTYPE_ANDROID_1) ? \
 	((name[0] == 0) && (name[1] == 0)) : \
-	(name[0] == FATXXFS_SLOT_DELETED) 
+	(name[0] == FATXXFS_SLOT_DELETED)
 
-/* 
- *Return 1 if c is an valid character for a short file name 
+/*
+ *Return 1 if c is an valid character for a short file name
  *
  * NOTE: 0x05 is allowed in name[0], and 0x2e (".") is allowed for name[0]
  * and name[1] and 0xe5 is allowed for name[0]
@@ -76,7 +76,7 @@ extern "C" {
 #endif
 
 	/*
-	 * Boot sector structure for FATXX file systems (TSK_FS_INFO_TYPE_FAT_12, 
+	 * Boot sector structure for FATXX file systems (TSK_FS_INFO_TYPE_FAT_12,
 	 * TSK_FS_INFO_TYPE_FAT_16, and TSK_FS_INFO_TYPE_FAT_32).
 	 */
     typedef struct {
@@ -151,10 +151,10 @@ extern "C" {
         uint8_t size[4];
     } FATXXFS_DENTRY;
 
-	/* 
-	 * Long file name support for windows 
+	/*
+	 * Long file name support for windows
 	 *
-	 * Contents of this are in UNICODE, not ASCII 
+	 * Contents of this are in UNICODE, not ASCII
 	 */
     typedef struct {
         uint8_t seq;
@@ -171,31 +171,31 @@ extern "C" {
 
     extern int8_t fatxxfs_is_cluster_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
-    extern uint8_t 
-    fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, 
+    extern uint8_t
+    fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,
+        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc,
         uint8_t a_do_basic_tests_only);
 
     extern TSK_RETVAL_ENUM
-    fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_FS_FILE *a_fs_file);
 
     extern uint8_t
     fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         TSK_INUM_T a_inum);
 
-    extern uint8_t 
-    fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    extern uint8_t
+    fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         FILE *a_hFile);
 
     extern uint8_t
     fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
-        FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
+        FATFS_DENTRY *a_dentry, unsigned int a_selection_flags,
         int a_cluster_is_alloc);
 
     extern TSK_RETVAL_ENUM
     fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
-        TSK_OFF_T len, TSK_DADDR_T * addrs);
+        TSK_OFF_T len, TSK_DADDR_T * addrs, int recursion_depth);
 
 #ifdef __cplusplus
 }

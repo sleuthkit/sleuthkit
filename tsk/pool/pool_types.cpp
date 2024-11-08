@@ -1,3 +1,11 @@
+/*
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2018-2019 BlackBag Technologies.  All Rights reserved
+ *
+ * This software is distributed under the Common Public License 1.0
+ */
 #include "tsk_pool.h"
 
 #include <string>
@@ -14,6 +22,7 @@ struct POOL_TYPES {
 static const POOL_TYPES pool_type_table[]{
     {"auto", TSK_POOL_TYPE_DETECT, "auto-detect"},
     {"apfs", TSK_POOL_TYPE_APFS, "APFS container"},
+    {"lvm", TSK_POOL_TYPE_LVM, "Linux LVM volume group"},
 };
 
 /**
