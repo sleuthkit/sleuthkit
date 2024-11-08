@@ -2,7 +2,7 @@
 #
 # Install python virtual environment and run get_test_images.py
 #
-pushd test/fiwalk
+pushd test/get_images
 if [ ! -d venv ]; then
     python3 -m venv venv
     source venv/bin/activate
@@ -11,4 +11,4 @@ else
     source venv/bin/activate
 fi
 popd
-python3 test/fiwalk/get_test_images.py
+python3 test/get_images/get_test_images.py
