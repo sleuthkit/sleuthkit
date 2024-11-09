@@ -159,7 +159,8 @@ tsk_auto_libtskauto_la_SOURCES = \
 
 # Compile the bundled sqlite3 if there isn't an existing lib to use
 if !HAVE_LIBSQLITE3
-tsk_auto_libtskauto_la_SOURCES += tsk/auto/sqlite3.c tsk/auto/sqlite3.h
+AM_CPPFLAGS += -Ivendors
+tsk_auto_libtskauto_la_SOURCES += vendors/sqlite3.c vendors/sqlite3.h
 endif
 
 tsk_base_libtskbase_la_SOURCES = \
@@ -583,15 +584,27 @@ check_SCRIPTS = \
 	test/check_static.sh \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
+	test/img_dump/img_differ.sh \
 	test/img_dump/test_imgs.sh \
-	test/legacy/runtests.sh
+	test/img_dump/test_imgs_E01.sh \
+	test/legacy/runtests.sh \
+	test/tools/tool_differ.sh \
+	test/tools/vstools/test_mmls.sh \
+	test/tools/vstools/test_mmls_E01.sh
 
 TESTS =	\
 	test/runner \
 	test/test_libraries.sh \
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
-	test/legacy/runtests.sh
+	test/legacy/runtests.sh \
+	test/tools/vstools/test_mmls.sh
+
+if HAVE_E01
+TESTS += \
+	test/img_dump/test_imgs_E01.sh \
+	test/tools/vstools/test_mmls_E01.sh
+endif
 
 if BUILD_STATIC
 TESTS += test/test_static_tools.sh
@@ -599,6 +612,10 @@ endif
 
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
+
+if USE_WINE
+TESTS_ENVIRONMENT = WINE=wine
+endif
 
 LOG_COMPILER = scripts/test_runner.sh
 
@@ -635,6 +652,8 @@ test_runner_SOURCES = \
 	$(tsk_util_libtskutil_la_SOURCES) \
 	$(tsk_vs_libtskvs_la_SOURCES)
 
+EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
+
 test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 test_fiwalk_fiwalk_test_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
@@ -644,12 +663,12 @@ test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
 	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
 
-EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/fiwalk/test_images.txt
+EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
 
-test/fiwalk/test_images.txt: test/fiwalk/test_images.yaml test/fiwalk/get_test_images.bash test/fiwalk/get_test_images.py
-	test/fiwalk/get_test_images.bash
+test/get_images/test_images.txt: test/get_images/test_images.yaml test/get_images/get_test_images.bash test/get_images/get_test_images.py
+	test/get_images/get_test_images.bash
 
-CLEANFILES += test/fiwalk/test_images.txt
+CLEANFILES += test/get_images/test_images.txt
 
 test_img_dump_img_dump_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 test_img_dump_img_dump_CXXFLAGS = $(AM_CXXFLAGS) $(PTHREAD_CFLAGS)
