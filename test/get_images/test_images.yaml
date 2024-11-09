@@ -38,3 +38,6 @@ sources:
       zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.zip
       unzip_image: image.gen1.dmg
       unzip_xml: image.gen1.xml
+  - gpt130:
+      comment: Disk image with 130 partitions
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/gpt_130_partitions.E01
