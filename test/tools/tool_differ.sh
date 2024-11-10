@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# usage: tool_differ <command> <
 
 # get basedir for normalizing output
 basedir=$(realpath "$(dirname $0)/../..")
@@ -20,7 +21,7 @@ if [ $DIFF_EXIT -ne 0 ]; then
   echo "$RESULT"
   echo ""
   echo === $1 ===
-  cat -vn $1
+  $WINE $CMD | cat -vn
   echo ""
   echo === $2 ===
   cat -vn $2
