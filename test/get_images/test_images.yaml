@@ -38,7 +38,7 @@ sources:
       zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.zip
       unzip_image: image.gen1.dmg
       unzip_xml: image.gen1.xml
-  - mbr
+  - mbr:
       comment: Disk image with MBR partitioning scheme
       image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/mbr-disk-image.E01
   - gpt130:
