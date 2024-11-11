@@ -1,4 +1,3 @@
-Unknown argument
 usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]
 	-t vstype: The type of volume system (use '-t list' for list of supported types)
 	-i imgtype: The format of the image file (use '-i list' for list supported types)
@@ -6,6 +5,7 @@ usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t
 	-o imgoffset: Offset to the start of the volume that contains the partition system (in sectors)
 	-B: print the rounded length in bytes
 	-r: recurse and look for other partition tables in partitions (DOS Only)
+	-c: print CSV-output
 	-v: verbose output
 	-V: print the version
 Unless any of these are specified, all volume types are shown
