@@ -18,8 +18,9 @@
 void
 usage()
 {
-    tsk_fprintf(stderr,
-        "usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n");
+    TFPRINTF(stderr,
+        _TSK_T
+        ("usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BcrvVh] [-aAmM] [-t vstype] image [images]\n"));
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
@@ -34,6 +35,7 @@ usage()
     tsk_fprintf(stderr, "\t-c: print CSV-output\n");
     tsk_fprintf(stderr, "\t-v: verbose output\n");
     tsk_fprintf(stderr, "\t-V: print the version\n");
+    tsk_fprintf(stderr, "\t-h: help. print this message\n");
     tsk_fprintf(stderr,
         "Unless any of these are specified, all volume types are shown\n");
     tsk_fprintf(stderr, "\t-a: Show allocated volumes\n");
