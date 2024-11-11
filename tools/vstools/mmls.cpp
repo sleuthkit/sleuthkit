@@ -62,7 +62,7 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
 {
     WalkState* ws = static_cast<WalkState*>(ptr);
 
-    char delim = ',';
+    const char delim = ',';
 
     if (part->flags & TSK_VS_PART_FLAG_META) {
         if (ws->csv) {
