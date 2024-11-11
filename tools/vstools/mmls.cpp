@@ -32,7 +32,7 @@ usage()
     tsk_fprintf(stderr, "\t-B: print the rounded length in bytes\n");
     tsk_fprintf(stderr,
         "\t-r: recurse and look for other partition tables in partitions (DOS Only)\n");
-    tsk_fprintf(stderr, "\t-c: print CSV-output\n");
+    tsk_fprintf(stderr, "\t-c: print CSV output\n");
     tsk_fprintf(stderr, "\t-v: verbose output\n");
     tsk_fprintf(stderr, "\t-V: print the version\n");
     tsk_fprintf(stderr, "\t-h: help. print this message\n");

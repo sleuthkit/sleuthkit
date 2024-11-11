@@ -5,7 +5,7 @@ usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BcrvVh] [-aAmM] [
 	-o imgoffset: Offset to the start of the volume that contains the partition system (in sectors)
 	-B: print the rounded length in bytes
 	-r: recurse and look for other partition tables in partitions (DOS Only)
-	-c: print CSV-output
+	-c: print CSV output
 	-v: verbose output
 	-V: print the version
 	-h: help. print this message
