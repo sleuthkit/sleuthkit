@@ -28,7 +28,7 @@
  */
 TSK_VS_PART_INFO *
 tsk_vs_part_add(TSK_VS_INFO * a_vs, TSK_DADDR_T a_start, TSK_DADDR_T len,
-    TSK_VS_PART_FLAG_ENUM type, char *desc, int8_t table, int8_t slot)
+    TSK_VS_PART_FLAG_ENUM type, char *desc, int8_t table, int16_t slot)
 {
     TSK_VS_PART_INFO *part;
     TSK_VS_PART_INFO *cur_part;

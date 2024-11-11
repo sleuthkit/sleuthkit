@@ -2,108 +2,84 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (C) 2024 Sleuth Kit Labs, LLC
- * Copyright (c) 2006-2023 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * mmls - list media management structure contents
  *
  * This software is distributed under the Common Public License 1.0
  */
-
-#include <iostream>
-
 #include "tsk/tsk_tools_i.h"
-#include "mmls.h"
 
-static TSK_TCHAR *progname;
+#include <memory>
+#include <variant>
 
-static uint8_t print_bytes = 0;
-static uint8_t recurse = 0;
-
-static int recurse_cnt = 0;
-static bool is_csv = false;
-static TSK_DADDR_T recurse_list[64];
-
-static int
+void
 usage()
 {
-    TFPRINTF(tsk_stderr,
-        _TSK_T("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BcrvVh] [-aAmM] [-t vstype] image [images]\n"),
-        progname);
-    tsk_fprintf(tsk_stderr,
+    TFPRINTF(stderr,
+        _TSK_T
+        ("usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"));
+    tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
-    tsk_fprintf(tsk_stderr,
+    tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for list supported types)\n");
-    tsk_fprintf(tsk_stderr,
+    tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
-    tsk_fprintf(tsk_stderr,
+    tsk_fprintf(stderr,
         "\t-o imgoffset: Offset to the start of the volume that contains the partition system (in sectors)\n");
-    tsk_fprintf(tsk_stderr, "\t-B: print the rounded length in bytes\n");
-    tsk_fprintf(tsk_stderr,
+    tsk_fprintf(stderr, "\t-B: print the rounded length in bytes\n");
+    tsk_fprintf(stderr,
         "\t-r: recurse and look for other partition tables in partitions (DOS Only)\n");
-    tsk_fprintf(tsk_stderr, "\t-c: print CSV-output\n");
-    tsk_fprintf(tsk_stderr, "\t-v: verbose output\n");
-    tsk_fprintf(tsk_stderr, "\t-V: print the version\n");
-    tsk_fprintf(tsk_stderr, "\t-h: help. print this message\n");
-    tsk_fprintf(tsk_stderr,
+    tsk_fprintf(stderr, "\t-v: verbose output\n");
+    tsk_fprintf(stderr, "\t-V: print the version\n");
+    tsk_fprintf(stderr,
         "Unless any of these are specified, all volume types are shown\n");
-    tsk_fprintf(tsk_stderr, "\t-a: Show allocated volumes\n");
-    tsk_fprintf(tsk_stderr, "\t-A: Show unallocated volumes\n");
-    tsk_fprintf(tsk_stderr, "\t-m: Show metadata volumes\n");
-    tsk_fprintf(tsk_stderr, "\t-M: Hide metadata volumes\n");
-    return 1;
+    tsk_fprintf(stderr, "\t-a: Show allocated volumes\n");
+    tsk_fprintf(stderr, "\t-A: Show unallocated volumes\n");
+    tsk_fprintf(stderr, "\t-m: Show metadata volumes\n");
+    tsk_fprintf(stderr, "\t-M: Hide metadata volumes\n");
 }
+
+struct WalkState {
+  bool print_bytes = false;
+  bool recurse = false;
+  int recurse_cnt = 0;
+  TSK_DADDR_T recurse_list[64] = {0};
+};
 
 /*
  * The callback action for the part_walk
  *
  * Prints the layout information
- * */
+ */
 static TSK_WALK_RET_ENUM
-part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
+part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
 {
-    char delim = ',';
-
     if (part->flags & TSK_VS_PART_FLAG_META)
-        if (is_csv)
-          tsk_printf("%.3" PRIuPNUM "%c%s%c", part->addr, delim, "Meta", delim);
-        else
-          tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
+        tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
 
     /* Neither table or slot were given */
     else if ((part->table_num == -1) && (part->slot_num == -1))
-        if (is_csv)
-          tsk_printf("%.3" PRIuPNUM "%c%c", part->addr, delim, delim);
-        else
-          tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
+        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
 
     /* Table was not given, but slot was */
     else if ((part->table_num == -1) && (part->slot_num != -1))
-        if (is_csv)
-          tsk_printf("%.3" PRIuPNUM "%c%.3" PRIu8 "%c",
-            part->addr, delim, part->slot_num, delim);
-        else
-          tsk_printf("%.3" PRIuPNUM ":  %.3" PRIu8 "       ",
-              part->addr, part->slot_num);
+        tsk_printf("%.3" PRIuPNUM ":  %.3" PRIu8 "       ",
+            part->addr, part->slot_num);
 
     /* The Table was given, but slot wasn't */
     else if ((part->table_num != -1) && (part->slot_num == -1))
-        if (is_csv)
-          tsk_printf("%.3" PRIuPNUM "%c%c", part->addr, delim, delim);
-        else
-          tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
+        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
 
     /* Both table and slot were given */
-    else if ((part->table_num != -1) && (part->slot_num != -1)) {
-        if (is_csv)
-          tsk_printf("%.3" PRIuPNUM "%c%.3d:%.3d%c",
-            part->addr, delim, part->table_num, part->slot_num, delim);
-        else
-          tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
-              part->addr, part->table_num, part->slot_num);
-    }
-    if (print_bytes) {
+    else if ((part->table_num != -1) && (part->slot_num != -1))
+        tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
+            part->addr, part->table_num, part->slot_num);
+
+    WalkState* ws = static_cast<WalkState*>(ptr);
+
+    if (ws->print_bytes) {
         TSK_OFF_T size;
         char unit = 'B';
         size = part->len * part->vs->block_size;
@@ -129,35 +105,23 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
         }
 
         /* Print the layout */
-        if (is_csv)
-          tsk_printf("%.10" PRIuDADDR "%c%.10" PRIuDADDR "%c%.10" PRIuDADDR
-              "%c%.4" PRIdOFF "%c%c%s\n", part->start, delim,
-              (TSK_DADDR_T) (part->start + part->len - 1), delim, part->len, delim, size,
-              unit, delim, part->desc);
-        else
-          tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
-              "   %.4" PRIdOFF "%c   %s\n", part->start,
-              (TSK_DADDR_T) (part->start + part->len - 1), part->len, size,
-              unit, part->desc);
+        tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
+            "   %.4" PRIdOFF "%c   %s\n", part->start,
+            (TSK_DADDR_T) (part->start + part->len - 1), part->len, size,
+            unit, part->desc);
     }
     else {
         /* Print the layout */
-        if (is_csv)
-          tsk_printf("%.10" PRIuDADDR "%c%.10" PRIuDADDR "%c%.10" PRIuDADDR
-            "%c%s\n", part->start, delim,
-            (TSK_DADDR_T) (part->start + part->len - 1), delim, part->len, delim,
+        tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
+            "   %s\n", part->start,
+            (TSK_DADDR_T) (part->start + part->len - 1), part->len,
             part->desc);
-        else
-          tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
-              "   %s\n", part->start,
-              (TSK_DADDR_T) (part->start + part->len - 1), part->len,
-              part->desc);
     }
 
-    if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)
-        && (part->flags == TSK_VS_PART_FLAG_ALLOC)) {
-        if (recurse_cnt < 64) {
-            recurse_list[recurse_cnt++] = part->start * part->vs->block_size;
+    if (ws->recurse && vs->vstype == TSK_VS_TYPE_DOS
+        && part->flags == TSK_VS_PART_FLAG_ALLOC) {
+        if (ws->recurse_cnt < 64) {
+            ws->recurse_list[ws->recurse_cnt++] = part->start * part->vs->block_size;
         }
     }
 
@@ -165,225 +129,211 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
 }
 
 static void
-print_header(const TSK_VS_INFO * vs)
+print_header(const TSK_VS_INFO * vs, bool print_bytes)
 {
-    // Make delim a char* to use it with the ternary operator
-    const char* delim = ",";
-
-    if (!is_csv){
-      tsk_printf("%s\n", tsk_vs_type_todesc(vs->vstype));
-      tsk_printf("Offset Sector: %" PRIuDADDR "\n",
-          (TSK_DADDR_T) (vs->offset / vs->block_size));
-      tsk_printf("Units are in %d-byte sectors\n\n", vs->block_size);
-    }
-
-
+    tsk_printf("%s\n", tsk_vs_type_todesc(vs->vstype));
+    tsk_printf("Offset Sector: %" PRIuDADDR "\n",
+        (TSK_DADDR_T) (vs->offset / vs->block_size));
+    tsk_printf("Units are in %d-byte sectors\n\n", vs->block_size);
     if (print_bytes)
         tsk_printf
-            ("%s%s%s%s%s%s%s%s%s%s%s%s",
-             is_csv ? "ID," : "      ",
-             "Slot",
-             is_csv ? delim : "      ",
-             "Start",
-             is_csv ? delim : "        ",
-             "End",
-             is_csv ? delim : "          ",
-             "Length",
-             is_csv ? delim : "       ",
-             "Size",
-             is_csv ? delim : "    ",
-             "Description\n");
+            ("      Slot      Start        End          Length       Size    Description\n");
     else
         tsk_printf
-            ("%s%s%s%s%s%s%s%s%s%s",
-             is_csv ? "ID," : "      ",
-             "Slot",
-             is_csv ? delim : "      ",
-             "Start",
-             is_csv ? delim : "        ",
-             "End",
-             is_csv ? delim : "          ",
-             "Length",
-             is_csv ? delim : "       ",
-             "Description\n");
+            ("      Slot      Start        End          Length       Description\n");
 }
 
-int
-mmls_main(int argc, char **argv1)
-{
-    TSK_VS_INFO *vs;
-    int ch;
-    TSK_OFF_T imgaddr = 0;
-    int flags = 0;
-    TSK_IMG_INFO *img;
-    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
-    uint8_t hide_meta = 0;
-    TSK_TCHAR **argv;
-    unsigned int ssize = 0;
+struct Options {
+  int flags = 0;
+  bool print_bytes = 0;
+  unsigned int ssize = 0;
+  TSK_OFF_T imgaddr = 0;
+  TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+  TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
+  bool recurse = false;
+  unsigned int verbose = 0;
+};
+
+std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
+    Options opts;
+
+    bool hide_meta = false;
     TSK_TCHAR *cp;
+    int ch;
 
-    if (tsk_stderr==NULL) tsk_stderr = stderr;
-
-#ifdef TSK_WIN32
-    // On Windows, get the wide arguments (mingw doesn't support wmain)
-    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == NULL) {
-        fprintf(tsk_stderr, "Error getting wide arguments\n");
-        exit(1);
-    }
-#else
-    argv = (TSK_TCHAR **) argv1;
-#endif
-
-    progname = argv[0];
-
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvVh"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
-            flags |= TSK_VS_PART_FLAG_ALLOC;
+            opts.flags |= TSK_VS_PART_FLAG_ALLOC;
             break;
         case _TSK_T('A'):
-            flags |= TSK_VS_PART_FLAG_UNALLOC;
-            break;
-        case _TSK_T('c'):
-            is_csv = true;
+            opts.flags |= TSK_VS_PART_FLAG_UNALLOC;
             break;
         case _TSK_T('B'):
-            print_bytes = 1;
+            opts.print_bytes = true;
             break;
         case _TSK_T('b'):
-            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || ssize < 1) {
-                TFPRINTF(tsk_stderr,
+            opts.ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || opts.ssize < 1) {
+                TFPRINTF(stderr,
                     _TSK_T
                     ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
-                return usage();
+                usage();
+                return 1;
             }
             break;
-        case _TSK_T('h'):
-            return usage();
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_img_type_print(tsk_stderr);
-                exit(1);
+                tsk_img_type_print(stderr);
+                return 1;
             }
-            imgtype = tsk_img_type_toid(OPTARG);
-            if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(tsk_stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
+            opts.imgtype = tsk_img_type_toid(OPTARG);
+            if (opts.imgtype == TSK_IMG_TYPE_UNSUPP) {
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
-                return usage();
+                usage();
+                return 1;
             }
             break;
         case _TSK_T('m'):
-            flags |= (TSK_VS_PART_FLAG_META);
+            opts.flags |= (TSK_VS_PART_FLAG_META);
             break;
         case _TSK_T('M'):
             // we'll set this after all flags have been set
-            hide_meta = 1;
+            hide_meta = true;
             break;
         case _TSK_T('o'):
-            if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
-                tsk_error_print(tsk_stderr);
-                exit(1);
+            if ((opts.imgaddr = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                return 1;
             }
             break;
         case _TSK_T('r'):
-            recurse = 1;
+            opts.recurse = true;
             break;
         case _TSK_T('t'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_vs_type_print(tsk_stderr);
-                exit(1);
+                tsk_vs_type_print(stderr);
+                return 1;
             }
-            vstype = tsk_vs_type_toid(OPTARG);
-            if (vstype == TSK_VS_TYPE_UNSUPP) {
-                TFPRINTF(tsk_stderr,
+            opts.vstype = tsk_vs_type_toid(OPTARG);
+            if (opts.vstype == TSK_VS_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
                     _TSK_T("Unsupported volume system type: %" PRIttocTSK "\n"),
                     OPTARG);
-                return usage();
+                usage();
+                return 1;
             }
             break;
         case _TSK_T('v'):
-            tsk_verbose++;
+            opts.verbose++;
             break;
         case _TSK_T('V'):
             tsk_version_print(stdout);
-            exit(0);
+            return 0;
         case _TSK_T('?'):
         default:
-            tsk_fprintf(tsk_stderr, "Unknown argument\n");
-            return usage();
+            tsk_fprintf(stderr, "Unknown argument\n");
+            usage();
+            return 1;
         }
     }
 
     // if they want to hide metadata volumes, set that now
     if (hide_meta) {
-        if (flags == 0)
-            flags = (TSK_VS_PART_FLAG_ALLOC | TSK_VS_PART_FLAG_UNALLOC);
-        else
-            flags &= ~TSK_VS_PART_FLAG_META;
+        if (opts.flags == 0) {
+            opts.flags = (TSK_VS_PART_FLAG_ALLOC | TSK_VS_PART_FLAG_UNALLOC);
+        }
+        else {
+            opts.flags &= ~TSK_VS_PART_FLAG_META;
+        }
     }
-    else if (flags == 0) {
-        flags = TSK_VS_PART_FLAG_ALL;
+    else if (opts.flags == 0) {
+        opts.flags = TSK_VS_PART_FLAG_ALL;
     }
 
     /* We need at least one more argument */
     if (OPTIND >= argc) {
-        tsk_fprintf(tsk_stderr, "Missing image name\n");
-        return usage();
+        tsk_fprintf(stderr, "Missing image name\n");
+        usage();
+        return 1;
     }
+
+    return opts;
+}
+
+int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
+    auto [
+      flags,
+      print_bytes,
+      ssize,
+      imgaddr,
+      imgtype,
+      vstype,
+      recurse,
+      _ // verbose
+    ] = opts;
+
+    tsk_verbose = opts.verbose;
 
     /* open the image */
-    img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize);
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
 
-    if (img == NULL) {
-        tsk_error_print(tsk_stderr);
-        goto on_error;
+    if (!img) {
+        tsk_error_print(stderr);
+        return 1;
     }
+
     if ((imgaddr * img->sector_size) >= img->size) {
-        tsk_fprintf(tsk_stderr,
+        tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / img->sector_size);
-        goto on_error;
+        return 1;
     }
 
     /* process the partition tables */
-    vs = tsk_vs_open(img, imgaddr * img->sector_size, vstype);
-    if (vs == NULL) {
-        tsk_error_print(tsk_stderr);
+    std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs{
+        tsk_vs_open(img.get(), imgaddr * img->sector_size, vstype),
+        tsk_vs_close
+    };
+
+    if (!vs) {
+        tsk_error_print(stderr);
         if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
-            tsk_vs_type_print(tsk_stderr);
-        goto on_error;
+            tsk_vs_type_print(stderr);
+        return 1;
     }
 
-    print_header(vs);
+    print_header(vs.get(), print_bytes);
 
-    if (tsk_vs_part_walk(vs, 0, vs->part_count - 1,
-            (TSK_VS_PART_FLAG_ENUM) flags, part_act, NULL)) {
-        tsk_error_print(tsk_stderr);
-        tsk_vs_close(vs);
-        goto on_error;
+    WalkState ws{print_bytes, recurse};
+    if (tsk_vs_part_walk(vs.get(), 0, vs->part_count - 1,
+            (TSK_VS_PART_FLAG_ENUM) flags, part_act, &ws)) {
+        tsk_error_print(stderr);
+        return 1;
     }
 
-    if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)) {
-        int i;
+    if (ws.recurse && vs->vstype == TSK_VS_TYPE_DOS) {
         /* disable recursing incase we hit another DOS partition
          * future versions may support more layers */
-        recurse = 0;
+        ws.recurse = false;
 
-        for (i = 0; i < recurse_cnt; i++) {
-            TSK_VS_INFO *vs2;
-            vs2 = tsk_vs_open(img, recurse_list[i], TSK_VS_TYPE_DETECT);
-            if (vs2 != NULL) {
+        for (int i = 0; i < ws.recurse_cnt; i++) {
+            std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs2{
+                tsk_vs_open(img.get(), ws.recurse_list[i], TSK_VS_TYPE_DETECT),
+                tsk_vs_close
+            };
+            if (vs2) {
                 tsk_printf("\n\n");
-                print_header(vs2);
-                if (tsk_vs_part_walk(vs2, 0, vs2->part_count - 1,
-                        (TSK_VS_PART_FLAG_ENUM) flags, part_act, NULL)) {
+                print_header(vs2.get(), print_bytes);
+                if (tsk_vs_part_walk(vs2.get(), 0, vs2->part_count - 1,
+                        (TSK_VS_PART_FLAG_ENUM) flags, part_act, &ws)) {
                     tsk_error_reset();
                 }
-                tsk_vs_close(vs2);
             }
             else {
                 /* Ignore error in this case and reset */
@@ -394,13 +344,29 @@ mmls_main(int argc, char **argv1)
     // TODO: tsk error leaks here.
     // is the memory managed by pthread_setspecific(pt_tls_key, ...) freed?
 
-    tsk_vs_close(vs);
-    tsk_img_close(img);
-    return(0);
+    return 0;
+}
 
-on_error:
-    if( img != NULL ) {
-        tsk_img_close( img );
+int
+main(int argc, char **argv1)
+{
+    TSK_TCHAR **argv;
+#ifdef TSK_WIN32
+    // On Windows, get the wide arguments (mingw doesn't support wmain)
+    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argv == NULL) {
+        fprintf(stderr, "Error getting wide arguments\n");
+        exit(1);
     }
-    return( 1 );
+#else
+    argv = (TSK_TCHAR **) argv1;
+#endif
+
+    const auto p = parse_args(argc, argv);
+    if (const int* ret = std::get_if<int>(&p)) {
+      return *ret;
+    }
+
+    const auto& opts = std::get<Options>(p);
+    return do_it(opts, argc, argv);
 }

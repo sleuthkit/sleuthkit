@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <new>
 
 void error_detected(uint32_t errnum, const char* errstr, ...);
 void error_returned(const char* errstr, ...);
@@ -237,14 +238,14 @@ decmpfs_read_zlib_block_table(
     }
 
     // Each table entry is 8 bytes long
-    std::unique_ptr<char[]> offsetTableData{new char[tableSize * 8]};
+    std::unique_ptr<char[]> offsetTableData{new(std::nothrow) char[tableSize * 8]};
     if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
         return nullptr;
     }
 
-    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable{new CMP_OFFSET_ENTRY[tableSize]};
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable{new(std::nothrow) CMP_OFFSET_ENTRY[tableSize]};
     if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
@@ -310,7 +311,7 @@ decmpfs_read_lzvn_block_table(
         return nullptr;
     }
 
-    std::unique_ptr<char[]> offsetTableData(new char[tableDataSize]);
+    std::unique_ptr<char[]> offsetTableData(new(std::nothrow) char[tableDataSize]);
     if (!offsetTableData) {
         error_returned
             (" %s: space for the offset table raw data", __func__);
@@ -321,7 +322,7 @@ decmpfs_read_lzvn_block_table(
     // table entries are 4 bytes, last entry is end of data
     const uint32_t tableSize = tableDataSize / 4 - 1;
 
-    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable(new CMP_OFFSET_ENTRY[tableSize]);
+    std::unique_ptr<CMP_OFFSET_ENTRY[]> offsetTable(new(std::nothrow) CMP_OFFSET_ENTRY[tableSize]);
     if (!offsetTable) {
         error_returned
             (" %s: space for the offset table", __func__);
@@ -641,14 +642,14 @@ decmpfs_attr_walk_compressed_rsrc(
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    std::unique_ptr<char[]> rawBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE + 1]};
     if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
         return 1;
     }
 
-    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    std::unique_ptr<char[]> uncBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE]};
     if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
@@ -904,14 +905,14 @@ decmpfs_file_read_compressed_rsrc(
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the zlib data is not
      * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
-    std::unique_ptr<char[]> rawBuf{new char[COMPRESSION_UNIT_SIZE + 1]};
+    std::unique_ptr<char[]> rawBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE + 1]};
     if (!rawBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
         return -1;
     }
 
-    std::unique_ptr<char[]> uncBuf{new char[COMPRESSION_UNIT_SIZE]};
+    std::unique_ptr<char[]> uncBuf{new(std::nothrow) char[COMPRESSION_UNIT_SIZE]};
     if (!uncBuf) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
@@ -1086,7 +1087,7 @@ std::unique_ptr<char[]> decmpfs_decompress_zlib_attr(
     // Note: cast is OK because uncSize will be quite modest, < 4000.
 
     // add some extra space
-    std::unique_ptr<char[]> uncBuf{new char[uncSize + 100]};
+    std::unique_ptr<char[]> uncBuf{new(std::nothrow) char[uncSize + 100]};
     if (!uncBuf) {
         error_returned
             (" - %s, space for the uncompressed attr", __func__);
@@ -1123,7 +1124,7 @@ std::unique_ptr<char[]> decmpfs_decompress_zlib_attr(
     // Dummy array is one byte long, so the ptr is not null, but we set the
     // length to zero bytes, so it is never read.
     *dstSize = 0;
-    return std::unique_ptr<char[]>{new char[1]};
+    return std::unique_ptr<char[]>{new(std::nothrow) char[1]};
 #endif
 }
 
@@ -1152,7 +1153,7 @@ std::unique_ptr<char[]> decmpfs_decompress_lzvn_attr(
   uint64_t uncSize,
   uint64_t* dstSize)
 {
-    std::unique_ptr<char[]> uncBuf{new char[uncSize]};
+    std::unique_ptr<char[]> uncBuf{new(std::nothrow) char[uncSize]};
     *dstSize = lzvn_decode_buffer(uncBuf.get(), uncSize, rawBuf, rawSize);
     return uncBuf;
 }

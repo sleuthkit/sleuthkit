@@ -4,7 +4,6 @@
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2007-2011 Brian Carrier.  All Rights reserved
  *
- * Some parts Copyright (c) 2024 BasisTech LLC. All Rights reserved
  * This software is distributed under the Common Public License 1.0
  */
 
@@ -19,9 +18,6 @@
 #include "tsk_base_i.h"
 #include <stdarg.h>
 
-
-FILE *tsk_stdout = NULL;         /* set to stdout if NULL and a default printer is called */
-FILE *tsk_stderr = NULL;         /* set to stderr if NULL and tried to be used */
 
 /** \internal
  * Convert the UTF-8 printf arguments to UTF-16 and fill in the
@@ -126,8 +122,7 @@ tsk_printf(const char *msg, ...)
         wprintf(_TSK_T("%ls"), wbuf);
     }
 #else
-    if (tsk_stdout==NULL) tsk_stdout = stdout;
-    vfprintf(tsk_stdout, msg, args);
+    vprintf(msg, args);
 #endif
     va_end(args);
 }
