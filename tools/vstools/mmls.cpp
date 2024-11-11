@@ -163,7 +163,7 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
     TSK_TCHAR *cp;
     int ch;
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvVh"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             opts.flags |= TSK_VS_PART_FLAG_ALLOC;
@@ -188,6 +188,9 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
         case _TSK_T('c'):
             opts.csv = true;
             break;
+        case _TSK_T('h'):
+          usage();
+          return 1;
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_img_type_print(stderr);
