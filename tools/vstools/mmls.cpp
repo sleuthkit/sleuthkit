@@ -31,6 +31,7 @@ usage()
     tsk_fprintf(stderr, "\t-B: print the rounded length in bytes\n");
     tsk_fprintf(stderr,
         "\t-r: recurse and look for other partition tables in partitions (DOS Only)\n");
+    tsk_fprintf(stderr, "\t-c: print CSV-output\n");
     tsk_fprintf(stderr, "\t-v: verbose output\n");
     tsk_fprintf(stderr, "\t-V: print the version\n");
     tsk_fprintf(stderr,
@@ -151,6 +152,7 @@ struct Options {
   TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
   TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
   bool recurse = false;
+  bool csv = false;
   unsigned int verbose = 0;
 };
 
@@ -161,7 +163,7 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
     TSK_TCHAR *cp;
     int ch;
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvV"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             opts.flags |= TSK_VS_PART_FLAG_ALLOC;
@@ -182,6 +184,9 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
                 usage();
                 return 1;
             }
+            break;
+        case _TSK_T('c'):
+            opts.csv = true;
             break;
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
@@ -276,6 +281,7 @@ int do_it(
       imgtype,
       vstype,
       recurse,
+      csv,
       _ // verbose
     ] = opts;
 
