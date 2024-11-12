@@ -643,6 +643,7 @@ test_runner_SOURCES = \
 	test/tsk/img/test_ewf.cpp \
 	test/tsk/img/test_mult_files.cpp \
 	test/tsk/img/test_raw.cpp \
+	test/tsk/img/test_vhd.cpp \
 	test/tsk/img/test_vmdk.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/runner.cpp \
