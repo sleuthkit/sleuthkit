@@ -191,7 +191,7 @@ jobs:
       - name: Run configure with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
-          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
 
       - name: Run make with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
