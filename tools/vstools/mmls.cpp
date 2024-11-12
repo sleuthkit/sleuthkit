@@ -14,6 +14,7 @@
 #include "tools/util.h"
 
 #include <memory>
+#include <utility>
 #include <variant>
 
 void
@@ -53,6 +54,32 @@ struct WalkState {
   TSK_DADDR_T recurse_list[64] = {0};
 };
 
+std::pair<TSK_OFF_T, char> size_with_unit(TSK_OFF_T size) {
+    char unit = 'B';
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'K';
+    }
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'M';
+    }
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'G';
+    }
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'T';
+    }
+
+    return { size, unit };
+}
+
 TSK_WALK_RET_ENUM
 part_act_tabular(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
 {
@@ -81,29 +108,7 @@ part_act_tabular(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
     }
 
     if (ws->print_bytes) {
-        TSK_OFF_T size;
-        char unit = 'B';
-        size = part->len * part->vs->block_size;
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'K';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'M';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'G';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'T';
-        }
+        const auto [size, unit] = size_with_unit(part->len * part->vs->block_size);
 
         /* Print the layout */
         tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
@@ -164,29 +169,7 @@ part_act_csv(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
     }
 
     if (ws->print_bytes) {
-        TSK_OFF_T size;
-        char unit = 'B';
-        size = part->len * part->vs->block_size;
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'K';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'M';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'G';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'T';
-        }
+        const auto [size, unit] = size_with_unit(part->len * part->vs->block_size);
 
         /* Print the layout */
         tsk_printf("%.10" PRIuDADDR "%c%.10" PRIuDADDR "%c%.10" PRIuDADDR
