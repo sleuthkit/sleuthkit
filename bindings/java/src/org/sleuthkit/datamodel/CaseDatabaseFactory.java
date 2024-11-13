@@ -789,7 +789,7 @@ class CaseDatabaseFactory {
 				
 				// Postgres supports composite and partial indexes which results in smaller indexes and faster inserts. 
 				// So in Postgres we can have an index which indexes only tsk_files with non-null MD5 and non-zero size:
-				stmt.execute("CREATE INDEX idx_tsk_files_data_md5_size_partial ON tsk_files(data_source_obj_id, md5, size) WHERE md5 IS NOT NULL AND size > 0");
+				stmt.execute("CREATE INDEX tsk_files_datasrc_md5_size_partial_index ON tsk_files(data_source_obj_id, md5, size) WHERE md5 IS NOT NULL AND size > 0");
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error performing PostgreSQL post table initialization", ex);
 			}
@@ -865,7 +865,7 @@ class CaseDatabaseFactory {
 			try (Statement stmt = conn.createStatement()) {				
 				// SQLite supports composite indexes but has only limited support for partial indexes 
 				// (partial indexes in SQLite do not support IS NOT NULL as a condition):
-				stmt.execute("CREATE INDEX idx_tsk_files_data_md5_size ON tsk_files(data_source_obj_id, md5, size)");
+				stmt.execute("CREATE INDEX tsk_files_datasrc_md5_size_index ON tsk_files(data_source_obj_id, md5, size)");
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error performing SQLite post table initialization", ex);
 			}

@@ -2939,10 +2939,10 @@ public class SleuthkitCase {
 		String insertSQL = "";
 		switch (getDatabaseType()) {
 			case POSTGRESQL:
-				insertSQL = "CREATE INDEX idx_tsk_files_data_md5_size_partial ON tsk_files(data_source_obj_id, md5, size) WHERE md5 IS NOT NULL AND size > 0"; //NON-NLS
+				insertSQL = "CREATE INDEX tsk_files_datasrc_md5_size_partial_index ON tsk_files(data_source_obj_id, md5, size) WHERE md5 IS NOT NULL AND size > 0"; //NON-NLS
 				break;
 			case SQLITE:
-				insertSQL = "CREATE INDEX idx_tsk_files_data_md5_size ON tsk_files(data_source_obj_id, md5, size)";
+				insertSQL = "CREATE INDEX tsk_files_datasrc_md5_size_index ON tsk_files(data_source_obj_id, md5, size)";
 				break;
 			default:
 				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
