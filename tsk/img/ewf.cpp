@@ -114,9 +114,6 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
 ewf_glob_free(IMG_EWF_INFO* ewf_info) {
     // Freeing img_info->images ourselves is incorrect if we used glob.
-    // v2 of the API has a free method. It's not clear from the docs what we
-    // should do in v1...
-    // @@@ Probably a memory leak in v1 unless libewf_close deals with it
     if (ewf_info->used_ewf_glob != 0) {
 #ifdef TSK_WIN32
         libewf_glob_wide_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
