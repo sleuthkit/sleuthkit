@@ -19,6 +19,19 @@
 
 #include <memory>
 
+#ifdef TSK_WIN32
+
+#include <algorithm>
+#include <string>
+
+static std::wstring bs_path_separators(const TSK_TCHAR* path) {
+  std::wstring r{path};
+  std::replace(r.begin(), r.end(), '/', '\\');
+  return r;
+}
+
+#endif
+
 #define TSK_QCOW_ERROR_STRING_SIZE 512
 
 /**
@@ -173,8 +186,16 @@ qcow_open(int a_num_img,
     qcow_info->handle = nullptr;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) qcow_info.get();
 
-    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-        return nullptr;
+    {
+#ifdef TSK_WIN32
+        const auto img_path = bs_path_separators(a_images[0]);
+        const TSK_TCHAR* const images[] = { img_path.c_str() };
+#else
+        const TSK_TCHAR* const* images = a_images;
+#endif
+        if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
+            return nullptr;
+        }
     }
 
     if (libqcow_file_initialize(&(qcow_info->handle), &qcow_error) != 1) {
