@@ -223,7 +223,7 @@ ewf_open(int a_num_img,
     int is_error;
     char error_string[TSK_EWF_ERROR_STRING_SIZE];
 
-    libewf_error_t *ewf_error = NULL;
+    libewf_error_t *ewf_error = nullptr;
     int result = 0;
 
     const auto deleter = [](IMG_EWF_INFO* ewf_info) {
@@ -243,7 +243,7 @@ ewf_open(int a_num_img,
         return nullptr;
     }
 
-    ewf_info->handle = NULL;
+    ewf_info->handle = nullptr;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ewf_info.get();
 
 #ifdef TSK_WIN32
