@@ -185,7 +185,7 @@ img_file_header_signature_ncmp(const char *filename,
 
 #ifdef TSK_WIN32
 std::vector<std::wstring>
-fixup_path_separators(const TSK_TCHAR* const imgs[], unsigned int len) {
+fixup_path_separators(const TSK_TCHAR* const imgs[], size_t len) {
     std::vector<std::wstring> v;
     for (size_t i = 0; i < len; ++i) {
         std::wstring r{imgs[i]};
@@ -194,6 +194,26 @@ fixup_path_separators(const TSK_TCHAR* const imgs[], unsigned int len) {
     }
     return v;
 }
+
+struct PathsHolder {
+    std::vector<std::wstring> v;
+    std::unique_ptr<const TSK_TCHAR*[]> imgs_arr;
+};
+
+PathsHolder replace_slashes(const TSK_TCHAR* const imgs[], size_t len) {
+    const auto imgs_bs = fixup_path_separators(imgs, len);
+    std::unique_ptr<const TSK_TCHAR*[]> imgs_arr{new const TSK_TCHAR*[len]};
+
+    for (size_t i = 0; i < len; ++i) {
+        imgs_arr[i] = imgs_bs[i].c_str();
+    }
+
+    return PathsHolder {
+        std::move(imgs_bs),
+        std::move(imgs_arr)
+    };
+}
+
 #endif
 
 TSK_IMG_INFO *
@@ -227,15 +247,8 @@ ewf_open(int a_num_img,
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ewf_info.get();
 
 #ifdef TSK_WIN32
-    const auto images_bs = fixup_path_separators(a_images, a_ssize);
-    std::unique_ptr<const TSK_TCHAR*[]> images_arr{new(std::nothrow) const TSK_TCHAR*[a_ssize]};
-    if (!images_arr) {
-        return nullptr;
-    }
-    for (size_t i = 0; i < a_ssize; ++i) {
-      images_arr[i] = images_bs[i].c_str();
-    }
-    const TSK_TCHAR* const* images = images_arr.get();
+    const auto holder = replace_slashes(a_images, a_ssize);
+    const TSK_TCHAR* const* images = holder.imgs_arr.get();
 #else
     const TSK_TCHAR* const* images = a_images;
 #endif
