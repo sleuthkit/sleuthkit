@@ -6,7 +6,7 @@ dest_dir: test/from_brian
 # An `xml` is the optional DFXML output
 sources:
   - step1:
-      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/imageformat_mmls_1.E01
+      image: test_data/imageformat_mmls_1.E01
       xml:   https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/imageformat_mmls_1.E01.xml
   - step2:
       zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/3-kwsrch-ntfs.zip
@@ -33,7 +33,7 @@ sources:
       zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/6-undel-fat.zip
       unzip_image: 6-undel-fat/6-fat-undel.dd
   - exfat1:
-      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/exfat1.E01
+      image: test_data/exfat1.E01
   - hfsjtest1:
       zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.zip
       unzip_image: image.gen1.dmg
