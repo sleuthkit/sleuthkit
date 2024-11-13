@@ -43,4 +43,15 @@ TEST_CASE("qcow_open ok") {
   REQUIRE(img);
 }
 
+#ifdef TSK_WIN32
+TEST_CASE("qcow_open backslash path separator ok") {
+  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.qcow") };
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    qcow_open(1, images, 1234),
+    tsk_img_close
+  };
+  REQUIRE(img);
+}
+#endif
+
 #endif
