@@ -17,6 +17,8 @@
 #if HAVE_LIBVHDI
 #include "vhd.h"
 
+#include <memory>
+
 #define TSK_VHDI_ERROR_STRING_SIZE 512
 
 /**
@@ -139,30 +141,38 @@ vhdi_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "vhd requires exactly 1 image filename for opening\n");
         }
-        return NULL;
+        return nullptr;
     }
 
     char error_string[TSK_VHDI_ERROR_STRING_SIZE];
-    libvhdi_error_t *vhdi_error = NULL;
-
-    IMG_VHDI_INFO *vhdi_info = NULL;
-    TSK_IMG_INFO *img_info = NULL;
+    libvhdi_error_t *vhdi_error = nullptr;
 
     if (tsk_verbose) {
         libvhdi_notify_set_verbose(1);
-        libvhdi_notify_set_stream(stderr, NULL);
+        libvhdi_notify_set_stream(stderr, nullptr);
     }
 
-    if ((vhdi_info =
-            (IMG_VHDI_INFO *) tsk_img_malloc(sizeof(IMG_VHDI_INFO))) ==
-        NULL) {
-        return NULL;
+    const auto deleter = [](IMG_VHDI_INFO* vhdi_info) {
+        if (vhdi_info->handle) {
+            libvhdi_file_close(vhdi_info->handle, nullptr);
+        }
+        libvhdi_file_free(&(vhdi_info->handle), nullptr);
+        tsk_img_free(vhdi_info);
+    };
+
+    std::unique_ptr<IMG_VHDI_INFO, decltype(deleter)> vhdi_info{
+        (IMG_VHDI_INFO *) tsk_img_malloc(sizeof(IMG_VHDI_INFO)),
+        deleter
+    };
+    if (!vhdi_info) {
+        return nullptr;
     }
-    vhdi_info->handle = NULL;
-    img_info = (TSK_IMG_INFO *) vhdi_info;
+
+    vhdi_info->handle = nullptr;
+    TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) vhdi_info.get();
 
     if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-        goto on_error;
+        return nullptr;
     }
 
     if (libvhdi_file_initialize(&(vhdi_info->handle), &vhdi_error) != 1) {
@@ -176,15 +186,16 @@ vhdi_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create vhdi handle\n");
         }
-        goto on_error;
+        return nullptr;
     }
+
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
     if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->img_info.images[0], &vhdi_error ) != 1 )
 #else
     if( libvhdi_check_file_signature((const char *) vhdi_info->img_info.images[0], &vhdi_error) != 1)
 #endif
-	{
+    {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
@@ -196,8 +207,9 @@ vhdi_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error checking file signature for vhd file\n");
         }
-        goto on_error;
+        return nullptr;
     }
+
 #if defined( TSK_WIN32 )
     if (libvhdi_file_open_wide(vhdi_info->handle,
             (const wchar_t *) vhdi_info->img_info.images[0],
@@ -218,8 +230,9 @@ vhdi_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vhdi file\n");
         }
-        goto on_error;
+        return nullptr;
     }
+
     if (libvhdi_file_get_media_size(vhdi_info->handle,
             (size64_t *) & (img_info->size), &vhdi_error) != 1) {
         tsk_error_reset();
@@ -233,7 +246,7 @@ vhdi_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of vhdi file\n");
         }
-        goto on_error;
+        return nullptr;
     }
 
     if (a_ssize != 0) {
@@ -250,15 +263,7 @@ vhdi_open(int a_num_img,
     // initialize the read lock
     tsk_init_lock(&(vhdi_info->read_lock));
 
-    return img_info;
-
-on_error:
-    if (vhdi_info->handle) {
-        libvhdi_file_close(vhdi_info->handle, NULL);
-    }
-    libvhdi_file_free(&(vhdi_info->handle), NULL);
-    tsk_img_free(vhdi_info);
-    return NULL;
+    return (TSK_IMG_INFO*) vhdi_info.release();
 }
 
 #endif /* HAVE_LIBVHDI */

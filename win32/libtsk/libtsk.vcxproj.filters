@@ -315,10 +315,10 @@
     <ClCompile Include="..\..\tsk\auto\tsk_db.cpp">
       <Filter>auto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\vmdk.c">
+    <ClCompile Include="..\..\tsk\img\vmdk.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\vhd.c">
+    <ClCompile Include="..\..\tsk\img\vhd.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\auto\guid.cpp">

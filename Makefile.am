@@ -278,16 +278,16 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/logical_img.h \
 	tsk/img/mult_files.cpp \
 	tsk/img/mult_files.h \
-	tsk/img/qcow.c \
+	tsk/img/qcow.cpp \
 	tsk/img/qcow.h \
 	tsk/img/raw.cpp \
 	tsk/img/raw.h \
 	tsk/img/tsk_img_i.h \
 	tsk/img/unsupported_types.c \
 	tsk/img/unsupported_types.h \
-	tsk/img/vhd.c \
+	tsk/img/vhd.cpp \
 	tsk/img/vhd.h \
-	tsk/img/vmdk.c \
+	tsk/img/vmdk.cpp \
 	tsk/img/vmdk.h
 
 tsk_pool_libtskpool_la_SOURCES = \

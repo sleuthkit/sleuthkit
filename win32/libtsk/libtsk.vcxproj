@@ -411,8 +411,8 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
     <ClCompile Include="..\..\tsk\img\unsupported_types.c" />
-    <ClCompile Include="..\..\tsk\img\vhd.c" />
-    <ClCompile Include="..\..\tsk\img\vmdk.c" />
+    <ClCompile Include="..\..\tsk\img\vhd.cpp" />
+    <ClCompile Include="..\..\tsk\img\vmdk.cpp" />
     <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp" />
     <ClCompile Include="..\..\tsk\pool\apfs_pool.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_open.cpp" />
