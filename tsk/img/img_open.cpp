@@ -15,6 +15,7 @@
  */
 
 #include "tsk_img_i.h"
+#include "img_open.h"
 
 #include "raw.h"
 #include "logical_img.h"
@@ -46,6 +47,7 @@
 #include <cstring>
 #include <memory>
 #include <new>
+#include <numeric>
 #include <vector>
 #include <utility>
 
@@ -65,34 +67,6 @@ bool sector_size_ok(unsigned int sector_size) {
     }
 
     return true;
-}
-
-template <class T>
-bool images_ok(int num_img, const T* const images[]) {
-    if (num_img < 0) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("number of images is negative (%d)", num_img);
-        return false;
-    }
-
-    if (num_img == 0 || !images || !images[0]) {
-        tsk_error_set_errno(TSK_ERR_IMG_NOFILE);
-        tsk_error_set_errstr("tsk_img_open");
-        return false;
-    }
-
-    return true;
-}
-
-template <class T>
-bool arguments_ok(
-    int num_img,
-    const T* const images[],
-    [[maybe_unused]] TSK_IMG_TYPE_ENUM type,
-    unsigned int a_ssize
-)
-{
-    return images_ok(num_img, images) && sector_size_ok(a_ssize);
 }
 
 void img_info_deleter(TSK_IMG_INFO* img_info) {
@@ -148,6 +122,8 @@ img_open_by_type(
 		    return { logical_open(num_img, images, a_ssize), img_info_deleter };
 
     default:
+        tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
+        tsk_error_set_errstr("%d", type);
         return { nullptr, img_info_deleter };
     }
 }
@@ -175,15 +151,122 @@ const char* type_name(TSK_IMG_TYPE_ENUM t) {
     }
 }
 
-std::string image_type_list(const std::vector<TSK_IMG_TYPE_ENUM>& l) {
-    std::string s;
-    for (const auto t: l) {
-        if (!s.empty()) {
-            s += ", ";
+std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
+img_open_detect_type(
+    int num_img,
+    const TSK_TCHAR* const images[],
+    unsigned int a_ssize
+)
+{
+    // Attempt to determine the image format
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_info{
+        nullptr,
+        img_info_deleter
+    };
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_guess{
+        nullptr,
+        img_info_deleter
+    };
+
+    std::vector<TSK_IMG_TYPE_ENUM> guesses;
+
+    enum Result { OK, UNRECOGNIZED, FAIL };
+
+    const auto ok_nonnull = [](TSK_IMG_INFO* img_info) {
+        return img_info ? OK : UNRECOGNIZED;
+    };
+
+#if HAVE_LIBAFFLIB
+    const auto ok_aff = [](TSK_IMG_INFO* img_info) {
+        if (img_info) {
+            /* we don't allow the "ANY" when autodetect is used because
+             * we only want to detect the tested formats. */
+            return img_info->itype == TSK_IMG_TYPE_AFF_ANY ? UNRECOGNIZED : OK;
         }
-        s += type_name(t);
+
+        // If AFF is otherwise happy except for a password,
+        // stop trying to guess
+        return tsk_error_get_errno() == TSK_ERR_IMG_PASSWD ? FAIL : UNRECOGNIZED;
+    };
+#endif
+
+    /* Try the non-raw formats first */
+    const std::vector<std::pair<TSK_IMG_TYPE_ENUM, Result (*)(TSK_IMG_INFO*)>> types{
+#if HAVE_LIBAFFLIB
+        { TSK_IMG_TYPE_AFF_ANY, ok_aff },
+#endif
+#if HAVE_LIBEWF
+        { TSK_IMG_TYPE_EWF_EWF, ok_nonnull },
+#endif
+#if HAVE_LIBAFF4
+        { TSK_IMG_TYPE_AFF4_AFF4, ok_nonnull },
+#endif
+#if HAVE_LIBVMDK
+        { TSK_IMG_TYPE_VMDK_VMDK, ok_nonnull },
+#endif
+#if HAVE_LIBVHDI
+        { TSK_IMG_TYPE_VHD_VHD, ok_nonnull },
+#endif
+#if HAVE_LIBQCOW
+        { TSK_IMG_TYPE_QCOW_QCOW, ok_nonnull },
+#endif
+    };
+
+    for (auto i = types.begin(); i != types.end(); ++i) {
+        tsk_error_reset();
+        img_info = img_open_by_type(num_img, images, i->first, a_ssize);
+        switch (i->second(img_info.get())) {
+        case OK:
+            guesses.push_back(img_info->itype);
+            img_guess = std::move(img_info);
+            break;
+
+        case UNRECOGNIZED:
+            break;
+
+        case FAIL:
+            // error should already be set by check function
+            img_info.reset();
+            return img_info;
+        }
     }
-    return s;
+
+    switch (guesses.size()) {
+    case 0:
+        // no guesses, try raw as a last resort
+        img_info.reset(raw_open(num_img, images, a_ssize));
+        if (!img_info) {
+            // raw failed too, who knows what type this is
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+        }
+        return img_info;
+
+    case 1:
+        // a non-raw format was detected
+        return img_guess;
+
+    default:
+        // too many guesses, image type is abmgiugous
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+
+        // build comma-separated guesses string
+        const auto ambiguous = std::accumulate(
+            std::next(guesses.begin()),
+            guesses.end(),
+            std::string(type_name(guesses[0])),
+            [](std::string a, TSK_IMG_TYPE_ENUM b) {
+                return std::move(a) + ", " + type_name(b);
+            }
+        );
+
+        tsk_error_set_errstr("%s", ambiguous.c_str());
+        img_info.reset();
+        return img_info;
+    }
 }
 
 TSK_IMG_INFO* img_open(
@@ -198,115 +281,11 @@ TSK_IMG_INFO* img_open(
             _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
             type, num_img, images[0]);
 
-    std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_info{
-        nullptr,
-        img_info_deleter
-    };
+    auto img_info = type == TSK_IMG_TYPE_DETECT ?
+      img_open_detect_type(num_img, images, a_ssize) :
+      img_open_by_type(num_img, images, type, a_ssize);
 
-    if (type == TSK_IMG_TYPE_DETECT) {
-        // Attempt to determine the image format
-        std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_guess{
-            nullptr,
-            img_info_deleter
-        };
-
-        std::vector<TSK_IMG_TYPE_ENUM> guesses;
-
-        enum Result { OK, UNRECOGNIZED, FAIL };
-
-        const auto ok_nonnull = [](TSK_IMG_INFO* img_info) {
-            return img_info ? OK : UNRECOGNIZED;
-        };
-
-#if HAVE_LIBAFFLIB
-        const auto ok_aff = [](TSK_IMG_INFO* img_info) {
-            if (img_info) {
-                /* we don't allow the "ANY" when autodetect is used because
-                 * we only want to detect the tested formats. */
-                return img_info->itype == TSK_IMG_TYPE_AFF_ANY ? UNRECOGNIZED : OK;
-            }
-
-            // If AFF is otherwise happy except for a password,
-            // stop trying to guess
-            return tsk_error_get_errno() == TSK_ERR_IMG_PASSWD ?  FAIL : UNRECOGNIZED;
-        };
-#endif
-
-        /* Try the non-raw formats first */
-        const std::pair<TSK_IMG_TYPE_ENUM, Result (*)(TSK_IMG_INFO*)> types[] = {
-#if HAVE_LIBAFFLIB
-            { TSK_IMG_TYPE_AFF_ANY, ok_aff },
-#endif
-#if HAVE_LIBEWF
-            { TSK_IMG_TYPE_EWF_EWF, ok_nonnull },
-#endif
-#if HAVE_LIBAFF4
-            { TSK_IMG_TYPE_AFF4_AFF4, ok_nonnull },
-#endif
-#if HAVE_LIBVMDK
-            { TSK_IMG_TYPE_VMDK_VMDK, ok_nonnull },
-#endif
-#if HAVE_LIBVHDI
-            { TSK_IMG_TYPE_VHD_VHD, ok_nonnull },
-#endif
-#if HAVE_LIBQCOW
-            { TSK_IMG_TYPE_QCOW_QCOW, ok_nonnull },
-#endif
-        };
-
-        for (auto i = std::begin(types); i != std::end(types); ++i) {
-            tsk_error_reset();
-            img_info = img_open_by_type(num_img, images, i->first, a_ssize);
-            switch (i->second(img_info.get())) {
-            case OK:
-                guesses.push_back(img_info->itype);
-                img_guess = std::move(img_info);
-                break;
-
-            case UNRECOGNIZED:
-                break;
-
-            case FAIL:
-                // error should already be set by check function
-                return nullptr;
-            }
-        }
-
-        switch (guesses.size()) {
-        case 0:
-            // try raw as a last resort
-            img_info.reset(raw_open(num_img, images, a_ssize));
-            if (!img_info) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-                return nullptr;
-            }
-            break;
-
-        case 1:
-            // a non-raw format was detected
-            img_info = std::move(img_guess);
-            break;
-
-        default:
-            // image type is abmgiugous
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-            // TODO: join guess string
-            const auto ambiguous = image_type_list(guesses);
-            tsk_error_set_errstr(ambiguous.c_str());
-            return nullptr;
-        }
-    }
-    else {
-        img_info = img_open_by_type(num_img, images, type, a_ssize);
-    }
-
-    /* check if img_info is good */
     if (!img_info) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
-        tsk_error_set_errstr("%d", type);
         return nullptr;
     }
 
@@ -363,7 +342,7 @@ tsk_img_open(int num_img,
     // Get rid of any old error messages laying around
     tsk_error_reset();
 
-    if (!arguments_ok(num_img, images, type, a_ssize)) {
+    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
         return nullptr;
     }
 
@@ -391,7 +370,6 @@ tsk_img_open_utf8_sing(const char *a_image,
     return tsk_img_open_utf8(1, &a, type, a_ssize);
 }
 
-
 /**
  * \ingroup imglib
  * Opens one or more disk image files so that they can be read.  This is a wrapper
@@ -407,14 +385,16 @@ tsk_img_open_utf8_sing(const char *a_image,
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
-tsk_img_open_utf8(int num_img,
-    const char *const images[], TSK_IMG_TYPE_ENUM type,
+tsk_img_open_utf8(
+    int num_img,
+    const char *const images[],
+    TSK_IMG_TYPE_ENUM type,
     unsigned int a_ssize)
 {
     // Get rid of any old error messages laying around
     tsk_error_reset();
 
-    if (!arguments_ok(num_img, images, type, a_ssize)) {
+    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
         return nullptr;
     }
 
@@ -463,7 +443,7 @@ tsk_img_open_utf8(int num_img,
 #else
     const TSK_TCHAR* const* imgs = images;
 #endif
-    return tsk_img_open(num_img, imgs, type, a_ssize);
+    return img_open(num_img, imgs, type, a_ssize);
 }
 
 /**
