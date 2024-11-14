@@ -43,6 +43,11 @@
 #include "aff4.h"
 #endif
 
+#include <cstring>
+#include <memory>
+#include <new>
+#include <vector>
+
 /**
  * \ingroup imglib
  * Opens a single (non-split) disk image file so that it can be read.  This is a
@@ -393,65 +398,47 @@ tsk_img_open_utf8(int num_img,
     unsigned int a_ssize)
 {
 #ifdef TSK_WIN32
-    {
-        /* Note that there is an assumption in this code that wchar_t is 2-bytes.
-         * this is a correct assumption for Windows, but not for all systems... */
+    /* Note that there is an assumption in this code that wchar_t is 2-bytes.
+     * this is a correct assumption for Windows, but not for all systems... */
 
-        TSK_IMG_INFO *retval = NULL;
-        wchar_t **images16;
-        int i;
+    // allocate a buffer to store the UTF-16 version of the images.
+    std::vector<std::unique_ptr<wchar_t[]>> images16_vec;
+    for (auto i = 0; i < num_img; ++i) {
+        // we allocate the buffer with the same number of chars as the UTF-8 length
+        const size_t ilen = std::strlen(images[i]);
 
-        // allocate a buffer to store the UTF-16 version of the images.
-        if ((images16 =
-                (wchar_t **) tsk_malloc(sizeof(wchar_t *) *
-                    num_img)) == NULL) {
-            return NULL;
+        images16_vec.emplace_back(new(std::nothrow) wchar_t[ilen + 1]);
+        if (!images16_vec.back()) {
+            return nullptr;
         }
 
-        for (i = 0; i < num_img; i++) {
-            size_t ilen;
-            UTF16 *utf16;
-            UTF8 *utf8;
-            TSKConversionResult retval2;
+        UTF8* utf8 = (UTF8 *) images[i];
+        UTF16* utf16 = (UTF16 *) images16_vec.back().get();
 
-            // we allocate the buffer with the same number of chars as the UTF-8 length
-            ilen = strlen(images[i]);
-            if ((images16[i] =
-                    (wchar_t *) tsk_malloc((ilen +
-                            1) * sizeof(wchar_t))) == NULL) {
-                goto tsk_utf8_cleanup;
-            }
-
-            utf8 = (UTF8 *) images[i];
-            utf16 = (UTF16 *) images16[i];
-
-            retval2 =
-                tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
-                &utf16, &utf16[ilen], TSKlenientConversion);
-            if (retval2 != TSKconversionOK) {
-                tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-                tsk_error_set_errstr
-                    ("tsk_img_open_utf8: Error converting image %s %d",
-                    images[i], retval2);
-                goto tsk_utf8_cleanup;
-            }
-            *utf16 = '\0';
+        const TSKConversionResult retval2 =
+            tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
+            &utf16, &utf16[ilen], TSKlenientConversion);
+        if (retval2 != TSKconversionOK) {
+            tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+            tsk_error_set_errstr
+                ("tsk_img_open_utf8: Error converting image %s %d",
+                images[i], retval2);
+            return nullptr;
         }
-
-        retval = tsk_img_open(num_img, images16, type, a_ssize);
-
-        // free up the memory
-      tsk_utf8_cleanup:
-        for (i = 0; i < num_img; i++) {
-            free(images16[i]);
-        }
-        free(images16);
-
-        if (retval) {
-            tsk_init_lock(&(retval->cache_lock));
-        }
-        return retval;
+        *utf16 = '\0';
     }
+
+    std::unique_ptr<wchar_t*[]> images16{
+        new(std::nothrow) wchar_t*[num_img]
+    };
+    if (!images16) {
+        return nullptr;
+    }
+    for (auto i = 0; i < num_img; ++i) {
+        images16[i] = images16_vec[i].get();
+    }
+
+    return tsk_img_open(num_img, images16.get(), type, a_ssize);
 #else
     return tsk_img_open(num_img, images, type, a_ssize);
 #endif
