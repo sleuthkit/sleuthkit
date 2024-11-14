@@ -229,6 +229,13 @@ jobs:
           bash <(curl -s https://codecov.io/bash) -B develop
 
 
+      - name: Keep artifacts
+        uses: actions/upload-artifact@v4
+        path: |
+          tools/fiwalk/src/.libs/fiwalk
+          tools/vstools/.libs/*
+
+
 #      - name: Run distcheck
 #        run: |
 #          ./configure
