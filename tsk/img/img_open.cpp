@@ -169,99 +169,74 @@ TSK_IMG_INFO* img_open(
     };
 
     if (type == TSK_IMG_TYPE_DETECT) {
-        /* If no type is given, then we use the autodetection methods
-         * In case the image file matches the signatures of multiple formats,
-         * we try all of the embedded formats
-         */
+        // Attempt to determine the image format
 
         std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_guess{
             nullptr,
             img_info_deleter
         };
 
-        std::vector<std::string> guesses;
+        std::vector<TSK_IMG_TYPE_ENUM> guesses;
 
-        // we rely on tsk_errno, so make sure it is 0
-        tsk_error_reset();
+        enum Result { OK, UNRECOGNIZED, FAIL };
 
-        /* Try the non-raw formats first */
+        const auto ok_nonnull = [](TSK_IMG_INFO* img_info) {
+            return img_info ? OK : UNRECOGNIZED;
+        };
+
 #if HAVE_LIBAFFLIB
-        img_info.reset(aff_open(num_img, images, a_ssize));
-        if (img_info) {
-            /* we don't allow the "ANY" when autodetect is used because
-             * we only want to detect the tested formats. */
-            if (img_info->itype == TSK_IMG_TYPE_AFF_ANY) {
-                img_info.reset();
+        const auto ok_aff = [](TSK_IMG_INFO* img_info) {
+            if (img_info) {
+                /* we don't allow the "ANY" when autodetect is used because
+                 * we only want to detect the tested formats. */
+                return img_info->itype == TSK_IMG_TYPE_AFF_ANY ? UNRECOGNIZED : OK;
             }
-            else {
-                guesses.push_back("AFF");
-                img_guess = std::move(img_info);
-            }
-        }
-        else {
+
             // If AFF is otherwise happy except for a password,
             // stop trying to guess
-            if (tsk_error_get_errno() == TSK_ERR_IMG_PASSWD) {
+            return tsk_error_get_errno() == TSK_ERR_IMG_PASSWD ?  FAIL : UNRECOGNIZED;
+        };
+#endif
+
+        /* Try the non-raw formats first */
+        const std::pair<TSK_IMG_TYPE_ENUM, Result (*)(TSK_IMG_INFO*)> types[] = {
+#if HAVE_LIBAFFLIB
+            { TSK_IMG_TYPE_AFF_ANY, ok_aff },
+#endif
+#if HAVE_LIBEWF
+            { TSK_IMG_TYPE_EWF_EWF, ok_nonnull },
+#endif
+#if HAVE_LIBAFF4
+            { TSK_IMG_TYPE_AFF4_AFF4, ok_nonnull },
+#endif
+#if HAVE_LIBVMDK
+            { TSK_IMG_TYPE_VMDK_VMDK, ok_nonnull },
+#endif
+#if HAVE_LIBVHDI
+            { TSK_IMG_TYPE_VHD_VHD, ok_nonnull },
+#endif
+#if HAVE_LIBQCOW
+            { TSK_IMG_TYPE_QCOW_QCOW, ok_nonnull },
+#endif
+        };
+
+        for (auto i = std::begin(types); i != std::end(types); ++i) {
+            tsk_error_reset();
+            img_info = img_open_by_type(num_img, images, i->first, a_ssize);
+            switch (i->second(img_info.get())) {
+            case OK:
+                guesses.push_back(img_info->itype);
+                img_guess = std::move(img_info);
+                break;
+
+            case UNRECOGNIZED:
+                break;
+
+            case FAIL:
+                // error should already be set by check function
                 return nullptr;
             }
-            tsk_error_reset();
         }
-#endif
-
-#if HAVE_LIBEWF
-        img_info.reset(ewf_open(num_img, images, a_ssize));
-        if (img_info) {
-            guesses.push_back("EWF");
-            img_guess = std::move(img_info);
-        }
-        else {
-            tsk_error_reset();
-        }
-#endif
-
-#if HAVE_LIBAFF4
-        img_info.reset(aff4_open(num_img, images, a_ssize));
-        if (img_info) {
-            guesses.push_back("AFF4");
-            img_guess = std::move(img_info);
-        }
-        else {
-            tsk_error_reset();
-        }
-#endif
-
-#if HAVE_LIBVMDK
-        img_info.reset(vmdk_open(num_img, images, a_ssize));
-        if (img_info) {
-            guesses.push_back("VMDK");
-            img_guess = std::move(img_info);
-        }
-        else {
-            tsk_error_reset();
-        }
-#endif
-
-#if HAVE_LIBVHDI
-        img_info.reset(vhdi_open(num_img, images, a_ssize));
-        if (img_info) {
-            guesses.push_back("VHD");
-            img_guess = std::move(img_info);
-        }
-        else {
-            tsk_error_reset();
-        }
-#endif
-
-#if HAVE_LIBQCOW
-        img_info.reset(qcow_open(num_img, images, a_ssize));
-        if (img_info) {
-            guesses.push_back("QCOW");
-            img_guess = std::move(img_info);
-        }
-        else {
-            tsk_error_reset();
-        }
-#endif
 
         switch (guesses.size()) {
         case 0:
