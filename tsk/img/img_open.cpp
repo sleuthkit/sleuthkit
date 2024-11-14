@@ -98,7 +98,7 @@ tsk_img_open(int num_img,
     // Get rid of any old error messages laying around
     tsk_error_reset();
 
-    if ((num_img == 0) || (images[0] == NULL)) {
+    if (num_img == 0 || images[0] == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_NOFILE);
         tsk_error_set_errstr("tsk_img_open");
@@ -112,7 +112,7 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
-    if ((a_ssize > 0) && (a_ssize < 512)) {
+    if (a_ssize > 0 && a_ssize < 512) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
@@ -120,7 +120,7 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
-    if ((a_ssize % 512) != 0) {
+    if (a_ssize % 512 != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
