@@ -47,6 +47,7 @@
 #include <memory>
 #include <new>
 #include <vector>
+#include <utility>
 
 bool sector_size_ok(unsigned int sector_size) {
     if (sector_size > 0 && sector_size < 512) {
@@ -151,6 +152,40 @@ img_open_by_type(
     }
 }
 
+const char* type_name(TSK_IMG_TYPE_ENUM t) {
+    switch (t) {
+    case TSK_IMG_TYPE_AFF_AFF:
+    case TSK_IMG_TYPE_AFF_AFD:
+    case TSK_IMG_TYPE_AFF_AFM:
+    case TSK_IMG_TYPE_AFF_ANY:
+        return "AFF";
+    case TSK_IMG_TYPE_EWF_EWF:
+        return "EWF";
+    case TSK_IMG_TYPE_VMDK_VMDK:
+        return "VMDK";
+    case TSK_IMG_TYPE_VHD_VHD:
+        return "VHD";
+    case TSK_IMG_TYPE_AFF4_AFF4:
+        return "AFF4";
+    case TSK_IMG_TYPE_QCOW_QCOW:
+        return "QCOW";
+    default:
+        // should be impossible
+        return "";
+    }
+}
+
+std::string image_type_list(const std::vector<TSK_IMG_TYPE_ENUM>& l) {
+    std::string s;
+    for (const auto t: l) {
+        if (!s.empty()) {
+            s += ", ";
+        }
+        s += type_name(t);
+    }
+    return s;
+}
+
 TSK_IMG_INFO* img_open(
     int num_img,
     const TSK_TCHAR* const images[],
@@ -170,7 +205,6 @@ TSK_IMG_INFO* img_open(
 
     if (type == TSK_IMG_TYPE_DETECT) {
         // Attempt to determine the image format
-
         std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_guess{
             nullptr,
             img_info_deleter
@@ -259,7 +293,8 @@ TSK_IMG_INFO* img_open(
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
             // TODO: join guess string
-            tsk_error_set_errstr(" ");
+            const auto ambiguous = image_type_list(guesses);
+            tsk_error_set_errstr(ambiguous.c_str());
             return nullptr;
         }
     }
