@@ -94,6 +94,63 @@ bool arguments_ok(
     return images_ok(num_img, images) && sector_size_ok(a_ssize);
 }
 
+void img_info_deleter(TSK_IMG_INFO* img_info) {
+    img_info->close(img_info);
+}
+
+std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
+img_open_by_type(
+    int num_img,
+    const TSK_TCHAR* const images[],
+    TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize
+)
+{
+    switch (type) {
+    case TSK_IMG_TYPE_RAW:
+        return { raw_open(num_img, images, a_ssize), img_info_deleter };
+
+#if HAVE_LIBAFFLIB
+    case TSK_IMG_TYPE_AFF_AFF:
+    case TSK_IMG_TYPE_AFF_AFD:
+    case TSK_IMG_TYPE_AFF_AFM:
+    case TSK_IMG_TYPE_AFF_ANY:
+        return { aff_open(num_img, images, a_ssize), img_info_deleter };
+#endif
+
+#if HAVE_LIBEWF
+    case TSK_IMG_TYPE_EWF_EWF:
+        return { ewf_open(num_img, images, a_ssize), img_info_deleter };
+#endif
+
+#if HAVE_LIBVMDK
+    case TSK_IMG_TYPE_VMDK_VMDK:
+        return { vmdk_open(num_img, images, a_ssize), img_info_deleter };
+#endif
+
+#if HAVE_LIBVHDI
+    case TSK_IMG_TYPE_VHD_VHD:
+        return { vhdi_open(num_img, images, a_ssize), img_info_deleter };
+#endif
+
+#if HAVE_LIBAFF4
+    case TSK_IMG_TYPE_AFF4_AFF4:
+        return { aff4_open(num_img, images, a_ssize), img_info_deleter };
+#endif
+
+#if HAVE_LIBQCOW
+    case TSK_IMG_TYPE_QCOW_QCOW:
+        return { qcow_open(num_img, images, a_ssize), img_info_deleter };
+#endif
+
+    case TSK_IMG_TYPE_LOGICAL:
+		    return { logical_open(num_img, images, a_ssize), img_info_deleter };
+
+    default:
+        return { nullptr, img_info_deleter };
+    }
+}
+
 TSK_IMG_INFO* img_open(
     int num_img,
     const TSK_TCHAR* const images[],
@@ -106,34 +163,39 @@ TSK_IMG_INFO* img_open(
             _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
             type, num_img, images[0]);
 
-    TSK_IMG_INFO *img_info = nullptr;
+    std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_info{
+        nullptr,
+        img_info_deleter
+    };
 
-    switch (type) {
-    case TSK_IMG_TYPE_DETECT:
-    {
+    if (type == TSK_IMG_TYPE_DETECT) {
         /* If no type is given, then we use the autodetection methods
          * In case the image file matches the signatures of multiple formats,
          * we try all of the embedded formats
          */
-        TSK_IMG_INFO *img_set = nullptr;
-#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW || HAVE_LIBAFF4
-        const char *set = nullptr;
-#endif
+
+        std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)> img_guess{
+            nullptr,
+            img_info_deleter
+        };
+
+        std::vector<std::string> guesses;
 
         // we rely on tsk_errno, so make sure it is 0
         tsk_error_reset();
 
         /* Try the non-raw formats first */
 #if HAVE_LIBAFFLIB
-        if ((img_info = aff_open(num_img, images, a_ssize))) {
+        img_info.reset(aff_open(num_img, images, a_ssize));
+        if (img_info) {
             /* we don't allow the "ANY" when autodetect is used because
              * we only want to detect the tested formats. */
             if (img_info->itype == TSK_IMG_TYPE_AFF_ANY) {
-                img_info->close(img_info);
+                img_info.reset();
             }
             else {
-                set = "AFF";
-                img_set = img_info;
+                guesses.push_back("AFF");
+                img_guess = std::move(img_info);
             }
         }
         else {
@@ -147,19 +209,10 @@ TSK_IMG_INFO* img_open(
 #endif
 
 #if HAVE_LIBEWF
-        if ((img_info = ewf_open(num_img, images, a_ssize))) {
-            if (!set) {
-                set = "EWF";
-                img_set = img_info;
-            }
-            else {
-                img_set->close(img_set);
-                img_info->close(img_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-                tsk_error_set_errstr("EWF or %s", set);
-                return nullptr;
-            }
+        img_info.reset(ewf_open(num_img, images, a_ssize));
+        if (img_info) {
+            guesses.push_back("EWF");
+            img_guess = std::move(img_info);
         }
         else {
             tsk_error_reset();
@@ -167,19 +220,10 @@ TSK_IMG_INFO* img_open(
 #endif
 
 #if HAVE_LIBAFF4
-        if ((img_info = aff4_open(num_img, images, a_ssize))) {
-            if (!set) {
-                set = "AFF4";
-                img_set = img_info;
-            }
-            else {
-                img_set->close(img_set);
-                img_info->close(img_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-                tsk_error_set_errstr("AFF4 or %s", set);
-                return nullptr;
-            }
+        img_info.reset(aff4_open(num_img, images, a_ssize));
+        if (img_info) {
+            guesses.push_back("AFF4");
+            img_guess = std::move(img_info);
         }
         else {
             tsk_error_reset();
@@ -187,19 +231,10 @@ TSK_IMG_INFO* img_open(
 #endif
 
 #if HAVE_LIBVMDK
-        if ((img_info = vmdk_open(num_img, images, a_ssize))) {
-            if (!set) {
-                set = "VMDK";
-                img_set = img_info;
-            }
-            else {
-                img_set->close(img_set);
-                img_info->close(img_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-                tsk_error_set_errstr("VMDK or %s", set);
-                return nullptr;
-            }
+        img_info.reset(vmdk_open(num_img, images, a_ssize));
+        if (img_info) {
+            guesses.push_back("VMDK");
+            img_guess = std::move(img_info);
         }
         else {
             tsk_error_reset();
@@ -207,19 +242,10 @@ TSK_IMG_INFO* img_open(
 #endif
 
 #if HAVE_LIBVHDI
-        if ((img_info = vhdi_open(num_img, images, a_ssize))) {
-            if (!set) {
-                set = "VHD";
-                img_set = img_info;
-            }
-            else {
-                img_set->close(img_set);
-                img_info->close(img_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-                tsk_error_set_errstr("VHD or %s", set);
-                return nullptr;
-            }
+        img_info.reset(vhdi_open(num_img, images, a_ssize));
+        if (img_info) {
+            guesses.push_back("VHD");
+            img_guess = std::move(img_info);
         }
         else {
             tsk_error_reset();
@@ -227,106 +253,57 @@ TSK_IMG_INFO* img_open(
 #endif
 
 #if HAVE_LIBQCOW
-        if ((img_info = qcow_open(num_img, images, a_ssize))) {
-            if (!set) {
-                set = "QCOW";
-                img_set = img_info;
-            }
-            else {
-                img_set->close(img_set);
-                img_info->close(img_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-                tsk_error_set_errstr("QCOW or %s", set);
-                return nullptr;
-            }
+        img_info.reset(qcow_open(num_img, images, a_ssize));
+        if (img_info) {
+            guesses.push_back("QCOW");
+            img_guess = std::move(img_info);
         }
         else {
             tsk_error_reset();
         }
 #endif
 
-        // if any of the non-raw formats were detected, then use it.
-        if (img_set) {
-            img_info = img_set;
+        switch (guesses.size()) {
+        case 0:
+            // try raw as a last resort
+            img_info.reset(raw_open(num_img, images, a_ssize));
+            if (!img_info) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                return nullptr;
+            }
             break;
-        }
 
-        // otherwise, try raw
-        if ((img_info = raw_open(num_img, images, a_ssize))) {
+        case 1:
+            // a non-raw format was detected
+            img_info = std::move(img_guess);
             break;
-        }
-        else if (tsk_error_get_errno() != 0) {
+
+        default:
+            // image type is abmgiugous
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+            // TODO: join guess string
+            tsk_error_set_errstr(" ");
             return nullptr;
         }
-
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-        return nullptr;
+    }
+    else {
+        img_info = img_open_by_type(num_img, images, type, a_ssize);
     }
 
-    case TSK_IMG_TYPE_RAW:
-        img_info = raw_open(num_img, images, a_ssize);
-        break;
-
-#if HAVE_LIBAFFLIB
-    case TSK_IMG_TYPE_AFF_AFF:
-    case TSK_IMG_TYPE_AFF_AFD:
-    case TSK_IMG_TYPE_AFF_AFM:
-    case TSK_IMG_TYPE_AFF_ANY:
-        img_info = aff_open(num_img, images, a_ssize);
-        break;
-#endif
-
-#if HAVE_LIBEWF
-    case TSK_IMG_TYPE_EWF_EWF:
-        img_info = ewf_open(num_img, images, a_ssize);
-        break;
-#endif
-
-#if HAVE_LIBVMDK
-    case TSK_IMG_TYPE_VMDK_VMDK:
-        img_info = vmdk_open(num_img, images, a_ssize);
-        break;
-#endif
-
-#if HAVE_LIBVHDI
-    case TSK_IMG_TYPE_VHD_VHD:
-        img_info = vhdi_open(num_img, images, a_ssize);
-        break;
-#endif
-
-#if HAVE_LIBAFF4
-    case TSK_IMG_TYPE_AFF4_AFF4:
-        img_info = aff4_open(num_img, images, a_ssize);
-        break;
-#endif
-
-#if HAVE_LIBQCOW
-    case TSK_IMG_TYPE_QCOW_QCOW:
-        img_info = qcow_open(num_img, images, a_ssize);
-        break;
-#endif
-
-    case TSK_IMG_TYPE_LOGICAL:
-		    img_info = logical_open(num_img, images, a_ssize);
-		    break;
-
-    default:
+    /* check if img_info is good */
+    if (!img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
         tsk_error_set_errstr("%d", type);
         return nullptr;
     }
 
-    /* check if img_info is good */
-    if (!img_info) {
-        return nullptr;
-    }
-
     /* we have a good img_info, set up the cache lock */
     tsk_init_lock(&(img_info->cache_lock));
-    return img_info;
+
+    return img_info.release();
 }
 
 /**
