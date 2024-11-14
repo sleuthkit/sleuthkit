@@ -641,6 +641,7 @@ test_runner_SOURCES = \
 	test/tsk/base/test_tsk_error.cpp \
 	test/tsk/img/test_aff4.cpp \
 	test/tsk/img/test_ewf.cpp \
+	test/tsk/img/test_img_open.cpp \
 	test/tsk/img/test_mult_files.cpp \
 	test/tsk/img/test_qcow.cpp \
 	test/tsk/img/test_raw.cpp \
