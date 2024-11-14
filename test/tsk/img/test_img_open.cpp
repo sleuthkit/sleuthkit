@@ -21,3 +21,37 @@ TEST_CASE("tsk_img_open -1 images") {
   };
   REQUIRE(!img);
 }
+
+TEST_CASE("tsk_img_open null images") {
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    tsk_img_open(1, nullptr, TSK_IMG_TYPE_DETECT, 1234),
+    tsk_img_close
+  };
+  REQUIRE(!img);
+}
+
+TEST_CASE("tsk_img_open_utf8 0 images") {
+  const char* const images[] = {};
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    tsk_img_open_utf8(0, images, TSK_IMG_TYPE_DETECT, 1234),
+    tsk_img_close
+  };
+  REQUIRE(!img);
+}
+
+TEST_CASE("tsk_img_open_utf8 -1 images") {
+  const char* const images[] = {};
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    tsk_img_open_utf8(-1, images, TSK_IMG_TYPE_DETECT, 1234),
+    tsk_img_close
+  };
+  REQUIRE(!img);
+}
+
+TEST_CASE("tsk_img_open_utf8 null images") {
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    tsk_img_open_utf8(1, nullptr, TSK_IMG_TYPE_DETECT, 1234),
+    tsk_img_close
+  };
+  REQUIRE(!img);
+}
