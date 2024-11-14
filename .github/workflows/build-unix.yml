@@ -231,9 +231,12 @@ jobs:
 
       - name: Keep artifacts
         uses: actions/upload-artifact@v4
-        path: |
-          tools/fiwalk/src/.libs/fiwalk
-          tools/vstools/.libs/*
+        with:
+          path: |
+            tools/fiwalk/src/.libs/fiwalk
+            tools/vstools/.libs/*
+          retention-days: 15
+
 
 
 #      - name: Run distcheck
