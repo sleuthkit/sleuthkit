@@ -48,91 +48,72 @@
 #include <new>
 #include <vector>
 
-/**
- * \ingroup imglib
- * Opens a single (non-split) disk image file so that it can be read.  This is a
- * wrapper around tsk_img_open().  See it for more details on detection etc. See
- * tsk_img_open_sing_utf8() for a version of this function that always takes
- * UTF-8 as input.
- *
- * @param a_image The path to the image file
- * @param type The disk image type (can be autodetection)
- * @param a_ssize Size of device sector in bytes (or 0 for default)
- *
- * @return Pointer to TSK_IMG_INFO or NULL on error
- */
-TSK_IMG_INFO *
-tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type,
-    unsigned int a_ssize)
-{
-    const TSK_TCHAR *const a = a_image;
-    return tsk_img_open(1, &a, type, a_ssize);
+bool sector_size_ok(unsigned int sector_size) {
+    if (sector_size > 0 && sector_size < 512) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
+            sector_size);
+        return false;
+    }
+
+    if (sector_size % 512 != 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
+            sector_size);
+        return false;
+    }
+
+    return true;
 }
 
-
-/**
- * \ingroup imglib
- * Opens one or more disk image files so that they can be read.  If a file format
- * type is specified, this function will call the specific routine to open the file.
- * Otherwise, it will detect the type (it will default to raw if no specific type can
- * be detected).   This function must be called before a disk image can be read from.
- * Note that the data type used to store the image paths is a TSK_TCHAR, which changes
- * depending on a Unix or Windows build.  If you will always have UTF8, then consider
- * using tsk_img_open_utf8().
- *
- * @param num_img The number of images to open (will be > 1 for split images).
- * @param images The path to the image files (the number of files must
- * be equal to num_img and they must be in a sorted order)
- * @param type The disk image type (can be autodetection)
- * @param a_ssize Size of device sector in bytes (or 0 for default)
- *
- * @return Pointer to TSK_IMG_INFO or NULL on error
- */
-TSK_IMG_INFO *
-tsk_img_open(int num_img,
-    const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM type,
-    unsigned int a_ssize)
-{
-    TSK_IMG_INFO *img_info = NULL;
-
-    // Get rid of any old error messages laying around
-    tsk_error_reset();
-
+template <class T>
+bool images_ok(int num_img, const T* const images[]) {
     if (num_img < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("number of images is negative (%d)", num_img);
-        return NULL;
+        return false;
     }
 
-    if (num_img == 0 || images[0] == NULL) {
+    if (num_img == 0 || !images || !images[0]) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_NOFILE);
         tsk_error_set_errstr("tsk_img_open");
-        return NULL;
+        return false;
     }
 
-    if (a_ssize > 0 && a_ssize < 512) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
-            a_ssize);
-        return NULL;
-    }
+    return true;
+}
 
-    if (a_ssize % 512 != 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
-            a_ssize);
-        return NULL;
-    }
+template <class T>
+bool arguments_ok(
+    int num_img,
+    const T* const images[],
+    [[maybe_unused]] TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize
+)
+{
+    // Get rid of any old error messages laying around
+    tsk_error_reset();
 
+    return images_ok(num_img, images) && sector_size_ok(a_ssize);
+}
+
+TSK_IMG_INFO* img_open(
+    int num_img,
+    const TSK_TCHAR* const images[],
+    TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize
+)
+{
     if (tsk_verbose)
         TFPRINTF(stderr,
             _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
             type, num_img, images[0]);
 
+    TSK_IMG_INFO *img_info = nullptr;
 
     switch (type) {
     case TSK_IMG_TYPE_DETECT:
@@ -141,9 +122,9 @@ tsk_img_open(int num_img,
          * In case the image file matches the signatures of multiple formats,
          * we try all of the embedded formats
          */
-        TSK_IMG_INFO *img_set = NULL;
+        TSK_IMG_INFO *img_set = nullptr;
 #if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW || HAVE_LIBAFF4
-        const char *set = NULL;
+        const char *set = nullptr;
 #endif
 
         // we rely on tsk_errno, so make sure it is 0
@@ -151,7 +132,7 @@ tsk_img_open(int num_img,
 
         /* Try the non-raw formats first */
 #if HAVE_LIBAFFLIB
-        if ((img_info = aff_open(num_img, images, a_ssize)) != NULL) {
+        if ((img_info = aff_open(num_img, images, a_ssize))) {
             /* we don't allow the "ANY" when autodetect is used because
              * we only want to detect the tested formats. */
             if (img_info->itype == TSK_IMG_TYPE_AFF_ANY) {
@@ -166,15 +147,15 @@ tsk_img_open(int num_img,
             // If AFF is otherwise happy except for a password,
             // stop trying to guess
             if (tsk_error_get_errno() == TSK_ERR_IMG_PASSWD) {
-                return NULL;
+                return nullptr;
             }
             tsk_error_reset();
         }
 #endif
 
 #if HAVE_LIBEWF
-        if ((img_info = ewf_open(num_img, images, a_ssize)) != NULL) {
-            if (set == NULL) {
+        if ((img_info = ewf_open(num_img, images, a_ssize))) {
+            if (!set) {
                 set = "EWF";
                 img_set = img_info;
             }
@@ -184,7 +165,7 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("EWF or %s", set);
-                return NULL;
+                return nullptr;
             }
         }
         else {
@@ -193,8 +174,8 @@ tsk_img_open(int num_img,
 #endif
 
 #if HAVE_LIBAFF4
-        if ((img_info = aff4_open(num_img, images, a_ssize)) != NULL) {
-            if (set == NULL) {
+        if ((img_info = aff4_open(num_img, images, a_ssize))) {
+            if (!set) {
                 set = "AFF4";
                 img_set = img_info;
             }
@@ -204,7 +185,7 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("AFF4 or %s", set);
-                return NULL;
+                return nullptr;
             }
         }
         else {
@@ -213,8 +194,8 @@ tsk_img_open(int num_img,
 #endif
 
 #if HAVE_LIBVMDK
-        if ((img_info = vmdk_open(num_img, images, a_ssize)) != NULL) {
-            if (set == NULL) {
+        if ((img_info = vmdk_open(num_img, images, a_ssize))) {
+            if (!set) {
                 set = "VMDK";
                 img_set = img_info;
             }
@@ -224,7 +205,7 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("VMDK or %s", set);
-                return NULL;
+                return nullptr;
             }
         }
         else {
@@ -233,8 +214,8 @@ tsk_img_open(int num_img,
 #endif
 
 #if HAVE_LIBVHDI
-        if ((img_info = vhdi_open(num_img, images, a_ssize)) != NULL) {
-            if (set == NULL) {
+        if ((img_info = vhdi_open(num_img, images, a_ssize))) {
+            if (!set) {
                 set = "VHD";
                 img_set = img_info;
             }
@@ -244,7 +225,7 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("VHD or %s", set);
-                return NULL;
+                return nullptr;
             }
         }
         else {
@@ -253,8 +234,8 @@ tsk_img_open(int num_img,
 #endif
 
 #if HAVE_LIBQCOW
-        if ((img_info = qcow_open(num_img, images, a_ssize)) != NULL) {
-            if (set == NULL) {
+        if ((img_info = qcow_open(num_img, images, a_ssize))) {
+            if (!set) {
                 set = "QCOW";
                 img_set = img_info;
             }
@@ -264,7 +245,7 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("QCOW or %s", set);
-                return NULL;
+                return nullptr;
             }
         }
         else {
@@ -273,22 +254,22 @@ tsk_img_open(int num_img,
 #endif
 
         // if any of the non-raw formats were detected, then use it.
-        if (img_set != NULL) {
+        if (img_set) {
             img_info = img_set;
             break;
         }
 
         // otherwise, try raw
-        if ((img_info = raw_open(num_img, images, a_ssize)) != NULL) {
+        if ((img_info = raw_open(num_img, images, a_ssize))) {
             break;
         }
         else if (tsk_error_get_errno() != 0) {
-            return NULL;
+            return nullptr;
         }
 
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-        return NULL;
+        return nullptr;
     }
 
     case TSK_IMG_TYPE_RAW:
@@ -342,12 +323,12 @@ tsk_img_open(int num_img,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
         tsk_error_set_errstr("%d", type);
-        return NULL;
+        return nullptr;
     }
 
     /* check if img_info is good */
-    if (img_info == NULL) {
-        return NULL;
+    if (!img_info) {
+        return nullptr;
     }
 
     /* we have a good img_info, set up the cache lock */
@@ -355,6 +336,56 @@ tsk_img_open(int num_img,
     return img_info;
 }
 
+/**
+ * \ingroup imglib
+ * Opens a single (non-split) disk image file so that it can be read.  This is a
+ * wrapper around tsk_img_open().  See it for more details on detection etc. See
+ * tsk_img_open_sing_utf8() for a version of this function that always takes
+ * UTF-8 as input.
+ *
+ * @param a_image The path to the image file
+ * @param type The disk image type (can be autodetection)
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
+ *
+ * @return Pointer to TSK_IMG_INFO or NULL on error
+ */
+TSK_IMG_INFO *
+tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize)
+{
+    const TSK_TCHAR *const a = a_image;
+    return tsk_img_open(1, &a, type, a_ssize);
+}
+
+/**
+ * \ingroup imglib
+ * Opens one or more disk image files so that they can be read.  If a file format
+ * type is specified, this function will call the specific routine to open the file.
+ * Otherwise, it will detect the type (it will default to raw if no specific type can
+ * be detected).   This function must be called before a disk image can be read from.
+ * Note that the data type used to store the image paths is a TSK_TCHAR, which changes
+ * depending on a Unix or Windows build.  If you will always have UTF8, then consider
+ * using tsk_img_open_utf8().
+ *
+ * @param num_img The number of images to open (will be > 1 for split images).
+ * @param images The path to the image files (the number of files must
+ * be equal to num_img and they must be in a sorted order)
+ * @param type The disk image type (can be autodetection)
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
+ *
+ * @return Pointer to TSK_IMG_INFO or NULL on error
+ */
+TSK_IMG_INFO *
+tsk_img_open(int num_img,
+    const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize)
+{
+    if (!arguments_ok(num_img, images, type, a_ssize)) {
+        return nullptr;
+    }
+
+    return img_open(num_img, images, type, a_ssize);
+}
 
 /**
 * \ingroup imglib
@@ -397,6 +428,10 @@ tsk_img_open_utf8(int num_img,
     const char *const images[], TSK_IMG_TYPE_ENUM type,
     unsigned int a_ssize)
 {
+    if (!arguments_ok(num_img, images, type, a_ssize)) {
+        return nullptr;
+    }
+
 #ifdef TSK_WIN32
     /* Note that there is an assumption in this code that wchar_t is 2-bytes.
      * this is a correct assumption for Windows, but not for all systems... */
@@ -438,10 +473,11 @@ tsk_img_open_utf8(int num_img,
         images16[i] = images16_vec[i].get();
     }
 
-    return tsk_img_open(num_img, images16.get(), type, a_ssize);
+    const TSK_TCHAR* const* imgs = images16.get();
 #else
-    return tsk_img_open(num_img, images, type, a_ssize);
+    const TSK_TCHAR* const* imgs = images;
 #endif
+    return tsk_img_open(num_img, imgs, type, a_ssize);
 }
 
 /**
@@ -471,54 +507,43 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
-    TSK_IMG_INFO *img_info;
+    tsk_error_reset();
+
     // sanity checks
+    if (!sector_size_ok(sector_size)) {
+        return nullptr;
+    }
+
     if (!ext_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image info pointer was null");
-        return NULL;
+        return nullptr;
     }
 
     if (!read) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image read pointer was null");
-        return NULL;
+        return nullptr;
     }
 
     if (!close) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image close pointer was null");
-        return NULL;
+        return nullptr;
     }
 
     if (!imgstat) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image imgstat pointer was null");
-        return NULL;
-    }
-
-    if (sector_size > 0 && sector_size < 512) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
-            sector_size);
-        return NULL;
-    }
-
-    if (sector_size % 512 != 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
-            sector_size);
-        return NULL;
+        return nullptr;
     }
 
     // set up the TSK_IMG_INFO members
-    img_info = (TSK_IMG_INFO *) ext_img_info;
+    TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ext_img_info;
 
     img_info->tag = TSK_IMG_INFO_TAG;
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
@@ -619,7 +644,7 @@ void tsk_img_free_image_names(TSK_IMG_INFO* img_info) {
         free(img_info->images[i]);
     }
     free(img_info->images);
-    img_info->images = NULL;
+    img_info->images = nullptr;
     img_info->num_img = 0;
 }
 
@@ -649,7 +674,7 @@ int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const imag
 void
 tsk_img_close(TSK_IMG_INFO * a_img_info)
 {
-    if (a_img_info == NULL) {
+    if (!a_img_info) {
         return;
     }
     tsk_deinit_lock(&(a_img_info->cache_lock));
@@ -663,12 +688,12 @@ void *
 tsk_img_malloc(size_t a_len)
 {
     TSK_IMG_INFO *imgInfo;
-    if ((imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
-        return NULL;
+    if (!(imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len))) {
+        return nullptr;
+    }
     imgInfo->tag = TSK_IMG_INFO_TAG;
-    return (void *) imgInfo;
+    return imgInfo;
 }
-
 
 /* tsk_img_free - unset image tag, then free memory
  * This is for img module and all its inheritances
