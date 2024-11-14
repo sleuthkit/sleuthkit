@@ -50,7 +50,6 @@
 
 bool sector_size_ok(unsigned int sector_size) {
     if (sector_size > 0 && sector_size < 512) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
             sector_size);
@@ -58,7 +57,6 @@ bool sector_size_ok(unsigned int sector_size) {
     }
 
     if (sector_size % 512 != 0) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
             sector_size);
@@ -71,14 +69,12 @@ bool sector_size_ok(unsigned int sector_size) {
 template <class T>
 bool images_ok(int num_img, const T* const images[]) {
     if (num_img < 0) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("number of images is negative (%d)", num_img);
         return false;
     }
 
     if (num_img == 0 || !images || !images[0]) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_NOFILE);
         tsk_error_set_errstr("tsk_img_open");
         return false;
@@ -95,9 +91,6 @@ bool arguments_ok(
     unsigned int a_ssize
 )
 {
-    // Get rid of any old error messages laying around
-    tsk_error_reset();
-
     return images_ok(num_img, images) && sector_size_ok(a_ssize);
 }
 
@@ -380,6 +373,9 @@ tsk_img_open(int num_img,
     const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM type,
     unsigned int a_ssize)
 {
+    // Get rid of any old error messages laying around
+    tsk_error_reset();
+
     if (!arguments_ok(num_img, images, type, a_ssize)) {
         return nullptr;
     }
@@ -428,6 +424,9 @@ tsk_img_open_utf8(int num_img,
     const char *const images[], TSK_IMG_TYPE_ENUM type,
     unsigned int a_ssize)
 {
+    // Get rid of any old error messages laying around
+    tsk_error_reset();
+
     if (!arguments_ok(num_img, images, type, a_ssize)) {
         return nullptr;
     }
@@ -515,28 +514,24 @@ tsk_img_open_external(
     }
 
     if (!ext_img_info) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image info pointer was null");
         return nullptr;
     }
 
     if (!read) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image read pointer was null");
         return nullptr;
     }
 
     if (!close) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image close pointer was null");
         return nullptr;
     }
 
     if (!imgstat) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("external image imgstat pointer was null");
         return nullptr;
