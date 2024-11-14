@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/sleuthkit/sleuthkit.svg?branch=develop)](https://travis-ci.org/sleuthkit/sleuthkit)
+[![codecov](https://codecov.io/github/sleuthkit/sleuthkit/branch/develop/graph/badge.svg?token=pfFlgpWdCt)](https://codecov.io/github/sleuthkit/sleuthkit)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/8f7ljj8s2lh5sqfv?svg=true)](https://ci.appveyor.com/project/bcarrier/sleuthkit)
 

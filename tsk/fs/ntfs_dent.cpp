@@ -25,50 +25,51 @@
  * NTFS file name processing internal functions.
  */
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
-/** 
- * Class to hold the pair of MFT entry and sequence. 
+/**
+ * Class to hold the pair of MFT entry and sequence.
  */
 class NTFS_META_ADDR {
 private:
-    uint64_t addr; ///< MFT entry
-    uint32_t seq; ///< Sequence 
-    uint32_t hash; ///< Hash of the path
+    const uint64_t addr; ///< MFT entry
+    const uint32_t seq; ///< Sequence
+    const uint32_t hash; ///< Hash of the path
 
 public:
-    NTFS_META_ADDR(uint64_t a_addr, uint32_t a_seq, uint32_t a_hash) {
-        addr = a_addr;
-        seq = a_seq;
-        hash = a_hash;
+    NTFS_META_ADDR(uint64_t a_addr, uint32_t a_seq, uint32_t a_hash) :
+        addr(a_addr),
+        seq(a_seq),
+        hash(a_hash)
+    {
     }
 
-    uint64_t getAddr() {
+    uint64_t getAddr() const {
         return addr;
     }
 
-    uint32_t getSeq() {
+    uint32_t getSeq() const {
         return seq;
     }
 
-    uint32_t getHash(){
+    uint32_t getHash() const {
         return hash;
     }
 };
 
 
 /* When we list a directory, we need to also look at MFT entries and what
- * they list as their parents. We used to do this only for orphan files, but 
+ * they list as their parents. We used to do this only for orphan files, but
  * we were pointed to a case whereby allocated files were not in IDX_ALLOC, but were
- * shown in Windows (when mounted).  They must have been found via the MFT entry, so 
- * we now load all parent to child relationships into the map. 
- * 
+ * shown in Windows (when mounted).  They must have been found via the MFT entry, so
+ * we now load all parent to child relationships into the map.
+ *
  * One of these classes is created per parent folder */
 class NTFS_PAR_MAP  {
 private:
         // maps sequence number to list of inums for the folder at that seq.
-        std::map <uint32_t, std::vector <NTFS_META_ADDR> > seq2addrs;
+        std::unordered_map <uint32_t, std::vector <NTFS_META_ADDR> > seq2addrs;
 public:
         /**
          * Add a child to this parent.
@@ -77,8 +78,7 @@ public:
          * @param seq Sequence of child in the folder
          */
         void add (uint32_t parSeq, TSK_INUM_T inum, uint32_t seq, uint32_t hash) {
-            NTFS_META_ADDR addr(inum, seq, hash);
-            seq2addrs[parSeq].push_back(addr);
+            seq2addrs[parSeq].emplace_back(inum, seq, hash);
         }
 
         /**
@@ -87,19 +87,19 @@ public:
          * @returns true if children exist
          */
         bool exists (uint32_t seq) {
-            if (seq2addrs.count(seq) > 0) 
+            if (seq2addrs.count(seq) > 0)
                 return true;
             else
                 return false;
         }
 
-        /** 
-         * Get the children for this folder at a given sequence.  Use exists first. 
+        /**
+         * Get the children for this folder at a given sequence.  Use exists first.
          * @param seq Sequence number to retrieve children for.
          * @returns list of INUMS for children.
          */
-        std::vector <NTFS_META_ADDR> &get (uint32_t seq) {
-            return seq2addrs[seq];
+        const std::vector <NTFS_META_ADDR> &get (uint32_t seq) const {
+            return seq2addrs.at(seq);
         }
  };
 
@@ -111,12 +111,13 @@ public:
 *
 * Assumes that you already have the lock
 */
-static std::map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
-    // allocate it if it hasn't already been 
+static std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
+    // allocate it if it hasn't already been
     if (ntfs->orphan_map == NULL) {
-        ntfs->orphan_map = new std::map<TSK_INUM_T, NTFS_PAR_MAP>;
+        auto inum_hash = [](const TSK_INUM_T& x) { return x; };
+        ntfs->orphan_map = new std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP,decltype(inum_hash)>(0, inum_hash);
     }
-    return (std::map<TSK_INUM_T, NTFS_PAR_MAP> *)ntfs->orphan_map;
+    return (std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *)ntfs->orphan_map;
 }
 
 
@@ -128,13 +129,13 @@ static std::map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
  *
  * @param ntfs structure to add the pair to
  * @param par Parent address
- * @param child_meta Child to add 
+ * @param child_meta Child to add
  * @returns 1 on error
  */
 static uint8_t
-ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_FS_META *child_meta) 
+ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_FS_META *child_meta)
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[name_list->par_inode];
     tmpParMap.add(name_list->par_seq, child_meta->addr, child_meta->seq, tsk_fs_dir_hash(name_list->name));
     return 0;
@@ -147,13 +148,13 @@ ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_FS_M
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
- * @seq seq Sequence of parent folder 
+ * @seq seq Sequence of parent folder
  * @returns true if parent has children.
  */
-static bool 
-ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq) 
+static bool
+ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq)
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     if (tmpParentMap->count(par) > 0) {
         NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
         if (tmpParMap.exists(seq))
@@ -164,19 +165,19 @@ ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq)
 
 /** \internal
  * Look up a map entry by the parent address. You should call ntfs_parent_map_exists() before this, otherwise
- * an empty entry could be created. 
+ * an empty entry could be created.
  *
  * Note: This routine assumes &ntfs->orphan_map_lock is locked by the caller.
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
- * @param seq Sequence of parent inode 
+ * @param seq Sequence of parent inode
  * @returns address of children files in the parent directory
  */
-static std::vector <NTFS_META_ADDR> &
+static const std::vector <NTFS_META_ADDR> &
 ntfs_parent_map_get(NTFS_INFO * ntfs, TSK_INUM_T par, uint32_t seq)
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
     return tmpParMap.get(seq);
 }
@@ -200,7 +201,7 @@ ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
         tsk_release_lock(&a_ntfs->orphan_map_lock);
         return;
     }
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(a_ntfs);
+    std::unordered_map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(a_ntfs);
 
     delete tmpParentMap;
     a_ntfs->orphan_map = NULL;
@@ -257,7 +258,7 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe, uintptr_t endaddr,
 
     name16 = (UTF16 *) & fname->name;
     name8 = (UTF8 *) fs_name->name;
-    
+
     const UTF16 * sourceEnd = (UTF16 *) ((uintptr_t) name16 + fname->nlen * 2);
     if (((uintptr_t) sourceEnd) >= endaddr) {
         if (tsk_verbose)
@@ -365,7 +366,7 @@ is_time(uint64_t t)
 
 
 /**
- * Process a lsit of index entries and add to FS_DIR
+ * Process a list of index entries and add to FS_DIR
  *
  * @param a_is_del Set to 1 if these entries are for a deleted directory
  * @param idxe Buffer with index entries to process
@@ -448,8 +449,8 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
         // @@@ BC: This hid a lot of entries in test images.  They were
         // only partial images, but they were not junk and the idea was
         // that this check would strip out chunk.  Commented it out and
-        // keeping it here as a reminder in case I think about doing it 
-        // again. 
+        // keeping it here as a reminder in case I think about doing it
+        // again.
 
         // verify name length would fit in stream
         if (fname->nlen > tsk_getu16(fs->endian, a_idxe->strlen)) {
@@ -511,22 +512,22 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                         "ntfs_proc_idxentry: Skipping because of invalid times\n");
                 continue;
             }
-        } 
-        
+        }
+
 
         /* For all fname entries, there will exist a DOS style 8.3
-         * entry.  
+         * entry.
          * If the original name is 8.3 compliant, it will be in
-         * a WINDOS type.  If it is not compliant, then it will 
+         * a WINDOS type.  If it is not compliant, then it will
          * exist in a POSIX or WIN32 type and the 8.3 compliant
          * one will be in DOS. The DOS entry typically follows
-         * the WIN32 or POSIX. 
+         * the WIN32 or POSIX.
          *
          * Our approach is to stash away the non-compliant names
-         * for one more entry to see if the next try is its 
-         * corresponding 8.3 entry. 
+         * for one more entry to see if the next try is its
+         * corresponding 8.3 entry.
          *
-         * If the 8.3 entry is not for the previous entry, we 
+         * If the 8.3 entry is not for the previous entry, we
          * skip it on the theory that it corresponds to a previous
          * WIN32 or POSIX entry. Note that we could be missing some info from deleted files
          * if the windows version was deleted and the DOS wasn't...
@@ -595,7 +596,7 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                 fs_name->flags);
 
         // WINDOS entries will not have a short 8.3 version, so add them now.
-        // otherwise, we stash the name to see if we get the 8.3 next. 
+        // otherwise, we stash the name to see if we get the 8.3 next.
         if (fname->nspace == NTFS_FNAME_WINDOS) {
             if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
                 tsk_fs_name_free(fs_name);
@@ -758,8 +759,11 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
 * @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
-ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr, int recursion_depth)
+ntfs_dir_open_meta(
+  TSK_FS_INFO * a_fs,
+  TSK_FS_DIR ** a_fs_dir,
+  TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) a_fs;
     TSK_FS_DIR *fs_dir;
@@ -770,7 +774,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     ntfs_idxroot *idxroot;
     ntfs_idxelist *idxelist;
     ntfs_idxrec *idxrec_p, *idxrec;
-    TSK_OFF_T idxalloc_len;
+    size_t idxalloc_len;
     TSK_FS_LOAD_FILE load_file;
 
     /* In this function, we will return immediately if we get an error.
@@ -875,7 +879,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_COR;
     }
 
-    
+
 
     /*
      * NTFS does not have "." and ".." entries in the index trees
@@ -898,7 +902,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         /*
          * "."
          */
-        
+
         fs_name->type = TSK_FS_NAME_TYPE_DIR;
         strcpy(fs_name->name, ".");
 
@@ -1035,15 +1039,16 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         /*
          * Copy the index allocation run into a big buffer
          */
-        idxalloc_len = fs_attr_idx->nrd.allocsize;
         // default to null unless length is greater than 0
         idxalloc = NULL;
-        if ((idxalloc_len > 0) && ((idxalloc = (char *)tsk_malloc((size_t)idxalloc_len)) == NULL)) {
-            return TSK_ERR;
+        idxalloc_len = (size_t) fs_attr_idx->nrd.allocsize;
+
+        if (idxalloc_len > 0 && (idxalloc = (char *)tsk_malloc(idxalloc_len)) == NULL) {
+          return TSK_ERR;
         }
 
         /* Fill in the loading data structure */
-        load_file.total = load_file.left = (size_t) idxalloc_len;
+        load_file.total = load_file.left = idxalloc_len;
         load_file.cur = load_file.base = idxalloc;
 
         if (tsk_verbose)
@@ -1090,7 +1095,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             uint32_t list_len, rec_len;
 
             // Ensure that there is enough data for an idxrec
-            if ((idxalloc_len < sizeof(ntfs_idxrec)) || (off > idxalloc_len - sizeof(ntfs_idxrec))) {
+            if (idxalloc_len < sizeof(ntfs_idxrec) || off > idxalloc_len - sizeof(ntfs_idxrec)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
@@ -1278,10 +1283,10 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
     }
 
-    
+
     /* see if there are any entries in MFT for this dir that we didn't see.
      * Need to make sure it is for this version (sequence) though.
-     * NTFS Updates the sequence when a directory is deleted and not when 
+     * NTFS Updates the sequence when a directory is deleted and not when
      * it is allocated.  So, if we have a deleted directory, then use
      * its previous sequence number to find the files that were in it when
      * it was allocated.
@@ -1297,35 +1302,35 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (ntfs_parent_map_exists(ntfs, a_addr, seqToSrch)) {
         TSK_FS_NAME *fs_name;
-        
-        std::vector <NTFS_META_ADDR> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
+
+        const std::vector <NTFS_META_ADDR> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
 
         if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL){
             tsk_release_lock(&ntfs->orphan_map_lock);
             return TSK_ERR;
         }
-        
+
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
         fs_name->par_addr = a_addr;
         fs_name->par_seq = fs_dir->fs_file->meta->seq;
 
-        for (size_t a = 0; a < childFiles.size(); a++) {
+        for(const NTFS_META_ADDR& childFile: childFiles) {
             TSK_FS_FILE *fs_file_orp = NULL;
 
             /* Check if fs_dir already has an allocated entry for this
              * file.  If so, ignore it. We used to rely on fs_dir_add
-             * to get rid of this, but it wasted a lot of lookups. If 
+             * to get rid of this, but it wasted a lot of lookups. If
              * We have only unalloc for this same entry (from idx entries),
              * then try to add it.   If we got an allocated entry from
              * the idx entries, then assume we have everything. */
-            if (tsk_fs_dir_contains(fs_dir, childFiles[a].getAddr(), childFiles[a].getHash()) == TSK_FS_NAME_FLAG_ALLOC) {
+            if (tsk_fs_dir_contains(fs_dir, childFile.getAddr(), childFile.getHash()) == TSK_FS_NAME_FLAG_ALLOC) {
                 continue;
             }
 
             /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
-            fs_name->meta_addr = childFiles[a].getAddr();
-            fs_name->meta_seq = childFiles[a].getSeq();
+            fs_name->meta_addr = childFile.getAddr();
+            fs_name->meta_seq = childFile.getSeq();
 
             // lookup the file to get more info (we did not cache that)
             fs_file_orp =
@@ -1337,11 +1342,11 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     }
                     else {
                         fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
-                        /* This sequence is the MFT entry, which gets 
-                         * incremented when it is unallocated.  So, 
+                        /* This sequence is the MFT entry, which gets
+                         * incremented when it is unallocated.  So,
                          * decrement it back down so that it is more
                          * similar to the usual situation, where the
-                         * name sequence is 1 smaller than the meta 
+                         * name sequence is 1 smaller than the meta
                          * sequence. */
                         fs_name->meta_seq--;
                     }
@@ -1591,7 +1596,7 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
         return 1;
     }
-    r_enum = ntfs_dinode_lookup(ntfs, (char *) mft, inode_toid);
+    r_enum = ntfs_dinode_lookup(ntfs, (char *) mft, inode_toid, 0);
     if (r_enum == TSK_ERR) {
         free(mft);
         return 1;

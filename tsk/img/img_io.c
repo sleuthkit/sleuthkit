@@ -95,11 +95,11 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     if ((TSK_OFF_T) a_len < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: a_len: %zd", a_len);
+        tsk_error_set_errstr("tsk_img_read: a_len: %" PRIuSIZE, a_len);
         return -1;
     }
 
-    /* cache_lock is used for both the cache in IMG_INFO and 
+    /* cache_lock is used for both the cache in IMG_INFO and
      * the shared variables in the img type specific INFO structs.
      * grab it now so that it is held before any reads.
      */

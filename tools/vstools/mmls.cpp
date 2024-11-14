@@ -11,21 +11,15 @@
  */
 #include "tsk/tsk_tools_i.h"
 
-static TSK_TCHAR *progname;
-
-static uint8_t print_bytes = 0;
-static uint8_t recurse = 0;
-
-static int recurse_cnt = 0;
-static TSK_DADDR_T recurse_list[64];
+#include <memory>
+#include <variant>
 
 void
 usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
-        progname);
+        ("usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"));
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
@@ -45,16 +39,22 @@ usage()
     tsk_fprintf(stderr, "\t-A: Show unallocated volumes\n");
     tsk_fprintf(stderr, "\t-m: Show metadata volumes\n");
     tsk_fprintf(stderr, "\t-M: Hide metadata volumes\n");
-    exit(1);
 }
+
+struct WalkState {
+  bool print_bytes = false;
+  bool recurse = false;
+  int recurse_cnt = 0;
+  TSK_DADDR_T recurse_list[64] = {0};
+};
 
 /*
  * The callback action for the part_walk
  *
  * Prints the layout information
- * */
+ */
 static TSK_WALK_RET_ENUM
-part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
+part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
 {
     if (part->flags & TSK_VS_PART_FLAG_META)
         tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
@@ -77,7 +77,9 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
         tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
             part->addr, part->table_num, part->slot_num);
 
-    if (print_bytes) {
+    WalkState* ws = static_cast<WalkState*>(ptr);
+
+    if (ws->print_bytes) {
         TSK_OFF_T size;
         char unit = 'B';
         size = part->len * part->vs->block_size;
@@ -116,10 +118,10 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
             part->desc);
     }
 
-    if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)
-        && (part->flags == TSK_VS_PART_FLAG_ALLOC)) {
-        if (recurse_cnt < 64) {
-            recurse_list[recurse_cnt++] = part->start * part->vs->block_size;
+    if (ws->recurse && vs->vstype == TSK_VS_TYPE_DOS
+        && part->flags == TSK_VS_PART_FLAG_ALLOC) {
+        if (ws->recurse_cnt < 64) {
+            ws->recurse_list[ws->recurse_cnt++] = part->start * part->vs->block_size;
         }
     }
 
@@ -127,7 +129,7 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
 }
 
 static void
-print_header(const TSK_VS_INFO * vs)
+print_header(const TSK_VS_INFO * vs, bool print_bytes)
 {
     tsk_printf("%s\n", tsk_vs_type_todesc(vs->vstype));
     tsk_printf("Offset Sector: %" PRIuDADDR "\n",
@@ -141,22 +143,214 @@ print_header(const TSK_VS_INFO * vs)
             ("      Slot      Start        End          Length       Description\n");
 }
 
+struct Options {
+  int flags = 0;
+  bool print_bytes = 0;
+  unsigned int ssize = 0;
+  TSK_OFF_T imgaddr = 0;
+  TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+  TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
+  bool recurse = false;
+  unsigned int verbose = 0;
+};
+
+std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
+    Options opts;
+
+    bool hide_meta = false;
+    TSK_TCHAR *cp;
+    int ch;
+
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
+        switch (ch) {
+        case _TSK_T('a'):
+            opts.flags |= TSK_VS_PART_FLAG_ALLOC;
+            break;
+        case _TSK_T('A'):
+            opts.flags |= TSK_VS_PART_FLAG_UNALLOC;
+            break;
+        case _TSK_T('B'):
+            opts.print_bytes = true;
+            break;
+        case _TSK_T('b'):
+            opts.ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || opts.ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
+                    OPTARG);
+                usage();
+                return 1;
+            }
+            break;
+        case _TSK_T('i'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_img_type_print(stderr);
+                return 1;
+            }
+            opts.imgtype = tsk_img_type_toid(OPTARG);
+            if (opts.imgtype == TSK_IMG_TYPE_UNSUPP) {
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
+                    OPTARG);
+                usage();
+                return 1;
+            }
+            break;
+        case _TSK_T('m'):
+            opts.flags |= (TSK_VS_PART_FLAG_META);
+            break;
+        case _TSK_T('M'):
+            // we'll set this after all flags have been set
+            hide_meta = true;
+            break;
+        case _TSK_T('o'):
+            if ((opts.imgaddr = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                return 1;
+            }
+            break;
+        case _TSK_T('r'):
+            opts.recurse = true;
+            break;
+        case _TSK_T('t'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_vs_type_print(stderr);
+                return 1;
+            }
+            opts.vstype = tsk_vs_type_toid(OPTARG);
+            if (opts.vstype == TSK_VS_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported volume system type: %" PRIttocTSK "\n"),
+                    OPTARG);
+                usage();
+                return 1;
+            }
+            break;
+        case _TSK_T('v'):
+            opts.verbose++;
+            break;
+        case _TSK_T('V'):
+            tsk_version_print(stdout);
+            return 0;
+        case _TSK_T('?'):
+        default:
+            tsk_fprintf(stderr, "Unknown argument\n");
+            usage();
+            return 1;
+        }
+    }
+
+    // if they want to hide metadata volumes, set that now
+    if (hide_meta) {
+        if (opts.flags == 0) {
+            opts.flags = (TSK_VS_PART_FLAG_ALLOC | TSK_VS_PART_FLAG_UNALLOC);
+        }
+        else {
+            opts.flags &= ~TSK_VS_PART_FLAG_META;
+        }
+    }
+    else if (opts.flags == 0) {
+        opts.flags = TSK_VS_PART_FLAG_ALL;
+    }
+
+    /* We need at least one more argument */
+    if (OPTIND >= argc) {
+        tsk_fprintf(stderr, "Missing image name\n");
+        usage();
+        return 1;
+    }
+
+    return opts;
+}
+
+int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
+    auto [
+      flags,
+      print_bytes,
+      ssize,
+      imgaddr,
+      imgtype,
+      vstype,
+      recurse,
+      _ // verbose
+    ] = opts;
+
+    tsk_verbose = opts.verbose;
+
+    /* open the image */
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
+        tsk_error_print(stderr);
+        return 1;
+    }
+
+    if ((imgaddr * img->sector_size) >= img->size) {
+        tsk_fprintf(stderr,
+            "Sector offset supplied is larger than disk image (maximum: %"
+            PRIu64 ")\n", img->size / img->sector_size);
+        return 1;
+    }
+
+    /* process the partition tables */
+    std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs{
+        tsk_vs_open(img.get(), imgaddr * img->sector_size, vstype),
+        tsk_vs_close
+    };
+
+    if (!vs) {
+        tsk_error_print(stderr);
+        if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
+            tsk_vs_type_print(stderr);
+        return 1;
+    }
+
+    print_header(vs.get(), print_bytes);
+
+    WalkState ws{print_bytes, recurse};
+    if (tsk_vs_part_walk(vs.get(), 0, vs->part_count - 1,
+            (TSK_VS_PART_FLAG_ENUM) flags, part_act, &ws)) {
+        tsk_error_print(stderr);
+        return 1;
+    }
+
+    if (ws.recurse && vs->vstype == TSK_VS_TYPE_DOS) {
+        /* disable recursing incase we hit another DOS partition
+         * future versions may support more layers */
+        ws.recurse = false;
+
+        for (int i = 0; i < ws.recurse_cnt; i++) {
+            std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs2{
+                tsk_vs_open(img.get(), ws.recurse_list[i], TSK_VS_TYPE_DETECT),
+                tsk_vs_close
+            };
+            if (vs2) {
+                tsk_printf("\n\n");
+                print_header(vs2.get(), print_bytes);
+                if (tsk_vs_part_walk(vs2.get(), 0, vs2->part_count - 1,
+                        (TSK_VS_PART_FLAG_ENUM) flags, part_act, &ws)) {
+                    tsk_error_reset();
+                }
+            }
+            else {
+                /* Ignore error in this case and reset */
+                tsk_error_reset();
+            }
+        }
+    }
+    // TODO: tsk error leaks here.
+    // is the memory managed by pthread_setspecific(pt_tls_key, ...) freed?
+
+    return 0;
+}
 
 int
 main(int argc, char **argv1)
 {
-    TSK_VS_INFO *vs;
-    int ch;
-    TSK_OFF_T imgaddr = 0;
-    int flags = 0;
-    TSK_IMG_INFO *img;
-    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
-    uint8_t hide_meta = 0;
     TSK_TCHAR **argv;
-    unsigned int ssize = 0;
-    TSK_TCHAR *cp;
-
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -168,167 +362,11 @@ main(int argc, char **argv1)
     argv = (TSK_TCHAR **) argv1;
 #endif
 
-
-    progname = argv[0];
-
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
-        switch (ch) {
-        case _TSK_T('a'):
-            flags |= TSK_VS_PART_FLAG_ALLOC;
-            break;
-        case _TSK_T('A'):
-            flags |= TSK_VS_PART_FLAG_UNALLOC;
-            break;
-        case _TSK_T('B'):
-            print_bytes = 1;
-            break;
-        case _TSK_T('b'):
-            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || ssize < 1) {
-                TFPRINTF(stderr,
-                    _TSK_T
-                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
-                    OPTARG);
-                usage();
-            }
-            break;
-        case _TSK_T('i'):
-            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_img_type_print(stderr);
-                exit(1);
-            }
-            imgtype = tsk_img_type_toid(OPTARG);
-            if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
-                    OPTARG);
-                usage();
-            }
-            break;
-        case _TSK_T('m'):
-            flags |= (TSK_VS_PART_FLAG_META);
-            break;
-        case _TSK_T('M'):
-            // we'll set this after all flags have been set
-            hide_meta = 1;
-            break;
-        case _TSK_T('o'):
-            if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
-                tsk_error_print(stderr);
-                exit(1);
-            }
-            break;
-        case _TSK_T('r'):
-            recurse = 1;
-            break;
-        case _TSK_T('t'):
-            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_vs_type_print(stderr);
-                exit(1);
-            }
-            vstype = tsk_vs_type_toid(OPTARG);
-            if (vstype == TSK_VS_TYPE_UNSUPP) {
-                TFPRINTF(stderr,
-                    _TSK_T("Unsupported volume system type: %" PRIttocTSK "\n"),
-                    OPTARG);
-                usage();
-            }
-            break;
-        case _TSK_T('v'):
-            tsk_verbose++;
-            break;
-        case _TSK_T('V'):
-            tsk_version_print(stdout);
-            exit(0);
-        case _TSK_T('?'):
-        default:
-            tsk_fprintf(stderr, "Unknown argument\n");
-            usage();
-        }
+    const auto p = parse_args(argc, argv);
+    if (const int* ret = std::get_if<int>(&p)) {
+      return *ret;
     }
 
-    // if they want to hide metadata volumes, set that now
-    if (hide_meta) {
-        if (flags == 0)
-            flags = (TSK_VS_PART_FLAG_ALLOC | TSK_VS_PART_FLAG_UNALLOC);
-        else
-            flags &= ~TSK_VS_PART_FLAG_META;
-    }
-    else if (flags == 0) {
-        flags = TSK_VS_PART_FLAG_ALL;
-    }
-
-    /* We need at least one more argument */
-    if (OPTIND >= argc) {
-        tsk_fprintf(stderr, "Missing image name\n");
-        usage();
-    }
-
-    /* open the image */
-    img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize);
-
-    if (img == NULL) {
-        tsk_error_print(stderr);
-        goto on_error;
-    }
-    if ((imgaddr * img->sector_size) >= img->size) {
-        tsk_fprintf(stderr,
-            "Sector offset supplied is larger than disk image (maximum: %"
-            PRIu64 ")\n", img->size / img->sector_size);
-        goto on_error;
-    }
-
-    /* process the partition tables */
-    vs = tsk_vs_open(img, imgaddr * img->sector_size, vstype);
-    if (vs == NULL) {
-        tsk_error_print(stderr);
-        if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
-            tsk_vs_type_print(stderr);
-        goto on_error;
-    }
-
-    print_header(vs);
-
-    if (tsk_vs_part_walk(vs, 0, vs->part_count - 1,
-            (TSK_VS_PART_FLAG_ENUM) flags, part_act, NULL)) {
-        tsk_error_print(stderr);
-        tsk_vs_close(vs);
-        goto on_error;
-    }
-
-    if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)) {
-        int i;
-        /* disable recursing incase we hit another DOS partition
-         * future versions may support more layers */
-        recurse = 0;
-
-        for (i = 0; i < recurse_cnt; i++) {
-            TSK_VS_INFO *vs2;
-            vs2 = tsk_vs_open(img, recurse_list[i], TSK_VS_TYPE_DETECT);
-            if (vs2 != NULL) {
-                tsk_printf("\n\n");
-                print_header(vs2);
-                if (tsk_vs_part_walk(vs2, 0, vs2->part_count - 1,
-                        (TSK_VS_PART_FLAG_ENUM) flags, part_act, NULL)) {
-                    tsk_error_reset();
-                }
-                tsk_vs_close(vs2);
-            }
-            else {
-                /* Ignore error in this case and reset */
-                tsk_error_reset();
-            }
-        }
-    }
-    // TODO: tsk error leaks here.
-    // is the memory managed by pthread_setspecific(pt_tls_key, ...) freed?
-
-    tsk_vs_close(vs);
-    tsk_img_close(img);
-    exit(0);
-
-on_error:
-    if( img != NULL ) {
-        tsk_img_close( img );
-    }
-    exit( 1 );
+    const auto& opts = std::get<Options>(p);
+    return do_it(opts, argc, argv);
 }

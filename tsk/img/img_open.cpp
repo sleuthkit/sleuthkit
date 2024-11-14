@@ -27,12 +27,20 @@
 #include "ewf.h"
 #endif
 
+#if HAVE_LIBQCOW
+#include "qcow.h"
+#endif
+
 #if HAVE_LIBVMDK
 #include "vmdk.h"
 #endif
 
 #if HAVE_LIBVHDI
 #include "vhd.h"
+#endif
+
+#if HAVE_LIBAFF4
+#include "aff4.h"
 #endif
 
 /**
@@ -92,6 +100,13 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
+    if (num_img < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("number of images is negative (%d)", num_img);
+        return NULL;
+    }
+
     if ((a_ssize > 0) && (a_ssize < 512)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
@@ -122,7 +137,7 @@ tsk_img_open(int num_img,
          * we try all of the embedded formats
          */
         TSK_IMG_INFO *img_set = NULL;
-#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI
+#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW || HAVE_LIBAFF4
         const char *set = NULL;
 #endif
 
@@ -131,7 +146,7 @@ tsk_img_open(int num_img,
 
         /* Try the non-raw formats first */
 #if HAVE_LIBAFFLIB
-        if ((img_info = aff_open(images, a_ssize)) != NULL) {
+        if ((img_info = aff_open(num_img, images, a_ssize)) != NULL) {
             /* we don't allow the "ANY" when autodetect is used because
              * we only want to detect the tested formats. */
             if (img_info->itype == TSK_IMG_TYPE_AFF_ANY) {
@@ -164,6 +179,26 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("EWF or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
+#if HAVE_LIBAFF4
+        if ((img_info = aff4_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "AFF4";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("AFF4 or %s", set);
                 return NULL;
             }
         }
@@ -212,6 +247,26 @@ tsk_img_open(int num_img,
         }
 #endif
 
+#if HAVE_LIBQCOW
+        if ((img_info = qcow_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "QCOW";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("QCOW or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
         // if any of the non-raw formats were detected, then use it.
         if (img_set != NULL) {
             img_info = img_set;
@@ -235,16 +290,12 @@ tsk_img_open(int num_img,
         img_info = raw_open(num_img, images, a_ssize);
         break;
 
-	case TSK_IMG_TYPE_LOGICAL:
-		img_info = logical_open(num_img, images, a_ssize);
-		break;
-
 #if HAVE_LIBAFFLIB
     case TSK_IMG_TYPE_AFF_AFF:
     case TSK_IMG_TYPE_AFF_AFD:
     case TSK_IMG_TYPE_AFF_AFM:
     case TSK_IMG_TYPE_AFF_ANY:
-        img_info = aff_open(images, a_ssize);
+        img_info = aff_open(num_img, images, a_ssize);
         break;
 #endif
 
@@ -265,6 +316,22 @@ tsk_img_open(int num_img,
         img_info = vhdi_open(num_img, images, a_ssize);
         break;
 #endif
+
+#if HAVE_LIBAFF4
+    case TSK_IMG_TYPE_AFF4_AFF4:
+        img_info = aff4_open(num_img, images, a_ssize);
+        break;
+#endif
+
+#if HAVE_LIBQCOW
+    case TSK_IMG_TYPE_QCOW_QCOW:
+        img_info = qcow_open(num_img, images, a_ssize);
+        break;
+#endif
+
+    case TSK_IMG_TYPE_LOGICAL:
+		    img_info = logical_open(num_img, images, a_ssize);
+		    break;
 
     default:
         tsk_error_reset();
@@ -393,9 +460,9 @@ tsk_img_open_utf8(int num_img,
 /**
 * \ingroup imglib
  * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer parameter
- * must be castable to a TSK_IMG_INFO pointer.  It is up to 
- * the caller to set the tag value in ext_img_info.  This 
- * method will initialize the cache lock. 
+ * must be castable to a TSK_IMG_INFO pointer.  It is up to
+ * the caller to set the tag value in ext_img_info.  This
+ * method will initialize the cache lock.
  *
  * @param ext_img_info Pointer to the partially initialized disk image
  * structure, having a TSK_IMG_INFO as its first member
@@ -560,8 +627,32 @@ tsk_img_open_utf16(int num_img,
 }
 #endif
 
+void tsk_img_free_image_names(TSK_IMG_INFO* img_info) {
+    for (int i = img_info->num_img - 1; i >= 0; --i) {
+        free(img_info->images[i]);
+    }
+    free(img_info->images);
+    img_info->images = NULL;
+    img_info->num_img = 0;
+}
 
+int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const images[], int num) {
+    if (!(img_info->images = (TSK_TCHAR**) tsk_malloc(num * sizeof(TSK_TCHAR*)))) {
+        return 0;
+    }
+    img_info->num_img = num;
+    memset(img_info->images, 0, sizeof(num * sizeof(TSK_TCHAR*)));
 
+    for (int i = 0; i < num; ++i) {
+        const size_t len = TSTRLEN(images[i]);
+        if (!(img_info->images[i] = (TSK_TCHAR*) tsk_malloc((len+1)*sizeof(TSK_TCHAR)))) {
+            tsk_img_free_image_names(img_info);
+            return 0;
+        }
+        TSTRNCPY(img_info->images[i], images[i], len + 1);
+    }
+    return 1;
+}
 
 /**
  * \ingroup imglib
@@ -576,4 +667,30 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     }
     tsk_deinit_lock(&(a_img_info->cache_lock));
     a_img_info->close(a_img_info);
+}
+
+/* tsk_img_malloc - tsk_malloc, then set image tag
+ * This is for img module and all its inheritances
+ */
+void *
+tsk_img_malloc(size_t a_len)
+{
+    TSK_IMG_INFO *imgInfo;
+    if ((imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
+        return NULL;
+    imgInfo->tag = TSK_IMG_INFO_TAG;
+    return (void *) imgInfo;
+}
+
+
+/* tsk_img_free - unset image tag, then free memory
+ * This is for img module and all its inheritances
+ */
+void
+tsk_img_free(void *a_ptr)
+{
+    TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
+    imgInfo->tag = 0;
+    tsk_img_free_image_names(imgInfo);
+    free(imgInfo);
 }

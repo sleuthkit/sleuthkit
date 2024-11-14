@@ -57,46 +57,46 @@
     <ClCompile Include="..\..\tsk\vs\sun.c">
       <Filter>vs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dcalc_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dcalc_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\dcat_lib.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dls_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dls_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dstat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dstat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ext2fs.c">
+    <ClCompile Include="..\..\tsk\fs\ext2fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.c">
+    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fatfs.c">
+    <ClCompile Include="..\..\tsk\fs\fatfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fatfs_meta.c">
+    <ClCompile Include="..\..\tsk\fs\fatfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ffind_lib.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ffs.c">
+    <ClCompile Include="..\..\tsk\fs\ffs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ffs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\ffs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fls_lib.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_attr.c">
+    <ClCompile Include="..\..\tsk\fs\fs_attr.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_attrlist.c">
@@ -105,10 +105,10 @@
     <ClCompile Include="..\..\tsk\fs\fs_block.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_dir.c">
+    <ClCompile Include="..\..\tsk\fs\fs_dir.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_file.c">
+    <ClCompile Include="..\..\tsk\fs\fs_file.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_inode.c">
@@ -117,10 +117,10 @@
     <ClCompile Include="..\..\tsk\fs\fs_io.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_load.c">
+    <ClCompile Include="..\..\tsk\fs\fs_load.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_name.c">
+    <ClCompile Include="..\..\tsk\fs\fs_name.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_open.c">
@@ -132,34 +132,34 @@
     <ClCompile Include="..\..\tsk\fs\fs_types.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs.c">
+    <ClCompile Include="..\..\tsk\fs\hfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_journal.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_journal.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\icat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\icat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ifind_lib.c">
+    <ClCompile Include="..\..\tsk\fs\ifind_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ils_lib.c">
+    <ClCompile Include="..\..\tsk\fs\ils_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\iso9660.c">
+    <ClCompile Include="..\..\tsk\fs\iso9660.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\iso9660_dent.c">
+    <ClCompile Include="..\..\tsk\fs\iso9660_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\nofs_misc.c">
+    <ClCompile Include="..\..\tsk\fs\nofs_misc.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\rawfs.c">
@@ -168,7 +168,7 @@
     <ClCompile Include="..\..\tsk\fs\swapfs.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\unix_misc.c">
+    <ClCompile Include="..\..\tsk\fs\unix_misc.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp">
@@ -186,7 +186,7 @@
     <ClCompile Include="..\..\tsk\auto\db_sqlite.cpp">
       <Filter>auto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\auto\sqlite3.c">
+    <ClCompile Include="..\..\vendors\sqlite3.c">
       <Filter>auto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\base\md5c.c">
@@ -240,19 +240,19 @@
     <ClCompile Include="..\..\tsk\img\img_types.c">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\mult_files.c">
+    <ClCompile Include="..\..\tsk\img\mult_files.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\raw.c">
+    <ClCompile Include="..\..\tsk\img\raw.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\logical_img.c">
+    <ClCompile Include="..\..\tsk\img\logical_img.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ntfs.c">
+    <ClCompile Include="..\..\tsk\fs\ntfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ntfs_dent.cpp">
@@ -261,25 +261,25 @@
     <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\idxonly.c">
+    <ClCompile Include="..\..\tsk\hashdb\idxonly.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\md5sum.c">
+    <ClCompile Include="..\..\tsk\hashdb\md5sum.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
+    <ClCompile Include="..\..\tsk\hashdb\nsrl.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\hdb_base.c">
+    <ClCompile Include="..\..\tsk\hashdb\hdb_base.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.c">
+    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\encase.c">
+    <ClCompile Include="..\..\tsk\hashdb\encase.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\exfatfs.c">
@@ -291,10 +291,10 @@
     <ClCompile Include="..\..\tsk\fs\logical_fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c">
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c">
@@ -306,7 +306,7 @@
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c">
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp">
@@ -360,7 +360,7 @@
     <ClCompile Include="..\..\tsk\fs\apfs_fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\decmpfs.c">
+    <ClCompile Include="..\..\tsk\fs\decmpfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp">
@@ -375,7 +375,7 @@
     <ClCompile Include="..\..\tsk\util\detect_encryption.c">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\util\file_system_utils.c">
+    <ClCompile Include="..\..\tsk\util\file_system_utils.cpp">
       <Filter>util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\unsupported_types.c">
@@ -464,7 +464,7 @@
     <ClInclude Include="..\..\tsk\fs\tsk_ntfs.h">
       <Filter>fs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tsk\auto\sqlite3.h">
+    <ClInclude Include="..\..\vendors\sqlite3.h">
       <Filter>auto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\auto\tsk_auto.h">
@@ -498,6 +498,9 @@
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\ewf.h">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\mult_files.h">
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\raw.h">

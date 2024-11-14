@@ -16,7 +16,7 @@ public:
     uint64_t file_offset;           // logical number of bytes from beginning of file
     uint64_t len;		    // number of bytes
     std::string md5;                // md5 if we are sector hashing, otherwise null
-    TSK_FS_BLOCK_FLAG_ENUM flags;   // 
+    TSK_FS_BLOCK_FLAG_ENUM flags;   //
     uint64_t next_file_offset() {return file_offset + len;}
     uint64_t next_img_offset()  {return img_offset + len;}
 };
@@ -24,6 +24,7 @@ public:
 typedef std::vector<class seg> seglist;	// vector of blocks
 class content {
 private:
+    struct fiwalk &o;
     std::string   evidence_filename;         // filename of what's currently being saved (from evidence file system)
     void     open_tempfile();
     void     open_savefile();
@@ -39,7 +40,7 @@ public:
     bool     name_filtered();
     std::string   evidence_dirname;		// where it is being put
 
-    int      fd_save;		        // where the file gets saved (fd_save>0)
+    int           fd_save;		        // where the file gets saved (fd_save>0)
     std::string   save_path;	                // full path of where it is being saved
 
     int      fd_temp;			// temp copy for plugin and "file" command
@@ -55,7 +56,8 @@ public:
     uint64_t total_bytes;
     std::vector<std::string> sectorhashes;	// a vector of sector hashes, if any have been computed
 
-    content(TSK_IMG_INFO *img_info_):
+    content(TSK_IMG_INFO *img_info_, fiwalk &o_):
+        o(o_),
 	img_info(img_info_),
 	invalid(false),
 	fd_save(0),
@@ -80,12 +82,12 @@ public:
 
     void   add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size);
     void   add_bytes(const char *buf,uint64_t file_offset,ssize_t size){ // handle annoying sign problems
-	add_bytes((const u_char *)buf,file_offset,size); 
+	add_bytes((const u_char *)buf,file_offset,size);
     }
     void write_record();		// writes the ARFF record for this content
     TSK_WALK_RET_ENUM file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
                                size_t size, TSK_FS_BLOCK_FLAG_ENUM flags);
-    
+
 };
 
 #endif

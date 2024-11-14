@@ -463,6 +463,7 @@ extern "C" {
         TSK_FS_META_MODE_ENUM mode;     ///< Unix-style permissions
         int nlink;              ///< link count (number of file names pointing to this)
         TSK_OFF_T size;         ///< file size (in bytes)
+        TSK_OFF_T start_of_inode;	///< address within file system where inode structure begins
         TSK_UID_T uid;          ///< owner id
         TSK_GID_T gid;          ///< group id
 
@@ -781,12 +782,12 @@ extern "C" {
 
     /**
     * Values for the file system type.  Each bit corresponds to a file
-    * system. The "[fs]_DETECT" value (such as TSK_FS_TYPE_NTSF_DETECT) is 
-    * the OR of all of the subtypes that 
-    * it could detect.  If there is only one type of that file system, 
-    * the [fs]_DETECT value will be the same as the type. 
+    * system. The "[fs]_DETECT" value (such as TSK_FS_TYPE_NTSF_DETECT) is
+    * the OR of all of the subtypes that
+    * it could detect.  If there is only one type of that file system,
+    * the [fs]_DETECT value will be the same as the type.
     *
-    * The _DETECT values should not be stored in TSK_FS_INFO.  Once 
+    * The _DETECT values should not be stored in TSK_FS_INFO.  Once
     * tsk_fs_open() has detected the type, it should assign the specific
     * version in TSK_FS_INFO.
     *

@@ -14,9 +14,9 @@
 
 /**
 * Convert entry type value to enum.
-* 
+*
 * @param val  The entry type as an integer
-* 
+*
 * @return Enum associated with the value. Returns BITLOCKER_METADATA_ENTRY_TYPE::UNKNOWN if unknown or invalid.
 */
 BITLOCKER_METADATA_ENTRY_TYPE getMetadataEntryTypeEnum(uint16_t val) {
@@ -42,9 +42,9 @@ BITLOCKER_METADATA_ENTRY_TYPE getMetadataEntryTypeEnum(uint16_t val) {
 
 /**
 * Converts entry type enum to printable string.
-* 
+*
 * @param type  Entry type
-* 
+*
 * @returns Entry type as a string
 */
 string convertMetadataEntryTypeToString(BITLOCKER_METADATA_ENTRY_TYPE type) {
@@ -71,9 +71,9 @@ string convertMetadataEntryTypeToString(BITLOCKER_METADATA_ENTRY_TYPE type) {
 
 /**
 * Convert value type value to enum.
-* 
+*
 * @param val  The value type as an integer
-* 
+*
 * @return Enum associated with the value. Returns BITLOCKER_METADATA_VALUE_TYPE::UNKNOWN if invalid.
 */
 BITLOCKER_METADATA_VALUE_TYPE getMetadataValueTypeEnum(uint16_t val) {
@@ -293,7 +293,7 @@ bool isAESCBC(BITLOCKER_ENCRYPTION_TYPE type) {
 
 /**
 * Check if the encryption type is AES-XTS
-* 
+*
 * @param type  Encryption type
 *
 * @return true if the encryption type is AES-XTS, false otherwise
@@ -305,9 +305,9 @@ bool isAESXTS(BITLOCKER_ENCRYPTION_TYPE type) {
 
 /**
 * Check if the encryption type uses the diffuser
-* 
+*
 * @param type  Encryption type
-* 
+*
 * @return true if the encryption type uses the diffuser, false otherwise
 */
 bool usesDiffuser(BITLOCKER_ENCRYPTION_TYPE type) {
