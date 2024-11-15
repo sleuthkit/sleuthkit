@@ -18,10 +18,12 @@
 #if HAVE_LIBEWF
 #include "ewf.h"
 
+#include <algorithm>
 #include <cctype>
 #include <memory>
-
-using std::string;
+#include <new>
+#include <string>
+#include <vector>
 
 #define TSK_EWF_ERROR_STRING_SIZE 512
 
@@ -184,7 +186,18 @@ img_file_header_signature_ncmp(const char *filename,
 }
 #endif
 
-
+#ifdef TSK_WIN32
+std::vector<std::wstring>
+fixup_path_separators(const TSK_TCHAR* const imgs[], unsigned int len) {
+    std::vector<std::wstring> v;
+    for (size_t i = 0; i < len; ++i) {
+        std::wstring r{imgs[i]};
+        std::replace(r.begin(), r.end(), '/', '\\');
+        v.push_back(r);
+    }
+    return v;
+}
+#endif
 
 TSK_IMG_INFO *
 ewf_open(int a_num_img,
@@ -216,15 +229,29 @@ ewf_open(int a_num_img,
     ewf_info->handle = NULL;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ewf_info.get();
 
+#ifdef TSK_WIN32
+    const auto images_bs = fixup_path_separators(a_images, a_ssize);
+    std::unique_ptr<const TSK_TCHAR*[]> images_arr{new(std::nothrow) const TSK_TCHAR*[a_ssize]};
+    if (!images_arr) {
+        return nullptr;
+    }
+    for (size_t i = 0; i < a_ssize; ++i) {
+      images_arr[i] = images_bs[i].c_str();
+    }
+    const TSK_TCHAR* const* images = images_arr.get();
+#else
+    const TSK_TCHAR* const* images = a_images;
+#endif
+
     // See if they specified only the first of the set...
     ewf_info->used_ewf_glob = 0;
     if (a_num_img == 1) {
 #ifdef TSK_WIN32
-        is_error = (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
+        is_error = (libewf_glob_wide(images[0], TSTRLEN(images[0]),
                 LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
                 &ewf_info->img_info.num_img, &ewf_error) == -1);
 #else
-        is_error = (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
+        is_error = (libewf_glob(images[0], TSTRLEN(images[0]),
                 LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
                 &ewf_info->img_info.num_img, &ewf_error) == -1);
 #endif
@@ -245,16 +272,16 @@ ewf_open(int a_num_img,
                 ewf_info->img_info.num_img);
     }
     else {
-        if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+        if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
             return nullptr;
         }
     }
 
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
-    is_error = (libewf_check_file_signature_wide(a_images[0], &ewf_error) != 1);
+    is_error = (libewf_check_file_signature_wide(images[0], &ewf_error) != 1);
 #else
-    is_error = (libewf_check_file_signature(a_images[0], &ewf_error) != 1);
+    is_error = (libewf_check_file_signature(images[0], &ewf_error) != 1);
 #endif
     if (is_error)
     {
@@ -277,7 +304,7 @@ ewf_open(int a_num_img,
 
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error initializing handle (%s)", a_images[0], error_string);
+            ": Error initializing handle (%s)", images[0], error_string);
 
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create EWF handle\n");
@@ -301,7 +328,7 @@ ewf_open(int a_num_img,
 
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error opening (%s)", a_images[0], error_string);
+            ": Error opening (%s)", images[0], error_string);
 
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
@@ -316,7 +343,7 @@ ewf_open(int a_num_img,
 
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error getting size of image (%s)", a_images[0],
+            ": Error getting size of image (%s)", images[0],
             error_string);
 
         if (tsk_verbose) {
@@ -334,7 +361,7 @@ ewf_open(int a_num_img,
 
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error getting MD5 of image (%s)", a_images[0],
+            ": Error getting MD5 of image (%s)", images[0],
             error_string);
 
         if (tsk_verbose) {
@@ -353,7 +380,7 @@ ewf_open(int a_num_img,
 
         getError(ewf_error, error_string);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error getting SHA1 of image (%s)", a_images[0],
+            ": Error getting SHA1 of image (%s)", images[0],
             error_string);
         libewf_error_free(&ewf_error);
 
@@ -516,7 +543,7 @@ std::string ewf_get_details(IMG_EWF_INFO *ewf_info) {
         return NULL;
     }
 
-    string collectionDetails = "";
+    std::string collectionDetails = "";
     //Populate all of the libewf header values for the acquisition details column
     collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));
     collectionDetails.append(libewf_read_case_number(ewf_info->handle, result, buffer_size));
