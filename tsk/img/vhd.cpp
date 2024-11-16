@@ -135,13 +135,8 @@ vhdi_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
     if (a_num_img != 1) {
-        if (a_num_img > 1) {
-            tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
-                ": expected 1 image filename, was given %d", a_images[0], a_num_img);
-        }
-        else {
-            tsk_error_set_errstr("vhdi_open file: expected 1 image filename, was given 0");
-        }
+        tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
+            ": expected 1 image filename, was given %d", a_images[0], a_num_img);
 
         if (tsk_verbose) {
             tsk_fprintf(stderr, "vhd requires exactly 1 image filename for opening\n");
