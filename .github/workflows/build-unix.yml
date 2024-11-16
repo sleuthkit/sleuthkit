@@ -30,6 +30,7 @@ jobs:
             codecov: "yes"
             prefix: "CODECOV"
             address_sanitizer: "yes"
+            keep_artifacts: "no"
 
           - os: "linux"
             arch: "x86_64"
@@ -40,6 +41,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
+            keep_artifacts: "yes"
 
           - os: "linux"
             arch: "x86_64"
@@ -50,6 +52,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -63,6 +66,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -76,6 +80,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -90,6 +95,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -104,6 +110,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
     steps:
       - name: Determine number of cores
@@ -229,7 +236,13 @@ jobs:
           bash <(curl -s https://codecov.io/bash) -B develop
 
 
+      - name: Print all of the files for use with artifact keeper
+        if: ${{ matrix.keep_artifacts == 'yes' }}
+        run: |
+          find . -ls
+
       - name: Keep artifacts
+        if: ${{ matrix.keep_artifacts == 'yes' }}
         uses: actions/upload-artifact@v4
         with:
           path: |
