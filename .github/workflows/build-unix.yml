@@ -236,10 +236,12 @@ jobs:
           bash <(curl -s https://codecov.io/bash) -B develop
 
 
-      - name: Print all of the files for use with artifact keeper
+      - name: Create any artifacts that we need to keep
         if: ${{ matrix.keep_artifacts == 'yes' }}
         run: |
-          find . -ls
+          ./configure ${{ matrix.configure_opts }} -O2
+          make tools/fiwalk/src/fiwalk
+          find . -name '*fiwalk*' -ls
 
       - name: Keep artifacts
         if: ${{ matrix.keep_artifacts == 'yes' }}
