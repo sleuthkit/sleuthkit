@@ -239,7 +239,7 @@ jobs:
       - name: Create any artifacts that we need to keep
         if: ${{ matrix.keep_artifacts == 'yes' }}
         run: |
-          ./configure ${{ matrix.configure_opts }} -O2
+          ./configure ${{ matrix.configure_opts }} CFLAGS='-O2' CXXFLAGS='-O2'
           make tools/fiwalk/src/fiwalk
           find . -name '*fiwalk*' -ls
 
