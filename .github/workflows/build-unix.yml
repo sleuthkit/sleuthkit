@@ -241,18 +241,16 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }} CFLAGS='-O2' CXXFLAGS='-O2'
           make tools/fiwalk/src/fiwalk
-          find . -name '*fiwalk*' -ls
+          mkdir artifacts
+          mv tools/fiwalk/src/.libs/fiwalk artifacts
 
       - name: Keep artifacts
         if: ${{ matrix.keep_artifacts == 'yes' }}
         uses: actions/upload-artifact@v4
         with:
           path: |
-            tools/fiwalk/src/.libs/fiwalk
-            tools/vstools/.libs/*
+            artifacts/*
           retention-days: 15
-
-
 
 #      - name: Run distcheck
 #        run: |
