@@ -103,9 +103,6 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
 #define CACHE_AGE   1000
     ssize_t read_count = 0;
-    int cache_index = 0;
-    int cache_next = 0;         // index to lowest age cache (to use next)
-    size_t len2 = 0;
 
     /* cache_lock is used for both the cache in IMG_INFO and
      * the shared variables in the img type specific INFO structs.
@@ -122,7 +119,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     /* See if the requested length is going to be too long.
      * we'll use this length when checking the cache. */
-    len2 = a_len;
+    size_t len2 = a_len;
 
     // Protect against INT64_MAX + INT64_MAX > value
     if ((TSK_OFF_T) len2 > a_img_info->size
@@ -130,18 +127,19 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         len2 = (size_t) (a_img_info->size - a_off);
     }
 
+    int cache_next = 0;         // index to lowest age cache (to use next)
+
     // check if it is in the cache
-    for (cache_index = 0;
-        cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
+    for (int cache_index = 0; cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
 
         // Look into the in-use cache entries
         if (a_img_info->cache_len[cache_index] > 0) {
 
             // the read_count check makes sure we don't go back in after data was read
-            if ((read_count == 0)
-                && (a_img_info->cache_off[cache_index] <= a_off)
-                && (a_img_info->cache_off[cache_index] +
-                    a_img_info->cache_len[cache_index] >= a_off + len2)) {
+            if (read_count == 0
+                && a_img_info->cache_off[cache_index] <= a_off
+                && a_img_info->cache_off[cache_index] +
+                    a_img_info->cache_len[cache_index] >= a_off + len2) {
 
                 /*
                    if (tsk_verbose)
