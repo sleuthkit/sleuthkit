@@ -21,7 +21,7 @@ static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     /* Some of the lower-level methods like block-sized reads.
         * So if the len is not that multiple, then make it. */
-    if ((a_img_info->sector_size > 0) && (a_len % a_img_info->sector_size)) {
+    if (a_img_info->sector_size > 0 && a_len % a_img_info->sector_size) {
         char *buf2 = a_buf;
 
         size_t len_tmp;
@@ -30,7 +30,7 @@ static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
             return -1;
         }
         nbytes = a_img_info->read(a_img_info, a_off, buf2, len_tmp);
-        if ((nbytes > 0) && (nbytes < (ssize_t) a_len)) {
+        if (nbytes > 0 && nbytes < (ssize_t) a_len) {
             memcpy(a_buf, buf2, nbytes);
         }
         else {
