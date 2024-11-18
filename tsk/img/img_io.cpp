@@ -81,6 +81,14 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return -1;
     }
 
+    // TODO: why not just return 0 here (and be POSIX compliant)?
+    if (a_off >= a_img_info->size) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
+        tsk_error_set_errstr("tsk_img_read - %" PRIdOFF, a_off);
+        return -1;
+    }
+
     // Protect a_off against overflowing when a_len is added since TSK_OFF_T
     // maps to an int64 we prefer it over size_t although likely checking
     // for ( a_len > SSIZE_MAX ) is better but the code does not seem to
@@ -90,15 +98,6 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
         tsk_error_set_errstr("tsk_img_read: a_len: %" PRIuSIZE, a_len);
-        return -1;
-    }
-
-    // TODO: why not just return 0 here (and be POSIX compliant)?
-    // and why not check earlier for this condition?
-    if (a_off >= a_img_info->size) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("tsk_img_read - %" PRIdOFF, a_off);
         return -1;
     }
 
