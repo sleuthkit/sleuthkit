@@ -93,12 +93,6 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return -1;
     }
 
-#define CACHE_AGE   1000
-    ssize_t read_count = 0;
-    int cache_index = 0;
-    int cache_next = 0;         // index to lowest age cache (to use next)
-    size_t len2 = 0;
-
     // TODO: why not just return 0 here (and be POSIX compliant)?
     // and why not check earlier for this condition?
     if (a_off >= a_img_info->size) {
@@ -107,6 +101,12 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         tsk_error_set_errstr("tsk_img_read - %" PRIdOFF, a_off);
         return -1;
     }
+
+#define CACHE_AGE   1000
+    ssize_t read_count = 0;
+    int cache_index = 0;
+    int cache_next = 0;         // index to lowest age cache (to use next)
+    size_t len2 = 0;
 
     /* cache_lock is used for both the cache in IMG_INFO and
      * the shared variables in the img type specific INFO structs.
