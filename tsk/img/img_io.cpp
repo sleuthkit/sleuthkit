@@ -126,7 +126,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     // Protect against INT64_MAX + INT64_MAX > value
     if ((TSK_OFF_T) len2 > a_img_info->size
-        || a_off >= (a_img_info->size - (TSK_OFF_T)len2)) {
+        || a_off >= a_img_info->size - (TSK_OFF_T)len2) {
         len2 = (size_t) (a_img_info->size - a_off);
     }
 
