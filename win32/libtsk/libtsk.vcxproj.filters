@@ -381,6 +381,9 @@
     <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp">
       <Filter>pool</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\img\cache.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\img\ewf.cpp">
       <Filter>img</Filter>
     </ClCompile>

@@ -294,7 +294,7 @@ TSK_IMG_INFO* img_open(
     }
 
     /* we have a good img_info, set up the cache lock */
-    tsk_init_lock(&(img_info->cache_lock));
+    tsk_init_cache_lock(img_info.get());
 
     img_info->cache_read = tsk_img_read_legacy;
 
@@ -570,7 +570,7 @@ tsk_img_open_external(
     img_info->close = close;
     img_info->imgstat = imgstat;
 
-    tsk_init_lock(&(img_info->cache_lock));
+    tsk_init_cache_lock(img_info);
     return img_info;
 }
 
@@ -694,7 +694,7 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     if (!a_img_info) {
         return;
     }
-    tsk_deinit_lock(&(a_img_info->cache_lock));
+    tsk_deinit_cache_lock(a_img_info);
     a_img_info->close(a_img_info);
 }
 

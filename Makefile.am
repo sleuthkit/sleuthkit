@@ -289,6 +289,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/aff4.h \
 	tsk/img/aff.c \
 	tsk/img/aff.h \
+	tsk/img/cache.cpp \
 	tsk/img/ewf.cpp \
 	tsk/img/ewf.h \
 	tsk/img/img_io.cpp \

@@ -67,12 +67,12 @@ tsk_img_read_legacy(
      * the shared variables in the img type specific INFO structs.
      * grab it now so that it is held before any reads.
      */
-    tsk_take_lock(&(a_img_info->cache_lock));
+    tsk_take_cache_lock(a_img_info);
 
     // if they ask for more than the cache length, skip the cache
     if (a_len + (a_off % 512) > TSK_IMG_INFO_CACHE_LEN) {
         read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
-        tsk_release_lock(&(a_img_info->cache_lock));
+        tsk_release_cache_lock(a_img_info);
         return read_count;
     }
 
@@ -200,7 +200,7 @@ tsk_img_read_legacy(
         }
     }
 
-    tsk_release_lock(&(a_img_info->cache_lock));
+    tsk_release_cache_lock(a_img_info);
     return read_count;
 }
 
