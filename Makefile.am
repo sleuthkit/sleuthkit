@@ -711,6 +711,12 @@ test_legacy_fs_thread_test_SOURCES = \
 test_legacy_read_apis_LDADD = $(TSK_LIBS)
 test_legacy_read_apis_SOURCES = test/legacy/read_apis.cpp
 
+check_PROGRAMS += bench/runner
+
+bench_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+bench_runner_LDADD = $(TSK_LIBS)
+bench_runner_SOURCES = bench/runner.cpp
+
 #
 # Java
 #
