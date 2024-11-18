@@ -284,7 +284,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/raw.cpp \
 	tsk/img/raw.h \
 	tsk/img/tsk_img_i.h \
-	tsk/img/unsupported_types.c \
+	tsk/img/unsupported_types.cpp \
 	tsk/img/unsupported_types.h \
 	tsk/img/vhd.cpp \
 	tsk/img/vhd.h \
