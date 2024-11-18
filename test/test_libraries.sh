@@ -17,7 +17,6 @@ IMGBASE="test/data/imageformat_mmls_1"
 
 if [ -n "$WINEARCH" ]; then
   MMLS_CMD="wine ${MMLS_CMD}.exe"
-  IMGBASE=$(echo "$IMGBASE" | tr '/' '\\')
 fi
 
 # exits with FAILURE status if the command failed

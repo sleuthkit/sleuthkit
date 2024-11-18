@@ -32,3 +32,14 @@ TEST_CASE("raw_open ok") {
   };
   REQUIRE(img);
 }
+
+#ifdef TSK_WIN32
+TEST_CASE("raw_open backslash path separator ok") {
+  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.dd") };
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    raw_open(1, images, 1234),
+    tsk_img_close
+  };
+  REQUIRE(img);
+}
+#endif

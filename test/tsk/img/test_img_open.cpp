@@ -13,6 +13,7 @@ TEST_CASE("tsk_img_open 0 images") {
     tsk_img_close
   };
   REQUIRE(!img);
+  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_NOFILE);
 }
 
 TEST_CASE("tsk_img_open -1 images") {
@@ -22,6 +23,7 @@ TEST_CASE("tsk_img_open -1 images") {
     tsk_img_close
   };
   REQUIRE(!img);
+  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_ARG);
 }
 
 TEST_CASE("tsk_img_open null images") {
@@ -30,6 +32,7 @@ TEST_CASE("tsk_img_open null images") {
     tsk_img_close
   };
   REQUIRE(!img);
+  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_NOFILE);
 }
 
 TEST_CASE("tsk_img_open_utf8 0 images") {
@@ -39,6 +42,7 @@ TEST_CASE("tsk_img_open_utf8 0 images") {
     tsk_img_close
   };
   REQUIRE(!img);
+  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_NOFILE);
 }
 
 TEST_CASE("tsk_img_open_utf8 -1 images") {
@@ -48,6 +52,7 @@ TEST_CASE("tsk_img_open_utf8 -1 images") {
     tsk_img_close
   };
   REQUIRE(!img);
+  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_ARG);
 }
 
 TEST_CASE("tsk_img_open_utf8 null images") {
@@ -56,6 +61,7 @@ TEST_CASE("tsk_img_open_utf8 null images") {
     tsk_img_close
   };
   REQUIRE(!img);
+  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_NOFILE);
 }
 
 TEST_CASE("tsk_img_open sector size") {
