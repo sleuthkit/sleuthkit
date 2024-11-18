@@ -30,6 +30,7 @@ jobs:
             codecov: "yes"
             prefix: "CODECOV"
             address_sanitizer: "yes"
+            keep_artifacts: "no"
 
           - os: "linux"
             arch: "x86_64"
@@ -40,6 +41,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
+            keep_artifacts: "yes"
 
           - os: "linux"
             arch: "x86_64"
@@ -50,6 +52,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -63,6 +66,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -76,6 +80,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -90,6 +95,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
           - os: "mingw"
             arch: "i686"
@@ -104,6 +110,7 @@ jobs:
             codecov: "no"
             prefix: ""
             address_sanitizer: "no"
+            keep_artifacts: "no"
 
     steps:
       - name: Determine number of cores
@@ -191,7 +198,7 @@ jobs:
       - name: Run configure with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
-          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
 
       - name: Run make with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
@@ -228,6 +235,23 @@ jobs:
           gcov $(find . -name '*.gcda')
           bash <(curl -s https://codecov.io/bash) -B develop
 
+
+      - name: Create any artifacts that we need to keep
+        if: ${{ matrix.keep_artifacts == 'yes' }}
+        run: |
+          ./configure ${{ matrix.configure_opts }} CFLAGS='-O2' CXXFLAGS='-O2'
+          make tools/fiwalk/src/fiwalk
+          mkdir executables
+          mv tools/fiwalk/src/.libs/fiwalk executables
+
+      - name: Keep artifacts
+        if: ${{ matrix.keep_artifacts == 'yes' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: executables
+          path: |
+            executables/*
+          retention-days: 15
 
 #      - name: Run distcheck
 #        run: |

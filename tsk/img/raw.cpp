@@ -19,6 +19,8 @@
 #include "raw.h"
 #include "tsk/util/file_system_utils.h"
 
+#include <memory>
+
 #ifdef __APPLE__
 #include <sys/disk.h>
 #endif
@@ -589,17 +591,29 @@ TSK_IMG_INFO *
 raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     unsigned int a_ssize)
 {
-    IMG_RAW_INFO *raw_info;
     TSK_IMG_INFO *img_info;
     int i;
     TSK_OFF_T first_seg_size;
 
-    if ((raw_info =
-            (IMG_RAW_INFO *) tsk_img_malloc(sizeof(IMG_RAW_INFO))) == NULL)
-        return NULL;
+    const auto deleter = [](IMG_RAW_INFO* raw_info) {
+        if (raw_info) {
+            free(raw_info->cptr);
+            free(raw_info->max_off);
+        }
+        tsk_img_free(raw_info);
+    };
 
-    raw_info->cptr = NULL;
-    img_info = (TSK_IMG_INFO *) raw_info;
+    std::unique_ptr<IMG_RAW_INFO, decltype(deleter)> raw_info{
+        (IMG_RAW_INFO *) tsk_img_malloc(sizeof(IMG_RAW_INFO)),
+        deleter
+    };
+    if (!raw_info) {
+        return nullptr;
+    }
+
+    raw_info->cptr = nullptr;
+    raw_info->max_off = nullptr;
+    img_info = (TSK_IMG_INFO *) raw_info.get();
 
     img_info->itype = TSK_IMG_TYPE_RAW;
     img_info->read = raw_read;
@@ -621,7 +635,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     /* Check that the first image file exists and is not a directory */
     first_seg_size = get_size_of_file_on_disk(a_images[0], raw_info->is_winobj);
     if (first_seg_size < -1) {
-        goto on_error;
+        return nullptr;
     }
 
     /* Set the sector size */
@@ -633,44 +647,43 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     else if (is_windows_device_path(a_images[0])) {
         /* On Windows, figure out the actual sector size if one was not given and this is a device.
          * This is to prevent problems reading later. */
-        set_device_sector_size(raw_info, a_images[0], first_seg_size);
+        set_device_sector_size(raw_info.get(), a_images[0], first_seg_size);
     }
 #endif
 
-
     /* see if there are more of them... */
-    if ((a_num_img == 1) && (raw_info->is_winobj == 0)) {
+    if (a_num_img == 1 && raw_info->is_winobj == 0) {
         if ((raw_info->img_info.images =
                 tsk_img_findFiles(a_images[0],
-                    &raw_info->img_info.num_img)) == NULL) {
+                    &raw_info->img_info.num_img)) == nullptr) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_STAT);
             tsk_error_set_errstr
                 ("raw_open: could not find segment files starting at \"%"
                 PRIttocTSK "\"", a_images[0]);
-            goto on_error;
+            return nullptr;
         }
     }
     else {
         if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-            goto on_error;
+            return nullptr;
         }
     }
 
     /* sanity check: when we have multiple segments, the size of
      * each must be known */
-    if ((raw_info->img_info.num_img > 1) && (first_seg_size < 0)) {
+    if (raw_info->img_info.num_img > 1 && first_seg_size < 0) {
         if (tsk_verbose) {
             tsk_fprintf(stderr,
                 "raw_open: file size is unknown in a segmented raw image\n");
         }
-        goto on_error;
+        return nullptr;
     }
 
     /* initialize the split cache */
     raw_info->cptr = (int *) tsk_malloc(raw_info->img_info.num_img * sizeof(int));
-    if (raw_info->cptr == NULL) {
-        goto on_error;
+    if (!raw_info->cptr) {
+        return nullptr;
     }
     memset((void *) &raw_info->cache, 0,
         SPLIT_CACHE * sizeof(IMG_SPLIT_CACHE));
@@ -680,8 +693,8 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
      * size gathered above */
     raw_info->max_off =
         (TSK_OFF_T *) tsk_malloc(raw_info->img_info.num_img * sizeof(TSK_OFF_T));
-    if (raw_info->max_off == NULL) {
-        goto on_error;
+    if (!raw_info->max_off) {
+        return nullptr;
     }
     img_info->size = first_seg_size;
     raw_info->max_off[0] = img_info->size;
@@ -707,7 +720,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
                         "raw_open: file size is unknown in a segmented raw image\n");
                 }
             }
-            goto on_error;
+            return nullptr;
         }
 
         /* add the size of this image to the total and save the current max */
@@ -722,10 +735,5 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
         }
     }
 
-    return img_info;
-
-on_error:
-    free(raw_info->cptr);
-    tsk_img_free(raw_info);
-    return NULL;
+    return (TSK_IMG_INFO*) raw_info.release();
 }

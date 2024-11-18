@@ -18,10 +18,22 @@
 #if HAVE_LIBEWF
 #include "ewf.h"
 
+#include <algorithm>
 #include <cctype>
 #include <memory>
+#include <new>
+#include <string>
+#include <vector>
 
-using std::string;
+#ifdef TSK_WIN32
+
+static std::wstring bs_path_separators(const TSK_TCHAR* path) {
+  std::wstring r{path};
+  std::replace(r.begin(), r.end(), '/', '\\');
+  return r;
+}
+
+#endif
 
 #define TSK_EWF_ERROR_STRING_SIZE 512
 
@@ -112,9 +124,6 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
 ewf_glob_free(IMG_EWF_INFO* ewf_info) {
     // Freeing img_info->images ourselves is incorrect if we used glob.
-    // v2 of the API has a free method. It's not clear from the docs what we
-    // should do in v1...
-    // @@@ Probably a memory leak in v1 unless libewf_close deals with it
     if (ewf_info->used_ewf_glob != 0) {
 #ifdef TSK_WIN32
         libewf_glob_wide_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
@@ -184,8 +193,6 @@ img_file_header_signature_ncmp(const char *filename,
 }
 #endif
 
-
-
 TSK_IMG_INFO *
 ewf_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
@@ -193,7 +200,7 @@ ewf_open(int a_num_img,
     int is_error;
     char error_string[TSK_EWF_ERROR_STRING_SIZE];
 
-    libewf_error_t *ewf_error = NULL;
+    libewf_error_t *ewf_error = nullptr;
     int result = 0;
 
     const auto deleter = [](IMG_EWF_INFO* ewf_info) {
@@ -213,62 +220,83 @@ ewf_open(int a_num_img,
         return nullptr;
     }
 
-    ewf_info->handle = NULL;
+    ewf_info->handle = nullptr;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ewf_info.get();
 
-    // See if they specified only the first of the set...
-    ewf_info->used_ewf_glob = 0;
-    if (a_num_img == 1) {
+    {
 #ifdef TSK_WIN32
-        is_error = (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
-                LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
-                &ewf_info->img_info.num_img, &ewf_error) == -1);
+        std::unique_ptr<const TSK_TCHAR*[]> imgs_arr{
+            new(std::nothrow) const TSK_TCHAR*[a_ssize]
+        };
+        if (!imgs_arr) {
+            return nullptr;
+        }
+
+        std::vector<std::wstring> imgs_vec;
+        for (size_t i = 0; i < a_ssize; ++i) {
+            imgs_vec.push_back(bs_path_separators(a_images[i]));
+            imgs_arr[i] = imgs_vec[i].c_str();
+        }
+
+        const TSK_TCHAR* const* images = imgs_arr.get();
 #else
-        is_error = (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
-                LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
-                &ewf_info->img_info.num_img, &ewf_error) == -1);
+        const TSK_TCHAR* const* images = a_images;
 #endif
-        if (is_error){
+
+        // See if they specified only the first of the set...
+        ewf_info->used_ewf_glob = 0;
+        if (a_num_img == 1) {
+#ifdef TSK_WIN32
+            is_error = (libewf_glob_wide(images[0], TSTRLEN(images[0]),
+                    LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
+                    &ewf_info->img_info.num_img, &ewf_error) == -1);
+#else
+            is_error = (libewf_glob(images[0], TSTRLEN(images[0]),
+                    LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
+                    &ewf_info->img_info.num_img, &ewf_error) == -1);
+#endif
+            if (is_error){
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+
+                getError(ewf_error, error_string);
+                tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
+                    error_string);
+                return nullptr;
+            }
+
+            ewf_info->used_ewf_glob = 1;
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ewf_open: found %d segment files via libewf_glob\n",
+                    ewf_info->img_info.num_img);
+        }
+        else {
+            if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
+                return nullptr;
+            }
+        }
+
+        // Check the file signature before we call the library open
+#if defined( TSK_WIN32 )
+        is_error = (libewf_check_file_signature_wide(images[0], &ewf_error) != 1);
+#else
+        is_error = (libewf_check_file_signature(images[0], &ewf_error) != 1);
+#endif
+        if (is_error)
+        {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
 
             getError(ewf_error, error_string);
-            tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
+            tsk_error_set_errstr("ewf_open: Not an EWF file (%s)",
                 error_string);
+
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "Not an EWF file\n");
+            }
             return nullptr;
         }
-
-        ewf_info->used_ewf_glob = 1;
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "ewf_open: found %d segment files via libewf_glob\n",
-                ewf_info->img_info.num_img);
-    }
-    else {
-        if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-            return nullptr;
-        }
-    }
-
-    // Check the file signature before we call the library open
-#if defined( TSK_WIN32 )
-    is_error = (libewf_check_file_signature_wide(a_images[0], &ewf_error) != 1);
-#else
-    is_error = (libewf_check_file_signature(a_images[0], &ewf_error) != 1);
-#endif
-    if (is_error)
-    {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-
-        getError(ewf_error, error_string);
-        tsk_error_set_errstr("ewf_open: Not an EWF file (%s)",
-            error_string);
-
-        if (tsk_verbose) {
-            tsk_fprintf(stderr, "Not an EWF file\n");
-        }
-        return nullptr;
     }
 
     if (libewf_handle_initialize(&(ewf_info->handle), &ewf_error) != 1) {
@@ -516,7 +544,7 @@ std::string ewf_get_details(IMG_EWF_INFO *ewf_info) {
         return NULL;
     }
 
-    string collectionDetails = "";
+    std::string collectionDetails = "";
     //Populate all of the libewf header values for the acquisition details column
     collectionDetails.append(libewf_read_description(ewf_info->handle, result, buffer_size));
     collectionDetails.append(libewf_read_case_number(ewf_info->handle, result, buffer_size));

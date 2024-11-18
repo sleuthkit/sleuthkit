@@ -16,6 +16,7 @@
 #include "catch.hpp"
 
 TEST_CASE("void ErrorsTest::testInitialState()","[errors]") {
+  tsk_error_reset();
   TSK_ERROR_INFO *ei = tsk_error_get_info();
   REQUIRE(0 == ei->t_errno);
   REQUIRE(0 == ei->errstr[0]);
@@ -23,6 +24,7 @@ TEST_CASE("void ErrorsTest::testInitialState()","[errors]") {
 }
 
 TEST_CASE("void ErrorsTest::testLengthChecks()","[errors]") {
+  tsk_error_reset();
   tsk_error_get_info();
   const std::string s(4096, 'x');
   tsk_error_set_errstr("%s", s.c_str());

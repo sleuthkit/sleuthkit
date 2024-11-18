@@ -87,6 +87,8 @@ import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TimelineManager.TimelineEventAddedEvent;
 import org.sleuthkit.datamodel.TskData.DbType;
+import static org.sleuthkit.datamodel.TskData.DbType.POSTGRESQL;
+import static org.sleuthkit.datamodel.TskData.DbType.SQLITE;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.ObjectType;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
@@ -108,7 +110,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 5);
+			= new CaseDbSchemaVersionNumber(9, 6);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1102,7 +1104,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot2toSchema9dot3(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot3toSchema9dot4(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot4toSchema9dot5(dbSchemaVersion, connection);
-				
+				dbSchemaVersion = updateFromSchema9dot5toSchema9dot6(dbSchemaVersion, connection);
 				
 
 				statement = connection.createStatement();
@@ -2924,6 +2926,41 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	private CaseDbSchemaVersionNumber updateFromSchema9dot5toSchema9dot6(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 5) {
+			return schemaVersion;
+		}
+		
+		String insertSQL = "";
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				insertSQL = "CREATE INDEX tsk_files_datasrc_md5_size_partial_index ON tsk_files(data_source_obj_id, md5, size) WHERE md5 IS NOT NULL AND size > 0"; //NON-NLS
+				break;
+			case SQLITE:
+				insertSQL = "CREATE INDEX tsk_files_datasrc_md5_size_index ON tsk_files(data_source_obj_id, md5, size)";
+				break;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try { 
+			// Adding index to the tsk_files table
+			statement.execute(insertSQL);
+			
+			return new CaseDbSchemaVersionNumber(9, 6);
+
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}	
 
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
