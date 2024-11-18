@@ -115,7 +115,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     tsk_take_lock(&(a_img_info->cache_lock));
 
     // if they ask for more than the cache length, skip the cache
-    if ((a_len + (a_off % 512)) > TSK_IMG_INFO_CACHE_LEN) {
+    if (a_len + (a_off % 512) > TSK_IMG_INFO_CACHE_LEN) {
         read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
         tsk_release_lock(&(a_img_info->cache_lock));
         return read_count;
@@ -126,8 +126,8 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     len2 = a_len;
 
     // Protect against INT64_MAX + INT64_MAX > value
-    if (((TSK_OFF_T) len2 > a_img_info->size)
-        || (a_off >= (a_img_info->size - (TSK_OFF_T)len2))) {
+    if ((TSK_OFF_T) len2 > a_img_info->size
+        || a_off >= (a_img_info->size - (TSK_OFF_T)len2)) {
         len2 = (size_t) (a_img_info->size - a_off);
     }
 
@@ -168,9 +168,9 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
                 a_img_info->cache_age[cache_index]--;
 
                 // see if this is the most eligible replacement
-                if ((a_img_info->cache_len[cache_next] > 0)
-                    && (a_img_info->cache_age[cache_index] <
-                        a_img_info->cache_age[cache_next]))
+                if (a_img_info->cache_len[cache_next] > 0
+                    && a_img_info->cache_age[cache_index] <
+                        a_img_info->cache_age[cache_next])
                     cache_next = cache_index;
             }
         }
@@ -196,7 +196,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         // Read a full cache block or the remaining data.
         read_size = TSK_IMG_INFO_CACHE_LEN;
 
-        if ((a_img_info->cache_off[cache_next] + (TSK_OFF_T)read_size) >
+        if (a_img_info->cache_off[cache_next] + (TSK_OFF_T)read_size >
             a_img_info->size) {
             read_size =
                 (size_t) (a_img_info->size -
@@ -225,7 +225,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
                 len2 = 0;
             }
             // Make sure not to copy more than is available in the cache.
-            else if ((rel_off + (TSK_OFF_T) len2) > (TSK_OFF_T) read_count) {
+            else if (rel_off + (TSK_OFF_T) len2 > (TSK_OFF_T) read_count) {
                 len2 = (size_t) (read_count - rel_off);
             }
             // Only copy data when we have something to copy.
