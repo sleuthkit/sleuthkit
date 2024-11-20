@@ -17,18 +17,20 @@
 #if HAVE_LIBVHDI
 #include "vhd.h"
 
-#include <memory>
-
-#ifdef TSK_WIN32
-
 #include <algorithm>
+#include <memory>
 #include <string>
 
-static std::wstring bs_path_separators(const TSK_TCHAR* path) {
-  std::wstring r{path};
-  std::replace(r.begin(), r.end(), '/', '\\');
-  return r;
-}
+// select wide string functions for Windodws, narrow otherwise
+#ifdef TSK_WIN32
+
+#define LIBVHDI_CHECK_FILE_SIGNATURE libvhdi_check_file_signature_wide
+#define LIBVHDI_FILE_OPEN libvhdi_file_open_wide
+
+#else
+
+#define LIBVHDI_CHECK_FILE_SIGNATURE libvhdi_check_file_signature
+#define LIBVHDI_FILE_OPEN libvhdi_file_open
 
 #endif
 
@@ -184,16 +186,17 @@ vhdi_open(int a_num_img,
     vhdi_info->handle = nullptr;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) vhdi_info.get();
 
-    {
 #ifdef TSK_WIN32
-        const auto img_path = bs_path_separators(a_images[0]);
-        const TSK_TCHAR* const images[] = { img_path.c_str() };
+    TSK_TSTRING img_path(a_images[0]);
+    std::replace(img_path.begin(), img_path.end(), '/', '\\');
+
+    const TSK_TCHAR* image = img_path.c_str();
 #else
-        const TSK_TCHAR* const* images = a_images;
+    const TSK_TCHAR* image = a_images[0];
 #endif
-        if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
-            return nullptr;
-        }
+
+    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+        return nullptr;
     }
 
     if (libvhdi_file_initialize(&(vhdi_info->handle), &vhdi_error) != 1) {
@@ -211,12 +214,7 @@ vhdi_open(int a_num_img,
     }
 
     // Check the file signature before we call the library open
-#if defined( TSK_WIN32 )
-    if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->img_info.images[0], &vhdi_error ) != 1 )
-#else
-    if( libvhdi_check_file_signature((const char *) vhdi_info->img_info.images[0], &vhdi_error) != 1)
-#endif
-    {
+    if (LIBVHDI_CHECK_FILE_SIGNATURE(image, &vhdi_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
@@ -231,16 +229,7 @@ vhdi_open(int a_num_img,
         return nullptr;
     }
 
-#if defined( TSK_WIN32 )
-    if (libvhdi_file_open_wide(vhdi_info->handle,
-            (const wchar_t *) vhdi_info->img_info.images[0],
-            LIBVHDI_OPEN_READ, &vhdi_error) != 1)
-#else
-    if (libvhdi_file_open(vhdi_info->handle,
-            (const char *) vhdi_info->img_info.images[0],
-            LIBVHDI_OPEN_READ, &vhdi_error) != 1)
-#endif
-    {
+    if (LIBVHDI_FILE_OPEN(vhdi_info->handle, image, LIBVHDI_OPEN_READ, &vhdi_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
