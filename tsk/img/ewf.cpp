@@ -122,29 +122,12 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 }
 
 static void
-ewf_glob_free(IMG_EWF_INFO* ewf_info) {
-    // Freeing img_info->images ourselves is incorrect if we used glob.
-    if (ewf_info->used_ewf_glob != 0) {
-#ifdef TSK_WIN32
-        libewf_glob_wide_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
-#else
-        libewf_glob_free(ewf_info->img_info.images, ewf_info->img_info.num_img, NULL);
-#endif
-        // ensure that tsk_img_free() does not double free images
-        ewf_info->img_info.images = NULL;
-        ewf_info->img_info.num_img = 0;
-    }
-}
-
-static void
 ewf_image_close(TSK_IMG_INFO * img_info)
 {
     IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
 
     libewf_handle_close(ewf_info->handle, NULL);
     libewf_handle_free(&(ewf_info->handle), NULL);
-
-    ewf_glob_free(ewf_info);
 
     tsk_deinit_lock(&(ewf_info->read_lock));
     tsk_img_free(ewf_info);
@@ -208,7 +191,6 @@ ewf_open(int a_num_img,
             libewf_handle_close(ewf_info->handle, nullptr);
         }
         libewf_handle_free(&(ewf_info->handle), nullptr);
-        ewf_glob_free(ewf_info);
         tsk_img_free(ewf_info);
     };
 
@@ -239,21 +221,21 @@ ewf_open(int a_num_img,
         }
 
         const TSK_TCHAR* const* images = imgs_arr.get();
-#else
-        const TSK_TCHAR* const* images = a_images;
 #endif
 
         // See if they specified only the first of the set...
-        ewf_info->used_ewf_glob = 0;
         if (a_num_img == 1) {
+            TSK_TCHAR** glob = nullptr;
+            int glob_len;
+
 #ifdef TSK_WIN32
-            is_error = (libewf_glob_wide(images[0], TSTRLEN(images[0]),
-                    LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
-                    &ewf_info->img_info.num_img, &ewf_error) == -1);
+            is_error = (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
+                    LIBEWF_FORMAT_UNKNOWN, &glob,
+                    &glob_len, &ewf_error) == -1);
 #else
-            is_error = (libewf_glob(images[0], TSTRLEN(images[0]),
-                    LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
-                    &ewf_info->img_info.num_img, &ewf_error) == -1);
+            is_error = (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
+                    LIBEWF_FORMAT_UNKNOWN, &glob,
+                    &glob_len, &ewf_error) == -1);
 #endif
             if (is_error){
                 tsk_error_reset();
@@ -265,23 +247,40 @@ ewf_open(int a_num_img,
                 return nullptr;
             }
 
-            ewf_info->used_ewf_glob = 1;
-            if (tsk_verbose)
+            const auto glob_deleter = [glob_len](TSK_TCHAR** glob) {
+#ifdef TSK_WIN32
+                libewf_glob_wide_free(glob, glob_len, NULL);
+#else
+                libewf_glob_free(glob, glob_len, NULL);
+#endif
+            };
+
+            std::unique_ptr<TSK_TCHAR*[], decltype(glob_deleter)> glob_holder{
+                glob,
+                glob_deleter
+            };
+
+            if (tsk_verbose) {
                 tsk_fprintf(stderr,
                     "ewf_open: found %d segment files via libewf_glob\n",
-                    ewf_info->img_info.num_img);
+                    glob_len);
+            }
+
+            if (!tsk_img_copy_image_names(img_info, glob, glob_len)) {
+                return nullptr;
+            }
         }
         else {
-            if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
+            if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
                 return nullptr;
             }
         }
 
         // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
-        is_error = (libewf_check_file_signature_wide(images[0], &ewf_error) != 1);
+        is_error = (libewf_check_file_signature_wide(ewf_info->img_info.images[0], &ewf_error) != 1);
 #else
-        is_error = (libewf_check_file_signature(images[0], &ewf_error) != 1);
+        is_error = (libewf_check_file_signature(ewf_info->img_info.images[0], &ewf_error) != 1);
 #endif
         if (is_error)
         {
