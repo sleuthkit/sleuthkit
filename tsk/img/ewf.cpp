@@ -200,11 +200,6 @@ TSK_IMG_INFO *
 ewf_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
-    char error_string[TSK_EWF_ERROR_STRING_SIZE];
-
-    libewf_error_t *ewf_error = nullptr;
-    int result = 0;
-
     const auto deleter = [](IMG_EWF_INFO* ewf_info) {
         if (ewf_info->handle) {
             libewf_handle_close(ewf_info->handle, nullptr);
@@ -223,6 +218,9 @@ ewf_open(int a_num_img,
 
     ewf_info->handle = nullptr;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ewf_info.get();
+
+    libewf_error_t *ewf_error = nullptr;
+    char error_string[TSK_EWF_ERROR_STRING_SIZE];
 
     {
 #ifdef TSK_WIN32
@@ -346,7 +344,7 @@ ewf_open(int a_num_img,
         return nullptr;
     }
 
-    result = libewf_handle_get_utf8_hash_value_md5(ewf_info->handle,
+    int result = libewf_handle_get_utf8_hash_value_md5(ewf_info->handle,
         (uint8_t *) ewf_info->md5hash, 33, &ewf_error);
 
     if (result == -1) {
