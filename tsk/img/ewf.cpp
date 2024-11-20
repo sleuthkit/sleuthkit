@@ -390,28 +390,31 @@ ewf_open(int a_num_img,
     else {
         uint32_t bytes_per_sector = 512;
         // see if the size is stored in the E01 file
-        if (-1 == libewf_handle_get_bytes_per_sector(ewf_info->handle,
-            &bytes_per_sector, NULL)) {
-            if (tsk_verbose)
+        if (libewf_handle_get_bytes_per_sector(ewf_info->handle,
+            &bytes_per_sector, NULL) == -1) {
+            if (tsk_verbose) {
                 tsk_fprintf(stderr,
                     "ewf_image_read: error getting sector size from E01\n");
+            }
             img_info->sector_size = 512;
             libewf_error_free(&ewf_error);
         }
         else {
             // if E01 had size of 0 or non-512 then consider it junk and ignore
             if (bytes_per_sector == 0 || bytes_per_sector % 512) {
-                if (tsk_verbose)
+                if (tsk_verbose) {
                     tsk_fprintf(stderr,
                         "ewf_image_read: Ignoring sector size in E01 (%d)\n",
                         bytes_per_sector);
+                }
                 bytes_per_sector = 512;
             }
             else {
-                if (tsk_verbose)
+                if (tsk_verbose) {
                     tsk_fprintf(stderr,
                         "ewf_image_read: Using E01 sector size (%d)\n",
                         bytes_per_sector);
+                }
             }
             img_info->sector_size = bytes_per_sector;
         }
