@@ -17,6 +17,8 @@
 #if HAVE_LIBQCOW
 #include "qcow.h"
 
+#include "../base/tsk_os_cpp.h"
+
 #include <algorithm>
 #include <memory>
 #include <string>

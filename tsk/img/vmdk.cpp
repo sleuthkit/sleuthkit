@@ -16,6 +16,8 @@
 #if HAVE_LIBVMDK
 #include "vmdk.h"
 
+#include "../base/tsk_os_cpp.h"
+
 #include <algorithm>
 #include <memory>
 #include <string>

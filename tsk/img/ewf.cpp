@@ -14,10 +14,11 @@
  */
 
 #include "tsk_img_i.h"
-#include "../base/tsk_os_cpp.h"
 
 #if HAVE_LIBEWF
 #include "ewf.h"
+
+#include "../base/tsk_os_cpp.h"
 
 #include <algorithm>
 #include <cctype>
