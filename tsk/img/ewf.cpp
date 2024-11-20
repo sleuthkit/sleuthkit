@@ -409,7 +409,7 @@ ewf_open(int a_num_img,
         }
         else {
             // if E01 had size of 0 or non-512 then consider it junk and ignore
-            if ((bytes_per_sector == 0) || (bytes_per_sector % 512)) {
+            if (bytes_per_sector == 0 || bytes_per_sector % 512) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "ewf_image_read: Ignoring sector size in E01 (%d)\n",
