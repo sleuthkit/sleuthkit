@@ -197,7 +197,7 @@ TSK_IMG_INFO *
 ewf_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
-    int is_error;
+    bool is_error;
     char error_string[TSK_EWF_ERROR_STRING_SIZE];
 
     libewf_error_t *ewf_error = nullptr;
