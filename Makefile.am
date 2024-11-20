@@ -269,7 +269,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/aff.h \
 	tsk/img/ewf.cpp \
 	tsk/img/ewf.h \
-	tsk/img/img_io.c \
+	tsk/img/img_io.cpp \
 	tsk/img/img_open.cpp \
 	tsk/img/img_open.h \
 	tsk/img/img_types.c \
@@ -284,7 +284,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/raw.cpp \
 	tsk/img/raw.h \
 	tsk/img/tsk_img_i.h \
-	tsk/img/unsupported_types.c \
+	tsk/img/unsupported_types.cpp \
 	tsk/img/unsupported_types.h \
 	tsk/img/vhd.cpp \
 	tsk/img/vhd.h \
@@ -642,6 +642,7 @@ test_runner_SOURCES = \
 	test/tsk/base/test_tsk_error.cpp \
 	test/tsk/img/test_aff4.cpp \
 	test/tsk/img/test_ewf.cpp \
+	test/tsk/img/test_img_io.cpp \
 	test/tsk/img/test_img_open.cpp \
 	test/tsk/img/test_mult_files.cpp \
 	test/tsk/img/test_qcow.cpp \

@@ -234,7 +234,7 @@
     <ClCompile Include="..\..\tsk\img\aff.c">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\img_io.c">
+    <ClCompile Include="..\..\tsk\img\img_io.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_types.c">
@@ -378,7 +378,7 @@
     <ClCompile Include="..\..\tsk\util\file_system_utils.cpp">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\unsupported_types.c">
+    <ClCompile Include="..\..\tsk\img\unsupported_types.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerParser.cpp">
