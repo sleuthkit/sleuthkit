@@ -14,25 +14,21 @@
  */
 
 #include "tsk_img_i.h"
+#include "../base/tsk_os_cpp.h"
 
 #if HAVE_LIBEWF
 #include "ewf.h"
 
 #include <algorithm>
 #include <cctype>
+#include <iterator>
 #include <memory>
 #include <new>
 #include <string>
 #include <vector>
 
 #ifdef TSK_WIN32
-
-static std::wstring bs_path_separators(const TSK_TCHAR* path) {
-  std::wstring r{path};
-  std::replace(r.begin(), r.end(), '/', '\\');
-  return r;
-}
-
+#include <cwchar>
 #endif
 
 // select wide string functions for Windodws, narrow otherwise
@@ -59,6 +55,23 @@ static std::wstring bs_path_separators(const TSK_TCHAR* path) {
 #endif
 
 #define TSK_EWF_ERROR_STRING_SIZE 512
+
+template <class C>
+std::vector<C*> to_cstr_vec(
+  std::vector<std::basic_string<C>>& strs)
+{
+    std::vector<C*> c_strs;
+    c_strs.reserve(strs.size());
+
+    std::transform(
+        std::begin(strs),
+        std::end(strs),
+        std::back_inserter(c_strs),
+        [](auto& s) { return &s[0]; }
+    );
+
+    return c_strs;
+}
 
 /**
  * Get error string from libewf and make buffer empty if that didn't work.
@@ -222,80 +235,99 @@ ewf_open(int a_num_img,
     libewf_error_t *ewf_error = nullptr;
     char error_string[TSK_EWF_ERROR_STRING_SIZE];
 
-    {
+    std::vector<TSK_TSTRING> imgs_native(a_images, a_images + a_num_img);
 #ifdef TSK_WIN32
-        std::unique_ptr<const TSK_TCHAR*[]> imgs_arr{
-            new(std::nothrow) const TSK_TCHAR*[a_ssize]
-        };
-        if (!imgs_arr) {
-            return nullptr;
-        }
-
-        std::vector<std::wstring> imgs_vec;
-        for (size_t i = 0; i < a_ssize; ++i) {
-            imgs_vec.push_back(bs_path_separators(a_images[i]));
-            imgs_arr[i] = imgs_vec[i].c_str();
-        }
-
-        const TSK_TCHAR* const* images = imgs_arr.get();
+    // replace slashes with backslashes on Windows
+    for (auto& s: imgs_native) {
+        std::replace(s.begin(), s.end(), '/', '\\');
+    }
 #endif
+    auto imgs_native_cstrs = to_cstr_vec(imgs_native);
+    TSK_TCHAR** images_native = imgs_native_cstrs.data();
 
-        // See if they specified only the first of the set...
-        if (a_num_img == 1) {
-            TSK_TCHAR** glob = nullptr;
-            int glob_len;
+    // Check if they specified only the first of the set...
+    if (a_num_img == 1) {
+        TSK_TCHAR** glob = nullptr;
+        int glob_len;
 
-            if (LIBEWF_GLOB(a_images[0], TSTRLEN(a_images[0]),
-                    LIBEWF_FORMAT_UNKNOWN, &glob,
-                    &glob_len, &ewf_error) == -1) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-
-                getError(ewf_error, error_string);
-                tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
-                    error_string);
-                return nullptr;
-            }
-
-            const auto glob_deleter = [glob_len](TSK_TCHAR** glob) {
-                LIBEWF_GLOB_FREE(glob, glob_len, NULL);
-            };
-
-            std::unique_ptr<TSK_TCHAR*[], decltype(glob_deleter)> glob_holder{
-                glob,
-                glob_deleter
-            };
-
-            if (tsk_verbose) {
-                tsk_fprintf(stderr,
-                    "ewf_open: found %d segment files via libewf_glob\n",
-                    glob_len);
-            }
-
-            if (!tsk_img_copy_image_names(img_info, glob, glob_len)) {
-                return nullptr;
-            }
-        }
-        else {
-            if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-                return nullptr;
-            }
-        }
-
-        // Check the file signature before we call the library open
-        if (LIBEWF_CHECK_FILE_SIGNATURE(ewf_info->img_info.images[0], &ewf_error) != 1) {
+        if (LIBEWF_GLOB(images_native[0], TSTRLEN(images_native[0]),
+                LIBEWF_FORMAT_UNKNOWN, &glob,
+                &glob_len, &ewf_error) == -1) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
 
             getError(ewf_error, error_string);
-            tsk_error_set_errstr("ewf_open: Not an EWF file (%s)",
+            tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
                 error_string);
-
-            if (tsk_verbose) {
-                tsk_fprintf(stderr, "Not an EWF file\n");
-            }
             return nullptr;
         }
+
+        const auto glob_deleter = [glob_len](TSK_TCHAR** glob) {
+            LIBEWF_GLOB_FREE(glob, glob_len, NULL);
+        };
+
+        std::unique_ptr<TSK_TCHAR*[], decltype(glob_deleter)> glob_holder{
+            glob,
+            glob_deleter
+        };
+
+        if (tsk_verbose) {
+            tsk_fprintf(stderr,
+                "ewf_open: found %d segment files via libewf_glob\n",
+                glob_len);
+        }
+
+        imgs_native.assign(glob, glob + glob_len);
+        imgs_native_cstrs = to_cstr_vec(imgs_native);
+        images_native = imgs_native_cstrs.data();
+
+        TSK_TCHAR** images;
+
+#ifdef TSK_WIN32
+        // If original path used slashes as the path separator, switch
+        // globbed paths recoreded in the img info to use slashes as well
+        std::vector<TSK_TSTRING> imgs;
+        std::vector<TSK_TCHAR*> imgs_cstrs;
+
+        if (std::wcschr(a_images[0], '/')) {
+            imgs = imgs_native;
+
+            for (auto&s : imgs) {
+                std::replace(s.begin(), s.end(), '\\', '/');
+            }
+
+            imgs_cstrs = to_cstr_vec(imgs);
+            images = imgs_cstrs.data();
+        }
+        else {
+            images = images_native;
+        }
+#else
+        images = images_native;
+#endif
+        if (!tsk_img_copy_image_names(img_info, images, glob_len)) {
+            return nullptr;
+        }
+    }
+    else {
+        if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+            return nullptr;
+        }
+    }
+
+    // Check the file signature before we call the library open
+    if (LIBEWF_CHECK_FILE_SIGNATURE(images_native[0], &ewf_error) != 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+
+        getError(ewf_error, error_string);
+        tsk_error_set_errstr("ewf_open: Not an EWF file (%s)",
+            error_string);
+
+        if (tsk_verbose) {
+            tsk_fprintf(stderr, "Not an EWF file\n");
+        }
+        return nullptr;
     }
 
     if (libewf_handle_initialize(&(ewf_info->handle), &ewf_error) != 1) {
@@ -313,7 +345,7 @@ ewf_open(int a_num_img,
     }
 
     if (LIBEWF_HANDLE_OPEN(ewf_info->handle,
-            ewf_info->img_info.images,
+            images_native,
             ewf_info->img_info.num_img, LIBEWF_OPEN_READ, &ewf_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
