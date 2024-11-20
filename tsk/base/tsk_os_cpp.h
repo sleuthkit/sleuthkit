@@ -5,10 +5,6 @@
 
 #include <string>
 
-#ifdef TSK_WIN32
-#define TSK_TSTRING std::wstring
-#else
-#define TSK_TSTRING std::string
-#endif
+#define TSK_TSTRING std::basic_string<TSK_TCHAR>
 
 #endif

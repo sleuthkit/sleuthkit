@@ -3,11 +3,11 @@
 #include "catch.hpp"
 
 TEST_CASE("testSegmentsAlphabetic", "[mult_files]") {
-  TSK_OSTRINGSTREAM os;
-  TSK_STRING base = _TSK_T("x");
+  TSK_TOSTRINGSTREAM os;
+  TSK_TSTRING base = _TSK_T("x");
 
-  for (TSK_STRING sep: {_TSK_T("."), _TSK_T("_"), _TSK_T("")}) {
-    const TSK_STRING name = base + sep;
+  for (TSK_TSTRING sep: {_TSK_T("."), _TSK_T("_"), _TSK_T("")}) {
+    const TSK_TSTRING name = base + sep;
     const auto pfunc = getSegmentPattern((name + _TSK_T("aaa")).c_str());
 
     CHECK(pfunc(1, os) == name + _TSK_T("aab"));
@@ -30,8 +30,8 @@ TEST_CASE("testSegmentsAlphabetic", "[mult_files]") {
     os.str(_TSK_T(""));
   }
 
-  for (TSK_STRING sep: {_TSK_T("."), _TSK_T("_"), _TSK_T("")}) {
-    const TSK_STRING name = base + sep;
+  for (TSK_TSTRING sep: {_TSK_T("."), _TSK_T("_"), _TSK_T("")}) {
+    const TSK_TSTRING name = base + sep;
     const auto pfunc = getSegmentPattern((name + _TSK_T("aaaa")).c_str());
 
     CHECK(pfunc(1, os) == name + _TSK_T("aaab"));
@@ -56,7 +56,7 @@ TEST_CASE("testSegmentsAlphabetic", "[mult_files]") {
 }
 
 TEST_CASE("testSegmentsBin", "[mult_files]") {
-  TSK_OSTRINGSTREAM os;
+  TSK_TOSTRINGSTREAM os;
   const auto pfunc = getSegmentPattern(_TSK_T("file.bin"));
 
   CHECK(pfunc(1, os) == _TSK_T("file(2).bin"));
@@ -69,7 +69,7 @@ TEST_CASE("testSegmentsBin", "[mult_files]") {
 }
 
 TEST_CASE("testSegmentsDmg", "[mult_files]") {
-  TSK_OSTRINGSTREAM os;
+  TSK_TOSTRINGSTREAM os;
   const auto pfunc = getSegmentPattern(_TSK_T("file.dmg"));
 
   CHECK(pfunc(1, os) == _TSK_T("file.002.dmgpart"));
@@ -87,11 +87,11 @@ TEST_CASE("testSegmentsNone", "[mult_files]") {
 }
 
 TEST_CASE("testSegmentsNumericOneBased") {
-  TSK_OSTRINGSTREAM os;
-  TSK_STRING base = _TSK_T("file");
+  TSK_TOSTRINGSTREAM os;
+  TSK_TSTRING base = _TSK_T("file");
 
   for (TSK_TCHAR sep: {'.', '_'}) {
-    const TSK_STRING name = base + sep;
+    const TSK_TSTRING name = base + sep;
     const auto pfunc = getSegmentPattern((name + _TSK_T("001")).c_str());
     os.str(_TSK_T(""));
     CHECK(pfunc(1, os) == name + _TSK_T("002"));
@@ -104,7 +104,7 @@ TEST_CASE("testSegmentsNumericOneBased") {
   }
 
   for (TSK_TCHAR sep: {_TSK_T('.'), _TSK_T('_')}) {
-    const TSK_STRING name = base + sep;
+    const TSK_TSTRING name = base + sep;
     const auto pfunc = getSegmentPattern((name + _TSK_T("00001")).c_str());
     os.str(_TSK_T(""));
     CHECK(pfunc(1, os) == name + _TSK_T("00002"));
@@ -118,11 +118,11 @@ TEST_CASE("testSegmentsNumericOneBased") {
 }
 
 TEST_CASE("testSegmentsNumericZeroBased", "[mult_files]") {
-  TSK_OSTRINGSTREAM os;
-  TSK_STRING base = _TSK_T("file");
+  TSK_TOSTRINGSTREAM os;
+  TSK_TSTRING base = _TSK_T("file");
 
   for (TSK_TCHAR sep: {_TSK_T('.'), _TSK_T('_')}) {
-    const TSK_STRING name = base + sep;
+    const TSK_TSTRING name = base + sep;
     const auto pfunc = getSegmentPattern((name + _TSK_T("000")).c_str());
     os.str(_TSK_T(""));
     CHECK(pfunc(1, os) == name + _TSK_T("001"));
@@ -135,7 +135,7 @@ TEST_CASE("testSegmentsNumericZeroBased", "[mult_files]") {
   }
 
   for (TSK_TCHAR sep: {_TSK_T('.'), _TSK_T('_')}) {
-    const TSK_STRING name = base + sep;
+    const TSK_TSTRING name = base + sep;
     const auto pfunc = getSegmentPattern((name + _TSK_T("00000")).c_str());
     os.str(_TSK_T(""));
     CHECK(pfunc(1, os) == name + _TSK_T("00001"));
