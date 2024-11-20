@@ -52,6 +52,11 @@ static std::wstring bs_path_separators(const TSK_TCHAR* path) {
 
 #endif
 
+#ifdef HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET
+#define LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET libewf_handle_read_buffer_at_offset
+#else
+#define LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET libewf_handle_read_random
+#endif
 
 #define TSK_EWF_ERROR_STRING_SIZE 512
 
@@ -94,11 +99,7 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     }
 
     tsk_take_lock(&(ewf_info->read_lock));
-#ifdef HAVE_LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET
-    cnt = libewf_handle_read_buffer_at_offset(
-#else
-    cnt = libewf_handle_read_random(
-#endif
+    cnt = LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET(
         ewf_info->handle, buf, len, offset, &ewf_error
     );
     if (cnt < 0) {
