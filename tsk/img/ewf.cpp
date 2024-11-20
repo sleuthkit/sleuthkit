@@ -35,6 +35,24 @@ static std::wstring bs_path_separators(const TSK_TCHAR* path) {
 
 #endif
 
+// select wide string functions for Windodws, narrow otherwise
+#ifdef TSK_WIN32
+
+#define LIBEWF_GLOB libewf_glob_wide
+#define LIBEWF_GLOB_FREE libewf_glob_wide_free
+#define LIBEWF_CHECK_FILE_SIGNATURE libewf_check_file_signature_wide
+#define LIBEWF_HANDLE_OPEN libewf_handle_open_wide
+
+#else
+
+#define LIBEWF_GLOB libewf_glob
+#define LIBEWF_GLOB_FREE libewf_glob_free
+#define LIBEWF_CHECK_FILE_SIGNATURE libewf_check_file_signature
+#define LIBEWF_HANDLE_OPEN libewf_handle_open
+
+#endif
+
+
 #define TSK_EWF_ERROR_STRING_SIZE 512
 
 /**
@@ -228,15 +246,9 @@ ewf_open(int a_num_img,
             TSK_TCHAR** glob = nullptr;
             int glob_len;
 
-#ifdef TSK_WIN32
-            is_error = (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
+            is_error = LIBEWF_GLOB(a_images[0], TSTRLEN(a_images[0]),
                     LIBEWF_FORMAT_UNKNOWN, &glob,
-                    &glob_len, &ewf_error) == -1);
-#else
-            is_error = (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
-                    LIBEWF_FORMAT_UNKNOWN, &glob,
-                    &glob_len, &ewf_error) == -1);
-#endif
+                    &glob_len, &ewf_error) == -1;
             if (is_error){
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
@@ -248,11 +260,7 @@ ewf_open(int a_num_img,
             }
 
             const auto glob_deleter = [glob_len](TSK_TCHAR** glob) {
-#ifdef TSK_WIN32
-                libewf_glob_wide_free(glob, glob_len, NULL);
-#else
-                libewf_glob_free(glob, glob_len, NULL);
-#endif
+                LIBEWF_GLOB_FREE(glob, glob_len, NULL);
             };
 
             std::unique_ptr<TSK_TCHAR*[], decltype(glob_deleter)> glob_holder{
@@ -277,11 +285,7 @@ ewf_open(int a_num_img,
         }
 
         // Check the file signature before we call the library open
-#if defined( TSK_WIN32 )
-        is_error = (libewf_check_file_signature_wide(ewf_info->img_info.images[0], &ewf_error) != 1);
-#else
-        is_error = (libewf_check_file_signature(ewf_info->img_info.images[0], &ewf_error) != 1);
-#endif
+        is_error = LIBEWF_CHECK_FILE_SIGNATURE(ewf_info->img_info.images[0], &ewf_error) != 1;
         if (is_error)
         {
             tsk_error_reset();
@@ -312,16 +316,9 @@ ewf_open(int a_num_img,
         return nullptr;
     }
 
-#if defined( TSK_WIN32 )
-    is_error = (libewf_handle_open_wide(ewf_info->handle,
-            (wchar_t * const *) ewf_info->img_info.images,
+    is_error = (LIBEWF_HANDLE_OPEN(ewf_info->handle,
+            ewf_info->img_info.images,
             ewf_info->img_info.num_img, LIBEWF_OPEN_READ, &ewf_error) != 1);
-#else
-    is_error = (libewf_handle_open(ewf_info->handle,
-            (char *const *) ewf_info->img_info.images,
-            ewf_info->img_info.num_img, LIBEWF_OPEN_READ, &ewf_error) != 1);
-#endif
-
     if (is_error) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
