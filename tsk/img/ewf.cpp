@@ -68,9 +68,8 @@ static uint8_t
 getError(libewf_error_t * ewf_error,
     char error_string[TSK_EWF_ERROR_STRING_SIZE])
 {
-    int retval;
     error_string[0] = '\0';
-    retval = libewf_error_backtrace_sprint(ewf_error,
+    const int retval = libewf_error_backtrace_sprint(ewf_error,
         error_string, TSK_EWF_ERROR_STRING_SIZE);
     libewf_error_free(&ewf_error);
     return retval <= 0;
@@ -80,16 +79,12 @@ static ssize_t
 ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     size_t len)
 {
-    char error_string[TSK_EWF_ERROR_STRING_SIZE];
-    libewf_error_t *ewf_error = NULL;
-
-    ssize_t cnt;
-    IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
-
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "ewf_image_read: byte offset: %" PRIdOFF " len: %" PRIuSIZE
             "\n", offset, len);
+
+    IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
 
     if (offset > img_info->size) {
         tsk_error_reset();
@@ -98,18 +93,24 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
         return -1;
     }
 
+    libewf_error_t *ewf_error = NULL;
+
     tsk_take_lock(&(ewf_info->read_lock));
-    cnt = LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET(
+    const ssize_t cnt = LIBEWF_HANDLE_READ_BUFFER_AT_OFFSET(
         ewf_info->handle, buf, len, offset, &ewf_error
     );
     if (cnt < 0) {
-        char *errmsg = NULL;
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        if (getError(ewf_error, error_string))
+
+        char *errmsg = NULL;
+        char error_string[TSK_EWF_ERROR_STRING_SIZE];
+        if (getError(ewf_error, error_string)) {
             errmsg = strerror(errno);
-        else
+        }
+        else {
             errmsg = error_string;
+        }
 
         libewf_error_free(&ewf_error);
         tsk_error_set_errstr("ewf_image_read - offset: %" PRIdOFF
