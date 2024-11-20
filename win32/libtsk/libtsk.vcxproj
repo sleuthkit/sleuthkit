@@ -410,9 +410,9 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
-    <ClCompile Include="..\..\tsk\img\unsupported_types.c" />
-    <ClCompile Include="..\..\tsk\img\vhd.c" />
-    <ClCompile Include="..\..\tsk\img\vmdk.c" />
+    <ClCompile Include="..\..\tsk\img\unsupported_types.cpp" />
+    <ClCompile Include="..\..\tsk\img\vhd.cpp" />
+    <ClCompile Include="..\..\tsk\img\vmdk.cpp" />
     <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp" />
     <ClCompile Include="..\..\tsk\pool\apfs_pool.cpp" />
     <ClCompile Include="..\..\tsk\pool\pool_open.cpp" />
@@ -514,7 +514,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp" />
     <ClCompile Include="..\..\tsk\img\aff.c" />
     <ClCompile Include="..\..\tsk\img\ewf.cpp" />
-    <ClCompile Include="..\..\tsk\img\img_io.c" />
+    <ClCompile Include="..\..\tsk\img\img_io.cpp" />
     <ClCompile Include="..\..\tsk\img\img_open.cpp" />
     <ClCompile Include="..\..\tsk\img\img_types.c" />
     <ClCompile Include="..\..\tsk\img\mult_files.cpp" />

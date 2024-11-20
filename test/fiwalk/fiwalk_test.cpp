@@ -15,9 +15,6 @@
 #include "tools/fiwalk/src/fiwalk.h"
 
 void check_image(std::string img_path, std::string dfxml2_path) {
-#if defined(__MINGW32__) || defined(__MINGW64__)
-    WARN("fiwalk_test disabled under mingw. Will not test "+img_path);
-#else
     CAPTURE(img_path);
     INFO("test: fiwalk " << img_path)
 
@@ -52,7 +49,6 @@ void check_image(std::string img_path, std::string dfxml2_path) {
         FAIL(img_path << " not found");
     }
     /* XML files are checked by the python driver */
-#endif
 }
 
 #ifdef HAVE_LIBEWF

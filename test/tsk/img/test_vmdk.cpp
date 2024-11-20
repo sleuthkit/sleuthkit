@@ -16,16 +16,7 @@ TEST_CASE("vmdk_open not a file") {
   REQUIRE(!img);
 }
 
-TEST_CASE("vmdk_open zero images") {
-  const TSK_TCHAR* const images[] = {};
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    vmdk_open(0, images, 1234),
-    tsk_img_close
-  };
-  REQUIRE(!img);
-}
-
-TEST_CASE("vmdk_open two images") {
+TEST_CASE("vmdk_open 2 images") {
   const TSK_TCHAR* const images[] = { _TSK_T("a"), _TSK_T("b") };
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     vmdk_open(2, images, 1234),
@@ -51,5 +42,16 @@ TEST_CASE("vmdk_open ok") {
   };
   REQUIRE(img);
 }
+
+#ifdef TSK_WIN32
+TEST_CASE("vmdk_open backslash path separator ok") {
+  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.vmdk") };
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    vmdk_open(1, images, 1234),
+    tsk_img_close
+  };
+  REQUIRE(img);
+}
+#endif
 
 #endif

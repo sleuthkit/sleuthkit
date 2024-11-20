@@ -16,8 +16,22 @@
 #if HAVE_LIBVMDK
 #include "vmdk.h"
 
-#define TSK_VMDK_ERROR_STRING_SIZE 512
+#include <memory>
 
+#ifdef TSK_WIN32
+
+#include <algorithm>
+#include <string>
+
+static std::wstring bs_path_separators(const TSK_TCHAR* path) {
+  std::wstring r{path};
+  std::replace(r.begin(), r.end(), '/', '\\');
+  return r;
+}
+
+#endif
+
+#define TSK_VMDK_ERROR_STRING_SIZE 512
 
 /**
  * Get error string from libvmdk and make buffer empty if that didn't work.
@@ -136,35 +150,51 @@ vmdk_open(int a_num_img,
 {
     if (a_num_img != 1) {
         tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
-            ": expected one image filename, was given %d", a_images[0], a_num_img);
+            ": expected 1 image filename, was given %d", a_images[0], a_num_img);
 
         if (tsk_verbose) {
             tsk_fprintf(stderr, "vmdk requires exactly 1 image filename for opening\n");
         }
-        return NULL;
+        return nullptr;
     }
 
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
-    libvmdk_error_t *vmdk_error = NULL;
-
-    IMG_VMDK_INFO *vmdk_info = NULL;
-    TSK_IMG_INFO *img_info = NULL;
+    libvmdk_error_t *vmdk_error = nullptr;
 
     if (tsk_verbose) {
         libvmdk_notify_set_verbose(1);
-        libvmdk_notify_set_stream(stderr, NULL);
+        libvmdk_notify_set_stream(stderr, nullptr);
     }
 
-    if ((vmdk_info =
-            (IMG_VMDK_INFO *) tsk_img_malloc(sizeof(IMG_VMDK_INFO))) ==
-        NULL) {
-        return NULL;
-    }
-    vmdk_info->handle = NULL;
-    img_info = (TSK_IMG_INFO *) vmdk_info;
+    const auto deleter = [](IMG_VMDK_INFO* vmdk_info) {
+        if (vmdk_info->handle) {
+            libvmdk_handle_close(vmdk_info->handle, NULL);
+        }
+        libvmdk_handle_free(&(vmdk_info->handle), NULL);
+        tsk_img_free(vmdk_info);
+    };
 
-    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
-        goto on_error;
+    std::unique_ptr<IMG_VMDK_INFO, decltype(deleter)> vmdk_info{
+        (IMG_VMDK_INFO *) tsk_img_malloc(sizeof(IMG_VMDK_INFO)),
+        deleter
+    };
+    if (!vmdk_info) {
+        return nullptr;
+    }
+
+    vmdk_info->handle = nullptr;
+    TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) vmdk_info.get();
+
+    {
+#ifdef TSK_WIN32
+        const auto img_path = bs_path_separators(a_images[0]);
+        const TSK_TCHAR* const images[] = { img_path.c_str() };
+#else
+        const TSK_TCHAR* const* images = a_images;
+#endif
+        if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
+            return nullptr;
+        }
     }
 
     if (libvmdk_handle_initialize(&(vmdk_info->handle), &vmdk_error) != 1) {
@@ -178,8 +208,9 @@ vmdk_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Unable to create vmdk handle\n");
         }
-        goto on_error;
+        return nullptr;
     }
+
 #if defined( TSK_WIN32 )
     if (libvmdk_handle_open_wide(vmdk_info->handle,
             (const wchar_t *) vmdk_info->img_info.images[0],
@@ -200,7 +231,7 @@ vmdk_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vmdk file\n");
         }
-        goto on_error;
+        return nullptr;
     }
 
     if (libvmdk_handle_open_extent_data_files(vmdk_info->handle, &vmdk_error) != 1) {
@@ -215,8 +246,9 @@ vmdk_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening vmdk extent data files\n");
         }
-        goto on_error;
+        return nullptr;
     }
+
     if (libvmdk_handle_get_media_size(vmdk_info->handle,
             (size64_t *) & (img_info->size), &vmdk_error) != 1) {
         tsk_error_reset();
@@ -230,7 +262,7 @@ vmdk_open(int a_num_img,
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of vmdk file\n");
         }
-        goto on_error;
+        return nullptr;
     }
 
     if (a_ssize != 0) {
@@ -247,15 +279,7 @@ vmdk_open(int a_num_img,
     // initialize the read lock
     tsk_init_lock(&(vmdk_info->read_lock));
 
-    return img_info;
-
-on_error:
-    if (vmdk_info->handle) {
-        libvmdk_handle_close(vmdk_info->handle, NULL);
-    }
-    libvmdk_handle_free(&(vmdk_info->handle), NULL);
-    tsk_img_free(vmdk_info);
-    return NULL;
+    return (TSK_IMG_INFO*) vmdk_info.release();
 }
 
 #endif /* HAVE_LIBVMDK */
