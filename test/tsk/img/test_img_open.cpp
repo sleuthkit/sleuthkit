@@ -1,7 +1,10 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/img/img_open.h"
 
+#include <algorithm>
 #include <memory>
+#include <string>
+#include <tuple>
 #include <utility>
 
 #include "catch.hpp"
@@ -143,361 +146,87 @@ TEST_CASE("type_name") {
   }
 }
 
-void detect_E01(const TSK_TCHAR* const* images) {
+void check_image_open(
+  const TSK_TCHAR* const* images,
+  TSK_IMG_TYPE_ENUM type,
+  bool ok,
+  uint32_t exp_type_or_err
+)
+{
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_DETECT, 0),
+    tsk_img_open(1, images, type, 0),
     tsk_img_close
   };
-  REQUIRE(img);
+
+  CHECK(bool(img) == ok);
+  if (ok) {
+    if (img) {
+      CHECK(img->itype == exp_type_or_err);
+    }
+  }
+  else {
+    CHECK(tsk_error_get_errno() == exp_type_or_err);
+  }
+}
+
+TEST_CASE("tsk_img_open") {
+  // image path : type arg : ok? : expected type : expected errno
+  const std::tuple<
+    const TSK_TCHAR*,
+    TSK_IMG_TYPE_ENUM,
+    bool,
+    uint32_t
+  > tcase[] = {
 #ifdef HAVE_LIBEWF
-  REQUIRE(img->itype == TSK_IMG_TYPE_EWF_EWF);
+    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_EWF_EWF },
+    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_EWF_EWF, true, TSK_IMG_TYPE_EWF_EWF },
+    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_EWF_EWF, false, TSK_ERR_IMG_MAGIC },
 #else
-  REQUIRE(img->itype == TSK_IMG_TYPE_RAW);
+    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_EWF_EWF, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
-}
-
-TEST_CASE("tsk_img_open detect E01") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.E01") };
-  detect_E01(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open detect E01 bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.E01") };
-  detect_E01(images);
-}
-#endif
-
-void detect_QCOW(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_DETECT, 0),
-    tsk_img_close
-  };
-  REQUIRE(img);
 #ifdef HAVE_LIBQCOW
-  REQUIRE(img->itype == TSK_IMG_TYPE_QCOW_QCOW);
+    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_QCOW_QCOW },
+    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_QCOW_QCOW, true, TSK_IMG_TYPE_QCOW_QCOW },
+    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_QCOW_QCOW, false, TSK_ERR_IMG_OPEN },
 #else
-  REQUIRE(img->itype == TSK_IMG_TYPE_RAW);
+    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_QCOW_QCOW, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
-}
-
-TEST_CASE("tsk_img_open detect QCOW") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.qcow") };
-  detect_QCOW(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open detect QCOW bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.qcow") };
-  detect_QCOW(images);
-}
-#endif
-
-void detect_VHD(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_DETECT, 0),
-    tsk_img_close
-  };
-  REQUIRE(img);
 #ifdef HAVE_LIBVHDI
-  REQUIRE(img->itype == TSK_IMG_TYPE_VHD_VHD);
+    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_VHD_VHD },
+    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_VHD_VHD, true, TSK_IMG_TYPE_VHD_VHD },
+    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_VHD_VHD, false, TSK_ERR_IMG_OPEN },
 #else
-  REQUIRE(img->itype == TSK_IMG_TYPE_RAW);
+    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_VHD_VHD, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
-}
-
-TEST_CASE("tsk_img_open detect VHD") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.vhd") };
-  detect_VHD(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open detect VHD bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.vhd") };
-  detect_VHD(images);
-}
-#endif
-
-void detect_VMDK(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_DETECT, 0),
-    tsk_img_close
-  };
-  REQUIRE(img);
 #ifdef HAVE_LIBVMDK
-  REQUIRE(img->itype == TSK_IMG_TYPE_VMDK_VMDK);
+    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_VMDK_VMDK },
+    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_VMDK_VMDK, true, TSK_IMG_TYPE_VMDK_VMDK },
+    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_VMDK_VMDK, false, TSK_ERR_IMG_OPEN },
 #else
-  REQUIRE(img->itype == TSK_IMG_TYPE_RAW);
+    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_VMDK_VMDK, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
-}
-
-TEST_CASE("tsk_img_open detect VMDK") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.vmdk") };
-  detect_VMDK(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open detect VMDK bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.vmdk") };
-  detect_VMDK(images);
-}
-#endif
-
-void detect_raw(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_DETECT, 0),
-    tsk_img_close
+    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_RAW, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_UNSUPP, false, TSK_ERR_IMG_UNSUPTYPE }
   };
-  REQUIRE(img);
-  REQUIRE(img->itype == TSK_IMG_TYPE_RAW);
-}
 
-TEST_CASE("tsk_img_open detect raw") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  detect_raw(images);
-}
-
+  for (const auto& [image, type, ok, exp_type_or_err]: tcase) {
+    CAPTURE(image);
+    CAPTURE(type);
+//    DYNAMIC_SECTION(image << ' ' << type);
+    check_image_open(&image, type, ok, exp_type_or_err);
 #ifdef TSK_WIN32
-TEST_CASE("tsk_img_open detect raw bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.dd") };
-  detect_raw(images);
-}
+    // check same path, with backslashes
+    std::wstring img(image);
+    std::replace(img.begin(), img.end(), '/', '\\');
+    const auto* image_bs = img.c_str();
+    CAPTURE(image_bs);
+//    DYNAMIC_SECTION(image_bs << ' ' << type);
+    check_image_open(&image_bs, type, ok, exp_type_or_err);
 #endif
-
-void open_E01(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_EWF_EWF, 0),
-    tsk_img_close
-  };
-#ifdef HAVE_LIBEWF
-  REQUIRE(img);
-  REQUIRE(img->itype == TSK_IMG_TYPE_EWF_EWF);
-#else
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_UNSUPTYPE);
-#endif
+  }
 }
-
-TEST_CASE("tsk_img_open E01") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.E01") };
-  open_E01(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open E01 bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.E01") };
-  open_E01(images);
-}
-#endif
-
-void open_QCOW(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_QCOW_QCOW, 0),
-    tsk_img_close
-  };
-#ifdef HAVE_LIBQCOW
-  REQUIRE(img);
-  REQUIRE(img->itype == TSK_IMG_TYPE_QCOW_QCOW);
-#else
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_UNSUPTYPE);
-#endif
-}
-
-TEST_CASE("tsk_img_open QCOW") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.qcow") };
-  open_QCOW(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open QCOW bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.qcow") };
-  open_QCOW(images);
-}
-#endif
-
-void open_VHD(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_VHD_VHD, 0),
-    tsk_img_close
-  };
-#ifdef HAVE_LIBVHDI
-  REQUIRE(img);
-  REQUIRE(img->itype == TSK_IMG_TYPE_VHD_VHD);
-#else
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_UNSUPTYPE);
-#endif
-}
-
-TEST_CASE("tsk_img_open VHD") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.vhd") };
-  open_VHD(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open VHD bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.vhd") };
-  open_VHD(images);
-}
-#endif
-
-void open_VMDK(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_VMDK_VMDK, 0),
-    tsk_img_close
-  };
-#ifdef HAVE_LIBVMDK
-  REQUIRE(img);
-  REQUIRE(img->itype == TSK_IMG_TYPE_VMDK_VMDK);
-#else
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_UNSUPTYPE);
-#endif
-}
-
-TEST_CASE("tsk_img_open VMDK") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.vmdk") };
-  open_VMDK(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open VMDK bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.vmdk") };
-  open_VMDK(images);
-}
-#endif
-
-void open_raw(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_RAW, 0),
-    tsk_img_close
-  };
-  REQUIRE(img);
-  REQUIRE(img->itype == TSK_IMG_TYPE_RAW);
-}
-
-TEST_CASE("tsk_img_open raw") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  open_raw(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open raw bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.dd") };
-  open_raw(images);
-}
-#endif
-
-void open_unsupported(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_UNSUPP, 0),
-    tsk_img_close
-  };
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_UNSUPTYPE);
-}
-
-TEST_CASE("tsk_img_open unsupported") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  open_unsupported(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open unsupported bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.dd") };
-  open_unsupported(images);
-}
-#endif
-
-#ifdef HAVE_LIBEWF
-void open_not_E01(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_EWF_EWF, 0),
-    tsk_img_close
-  };
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_MAGIC);
-}
-
-TEST_CASE("tsk_img_open not EWF") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  open_not_E01(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open not EWF bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.dd") };
-  open_not_E01(images);
-}
-#endif
-#endif
-
-#ifdef HAVE_LIBQCOW
-void open_not_QCOW(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_QCOW_QCOW, 0),
-    tsk_img_close
-  };
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_OPEN);
-}
-
-TEST_CASE("tsk_img_open not QCOW") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  open_not_QCOW(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open not QCOW bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  open_not_QCOW(images);
-}
-#endif
-#endif
-
-#ifdef HAVE_LIBVHDI
-void open_not_VHD(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_VHD_VHD, 0),
-    tsk_img_close
-  };
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_OPEN);
-}
-
-TEST_CASE("tsk_img_open not VHD") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  open_not_VHD(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open not VHD bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.dd") };
-  open_not_VHD(images);
-}
-#endif
-#endif
-
-#ifdef HAVE_LIBVMDK
-void open_not_VMDK(const TSK_TCHAR* const* images) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    tsk_img_open(1, images, TSK_IMG_TYPE_VMDK_VMDK, 0),
-    tsk_img_close
-  };
-  REQUIRE(!img);
-  REQUIRE(tsk_error_get_errno() == TSK_ERR_IMG_OPEN);
-}
-
-TEST_CASE("tsk_img_open not VMDK") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
-  open_not_VMDK(images);
-}
-
-#ifdef TSK_WIN32
-TEST_CASE("tsk_img_open not VMDK bs") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.dd") };
-  open_not_VMDK(images);
-}
-#endif
-#endif
