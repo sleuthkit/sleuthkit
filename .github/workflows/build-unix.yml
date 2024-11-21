@@ -15,7 +15,7 @@ on:
 jobs:
   build:
     timeout-minutes: 30
-    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }}
+    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -39,9 +39,10 @@ jobs:
             runner: "ubuntu-22.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=\"-Wno-unused-command-line-argument -Werror\" CXXFLAGS=-Werror"
             codecov: "no"
-            prefix: ""
+            prefix:
             address_sanitizer: "yes"
             keep_artifacts: "yes"
+            suffix: "(with artifacts)"
 
           - os: "linux"
             arch: "x86_64"
