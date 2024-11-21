@@ -45,4 +45,31 @@ TEST_CASE("ewf_open backslash path separator ok") {
 }
 #endif
 
+TEST_CASE("glob_E01 one ok") {
+  const std::vector<TSK_TSTRING> exp{ _TSK_T("test/data/image.E01") };
+  const auto glob = glob_E01(_TSK_T("test/data/image.E01"));
+  REQUIRE(glob);
+  REQUIRE(glob.value() == exp);
+}
+
+TEST_CASE("glob_E01 one not a file") {
+  const auto glob = glob_E01(_TSK_T("test/data/not_a_file.E01"));
+  REQUIRE(glob);
+  REQUIRE(glob.value() == std::vector<TSK_TSTRING>{});
+}
+
+TEST_CASE("glob_E01 one wrong extension") {
+  REQUIRE(!glob_E01(_TSK_T("test/data/not_a_file")));
+}
+
+TEST_CASE("glob_E01 two") {
+  const std::vector<TSK_TSTRING> exp{
+    _TSK_T("test/data/bogus.E01"),
+    _TSK_T("test/data/bogus.E02")
+  };
+  const auto glob = glob_E01(_TSK_T("test/data/bogus.E01"));
+  REQUIRE(glob);
+  REQUIRE(glob.value() == exp);
+}
+
 #endif

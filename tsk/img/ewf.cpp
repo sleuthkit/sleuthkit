@@ -25,6 +25,7 @@
 #include <iterator>
 #include <memory>
 #include <new>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -210,6 +211,38 @@ img_file_header_signature_ncmp(const char *filename,
 }
 #endif
 
+std::optional<std::vector<TSK_TSTRING>>
+glob_E01(const TSK_TCHAR* image_native) {
+    TSK_TCHAR** glob = nullptr;
+    int glob_len;
+
+    libewf_error_t *ewf_error = nullptr;
+    if (LIBEWF_GLOB(image_native, TSTRLEN(image_native),
+            LIBEWF_FORMAT_UNKNOWN, &glob,
+            &glob_len, &ewf_error) == -1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+
+        char error_string[TSK_EWF_ERROR_STRING_SIZE];
+        getError(ewf_error, error_string);
+        tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
+            error_string);
+
+        return {};
+    }
+
+    const auto glob_deleter = [glob_len](TSK_TCHAR** glob) {
+        LIBEWF_GLOB_FREE(glob, glob_len, NULL);
+    };
+
+    std::unique_ptr<TSK_TCHAR*[], decltype(glob_deleter)> glob_holder{
+        glob,
+        glob_deleter
+    };
+
+    return std::vector<TSK_TSTRING>(glob, glob + glob_len);
+}
+
 TSK_IMG_INFO *
 ewf_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
@@ -248,37 +281,12 @@ ewf_open(int a_num_img,
 
     // Check if they specified only the first of the set...
     if (a_num_img == 1) {
-        TSK_TCHAR** glob = nullptr;
-        int glob_len;
-
-        if (LIBEWF_GLOB(images_native[0], TSTRLEN(images_native[0]),
-                LIBEWF_FORMAT_UNKNOWN, &glob,
-                &glob_len, &ewf_error) == -1) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-
-            getError(ewf_error, error_string);
-            tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
-                error_string);
+        auto glob = glob_E01(images_native[0]);
+        if (!glob) {
             return nullptr;
         }
 
-        const auto glob_deleter = [glob_len](TSK_TCHAR** glob) {
-            LIBEWF_GLOB_FREE(glob, glob_len, NULL);
-        };
-
-        std::unique_ptr<TSK_TCHAR*[], decltype(glob_deleter)> glob_holder{
-            glob,
-            glob_deleter
-        };
-
-        if (tsk_verbose) {
-            tsk_fprintf(stderr,
-                "ewf_open: found %d segment files via libewf_glob\n",
-                glob_len);
-        }
-
-        imgs_native.assign(glob, glob + glob_len);
+        imgs_native = std::move(glob.value());
         imgs_native_cstrs = to_cstr_vec(imgs_native);
         images_native = imgs_native_cstrs.data();
 
@@ -306,7 +314,7 @@ ewf_open(int a_num_img,
 #else
         images = images_native;
 #endif
-        if (!tsk_img_copy_image_names(img_info, images, glob_len)) {
+        if (!tsk_img_copy_image_names(img_info, images, imgs_native_cstrs.size())) {
             return nullptr;
         }
     }

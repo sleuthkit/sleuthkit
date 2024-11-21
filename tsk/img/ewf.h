@@ -19,7 +19,12 @@
 #if HAVE_LIBEWF
 
 #include <libewf.h>
+
+#include <optional>
 #include <string>
+#include <vector>
+
+#include "../base/tsk_os_cpp.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,5 +48,8 @@ extern "C" {
 }
 #endif
     extern std::string ewf_get_details(IMG_EWF_INFO *);
+
+    std::optional<std::vector<TSK_TSTRING>>
+    glob_E01(const TSK_TCHAR* image_native);
 #endif
 #endif
