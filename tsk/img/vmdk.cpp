@@ -16,18 +16,20 @@
 #if HAVE_LIBVMDK
 #include "vmdk.h"
 
-#include <memory>
-
-#ifdef TSK_WIN32
+#include "../base/tsk_os_cpp.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
-static std::wstring bs_path_separators(const TSK_TCHAR* path) {
-  std::wstring r{path};
-  std::replace(r.begin(), r.end(), '/', '\\');
-  return r;
-}
+// select wide string functions for Windodws, narrow otherwise
+#ifdef TSK_WIN32
+
+#define LIBVMDK_HANDLE_OPEN libvmdk_handle_open_wide
+
+#else
+
+#define LIBVMDK_HANDLE_OPEN libvmdk_handle_open
 
 #endif
 
@@ -185,16 +187,17 @@ vmdk_open(int a_num_img,
     vmdk_info->handle = nullptr;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) vmdk_info.get();
 
-    {
 #ifdef TSK_WIN32
-        const auto img_path = bs_path_separators(a_images[0]);
-        const TSK_TCHAR* const images[] = { img_path.c_str() };
+    TSK_TSTRING img_path(a_images[0]);
+    std::replace(img_path.begin(), img_path.end(), '/', '\\');
+
+    const TSK_TCHAR* image = img_path.c_str();
 #else
-        const TSK_TCHAR* const* images = a_images;
+    const TSK_TCHAR* image = a_images[0];
 #endif
-        if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
-            return nullptr;
-        }
+
+    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+        return nullptr;
     }
 
     if (libvmdk_handle_initialize(&(vmdk_info->handle), &vmdk_error) != 1) {
@@ -211,16 +214,7 @@ vmdk_open(int a_num_img,
         return nullptr;
     }
 
-#if defined( TSK_WIN32 )
-    if (libvmdk_handle_open_wide(vmdk_info->handle,
-            (const wchar_t *) vmdk_info->img_info.images[0],
-            LIBVMDK_OPEN_READ, &vmdk_error) != 1)
-#else
-    if (libvmdk_handle_open(vmdk_info->handle,
-            (const char *) vmdk_info->img_info.images[0],
-            LIBVMDK_OPEN_READ, &vmdk_error) != 1)
-#endif
-    {
+    if (LIBVMDK_HANDLE_OPEN(vmdk_info->handle, image, LIBVMDK_OPEN_READ, &vmdk_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 

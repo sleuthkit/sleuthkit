@@ -17,18 +17,22 @@
 #if HAVE_LIBQCOW
 #include "qcow.h"
 
-#include <memory>
-
-#ifdef TSK_WIN32
+#include "../base/tsk_os_cpp.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
-static std::wstring bs_path_separators(const TSK_TCHAR* path) {
-  std::wstring r{path};
-  std::replace(r.begin(), r.end(), '/', '\\');
-  return r;
-}
+// select wide string functions for Windodws, narrow otherwise
+#ifdef TSK_WIN32
+
+#define LIBQCOW_CHECK_FILE_SIGNATURE libqcow_check_file_signature_wide
+#define LIBQCOW_FILE_OPEN libqcow_file_open_wide
+
+#else
+
+#define LIBQCOW_CHECK_FILE_SIGNATURE libqcow_check_file_signature
+#define LIBQCOW_FILE_OPEN libqcow_file_open
 
 #endif
 
@@ -186,16 +190,17 @@ qcow_open(int a_num_img,
     qcow_info->handle = nullptr;
     TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) qcow_info.get();
 
-    {
 #ifdef TSK_WIN32
-        const auto img_path = bs_path_separators(a_images[0]);
-        const TSK_TCHAR* const images[] = { img_path.c_str() };
+    TSK_TSTRING img_path(a_images[0]);
+    std::replace(img_path.begin(), img_path.end(), '/', '\\');
+
+    const TSK_TCHAR* const image = img_path.c_str();
 #else
-        const TSK_TCHAR* const* images = a_images;
+    const TSK_TCHAR* const image = a_images[0];
 #endif
-        if (!tsk_img_copy_image_names(img_info, images, a_num_img)) {
-            return nullptr;
-        }
+
+    if (!tsk_img_copy_image_names(img_info, a_images, a_num_img)) {
+        return nullptr;
     }
 
     if (libqcow_file_initialize(&(qcow_info->handle), &qcow_error) != 1) {
@@ -213,12 +218,7 @@ qcow_open(int a_num_img,
     }
 
     // Check the file signature before we call the library open
-#if defined( TSK_WIN32 )
-    if (libqcow_check_file_signature_wide((const wchar_t *) qcow_info->img_info.images[0], &qcow_error) != 1)
-#else
-    if (libqcow_check_file_signature((const char *) qcow_info->img_info.images[0], &qcow_error) != 1)
-#endif
-    {
+    if (LIBQCOW_CHECK_FILE_SIGNATURE(image, &qcow_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
@@ -233,16 +233,7 @@ qcow_open(int a_num_img,
         return nullptr;
     }
 
-#if defined( TSK_WIN32 )
-    if (libqcow_file_open_wide(qcow_info->handle,
-            (const wchar_t *) qcow_info->img_info.images[0],
-            LIBQCOW_OPEN_READ, &qcow_error) != 1)
-#else
-    if (libqcow_file_open(qcow_info->handle,
-            (const char *) qcow_info->img_info.images[0],
-            LIBQCOW_OPEN_READ, &qcow_error) != 1)
-#endif
-    {
+    if (LIBQCOW_FILE_OPEN(qcow_info->handle, image, LIBQCOW_OPEN_READ, &qcow_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
