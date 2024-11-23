@@ -193,7 +193,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/dcalc_lib.cpp \
 	tsk/fs/btrfs.cpp \
 	tsk/fs/btrfs_csum.cpp \
-	tsk/fs/dcat_lib.c \
+	tsk/fs/dcat_lib.cpp \
 	tsk/fs/decmpfs.cpp \
 	tsk/fs/dls_lib.cpp \
 	tsk/fs/dstat_lib.cpp \
