@@ -114,6 +114,8 @@ extern "C" {
         int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock)
         size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock)
 
+        ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+
         ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
         void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
         void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function

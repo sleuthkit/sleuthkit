@@ -25,6 +25,8 @@ TEST_CASE("tsk_img_read inner function failed") {
   REQUIRE(img);
   tsk_init_lock(&(img->cache_lock));
 
+  img->cache_read = tsk_img_read_legacy;
+
   img->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
     return (ssize_t) -1;
   };

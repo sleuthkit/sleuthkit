@@ -53,62 +53,13 @@ static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     return nbytes;
 }
 
-/**
- * \ingroup imglib
- * Reads data from an open disk image
- * @param a_img_info Disk image to read from
- * @param a_off Byte offset to start reading from
- * @param a_buf Buffer to read into
- * @param a_len Number of bytes to read into buffer
- * @returns -1 on error or number of bytes read
- */
 ssize_t
-tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
-    char *a_buf, size_t a_len)
+tsk_img_read_legacy(
+    TSK_IMG_INFO* a_img_info,
+    TSK_OFF_T a_off,
+    char* a_buf,
+    size_t a_len)
 {
-    if (a_img_info == NULL) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: a_img_info: NULL");
-        return -1;
-    }
-
-    // Do not allow a_buf to be NULL.
-    if (a_buf == NULL) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: a_buf: NULL");
-        return -1;
-    }
-
-    // The function cannot handle negative offsets.
-    if (a_off < 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: a_off: %" PRIdOFF, a_off);
-        return -1;
-    }
-
-    // TODO: why not just return 0 here (and be POSIX compliant)?
-    if (a_off >= a_img_info->size) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("tsk_img_read - %" PRIdOFF, a_off);
-        return -1;
-    }
-
-    // Protect a_off against overflowing when a_len is added since TSK_OFF_T
-    // maps to an int64 we prefer it over size_t although likely checking
-    // for ( a_len > SSIZE_MAX ) is better but the code does not seem to
-    // use that approach.
-
-    if ((TSK_OFF_T) a_len < 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: a_len: %" PRIuSIZE, a_len);
-        return -1;
-    }
-
 #define CACHE_AGE   1000
     ssize_t read_count = 0;
 
@@ -251,4 +202,63 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     tsk_release_lock(&(a_img_info->cache_lock));
     return read_count;
+}
+
+/**
+ * \ingroup imglib
+ * Reads data from an open disk image
+ * @param a_img_info Disk image to read from
+ * @param a_off Byte offset to start reading from
+ * @param a_buf Buffer to read into
+ * @param a_len Number of bytes to read into buffer
+ * @returns -1 on error or number of bytes read
+ */
+ssize_t
+tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
+    char *a_buf, size_t a_len)
+{
+    if (a_img_info == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_read: a_img_info: NULL");
+        return -1;
+    }
+
+    // Do not allow a_buf to be NULL.
+    if (a_buf == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_read: a_buf: NULL");
+        return -1;
+    }
+
+    // The function cannot handle negative offsets.
+    if (a_off < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_read: a_off: %" PRIdOFF, a_off);
+        return -1;
+    }
+
+    // TODO: why not just return 0 here (and be POSIX compliant)?
+    if (a_off >= a_img_info->size) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
+        tsk_error_set_errstr("tsk_img_read - %" PRIdOFF, a_off);
+        return -1;
+    }
+
+    // Protect a_off against overflowing when a_len is added since TSK_OFF_T
+    // maps to an int64 we prefer it over size_t although likely checking
+    // for ( a_len > SSIZE_MAX ) is better but the code does not seem to
+    // use that approach.
+
+    if ((TSK_OFF_T) a_len < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_read: a_len: %" PRIuSIZE, a_len);
+        return -1;
+    }
+
+    return a_img_info->cache_read(a_img_info, a_off, a_buf, a_len);
 }

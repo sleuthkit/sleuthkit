@@ -296,6 +296,8 @@ TSK_IMG_INFO* img_open(
     /* we have a good img_info, set up the cache lock */
     tsk_init_lock(&(img_info->cache_lock));
 
+    img_info->cache_read = tsk_img_read_legacy;
+
     return img_info.release();
 }
 
@@ -563,6 +565,7 @@ tsk_img_open_external(
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
     img_info->size = size;
     img_info->sector_size = sector_size ? sector_size : 512;
+    img_info->cache_read = tsk_img_read_legacy;
     img_info->read = read;
     img_info->close = close;
     img_info->imgstat = imgstat;
