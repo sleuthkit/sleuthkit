@@ -3038,7 +3038,7 @@ static const TSK_FS_NAME_TYPE_ENUM btrfs_type2nametype[BTRFS_TYPE2NAMETYPE_COUNT
  * @return result
  */
 static TSK_RETVAL_ENUM
-btrfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr, int recursion_depth)
+btrfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr, [[maybe_unused]] int recursion_depth)
 {
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         btrfs_error(TSK_ERR_FS_WALK_RNG,
@@ -3288,7 +3288,7 @@ on_error:
  * @return relation between name A and name B
  */
 static int
-btrfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *a_name_a,
+btrfs_name_cmp([[maybe_unused]] TSK_FS_INFO * a_fs_info, const char *a_name_a,
     const char *a_name_b)
 {
     return strcmp(a_name_a, a_name_b);
@@ -3847,7 +3847,7 @@ btrfs_attr_walk_special(const TSK_FS_ATTR * a_fs_attr, int a_flags,
  * @return default attribute type
  */
 static TSK_FS_ATTR_TYPE_ENUM
-btrfs_get_default_attr_type(const TSK_FS_FILE * a_file)
+btrfs_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 {
     return TSK_FS_ATTR_TYPE_DEFAULT;
 }
@@ -4451,8 +4451,8 @@ typedef struct {
 
 
 static TSK_WALK_RET_ENUM
-btrfs_istat_filewalk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off,
-    TSK_DADDR_T a_addr, char *a_buf, size_t a_len,
+btrfs_istat_filewalk_cb([[maybe_unused]] TSK_FS_FILE * a_fs_file, [[maybe_unused]] TSK_OFF_T a_off,
+    TSK_DADDR_T a_addr, [[maybe_unused]] char *a_buf, [[maybe_unused]] size_t a_len,
     TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
 {
     // skip resident or non-raw or blocks
@@ -4525,8 +4525,8 @@ btrfs_istat_print_flags(FILE * a_file, uint64_t a_flags)
  * @return 0 if no error occured, otherwise 1
  */
 static uint8_t
-btrfs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * a_file, TSK_INUM_T a_inum,
-            TSK_DADDR_T a_numblock, int32_t a_sec_skew)
+btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * a_file, TSK_INUM_T a_inum,
+            [[maybe_unused]] TSK_DADDR_T a_numblock, int32_t a_sec_skew)
 {
     BTRFS_INFO *btrfs = (BTRFS_INFO*) a_fs;
     TSK_FS_FILE *file;
@@ -4673,31 +4673,31 @@ btrfs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * a_fil
  */
 
 static uint8_t
-btrfs_jentry_walk(TSK_FS_INFO * a_fs, int a_entry,
-    TSK_FS_JENTRY_WALK_CB a_cb, void *a_fn)
+btrfs_jentry_walk([[maybe_unused]] TSK_FS_INFO * a_fs, [[maybe_unused]] int a_entry,
+    [[maybe_unused]] TSK_FS_JENTRY_WALK_CB a_cb, [[maybe_unused]] void *a_fn)
 {
     btrfs_error(TSK_ERR_FS_UNSUPFUNC, "Journal support for Btrfs is not implemented");
     return 1;
 }
 
 static uint8_t
-btrfs_jblk_walk(TSK_FS_INFO * a_fs, TSK_DADDR_T a_daddr,
-    TSK_DADDR_T a_daddrt, int a_entry, TSK_FS_JBLK_WALK_CB a_cb,
-    void *a_fn)
+btrfs_jblk_walk([[maybe_unused]] TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_DADDR_T a_daddr,
+                [[maybe_unused]] TSK_DADDR_T a_daddrt, [[maybe_unused]] int a_entry, [[maybe_unused]] TSK_FS_JBLK_WALK_CB a_cb,
+                [[maybe_unused]] void *a_fn)
 {
     btrfs_error(TSK_ERR_FS_UNSUPFUNC, "Journal support for Btrfs is not implemented");
     return 1;
 }
 
 static uint8_t
-btrfs_jopen(TSK_FS_INFO * a_fs, TSK_INUM_T a_inum)
+btrfs_jopen([[maybe_unused]] TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_INUM_T a_inum)
 {
     btrfs_error(TSK_ERR_FS_UNSUPFUNC, "Journal support for Btrfs is not implemented");
     return 1;
 }
 
 static uint8_t
-btrfs_fscheck(TSK_FS_INFO * a_fs, FILE * a_file)
+btrfs_fscheck([[maybe_unused]] TSK_FS_INFO * a_fs, [[maybe_unused]] FILE * a_file)
 {
     btrfs_error(TSK_ERR_FS_UNSUPFUNC, "fscheck not implemented yet for Btrfs");
     return 1;
@@ -4892,7 +4892,7 @@ btrfs_inodewalk_test_cb(TSK_FS_FILE * a_file, void *a_ptr)
  */
 TSK_FS_INFO *
 btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-           TSK_FS_TYPE_ENUM ftype, const char *pass, uint8_t test)
+           TSK_FS_TYPE_ENUM ftype, [[maybe_unused]] const char *pass, uint8_t test)
 {
     // clean up any error messages that are lying around
     tsk_error_reset();
