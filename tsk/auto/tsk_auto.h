@@ -206,14 +206,14 @@ class TskAuto {
      * the errors or never called addToErrorList().
      * @returns list of errors.
      */
-    const std::vector<error_record> getErrorList();
+    const std::vector<error_record>& getErrorList();
 
     /**
      * Remove the errors on the internal list.
      */
     void resetErrorList();
 
-    static std::string errorRecordToString(error_record &rec);
+    static std::string errorRecordToString(const error_record &rec);
 
 
     /**
