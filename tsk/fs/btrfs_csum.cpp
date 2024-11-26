@@ -15,7 +15,6 @@
  */
 
 #include "tsk/base/crc.h"
-#include <stdio.h>
 
 /**
  * Returns the CRC32C checksum of a specific amount of data.
@@ -30,8 +29,8 @@ btrfs_csum_crc32c(const unsigned char *a_data, const int a_len)
     cm.cm_width = 32;
     cm.cm_poly = 0x1EDC6F41;
     cm.cm_init = 0xFFFFFFFF;
-    cm.cm_refin = TRUE;
-    cm.cm_refot = TRUE;
+    cm.cm_refin = true;
+    cm.cm_refot = true;
     cm.cm_xorot = 0xFFFFFFFF;
 
     cm_ini(&cm);
