@@ -58,6 +58,13 @@ TEST_CASE("test_disk_images imageformat_mmls_1.E01", "[fiwalk]") {
       "test/from_brian/imageformat_mmls_1.E01.xml"
     );
 }
+
+TEST_CASE("test_disk_images btrfs_test_image.E01 btrfs", "[fiwalk]") {
+    check_image(
+      "test/from_brian/btrfs_testimage_50MB.E01",
+      ""
+    );
+}
 #endif
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
@@ -119,13 +126,6 @@ TEST_CASE("test_disk_images 6-fat-undel.dd", "[fiwalk]") {
 TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
     check_image(
       "test/from_brian/image.gen1.dmg",
-      ""
-    );
-}
-
-TEST_CASE("test_disk_images btrfs_test_image.E01 btrfs", "[fiwalk]") {
-    check_image(
-      "test/from_brian/btrfs_testimage_50MB.E01",
       ""
     );
 }
