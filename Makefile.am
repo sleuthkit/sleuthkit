@@ -415,7 +415,7 @@ tools_autotools_tsk_gettimes_SOURCES = tools/autotools/tsk_gettimes.cpp
 tools_autotools_tsk_imageinfo_LDADD = $(TSK_LIB)
 tools_autotools_tsk_imageinfo_SOURCES = tools/autotools/tsk_imageinfo.cpp
 
-tools_autotools_tsk_loaddb_CXXFLAGS = $(AM_CXXFLAGS) -Wno-error=overloaded-virtual
+tools_autotools_tsk_loaddb_CXXFLAGS = $(AM_CXXFLAGS)
 tools_autotools_tsk_loaddb_LDADD = $(TSK_LIB)
 tools_autotools_tsk_loaddb_SOURCES = tools/autotools/tsk_loaddb.cpp
 
