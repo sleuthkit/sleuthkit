@@ -49,7 +49,7 @@ jobs:
             linkage: "shared"
             compiler: "clang"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++ CFLAGS=\"-Werror -Wno-error=unused-parameter\" CXXFLAGS=\"-Werror -Wno-error=unused-parameter\""
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++ CFLAGS=-Werror CXXFLAGS=-Werror
             codecov: "no"
             prefix: ""
             address_sanitizer: "yes"
