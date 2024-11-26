@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I$(srcdir)/tsk
 AM_CFLAGS = -Wall -Wextra
-AM_CXXFLAGS = -Wall -Wextra  -Woverloaded-virtual
+AM_CXXFLAGS = -Wall -Wextra -Woverloaded-virtual
 
 CLEANFILES = *.gcov
 
@@ -461,7 +461,7 @@ tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/content.h \
 	tools/fiwalk/src/dfxml.cpp \
 	tools/fiwalk/src/dfxml.h \
-	tools/fiwalk/src/fiwalk.cpp  \
+	tools/fiwalk/src/fiwalk.cpp \
 	tools/fiwalk/src/fiwalk.h \
 	tools/fiwalk/src/fiwalk_tsk.cpp \
 	tools/fiwalk/src/hash_t.h \
