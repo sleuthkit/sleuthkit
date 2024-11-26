@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# usage: tool_differ <command> <
 
 # get basedir for normalizing output
 basedir=$(realpath "$(dirname $0)/../..")
@@ -18,6 +19,12 @@ RESULT=$(diff --strip-trailing-cr -u "$EXP" <($WINE $CMD 2>&1 | sed -e "\|^${bas
 if [ $DIFF_EXIT -ne 0 ]; then
   echo failed
   echo "$RESULT"
+  echo ""
+  echo === $1 ===
+  $WINE $CMD | cat -vn
+  echo ""
+  echo === $2 ===
+  cat -vn $2
   exit 1
 else
   echo ok
