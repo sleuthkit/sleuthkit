@@ -37,7 +37,7 @@ jobs:
             linkage: "shared"
             compiler: "gcc"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=\"-Wno-unused-command-line-argument -Werror -Wno-error=unused-parameter\" CXXFLAGS=\"-Werror -Wno-error=unused-parameter\""
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CXXFLAGS=-Werror"
             codecov: "no"
             prefix:
             address_sanitizer: "yes"
