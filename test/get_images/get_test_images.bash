@@ -1,8 +1,10 @@
 #!/bin/bash -ex
 #
-# Install python virtual environment and run get_test_images.py
+# Install python virtual environment in the same directory as this script.
+# Then go back to where we were and run get_test_images.py
 #
-pushd test/get_images
+MYDIR=$(dirname "$0")
+pushd $MYDIR
 if [ ! -d venv ]; then
     python3 -m venv venv
     source venv/bin/activate

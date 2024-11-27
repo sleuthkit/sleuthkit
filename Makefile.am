@@ -64,6 +64,7 @@ nobase_include_HEADERS = \
 	tsk/fs/encryptionHelper.h \
 	tsk/fs/tsk_apfs.h \
 	tsk/fs/tsk_apfs.hpp \
+	tsk/fs/tsk_btrfs.h \
 	tsk/fs/tsk_exfatfs.h \
 	tsk/fs/tsk_ext2fs.h \
 	tsk/fs/tsk_fatfs.h \
@@ -190,7 +191,9 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/apfs_fs.cpp \
 	tsk/fs/apfs_open.cpp \
 	tsk/fs/dcalc_lib.cpp \
-	tsk/fs/dcat_lib.c \
+	tsk/fs/btrfs.cpp \
+	tsk/fs/btrfs_csum.cpp \
+	tsk/fs/dcat_lib.cpp \
 	tsk/fs/decmpfs.cpp \
 	tsk/fs/dls_lib.cpp \
 	tsk/fs/dstat_lib.cpp \
@@ -458,7 +461,7 @@ tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/content.h \
 	tools/fiwalk/src/dfxml.cpp \
 	tools/fiwalk/src/dfxml.h \
-	tools/fiwalk/src/fiwalk.cpp  \
+	tools/fiwalk/src/fiwalk.cpp \
 	tools/fiwalk/src/fiwalk.h \
 	tools/fiwalk/src/fiwalk_tsk.cpp \
 	tools/fiwalk/src/hash_t.h \
@@ -837,6 +840,7 @@ noinst_PROGRAMS += \
 	fls_hfs_fuzzer \
 	fls_iso9660_fuzzer \
 	fls_ntfs_fuzzer \
+	fls_btrfs_fuzzer \
 	mmls_dos_fuzzer \
 	mmls_gpt_fuzzer \
 	mmls_mac_fuzzer \
@@ -847,6 +851,18 @@ fls_apfs_fuzzer_SOURCES = \
 	ossfuzz/mem_img.h
 
 fls_apfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	$(TSK_LIB)
+
+fls_btrfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_btrfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_BTRFS_DETECT \
+	$(AM_CPPFLAGS)
+
+fls_btrfs_fuzzer_LDADD = \
 	@LIB_FUZZING_ENGINE@ \
 	$(TSK_LIB)
 

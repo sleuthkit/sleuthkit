@@ -37,7 +37,7 @@ jobs:
             linkage: "shared"
             compiler: "gcc"
             runner: "ubuntu-22.04"
-            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CFLAGS=\"-Wno-unused-command-line-argument -Werror\" CXXFLAGS=-Werror"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CXXFLAGS=-Werror"
             codecov: "no"
             prefix:
             address_sanitizer: "yes"
@@ -172,6 +172,7 @@ jobs:
         run: |
           make test/get_images/test_images.txt
           cat test/get_images/test_images.txt
+          ls -l test/from_brian
 
       - name: Run make
         run: |
@@ -225,8 +226,8 @@ jobs:
       - name: Run unit tests for codecov
         if: ${{ matrix.codecov == 'yes' }}
         run: |
-          test/fiwalk/fiwalk_test
-          test/runner
+          test/fiwalk/fiwalk_test -s
+          test/runner -s
 
       - name: Upload codecov report
         if: ${{ matrix.codecov == 'yes' }}

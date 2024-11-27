@@ -24,7 +24,7 @@
 #include <ctype.h>
 
 /**
- * \file dcat_lib.c
+ * \file dcat_lib.cpp
  * Contains the library API functions used by the TSK blkcat command
  * line tool.
  */
@@ -98,7 +98,7 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
     if ((lclflags & TSK_FS_BLKCAT_HEX) && (lclflags & TSK_FS_BLKCAT_HTML))
         tsk_printf("<table border=0>\n");
 
-    if ((buf = tsk_malloc(fs->block_size)) == NULL)
+    if ((buf = (char *)tsk_malloc(fs->block_size)) == NULL)
         return 1;
 
     for (i = 0; i < read_num_units; i++) {

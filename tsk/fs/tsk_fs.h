@@ -244,6 +244,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
         TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
         TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002,  //  Extents for Ext4 file system
+        TSK_FS_ATTR_TYPE_UNIX_XATTR = 0x1003,   //  Extended Attributes for Btrfs file system
 
         // Types for HFS+ File Attributes
         TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
@@ -822,7 +823,9 @@ extern "C" {
         TSK_FS_TYPE_HFS_LEGACY= 0x00008000,   ///< HFS file system
         TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
         TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
-		TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+               TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+        TSK_FS_TYPE_BTRFS = 0x00040000,        ///< Btrfs file system
+        TSK_FS_TYPE_BTRFS_DETECT = TSK_FS_TYPE_BTRFS, ///< Btrfs auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
@@ -891,6 +894,13 @@ extern "C" {
     * is for a YAFFS2 file system. */
 #define TSK_FS_TYPE_ISAPFS(ftype) \
     (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
+
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
+    * is for a Btrfs file system. */
+#define TSK_FS_TYPE_ISBTRFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_BTRFS_DETECT)?1:0)
 
     /**
     * \ingroup fslib

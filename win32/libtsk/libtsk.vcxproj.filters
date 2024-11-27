@@ -60,7 +60,7 @@
     <ClCompile Include="..\..\tsk\fs\dcalc_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dcat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dcat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\dls_lib.cpp">
@@ -192,6 +192,9 @@
     <ClCompile Include="..\..\tsk\base\md5c.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\base\crc.c">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\base\mymalloc.c">
       <Filter>base</Filter>
     </ClCompile>
@@ -286,6 +289,12 @@
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\btrfs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\btrfs_csum.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\logical_fs.cpp">
@@ -486,6 +495,9 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\base\tsk_os.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\base\crc.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\hashdb\tsk_hashdb.h">
