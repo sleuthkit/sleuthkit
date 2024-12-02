@@ -1,42 +1,86 @@
 version: 4.6.0.{build}
 
-cache:
-  - C:\Users\appveyor\.ant
-  - C:\ProgramData\chocolatey\bin
-  - C:\ProgramData\chocolatey\lib
-  - C:\libvhdi_64bit
-  - C:\libvmdk_64bit
-  - C:\libewf_64bit
-  - C:\zlib
-branches:
-    only:
-      - develop
-
-image: Visual Studio 2015
-
-
-install:  
-  - ps: choco install ant --ignore-dependencies
-  - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
-  - set PATH=C:\Python36-x64\';%PATH%
 environment:
-    global:
-      TSK_HOME: "%APPVEYOR_BUILD_FOLDER%"
-      LIBVHDI_HOME: "C:\\libvhdi_64bit"
-      LIBVMDK_HOME: "C:\\libvmdk_64bit\\libvmdk"
-      LIBEWF_HOME: "C:\\libewf_64bit"
-      POSTGRESQL_HOME_64: "C:\\Program Files\\PostgreSQL\\9.5"
-      PYTHON: "C:\\Python36-x64"
-      JDK_HOME: C:\Program Files\Java\jdk1.8.0
-services:
-      - postgresql95;
+  matrix:
+  - job_name: Windows Build
+    appveyor_build_worker_image: Visual Studio 2019
+  - job_name: Linux Build
+    appveyor_build_worker_image: Ubuntu
+  - job_name: macOS Build
+    appveyor_build_worker_image: macos-catalina
 
-build_script:
-      - python setupDevRepos.py
-      - python win32\updateAndBuildAll.py -m 
+matrix:
+
+  fast_finish: true
+
+
+# job-specific configurations
+for:
+
+  -
+    matrix:
+      only:
+        - job_name: Windows Build
+
+    cache:
+      - C:\Users\appveyor\.ant
+      - C:\ProgramData\chocolatey\bin
+      - C:\ProgramData\chocolatey\lib
+
+    install:
+      - ps: choco install nuget.commandline
+      - ps: choco install ant --ignore-dependencies
+      - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
+      - set PATH=C:\Python36-x64\';%PATH%
+    environment:
+      global:
+        TSK_HOME: "%APPVEYOR_BUILD_FOLDER%"
+        PYTHON: "C:\\Python36-x64"
+        JDK_HOME: C:\Program Files\Java\jdk1.8.0
+    services:
+
+    before_build:
+      - nuget restore win32\libtsk -PackagesDirectory win32\packages
+
+    build_script:
+      - python win32\updateAndBuildAll.py -m
       - ps: ant -version
       - ps: pushd bindings/java
-      - cmd: ant -q dist-PostgreSQL
+      - cmd: ant -q dist
+      - ps: popd
+      - ps: pushd case-uco/java
+      - cmd: ant -q
       - ps: popd
 
-test: off
+    test_script:
+      - cmd: ant -q -f bindings/java test
+
+  -
+    matrix:
+      only:
+        - job_name: Linux Build
+
+    install:
+      - sudo apt install -y autoconf python3-venv
+
+    build_script:
+      - cat /etc/os-release
+      - ./bootstrap
+      - ./configure
+      - make -j
+
+    test_script:
+      - make -j check VERBOSE=1
+
+  -
+    matrix:
+      only:
+        - job_name: macOS Build
+
+    build_script:
+      - ./bootstrap
+      - ./configure
+      - make -j
+
+    test_script:
+      - make -j check VERBOSE=1

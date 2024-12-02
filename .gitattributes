@@ -5,6 +5,7 @@
 
 *.txt                   text
 *.xml                   text
+*.properties-MERGED                  text
 *.html                   text diff=html
 *.dox                   text
 *.am                   text

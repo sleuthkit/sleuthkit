@@ -1,15 +1,15 @@
 /*
-** icat 
-** The Sleuth Kit 
+** icat
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 
  * LICENSE
@@ -22,6 +22,7 @@
  --*/
 
 #include "tsk/tsk_tools_i.h"
+#include "tsk/fs/apfs_fs.h"
 #include <locale.h>
 
 /* usage - explain and terminate */
@@ -33,7 +34,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-hrRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inum[-typ[-id]]\n"),
+        ("usage: %" PRIttocTSK " [-hrRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inum[-typ[-id]]\n"),
         progname);
     tsk_fprintf(stderr, "\t-h: Do not display holes in sparse files\n");
     tsk_fprintf(stderr, "\t-r: Recover deleted file\n");
@@ -48,8 +49,14 @@ usage()
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
+    tsk_fprintf(stderr, "\t-S snap_id: Snapshot ID (for APFS only)\n");
     tsk_fprintf(stderr, "\t-v: verbose to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }
@@ -63,6 +70,11 @@ main(int argc, char **argv1)
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
+    const char * password = "";
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_OFF_T pvol_block = 0;
+    TSK_OFF_T snap_id = 0;
 
     TSK_INUM_T inum;
     int fw_flags = 0;
@@ -90,19 +102,20 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:hi:o:rRsvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:hi:o:rRsvVP:B:k:S:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -115,7 +128,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -129,10 +142,13 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
+            break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
             break;
         case _TSK_T('o'):
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
@@ -140,8 +156,32 @@ main(int argc, char **argv1)
                 exit(1);
             }
             break;
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %" PRIttocTSK "\n"), OPTARG);
+                usage();
+            }
+            break;
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
+        case _TSK_T('S'):
+            if ((snap_id = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
         case _TSK_T('r'):
-            // this is no longer needed, so we silently ignore it. 
+            // this is no longer needed, so we silently ignore it.
             break;
         case _TSK_T('R'):
             suppress_recover_error = 1;
@@ -167,7 +207,7 @@ main(int argc, char **argv1)
     /* Get the inode address */
     if (tsk_fs_parse_inum(argv[argc - 1], &inum, &type, &type_used, &id,
             &id_used)) {
-        TFPRINTF(stderr, _TSK_T("Invalid inode address: %s\n"),
+        TFPRINTF(stderr, _TSK_T("Invalid inode address: %" PRIttocTSK "\n"),
             argv[argc - 1]);
         usage();
     }
@@ -184,29 +224,61 @@ main(int argc, char **argv1)
             PRIu64 ")\n", img->size / img->sector_size);
         exit(1);
     }
-    if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-        tsk_error_print(stderr);
-        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-            tsk_fs_type_print(stderr);
-        img->close(img);
-        exit(1);
+
+    if (pvol_block == 0) {
+        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size,
+                                          fstype, password)) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            tsk_img_close(img);
+            exit(1);
+        }
+    } else {
+        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+        if (pool == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            tsk_img_close(img);
+            exit(1);
+        }
+
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
+        img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            tsk_img_close(img);
+            exit(1);
+        }
     }
 
     if (inum > fs->last_inum) {
         tsk_fprintf(stderr,
             "Metadata address too large for image (%" PRIuINUM ")\n",
             fs->last_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
     if (inum < fs->first_inum) {
         tsk_fprintf(stderr,
             "Metadata address too small for image (%" PRIuINUM ")\n",
             fs->first_inum);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
+    }
+
+    if (snap_id > 0) {
+        tsk_apfs_set_snapshot(fs, (uint64_t)snap_id);
     }
 
     retval =
@@ -219,12 +291,12 @@ main(int argc, char **argv1)
         }
         else {
             tsk_error_print(stderr);
-            fs->close(fs);
-            img->close(img);
+            tsk_fs_close(fs);
+            tsk_img_close(img);
             exit(1);
         }
     }
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
     exit(0);
 }

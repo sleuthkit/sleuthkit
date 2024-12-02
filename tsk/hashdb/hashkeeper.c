@@ -36,7 +36,7 @@ uint8_t
     if (NULL == fgets(buf, TSK_HDB_MAXLEN, hFile))
         return 0;
 
-    if (strlen(buf) < 150) 
+    if (strlen(buf) < 150)
         return 0;
 
     ptr = buf;
@@ -89,13 +89,13 @@ TSK_HDB_INFO *hk_open(FILE *hDb, const TSK_TCHAR *db_path)
     hdb_binsrch_info->base.make_index = hk_makeindex;
     hdb_binsrch_info->get_entry = hk_getentry;
 
-    return (TSK_HDB_INFO*)hdb_binsrch_info;    
+    return (TSK_HDB_INFO*)hdb_binsrch_info;
 }
 
 /**
 * Give a line from a hash keeper database, parse out the
 * MD5 (and other) text.  NOTE that this will add NULL values
-* to the input text. 
+* to the input text.
 *
 * @param str [in] String to parse
 * @param md5 [out] Pointer to a pointer, which will be assigned to the MD5 text in original string
@@ -280,7 +280,7 @@ uint8_t
 
     /* Status */
     if (tsk_verbose)
-        TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
+        TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%" PRIttocTSK ")\n"),
         hdb_binsrch_info->base.db_fname);
 
     /* Allocate a buffer to hold the previous hash values */
@@ -355,15 +355,15 @@ uint8_t
 * Find the corresponding name at the
 * given offset.  The offset was likely determined from the index.
 * The entries in the DB following the one specified are also processed
-* if they have the same hash value and their name is different. 
-* The callback is called for each entry. 
+* if they have the same hash value and their name is different.
+* The callback is called for each entry.
 *
 * Note: This routine assumes that &hdb_info->lock is locked by the caller.
 *
 * @param hdb_info Data base to get data from.
 * @param hash MD5 hash value that was searched for
 * @param offset Byte offset where hash value should be located in db_file
-* @param flags 
+* @param flags
 * @param action Callback used for each entry found in lookup
 * @param cb_ptr Pointer to data passed to callback
 *
@@ -381,7 +381,7 @@ uint8_t
 
     if (tsk_verbose)
         fprintf(stderr,
-        "hk_getentry: Lookup up hash %s at offset %" PRIuOFF "\n",
+        "hk_getentry: Lookup up hash %s at offset %" PRIdOFF "\n",
         hash, offset);
 
     if (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN) {

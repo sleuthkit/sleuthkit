@@ -24,6 +24,7 @@
 #define _TSK_BASE_H
 
 // standard C header files
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -39,11 +40,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040604ff
+#define TSK_VERSION_NUM 0x041201ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.6.4"
+#define TSK_VERSION_STR "4.12.1"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -55,6 +56,10 @@
 
 // get some other TSK / OS settings
 #include "tsk_os.h"
+
+#ifdef TSK_WIN32
+#define strncasecmp _strnicmp
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -247,32 +252,26 @@ extern "C" {
     typedef uint64_t TSK_INUM_T;        ///< Data type used to internally store metadata / inode addresses
 #define PRIuINUM	PRIu64
 #define PRIxINUM	PRIx64
-#define PRIdINUM	PRId64
 
     typedef uint32_t TSK_UID_T; ///< Data type used to internally store User IDs
 #define PRIuUID	    PRIu32
 #define PRIxUID	    PRIx32
-#define PRIdUID	    PRId32
 
     typedef uint32_t TSK_GID_T; ///< Data type used to internally store Group IDs
 #define PRIuGID	    PRIu32
 #define PRIxGID	    PRIx32
-#define PRIdGID	    PRId32
 
     typedef uint64_t TSK_DADDR_T;       ///< Data type used to internally store sector and block addresses
 #define PRIuDADDR   PRIu64
 #define PRIxDADDR   PRIx64
-#define PRIdDADDR   PRId64
 
     typedef int64_t TSK_OFF_T;  ///< Data type used to internally store volume, file, etc. sizes and offsets
-#define PRIuOFF		PRIu64
 #define PRIxOFF		PRIx64
 #define PRIdOFF		PRId64
 
     typedef uint32_t TSK_PNUM_T;        ///< Data type used to internally store partition addresses
 #define PRIuPNUM	PRIu32
 #define PRIxPNUM	PRIx32
-#define PRIdPNUM	PRId32
 //@}
 
 
@@ -303,6 +302,7 @@ extern "C" {
 #define TSK_ERR_FS	0x08000000
 #define TSK_ERR_HDB	0x10000000
 #define TSK_ERR_AUTO 0x20000000
+#define TSK_ERR_POOL 0x40000000
 #define TSK_ERR_MASK	0x00ffffff
 
 #define TSK_ERR_AUX_MALLOC	(TSK_ERR_AUX | 0)
@@ -333,7 +333,15 @@ extern "C" {
 #define TSK_ERR_VS_BUF		(TSK_ERR_VS | 5)
 #define TSK_ERR_VS_BLK_NUM	(TSK_ERR_VS | 6)
 #define TSK_ERR_VS_ARG	    (TSK_ERR_VS | 7)
-#define TSK_ERR_VS_MAX		8
+#define TSK_ERR_VS_ENCRYPTED    (TSK_ERR_VS | 8)
+#define TSK_ERR_VS_MULTTYPE     (TSK_ERR_VS | 9)
+#define TSK_ERR_VS_MAX		10
+
+#define TSK_ERR_POOL_UNKTYPE    (TSK_ERR_POOL | 0)
+#define TSK_ERR_POOL_UNSUPTYPE  (TSK_ERR_IMG | 1)
+#define TSK_ERR_POOL_ARG        (TSK_ERR_POOL | 2)
+#define TSK_ERR_POOL_GENPOOL    (TSK_ERR_POOL | 3)
+#define TSK_ERR_POOL_MAX        4
 
 #define TSK_ERR_FS_UNKTYPE	(TSK_ERR_FS | 0)
 #define TSK_ERR_FS_UNSUPTYPE	(TSK_ERR_FS | 1)
@@ -353,8 +361,11 @@ extern "C" {
 #define TSK_ERR_FS_GENFS	(TSK_ERR_FS | 15)
 #define TSK_ERR_FS_CORRUPT	(TSK_ERR_FS | 16)
 #define TSK_ERR_FS_ATTR_NOTFOUND (TSK_ERR_FS | 17)
-#define TSK_ERR_FS_MAX		18
-
+#define TSK_ERR_FS_ENCRYPTED    (TSK_ERR_FS | 18)
+#define TSK_ERR_FS_POSSIBLY_ENCRYPTED    (TSK_ERR_FS | 19)
+#define TSK_ERR_FS_MULTTYPE    (TSK_ERR_FS | 20)
+#define TSK_ERR_FS_BITLOCKER_ERROR    (TSK_ERR_FS | 21)
+#define TSK_ERR_FS_MAX		22
 
 #define TSK_ERR_HDB_UNKTYPE     (TSK_ERR_HDB | 0)
 #define TSK_ERR_HDB_UNSUPTYPE   (TSK_ERR_HDB | 1)
@@ -456,8 +467,8 @@ documentation and/or software.
     } TSK_MD5_CTX;
 
     void TSK_MD5_Init(TSK_MD5_CTX *);
-    void TSK_MD5_Update(TSK_MD5_CTX *, unsigned char *, unsigned int);
-    void TSK_MD5_Final(unsigned char[16], TSK_MD5_CTX *);
+    void TSK_MD5_Update(TSK_MD5_CTX *, const unsigned char *, unsigned int);
+    void TSK_MD5_Final(TSK_MD5_CTX *, unsigned char[16]);
 
 
 
@@ -475,8 +486,8 @@ documentation and/or software.
 /* Message digest functions */
 
     void TSK_SHA_Init(TSK_SHA_CTX *);
-    void TSK_SHA_Update(TSK_SHA_CTX *, BYTE * buffer, int count);
-    void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
+    void TSK_SHA_Update(TSK_SHA_CTX *, const BYTE * buffer, unsigned int count);
+    void TSK_SHA_Final(TSK_SHA_CTX *, BYTE * output);
 
 /* Flags for which type of hash(es) to run */
 	typedef enum{

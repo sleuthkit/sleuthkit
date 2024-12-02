@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -54,6 +55,7 @@ public class LayoutFile extends AbstractFile {
 	 *                           added.
 	 * @param objId              The object id of the file in the case database.
 	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param fileSystemObjectId The object id of the file system. May be null.
 	 * @param name               The name of the file.
 	 * @param fileType           The type of the file.
 	 * @param dirType            The type of the file, usually as reported in
@@ -70,25 +72,40 @@ public class LayoutFile extends AbstractFile {
 	 *                           reported in the metadata structure of the file
 	 *                           system.
 	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The creation time of the file.
+	 * @param atime              The accessed time of the file
+	 * @param mtime              The modified time of the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
+	 * @param ownerUid			 UID of the file owner as found in the file
+	 *                           system, can be null.
+	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
 	LayoutFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId,
 			String name,
 			TSK_DB_FILES_TYPE_ENUM fileType,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size,
-			String md5Hash, FileKnown knownState,
-			String parentPath, String mimeType) {
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name));
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash, String sha256Hash, String sha1Hash,
+			FileKnown knownState,
+			String parentPath, String mimeType,
+			String ownerUid,
+			Long osAccountObjId) {
+			
+		super(db, objId, dataSourceObjectId, fileSystemObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name), ownerUid, osAccountObjId, TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 	}
 
 	/**
@@ -140,6 +157,12 @@ public class LayoutFile extends AbstractFile {
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
 		int bytesRead = 0; // Bytes read so far
+		
+		// if the caller has requested more data than we have in the file
+		// then make sure we don't go beyond the end of the file
+		long readLen = len;
+		if (offset + readLen > size) 
+			readLen = size - offset;
 
 		if (imageHandle == -1) {
 			Content dataSource = getDataSource();
@@ -152,17 +175,17 @@ public class LayoutFile extends AbstractFile {
 		}
 
 		for (TskFileRange range : getRanges()) {
-			if (bytesRead < len) { // we haven't read enough yet
+			if (bytesRead < readLen) { // we haven't read enough yet
 				if (offset < offsetInThisLayoutContent + range.getByteLen()) { // if we are in a range object we want to read from
 					long offsetInRange = 0; // how far into the current range object to start reading
 					if (bytesRead == 0) { // we haven't read anything yet so we want to read from the correct offset in this range object
 						offsetInRange = offset - offsetInThisLayoutContent; // start reading from the correct offset
 					}
 					long offsetInImage = range.getByteStart() + offsetInRange; // how far into the image to start reading
-					long lenToRead = Math.min(range.getByteLen() - offsetInRange, len - bytesRead); // how much we can read this time
-					int lenRead = readImgToOffset(imageHandle, buf, bytesRead, offsetInImage, (int) lenToRead);
+					long lenToReadInRange = Math.min(range.getByteLen() - offsetInRange, readLen - bytesRead); // how much we can read this time
+					int lenRead = readImgToOffset(imageHandle, buf, bytesRead, offsetInImage, (int) lenToReadInRange);
 					bytesRead += lenRead;
-					if (lenToRead != lenRead) { // If image read failed or was cut short
+					if (lenToReadInRange != lenRead) { // If image read failed or was cut short
 						break;
 					}
 				}
@@ -232,43 +255,5 @@ public class LayoutFile extends AbstractFile {
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "LayoutFile [\t" + "]\t"; //NON-NLS
-	}
-
-	/**
-	 * Constructs a representation of a layout file that has been added to a
-	 * case. Layout files are not file system files, but "virtual" files created
-	 * from blocks of data (e.g. unallocated) that are treated as files for
-	 * convenience and uniformity.
-	 *
-	 * @param db         The case database to which the file has been added.
-	 * @param objId      The object id of the file in the case database.
-	 * @param name       The name of the file.
-	 * @param fileType   The type of the file.
-	 * @param dirType    The type of the file, usually as reported in the name
-	 *                   structure of the file system. May be set to
-	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType   The type of the file, usually as reported in the
-	 *                   metadata structure of the file system. May be set to
-	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag    The allocated status of the file, usually as reported
-	 *                   in the name structure of the file system.
-	 * @param metaFlags  The allocated status of the file, usually as reported
-	 *                   in the metadata structure of the file system.
-	 * @param size       The size of the file.
-	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
-	 * @param knownState The known state of the file from a hash database
-	 *                   lookup, null if not yet looked up.
-	 * @param parentPath The path of the parent of the file.
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	protected LayoutFile(SleuthkitCase db, long objId, String name,
-			TSK_DB_FILES_TYPE_ENUM fileType,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), name, fileType, dirType, metaType, dirFlag, metaFlags, size, md5Hash, knownState, parentPath, null);
 	}
 }

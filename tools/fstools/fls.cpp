@@ -1,8 +1,8 @@
 /*
 ** fls
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Given an image and directory inode, display the file names and 
+** Given an image and directory inode, display the file names and
 ** directories that exist (both active and deleted)
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
@@ -20,6 +20,7 @@
 **
 */
 #include "tsk/tsk_tools_i.h"
+#include "tsk/fs/apfs_fs.h"
 #include <locale.h>
 #include <time.h>
 
@@ -30,7 +31,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
+        ("usage: %" PRIttocTSK " [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
         progname);
     tsk_fprintf(stderr,
         "\tIf [inode] is not given, the root directory is used\n");
@@ -52,6 +53,11 @@ usage()
     tsk_fprintf(stderr, "\t-h: Include MD5 checksum hash in mactime output\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: Offset into image file (in sectors)\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
+    tsk_fprintf(stderr, "\t-S snap_id: Snapshot ID (for APFS only)\n");
     tsk_fprintf(stderr, "\t-p: Display full path for each file\n");
     tsk_fprintf(stderr, "\t-r: Recurse on directory entries\n");
     tsk_fprintf(stderr, "\t-u: Display undeleted entries only\n");
@@ -61,6 +67,7 @@ usage()
         "\t-z: Time zone of original machine (i.e. EST5EDT or GMT) (only useful with -l)\n");
     tsk_fprintf(stderr,
         "\t-s seconds: Time skew of original machine (in seconds) (only useful with -l & -m)\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }
@@ -70,10 +77,14 @@ main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
+    TSK_IMG_INFO *img_parent = NULL;
+    const TSK_POOL_INFO *pool = NULL;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
+    const char *password = "";
+
 
     TSK_INUM_T inode;
     int name_flags = TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC;
@@ -85,6 +96,10 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_OFF_T pvol_block = 0;
+    TSK_OFF_T snap_id = 0;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -103,13 +118,14 @@ main(int argc, char **argv1)
     fls_flags = TSK_FS_FLS_DIR | TSK_FS_FLS_FILE;
 
     while ((ch =
-            GETOPT(argc, argv, _TSK_T("ab:dDf:Fi:m:hlo:prs:uvVz:"))) > 0) {
+            GETOPT(argc, argv, _TSK_T("ab:dDf:Fi:m:hlo:prs:uvVz:P:B:k:S:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('a'):
             fls_flags |= TSK_FS_FLS_DOT;
             break;
@@ -118,7 +134,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -138,7 +154,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -153,7 +169,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -174,8 +190,35 @@ main(int argc, char **argv1)
                 exit(1);
             }
             break;
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %" PRIttocTSK "\n"), OPTARG);
+                usage();
+            }
+            break;
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
+        case _TSK_T('S'):
+            if ((snap_id = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
         case _TSK_T('p'):
             fls_flags |= TSK_FS_FLS_FULL;
+            break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
             break;
         case _TSK_T('r'):
             name_flags |= TSK_FS_DIR_WALK_FLAG_RECURSE;
@@ -215,7 +258,6 @@ main(int argc, char **argv1)
         usage();
     }
 
-
     /* Set the full flag to print the full path name if recursion is
      ** set and we are only displaying files or deleted files
      */
@@ -246,7 +288,7 @@ main(int argc, char **argv1)
         }
     }
 
-    /* open image - there is an optional inode address at the end of args 
+    /* open image - there is an optional inode address at the end of args
      *
      * Check the final argument and see if it is a number
      */
@@ -262,16 +304,48 @@ main(int argc, char **argv1)
             tsk_fprintf(stderr,
                 "Sector offset supplied is larger than disk image (maximum: %"
                 PRIu64 ")\n", img->size / img->sector_size);
+            tsk_img_close(img);
             exit(1);
         }
-        if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
 
-            img->close(img);
-            exit(1);
+        if (pvol_block == 0) {
+            if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+                tsk_error_print(stderr);
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                    tsk_fs_type_print(stderr);
+                tsk_img_close(img);
+                exit(1);
+            }
+        } else {
+            // Pool block was specified, so open pool
+            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+            if (pool == NULL) {
+                tsk_error_print(stderr);
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                    tsk_pool_type_print(stderr);
+                tsk_img_close(img);
+                exit(1);
+            }
+            img_parent = img;
+
+            TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+            if (pool->ctype == TSK_POOL_TYPE_LVM){
+                offset = 0;
+            }
+#endif /* HAVE_LIBVSLVM */
+            img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
+            if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
+                tsk_error_print(stderr);
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                    tsk_fs_type_print(stderr);
+                tsk_img_close(img);
+                tsk_pool_close(pool);
+                tsk_img_close(img_parent);
+                exit(1);
+            }
         }
+
         inode = fs->root_inum;
     }
     else {
@@ -291,29 +365,76 @@ main(int argc, char **argv1)
             tsk_fprintf(stderr,
                 "Sector offset supplied is larger than disk image (maximum: %"
                 PRIu64 ")\n", img->size / img->sector_size);
+            tsk_img_close(img);
             exit(1);
         }
 
+        if (pvol_block == 0) {
+            if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+                tsk_error_print(stderr);
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                    tsk_fs_type_print(stderr);
+                tsk_img_close(img);
+                exit(1);
+            }
+        } else {
+            // Pool block was specified, so open pool
+            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
 
-        if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
-            img->close(img);
-            exit(1);
+            if (pool == NULL) {
+                tsk_error_print(stderr);
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                    tsk_pool_type_print(stderr);
+                tsk_img_close(img);
+                exit(1);
+            }
+            img_parent = img;
+
+            TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+            if (pool->ctype == TSK_POOL_TYPE_LVM){
+                offset = 0;
+            }
+#endif /* HAVE_LIBVSLVM */
+            img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
+            if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
+                tsk_error_print(stderr);
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                    tsk_fs_type_print(stderr);
+                tsk_img_close(img);
+                tsk_pool_close(pool);
+                tsk_img_close(img_parent);
+                exit(1);
+            }
         }
+    }
+
+    if (snap_id > 0) {
+        tsk_apfs_set_snapshot(fs, (uint64_t)snap_id);
     }
 
     if (tsk_fs_fls(fs, (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
             (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre, sec_skew)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
+        if (pool != NULL) {
+          tsk_pool_close(pool);
+        }
+        if (img_parent != NULL) {
+          tsk_img_close(img_parent);
+        }
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
 
+    if (pool != NULL) {
+      tsk_pool_close(pool);
+    }
+    if (img_parent != NULL) {
+      tsk_img_close(img_parent);
+    }
     exit(0);
 }

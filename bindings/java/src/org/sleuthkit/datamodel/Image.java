@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -43,7 +43,9 @@ public class Image extends AbstractContent implements DataSource {
 	private long size;
 	private final String[] paths;
 	private volatile long imageHandle = 0;
-	private final String deviceId, timezone, md5;
+	private volatile Host host = null;
+	private final String deviceId, timezone;
+	private String md5, sha1, sha256;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private static final Logger LOGGER = Logger.getLogger(Image.class.getName());
@@ -76,6 +78,8 @@ public class Image extends AbstractContent implements DataSource {
 		this.timezone = timezone;
 		this.size = 0;
 		this.md5 = md5;
+		this.sha1 = "";
+		this.sha256 = "";
 	}
 
 	/**
@@ -94,7 +98,8 @@ public class Image extends AbstractContent implements DataSource {
 	 * @param md5      MD5 hash.
 	 * @param size     Size.
 	 */
-	Image(SleuthkitCase db, long obj_id, long type, String deviceId, long ssize, String name, String[] paths, String timezone, String md5, long size) throws TskCoreException {
+	Image(SleuthkitCase db, long obj_id, long type, String deviceId, long ssize, String name, String[] paths, String timezone, 
+			String md5, String sha1, String sha256, long size) throws TskCoreException {
 		super(db, obj_id, name);
 		this.deviceId = deviceId;
 		this.type = type;
@@ -103,6 +108,8 @@ public class Image extends AbstractContent implements DataSource {
 		this.timezone = timezone;
 		this.size = size;
 		this.md5 = md5;
+		this.sha1 = sha1;
+		this.sha256 = sha256;
 	}
 
 	/**
@@ -113,11 +120,19 @@ public class Image extends AbstractContent implements DataSource {
 	 * @throws TskCoreException
 	 */
 	public synchronized long getImageHandle() throws TskCoreException {
+		if (paths.length == 0) {
+			throw new TskCoreException("Image has no associated paths");
+		}
+		
 		if (imageHandle == 0) {
-			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize);
+			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize, getSleuthkitCase());
 		}
 
 		return imageHandle;
+	}
+	
+	synchronized void setImageHandle(long imageHandle) {
+		this.imageHandle = imageHandle;
 	}
 
 	@Override
@@ -130,6 +145,7 @@ public class Image extends AbstractContent implements DataSource {
 		//frees nothing, as we are caching image handles
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -144,6 +160,11 @@ public class Image extends AbstractContent implements DataSource {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		// If there are no paths, don't attempt to read the image
+		if (paths.length == 0) {
+			return 0;
+		}
+		
 		// read from the image
 		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}
@@ -240,8 +261,8 @@ public class Image extends AbstractContent implements DataSource {
 	 * @throws TskCoreException
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {
-		List<FileSystem> fs = new ArrayList<FileSystem>();
-		fs.addAll(getSleuthkitCase().getFileSystems(this));
+		List<FileSystem> fs = new ArrayList<>();
+		fs.addAll(getSleuthkitCase().getImageFileSystems(this));
 		return fs;
 	}
 
@@ -348,12 +369,87 @@ public class Image extends AbstractContent implements DataSource {
 	}
 
 	/**
-	 * gets the md5 hash value
+	 * Gets the md5 hash value
 	 *
-	 * @return md5 hash if attained(from database). returns null if not set.
+	 * @return md5 hash if attained(from database), empty string otherwise
+	 * 
+	 * @throws TskCoreException
 	 */
-	public String getMd5() {
+	public String getMd5() throws TskCoreException {
+		if (md5 == null || md5.isEmpty()) {
+			md5 = getSleuthkitCase().getMd5ImageHash(this);
+		}
 		return md5;
+	}
+	
+	/**
+	 * gets the SHA1 hash value
+	 *
+	 * @return SHA1 hash if attained(from database), empty string otherwise
+	 * 
+	 * @throws TskCoreException on DB error. 
+	 */
+	public String getSha1() throws TskCoreException {
+		if (sha1 == null || sha1.isEmpty()) {
+			sha1 = getSleuthkitCase().getSha1ImageHash(this);
+		}
+		return sha1;
+	}
+	
+	/**
+	 * gets the SHA256 hash value
+	 *
+	 * @return SHA256 hash if attained(from database), empty string otherwise
+	 * 
+	 * @throws TskCoreException
+	 */
+	public String getSha256() throws TskCoreException {
+		if (sha256 == null || sha256.isEmpty()) {
+			sha256 = getSleuthkitCase().getSha256ImageHash(this);
+		}
+		return sha256;
+	}
+	
+	/**
+	 * 
+	 * @param md5
+	 * @throws TskCoreException On DB errors
+	 * @throws TskDataException If hash has already been set
+	 */
+	public void setMD5(String md5) throws TskCoreException, TskDataException {
+		if (getMd5().isEmpty() == false) {
+			throw new TskDataException("MD5 value has already been set");
+		}
+		getSleuthkitCase().setMd5ImageHash(this, md5);
+		this.md5 = md5;
+	}
+	
+	/**
+	 * 
+	 * @param sha1
+	 * @throws TskCoreException On DB errors
+	 * @throws TskDataException If hash has already been set
+	 */
+	public void setSha1(String sha1) throws TskCoreException, TskDataException {
+		if (getSha1().isEmpty() == false) {
+			throw new TskDataException("SHA1 value has already been set");
+		}
+		getSleuthkitCase().setSha1ImageHash(this, sha1);
+		this.sha1 = sha1;
+	}
+	
+	/**
+	 * 
+	 * @param sha256
+	 * @throws TskCoreException On DB errors
+	 * @throws TskDataException If hash has already been set
+	 */
+	public void setSha256(String sha256) throws TskCoreException, TskDataException {
+		if (getSha256().isEmpty() == false) {
+			throw new TskDataException("SHA256 value has already been set");
+		}
+		getSleuthkitCase().setSha256ImageHash(this, sha256);
+		this.sha256 = sha256;
 	}
 
 	/**
@@ -419,6 +515,123 @@ public class Image extends AbstractContent implements DataSource {
 		}
 
 		return contentSize;
+	}
+
+	/**
+	 * Sets the acquisition details field in the case database.
+	 *
+	 * @param details The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	@Override
+	public void setAcquisitionDetails(String details) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionDetails(this, details);
+	}
+
+	/**
+	 * Sets the acquisition tool details such as its name, version number and
+	 * any settings used during the acquisition to acquire data.
+	 *
+	 * @param name     The name of the acquisition tool. May be NULL.
+	 * @param version  The acquisition tool version number. May be NULL.
+	 * @param settings The settings used by the acquisition tool. May be NULL.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	@Override
+	public void setAcquisitionToolDetails(String name, String version, String settings) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionToolDetails(this, name, version, settings);
+	}
+
+	/**
+	 * Gets the acquisition tool settings field from the case database.
+	 *
+	 * @return The acquisition tool settings. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolSettings() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_settings");
+	}
+
+	/**
+	 * Gets the acquisition tool name field from the case database.
+	 *
+	 * @return The acquisition tool name. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolName() throws TskCoreException{
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_name");
+	}
+
+	/**
+	 * Gets the acquisition tool version field from the case database.
+	 *
+	 * @return The acquisition tool version. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolVersion() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_version");
+	}
+
+	/**
+	 * Gets the added date field from the case database.
+	 *
+	 * @return The date time when the image was added in epoch seconds.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public Long getDateAdded() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoLong(this, "added_date_time");
+	}
+
+	/**
+	 * Gets the acquisition details field from the case database.
+	 * 
+	 * @return The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	@Override
+	public String getAcquisitionDetails() throws TskCoreException {
+		return getSleuthkitCase().getAcquisitionDetails(this);
+	}	
+	
+	/**
+	 * Gets the host for this data source.
+	 * 
+	 * @return The host
+	 * 
+	 * @throws TskCoreException 
+	 */
+	@Override
+	public Host getHost() throws TskCoreException {
+		// This is a check-then-act race condition that may occasionally result
+		// in additional processing but is safer than using locks.
+		if (host == null) {
+			host = getSleuthkitCase().getHostManager().getHostByDataSource(this);
+		}
+		return host;
+	}	
+
+	/**
+	 * Updates the image's total size and sector size.This function may be used
+	 * to update the sizes after the image was created.
+	 *
+	 * Can only update the sizes if they were not set before. Will throw
+	 * TskCoreException if the values in the db are not 0 prior to this call.
+	 *
+	 * @param totalSize  The total size
+	 * @param sectorSize The sector size
+	 *
+	 * @throws TskCoreException If there is an error updating the case database.
+	 *
+	 */
+	public void setSizes(long totalSize, long sectorSize) throws TskCoreException {
+		getSleuthkitCase().setImageSizes(this, totalSize, sectorSize);
 	}
 
 	/**

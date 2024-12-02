@@ -38,7 +38,8 @@ PROJECT_NAME           = "Sleuth Kit Java Bindings (JNI)"
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 4.6 
+# NOTE: This is updated by the release-unix.pl script
+PROJECT_NUMBER = 4.12.1
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -760,10 +761,18 @@ WARN_LOGFILE           =
 
 INPUT                  = main.dox \
                          query_database.dox \
-			             blackboard.dox \
+                         blackboard.dox \
+                         artifact_catalog.dox \
                          insert_and_update_database.dox \
                          communications.dox \
-						 ../src
+                         datasources.dox \
+                         os_accounts.dox \
+                         schema/schema_list.dox \
+                         schema/db_schema_8_6.dox \
+                         schema/db_schema_9_0.dox \
+                         schema/db_schema_9_1.dox \
+                         schema/db_schema_9_4.dox \
+                         ../src
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -851,7 +860,7 @@ EXAMPLE_RECURSIVE      = NO
 # that contain images that are to be included in the documentation (see the
 # \image command).
 
-IMAGE_PATH             =
+IMAGE_PATH             = images/
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -1047,7 +1056,8 @@ GENERATE_HTML          = YES
 # The default directory is: html.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_OUTPUT            = jni-docs/4.6/
+# NOTE: This is updated by the release-unix.pl script
+HTML_OUTPUT = jni-docs/4.12.1/
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).

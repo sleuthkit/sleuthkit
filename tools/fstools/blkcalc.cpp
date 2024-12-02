@@ -31,7 +31,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-dsu unit_addr] [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images]\n"),
+        ("usage: %" PRIttocTSK " [-dsu unit_addr] [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images]\n"),
         progname);
     tsk_fprintf(stderr, "Slowly calculates the opposite block number\n");
     tsk_fprintf(stderr, "\tOne of the following must be given:\n");
@@ -49,6 +49,10 @@ usage()
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
 
@@ -66,6 +70,10 @@ main(int argc, char **argv1)
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_OFF_T pvol_block = 0;
+    const char * password = "";
 
     int ch;
     TSK_TCHAR *cp;
@@ -91,20 +99,21 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:d:f:i:o:s:u:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:d:f:i:o:P:s:u:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -114,7 +123,7 @@ main(int argc, char **argv1)
             type |= TSK_FS_BLKCALC_DD;
             count = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid address: %s\n"), OPTARG);
+                TFPRINTF(stderr, _TSK_T("Invalid address: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             set = 1;
@@ -128,7 +137,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -140,7 +149,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -153,11 +162,31 @@ main(int argc, char **argv1)
             }
             break;
 
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                usage();
+            }
+            break;
+
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
+
         case _TSK_T('s'):
             type |= TSK_FS_BLKCALC_SLACK;
             count = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid address: %s\n"), OPTARG);
+                TFPRINTF(stderr, _TSK_T("Invalid address: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             set = 1;
@@ -167,7 +196,7 @@ main(int argc, char **argv1)
             type |= TSK_FS_BLKCALC_BLKLS;
             count = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid address: %s\n"), OPTARG);
+                TFPRINTF(stderr, _TSK_T("Invalid address: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             set = 1;
@@ -214,23 +243,51 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-        tsk_error_print(stderr);
-        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-            tsk_fs_type_print(stderr);
-        img->close(img);
-        exit(1);
+    if (pvol_block == 0) {
+        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size,
+            fstype, password)) == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            tsk_img_close(img);
+            exit(1);
+        }
+    }
+    else {
+        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
+        if (pool == NULL) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            tsk_img_close(img);
+            exit(1);
+        }
+
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
+        img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
+        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL){
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            tsk_img_close(img);
+            exit(1);
+        }
     }
 
     if (-1 == tsk_fs_blkcalc(fs, (TSK_FS_BLKCALC_FLAG_ENUM) type, count)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
+        tsk_fs_close(fs);
+        tsk_img_close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
+    tsk_fs_close(fs);
+    tsk_img_close(img);
 
     exit(0);
 }

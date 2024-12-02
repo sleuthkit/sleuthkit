@@ -19,6 +19,15 @@
     <Filter Include="img">
       <UniqueIdentifier>{36ca1943-034a-4915-a0ac-ede5f6e26bfd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pool">
+      <UniqueIdentifier>{7cbe036c-983e-47eb-b83e-499ecc668ffd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{5ae960da-f555-42cd-bc00-eba8c536e79b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util\Bitlocker">
+      <UniqueIdentifier>{8ac041d0-9f31-48c5-aff5-909554fdfe98}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tsk\vs\bsd.c">
@@ -48,46 +57,46 @@
     <ClCompile Include="..\..\tsk\vs\sun.c">
       <Filter>vs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dcalc_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dcalc_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dcat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dcat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dls_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dls_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\dstat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\dstat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ext2fs.c">
+    <ClCompile Include="..\..\tsk\fs\ext2fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.c">
+    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fatfs.c">
+    <ClCompile Include="..\..\tsk\fs\fatfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fatfs_meta.c">
+    <ClCompile Include="..\..\tsk\fs\fatfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ffind_lib.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ffs.c">
+    <ClCompile Include="..\..\tsk\fs\ffs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ffs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\ffs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fls_lib.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_attr.c">
+    <ClCompile Include="..\..\tsk\fs\fs_attr.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_attrlist.c">
@@ -96,10 +105,10 @@
     <ClCompile Include="..\..\tsk\fs\fs_block.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_dir.c">
+    <ClCompile Include="..\..\tsk\fs\fs_dir.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_file.c">
+    <ClCompile Include="..\..\tsk\fs\fs_file.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_inode.c">
@@ -108,10 +117,10 @@
     <ClCompile Include="..\..\tsk\fs\fs_io.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_load.c">
+    <ClCompile Include="..\..\tsk\fs\fs_load.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fs_name.c">
+    <ClCompile Include="..\..\tsk\fs\fs_name.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fs_open.c">
@@ -123,34 +132,34 @@
     <ClCompile Include="..\..\tsk\fs\fs_types.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs.c">
+    <ClCompile Include="..\..\tsk\fs\hfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_journal.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_journal.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.c">
+    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\icat_lib.c">
+    <ClCompile Include="..\..\tsk\fs\icat_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ifind_lib.c">
+    <ClCompile Include="..\..\tsk\fs\ifind_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ils_lib.c">
+    <ClCompile Include="..\..\tsk\fs\ils_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\iso9660.c">
+    <ClCompile Include="..\..\tsk\fs\iso9660.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\iso9660_dent.c">
+    <ClCompile Include="..\..\tsk\fs\iso9660_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\nofs_misc.c">
+    <ClCompile Include="..\..\tsk\fs\nofs_misc.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\rawfs.c">
@@ -159,7 +168,7 @@
     <ClCompile Include="..\..\tsk\fs\swapfs.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\unix_misc.c">
+    <ClCompile Include="..\..\tsk\fs\unix_misc.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp">
@@ -177,10 +186,13 @@
     <ClCompile Include="..\..\tsk\auto\db_sqlite.cpp">
       <Filter>auto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\auto\sqlite3.c">
+    <ClCompile Include="..\..\vendors\sqlite3.c">
       <Filter>auto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\base\md5c.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\base\crc.c">
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\base\mymalloc.c">
@@ -225,28 +237,25 @@
     <ClCompile Include="..\..\tsk\img\aff.c">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\ewf.c">
-      <Filter>img</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\img\img_io.c">
-      <Filter>img</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\img\img_open.c">
+    <ClCompile Include="..\..\tsk\img\img_io.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_types.c">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\mult_files.c">
+    <ClCompile Include="..\..\tsk\img\mult_files.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\raw.c">
+    <ClCompile Include="..\..\tsk\img\raw.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\logical_img.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ntfs.c">
+    <ClCompile Include="..\..\tsk\fs\ntfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ntfs_dent.cpp">
@@ -255,25 +264,25 @@
     <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\idxonly.c">
+    <ClCompile Include="..\..\tsk\hashdb\idxonly.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\md5sum.c">
+    <ClCompile Include="..\..\tsk\hashdb\md5sum.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
+    <ClCompile Include="..\..\tsk\hashdb\nsrl.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\hdb_base.c">
+    <ClCompile Include="..\..\tsk\hashdb\hdb_base.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.c">
+    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\encase.c">
+    <ClCompile Include="..\..\tsk\hashdb\encase.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\exfatfs.c">
@@ -282,10 +291,19 @@
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c">
+    <ClCompile Include="..\..\tsk\fs\btrfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c">
+    <ClCompile Include="..\..\tsk\fs\btrfs_csum.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\logical_fs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c">
@@ -297,7 +315,7 @@
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c">
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp">
@@ -306,13 +324,10 @@
     <ClCompile Include="..\..\tsk\auto\tsk_db.cpp">
       <Filter>auto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\auto\db_postgresql.cpp">
-      <Filter>auto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\img\vmdk.c">
+    <ClCompile Include="..\..\tsk\img\vmdk.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\vhd.c">
+    <ClCompile Include="..\..\tsk\img\vhd.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\auto\guid.cpp">
@@ -326,6 +341,90 @@
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\lzvn.c">
       <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\apfs_pool.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\pool_open.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\pool_read.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\pool_types.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\crypto.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs_open.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs_compat.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs_fs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\decmpfs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\ewf.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\img_open.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\detect_encryption.c">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\file_system_utils.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\unsupported_types.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerParser.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\DataTypes.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataEntry.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataUtils.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\encryptionHelper.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerUtils.cpp">
+      <Filter>util\Bitlocker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.cpp">
+      <Filter>util\Bitlocker</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -374,7 +473,7 @@
     <ClInclude Include="..\..\tsk\fs\tsk_ntfs.h">
       <Filter>fs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tsk\auto\sqlite3.h">
+    <ClInclude Include="..\..\vendors\sqlite3.h">
       <Filter>auto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\auto\tsk_auto.h">
@@ -398,6 +497,9 @@
     <ClInclude Include="..\..\tsk\base\tsk_os.h">
       <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tsk\base\crc.h">
+      <Filter>base</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\tsk\hashdb\tsk_hashdb.h">
       <Filter>hash</Filter>
     </ClInclude>
@@ -410,7 +512,13 @@
     <ClInclude Include="..\..\tsk\img\ewf.h">
       <Filter>img</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tsk\img\mult_files.h">
+      <Filter>img</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\tsk\img\raw.h">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\logical_img.h">
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\tsk_img.h">
@@ -428,16 +536,13 @@
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h">
       <Filter>fs</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_logical_fs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h">
       <Filter>hash</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\auto\tsk_db.h">
-      <Filter>auto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h">
-      <Filter>auto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\tsk\auto\db_connection_info.h">
       <Filter>auto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\vmdk.h">
@@ -455,5 +560,105 @@
     <ClInclude Include="..\..\tsk\img\img_writer.h">
       <Filter>img</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\pool_compat.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.h">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.h">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\crypto.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\lw_shared_ptr.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\span.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\libtsk.h" />
+    <ClInclude Include="..\..\tsk\fs\apfs_compat.hpp">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.hpp">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\decmpfs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\apfs_pool_compat.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\pool.hpp">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\detect_encryption.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\file_system_utils.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\unsupported_types.h">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerParser.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\DataTypes.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataEntry.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataUtils.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValue.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\encryptionHelper.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerUtils.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.h">
+      <Filter>util\Bitlocker</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

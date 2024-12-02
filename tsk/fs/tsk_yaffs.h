@@ -1,13 +1,13 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** This software is distributed under the Common Public License 1.0 
+**
+** This software is distributed under the Common Public License 1.0
 */
 
 /*
@@ -17,10 +17,8 @@
 #ifndef _TSK_YAFFSFS_H
 #define _TSK_YAFFSFS_H
 
-#include <map>
-#include <utility>
-
 #ifdef __cplusplus
+#include <map>
 extern "C" {
 #endif
 
@@ -214,6 +212,12 @@ typedef enum {
         YaffsCacheChunk *cache_chunks_tail;
     } YaffsCacheChunkGroup;
 
+    #ifdef __cplusplus
+    typedef std::map < uint32_t, YaffsCacheChunkGroup > chunkmap_t;
+    #else
+    typedef void chunkmap_t;
+    #endif
+
     /*
      * Structure of an yaffsfs file system handle.
      */
@@ -235,7 +239,7 @@ typedef enum {
 
         tsk_lock_t cache_lock;
         YaffsCacheObject *cache_objects;
-         std::map < uint32_t, YaffsCacheChunkGroup > *chunkMap;
+        chunkmap_t *chunkMap;
 
         // If the user specified that the image is YAFFS2, print out additional verbose error messages
         int autoDetect;

@@ -9,14 +9,6 @@
       <Configuration>Debug_NoLibs</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug_PostgreSQL|Win32">
-      <Configuration>Debug_PostgreSQL</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug_PostgreSQL|x64">
-      <Configuration>Debug_PostgreSQL</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
@@ -33,12 +25,12 @@
       <Configuration>Release_NoLibs</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release_PostgreSQL|Win32">
-      <Configuration>Release_PostgreSQL</Configuration>
+    <ProjectConfiguration Include="Release_XPNoLibs|Win32">
+      <Configuration>Release_XPNoLibs</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release_PostgreSQL|x64">
-      <Configuration>Release_PostgreSQL</Configuration>
+    <ProjectConfiguration Include="Release_XPNoLibs|x64">
+      <Configuration>Release_XPNoLibs</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -54,73 +46,64 @@
     <ProjectGuid>{76EFC06C-1F64-4478-ABE8-79832716B393}</ProjectGuid>
     <RootNamespace>libtsk</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v141_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|x64'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -137,7 +120,7 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|Win32'" Label="PropertySheets">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
@@ -146,54 +129,46 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|x64'" Label="PropertySheets">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|x64'">$(OutDir)</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|Win32'">$(IntDir)</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|x64'">$(IntDir)</IntDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">$(OutDir)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|x64'">$(OutDir)</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|x64'">$(OutDir)</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">$(IntDir)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|Win32'">$(IntDir)</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|Win32'">$(IntDir)</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">$(IntDir)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|x64'">$(IntDir)</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|x64'">$(IntDir)</IntDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|x64'">$(OutDir)</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|Win32'">$(IntDir)</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|x64'">$(IntDir)</IntDir>
   </PropertyGroup>
+  <Import Project="$(SolutionDir)\NugetPackages.props" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;_ITERATOR_DEBUG_LEVEL=2;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;HAVE_LIBMBEDTLS;WIN32;_DEBUG;_LIB;_ITERATOR_DEBUG_LEVEL=2;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -202,125 +177,89 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"</Command>
-    </PostBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|Win32'">
-    <ClCompile>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBVMDK;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CompileAs>Default</CompileAs>
-    </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
-copy "$(POSTGRESQL_HOME_32)\bin\libintl-8.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_32)\bin\libiconv-2.dll" "$(OutDir)" 
-copy "$(POSTGRESQL_HOME_32)\bin\libeay32.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_32)\bin\ssleay32.dll" "$(OutDir)"
-copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" 
-</Command>
-    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
+copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
+    </PreBuildEvent>
     <Lib>
-      <AdditionalDependencies>libpq.lib</AdditionalDependencies>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_32)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBMBEDTLS;HAVE_LIBZ;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
-copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
-    </PostBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|x64'">
-    <ClCompile>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-    </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
-copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libiconv-2.dll" "$(OutDir)" 
-copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
-    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
+copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"</Command>
+    </PreBuildEvent>
     <Lib>
-      <AdditionalDependencies>libpq.lib</AdditionalDependencies>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_64)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;_LIB;WINVER=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBMBEDTLS;WIN32;NDEBUG;_LIB;WINVER=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"
+    <PreBuildEvent>
+      <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
+copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
 xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
-xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
-    </PostBuildEvent>
+xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarget)\Microsoft.VC142.CRT" "$(OutDir)"</Command>
+    </PreBuildEvent>
+    <Lib>
+      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
+    </Lib>
+    <Lib>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -328,74 +267,71 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAsManaged>false</CompileAsManaged>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
+    <Lib>
+      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
+    </Lib>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAsManaged>false</CompileAsManaged>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
-copy "$(POSTGRESQL_HOME_32)\bin\libintl-8.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_32)\bin\libiconv-2.dll" "$(OutDir)" 
-copy "$(POSTGRESQL_HOME_32)\bin\libeay32.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_32)\bin\ssleay32.dll" "$(OutDir)"
-copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)"
-xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
-xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
-    </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>libpq.lib</AdditionalDependencies>
-    </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_32)\lib</AdditionalLibraryDirectories>
+      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBOPENSSL;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;HAVE_LIBMBEDTLS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
-copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"
+    <PreBuildEvent>
+      <Command>copy "$(LibEwfLib)\libewf.dll" "$(OutDir)"
+copy "$(ZlibDll)\zlib.dll" "$(OutDir)"
+copy "$(LibVmdkLib)\libvmdk.dll" "$(OutDir)"
+copy "$(LibVhdiLib)\libvhdi.dll" "$(OutDir)"
 xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
-xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
-    </PostBuildEvent>
+xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarget)\Microsoft.VC142.CRT" "$(OutDir)"</Command>
+    </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>mbedcrypto.lib;mbedtls.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(MbedTlsLib);</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -403,51 +339,32 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAsManaged>false</CompileAsManaged>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;HAVE_LIBPQ_;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAsManaged>false</CompileAsManaged>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
-    <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libiconv-2.dll" "$(OutDir)" 
-copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"
-copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" 
-copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"
-xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
-xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
-    </PostBuildEvent>
-    <Lib>
-      <AdditionalDependencies>libpq.lib</AdditionalDependencies>
-    </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_64)\lib</AdditionalLibraryDirectories>
-    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -455,38 +372,66 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4200;4814;5030</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\tsk\auto\db_postgresql.cpp" />
     <ClCompile Include="..\..\tsk\auto\guid.cpp" />
     <ClCompile Include="..\..\tsk\auto\is_image_supported.cpp" />
     <ClCompile Include="..\..\tsk\auto\tsk_db.cpp" />
-    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
+    <ClCompile Include="..\..\tsk\fs\apfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\apfs_compat.cpp" />
+    <ClCompile Include="..\..\tsk\fs\apfs_fs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\apfs_open.cpp" />
+    <ClCompile Include="..\..\tsk\fs\decmpfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
-    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.cpp" />
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
-    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
-    <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.cpp" />
+    <ClCompile Include="..\..\tsk\fs\encryptionHelper.cpp" />
+    <ClCompile Include="..\..\tsk\hashdb\hdb_base.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\img\img_writer.cpp" />
-    <ClCompile Include="..\..\tsk\img\vhd.c" />
-    <ClCompile Include="..\..\tsk\img\vmdk.c" />
+    <ClCompile Include="..\..\tsk\img\unsupported_types.cpp" />
+    <ClCompile Include="..\..\tsk\img\vhd.cpp" />
+    <ClCompile Include="..\..\tsk\img\vmdk.cpp" />
+    <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp" />
+    <ClCompile Include="..\..\tsk\pool\apfs_pool.cpp" />
+    <ClCompile Include="..\..\tsk\pool\pool_open.cpp" />
+    <ClCompile Include="..\..\tsk\pool\pool_read.cpp" />
+    <ClCompile Include="..\..\tsk\pool\pool_types.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerParser.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\BitlockerUtils.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\DataTypes.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataEntry.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataUtils.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.cpp" />
+    <ClCompile Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.cpp" />
+    <ClCompile Include="..\..\tsk\util\crypto.cpp" />
+    <ClCompile Include="..\..\tsk\util\detect_encryption.c" />
+    <ClCompile Include="..\..\tsk\util\file_system_utils.cpp" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -496,55 +441,59 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\vs\mm_part.c" />
     <ClCompile Include="..\..\tsk\vs\mm_types.c" />
     <ClCompile Include="..\..\tsk\vs\sun.c" />
-    <ClCompile Include="..\..\tsk\fs\dcalc_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\dcat_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\dls_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\dstat_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\ext2fs.c" />
-    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.c" />
-    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.c" />
-    <ClCompile Include="..\..\tsk\fs\fatfs.c" />
+    <ClCompile Include="..\..\tsk\fs\dcalc_lib.cpp" />
+    <ClCompile Include="..\..\tsk\fs\dcat_lib.cpp" />
+    <ClCompile Include="..\..\tsk\fs\dls_lib.cpp" />
+    <ClCompile Include="..\..\tsk\fs\dstat_lib.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ext2fs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ext2fs_dent.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ext2fs_journal.cpp" />
+    <ClCompile Include="..\..\tsk\fs\fatfs.cpp" />
     <ClCompile Include="..\..\tsk\fs\fatfs_dent.cpp" />
-    <ClCompile Include="..\..\tsk\fs\fatfs_meta.c" />
+    <ClCompile Include="..\..\tsk\fs\fatfs_meta.cpp" />
     <ClCompile Include="..\..\tsk\fs\ffind_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\ffs.c" />
-    <ClCompile Include="..\..\tsk\fs\ffs_dent.c" />
+    <ClCompile Include="..\..\tsk\fs\ffs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ffs_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\fls_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\fs_attr.c" />
+    <ClCompile Include="..\..\tsk\fs\fs_attr.cpp" />
     <ClCompile Include="..\..\tsk\fs\fs_attrlist.c" />
     <ClCompile Include="..\..\tsk\fs\fs_block.c" />
-    <ClCompile Include="..\..\tsk\fs\fs_dir.c" />
-    <ClCompile Include="..\..\tsk\fs\fs_file.c" />
+    <ClCompile Include="..\..\tsk\fs\fs_dir.cpp" />
+    <ClCompile Include="..\..\tsk\fs\fs_file.cpp" />
     <ClCompile Include="..\..\tsk\fs\fs_inode.c" />
     <ClCompile Include="..\..\tsk\fs\fs_io.c" />
-    <ClCompile Include="..\..\tsk\fs\fs_load.c" />
-    <ClCompile Include="..\..\tsk\fs\fs_name.c" />
+    <ClCompile Include="..\..\tsk\fs\fs_load.cpp" />
+    <ClCompile Include="..\..\tsk\fs\fs_name.cpp" />
     <ClCompile Include="..\..\tsk\fs\fs_open.c" />
     <ClCompile Include="..\..\tsk\fs\fs_parse.c" />
     <ClCompile Include="..\..\tsk\fs\fs_types.c" />
-    <ClCompile Include="..\..\tsk\fs\hfs.c" />
-    <ClCompile Include="..\..\tsk\fs\hfs_dent.c" />
-    <ClCompile Include="..\..\tsk\fs\hfs_journal.c" />
-    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.c" />
-    <ClCompile Include="..\..\tsk\fs\icat_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\ifind_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\ils_lib.c" />
-    <ClCompile Include="..\..\tsk\fs\iso9660.c" />
-    <ClCompile Include="..\..\tsk\fs\iso9660_dent.c" />
+    <ClCompile Include="..\..\tsk\fs\hfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\hfs_dent.cpp" />
+    <ClCompile Include="..\..\tsk\fs\hfs_journal.cpp" />
+    <ClCompile Include="..\..\tsk\fs\hfs_unicompare.cpp" />
+    <ClCompile Include="..\..\tsk\fs\icat_lib.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ifind_lib.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ils_lib.cpp" />
+    <ClCompile Include="..\..\tsk\fs\iso9660.cpp" />
+    <ClCompile Include="..\..\tsk\fs\iso9660_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\lzvn.c" />
-    <ClCompile Include="..\..\tsk\fs\nofs_misc.c" />
-    <ClCompile Include="..\..\tsk\fs\ntfs.c" />
+    <ClCompile Include="..\..\tsk\fs\nofs_misc.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ntfs.cpp" />
     <ClCompile Include="..\..\tsk\fs\ntfs_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\rawfs.c" />
     <ClCompile Include="..\..\tsk\fs\swapfs.c" />
-    <ClCompile Include="..\..\tsk\fs\unix_misc.c" />
+    <ClCompile Include="..\..\tsk\fs\unix_misc.cpp" />
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp" />
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\btrfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\btrfs_csum.cpp" />
+    <ClCompile Include="..\..\tsk\fs\logical_fs.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto_db.cpp" />
     <ClCompile Include="..\..\tsk\auto\case_db.cpp" />
     <ClCompile Include="..\..\tsk\auto\db_sqlite.cpp" />
-    <ClCompile Include="..\..\tsk\auto\sqlite3.c" />
+    <ClCompile Include="..\..\vendors\sqlite3.c" />
+    <ClCompile Include="..\..\tsk\base\crc.c" />
     <ClCompile Include="..\..\tsk\base\md5c.c" />
     <ClCompile Include="..\..\tsk\base\mymalloc.c" />
     <ClCompile Include="..\..\tsk\base\sha1c.c" />
@@ -559,33 +508,65 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\base\tsk_unicode.c" />
     <ClCompile Include="..\..\tsk\base\tsk_version.c" />
     <ClCompile Include="..\..\tsk\base\XGetopt.c" />
-    <ClCompile Include="..\..\tsk\hashdb\encase.c" />
+    <ClCompile Include="..\..\tsk\hashdb\encase.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c" />
-    <ClCompile Include="..\..\tsk\hashdb\idxonly.c" />
-    <ClCompile Include="..\..\tsk\hashdb\md5sum.c" />
-    <ClCompile Include="..\..\tsk\hashdb\nsrl.c" />
-    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.c" />
+    <ClCompile Include="..\..\tsk\hashdb\idxonly.cpp" />
+    <ClCompile Include="..\..\tsk\hashdb\md5sum.cpp" />
+    <ClCompile Include="..\..\tsk\hashdb\nsrl.cpp" />
+    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp" />
     <ClCompile Include="..\..\tsk\img\aff.c" />
-    <ClCompile Include="..\..\tsk\img\ewf.c" />
-    <ClCompile Include="..\..\tsk\img\img_io.c" />
-    <ClCompile Include="..\..\tsk\img\img_open.c" />
+    <ClCompile Include="..\..\tsk\img\ewf.cpp" />
+    <ClCompile Include="..\..\tsk\img\img_io.cpp" />
+    <ClCompile Include="..\..\tsk\img\img_open.cpp" />
     <ClCompile Include="..\..\tsk\img\img_types.c" />
-    <ClCompile Include="..\..\tsk\img\mult_files.c" />
-    <ClCompile Include="..\..\tsk\img\raw.c" />
+    <ClCompile Include="..\..\tsk\img\mult_files.cpp" />
+    <ClCompile Include="..\..\tsk\img\raw.cpp" />
+    <ClCompile Include="..\..\tsk\img\logical_img.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\tsk\auto\db_connection_info.h" />
     <ClInclude Include="..\..\tsk\auto\guid.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_db.h" />
-    <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_is_image_supported.h" />
+    <ClInclude Include="..\..\tsk\fs\apfs_compat.hpp" />
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.h" />
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.hpp" />
+    <ClInclude Include="..\..\tsk\fs\decmpfs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp" />
+    <ClInclude Include="..\..\tsk\fs\encryptionHelper.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\img\img_writer.h" />
+    <ClInclude Include="..\..\tsk\img\pool.hpp" />
+    <ClInclude Include="..\..\tsk\img\unsupported_types.h" />
     <ClInclude Include="..\..\tsk\img\vhd.h" />
     <ClInclude Include="..\..\tsk\img\vmdk.h" />
+    <ClInclude Include="..\..\tsk\libtsk.h" />
+    <ClInclude Include="..\..\tsk\pool\apfs_pool_compat.hpp" />
+    <ClInclude Include="..\..\tsk\pool\pool_compat.hpp" />
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.h" />
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.hpp" />
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.h" />
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerParser.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\BitlockerUtils.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\DataTypes.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataEntry.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataUtils.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValue.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueAesCcmEncryptedKey.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueKey.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueOffsetAndSize.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueStretchKey.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueUnicode.h" />
+    <ClInclude Include="..\..\tsk\util\Bitlocker\MetadataValueVolumeMasterKey.h" />
+    <ClInclude Include="..\..\tsk\util\crypto.hpp" />
+    <ClInclude Include="..\..\tsk\util\detect_encryption.h" />
+    <ClInclude Include="..\..\tsk\util\file_system_utils.h" />
+    <ClInclude Include="..\..\tsk\util\lw_shared_ptr.hpp" />
+    <ClInclude Include="..\..\tsk\util\span.hpp" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_dos.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_gpt.h" />
@@ -602,7 +583,8 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\fs\tsk_iso9660.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_ntfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
-    <ClInclude Include="..\..\tsk\auto\sqlite3.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_logical_fs.h" />
+    <ClInclude Include="..\..\vendors\sqlite3.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_auto.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_auto_i.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_case_db.h" />
@@ -610,15 +592,36 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\base\tsk_base.h" />
     <ClInclude Include="..\..\tsk\base\tsk_base_i.h" />
     <ClInclude Include="..\..\tsk\base\tsk_os.h" />
+    <ClInclude Include="..\..\tsk\base\crc.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hashdb.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hashdb_i.h" />
     <ClInclude Include="..\..\tsk\img\aff.h" />
     <ClInclude Include="..\..\tsk\img\ewf.h" />
+    <ClInclude Include="..\..\tsk\img\mult_files.h" />
     <ClInclude Include="..\..\tsk\img\raw.h" />
+    <ClInclude Include="..\..\tsk\img\logical_img.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img_i.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets" Condition="Exists('..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets')" />
+    <Import Project="..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets" Condition="Exists('..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets')" />
+    <Import Project="..\packages\zlib_native.1.2.11\build\native\zlib_native.targets" Condition="Exists('..\packages\zlib_native.1.2.11\build\native\zlib_native.targets')" />
+    <Import Project="..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets" Condition="Exists('..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets')" />
+    <Import Project="..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets" Condition="Exists('..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild" Condition="!$(Configuration.EndsWith('_NoLibs'))">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\openssl-vc140-vc141-x86_64.1.1.5\build\native\openssl-vc140-vc141-x86_64.targets'))" />
+    <Error Condition="!Exists('..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\zlib_native.redist.1.2.11\build\native\zlib_native.redist.targets'))" />
+    <Error Condition="!Exists('..\packages\zlib_native.1.2.11\build\native\zlib_native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\zlib_native.1.2.11\build\native\zlib_native.targets'))" />
+    <Error Condition="!Exists('..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets'))" />
+    <Error Condition="!Exists('..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets'))" />
+  </Target>
 </Project>

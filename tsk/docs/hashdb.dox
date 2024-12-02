@@ -4,7 +4,7 @@ This section describes some the API functions and concepts associated with the H
 
 \section hash_over Overview
 
-Hash databases are frequently used to identify known good and known bad files. Text files of MD5 and SHA-1 hashes can be easily created and shared, but they are frequently not the most efficient to use to use when searching for a hash because they are in an unsorted order. 
+Hash databases are frequently used to identify known good and known bad files. Text files of MD5 and SHA-1 hashes can be easily created and shared, but they are frequently not the most efficient to use when searching for a hash because they are in an unsorted order. 
 
 The hash database functions in TSK create an index into text file hash databases and allow you to more quickly perform lookups.  TSK  uses the index to perform binary searches for the hashes (see <a href="http://www.sleuthkit.org/informer/sleuthkit-informer-6.html">Informer #6</a>). 
 

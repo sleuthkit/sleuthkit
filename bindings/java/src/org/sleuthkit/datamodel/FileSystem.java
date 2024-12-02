@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  * 
  * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -19,6 +19,11 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Represents a file system object stored in tsk_fs_info table FileSystem has a
@@ -69,6 +74,10 @@ public class FileSystem extends AbstractContent {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		Content dataSource = getDataSource();
+		if (dataSource instanceof Image && ArrayUtils.isEmpty(((Image) dataSource).getPaths())) {
+			return 0;
+		}
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
 
@@ -91,16 +100,54 @@ public class FileSystem extends AbstractContent {
 			synchronized (this) {
 				if (filesystemHandle == 0) {
 					Content dataSource = getDataSource();
-					if ((dataSource != null) && (dataSource instanceof Image)) {
-						Image image = (Image) dataSource;
-						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset);
-					} else {
+					if ((dataSource == null) || ( !(dataSource instanceof Image))) {
 						throw new TskCoreException("Data Source of File System is not an image");
+					}
+
+					Image image = (Image) dataSource;
+
+					// Check if this file system is in a pool
+					if (isPoolContent()) {
+						Pool pool = getPool();
+						if (pool == null) {
+							throw new TskCoreException("Error finding pool for file system");
+						}
+
+						Volume poolVolume = getPoolVolume();
+						if (poolVolume == null) {
+							throw new TskCoreException("File system is in a pool but has no volume");
+						}
+						filesystemHandle = SleuthkitJNI.openFsPool(image.getImageHandle(), imgOffset, pool.getPoolHandle(), poolVolume.getStart(), getSleuthkitCase());
+					} else {
+						String password = getImagePasswordFromSettings(image.getAcquisitionToolSettings());
+						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, password, getSleuthkitCase());
 					}
 				}
 			}
 		}
 		return this.filesystemHandle;
+	}
+	
+	/**
+	 * Attempt to read the image password from the settings string 
+	 * 
+	 * @param settingsStr
+	 * 
+	 * @return the password if found, empty string otherwise
+	 */
+	private String getImagePasswordFromSettings(String settingsStr) {
+		
+		if(StringUtils.isBlank(settingsStr)){
+			return "";
+		}
+
+		try {
+			Map<String, Object> settingsMap = (new Gson()).fromJson(settingsStr, Map.class);
+			return (String)settingsMap.getOrDefault("imagePassword", "");
+		} catch (JsonSyntaxException ex) {
+			// There's no guarantee that acquisition settings will contain a valid JSON string
+			return "";
+		}
 	}
 
 	public Directory getRootDirectory() throws TskCoreException {
@@ -180,6 +227,7 @@ public class FileSystem extends AbstractContent {
 		return lastInum;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {

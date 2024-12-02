@@ -85,7 +85,7 @@ namespace Rejistry {
         VKRecord(RegistryByteBuffer * buf, uint32_t offset);
         VKRecord(const VKRecord &);
         virtual ~VKRecord() {}
-    
+
         /**
          * Does the record have a non-default name?
          * @returns true if the record has an explicit name, or false if the
@@ -149,7 +149,7 @@ namespace Rejistry {
         static const uint16_t DB_DATA_SIZE = 0x3FD8;
         static const uint32_t LARGE_DATA_SIZE = 0x80000000;
 
-        static const uint16_t MAX_NAME_LENGTH = 32767;
+        static const uint16_t MAX_NAME_LENGTH = 16383; //# of characters
 
         VKRecord();
         VKRecord& operator=(const VKRecord &);

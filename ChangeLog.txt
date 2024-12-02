@@ -8,5 +8,5 @@ For a specific release, try something like:
 
     svn log http://svn.sleuthkit.org/repos/sleuthkit/tags/sleuthkit-3.0.0
 
-and replace 3.0.0 with the version you are interested in. 
+and replace 3.0.0 with the version you are interested in.
 

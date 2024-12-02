@@ -50,27 +50,32 @@ tsk_fs_meta_alloc(size_t a_buf_len)
             return NULL;
         }
         fs_meta->content_len = a_buf_len;
+        fs_meta->reset_content = NULL;
     }
 
     // assign the id so we know the structure is still alloc
     fs_meta->tag = TSK_FS_META_TAG;
 
-    return (fs_meta);
+    return fs_meta;
 }
 
 
 /**
  * \internal
  * Resize an existing TSK_FS_META structure -- changes the number of
- * block pointers. 
+ * block pointers.
  *
  * @param fs_meta Structure to resize
  * @param a_buf_len Size of file system specific data that is used to store references to file content
- * @return NULL on error 
+ * @return NULL on error
  */
 TSK_FS_META *
 tsk_fs_meta_realloc(TSK_FS_META * a_fs_meta, size_t a_buf_len)
 {
+    if (a_fs_meta->reset_content != NULL) {
+        a_fs_meta->reset_content(a_fs_meta->content_ptr);
+    }
+
     if (a_fs_meta->content_len != a_buf_len) {
         a_fs_meta->content_len = a_buf_len;
         a_fs_meta->content_ptr =
@@ -79,7 +84,7 @@ tsk_fs_meta_realloc(TSK_FS_META * a_fs_meta, size_t a_buf_len)
             return NULL;
         }
     }
-    return (a_fs_meta);
+    return a_fs_meta;
 }
 
 
@@ -100,7 +105,14 @@ tsk_fs_meta_close(TSK_FS_META * fs_meta)
     // clear the tag so we know the structure isn't alloc
     fs_meta->tag = 0;
 
-    free(fs_meta->content_ptr);
+    if (fs_meta->content_ptr) {
+        if (fs_meta->reset_content) {
+            fs_meta->reset_content(fs_meta->content_ptr);
+        }
+
+        free((char *) fs_meta->content_ptr);
+    }
+
     fs_meta->content_ptr = NULL;
     fs_meta->content_len = 0;
 
@@ -134,6 +146,11 @@ tsk_fs_meta_reset(TSK_FS_META * a_fs_meta)
     TSK_FS_ATTRLIST *attr_tmp;
     TSK_FS_META_NAME_LIST *name2_tmp;
     char *link_tmp;
+
+    // Clear content
+    if (a_fs_meta->reset_content) {
+        a_fs_meta->reset_content(a_fs_meta->content_ptr);
+    }
 
     // backup pointers
     content_ptr_tmp = a_fs_meta->content_ptr;
@@ -176,7 +193,7 @@ tsk_fs_meta_reset(TSK_FS_META * a_fs_meta)
  * \ingroup fslib
  * Walk a range of metadata structures and call a callback for each
  * structure that matches the flags supplied.   For example, it can
- * call the callback on only allocated or unallocated entries. 
+ * call the callback on only allocated or unallocated entries.
  *
  * @param a_fs File system to process
  * @param a_start Metadata address to start walking from

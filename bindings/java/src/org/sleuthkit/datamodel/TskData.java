@@ -29,7 +29,7 @@ import java.util.Set;
  */
 public class TskData {
 
-	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private final static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * The type of the file system file, as reported in the name structure of
@@ -153,6 +153,7 @@ public class TskData {
 	 */
 	public enum TSK_FS_NAME_FLAG_ENUM {
 
+		UNKNOWN(0, bundle.getString("TskData.tskFsNameFlagEnum.unknown")), ///< Unknown
 		ALLOC(1, bundle.getString("TskData.tskFsNameFlagEnum.allocated")), ///< Name is in an allocated state
 		UNALLOC(2, bundle.getString("TskData.tskFsNameFlagEnum.unallocated"));    ///< Name is in an unallocated state
 
@@ -191,8 +192,8 @@ public class TskData {
 					return flag;
 				}
 			}
-			throw new IllegalArgumentException(
-					MessageFormat.format(bundle.getString("TskData.tskFsNameFlagEnum.exception.msg1.text"), dirFlag));
+
+			return TSK_FS_NAME_FLAG_ENUM.UNKNOWN;
 		}
 	}
 
@@ -203,6 +204,7 @@ public class TskData {
 	 */
 	public enum TSK_FS_META_FLAG_ENUM {
 
+		UNKNOWN(0, bundle.getString("TskData.tskFsMetaFlagEnum.unknown")), ///< Unknown
 		ALLOC(1, bundle.getString("TskData.tskFsMetaFlagEnum.allocated")), ///< Metadata structure is currently in an allocated state
 		UNALLOC(2, bundle.getString("TskData.tskFsMetaFlagEnum.unallocated")), ///< Metadata structure is currently in an unallocated state
 		USED(4, bundle.getString("TskData.tskFsMetaFlagEnum.used")), ///< Metadata structure has been allocated at least once
@@ -247,6 +249,11 @@ public class TskData {
 		public static Set<TSK_FS_META_FLAG_ENUM> valuesOf(short metaFlags) {
 			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
 
+			if (metaFlags == TSK_FS_META_FLAG_ENUM.UNKNOWN.getValue()) {
+				matchedFlags.add(TSK_FS_META_FLAG_ENUM.UNKNOWN);
+				return matchedFlags;
+			}
+
 			for (TSK_FS_META_FLAG_ENUM v : TSK_FS_META_FLAG_ENUM.values()) {
 				long flag = v.getValue();
 
@@ -265,7 +272,6 @@ public class TskData {
 			}
 			return val;
 		}
-
 	}
 
 	/**
@@ -433,7 +439,6 @@ public class TskData {
 	 * tsk_fs_info table.
 	 */
 	public enum TSK_FS_TYPE_ENUM {
-
 		TSK_FS_TYPE_DETECT(0x00000000, bundle.getString("TskData.tskFsTypeEnum.autoDetect")), ///< Use autodetection methods
 		TSK_FS_TYPE_NTFS(0x00000001, "NTFS"), ///< NTFS file system
 		TSK_FS_TYPE_NTFS_DETECT(0x00000001, bundle.getString("TskData.tskFsTypeEnum.NTFSautoDetect")), ///< NTFS auto detection
@@ -444,7 +449,7 @@ public class TskData {
 		TSK_FS_TYPE_FAT_DETECT(0x0000000e, bundle.getString("TskData.tskFsTypeEnum.FATautoDetect")), ///< FAT auto detection
 		TSK_FS_TYPE_FFS1(0x00000010, "UFS1"), ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
 		TSK_FS_TYPE_FFS1B(0x00000020, "UFS1b"), ///< UFS1b (Solaris - has no type)
-		TSK_FS_TYPE_FFS2(0x00000040, "UFS2"), ///< UFS2 - FreeBSD, NetBSD 
+		TSK_FS_TYPE_FFS2(0x00000040, "UFS2"), ///< UFS2 - FreeBSD, NetBSD
 		TSK_FS_TYPE_FFS_DETECT(0x00000070, "UFS"), ///< UFS auto detection
 		TSK_FS_TYPE_EXT2(0x00000080, "Ext2"), ///< Ext2 file system
 		TSK_FS_TYPE_EXT3(0x00000100, "Ext3"), ///< Ext3 file system
@@ -460,6 +465,11 @@ public class TskData {
 		TSK_FS_TYPE_EXT4(0x00002000, "Ext4"), ///< Ext4 file system
 		TSK_FS_TYPE_YAFFS2(0x00004000, "YAFFS2"), ///< YAFFS2 file system
 		TSK_FS_TYPE_YAFFS2_DETECT(0x00004000, bundle.getString("TskData.tskFsTypeEnum.YAFFS2autoDetect")), ///< YAFFS2 auto detection
+		TSK_FS_TYPE_APFS(0x00010000, "APFS"), ///< APFS file system
+		TSK_FS_TYPE_APFS_DETECT(0x00010000, bundle.getString("TskData.tskFsTypeEnum.APFSautoDetect")), ///< APFS auto detection
+                TSK_FS_TYPE_BTRFS(0x00040000,  "BTRFS"), ///< Btrfs file system
+                TSK_FS_TYPE_BTRFS_DETECT(0x00040000, "BTRFSAutoDetect"),   ///< Btrfs auto detection
+		TSK_FS_TYPE_LOGICAL(0x00020000, "Logical"),
 		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 
 		private int value;
@@ -478,10 +488,10 @@ public class TskData {
 		public int getValue() {
 			return value;
 		}
-		
+
 		/**
 		 * Get display name of the enum
-		 * 
+		 *
 		 * @return the displayName
 		 */
 		public String getDisplayName() {
@@ -524,6 +534,8 @@ public class TskData {
 		TSK_IMG_TYPE_EWF_EWF(64, "E01"), // Expert Witness format (encase) NON-NLS
 		TSK_IMG_TYPE_VMDK_VMDK(128, "VMDK"), // VMware Virtual Disk (VMDK) NON-NLS
 		TSK_IMG_TYPE_VHD_VHD(256, "VHD"), // Virtual Hard Disk (VHD) image format NON-NLS
+		TSK_IMG_TYPE_POOL_POOL(16384, "POOL"), // Pool (internal use) NON-NLS
+		TSK_IMG_TYPE_LOGICAL(32768, "Logical"),   /// Logical directory
 		TSK_IMG_TYPE_UNSUPP(65535, bundle.getString("TskData.tskImgTypeEnum.unknown"));   // Unsupported Image Type
 
 		private long imgType;
@@ -575,6 +587,8 @@ public class TskData {
 		TSK_VS_TYPE_SUN(0x0004, "SUN VTOC"), ///< Sun VTOC NON-NLS
 		TSK_VS_TYPE_MAC(0x0008, "Mac"), ///< Mac partition table NON-NLS
 		TSK_VS_TYPE_GPT(0x0010, "GPT"), ///< GPT partition table NON-NLS
+		TSK_VS_TYPE_APFS(0x0020, "APFS"), ///< APFS pool NON-NLS
+		TSK_VS_TYPE_LVM(0x0030, "LVM"), ///< LVM pool NON-NLS
 		TSK_VS_TYPE_DBFILLER(0x00F0, bundle.getString("TskData.tskVSTypeEnum.fake")), ///< fake partition table type for loaddb (for images that do not have a volume system)
 		TSK_VS_TYPE_UNSUPP(0xFFFF, bundle.getString("TskData.tskVSTypeEnum.unsupported"));    ///< Unsupported
 
@@ -621,18 +635,24 @@ public class TskData {
 	 */
 	public enum ObjectType {
 
-		IMG(0), ///< Disk Image - see tsk_image_info for more details
-		VS(1), ///< Volume System - see tsk_vs_info for more details
-		VOL(2), ///< Volume - see tsk_vs_parts for more details
-		FS(3), ///< File System - see tsk_fs_info for more details
-		ABSTRACTFILE(4), ///< File - see tsk_files for more details
-		ARTIFACT(5),	/// Artifact - see blackboard_artifacts for more details
-		REPORT(6)	///< Report - see reports for more details
-		; 
-		private short objectType;
+		IMG(0, bundle.getString("TskData.ObjectType.IMG.name")), ///< Disk Image - see tsk_image_info for more details
+		VS(1, bundle.getString("TskData.ObjectType.VS.name")), ///< Volume System - see tsk_vs_info for more details
+		VOL(2, bundle.getString("TskData.ObjectType.VOL.name")), ///< Volume - see tsk_vs_parts for more details
+		FS(3, bundle.getString("TskData.ObjectType.FS.name")), ///< File System - see tsk_fs_info for more details
+		ABSTRACTFILE(4, bundle.getString("TskData.ObjectType.AbstractFile.name")), ///< File - see tsk_files for more details
+		ARTIFACT(5, bundle.getString("TskData.ObjectType.Artifact.name")),	/// Artifact - see blackboard_artifacts for more details
+		REPORT(6, bundle.getString("TskData.ObjectType.Report.name")),	///< Report - see reports for more details
+		POOL(7, bundle.getString("TskData.ObjectType.Pool.name")),	///< Pool
+		OS_ACCOUNT(8, bundle.getString("TskData.ObjectType.OsAccount.name")), ///< OS Account - see tsk_os_accounts for more details
+		HOST_ADDRESS(9, bundle.getString("TskData.ObjectType.HostAddress.name")), ///< Host Address - see tsk_host_addresses for more details
+		UNSUPPORTED(-1, bundle.getString("TskData.ObjectType.Unsupported.name")) ///< Unsupported type
+		;
+		private final short objectType;
+		private final String displayName;
 
-		private ObjectType(int objectType) {
+		private ObjectType(int objectType, String displayName) {
 			this.objectType = (short) objectType;
+			this.displayName = displayName;
 		}
 
 		/**
@@ -642,6 +662,11 @@ public class TskData {
 		 */
 		public short getObjectType() {
 			return objectType;
+		}
+
+		@Override
+		public String toString() {
+			return displayName;
 		}
 
 		/**
@@ -657,8 +682,7 @@ public class TskData {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException(
-					MessageFormat.format(bundle.getString("TskData.objectTypeEnum.exception.msg1.text"), objectType));
+			return UNSUPPORTED;
 		}
 	}
 
@@ -668,15 +692,16 @@ public class TskData {
 	 */
 	public enum TSK_DB_FILES_TYPE_ENUM {
 
-		FS(0, "File System"), ///< File that can be found in file system tree. 
-		CARVED(1, "Carved"), ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range. 
+		FS(0, "File System"), ///< File that can be found in file system tree.
+		CARVED(1, "Carved"), ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range.
 		DERIVED(2, "Derived"), ///< File derived from a parent file (i.e. from ZIP)
 		LOCAL(3, "Local"), ///< Local file that was added (not from a disk image)
-		UNALLOC_BLOCKS(4, "Unallocated Blocks"), ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
-		UNUSED_BLOCKS(5, "Unused Blocks"), ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
+		UNALLOC_BLOCKS(4, "Unallocated Blocks"), ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout.
+		UNUSED_BLOCKS(5, "Unused Blocks"), ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout.
 		VIRTUAL_DIR(6, "Virtual Directory"), ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
 		SLACK(7, "Slack"), ///< Slack space for a single file
 		LOCAL_DIR(8, "Local Directory"), ///< Local directory that was added (not from a disk image)
+		LAYOUT_FILE(9, "Layout File"), ///< Set of blocks from an image that have been designated as a file
 		;
 
 		private final short fileType;
@@ -719,14 +744,64 @@ public class TskData {
 	}
 
 	/**
+	 * The type of pool in a database.
+	 * This is the pool_type field in the tsk_pool_info table.
+	 */
+	public enum TSK_POOL_TYPE_ENUM {
+		TSK_POOL_TYPE_DETECT(0, "Auto detect"), ///< Use autodetection methods
+		TSK_POOL_TYPE_APFS(1, "APFS Pool"), ///< APFS Pooled Volumes
+		TSK_POOL_TYPE_LVM(2, "LVM Pool"), ///< LVM Pooled Volumes
+		TSK_POOL_TYPE_UNSUPP(0xffff, "Unsupported") ///< Unsupported pool container type
+		;
+
+		private final short poolType;
+		private final String name;
+
+		TSK_POOL_TYPE_ENUM(int poolType, String name) {
+			this.poolType = (short) poolType;
+			this.name = name;
+		}
+
+		/**
+		 * Convert db pool type short value to the enum type
+		 *
+		 * @param poolType long value to convert
+		 *
+		 * @return the enum type
+		 */
+		public static TSK_POOL_TYPE_ENUM valueOf(long poolType) {
+			for (TSK_POOL_TYPE_ENUM type : TSK_POOL_TYPE_ENUM.values()) {
+				if (type.poolType == poolType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tskDbFilesTypeEnum.exception.msg1.text"), poolType)); // TODO
+		}
+
+		/**
+		 * Get short value of the file type
+		 *
+		 * @return the long value of the file type
+		 */
+		public short getValue() {
+			return poolType;
+		}
+
+		public String getName() {
+			return name;
+		}
+	}
+
+	/**
 	 * Identifies if a file was in a hash database or not. This is the known
 	 * column in the tsk_files table.
 	 */
 	public enum FileKnown {
 
 		UNKNOWN(0, bundle.getString("TskData.fileKnown.unknown")), ///< File marked as unknown by hash db
-		KNOWN(1, bundle.getString("TskData.fileKnown.known")), ///< File marked as a known by hash db
-		BAD(2, bundle.getString("TskData.fileKnown.knownBad")); ///< File marked as known and bad/notable/interesting by hash db
+		KNOWN(1, bundle.getString("TskData.fileKnown.known")), ///< File marked as a type by hash db
+		BAD(2, bundle.getString("TskData.fileKnown.knownBad")); ///< File marked as bad by hash db
 
 		private byte known;
 		private String name;
@@ -768,6 +843,107 @@ public class TskData {
 	}
 
 	/**
+	 * Identifies tag type. This is the knownStatus column in the tag_names
+	 * table.
+	 */
+	public enum TagType {
+
+		UNKNOWN(0, bundle.getString("TskData.tagType.unknown")), // does not change score
+		KNOWN(1, bundle.getString("TskData.tagType.known")), // does not change score
+		BAD(2, bundle.getString("TskData.tagType.knownBad")), // changes score to "notable"
+		SUSPICIOUS(3, bundle.getString("TskData.tagType.suspicious")); // changes score to "likely notable"
+
+		private byte type;
+		private String name;
+
+		private TagType(int type, String name) {
+			this.type = (byte) type;
+			this.name = name;
+		}
+
+		/**
+		 * This method is used only to support deprecated APIs. It should not be
+		 * used otherwise. FileKnown used to be used for tag types. Converts
+		 * TagType to a corresponding FileKnown value.
+		 *
+		 * @param tagType to convert
+		 *
+		 * @return the enum FileKnown
+		 */
+		public static FileKnown convertTagTypeToFileKnown(TagType tagType) {
+			switch (tagType) {
+				case BAD:
+					return FileKnown.BAD;
+				case KNOWN:
+					return FileKnown.KNOWN;
+				case UNKNOWN:
+				case SUSPICIOUS:
+					return FileKnown.UNKNOWN; // supporting legacy behavior
+			}
+
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tagType.exception.msg1.text"), tagType));
+		}
+
+		/**
+		 * This method is used only to support deprecated APIs. It should not be
+		 * used otherwise. FileKnown used to be used for tag types. Converts
+		 * FileKnown to a corresponding TagType value.
+		 *
+		 * @param fileKnown to convert
+		 *
+		 * @return the enum TagType
+		 */
+		public static TagType convertFileKnownToTagType(FileKnown fileKnown) {
+			switch (fileKnown) {
+				case BAD:
+					return TagType.BAD;
+				case KNOWN:
+					return TagType.KNOWN;
+				case UNKNOWN:
+					// Autopsy should use TagType.SUSPICIOUS instead of TagType.UNKNOWN.
+					// Tagging something as SUSPICIOUS will cause the underlying TSK score
+					// to be chnaged to SCORE_LIKELY_NOTABLE, whereas UNKNOWN
+					// does not change the underlying TSK score.
+					return TagType.SUSPICIOUS;
+			}
+
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.fileKnown.exception.msg1.text"), fileKnown));
+		}
+
+		/**
+		 * Convert tag type byte value to the enum type
+		 *
+		 * @param type long value to convert
+		 *
+		 * @return the enum type
+		 */
+		public static TagType valueOf(byte type) {
+			for (TagType v : TagType.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.tagType.exception.msg1.text"), type));
+		}
+
+		public String getName() {
+			return this.name;
+		}
+
+		/**
+		 * Get byte value of the tag type status
+		 *
+		 * @return the long value of the tag type status
+		 */
+		public byte getTagTypeValue() {
+			return this.type;
+		}
+	}
+
+	/**
 	 * DbType is the enum covering database type. It tells you what underlying
 	 * database you can use in Autopsy and TSK.
 	 */
@@ -790,7 +966,7 @@ public class TskData {
 			return this.value;
 		}
 	}
-	
+
 	/**
 	 * Encoding type records whether locally stored files have been encoded
 	 * or not, and the method used to do so. This is the encoding_type column
@@ -802,17 +978,17 @@ public class TskData {
 		// Update EncodedFileUtil.java to handle any new types
 		NONE(0),
 		XOR1(1);
-		
+
 		private final int type;
-		
+
 		private EncodingType(int type){
 			this.type = type;
 		}
-		
+
 		public int getType(){
 			return type;
 		}
-		
+
 		public static EncodingType valueOf(int type) {
 			for (EncodingType v : EncodingType.values()) {
 				if (v.type == type) {
@@ -823,4 +999,77 @@ public class TskData {
 					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
 		}
 	}
+
+	/**
+	 * CollectedStatus stores where the data for a file can be found or the
+     * reason no data for the file exists.
+	 */
+	public enum CollectedStatus{
+
+		UNKNOWN(0),
+		NO_SAVE_ERROR(1),
+		NO_EMPTY_FILE(2),
+		NO_NOT_FOUND(3),
+		NO_UNRESOLVED(4),
+		NO_READ_ERROR(5),
+		NO_READ_ERROR_PARTIAL(6),
+		NO_NOT_ATTEMPTED(7),
+		NO_NOT_REGULAR_FILE(8),
+		NO_FILE_TOO_LARGE(9),
+		NO_ONLY_HASH_COLLECTED(10),
+		NO_UNSUPPORTED_COMPRESSION(11),
+		YES_TSK(12),
+		YES_REPO(13);
+
+		private final int type;
+
+		private CollectedStatus(int type){
+			this.type = type;
+		}
+
+		public int getType(){
+			return type;
+		}
+
+		public static CollectedStatus valueOf(int type) {
+			for (CollectedStatus v : CollectedStatus.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.collectedStatus.exception.msg1.text"), type));
+		}
+	}
+
+    /**
+	 * Type of keyword search query
+	 **/
+    public enum KeywordSearchQueryType {
+        LITERAL(0),
+		SUBSTRING(1),
+		REGEX(2);
+
+		private final int type;
+
+		private KeywordSearchQueryType(int type){
+			this.type = type;
+		}
+
+		public int getType(){
+			return type;
+		}
+
+		public static KeywordSearchQueryType valueOf(int type) {
+			for (KeywordSearchQueryType v : KeywordSearchQueryType.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.keywordSearchQueryType.exception.msg1.text"), type));
+		}
+    };
+
+
 }

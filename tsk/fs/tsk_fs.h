@@ -49,6 +49,7 @@ extern "C" {
 
     typedef struct TSK_FS_INFO TSK_FS_INFO;
     typedef struct TSK_FS_FILE TSK_FS_FILE;
+    typedef struct _TSK_POOL_INFO TSK_POOL_INFO;
 
 
 
@@ -147,7 +148,8 @@ extern "C" {
     typedef enum {
         TSK_FS_ATTR_RUN_FLAG_NONE = 0x00,       ///< No Flag
         TSK_FS_ATTR_RUN_FLAG_FILLER = 0x01,     ///< Entry is a filler for a run that has not been seen yet in the processing (or has been lost)
-        TSK_FS_ATTR_RUN_FLAG_SPARSE = 0x02      ///< Entry is a sparse run where all data in the run is zeros
+        TSK_FS_ATTR_RUN_FLAG_SPARSE = 0x02,     ///< Entry is a sparse run where all data in the run is zeros
+        TSK_FS_ATTR_RUN_FLAG_ENCRYPTED = 0x04   ///< Entry is arun where the data is encrypted
     } TSK_FS_ATTR_RUN_FLAG_ENUM;
 
 
@@ -164,8 +166,11 @@ extern "C" {
         TSK_DADDR_T offset;     ///< Offset (in blocks) of this run in the file
         TSK_DADDR_T addr;       ///< Starting block address (in file system) of run
         TSK_DADDR_T len;        ///< Number of blocks in run (0 when entry is not in use)
+        TSK_DADDR_T crypto_id;  ///< Starting block number used for XTS encryption IV
         TSK_FS_ATTR_RUN_FLAG_ENUM flags;        ///< Flags for run
     };
+
+    extern void tsk_fs_attr_run_free(TSK_FS_ATTR_RUN *);
 
     /**
     * Flags used for the TSK_FS_ATTR structure, which is used to
@@ -239,6 +244,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
         TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
         TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002,  //  Extents for Ext4 file system
+        TSK_FS_ATTR_TYPE_UNIX_XATTR = 0x1003,   //  Extended Attributes for Btrfs file system
 
         // Types for HFS+ File Attributes
         TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
@@ -246,6 +252,12 @@ extern "C" {
         TSK_FS_ATTR_TYPE_HFS_RSRC = 0x1101,     // 4353 Resource fork of regular files
         TSK_FS_ATTR_TYPE_HFS_EXT_ATTR = 0x1102, // 4354 Extended Attributes, except compression records
         TSK_FS_ATTR_TYPE_HFS_COMP_REC = 0x1103, // 4355 Compression records
+
+        // Types for APFS File Attributes (alias to HFS+)
+        TSK_FS_ATTR_TYPE_APFS_DATA = TSK_FS_ATTR_TYPE_HFS_DATA,
+        TSK_FS_ATTR_TYPE_APFS_RSRC = TSK_FS_ATTR_TYPE_HFS_RSRC,
+        TSK_FS_ATTR_TYPE_APFS_EXT_ATTR = TSK_FS_ATTR_TYPE_HFS_EXT_ATTR,
+        TSK_FS_ATTR_TYPE_APFS_COMP_REC = TSK_FS_ATTR_TYPE_HFS_COMP_REC,
     } TSK_FS_ATTR_TYPE_ENUM;
 
 #define TSK_FS_ATTR_ID_DEFAULT  0       ///< Default Data ID used if file system does not assign one.
@@ -401,7 +413,7 @@ extern "C" {
     extern char tsk_fs_meta_type_str[TSK_FS_META_TYPE_STR_MAX][2];
 
 #define TSK_FS_IS_DIR_META(x) ((x == TSK_FS_META_TYPE_DIR) || (x == TSK_FS_META_TYPE_VIRT_DIR))
-    
+
     enum TSK_FS_META_MODE_ENUM {
         /* The following describe the file permissions */
         TSK_FS_META_MODE_UNSPECIFIED = 0000000,       ///< unspecified
@@ -427,9 +439,10 @@ extern "C" {
     typedef enum TSK_FS_META_CONTENT_TYPE_ENUM {
         TSK_FS_META_CONTENT_TYPE_DEFAULT = 0x0,
         TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1,     ///< Ext4 with extents instead of individual pointers
-        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM = 0x02,
-        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS = 0x03,
-        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_BTREE = 0x04
+        TSK_FS_META_CONTENT_TYPE_EXT4_INLINE = 0x02      ///< Ext4 with inline data
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM = 0x03,
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS = 0x04,
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_BTREE = 0x05
     } TSK_FS_META_CONTENT_TYPE_ENUM;
 
 
@@ -454,6 +467,7 @@ extern "C" {
         TSK_FS_META_MODE_ENUM mode;     ///< Unix-style permissions
         int nlink;              ///< link count (number of file names pointing to this)
         TSK_OFF_T size;         ///< file size (in bytes)
+        TSK_OFF_T start_of_inode;	///< address within file system where inode structure begins
         TSK_UID_T uid;          ///< owner id
         TSK_GID_T gid;          ///< group id
 
@@ -493,7 +507,7 @@ extern "C" {
         void *content_ptr;      ///< Pointer to file system specific data that is used to store references to file content
         size_t content_len;     ///< size of content  buffer
         TSK_FS_META_CONTENT_TYPE_ENUM content_type;     ///< File system-specific and describes type of data in content_ptr in case file systems have multiple ways of storing things.
-
+        void (*reset_content)(void *); ///< \internal Optional callback used for any internal cleanup needed before freeing content_ptr
         uint32_t seq;           ///< Sequence number for file (NTFS only, is incremented when entry is reallocated)
 
         /** Contains run data on the file content (specific locations where content is stored).
@@ -602,6 +616,7 @@ extern "C" {
         uint32_t meta_seq;      ///< Sequence number for metadata structure (NTFS only)
         TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory).
         uint32_t par_seq;       ///< Sequence number for parent directory (NTFS only)
+        uint64_t date_added;    ///< Time entry was added to a directory (APFS only)
 
         TSK_FS_NAME_TYPE_ENUM type;     ///< File type information (directory, file, etc.)
         TSK_FS_NAME_FLAG_ENUM flags;    ///< Flags that describe allocation status etc.
@@ -771,7 +786,15 @@ extern "C" {
 
     /**
     * Values for the file system type.  Each bit corresponds to a file
-    * system.
+    * system. The "[fs]_DETECT" value (such as TSK_FS_TYPE_NTSF_DETECT) is
+    * the OR of all of the subtypes that
+    * it could detect.  If there is only one type of that file system,
+    * the [fs]_DETECT value will be the same as the type.
+    *
+    * The _DETECT values should not be stored in TSK_FS_INFO.  Once
+    * tsk_fs_open() has detected the type, it should assign the specific
+    * version in TSK_FS_INFO.
+    *
     */
     enum TSK_FS_TYPE_ENUM {
         TSK_FS_TYPE_DETECT = 0x00000000,        ///< Use autodetection methods
@@ -795,13 +818,19 @@ extern "C" {
         TSK_FS_TYPE_RAW_DETECT = 0x00000400,    ///< RAW auto detection
         TSK_FS_TYPE_ISO9660 = 0x00000800,       ///< ISO9660 file system
         TSK_FS_TYPE_ISO9660_DETECT = 0x00000800,        ///< ISO9660 auto detection
-        TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS file system
-        TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< HFS auto detection
+        TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS+/HFSX file system
+        TSK_FS_TYPE_HFS_DETECT = 0x00009000,    ///< HFS auto detection
         TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext4 file system
         TSK_FS_TYPE_YAFFS2 = 0x00004000,        ///< YAFFS2 file system
         TSK_FS_TYPE_YAFFS2_DETECT = 0x00004000, ///< YAFFS2 auto detection
-        TSK_FS_TYPE_XFS = 0x00008000,           ///< XFS file system
-        TSK_FS_TYPE_XFS_DETECT = 0x00008000,    ///< XFS auto detection
+        TSK_FS_TYPE_HFS_LEGACY= 0x00008000,   ///< HFS file system
+        TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
+        TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
+        TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+        TSK_FS_TYPE_BTRFS = 0x00040000,        ///< Btrfs file system
+        TSK_FS_TYPE_BTRFS_DETECT = TSK_FS_TYPE_BTRFS, ///< Btrfs auto detection
+        TSK_FS_TYPE_XFS = 0x00080000,           ///< XFS file system
+        TSK_FS_TYPE_XFS_DETECT = 0x00080000,    ///< XFS auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
@@ -870,6 +899,16 @@ extern "C" {
     * is for a YAFFS2 file system. */
 #define TSK_FS_TYPE_ISXFS(ftype) \
     (((ftype) & TSK_FS_TYPE_XFS_DETECT)?1:0)
+    
+#define TSK_FS_TYPE_ISAPFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
+
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
+    * is for a Btrfs file system. */
+#define TSK_FS_TYPE_ISBTRFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_BTRFS_DETECT)?1:0)
 
     /**
     * \ingroup fslib
@@ -878,6 +917,20 @@ extern "C" {
 #define TSK_FS_TYPE_ISRAW(ftype) \
     (((ftype) & TSK_FS_TYPE_RAW_DETECT)?1:0)
 
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
+    * is for an APFS "file system". */
+#define TSK_FS_TYPE_ISAPFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
+
+	/**
+	* \ingroup fslib
+	* Macro that takes a file system type and returns 1 if the type
+	* is for a logical directory "file system". */
+#define TSK_FS_TYPE_ISDIR(ftype) \
+	(((ftype) & TSK_FS_TYPE_LOGICAL)?1:0)
+
 
     /**
     * Flags for the FS_INFO structure
@@ -885,7 +938,8 @@ extern "C" {
     enum TSK_FS_INFO_FLAG_ENUM {
         TSK_FS_INFO_FLAG_NONE = 0x00,   ///< No Flags
         TSK_FS_INFO_FLAG_HAVE_SEQ = 0x01,       ///< File system has sequence numbers in the inode addresses.
-        TSK_FS_INFO_FLAG_HAVE_NANOSEC = 0x02    ///< Nano second field in times will be set.
+        TSK_FS_INFO_FLAG_HAVE_NANOSEC = 0x02,    ///< Nano second field in times will be set.
+        TSK_FS_INFO_FLAG_ENCRYPTED = 0x04 ///< File system is encrypted
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
 
@@ -894,6 +948,13 @@ extern "C" {
         TSK_FS_ISTAT_RUNLIST = 0x01
     };
     typedef enum TSK_FS_ISTAT_FLAG_ENUM TSK_FS_ISTAT_FLAG_ENUM;
+
+    // Not used by APFS
+    enum TSK_FS_ENCRYPTION_TYPE_ENUM {
+        TSK_FS_ENCRYPTION_TYPE_NONE = 0x00,
+        TSK_FS_ENCRYPTION_TYPE_BITLOCKER = 0x01
+    };
+    typedef enum TSK_FS_ENCRYPTION_TYPE_ENUM TSK_FS_ENCRYPTION_TYPE_ENUM;
 
 #define TSK_FS_INFO_TAG  0x10101010
 #define TSK_FS_INFO_FS_ID_LEN   32      // set based on largest file system / volume ID supported
@@ -909,8 +970,11 @@ extern "C" {
     */
     struct TSK_FS_INFO {
         int tag;                ///< \internal Will be set to TSK_FS_INFO_TAG if structure is still allocated, 0 if not
-        TSK_IMG_INFO *img_info; ///< Pointer to the image layer state
-        TSK_OFF_T offset;       ///< Byte offset into img_info that fs starts
+
+        struct {
+            TSK_IMG_INFO *img_info; ///< Pointer to the image layer state
+            TSK_OFF_T offset;       ///< Byte offset into img_info that fs starts
+        };
 
         /* meta data */
         TSK_INUM_T inum_count;  ///< Number of metadata addresses
@@ -938,7 +1002,7 @@ extern "C" {
 
         TSK_FS_TYPE_ENUM ftype; ///< type of file system
         const char *duname;     ///< string "name" of data unit type
-        TSK_FS_INFO_FLAG_ENUM flags;    ///< flags for file system
+        TSK_FS_INFO_FLAG_ENUM flags;         ///< flags for file system
         uint8_t fs_id[TSK_FS_INFO_FS_ID_LEN];   ///< File system id (as reported in boot sector)
         size_t fs_id_used;      ///< Number of bytes in fs_id that are being used
 
@@ -952,6 +1016,10 @@ extern "C" {
                                         * after looking for orphans
                                         * or afer a full name_walk is performed.
                                         * (r/w shared - lock) */
+
+        /* Hold encryption type and data structure */
+        TSK_FS_ENCRYPTION_TYPE_ENUM encryption_type;
+        void* encryption_data;
 
         /* orphan_hunt_lock protects orphan_dir */
         tsk_lock_t orphan_dir_lock;     // taken for the duration of orphan hunting (not just when updating orphan_dir)
@@ -969,6 +1037,8 @@ extern "C" {
 
          uint8_t(*load_attrs) (TSK_FS_FILE *);  ///< \internal
 
+         uint8_t(*decrypt_block)(TSK_FS_INFO * fs, TSK_DADDR_T start, void * data); ///< \internal
+
 
         /**
         * Pointer to file system specific function that prints details on a specific file to a file handle.
@@ -984,7 +1054,7 @@ extern "C" {
          uint8_t(*istat) (TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
             TSK_DADDR_T numblock, int32_t sec_skew);
 
-         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead.
+         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode, int recursion_depth);  ///< \internal Call tsk_fs_dir_open_meta() instead.
 
          uint8_t(*jopen) (TSK_FS_INFO *, TSK_INUM_T);   ///< \internal
 
@@ -1001,6 +1071,8 @@ extern "C" {
         void (*close) (TSK_FS_INFO * fs);       ///< FS-specific function: Call tsk_fs_close() instead.
 
          uint8_t(*fread_owner_sid) (TSK_FS_FILE *, char **);    // FS-specific function. Call tsk_fs_file_get_owner_sid() instead.
+
+         void * impl; ///< \internal pointer to specific implementation
     };
 
 
@@ -1009,6 +1081,14 @@ extern "C" {
         TSK_FS_TYPE_ENUM);
     extern TSK_FS_INFO *tsk_fs_open_vol(const TSK_VS_PART_INFO *,
         TSK_FS_TYPE_ENUM);
+    extern TSK_FS_INFO *tsk_fs_open_pool(const TSK_POOL_INFO *,
+        TSK_DADDR_T, TSK_FS_TYPE_ENUM);
+    extern TSK_FS_INFO *tsk_fs_open_img_decrypt(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char * password);
+    extern TSK_FS_INFO *tsk_fs_open_vol_decrypt(const TSK_VS_PART_INFO *,
+        TSK_FS_TYPE_ENUM, const char * password);
+    extern TSK_FS_INFO *tsk_fs_open_pool_decrypt(const TSK_POOL_INFO *,
+        TSK_DADDR_T, TSK_FS_TYPE_ENUM, const char * password);
     extern void tsk_fs_close(TSK_FS_INFO *);
 
     extern TSK_FS_TYPE_ENUM tsk_fs_type_toid_utf8(const char *);
@@ -1016,11 +1096,16 @@ extern "C" {
     extern void tsk_fs_type_print(FILE *);
     extern const char *tsk_fs_type_toname(TSK_FS_TYPE_ENUM);
     extern TSK_FS_TYPE_ENUM tsk_fs_type_supported();
+    extern void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, size_t a_descLen);
 
     extern ssize_t tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off,
         char *a_buf, size_t a_len);
+    extern ssize_t tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off,
+        char *a_buf, size_t a_len, TSK_DADDR_T crypto_id);
     extern ssize_t tsk_fs_read_block(TSK_FS_INFO * a_fs,
         TSK_DADDR_T a_addr, char *a_buf, size_t a_len);
+    extern ssize_t tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs,
+        TSK_DADDR_T a_addr, char *a_buf, size_t a_len, TSK_DADDR_T crypto_id);
 
     //@}
 
@@ -2140,7 +2225,7 @@ class TskFsInfo {
         if (m_fsInfo != NULL)
             return m_fsInfo->flags;
         else
-            return (TSK_FS_INFO_FLAG_ENUM) 0;
+            return (TSK_FS_INFO_FLAG_ENUM)0;
     };
     /**
         * return file system id (as reported in boot sector).  Use getFsIdLen() to determine how many byts in buffer are used.

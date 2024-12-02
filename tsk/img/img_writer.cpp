@@ -70,7 +70,7 @@ static TSK_RETVAL_ENUM seekToOffset(TSK_IMG_WRITER * writer, TSK_OFF_T offset) {
         int lastError = (int)GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-        tsk_error_set_errstr("img_writer::seekToOffset: offset %" PRIuOFF " seek - %d",
+        tsk_error_set_errstr("img_writer::seekToOffset: offset %" PRIdOFF " seek - %d",
             offset,
             lastError);
         return TSK_ERR;
@@ -93,7 +93,7 @@ static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
         int lastError = (int)GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-        tsk_error_set_errstr("img_writer::seekAhead: offset %" PRIuOFF " seek - %d",
+        tsk_error_set_errstr("img_writer::seekAhead: offset %" PRIdOFF " seek - %d",
             dist,
             lastError);
         return TSK_ERR;
@@ -102,7 +102,7 @@ static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
 }
 
 /*
- * Use the sector bitmap to determine whether we're done writing data to a given block 
+ * Use the sector bitmap to determine whether we're done writing data to a given block
  */
 static void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
 
@@ -130,7 +130,7 @@ static void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
 }
 
 /*
- * Add a buffer of data to a previously started block in the VHD 
+ * Add a buffer of data to a previously started block in the VHD
  */
 static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer,
     size_t len, TSK_OFF_T blockNum) {
@@ -156,14 +156,14 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
             }
         }
         else {
-            
+
             DWORD bytesWritten;
-            if (FALSE == WriteFile(writer->outputFileHandle, &(buffer[inputOffset]), VHD_SECTOR_SIZE, 
+            if (FALSE == WriteFile(writer->outputFileHandle, &(buffer[inputOffset]), VHD_SECTOR_SIZE,
                     &bytesWritten, NULL)) {
                 int lastError = GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-                tsk_error_set_errstr("addToExistingBlock: error writing sector",
+                tsk_error_set_errstr("addToExistingBlock: error writing sector: %d",
                     lastError);
                 return TSK_ERR;
             }
@@ -175,14 +175,14 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     if (TSK_OK != seekToOffset(writer, VHD_SECTOR_SIZE * TSK_OFF_T(writer->blockToSectorNumber[blockNum]))) {
         return TSK_ERR;
     }
-    
+
     DWORD bytesWritten;
-    if (FALSE == WriteFile(writer->outputFileHandle, writer->blockToSectorBitmap[blockNum], 
+    if (FALSE == WriteFile(writer->outputFileHandle, writer->blockToSectorBitmap[blockNum],
             writer->sectorBitmapArrayLength, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("addToExistingBlock: error writing sector",
+        tsk_error_set_errstr("addToExistingBlock: error writing sector: %d",
             lastError);
         return TSK_ERR;
     }
@@ -190,10 +190,32 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     return TSK_OK;
 }
 
-/* 
+/*
+ * Write the footer at the position.
+ * Call this method when WriteFile failed and you want to output the footer at position for a valid VHD.
+ */
+static TSK_RETVAL_ENUM writeFooterAtPosition(TSK_IMG_WRITER* writer, TSK_OFF_T position) {
+    if (TSK_OK == seekToOffset(writer, position)) {
+        return writeFooter(writer); // write footer at lastPosition prior to WriteFile error
+    }
+    else {
+        int lastError = GetLastError();
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
+        tsk_error_set_errstr("addNewBlock: error seekToOffset: %d",
+            lastError);
+        return TSK_ERR;
+    }
+}
+
+/*
  * Add a new block to the VHD and copy in the buffer
  */
 static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len, TSK_OFF_T blockNum) {
+
+    if (writer->hadErrorExtending) {
+        return TSK_OK; // pretend we are OK, NOOP
+    }
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "addNewBlock: Adding new block 0x%x\n", blockNum);
@@ -206,8 +228,22 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
     writer->blockToSectorNumber[blockNum] = uint32_t(writer->nextDataOffset / VHD_SECTOR_SIZE);
 
     char * fullBuffer = (char *)tsk_malloc(writer->blockSize * sizeof(char));
+    if (fullBuffer == NULL) {
+        return TSK_ERR;
+    }
+
     char * sectorBitmap = (char *)tsk_malloc(writer->sectorBitmapLength * sizeof(char));
+    if (sectorBitmap == NULL) {
+        free(fullBuffer);
+        return TSK_ERR;
+    }
+
     unsigned char * completedSectors = (unsigned char *)tsk_malloc(((writer->sectorBitmapArrayLength) * sizeof(char)));
+    if (completedSectors == NULL) {
+        free(fullBuffer);
+        free(sectorBitmap);
+        return TSK_ERR;
+    }
 
     /* Create the full new block and record the sectors written */
     TSK_OFF_T startingOffset = addr % writer->blockSize;
@@ -234,6 +270,8 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
 
     /* Write the new offset to the BAT */
     if (TSK_OK != seekToOffset(writer, writer->batOffset + 4 * blockNum)) {
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
     DWORD bytesWritten;
@@ -241,29 +279,47 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
         int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("addNewBlock: error writing BAT entry",
+        tsk_error_set_errstr("addNewBlock: error writing BAT entry: %d",
             lastError);
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
 
     /* Write the sector bitmap and the data */
     if (TSK_OK != seekToOffset(writer, writer->nextDataOffset)) {
+        free(fullBuffer);
+        free(sectorBitmap);
         return TSK_ERR;
     }
+
+    TSK_OFF_T lastFooterPosition = writer->nextDataOffset;
+
     if (FALSE == WriteFile(writer->outputFileHandle, sectorBitmap, writer->sectorBitmapLength, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("addNewBlock: error writing sector bitmap",
+        tsk_error_set_errstr("addNewBlock: error writing sector bitmap: %d",
             lastError);
+        free(fullBuffer);
+        free(sectorBitmap);
+
+        writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
+        writer->hadErrorExtending = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
+
     if (FALSE == WriteFile(writer->outputFileHandle, fullBuffer, writer->blockSize, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("addNewBlock: error writing block data",
+        tsk_error_set_errstr("addNewBlock: error writing block data: %d",
             lastError);
+        free(fullBuffer);
+        free(sectorBitmap);
+
+        writeFooterAtPosition(writer, lastFooterPosition); // so VHD is valid
+        writer->hadErrorExtending = 1; // WriteFile returns error, don't write anymore
         return TSK_ERR;
     }
 
@@ -280,9 +336,10 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
 }
 
 /*
- * Add a buffer that fits in a single block of the VHD 
+ * Add a buffer that fits in a single block of the VHD
  */
 static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
+    TSK_RETVAL_ENUM result;
     TSK_OFF_T blockNum = addr / writer->blockSize;
 
     if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_FINISHED){
@@ -290,10 +347,14 @@ static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *bu
     }
 
     if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_ALLOC) {
-        addToExistingBlock(writer, addr, buffer, len, blockNum);
+        result = addToExistingBlock(writer, addr, buffer, len, blockNum);
     }
     else {
-        addNewBlock(writer, addr, buffer, len, blockNum);
+        result = addNewBlock(writer, addr, buffer, len, blockNum);
+    }
+
+    if (result != TSK_OK) {
+        return result;
     }
 
     /* Check whether the block is now done */
@@ -334,7 +395,7 @@ static uint32_t generateChecksum(unsigned char * buffer, int len) {
         sum += buffer[i];
     }
 
-    return (~sum);
+    return ~sum;
 }
 
 /*
@@ -345,6 +406,9 @@ static uint32_t generateChecksum(unsigned char * buffer, int len) {
 static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
     if (writer->footer == NULL) {
         writer->footer = (unsigned char *)tsk_malloc(VHD_FOOTER_LENGTH * sizeof(unsigned char));
+        if (writer->footer == NULL) {
+            return TSK_ERR;
+        }
 
         /* First calculate geometry values */
         uint32_t cylinders;
@@ -407,10 +471,10 @@ static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
 
     DWORD bytesWritten;
     if (FALSE == WriteFile(writer->outputFileHandle, writer->footer, VHD_FOOTER_LENGTH, &bytesWritten, NULL)) {
-        int lastError = GetLastError();
+        const int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("writeFooter: error writing VHD footer",
+        tsk_error_set_errstr("writeFooter: error writing VHD footer: %d",
             lastError);
         return TSK_ERR;
     }
@@ -421,7 +485,10 @@ static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
 * Write the dynamic disk header to the file
 */
 static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
-    unsigned char * diskHeader = (unsigned char *)malloc(VHD_DISK_HEADER_LENGTH * sizeof(unsigned char));
+    unsigned char * diskHeader = (unsigned char *)tsk_malloc(VHD_DISK_HEADER_LENGTH * sizeof(unsigned char));
+    if (diskHeader == NULL) {
+        return TSK_ERR;
+    }
     for (int i = 0; i < VHD_DISK_HEADER_LENGTH; i++) {
         diskHeader[i] = 0;
     }
@@ -437,13 +504,15 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
 
     DWORD bytesWritten;
     if (FALSE == WriteFile(writer->outputFileHandle, diskHeader, VHD_DISK_HEADER_LENGTH, &bytesWritten, NULL)) {
-        int lastError = GetLastError();
+        const int lastError = GetLastError();
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("writeFooter: error writing VHD header",
+        tsk_error_set_errstr("writeFooter: error writing VHD header: %d",
             lastError);
+        free(diskHeader);
         return TSK_ERR;
     }
+    free(diskHeader);
     return TSK_OK;
 }
 
@@ -457,14 +526,14 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
  */
 static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
 
-    if (writer->is_finished) {
+    if (writer->is_finished || writer->hadErrorExtending) {
         return TSK_OK;
     }
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_add: Adding data at offset: %"
-            PRIuOFF " len: %" PRIuOFF "\n", addr,
+			PRIdOFF " len: %" PRIdOFF "\n", addr,
             (TSK_OFF_T)len);
     }
 
@@ -473,16 +542,20 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
         return TSK_ERR;
     }
 
-    if ((addr / writer->blockSize) == ((addr + len) / writer->blockSize)) {
+    if (addr / writer->blockSize == (TSK_OFF_T)(addr + len) / writer->blockSize) {
         /* The buffer is contained in a single block */
         return addBlock(writer, addr, buffer, len);
     }
     else {
         /* The buffer spans two blocks */
         TSK_OFF_T firstPartLength = writer->blockSize - (addr % writer->blockSize);
+        TSK_RETVAL_ENUM result;
         addBlock(writer, addr, buffer, firstPartLength);
         if (addr + firstPartLength < writer->imageSize) {
-            addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
+            result = addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
+            if (result != TSK_OK) {
+                return result;
+            }
         }
     }
 
@@ -497,9 +570,9 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "tsk_img_writer_close: Closing image writer");
+            "tsk_img_writer_close: Closing image writer\n");
     }
-    
+
     if (img_writer->outputFileHandle != 0) {
         CloseHandle(img_writer->outputFileHandle);
         img_writer->outputFileHandle = 0;
@@ -537,7 +610,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "tsk_img_writer_finish_image: Finishing image");
+            "tsk_img_writer_finish_image: Finishing image\n");
     }
 
     if (img_writer->is_finished == 1) {
@@ -548,11 +621,14 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
         return TSK_ERR;
     }
 
-    IMG_RAW_INFO * raw_info = (IMG_RAW_INFO *)(img_writer->img_info);
     TSK_OFF_T offset;
     TSK_OFF_T startOfBlock;
 
     char * buffer = (char*)tsk_malloc(TSK_IMG_INFO_CACHE_LEN * sizeof(char));
+    if (buffer == NULL) {
+        return TSK_ERR;
+    }
+
     for (TSK_OFF_T i = 0; i < img_writer->totalBlocks; i++) {
         if (img_writer->cancelFinish) {
             return TSK_ERR;
@@ -570,13 +646,16 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
              * another thread running tsk_img_writer_add.
             */
             startOfBlock = i * img_writer->blockSize;
-            for(offset = startOfBlock; offset < startOfBlock + img_writer->blockSize;offset += TSK_IMG_INFO_CACHE_LEN){
+            for (offset = startOfBlock; offset < img_writer->img_info->size && offset < startOfBlock + img_writer->blockSize;
+                offset += TSK_IMG_INFO_CACHE_LEN) {
                 if (img_writer->cancelFinish) {
+                    free(buffer);
                     return TSK_ERR;
                 }
                 /* Using tsk_img_read here to make sure we get the lock */
                 if (tsk_img_read(img_writer->img_info, offset, buffer, TSK_IMG_INFO_CACHE_LEN) < 0) {
                     // this usually happens when the device has been unplugged
+                    free(buffer);
                     return TSK_ERR;
                 }
             }
@@ -587,6 +666,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
         }
     }
 
+    free(buffer);
     img_writer->is_finished = 1;
     return TSK_OK;
 }
@@ -601,22 +681,37 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
  * @param img_info        the TSK_IMG_INFO object
  * @param outputFileName  path to the VHD
  */
-TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR * outputFileName) {
 #ifndef TSK_WIN32
+TSK_RETVAL_ENUM tsk_img_writer_create(
+  [[maybe_unused]] TSK_IMG_INFO *img_info,
+  [[maybe_unused]] const TSK_TCHAR *outputFileName)
+{
     return TSK_ERR;
+}
 #else
+TSK_RETVAL_ENUM tsk_img_writer_create(
+  TSK_IMG_INFO *img_info,
+  const TSK_TCHAR *outputFileName)
+{
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_create: Creating image writer in %" PRIttocTSK"\n",
             outputFileName);
     }
 
-    /* Everything will break if the buffers coming in are larger than the block 
+    /* Everything will break if the buffers coming in are larger than the block
        size (i.e., they could span three blocks instead of just two)*/
     if (TSK_IMG_INFO_CACHE_LEN > VHD_DEFAULT_BLOCK_SIZE) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("tsk_img_writer_create: tsk cache length is larger than the block size");
+        return TSK_ERR;
+    }
+
+    if (img_info->itype != TSK_IMG_TYPE_RAW) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("tsk_img_writer_create: image writer can be used on only raw images");
         return TSK_ERR;
     }
 
@@ -631,19 +726,25 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     }
 
     /* Initialize the img_writer object */
-    if ((raw_info->img_writer = (TSK_IMG_WRITER *)tsk_malloc(sizeof(TSK_IMG_WRITER))) == NULL)
+    if ((raw_info->img_writer = (TSK_IMG_WRITER *)tsk_malloc(sizeof(TSK_IMG_WRITER))) == NULL) {
         return TSK_ERR;
+    }
     TSK_IMG_WRITER* writer = raw_info->img_writer;
     writer->is_finished = 0;
     writer->finishProgress = 0;
     writer->cancelFinish = 0;
+    writer->inFinalizeImageWriter = 0;
+    writer->hadErrorExtending = 0;
     writer->footer = NULL;
     writer->img_info = img_info;
     writer->add = tsk_img_writer_add;
     writer->close = tsk_img_writer_close;
     writer->finish_image = tsk_img_writer_finish_image;
 
-    writer->fileName = (TSK_TCHAR*)tsk_malloc((TSTRLEN(outputFileName) + 1) * sizeof(TCHAR));
+    if ((writer->fileName = (TSK_TCHAR*)tsk_malloc((TSTRLEN(outputFileName) + 1) * sizeof(TCHAR))) == NULL) {
+        free(raw_info->img_writer);
+        return TSK_ERR;
+    }
     TSTRNCPY(writer->fileName, outputFileName, TSTRLEN(outputFileName) + 1);
 
     /* Calculation time */
@@ -652,6 +753,8 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("tsk_img_writer_create: image file is too large to copy");
+        free(writer->fileName);
+        free(raw_info->img_writer);
         return TSK_ERR;
     }
     writer->blockSize = VHD_DEFAULT_BLOCK_SIZE;
@@ -674,7 +777,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
         FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0,
         NULL);
     if (writer->outputFileHandle == INVALID_HANDLE_VALUE) {
-        int lastError = (int)GetLastError();
+        const int lastError = (int)GetLastError();
         writer->outputFileHandle = 0; /* so we don't close it next time */
 
         /* Close everything and free the memory */
@@ -684,19 +787,25 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
 
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr("tsk_img_writer_create: error creating file \"%" PRIttocTSK "\"", outputFileName);
+        tsk_error_set_errstr("tsk_img_writer_create: error %d creating file \"%" PRIttocTSK "\"", lastError, outputFileName);
         return TSK_ERR;
     }
 
     /* Write the backup copy of the footer */
     TSK_RETVAL_ENUM retval = writeFooter(writer);
     if (retval != TSK_OK) {
+        //@@@ should we call tsk_img_writer_close
+        free(writer->fileName);
+        free(raw_info->img_writer);
         return retval;
     }
 
     /* Write the dynamic disk header */
     retval = writeDynamicDiskHeader(writer);
     if (retval != TSK_OK) {
+        //@@@ should we call tsk_img_writer_close
+        free(writer->fileName);
+        free(raw_info->img_writer);
         return retval;
     }
 
@@ -711,13 +820,15 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     DWORD bytesWritten;
     unsigned char batBuf[4] = { 0xff, 0xff, 0xff, 0xff };
     for (unsigned int i = 0; i < batLengthOnDisk / 4; i++) {
-        /* My understanding is that Windows will buffer all these making it no less efficient than 
+        /* My understanding is that Windows will buffer all these making it no less efficient than
            writing the whole thing at once */
         if (FALSE == WriteFile(writer->outputFileHandle, batBuf, 4, &bytesWritten, NULL)) {
             int lastError = GetLastError();
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-            tsk_error_set_errstr("tsk_img_writer_create: Error writing block allocation table", lastError);
+            tsk_error_set_errstr("tsk_img_writer_create: Error writing block allocation table: %d", lastError);
+            free(writer->fileName);
+            free(raw_info->img_writer);
             return TSK_ERR;
         }
     }
@@ -726,12 +837,48 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     writer->nextDataOffset = 0x600 + batLengthOnDisk;
 
     /* Initialize all the bookkeeping arrays */
-    writer->blockStatus = (IMG_WRITER_BLOCK_STATUS_ENUM*)tsk_malloc(writer->totalBlocks * sizeof(IMG_WRITER_BLOCK_STATUS_ENUM));
-    writer->blockToSectorNumber = (uint32_t*)tsk_malloc(writer->totalBlocks * sizeof(uint32_t));
-    writer->blockToSectorBitmap = (unsigned char **)tsk_malloc(writer->totalBlocks * sizeof(unsigned char *));
+    if ((writer->blockStatus = (IMG_WRITER_BLOCK_STATUS_ENUM*)tsk_malloc(writer->totalBlocks * sizeof(IMG_WRITER_BLOCK_STATUS_ENUM))) == NULL) {
+        free(writer->fileName);
+        free(raw_info->img_writer);
+        return TSK_ERR;
+    }
+    if ((writer->blockToSectorNumber = (uint32_t*)tsk_malloc(writer->totalBlocks * sizeof(uint32_t))) == NULL) {
+        free(writer->blockStatus);
+        free(writer->fileName);
+        free(raw_info->img_writer);
+        return TSK_ERR;
+    }
+    if ((writer->blockToSectorBitmap = (unsigned char **)tsk_malloc(writer->totalBlocks * sizeof(unsigned char *))) == NULL) {
+        free(writer->blockToSectorNumber);
+        free(writer->blockStatus);
+        free(writer->fileName);
+        free(raw_info->img_writer);
+        return TSK_ERR;
+    }
 
     return TSK_OK;
-#endif
 }
+#endif
 
+/**
+ * Read the remaining sectors into the VHD file.
+ */
+TSK_RETVAL_ENUM tsk_img_writer_finish(TSK_IMG_INFO *img_info) {
+    if (img_info->itype != TSK_IMG_TYPE_RAW) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_writer_finish: image writer can be used on only raw images");
+        return TSK_ERR;
+    }
+
+    IMG_RAW_INFO* raw_info = (IMG_RAW_INFO *)img_info;
+    if (raw_info->img_writer == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_writer_finish: image writer not set");
+        return TSK_ERR;
+    }
+    raw_info->img_writer->inFinalizeImageWriter = 1;
+    return raw_info->img_writer->finish_image(raw_info->img_writer);
+}
 
