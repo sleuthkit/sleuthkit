@@ -40,3 +40,7 @@ sources:
       unzip_xml: image.gen1.xml
   - btrfs:
       image: https://corp.digitalcorpora.org/corpora/drives/2015-basicmaster/btrfs_testimage_50MB.E01
+  - xfs:
+      zipfile: https://files.iblue.team/279b6e00-851e/2GB-xfs/2GB-xfs-raw.zip
+      unzip_image: 2GB-xfs-raw.001
+

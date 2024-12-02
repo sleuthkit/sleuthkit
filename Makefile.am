@@ -210,7 +210,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/fatfs_meta.cpp \
 	tsk/fs/fatfs_utils.c \
 	tsk/fs/fatxxfs.c \
-	tsk/fs/fatxxfs_dent.c \
+	tsk/fs/fatxxfs_dent.cpp \
 	tsk/fs/fatxxfs_meta.cpp \
 	tsk/fs/ffind_lib.c \
 	tsk/fs/ffs.cpp \
@@ -250,7 +250,9 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/usnjls_lib.cpp \
 	tsk/fs/usn_journal.cpp \
 	tsk/fs/walk_cpp.cpp \
-	tsk/fs/yaffs.cpp
+	tsk/fs/yaffs.cpp \
+	tsk/fs/xfs.cpp \
+	tsk/fs/xfs_dent.cpp
 
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \

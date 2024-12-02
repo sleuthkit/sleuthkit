@@ -13,112 +13,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_xfs.h"
 
-static int
-xfs_mount_validate_sb(
-    TSK_FS_INFO* fs, xfs_sb *sbp)
-{
-    if (tsk_fs_guessu64(fs, sbp->sb_magicnum, XFS_FS_MAGIC)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr("xfs: Invalid magic number");
-        return 0;
-    }
-
-    if (!xfs_sb_good_version(fs, sbp)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
-        tsk_error_set_errstr("xfs: unsupported superblock version or corrupted superblock");
-        return 0;
-    }
-
-    /*
-     * Version 5 superblock feature mask validation. Reject combinations the
-     * kernel cannot support up front before checking anything else. For
-     * write validation, we don't need to check feature masks.
-     */
-    if (tsk_fs_guessu64(fs, sbp->sb_versionnum, XFS_SB_VERSION_5)) {
-    
-        if (xfs_sb_has_compat_feature(fs, sbp, XFS_SB_FEAT_COMPAT_UNKNOWN)) {
-            tsk_fprintf(stderr,
-                "Superblock has unknown compatible features (0x%x) enabled.",
-                (tsk_getu32(fs->endian, sbp->sb_features_compat) & XFS_SB_FEAT_COMPAT_UNKNOWN));
-            tsk_fprintf(stderr, "Using a more recent kernel is recommended.");
-        }
-
-        if (xfs_sb_has_ro_compat_feature(fs, sbp, XFS_SB_FEAT_RO_COMPAT_UNKNOWN)) {
-            tsk_fprintf(stderr, 
-                "Superblock has unknown read-only compatible features (0x%x) enabled.",
-                (tsk_getu32(fs->endian, sbp->sb_features_ro_compat) & XFS_SB_FEAT_RO_COMPAT_UNKNOWN));
-        }
-
-        if (xfs_sb_has_incompat_feature(fs, sbp, XFS_SB_FEAT_INCOMPAT_UNKNOWN)) {
-            tsk_fprintf(stderr, 
-                "Superblock has unknown incompatible features (0x%x) enabled.",
-                (tsk_getu32(fs->endian, sbp->sb_features_incompat) & XFS_SB_FEAT_INCOMPAT_UNKNOWN));
-            tsk_fprintf(stderr, 
-                "Filesystem can not be safely mounted by tsk.");
-        }
-    }
-
-    /*
-     * More sanity checking.  Most of these were stolen directly from
-     * xfs_repair.
-     */
-    if ((tsk_getu32(fs->endian, sbp->sb_agcount) <= 0                    ||
-        tsk_getu16(fs->endian, sbp->sb_sectsize) < XFS_MIN_SECTORSIZE           ||
-        tsk_getu16(fs->endian, sbp->sb_sectsize) > XFS_MAX_SECTORSIZE           ||
-        tsk_getu8(fs->endian, sbp->sb_sectlog) < XFS_MIN_SECTORSIZE_LOG            ||
-        tsk_getu8(fs->endian, sbp->sb_sectlog) > XFS_MAX_SECTORSIZE_LOG            ||
-        tsk_getu16(fs->endian, sbp->sb_sectsize) != (1 << tsk_getu8(fs->endian, sbp->sb_sectlog))          ||
-        tsk_getu32(fs->endian, sbp->sb_blocksize) < XFS_MIN_BLOCKSIZE           ||
-        tsk_getu32(fs->endian, sbp->sb_blocksize) > XFS_MAX_BLOCKSIZE           ||
-        tsk_getu8(fs->endian, sbp->sb_blocklog) < XFS_MIN_BLOCKSIZE_LOG            ||
-        tsk_getu8(fs->endian, sbp->sb_blocklog) > XFS_MAX_BLOCKSIZE_LOG            ||
-        tsk_getu32(fs->endian, sbp->sb_blocksize) != ((uint32_t)1 << tsk_getu8(fs->endian, sbp->sb_blocklog))        ||
-        tsk_getu8(fs->endian, sbp->sb_dirblklog) + tsk_getu8(fs->endian, sbp->sb_blocklog) > XFS_MAX_BLOCKSIZE_LOG ||
-        tsk_getu16(fs->endian, sbp->sb_inodesize) < XFS_DINODE_MIN_SIZE         ||
-        tsk_getu16(fs->endian, sbp->sb_inodesize) > XFS_DINODE_MAX_SIZE         ||
-        tsk_getu8(fs->endian, sbp->sb_inodelog) < XFS_DINODE_MIN_LOG           ||
-        tsk_getu8(fs->endian, sbp->sb_inodelog) > XFS_DINODE_MAX_LOG           ||
-        tsk_getu16(fs->endian, sbp->sb_inodesize) != (1 << tsk_getu8(fs->endian, sbp->sb_inodelog))        ||
-        tsk_getu32(fs->endian, sbp->sb_logsunit) > XLOG_MAX_RECORD_BSIZE            ||
-        tsk_getu16(fs->endian, sbp->sb_inopblock) != howmany(tsk_getu16(fs->endian, sbp->sb_blocksize), tsk_getu16(fs->endian, sbp->sb_inodesize)) ||
-        (tsk_getu8(fs->endian, sbp->sb_blocklog) - tsk_getu8(fs->endian, sbp->sb_inodelog) != tsk_getu8(fs->endian, sbp->sb_inopblog))   ||
-        (tsk_getu32(fs->endian, sbp->sb_rextsize) * tsk_getu32(fs->endian, sbp->sb_blocksize) > XFS_MAX_RTEXTSIZE)  ||
-        (tsk_getu32(fs->endian, sbp->sb_rextsize) * tsk_getu32(fs->endian, sbp->sb_blocksize) < XFS_MIN_RTEXTSIZE)  ||
-        (tsk_getu8(fs->endian, sbp->sb_imax_pct) > 100 /* zero sb_imax_pct is valid */)    ||
-        tsk_getu64(fs->endian, sbp->sb_dblocks) == 0                    ||
-        tsk_getu64(fs->endian, sbp->sb_dblocks) > XFS_MAX_DBLOCKS(fs, sbp)          ||
-        tsk_getu64(fs->endian, sbp->sb_dblocks) < XFS_MIN_DBLOCKS(fs, sbp)          ||
-        tsk_getu8(fs->endian, sbp->sb_shared_vn) != 0)) {
-        tsk_fprintf(stderr, "Superblock sanity check failed");
-        return NULL;
-    }
-
-    if (tsk_fs_guessu16(fs, sbp->sb_versionnum, XFS_SB_VERSION_5) &&
-        tsk_getu32(fs->endian, sbp->sb_blocksize) < XFS_MIN_CRC_BLOCKSIZE) {
-        tsk_fprintf(stderr, "v5 Superblock sanity check failed");
-        return NULL;
-    }
-
-    /*
-     * Currently only very few inode sizes are supported.
-     */
-    switch (tsk_getu16(fs->endian, sbp->sb_inodesize)) {
-    case 256:
-    case 512:
-    case 1024:
-    case 2048:
-        break;
-    default:
-        tsk_fprintf(stderr, "inode size of %d bytes not supported",
-                tsk_getu16(fs->endian, sbp->sb_inodesize));
-        return -ENOSYS;
-    }
-
-    return 0;
-}
-
 void
 xfs_bmbt_disk_get_all(
     XFS_INFO* xfs,
@@ -169,22 +63,6 @@ xfs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
     return 0;
 }
 
-
-/** \internal
- * Given a block that contains an extent node (which starts with extent_header),
- * walk it, and add everything encountered to the appropriate attributes.
- * @return 0 on success, 1 on error.
- */
-static TSK_OFF_T
-xfs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
-    TSK_FS_ATTR * fs_attr, TSK_FS_ATTR * fs_attr_extent,
-    TSK_DADDR_T idx_block)
-{
-    fprintf(stderr, "[i] xfs_make_data_run_extent_index: xfs.c: %d - not implemented\n", __LINE__);
-
-    return 1;
-}
-
 /**
  * \internal
  * Loads attribute for XFS Extents-based storage method.
@@ -196,20 +74,18 @@ xfs_load_attrs_block(TSK_FS_FILE *fs_file)
 {
     TSK_FS_META *fs_meta = fs_file->meta;
     TSK_FS_INFO *fs_info = fs_file->fs_info;
-    XFS_INFO * xfs = (XFS_INFO*)fs_info;
     TSK_OFF_T length = 0;
     TSK_FS_ATTR * fs_attr;
-    int i;
     xfs_bmbt_rec_t *rec;
 
     rec = (xfs_bmbt_rec_t*)fs_meta->content_ptr;    
     
     if ((fs_meta->attr != NULL)
         && (fs_meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
-        fprintf(stderr, "[i] xfs_load_attr_block: xfs.c: %d - already studied, exiting load_attr_blk\n", __LINE__);
+        fprintf(stderr, "[i] xfs_load_attr_block: xfs.cpp: %d - already studied, exiting load_attr_blk\n", __LINE__);
         return 0;
     }else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
-        fprintf(stderr, "[i] xfs_load_attr_block: xfs.c: %d - error on attr, exiting load_attr_blk\n", __LINE__);
+        fprintf(stderr, "[i] xfs_load_attr_block: xfs.cpp: %d - error on attr, exiting load_attr_blk\n", __LINE__);
         return 1;
     }
 
@@ -238,7 +114,7 @@ xfs_load_attrs_block(TSK_FS_FILE *fs_file)
 
     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
                             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                            fs_meta->size, fs_meta->size, length, 0, 0)) {
+                            fs_meta->size, fs_meta->size, length, TSK_FS_ATTR_FLAG_NONE, 0)) {
         return 1;
     }
 
@@ -248,7 +124,7 @@ xfs_load_attrs_block(TSK_FS_FILE *fs_file)
             break;
            
         if (xfs_make_data_run_extent(fs_info, fs_attr, rec)) {
-            fprintf(stderr, "[i] xfs_load_attr_block: xfs.c: %d - xfs_make_data_run_extent failed.\n",
+            fprintf(stderr, "[i] xfs_load_attr_block: xfs.cpp: %d - xfs_make_data_run_extent failed.\n",
                 __LINE__);
             return 1;
         }
@@ -270,8 +146,6 @@ xfs_load_attrs_block(TSK_FS_FILE *fs_file)
 static uint8_t
 xfs_load_attrs(TSK_FS_FILE * fs_file)
 {
-    TSK_FS_INFO * fs = (TSK_FS_INFO*)fs_file->fs_info;
- 
     // not needed to implement about shortform data fork. shortform does not have location of real file.
     if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS) {
         xfs_load_attrs_block(fs_file);
@@ -299,7 +173,6 @@ xfs_dinode_load(XFS_INFO * xfs, TSK_INUM_T dino_inum,
 {
     TSK_OFF_T addr;
     ssize_t cnt;
-    TSK_INUM_T rel_inum;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & xfs->fs_info;
 
     /*
@@ -331,7 +204,7 @@ xfs_dinode_load(XFS_INFO * xfs, TSK_INUM_T dino_inum,
         }
 
         tsk_error_set_errstr2("xfs_dinode_load: Inode %" PRIuINUM
-            " from %" PRIuOFF, dino_inum, addr);
+            " from %" PRIu64, dino_inum, addr);
 
         return 1;
     }
@@ -343,10 +216,7 @@ static uint8_t
 xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     TSK_INUM_T inum, const xfs_dinode * dino_buf)
 {
-    int i;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & xfs->fs_info;
-    xfs_sb *sb = xfs->fs;
-    TSK_INUM_T ibase = 0;
 
     if (dino_buf == NULL) {
         tsk_error_reset();
@@ -389,34 +259,34 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     }
 
     // set the mode
-    fs_meta->mode = 0;
+    fs_meta->mode = TSK_FS_META_MODE_ENUM(0);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_ISUID)
-        fs_meta->mode |= TSK_FS_META_MODE_ISUID;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_ISUID);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_ISGID)
-        fs_meta->mode |= TSK_FS_META_MODE_ISGID;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_ISGID);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_ISVTX)
-        fs_meta->mode |= TSK_FS_META_MODE_ISVTX;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_ISVTX);
 
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IRUSR)
-        fs_meta->mode |= TSK_FS_META_MODE_IRUSR;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IRUSR);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IWUSR)
-        fs_meta->mode |= TSK_FS_META_MODE_IWUSR;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IWUSR);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IXUSR)
-        fs_meta->mode |= TSK_FS_META_MODE_IXUSR;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IXUSR);
 
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IRGRP)
-        fs_meta->mode |= TSK_FS_META_MODE_IRGRP;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IRGRP);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IWGRP)
-        fs_meta->mode |= TSK_FS_META_MODE_IWGRP;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IWGRP);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IXGRP)
-        fs_meta->mode |= TSK_FS_META_MODE_IXGRP;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IXGRP);
 
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IROTH)
-        fs_meta->mode |= TSK_FS_META_MODE_IROTH;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IROTH);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IWOTH)
-        fs_meta->mode |= TSK_FS_META_MODE_IWOTH;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IWOTH);
     if (tsk_getu16(fs->endian, dino_buf->di_mode) & XFS_IN_IXOTH)
-        fs_meta->mode |= TSK_FS_META_MODE_IXOTH;
+        fs_meta->mode = TSK_FS_META_MODE_ENUM(fs_meta->mode | TSK_FS_META_MODE_IXOTH);
 
     fs_meta->nlink = tsk_getu32(fs->endian, dino_buf->di_nlink);
     fs_meta->size = tsk_getu64(fs->endian, dino_buf->di_size);
@@ -449,7 +319,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
 
     if (fs_meta->content_len != XFS_CONTENT_LEN_V5(xfs)) {
          if (tsk_verbose) {
-            fprintf(stderr, "xfs.c: content_len is not XFS_CONTENT_LEN_V5\n");
+            fprintf(stderr, "xfs.cpp: content_len is not XFS_CONTENT_LEN_V5\n");
          }
 
          if ((fs_meta =
@@ -468,7 +338,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
 
     if (cnt != XFS_CONTENT_LEN_V5(xfs)){
         if (tsk_verbose) {
-            fprintf(stderr, "invalid datafork read size, cnt: %d\n", cnt);
+            fprintf(stderr, "invalid datafork read size, cnt: %ld\n", cnt);
         }
         return -1;
     }
@@ -493,11 +363,8 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
 uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
     TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB a_action, void *a_ptr)
 {
-    char *myname = "xfs_inode_walk";
-    TSK_INUM_T inum;
-    TSK_INUM_T end_inum_tmp;
+    const char *myname = "xfs_inode_walk";
     TSK_FS_FILE * fs_file;
-    unsigned int myflags;
 
     tsk_error_reset();
 
@@ -515,15 +382,15 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
     }
 
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        flags |= TSK_FS_META_FLAG_UNALLOC;
-        flags &= ~TSK_FS_META_FLAG_ALLOC;
-        flags |= TSK_FS_META_FLAG_USED;
-        flags &= ~TSK_FS_META_FLAG_UNUSED;
+        flags = TSK_FS_META_FLAG_ENUM(flags | TSK_FS_META_FLAG_UNALLOC);
+        flags = TSK_FS_META_FLAG_ENUM(flags & ~TSK_FS_META_FLAG_ALLOC);
+        flags = TSK_FS_META_FLAG_ENUM(flags | TSK_FS_META_FLAG_USED);
+        flags = TSK_FS_META_FLAG_ENUM(flags & ~TSK_FS_META_FLAG_UNUSED);
     }
     else {
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
-            flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
+             flags = TSK_FS_META_FLAG_ENUM(flags | TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
         /* If neither of the USED or UNUSED flags are set, then set them
@@ -531,7 +398,7 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
          */
         if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-            flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
+            flags = TSK_FS_META_FLAG_ENUM(flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
     /* If we are looking for orphan files and have not yet filled
@@ -552,18 +419,16 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
 }
 
 //block walk
-uint8_t xfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, 
-    TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, void *ptr)
+uint8_t xfs_block_walk([[maybe_unused]] TSK_FS_INFO * fs, [[maybe_unused]] TSK_DADDR_T start, [[maybe_unused]]TSK_DADDR_T end, 
+    [[maybe_unused]]TSK_FS_BLOCK_WALK_FLAG_ENUM flags,[[maybe_unused]] TSK_FS_BLOCK_WALK_CB cb, [[maybe_unused]]void *ptr)
 {
     return -1;
 }
 
 //block_getflags
-TSK_FS_BLOCK_FLAG_ENUM xfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
+TSK_FS_BLOCK_FLAG_ENUM xfs_block_getflags([[maybe_unused]]TSK_FS_INFO * a_fs, [[maybe_unused]]TSK_DADDR_T a_addr)
 {
-    int flags = 0;
-
-    return flags;
+    return TSK_FS_BLOCK_FLAG_UNUSED;
 }
 
 static uint8_t 
@@ -652,13 +517,9 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
 //fsstat
 uint8_t xfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
-    uint i;
     XFS_INFO * xfs = (XFS_INFO *) fs;
     xfs_sb *sb = xfs->fs;
     
-    int ibpg;
-    time_t imptime;
-    char timeBuf[128];
     const char *tmptypename;
     
     tsk_error_reset();
@@ -737,13 +598,13 @@ uint8_t xfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     return -1;
 }
 
-uint8_t xfs_fscheck(TSK_FS_INFO * fs, FILE * HFile)
+uint8_t xfs_fscheck([[maybe_unused]] TSK_FS_INFO * fs,[[maybe_unused]] FILE * HFile)
 {
     return -1;
 }
 
-uint8_t xfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
-            TSK_DADDR_T numblock, int32_t sec_skew)
+uint8_t xfs_istat([[maybe_unused]]TSK_FS_INFO * fs, [[maybe_unused]]TSK_FS_ISTAT_FLAG_ENUM flags,[[maybe_unused]] FILE * hFile,[[maybe_unused]] TSK_INUM_T inum,
+            [[maybe_unused]]TSK_DADDR_T numblock, [[maybe_unused]]int32_t sec_skew)
 {
     return -1;
 }
@@ -764,7 +625,7 @@ void xfs_close(TSK_FS_INFO * fs)
 
 TSK_FS_INFO *
 xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM ftype, uint8_t test)
+    TSK_FS_TYPE_ENUM ftype, [[maybe_unused]] const char* a_pass, [[maybe_unused]] uint8_t test)
 {
     XFS_INFO *xfs;
     unsigned int len;
@@ -791,7 +652,7 @@ xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     fs = &(xfs->fs_info);
     fs->ftype = ftype;
-    fs->flags = 0;
+    fs->flags = TSK_FS_INFO_FLAG_NONE;
     fs->img_info = img_info;
     fs->offset = offset;
     fs->tag = TSK_FS_INFO_TAG;

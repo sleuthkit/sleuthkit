@@ -12,6 +12,7 @@
 
 #ifndef _TSK_XFS_H
 #define _TSK_XFS_H
+#endif
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -20,13 +21,11 @@
 extern "C" {
 #endif
 
-static int files_found;
-
-typedef int64_t           xfs_off_t;  /* <file offset> type */
-typedef uint32_t  xfs_rfsblock_t; /* blockno in filesystem (raw) */
+typedef int64_t  xfs_off_t;  /* <file offset> type */
+typedef uint32_t xfs_rfsblock_t; /* blockno in filesystem (raw) */
 typedef uint64_t XFS_AGNUM_T;
-typedef uint        xfs_dir2_data_aoff_t;   /* argument form */
-typedef uint32_t    xfs_dir2_dataptr_t;
+typedef uint32_t xfs_dir2_data_aoff_t;   /* argument form */
+typedef uint32_t xfs_dir2_dataptr_t;
 
 #define __round_mask(x, y) ((__typeof__(x))((y)-1))
 #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
@@ -745,34 +744,6 @@ xfs_dir2_sf_get_ino(
 }
 
 static xfs_ino_t
-xfs_dir2_sf_get_parent_ino(
-    struct xfs_dir2_sf_hdr  *hdr)
-{
-    return xfs_dir2_sf_get_ino(hdr, hdr->parent);
-}
-
-/*
- * Inode numbers in short-form directories can come in two versions,
- * either 4 bytes or 8 bytes wide.  These helpers deal with the
- * two forms transparently by looking at the headers i8count field.
- *
- * For 64-bit inode number the most significant byte must be zero.
- */
-/*
- * In short-form directory entries the inode numbers are stored at variable
- * offset behind the entry name. If the entry stores a filetype value, then it
- * sits between the name and the inode number. Hence the inode numbers may only
- * be accessed through the helpers below.
- */
-static xfs_ino_t
-xfs_dir2_sfe_get_ino(
-    struct xfs_dir2_sf_hdr  *hdr,
-    struct xfs_dir2_sf_entry *sfep)
-{
-    return xfs_dir2_sf_get_ino(hdr, &sfep->name[sfep->namelen]);
-}
-
-static xfs_ino_t
 xfs_dir3_sfe_get_ino(
     struct xfs_dir2_sf_hdr  *hdr,
     struct xfs_dir2_sf_entry *sfep)
@@ -1192,7 +1163,7 @@ xfs_dir2_block_tail_p(XFS_INFO *xfs, struct xfs_dir2_data_hdr *hdr)
  * Pointer to the leaf entries embedded in a data block (1-block format)
  */
 static inline struct xfs_dir2_leaf_entry *
-xfs_dir2_block_leaf_p(XFS_INFO *xfs, struct xfs_dir2_block_tail *btp)
+xfs_dir2_block_leaf_p([[maybe_unused]] XFS_INFO *xfs, struct xfs_dir2_block_tail *btp)
 {
     uint32_t count = btp->count;
     return ((struct xfs_dir2_leaf_entry *)btp) - count;
@@ -1220,21 +1191,9 @@ xfs_dir3_blockentry_get_ftype(
     return ftype;
 }
 
-static uint16_t
-xfs_dir3_blockentry_get_tag(
-    struct xfs_dir2_data_entry *sfep)
-{
-    uint16_t ftype;
-    ftype = sfep->name[sfep->namelen + 1];
-    if (ftype >= XFS_DIR3_FT_MAX)
-        return XFS_DIR3_FT_UNKNOWN;
-    return ftype;
-}
-
 static inline 
 TSK_OFF_T xfs_inode_get_offset(XFS_INFO * xfs, TSK_INUM_T a_addr){
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & xfs->fs_info;
-    TSK_OFF_T offset_block;
     TSK_OFF_T offset;
     uint8_t sb_agblklog = xfs->fs->sb_agblklog;
     uint8_t sb_inopblog = xfs->fs->sb_inopblog;
@@ -1275,7 +1234,7 @@ typedef struct xfs_bmbt_rec
 
 typedef xfs_off_t   xfs_dir2_off_t;
 typedef uint32_t    xfs_dir2_db_t;
-typedef uint        xfs_dir2_data_aoff_t;   /* argument form */
+typedef uint32_t    xfs_dir2_data_aoff_t;   /* argument form */
 
 static inline uint16_t get_unaligned_be16(const uint8_t *p)
 {
@@ -1335,15 +1294,6 @@ xfs_dir3_sf_entsize(
 }
 
 static struct xfs_dir2_sf_entry *
-xfs_dir2_sf_nextentry(
-	struct xfs_dir2_sf_hdr	*hdr,
-	struct xfs_dir2_sf_entry *sfep)
-{
-	return (struct xfs_dir2_sf_entry *)
-		((char *)sfep + xfs_dir2_sf_entsize(hdr, sfep->namelen));
-}
-
-static struct xfs_dir2_sf_entry *
 xfs_dir3_sf_nextentry(
 	struct xfs_dir2_sf_hdr	*hdr,
 	struct xfs_dir2_sf_entry *sfep)
@@ -1370,4 +1320,6 @@ xfs_dir2_db_off_to_dataptr(XFS_INFO *xfs, xfs_dir2_db_t db,
     return xfs_dir2_byte_to_dataptr(xfs_dir2_db_off_to_byte(xfs, db, o));
 }
 
+#ifdef __cplusplus
+}
 #endif

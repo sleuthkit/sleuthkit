@@ -13,41 +13,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_xfs.h"
 
-static int files_found = 0;
-static int folders_found = 0;
-
-static int
-xfs_dir2_data_entsize(
-    int         n)
-{
-    return XFS_DIR2_DATA_ENTSIZE(n);
-}
-
-static int
-xfs_dir3_data_entsize(
-    int         n)
-{
-    return XFS_DIR3_DATA_ENTSIZE(n);
-}
-
-static uint8_t
-xfs_dir2_data_get_ftype(
-    struct xfs_dir2_data_entry *dep)
-{
-    return XFS_DIR3_FT_UNKNOWN;
-}
-
-static uint8_t
-xfs_dir3_data_get_ftype(
-    struct xfs_dir2_data_entry *dep)
-{
-    uint8_t     ftype = dep->name[dep->namelen];
-
-    if (ftype >= XFS_DIR3_FT_MAX)
-        return XFS_DIR3_FT_UNKNOWN;
-    return ftype;
-}
-
 static uint8_t
 xfs_dent_copy(XFS_INFO * xfs,
     char *xfs_dent, TSK_FS_NAME *fs_name, TSK_FS_FILE *fs_file)
@@ -61,7 +26,7 @@ xfs_dent_copy(XFS_INFO * xfs,
         xfs_dir2_sf_hdr_t *hdr = (xfs_dir2_sf_hdr_t*)dir2_sf->hdr;
         xfs_dir2_sf_entry_t *ent = (xfs_dir2_sf_entry_t*)dir2_sf->entry;
 
-        strncpy(fs_name->name, ent->name, ent->namelen);
+        strncpy(fs_name->name, (char*)ent->name, ent->namelen);
         fs_name->name[ent->namelen] = '\0';
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
         fs_name->meta_addr = (TSK_INUM_T)xfs_dir3_sfe_get_ino(hdr, ent);
@@ -108,7 +73,7 @@ xfs_dent_copy(XFS_INFO * xfs,
     {
         xfs_dir2_data_entry_t *ent = (xfs_dir2_data_entry_t*)xfs_dent;
 
-        strncpy(fs_name->name, ent->name, ent->namelen);
+        strncpy(fs_name->name, (char*)ent->name, ent->namelen);
         fs_name->name[ent->namelen] = '\0';
         fs_name->meta_addr = tsk_getu64(xfs->fs_info.endian, ent->inumber);
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
@@ -150,15 +115,15 @@ xfs_dent_copy(XFS_INFO * xfs,
                 break;
         }
     }
-    else fprintf(stderr, "[i] xfs_dent_copy: xfs.c: %d - unsupported metadata type detected\n", __LINE__);
+    else fprintf(stderr, "[i] xfs_dent_copy: xfs.cpp: %d - unsupported metadata type detected\n", __LINE__);
 
-    fs_name->flags = 0;
+    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
     return 0;
 }
 
 static TSK_RETVAL_ENUM
-xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
+xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, char *buf)
 {
     TSK_FS_INFO *fs = &(xfs->fs_info);
     
@@ -177,7 +142,7 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del
     if ((fs_name = tsk_fs_name_alloc(XFS_MAXNAMELEN + 1, 0)) == NULL)
         return TSK_ERR;
 
-    ent = (char*)(hdr + 1) - (hdr->i8count == 0) * 4; // code of miracle
+    ent = (xfs_dir2_sf_entry_t*)((char*)(hdr + 1) - (hdr->i8count == 0) * 4); // code of miracle
     
     uint16_t num_entries = (hdr->i8count > 0) ? hdr->i8count : hdr->count;
     uint16_t num_entries_chk = 0;
@@ -190,7 +155,7 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del
         
         dir2_sf->entry = ent;
         namelen = ent->namelen;
-        inode = xfs_dir2_sf_get_ino(hdr, ent);
+        inode = xfs_dir2_sf_get_ino(hdr, (uint8_t*)ent);
         name = (char*)tsk_malloc(sizeof(char) * (namelen + 1));
         name[namelen] = '\0';
 
@@ -200,7 +165,7 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del
             break;
         }
 
-        if (xfs_dent_copy(xfs, dir2_sf, fs_name, fs_file)) {
+        if (xfs_dent_copy(xfs, (char*)dir2_sf, fs_name, fs_file)) {
             tsk_fs_name_free(fs_name);
             return TSK_ERR;
         }
@@ -220,22 +185,23 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del
     return TSK_OK;
 }
 
-static TSK_RETVAL_ENUM
-xfs_dent_parse_btree(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
-    uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
+void
+xfs_bmbt_disk_get_all(
+    XFS_INFO* xfs,
+    struct xfs_bmbt_rec *rec,
+    struct xfs_bmbt_irec    *irec)
 {
-    // while nextents, nblocks
-    //  di_bmx에서 n = offset, block, blockcount / 2n = leafoffset, block, blockcount
-    //  while true
-    //   if block[n.offset].magic == dir2_data_magic
-    //    data_free_t*n개 지나기 (data_unused_t의 length, offset++)
-    //    continue
-    //   offset => dir22_data_entry_t
-    //   break
-    //  while nextents, nblocks
-    //   dir2_data_entry_t 파싱 -> inumber, namelen, name, tag
-    //  ~~이런식
-    offset += 0; // 여기서 취해줄 수 있는게 없음
+    uint64_t        l0 = tsk_getu64(xfs->fs_info.endian, rec->l0);
+    uint64_t        l1 = tsk_getu64(xfs->fs_info.endian, rec->l1);
+
+    irec->br_startoff = (l0 & xfs_mask64lo(64 - BMBT_EXNTFLAG_BITLEN)) >> 9;
+    irec->br_startblock = ((l0 & xfs_mask64lo(9)) << 43) | (l1 >> 21);
+    irec->br_blockcount = l1 & xfs_mask64lo(21);
+
+    if (l0 >> (64 - BMBT_EXNTFLAG_BITLEN))
+        irec->br_state = XFS_EXT_UNWRITTEN;
+    else
+        irec->br_state = XFS_EXT_NORM;
 }
 
 /*
@@ -247,7 +213,7 @@ xfs_dent_parse_btree(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir,
  *                      or leaf
  */
 static TSK_RETVAL_ENUM
-xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
+xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, [[maybe_unused]]uint8_t a_is_del, [[maybe_unused]]TSK_LIST ** list_seen, char *buf,[[maybe_unused]] TSK_OFF_T offset)
 {
     TSK_FS_INFO *fs_info = &(xfs->fs_info);
     TSK_FS_NAME *fs_name;
@@ -272,18 +238,17 @@ xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TS
     ssize_t len = irec->br_blockcount * tsk_getu32(xfs->fs_info.endian, xfs->fs->sb_blocksize);
 
     char *fbuf = (char*)tsk_malloc(sizeof(char) * len);
-    ssize_t cnt = tsk_fs_read(fs_info, soff, fbuf, len);
 
-    struct xfs_dir3_data_hdr *hdr = (struct xfs_dir3_data_hdr_t*)fbuf;
+    struct xfs_dir3_data_hdr *hdr = (struct xfs_dir3_data_hdr*)fbuf;
 
     // sanity check
     if (hdr->hdr.magic != 0x33424458) { // XDB3
         // Trick to explore unalloc dent
         a_fs_dir->fs_file->meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM;
-        if (xfs_dent_parse_shortform(xfs, a_fs_dir, a_is_del, list_seen, buf, offset) == TSK_OK){
+        if (xfs_dent_parse_shortform(xfs, a_fs_dir, buf) == TSK_OK){
             return TSK_OK;
         }else{
-            fprintf(stderr, "[i] xfs_dent_parse_block: xfs_dent.c: %d - not a dir2_data_hdr: %8x\n",
+            fprintf(stderr, "[i] xfs_dent_parse_block: xfs_dent.cpp: %d - not a dir2_data_hdr: %8x\n",
             __LINE__, hdr->hdr.magic);            
             return TSK_ERR;
         }
@@ -296,7 +261,7 @@ xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TS
         if (ent->namelen == 0)
             break;
   
-        if (xfs_dent_copy(xfs, ent, fs_name, a_fs_dir->fs_file)) {
+        if (xfs_dent_copy(xfs, (char*)ent, fs_name, a_fs_dir->fs_file)) {
             tsk_fs_name_free(fs_name);
             return TSK_ERR;
         }
@@ -317,15 +282,16 @@ xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TS
 static TSK_RETVAL_ENUM
 xfs_dent_parse(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TSK_LIST ** list_seen, char *buf, TSK_OFF_T offset)
 {
-    TSK_FS_INFO* fs_info = (TSK_FS_INFO*) xfs;
     switch(a_fs_dir->fs_file->meta->content_type){
         case TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM:
-            xfs_dent_parse_shortform(xfs, a_fs_dir, a_is_del, list_seen, buf, offset);
+            xfs_dent_parse_shortform(xfs, a_fs_dir, buf);
             break;
 
         case TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS:
             xfs_dent_parse_block(xfs, a_fs_dir, a_is_del, list_seen, buf, offset);
             break;
+        default:
+            return TSK_ERR;
     }
     return TSK_OK;
 }
@@ -350,7 +316,6 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     XFS_INFO * xfs = (XFS_INFO *) a_fs;
     TSK_FS_DIR * fs_dir;
     TSK_LIST *list_seen = NULL;
-    TSK_OFF_T size;
 
     char *dirbuf;
     
@@ -399,8 +364,8 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     }
 
     // We only read in and process a single block at a time
-    if ((dirbuf = tsk_malloc((size_t)a_fs->block_size)) == NULL) {
-        fprintf(stderr, "[i] xfs_load_attr_block: xfs.c: %d - failed to malloc\n", __LINE__);
+    if ((dirbuf = (char*)tsk_malloc((size_t)a_fs->block_size)) == NULL) {
+        fprintf(stderr, "[i] xfs_load_attr_block: xfs.cpp: %d - failed to malloc\n", __LINE__);
         return TSK_ERR;
     }
 
@@ -421,19 +386,19 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     return retval_final;
 }
 
-uint8_t xfs_jentry_walk(TSK_FS_INFO *info, int a,
-        TSK_FS_JENTRY_WALK_CB c, void *b)
+uint8_t xfs_jentry_walk([[maybe_unused]]TSK_FS_INFO *info, [[maybe_unused]]int a,
+        [[maybe_unused]]TSK_FS_JENTRY_WALK_CB c, [[maybe_unused]]void *b)
 {
     return -1;
 }
 
-uint8_t xfs_jblk_walk(TSK_FS_INFO *a, TSK_DADDR_T b,
-        TSK_DADDR_T c, int d, TSK_FS_JBLK_WALK_CB e, void *f)
+uint8_t xfs_jblk_walk([[maybe_unused]]TSK_FS_INFO *a, [[maybe_unused]]TSK_DADDR_T b,
+        [[maybe_unused]]TSK_DADDR_T c, [[maybe_unused]]int d, [[maybe_unused]]TSK_FS_JBLK_WALK_CB e, [[maybe_unused]]void *f)
 {
     return -1;
 }
 
-uint8_t xfs_jopen(TSK_FS_INFO *a, TSK_INUM_T b)
+uint8_t xfs_jopen([[maybe_unused]]TSK_FS_INFO *a, [[maybe_unused]]TSK_INUM_T b)
 {
     return -1;
 }
