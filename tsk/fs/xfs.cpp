@@ -36,10 +36,12 @@ xfs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
     data_run->offset = 0;
     data_run->addr = agno * tsk_getu32(fs_info->endian, xfs->fs->sb_agblocks) + blkno;
     data_run->len = irec->br_blockcount;
-
+    
     if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
         return 1;
     }
+
+    free(irec);
 
     return 0;
 }
@@ -314,8 +316,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
     // Contents after inode core must be copied to content ptr
     TSK_OFF_T dfork_offset = xfs_inode_get_offset(xfs, inum) + sizeof(xfs_dinode);
     
-    char* content_buf = (char*)tsk_malloc(XFS_CONTENT_LEN_V5(xfs));
-    ssize_t cnt = tsk_fs_read(fs, dfork_offset, content_buf, XFS_CONTENT_LEN_V5(xfs));
+    ssize_t cnt = tsk_fs_read(fs, dfork_offset, (char*)fs_meta->content_ptr, XFS_CONTENT_LEN_V5(xfs));
 
     if (cnt != XFS_CONTENT_LEN_V5(xfs)){
         if (tsk_verbose) {
@@ -323,8 +324,6 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
         }
         return -1;
     }
-
-    fs_meta->content_ptr = (void*) content_buf;
   
     if (dino_buf->di_format == XFS_DINODE_FMT_LOCAL){
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM;  
@@ -471,26 +470,22 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
 
         }  
         else if(a_fs_file->meta->type == TSK_FS_META_TYPE_UNDEF) {
-            TSK_FS_META * new_meta;
-            new_meta = tsk_fs_meta_alloc(fs->block_size);
-            if ((new_meta = tsk_fs_meta_alloc(XFS_CONTENT_LEN_V5(xfs))) == NULL) // #define XFS_CONTENT_LEN 
-                return 1;        
+            tsk_fs_meta_reset(a_fs_file->meta);
+            // if ((a_fs_file->meta = tsk_fs_meta_alloc(XFS_CONTENT_LEN_V5(xfs))) == NULL) // #define XFS_CONTENT_LEN 
+            //     return 1;        
 
             dino_buf->di_mode[0] = 0x41;
             dino_buf->di_mode[1] = 0xED;
 
-            if(xfs_dinode_copy(xfs, new_meta, inum, dino_buf)){
+            if(xfs_dinode_copy(xfs, a_fs_file->meta, inum, dino_buf)){
                 free(dino_buf);
                 return 1;
             }
-
-            a_fs_file->meta = new_meta;
             a_fs_file->meta->flags = TSK_FS_META_FLAG_UNALLOC;
             a_fs_file->name->flags = TSK_FS_NAME_FLAG_UNALLOC;
-
         }
     }
-    
+
     free(dino_buf);
     return 0;
 }
