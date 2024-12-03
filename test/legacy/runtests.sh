@@ -10,7 +10,7 @@ EXIT_IGNORE=77
 
 NOHARDFAIL=yes
 
-IMAGE_DIR=test/from_brian
+IMAGE_DIR=test_data
 NTHREADS=1
 NITERS=1
 

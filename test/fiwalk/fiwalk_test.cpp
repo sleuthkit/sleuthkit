@@ -54,8 +54,8 @@ void check_image(std::string img_path, std::string dfxml2_path) {
 #ifdef HAVE_LIBEWF
 TEST_CASE("test_disk_images imageformat_mmls_1.E01", "[fiwalk]") {
     check_image(
-      "test/from_brian/imageformat_mmls_1.E01",
-      "test/from_brian/imageformat_mmls_1.E01.xml"
+      "test_data/imageformat_mmls_1.E01",
+      "test_data/imageformat_mmls_1.E01.xml"
     );
 }
 

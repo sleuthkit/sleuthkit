@@ -20,4 +20,4 @@ data/image/image_dd.xml - DFXML output of running fiwalk on data/image/image.dd
 ```
 Setup:
 
-`get_test_images.py` - Script that gets disk images from digitalcorpora and stores them in `from_brian` (which is the legacy location where disk images are stored.
+`get_test_images.py` - Script that gets disk images from digitalcorpora and stores them in `test_data`.
