@@ -13,12 +13,58 @@
 #include "tsk_fs_i.h"
 #include "tsk_xfs.h"
 
+/*
+ * Inode numbers in short-form directories can come in two versions,
+ * either 4 bytes or 8 bytes wide.  These helpers deal with the
+ * two forms transparently by looking at the headers i8count field.
+ *
+ * For 64-bit inode number the most significant byte must be zero.
+ */
+static xfs_ino_t
+xfs_dir2_sf_get_ino(
+    struct xfs_dir2_sf_hdr  *hdr,
+    uint8_t         *from)
+{
+    if (hdr->i8count)
+        return get_unaligned_be64(from) & 0x00ffffffffffffffULL;
+    else
+        return get_unaligned_be32(from);
+}
+
+static xfs_ino_t
+xfs_dir3_sfe_get_ino(
+    struct xfs_dir2_sf_hdr  *hdr,
+    struct xfs_dir2_sf_entry *sfep)
+{
+    return xfs_dir2_sf_get_ino(hdr, &sfep->name[sfep->namelen + 1]);
+}
+
+static uint8_t
+xfs_dir3_sfe_get_ftype(
+	struct xfs_dir2_sf_entry *sfep)
+{
+    uint8_t	ftype;
+	ftype = sfep->name[sfep->namelen];
+	if (ftype >= XFS_DIR3_FT_MAX)
+		return XFS_DIR3_FT_UNKNOWN;
+	return ftype;
+}
+
+static uint8_t
+xfs_dir3_blockentry_get_ftype(
+    struct xfs_dir2_data_entry *daen) // inumber namelen name ftype tag
+{
+    uint8_t ftype;
+    ftype = daen->name[daen->namelen];
+    if (ftype >= XFS_DIR3_FT_MAX)
+        return XFS_DIR3_FT_UNKNOWN;
+    return ftype;
+}
+
 static uint8_t
 xfs_dent_copy(XFS_INFO * xfs,
     char *xfs_dent, TSK_FS_NAME *fs_name, TSK_FS_FILE *fs_file)
 {
-    TSK_FS_INFO *fs = &(xfs->fs_info);
-
     if (fs_file->meta->content_type == 
         TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM)
     {
@@ -122,6 +168,38 @@ xfs_dent_copy(XFS_INFO * xfs,
     return 0;
 }
 
+/*
+ * Shortform directory ops
+ */
+static int
+xfs_dir2_sf_entsize(
+	struct xfs_dir2_sf_hdr	*hdr,
+	int			len)
+{
+	int count = sizeof(struct xfs_dir2_sf_entry);	/* namelen + offset */
+
+	count += len;					/* name */
+	count += hdr->i8count ? XFS_INO64_SIZE : XFS_INO32_SIZE; /* ino # */
+	return count;
+}
+
+static int
+xfs_dir3_sf_entsize(
+	struct xfs_dir2_sf_hdr	*hdr,
+	int			len)
+{
+	return xfs_dir2_sf_entsize(hdr, len) + sizeof(uint8_t);
+}
+
+static struct xfs_dir2_sf_entry *
+xfs_dir3_sf_nextentry(
+	struct xfs_dir2_sf_hdr	*hdr,
+	struct xfs_dir2_sf_entry *sfep)
+{
+	return (struct xfs_dir2_sf_entry *)
+		((char *)sfep + xfs_dir3_sf_entsize(hdr, sfep->namelen));
+}
+
 static TSK_RETVAL_ENUM
 xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, char *buf)
 {
@@ -134,34 +212,25 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, char *buf)
     
     xfs_dir2_sf_t * dir2_sf = (xfs_dir2_sf_t *)tsk_malloc(sizeof(xfs_dir2_sf_t));
     hdr = (xfs_dir2_sf_hdr_t*)buf;
-    dir2_sf->hdr = hdr;   
-    
-    //uint8_t ftype;
-    uint64_t i;
+    dir2_sf->hdr = hdr;
 
     if ((fs_name = tsk_fs_name_alloc(XFS_MAXNAMELEN + 1, 0)) == NULL)
         return TSK_ERR;
 
     ent = (xfs_dir2_sf_entry_t*)((char*)(hdr + 1) - (hdr->i8count == 0) * 4); // code of miracle
     
-    uint16_t num_entries = (hdr->i8count > 0) ? hdr->i8count : hdr->count;
     uint16_t num_entries_chk = 0;
 
     while (1)
     {
         uint8_t namelen;
         uint64_t inode;
-        char* name;
         
         dir2_sf->entry = ent;
         namelen = ent->namelen;
         inode = xfs_dir2_sf_get_ino(hdr, (uint8_t*)ent);
-        name = (char*)tsk_malloc(sizeof(char) * (namelen + 1));
-        name[namelen] = '\0';
-
-        memcpy(name, ent->name, namelen);
         
-        if (inode > fs->last_inum || namelen > XFS_MAXNAMELEN || namelen == 0) {
+        if (inode > fs->last_inum || namelen == 0) {
             break;
         }
 
@@ -180,28 +249,9 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, char *buf)
 
         ent = xfs_dir3_sf_nextentry(hdr, ent);
     }
-
+    free(dir2_sf);
     tsk_fs_name_free(fs_name);
     return TSK_OK;
-}
-
-void
-xfs_bmbt_disk_get_all(
-    XFS_INFO* xfs,
-    struct xfs_bmbt_rec *rec,
-    struct xfs_bmbt_irec    *irec)
-{
-    uint64_t        l0 = tsk_getu64(xfs->fs_info.endian, rec->l0);
-    uint64_t        l1 = tsk_getu64(xfs->fs_info.endian, rec->l1);
-
-    irec->br_startoff = (l0 & xfs_mask64lo(64 - BMBT_EXNTFLAG_BITLEN)) >> 9;
-    irec->br_startblock = ((l0 & xfs_mask64lo(9)) << 43) | (l1 >> 21);
-    irec->br_blockcount = l1 & xfs_mask64lo(21);
-
-    if (l0 >> (64 - BMBT_EXNTFLAG_BITLEN))
-        irec->br_state = XFS_EXT_UNWRITTEN;
-    else
-        irec->br_state = XFS_EXT_NORM;
 }
 
 /*
@@ -215,7 +265,6 @@ xfs_bmbt_disk_get_all(
 static TSK_RETVAL_ENUM
 xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, [[maybe_unused]]uint8_t a_is_del, [[maybe_unused]]TSK_LIST ** list_seen, char *buf,[[maybe_unused]] TSK_OFF_T offset)
 {
-    TSK_FS_INFO *fs_info = &(xfs->fs_info);
     TSK_FS_NAME *fs_name;
 
     if ((fs_name = tsk_fs_name_alloc(XFS_MAXNAMELEN + 1, 0)) == NULL)
@@ -228,12 +277,6 @@ xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, [[maybe_unused]]uint
     irec = (xfs_bmbt_irec_t*)tsk_malloc(sizeof(xfs_bmbt_irec_t));
 
     xfs_bmbt_disk_get_all(xfs, rec, irec);
-
-    uint32_t agno = XFS_FSB_TO_AGNO(xfs, irec->br_startblock);
-    uint32_t agblkno = XFS_FSB_TO_AGBNO(xfs, irec->br_startblock);
-
-    TSK_OFF_T soff = (agno * tsk_getu32(xfs->fs_info.endian, xfs->fs->sb_agblocks) + agblkno)
-        * tsk_getu32(xfs->fs_info.endian, xfs->fs->sb_blocksize); // real offset
 
     ssize_t len = irec->br_blockcount * tsk_getu32(xfs->fs_info.endian, xfs->fs->sb_blocksize);
 
@@ -311,7 +354,7 @@ xfs_dent_parse(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, uint8_t a_is_del, TSK_LIST
 */
 TSK_RETVAL_ENUM 
 xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr,[[maybe_unused]] int recursion_depth)
 {
     XFS_INFO * xfs = (XFS_INFO *) a_fs;
     TSK_FS_DIR * fs_dir;

@@ -724,33 +724,6 @@ static inline uint64_t get_unaligned_be64(const uint8_t *p)
 	       get_unaligned_be32(p + 4);
 }
 
-
-/*
- * Inode numbers in short-form directories can come in two versions,
- * either 4 bytes or 8 bytes wide.  These helpers deal with the
- * two forms transparently by looking at the headers i8count field.
- *
- * For 64-bit inode number the most significant byte must be zero.
- */
-static xfs_ino_t
-xfs_dir2_sf_get_ino(
-    struct xfs_dir2_sf_hdr  *hdr,
-    uint8_t         *from)
-{
-    if (hdr->i8count)
-        return get_unaligned_be64(from) & 0x00ffffffffffffffULL;
-    else
-        return get_unaligned_be32(from);
-}
-
-static xfs_ino_t
-xfs_dir3_sfe_get_ino(
-    struct xfs_dir2_sf_hdr  *hdr,
-    struct xfs_dir2_sf_entry *sfep)
-{
-    return xfs_dir2_sf_get_ino(hdr, &sfep->name[sfep->namelen + 1]);
-}
-
 /*
     Data block structure:: Free area in data block
 */
@@ -1086,7 +1059,7 @@ typedef enum xfs_dinode_fmt {
 
 extern TSK_RETVAL_ENUM
     xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr);
+    TSK_INUM_T a_addr, int recursion_depth);
 extern uint8_t xfs_jentry_walk(TSK_FS_INFO *, int,
     TSK_FS_JENTRY_WALK_CB, void *);
 extern uint8_t xfs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T,
@@ -1169,28 +1142,6 @@ xfs_dir2_block_leaf_p([[maybe_unused]] XFS_INFO *xfs, struct xfs_dir2_block_tail
     return ((struct xfs_dir2_leaf_entry *)btp) - count;
 }
 
-static uint8_t
-xfs_dir3_sfe_get_ftype(
-	struct xfs_dir2_sf_entry *sfep)
-{
-    uint8_t	ftype;
-	ftype = sfep->name[sfep->namelen];
-	if (ftype >= XFS_DIR3_FT_MAX)
-		return XFS_DIR3_FT_UNKNOWN;
-	return ftype;
-}
-
-static uint8_t
-xfs_dir3_blockentry_get_ftype(
-    struct xfs_dir2_data_entry *daen) // inumber namelen name ftype tag
-{
-    uint8_t ftype;
-    ftype = daen->name[daen->namelen];
-    if (ftype >= XFS_DIR3_FT_MAX)
-        return XFS_DIR3_FT_UNKNOWN;
-    return ftype;
-}
-
 static inline 
 TSK_OFF_T xfs_inode_get_offset(XFS_INFO * xfs, TSK_INUM_T a_addr){
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & xfs->fs_info;
@@ -1270,36 +1221,23 @@ xfs_dir2_byte_to_dataptr(xfs_dir2_off_t by)
 #define XFS_INO32_SIZE	4
 #define XFS_INO64_SIZE	8
 
-/*
- * Shortform directory ops
- */
-static int
-xfs_dir2_sf_entsize(
-	struct xfs_dir2_sf_hdr	*hdr,
-	int			len)
+static void
+xfs_bmbt_disk_get_all(
+    XFS_INFO* xfs,
+    struct xfs_bmbt_rec *rec,
+    struct xfs_bmbt_irec    *irec)
 {
-	int count = sizeof(struct xfs_dir2_sf_entry);	/* namelen + offset */
+    uint64_t        l0 = tsk_getu64(xfs->fs_info.endian, rec->l0);
+    uint64_t        l1 = tsk_getu64(xfs->fs_info.endian, rec->l1);
 
-	count += len;					/* name */
-	count += hdr->i8count ? XFS_INO64_SIZE : XFS_INO32_SIZE; /* ino # */
-	return count;
-}
+    irec->br_startoff = (l0 & xfs_mask64lo(64 - BMBT_EXNTFLAG_BITLEN)) >> 9;
+    irec->br_startblock = ((l0 & xfs_mask64lo(9)) << 43) | (l1 >> 21);
+    irec->br_blockcount = l1 & xfs_mask64lo(21);
 
-static int
-xfs_dir3_sf_entsize(
-	struct xfs_dir2_sf_hdr	*hdr,
-	int			len)
-{
-	return xfs_dir2_sf_entsize(hdr, len) + sizeof(uint8_t);
-}
-
-static struct xfs_dir2_sf_entry *
-xfs_dir3_sf_nextentry(
-	struct xfs_dir2_sf_hdr	*hdr,
-	struct xfs_dir2_sf_entry *sfep)
-{
-	return (struct xfs_dir2_sf_entry *)
-		((char *)sfep + xfs_dir3_sf_entsize(hdr, sfep->namelen));
+    if (l0 >> (64 - BMBT_EXNTFLAG_BITLEN))
+        irec->br_state = XFS_EXT_UNWRITTEN;
+    else
+        irec->br_state = XFS_EXT_NORM;
 }
 
 static struct xfs_dir2_data_entry *

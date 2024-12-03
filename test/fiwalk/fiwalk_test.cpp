@@ -131,9 +131,9 @@ TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
 }
 
 
-TEST_CASE("test_disk_images 2gb-xfs.dd xfs", "[fiwalk]") {
+TEST_CASE("test_disk_images 2GB-xfs-raw.001 xfs", "[fiwalk]") {
     check_image(
-      "test/from_brian/2gb-xfs.dd",
+      "test/from_brian/2GB-xfs-raw.001",
       ""
     );
 }

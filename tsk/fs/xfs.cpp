@@ -13,25 +13,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_xfs.h"
 
-void
-xfs_bmbt_disk_get_all(
-    XFS_INFO* xfs,
-    struct xfs_bmbt_rec *rec,
-    struct xfs_bmbt_irec    *irec)
-{
-    uint64_t        l0 = tsk_getu64(xfs->fs_info.endian, rec->l0);
-    uint64_t        l1 = tsk_getu64(xfs->fs_info.endian, rec->l1);
-
-    irec->br_startoff = (l0 & xfs_mask64lo(64 - BMBT_EXNTFLAG_BITLEN)) >> 9;
-    irec->br_startblock = ((l0 & xfs_mask64lo(9)) << 43) | (l1 >> 21);
-    irec->br_blockcount = l1 & xfs_mask64lo(21);
-
-    if (l0 >> (64 - BMBT_EXNTFLAG_BITLEN))
-        irec->br_state = XFS_EXT_UNWRITTEN;
-    else
-        irec->br_state = XFS_EXT_NORM;
-}
-
 /** \internal
  * Add a single extent -- that is, a single data ran -- to the file data attribute.
  * @return 0 on success, 1 on error.
@@ -129,7 +110,7 @@ xfs_load_attrs_block(TSK_FS_FILE *fs_file)
             return 1;
         }
 
-        rec = xfs_dir2_data_nextentry(rec);
+        rec = (xfs_bmbt_rec_t*)xfs_dir2_data_nextentry((xfs_dir2_data_entry*)rec);
     }
     
     fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
@@ -317,7 +298,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
          fs_meta->link = NULL;
     }
 
-    if (fs_meta->content_len != XFS_CONTENT_LEN_V5(xfs)) {
+    if (fs_meta->content_len != (size_t)XFS_CONTENT_LEN_V5(xfs)) {
          if (tsk_verbose) {
             fprintf(stderr, "xfs.cpp: content_len is not XFS_CONTENT_LEN_V5\n");
          }
@@ -361,7 +342,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
 }    
 
 uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
-    TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB a_action, void *a_ptr)
+    TSK_FS_META_FLAG_ENUM flags,[[maybe_unused]] TSK_FS_META_WALK_CB a_action, [[maybe_unused]]void *a_ptr)
 {
     const char *myname = "xfs_inode_walk";
     TSK_FS_FILE * fs_file;
@@ -371,13 +352,13 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
     if(start_inum < fs->first_inum || start_inum > fs->last_inum){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr("%s: start inode: %s" PRIuINUM "", myname, start_inum);
+        tsk_error_set_errstr("%s: start inode: %lu" PRIuINUM "", myname, start_inum);
         return 1;
     }
     if(end_inum < fs->first_inum || end_inum > fs->last_inum || end_inum < start_inum){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr("%s: end inode: %s" PRIuINUM "", myname, end_inum);
+        tsk_error_set_errstr("%s: end inode: %lu" PRIuINUM "", myname, end_inum);
         return 1;
     }
 
@@ -485,13 +466,13 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
             && ((a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) == 0) && (a_fs_file->meta->size == 0)) 
         {
             xfs_bmbt_irec_t *irec = (xfs_bmbt_irec_t*)tsk_malloc(sizeof(xfs_bmbt_irec_t));
-            xfs_bmbt_disk_get_all(xfs, a_fs_file->meta->content_ptr, irec);
+            xfs_bmbt_disk_get_all(xfs, (xfs_bmbt_rec*) a_fs_file->meta->content_ptr, irec);
             a_fs_file->meta->size = irec->br_blockcount * fs->block_size;
 
         }  
         else if(a_fs_file->meta->type == TSK_FS_META_TYPE_UNDEF) {
             TSK_FS_META * new_meta;
-            new_meta = tsk_fs_meta_alloc(fs);
+            new_meta = tsk_fs_meta_alloc(fs->block_size);
             if ((new_meta = tsk_fs_meta_alloc(XFS_CONTENT_LEN_V5(xfs))) == NULL) // #define XFS_CONTENT_LEN 
                 return 1;        
 
