@@ -27,7 +27,14 @@ typedef uint64_t XFS_AGNUM_T;
 typedef uint32_t xfs_dir2_data_aoff_t;   /* argument form */
 typedef uint32_t xfs_dir2_dataptr_t;
 
-#define __round_mask(x, y) ((__typeof__(x))((y)-1))
+#define _MSC_VER  // Uncomment for MSVC, comment for GCC/Clang
+#ifdef _MSC_VER
+    // For MSVC
+    #define __round_mask(x, y) ((x) < (y) ? 0 : ((y) - 1))
+#else
+    // For GCC
+    #define __round_mask(x, y) ((__typeof__(x))((y) - 1))
+#endif
 #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
 
 #define 	XFS_MIN_AG_BLOCKS   64
