@@ -27,6 +27,7 @@
 #include <time.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -84,7 +85,7 @@ struct Options {
     TSK_OFF_T snap_id = 0;
     int32_t sec_skew = 0;
     const char* password = "";
-    const TSK_TCHAR* macpre = nullptr;
+    std::optional<TSK_TSTRING> macpre;
     unsigned int verbose = 0;
 };
 
@@ -256,6 +257,13 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv, char** argv1) 
         opts.fls_flags |= TSK_FS_FLS_FULL;
     }
 
+    /* we need to append a / to the end of the directory if
+     * one does not already exist
+     */
+    if (opts.macpre && opts.macpre->back() != _TSK_T('/')) {
+        *opts.macpre += _TSK_T("/");
+    }
+
     return opts;
 }
 
@@ -272,7 +280,7 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
       snap_id,
       sec_skew,
       password,
-      opts_macpre,
+      macpre,
       _ // verbose
     ] = opts;
 
@@ -284,25 +292,6 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
     const TSK_POOL_INFO *pool = NULL;
 
     TSK_INUM_T inode;
-
-    /* we need to append a / to the end of the directory if
-     * one does not already exist
-     */
-    TSK_TSTRING macpre_str;
-    TSK_TCHAR* macpre;
-
-    if (opts_macpre) {
-        macpre_str = opts_macpre;
-        macpre = &macpre_str[0];
-
-        size_t len = TSTRLEN(opts_macpre);
-        if (opts_macpre[len - 1] != '/') {
-            macpre_str += _TSK_T("/");
-        }
-    }
-    else {
-        macpre = nullptr;
-    }
 
     /* open image - there is an optional inode address at the end of args
      *
@@ -432,7 +421,7 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
     }
 
     if (tsk_fs_fls(fs, (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
-            (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre, sec_skew)) {
+            (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre ? macpre->c_str() : nullptr, sec_skew)) {
         tsk_error_print(stderr);
         tsk_fs_close(fs);
         tsk_img_close(img);
