@@ -309,6 +309,7 @@ open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
       nullptr, tsk_fs_close
     };
 
+    bool had_inum_arg = false;
     TSK_INUM_T inode;
 
     /* open image - there is an optional inode address at the end of args
@@ -318,59 +319,7 @@ open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
     if (tsk_fs_parse_inum(argv[argc - 1], &inode, NULL, NULL, NULL, NULL)) {
         /* Not an inode at the end */
         img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
-        if (!img) {
-            tsk_error_print(stderr);
-            return 1;
-        }
-
-        if ((imgaddr * img->sector_size) >= img->size) {
-            tsk_fprintf(stderr,
-                "Sector offset supplied is larger than disk image (maximum: %"
-                PRIu64 ")\n", img->size / img->sector_size);
-            return 1;
-        }
-
-        if (pvol_block == 0) {
-            fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
-            if (!fs) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
-                    tsk_fs_type_print(stderr);
-                }
-                return 1;
-            }
-        }
-        else {
-            // Pool block was specified, so open pool
-            pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
-            if (!pool) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
-                    tsk_pool_type_print(stderr);
-                }
-                return 1;
-            }
-
-            img_parent = std::move(img);
-
-            TSK_OFF_T offset = imgaddr * img->sector_size;
-#if HAVE_LIBVSLVM
-            if (pool->ctype == TSK_POOL_TYPE_LVM){
-                offset = 0;
-            }
-#endif /* HAVE_LIBVSLVM */
-            img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
-            fs.reset(tsk_fs_open_img_decrypt(img.get(), offset, fstype, password));
-            if (!fs) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
-                    tsk_fs_type_print(stderr);
-                }
-                return 1;
-            }
-        }
-
-        inode = fs->root_inum;
+        had_inum_arg = true;
     }
     else {
         // check that we have enough arguments
@@ -381,57 +330,62 @@ open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
         }
 
         img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
-        if (!img) {
+    }
+
+    if (!img) {
+        tsk_error_print(stderr);
+        return 1;
+    }
+
+    if (imgaddr * img->sector_size >= img->size) {
+        tsk_fprintf(stderr,
+            "Sector offset supplied is larger than disk image (maximum: %"
+             PRIu64 ")\n", img->size / img->sector_size);
+        return 1;
+    }
+
+    if (pvol_block == 0) {
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+        if (!fs) {
             tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
+                tsk_fs_type_print(stderr);
+            }
+            return 1;
+        }
+    }
+    else {
+        // Pool block was specified, so open pool
+        pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+        if (!pool) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
+                tsk_pool_type_print(stderr);
+            }
             return 1;
         }
 
-        if (imgaddr * img->sector_size >= img->size) {
-            tsk_fprintf(stderr,
-                "Sector offset supplied is larger than disk image (maximum: %"
-                PRIu64 ")\n", img->size / img->sector_size);
-            return 1;
-        }
+        img_parent = std::move(img);
 
-        if (pvol_block == 0) {
-            fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
-            if (!fs) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
-                    tsk_fs_type_print(stderr);
-                }
-                return 1;
-            }
-        }
-        else {
-            // Pool block was specified, so open pool
-            pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
-            if (!pool) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
-                    tsk_pool_type_print(stderr);
-                }
-                return 1;
-            }
-
-            img_parent = std::move(img);
-
-            TSK_OFF_T offset = imgaddr * img->sector_size;
+        TSK_OFF_T offset = imgaddr * img->sector_size;
 #if HAVE_LIBVSLVM
-            if (pool->ctype == TSK_POOL_TYPE_LVM){
-                offset = 0;
-            }
-#endif /* HAVE_LIBVSLVM */
-            img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
-            fs.reset(tsk_fs_open_img_decrypt(img.get(), offset, fstype, password));
-            if (!fs) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
-                    tsk_fs_type_print(stderr);
-                }
-                return 1;
-            }
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
         }
+#endif /* HAVE_LIBVSLVM */
+        img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), offset, fstype, password));
+        if (!fs) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
+                tsk_fs_type_print(stderr);
+            }
+            return 1;
+        }
+    }
+
+    if (had_inum_arg) {
+      inode = fs->root_inum;
     }
 
     return Holder{
