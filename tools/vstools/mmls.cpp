@@ -262,7 +262,11 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
     return opts;
 }
 
-int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
+int do_it(
+  const Options& opts,
+  const TSK_TCHAR* const* img_paths,
+  size_t img_paths_len)
+{
     auto [
       flags,
       print_bytes,
@@ -278,7 +282,7 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
 
     /* open the image */
     std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_open(img_paths_len, img_paths, imgtype, ssize),
         tsk_img_close
     };
 
@@ -367,5 +371,5 @@ main(int argc, char **argv1)
     }
 
     const auto& opts = std::get<Options>(p);
-    return do_it(opts, argc, argv);
+    return do_it(opts, &argv[OPTIND], argc - OPTIND);
 }
