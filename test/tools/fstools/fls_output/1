@@ -1,5 +1,5 @@
 Missing image name
-usage: /home/juckelman/projects/make_world/world/sleuthkit/tools/fstools/.libs/fls [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]
+usage: fls [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]
 	If [inode] is not given, the root directory is used
 	-a: Display "." and ".." entries
 	-d: Display deleted entries only
