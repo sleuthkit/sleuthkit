@@ -286,10 +286,21 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
 
     tsk_verbose = opts.verbose;
 
-    TSK_FS_INFO *fs = NULL;
-    TSK_IMG_INFO *img = NULL;
-    TSK_IMG_INFO *img_parent = NULL;
-    const TSK_POOL_INFO *pool = NULL;
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_parent{
+      nullptr, tsk_img_close
+    };
+
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+      nullptr, tsk_pool_close
+    };
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+      nullptr, tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+      nullptr, tsk_fs_close
+    };
 
     TSK_INUM_T inode;
 
@@ -299,9 +310,8 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
      */
     if (tsk_fs_parse_inum(argv[argc - 1], &inode, NULL, NULL, NULL, NULL)) {
         /* Not an inode at the end */
-        if ((img =
-                tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
+        img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             return 1;
         }
@@ -310,29 +320,31 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
             tsk_fprintf(stderr,
                 "Sector offset supplied is larger than disk image (maximum: %"
                 PRIu64 ")\n", img->size / img->sector_size);
-            tsk_img_close(img);
             return 1;
         }
 
         if (pvol_block == 0) {
-            if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+            fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+            if (!fs) {
                 tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                     tsk_fs_type_print(stderr);
-                tsk_img_close(img);
+                }
                 return 1;
             }
-        } else {
+        }
+        else {
             // Pool block was specified, so open pool
-            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-            if (pool == NULL) {
+            pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+            if (!pool) {
                 tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                     tsk_pool_type_print(stderr);
-                tsk_img_close(img);
+                }
                 return 1;
             }
-            img_parent = img;
+
+            img_parent = std::move(img);
 
             TSK_OFF_T offset = imgaddr * img->sector_size;
 #if HAVE_LIBVSLVM
@@ -340,14 +352,13 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
                 offset = 0;
             }
 #endif /* HAVE_LIBVSLVM */
-            img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-            if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
+            img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+            fs.reset(tsk_fs_open_img_decrypt(img.get(), offset, fstype, password));
+            if (!fs) {
                 tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                     tsk_fs_type_print(stderr);
-                tsk_img_close(img);
-                tsk_pool_close(pool);
-                tsk_img_close(img_parent);
+                }
                 return 1;
             }
         }
@@ -362,40 +373,41 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
             return 1;
         }
 
-        if ((img =
-                tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
+        img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             return 1;
         }
-        if ((imgaddr * img->sector_size) >= img->size) {
+
+        if (imgaddr * img->sector_size >= img->size) {
             tsk_fprintf(stderr,
                 "Sector offset supplied is larger than disk image (maximum: %"
                 PRIu64 ")\n", img->size / img->sector_size);
-            tsk_img_close(img);
             return 1;
         }
 
         if (pvol_block == 0) {
-            if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+            fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+            if (!fs) {
                 tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                     tsk_fs_type_print(stderr);
-                tsk_img_close(img);
+                }
                 return 1;
             }
-        } else {
+        }
+        else {
             // Pool block was specified, so open pool
-            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-
-            if (pool == NULL) {
+            pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+            if (!pool) {
                 tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                     tsk_pool_type_print(stderr);
-                tsk_img_close(img);
+                }
                 return 1;
             }
-            img_parent = img;
+
+            img_parent = std::move(img);
 
             TSK_OFF_T offset = imgaddr * img->sector_size;
 #if HAVE_LIBVSLVM
@@ -403,46 +415,28 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
                 offset = 0;
             }
 #endif /* HAVE_LIBVSLVM */
-            img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-            if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
+            img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+            fs.reset(tsk_fs_open_img_decrypt(img.get(), offset, fstype, password));
+            if (!fs) {
                 tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                     tsk_fs_type_print(stderr);
-                tsk_img_close(img);
-                tsk_pool_close(pool);
-                tsk_img_close(img_parent);
+                }
                 return 1;
             }
         }
     }
 
     if (snap_id > 0) {
-        tsk_apfs_set_snapshot(fs, (uint64_t)snap_id);
+        tsk_apfs_set_snapshot(fs.get(), (uint64_t)snap_id);
     }
 
-    if (tsk_fs_fls(fs, (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
+    if (tsk_fs_fls(fs.get(), (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
             (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre ? macpre->c_str() : nullptr, sec_skew)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
-        if (pool != NULL) {
-          tsk_pool_close(pool);
-        }
-        if (img_parent != NULL) {
-          tsk_img_close(img_parent);
-        }
         return 1;
     }
 
-    tsk_fs_close(fs);
-    tsk_img_close(img);
-
-    if (pool != NULL) {
-      tsk_pool_close(pool);
-    }
-    if (img_parent != NULL) {
-      tsk_img_close(img_parent);
-    }
     return 0;
 }
 
