@@ -17,9 +17,8 @@
 void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"));
+    tsk_fprintf(stderr,
+        "usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n");
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
