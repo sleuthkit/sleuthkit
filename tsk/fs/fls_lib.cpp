@@ -26,20 +26,20 @@
 
 #include "tsk_fs_i.h"
 
+#include <string>
+
 /** \internal
 * Structure to store data for callbacks.
 */
-typedef struct {
+struct FLS_DATA {
     /* Time skew of the system in seconds */
     int32_t sec_skew;
 
     /*directory prefix for printing mactime output */
-    const char *macpre;
+    std::string macpre;
+
     int flags;
-} FLS_DATA;
-
-
-
+};
 
 /* this is a wrapper type function that takes care of the runtime
  * flags
@@ -73,7 +73,7 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
             if(0 == tsk_fs_file_hash_calc(fs_file, &hash_results,
                 TSK_BASE_HASH_MD5)){
 				tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
-					fls_data->macpre, fls_data->sec_skew,
+					fls_data->macpre.c_str(), fls_data->sec_skew,
 					hash_results.md5_digest);
                                 tsk_printf("\n");
 			}
@@ -82,14 +82,14 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 				// If the hash calculation had errors, pass in a buffer of nulls
 				memset(null_buf, 0, 16);
 				tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
-					fls_data->macpre, fls_data->sec_skew,
+					fls_data->macpre.c_str(), fls_data->sec_skew,
 					null_buf);
                                 tsk_printf("\n");
 			}
         }
         else {
             tsk_fs_name_print_mac(stdout, fs_file, a_path,
-                fs_attr, fls_data->macpre, fls_data->sec_skew);
+                fs_attr, fls_data->macpre.c_str(), fls_data->sec_skew);
             tsk_printf("\n");
         }
     }
@@ -215,22 +215,17 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
     data.flags = lclflags;
     data.sec_skew = skew;
 
+    if (tpre) {
+        const size_t tlen = TSTRLEN(tpre);
+        if (tlen > 0) {
 #ifdef TSK_WIN32
-    {
-        UTF8 *ptr8;
-        UTF16 *ptr16;
-        int retval;
+            size_t clen = tlen * 4;
 
-        if ((tpre != NULL) && (TSTRLEN(tpre) > 0)) {
-            size_t clen = TSTRLEN(tpre) * 4;
-            data.macpre = (char *) tsk_malloc(clen);
-            if (data.macpre == NULL) {
-                return 1;
-            }
-            ptr8 = (UTF8 *) data.macpre;
-            ptr16 = (UTF16 *) tpre;
+            data.macpre.resize(clen);
+            UTF8* ptr8 = (UTF8 *) &data.macpre[0];
+            UTF16* ptr16 = (UTF16 *) tpre;
 
-            retval =
+            const int retval =
                 tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
                 & ptr16[TSTRLEN(tpre) + 1], &ptr8,
                 (UTF8 *) ((uintptr_t) ptr8 + clen), TSKlenientConversion);
@@ -242,23 +237,11 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
                     retval);
                 return 1;
             }
-        }
-        else {
-            data.macpre = (char *) tsk_malloc(1);
-            if (data.macpre == NULL) {
-                return 1;
-            }
-            data.macpre[0] = '\0';
-        }
-
-        retval = tsk_fs_dir_walk(fs, inode, flags, print_dent_act, &data);
-
-        free(data.macpre);
-        data.macpre = NULL;
-        return retval;
-    }
 #else
-    data.macpre = tpre;
-    return tsk_fs_dir_walk(fs, inode, flags, print_dent_act, &data);
+            data.macpre = tpre;
 #endif
+        }
+    }
+
+    return tsk_fs_dir_walk(fs, inode, flags, print_dent_act, &data);
 }
