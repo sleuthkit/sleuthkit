@@ -34,7 +34,7 @@ typedef struct {
     int32_t sec_skew;
 
     /*directory prefix for printing mactime output */
-    char *macpre;
+    const char *macpre;
     int flags;
 } FLS_DATA;
 
@@ -207,7 +207,7 @@ print_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
 /* Returns 0 on success and 1 on error */
 uint8_t
 tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
-    TSK_INUM_T inode, TSK_FS_DIR_WALK_FLAG_ENUM flags, TSK_TCHAR * tpre,
+    TSK_INUM_T inode, TSK_FS_DIR_WALK_FLAG_ENUM flags, const TSK_TCHAR * tpre,
     int32_t skew)
 {
     FLS_DATA data;
