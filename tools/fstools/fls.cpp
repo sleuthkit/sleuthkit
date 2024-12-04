@@ -267,7 +267,16 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv, char** argv1) 
     return opts;
 }
 
-int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
+struct Holder {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_parent;
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool;
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img;
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs;
+    TSK_INUM_T inode;
+};
+
+std::variant<Holder, int>
+open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
     auto [
       fls_flags,
       name_flags,
@@ -277,14 +286,12 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
       pooltype,
       fstype,
       pvol_block,
-      snap_id,
-      sec_skew,
+      _snap_id,
+      _sec_skew,
       password,
-      macpre,
-      _ // verbose
+      _macpre,
+      _verbose
     ] = opts;
-
-    tsk_verbose = opts.verbose;
 
     std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_parent{
       nullptr, tsk_img_close
@@ -427,12 +434,22 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
         }
     }
 
+    return Holder{
+        std::move(img_parent),
+        std::move(pool),
+        std::move(img),
+        std::move(fs),
+        inode
+    };
+}
+
+int do_it(TSK_FS_INFO* fs, uint64_t snap_id, int fls_flags, TSK_INUM_T inode, int name_flags, const TSK_TCHAR* macpre, int32_t sec_skew) {
     if (snap_id > 0) {
-        tsk_apfs_set_snapshot(fs.get(), (uint64_t)snap_id);
+        tsk_apfs_set_snapshot(fs, snap_id);
     }
 
-    if (tsk_fs_fls(fs.get(), (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
-            (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre ? macpre->c_str() : nullptr, sec_skew)) {
+    if (tsk_fs_fls(fs, (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
+            (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre, sec_skew)) {
         tsk_error_print(stderr);
         return 1;
     }
@@ -461,7 +478,23 @@ main(int argc, char **argv1)
     if (const int* ret = std::get_if<int>(&p)) {
       return *ret;
     }
-
     const auto& opts = std::get<Options>(p);
-    return do_it(opts, argc, argv);
+
+    tsk_verbose = opts.verbose;
+
+    auto r = open_handles(opts, argc, argv);
+    if (const int* ret = std::get_if<int>(&r)) {
+      return *ret;
+    }
+    auto& h = std::get<Holder>(r);
+
+    return do_it(
+        h.fs.get(),
+        opts.snap_id,
+        opts.fls_flags,
+        h.inode,
+        opts.name_flags,
+        opts.macpre ? opts.macpre->c_str() : nullptr,
+        opts.sec_skew
+    );
 }
