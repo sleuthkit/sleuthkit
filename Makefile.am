@@ -214,7 +214,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/ffind_lib.c \
 	tsk/fs/ffs.cpp \
 	tsk/fs/ffs_dent.cpp \
-	tsk/fs/fls_lib.c \
+	tsk/fs/fls_lib.cpp \
 	tsk/fs/fs_attr.cpp \
 	tsk/fs/fs_attrlist.c \
 	tsk/fs/fs_block.c \
