@@ -276,7 +276,7 @@ struct Holder {
 };
 
 std::variant<Holder, int>
-open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
+open_handles(const Options& opts, const TSK_TCHAR* const* argv, size_t argc) {
     auto [
       fls_flags,
       name_flags,
@@ -318,17 +318,17 @@ open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
      */
     if (tsk_fs_parse_inum(argv[argc - 1], &inode, NULL, NULL, NULL, NULL)) {
         /* Not an inode at the end */
-        img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
+        img.reset(tsk_img_open(argc, argv, imgtype, ssize));
     }
     else {
         // check that we have enough arguments
-        if (OPTIND + 1 == argc) {
+        if (argc == 1) {
             tsk_fprintf(stderr, "Missing image name or inode\n");
             usage();
             return 1;
         }
 
-        img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
+        img.reset(tsk_img_open(argc - 1, argv, imgtype, ssize));
         had_inum_arg = true;
     }
 
@@ -436,7 +436,7 @@ main(int argc, char **argv1)
 
     tsk_verbose = opts.verbose;
 
-    auto r = open_handles(opts, argc, argv);
+    auto r = open_handles(opts, argv + OPTIND, argc - OPTIND);
     if (const int* ret = std::get_if<int>(&r)) {
       return *ret;
     }
