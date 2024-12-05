@@ -1,4 +1,5 @@
 #include "tools/util.h"
+#include "tsk/base/tsk_os.h"
 
 #include <cstdio>
 #include <cstdlib>
