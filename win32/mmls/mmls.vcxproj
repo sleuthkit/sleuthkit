@@ -424,6 +424,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tools\vstools\mmls.cpp" />
+    <ClCompile Include="..\..\tools\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libtsk\libtsk.vcxproj">

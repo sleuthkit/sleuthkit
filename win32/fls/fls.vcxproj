@@ -434,6 +434,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tools\fstools\fls.cpp" />
+    <ClCompile Include="..\..\tools\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libtsk\libtsk.vcxproj">
