@@ -62,7 +62,7 @@ jobs:
             runner: "ubuntu-24.04"
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --enable-shared --disable-static"
             winearch: 'win64'
-            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
+            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine64'
             codecov: "no"
             prefix: ""
@@ -76,7 +76,7 @@ jobs:
             runner: "ubuntu-24.04"
             configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --disable-shared --enable-static"
             winearch: 'win64'
-            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\10-posix'
+            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine64'
             codecov: "no"
             prefix: ""
@@ -91,7 +91,7 @@ jobs:
             configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static --disable-java"
             configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static"
             winearch: 'win32'
-            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
+            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine32'
             codecov: "no"
             prefix: ""
@@ -106,7 +106,7 @@ jobs:
             configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static --disable-java"
             configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static"
             winearch: 'win32'
-            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\10-posix'
+            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine32'
             codecov: "no"
             prefix: ""
