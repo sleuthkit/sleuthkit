@@ -20,7 +20,7 @@ argv_to_tsk_tchar(int argc, char**) {
     std::exit(1);
   }
 
-  return { args, argc };
+  return { std::move(args), argc };
 #else
 argv_to_tsk_tchar(int argc, char** argv) {
   // Pass argv, argc through when not on Windows
