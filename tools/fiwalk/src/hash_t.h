@@ -224,7 +224,8 @@ public:
 
   std::string hexdigest() const {
     std::string buf('\0', this->SIZE*2);
-    return std::string(hexdigest(&buf[0], buf.size()));
+    hexdigest(&buf[0], buf.size());
+    return buf;
   }
 
   /**
