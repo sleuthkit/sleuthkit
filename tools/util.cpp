@@ -7,8 +7,8 @@ std::pair<
   std::unique_ptr<TSK_TCHAR*[], void(*)(TSK_TCHAR**)>,
   int
 >
-argv_to_tsk_tchar(int argc, char** argv) {
 #ifdef TSK_WIN32
+argv_to_tsk_tchar(int argc, char**) {
   // On Windows, get the wide arguments (mingw doesn't support wmain)
   const auto args = std::unique_ptr<TSK_TCHAR*[]>, void(*)(TSK_TCHAR**)>{
     CommandLineToArgvW(GetCommandLineW(), &argc),
@@ -22,6 +22,7 @@ argv_to_tsk_tchar(int argc, char** argv) {
 
   return { args, argc };
 #else
+argv_to_tsk_tchar(int argc, char** argv) {
   // Pass argv, argc through when not on Windows
   return {
     std::unique_ptr<TSK_TCHAR*[], void(*)(TSK_TCHAR**)>{
