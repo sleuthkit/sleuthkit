@@ -319,7 +319,6 @@ open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
     if (tsk_fs_parse_inum(argv[argc - 1], &inode, NULL, NULL, NULL, NULL)) {
         /* Not an inode at the end */
         img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
-        had_inum_arg = true;
     }
     else {
         // check that we have enough arguments
@@ -330,6 +329,7 @@ open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
         }
 
         img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
+        had_inum_arg = true;
     }
 
     if (!img) {
@@ -384,7 +384,7 @@ open_handles(const Options& opts, int argc, TSK_TCHAR** argv) {
         }
     }
 
-    if (had_inum_arg) {
+    if (!had_inum_arg) {
       inode = fs->root_inum;
     }
 
