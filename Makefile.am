@@ -129,6 +129,7 @@ nobase_dist_data_DATA = \
 TSK_LIB = tsk/libtsk.la
 
 noinst_LTLIBRARIES = \
+	tools/libtsktools.la \
 	tsk/auto/libtskauto.la \
 	tsk/base/libtskbase.la \
 	tsk/fs/libtskfs.la \
@@ -404,6 +405,10 @@ bin_PROGRAMS = \
 	tools/vstools/mmstat \
 	tools/vstools/mmcat
 
+tools_libtsktools_la_SOURCES = \
+	tools/util.cpp \
+	tools/util.h
+
 tools_autotools_tsk_comparedir_LDADD = $(TSK_LIB)
 tools_autotools_tsk_comparedir_SOURCES = \
 	tools/autotools/tsk_comparedir.cpp \
@@ -496,7 +501,7 @@ tools_fstools_blkstat_SOURCES = tools/fstools/blkstat.cpp
 tools_fstools_ffind_LDADD = $(TSK_LIB)
 tools_fstools_ffind_SOURCES = tools/fstools/ffind.cpp
 
-tools_fstools_fls_LDADD = $(TSK_LIB)
+tools_fstools_fls_LDADD = $(TSK_LIB) tools/libtsktools.la
 tools_fstools_fls_SOURCES = tools/fstools/fls.cpp
 
 tools_fstools_fcat_LDADD = $(TSK_LIB)
@@ -545,7 +550,7 @@ tools_srchtools_srch_strings_SOURCES = tools/srchtools/srch_strings.c
 tools_srchtools_sigfind_LDADD = $(TSK_LIB)
 tools_srchtools_sigfind_SOURCES = tools/srchtools/sigfind.cpp
 
-tools_vstools_mmls_LDADD = $(TSK_LIB)
+tools_vstools_mmls_LDADD = $(TSK_LIB) tools/libtsktools.la
 tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp
 
 tools_vstools_mmstat_LDADD = $(TSK_LIB)

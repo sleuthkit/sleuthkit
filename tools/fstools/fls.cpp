@@ -22,6 +22,7 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/base/tsk_os_cpp.h"
 #include "tsk/fs/apfs_fs.h"
+#include "tools/util.h"
 
 #include <locale.h>
 #include <time.h>
@@ -412,23 +413,13 @@ int do_it(TSK_FS_INFO* fs, uint64_t snap_id, int fls_flags, TSK_INUM_T inode, in
 }
 
 int
-main(int argc, char **argv1)
+main(int argc1, char **argv1)
 {
-    TSK_TCHAR **argv;
-#ifdef TSK_WIN32
-    // On Windows, get the wide arguments (mingw doesn't support wmain)
-    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
-        exit(1);
-    }
-#else
-    argv = (TSK_TCHAR **) argv1;
-#endif
+    auto [argv, argc] = argv_to_tsk_tchar(argc1, argv1);
 
     setlocale(LC_ALL, "");
 
-    const auto p = parse_args(argc, argv, argv1);
+    const auto p = parse_args(argc, argv.get(), argv1);
     if (const int* ret = std::get_if<int>(&p)) {
       return *ret;
     }
@@ -436,7 +427,7 @@ main(int argc, char **argv1)
 
     tsk_verbose = opts.verbose;
 
-    auto r = open_handles(opts, argv + OPTIND, argc - OPTIND);
+    auto r = open_handles(opts, &argv[OPTIND], argc - OPTIND);
     if (const int* ret = std::get_if<int>(&r)) {
       return *ret;
     }

@@ -10,6 +10,7 @@
  * This software is distributed under the Common Public License 1.0
  */
 #include "tsk/tsk_tools_i.h"
+#include "tools/util.h"
 
 #include <memory>
 #include <variant>
@@ -351,21 +352,11 @@ int do_it(
 }
 
 int
-main(int argc, char **argv1)
+main(int argc1, char **argv1)
 {
-    TSK_TCHAR **argv;
-#ifdef TSK_WIN32
-    // On Windows, get the wide arguments (mingw doesn't support wmain)
-    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
-        exit(1);
-    }
-#else
-    argv = (TSK_TCHAR **) argv1;
-#endif
+    auto [argv, argc] = argv_to_tsk_tchar(argc1, argv1);
 
-    const auto p = parse_args(argc, argv);
+    const auto p = parse_args(argc, argv.get());
     if (const int* ret = std::get_if<int>(&p)) {
       return *ret;
     }
