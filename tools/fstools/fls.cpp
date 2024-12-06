@@ -24,15 +24,11 @@
 #include <locale.h>
 #include <time.h>
 
-static TSK_TCHAR *progname;
-
 void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: fls [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n");
     tsk_fprintf(stderr,
         "\tIf [inode] is not given, the root directory is used\n");
     tsk_fprintf(stderr, "\t-a: Display \".\" and \"..\" entries\n");
@@ -112,7 +108,6 @@ main(int argc, char **argv1)
     argv = (TSK_TCHAR **) argv1;
 #endif
 
-    progname = argv[0];
     setlocale(LC_ALL, "");
 
     fls_flags = TSK_FS_FLS_DIR | TSK_FS_FLS_FILE;

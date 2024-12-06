@@ -593,6 +593,7 @@ check_SCRIPTS = \
 	test/img_dump/test_imgs_E01.sh \
 	test/legacy/runtests.sh \
 	test/tools/tool_differ.sh \
+	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
 
@@ -602,6 +603,7 @@ TESTS =	\
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
 	test/legacy/runtests.sh \
+	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh
 
 if HAVE_E01
