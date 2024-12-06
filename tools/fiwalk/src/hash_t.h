@@ -223,9 +223,9 @@ public:
   }
 
   std::string hexdigest() const {
-    std::string ret;
-    char buf[this->SIZE*2 + 1];
-    return std::string(hexdigest(buf, sizeof(buf)));
+    std::string buf('\0', this->SIZE*2);
+    hexdigest(&buf[0], buf.size());
+    return buf;
   }
 
   /**

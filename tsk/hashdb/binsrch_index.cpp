@@ -111,20 +111,20 @@ static uint8_t
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
-            _TSK_T("%s-%s.idx"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
         TSNPRINTF(hdb_binsrch_info->idx_idx_fname, flen,
-            _TSK_T("%s-%s.idx2"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx2"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
         return 0;
     case TSK_HDB_HTYPE_SHA1_ID:
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
-            _TSK_T("%s-%s.idx"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
         TSNPRINTF(hdb_binsrch_info->idx_idx_fname, flen,
-            _TSK_T("%s-%s.idx2"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx2"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
         return 0;
 
@@ -702,7 +702,7 @@ uint8_t
         return 1;
     }
     TSNPRINTF(hdb_binsrch_info->uns_fname, flen,
-        _TSK_T("%s-%s-ns.idx"), hdb_binsrch_info->base.db_fname,
+        _TSK_T("%s-%") PRIcTSK _TSK_T("-ns.idx"), hdb_binsrch_info->base.db_fname,
         TSK_HDB_HTYPE_STR(hdb_binsrch_info->hash_type));
 
 
