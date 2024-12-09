@@ -1159,9 +1159,9 @@ TSK_OFF_T xfs_inode_get_offset(XFS_INFO * xfs, TSK_INUM_T a_addr){
     /* lock access to grp_buf */
     tsk_take_lock(&xfs->lock);
 
-    uint32_t ag_num = a_addr >> (sb_agblklog + sb_inopblog);
-    uint32_t blk_num = (a_addr - (ag_num << (sb_agblklog + sb_inopblog))) >> sb_inopblog;
-    uint32_t sec_num = (a_addr - (ag_num << (sb_agblklog + sb_inopblog)) - (blk_num << sb_inopblog));
+    uint64_t ag_num = a_addr >> (sb_agblklog + sb_inopblog);
+    uint64_t blk_num = (a_addr - (ag_num << (sb_agblklog + sb_inopblog))) >> sb_inopblog;
+    uint64_t sec_num = (a_addr - (ag_num << (sb_agblklog + sb_inopblog)) - (blk_num << sb_inopblog));
 
     tsk_release_lock(&xfs->lock);
 
