@@ -42,6 +42,7 @@ usage()
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
         "\t-d dir_inum: Directory inum to recover from (must also specify a specific partition using -o or there must not be a volume system)\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }
@@ -58,7 +59,7 @@ public:
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
-    uint8_t openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_ENUM pooltype, TSK_DADDR_T pvol_block);
+    uint8_t openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_ENUM pooltype, TSK_DADDR_T pvol_block, const char* password);
     uint8_t findFiles(TSK_INUM_T a_dirInum);
     uint8_t handleError();
 
@@ -373,11 +374,11 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
 }
 
 uint8_t
-TskRecover::openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_ENUM pooltype, TSK_DADDR_T pvol_block)
+TskRecover::openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_ENUM pooltype, TSK_DADDR_T pvol_block, const char* password)
 {
     if (pvol_block == 0) {
         if ((m_fs_info = tsk_fs_open_img_decrypt(m_img_info, a_soffset * m_img_info->sector_size,
-            fstype, "")) == NULL) {
+            fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
@@ -394,7 +395,7 @@ TskRecover::openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_E
         }
 
         m_img_info = pool->get_img_info(pool, pvol_block);
-        if ((m_fs_info = tsk_fs_open_img_decrypt(m_img_info, a_soffset * m_img_info->sector_size, fstype, "")) == NULL) {
+        if ((m_fs_info = tsk_fs_open_img_decrypt(m_img_info, a_soffset * m_img_info->sector_size, fstype, password)) == NULL) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
@@ -431,6 +432,7 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp;
     TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
     TSK_INUM_T dirInum = 0;
+    const char* password = "";
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -446,7 +448,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:d:ef:i:o:P:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:d:ef:i:k:o:P:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -539,6 +541,10 @@ main(int argc, char **argv1)
             }
             break;
 
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
+            break;
+
         case _TSK_T('v'):
             tsk_verbose++;
             break;
@@ -557,6 +563,7 @@ main(int argc, char **argv1)
     }
 
     TskRecover tskRecover(argv[argc-1]);
+    tskRecover.setFileSystemPassword(password);
 
     tskRecover.setFileFilterFlags(walkflag);
     if (tskRecover.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype,
@@ -565,7 +572,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tskRecover.openFs(soffset, fstype, pooltype, (TSK_DADDR_T)pvol_block)) {
+    if (tskRecover.openFs(soffset, fstype, pooltype, (TSK_DADDR_T)pvol_block, password)) {
         // Errors were already logged
         exit(1);
     }
