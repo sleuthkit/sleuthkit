@@ -1167,7 +1167,7 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
      * be fewer callbacks for UNALLOC than ALLOC.
      */
     if (tsk_fs_dir_walk_internal(a_fs, a_fs->root_inum,
-            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_named_dir_walk_cb, NULL, 0)) {
+            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_named_dir_walk_cb, NULL, 0)) {
         tsk_error_errstr2_concat
             ("- tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
         return TSK_ERR;
