@@ -715,7 +715,10 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         }
 
         // call the action if we have the right flags.
-        if ((fs_file->name->flags & a_flags) == fs_file->name->flags) {
+        const TSK_FS_NAME_FLAG_ENUM n_flags =
+            (TSK_FS_NAME_FLAG_ENUM) (((a_flags & TSK_FS_DIR_WALK_FLAG_ALLOC) ? TSK_FS_NAME_FLAG_ALLOC : 0) |
+            ((a_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC) ? TSK_FS_NAME_FLAG_UNALLOC : 0));
+        if ((fs_file->name->flags & n_flags) == fs_file->name->flags) {
 
             retval = a_action(fs_file, a_dinfo->dirs, a_ptr);
             if (retval == TSK_WALK_STOP) {
