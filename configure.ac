@@ -15,7 +15,7 @@ AM_MAINTAINER_MODE
 
 dnl Checks for programs.
 AC_PROG_CXX
-AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
+AX_CXX_COMPILE_STDCXX([20], [noext], [mandatory])
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
