@@ -25,9 +25,6 @@ AC_PATH_PROG(PERL, perl)
 
 TSK_CHECK_PROG_PKGCONFIG
 
-
-
-
 dnl Checks for header files.
 dnl AC_HEADER_MAJOR
 dnl AC_HEADER_SYS_WAIT
