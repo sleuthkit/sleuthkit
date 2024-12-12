@@ -25,7 +25,7 @@ jobs:
             arch: "arm64"
             linkage: "shared"
             compiler: "gcc"
-            runner: "macos-latest"
+            runner: "macos-15"
             configure_opts: "--with-libewf --disable-java"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
             codecov: "yes"
