@@ -652,10 +652,6 @@ check_PROGRAMS = \
 	test/legacy/fs_thread_test \
 	test/legacy/read_apis
 
-# Unit tests:
-# Instead of linking with ../tsk/libtsk.la, we recompile everything from scratch
-# and link into a single executable.
-# This makes things easier with codecov.
 test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
 test_runner_LDADD = $(TSK_LIBS)
 test_runner_SOURCES = \
@@ -671,15 +667,7 @@ test_runner_SOURCES = \
 	test/tsk/img/test_vmdk.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
-	test/runner.cpp \
-	$(tsk_auto_libtskauto_la_SOURCES) \
-	$(tsk_base_libtskbase_la_SOURCES) \
-	$(tsk_fs_libtskfs_la_SOURCES) \
-	$(tsk_hashdb_libtskhashdb_la_SOURCES) \
-	$(tsk_img_libtskimg_la_SOURCES) \
-	$(tsk_pool_libtskpool_la_SOURCES) \
-	$(tsk_util_libtskutil_la_SOURCES) \
-	$(tsk_vs_libtskvs_la_SOURCES)
+	test/runner.cpp
 
 EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
 
