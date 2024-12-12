@@ -83,7 +83,7 @@ TSK_HDB_BINSRCH_INFO *hdb_binsrch_open(FILE *hDb, const TSK_TCHAR *db_path)
 * @param htype Hash type being used
 * @return 1 on error and 0 on success
 */
-static uint8_t
+uint8_t
     hdb_binsrch_idx_init_hash_type_info(TSK_HDB_BINSRCH_INFO *hdb_binsrch_info, TSK_HDB_HTYPE_ENUM htype)
 {
     if (hdb_binsrch_info->hash_type != TSK_HDB_HTYPE_INVALID_ID) {
