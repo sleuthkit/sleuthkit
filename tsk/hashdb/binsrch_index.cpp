@@ -1584,6 +1584,9 @@ void
     free(hdb_info->idx_fname);
     hdb_info->idx_fname = NULL;
 
+    free(hdb_info->idx_idx_fname);
+    hdb_info->idx_idx_fname = NULL;
+
     if (hdb_info->hIdx) {
         fclose(hdb_info->hIdx);
         hdb_info->hIdx = NULL;
