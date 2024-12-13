@@ -3502,7 +3502,6 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         int i, len;
         char *sid_str_offset = NULL;
         char *sid_str = NULL;
-        unsigned int sid_str_len;
 
         //tsk_fprintf(stderr, "Sub-Authority Count: %i\n", sid->sub_auth_count);
         authority = 0;
@@ -3512,18 +3511,18 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         //tsk_fprintf(stderr, "NT Authority: %" PRIu64 "\n", authority);
 
         // "S-1-AUTH-SUBAUTH-SUBAUTH..."
-        sid_str_len = 4 + 13 + (1 + 10) * sid->sub_auth_count + 1;
+        const size_t sid_str_len = 4 + 13 + (1 + 10) * sid->sub_auth_count;
 
         // Allocate the buffer for the string representation of the SID.
-        if ((sid_str = (char *) tsk_malloc(sid_str_len)) == NULL) {
+        if ((sid_str = (char *) tsk_malloc(sid_str_len + 1)) == NULL) {
             return 1;
         }
 
-        len = sprintf(sid_str, "S-1-%" PRIu64, authority);
+        len = snprintf(sid_str, sid_str_len + 1, "S-1-%" PRIu64, authority);
         sid_str_offset = sid_str + len;
 
         for (i = 0; i < sid->sub_auth_count; i++) {
-            len = sprintf(sid_str_offset, "-%" PRIu32, sid->sub_auth[i]);
+            len = snprintf(sid_str_offset, sid_str_len + 1 - len, "-%" PRIu32, sid->sub_auth[i]);
             sid_str_offset += len;
         }
         *a_sidstr = sid_str;
