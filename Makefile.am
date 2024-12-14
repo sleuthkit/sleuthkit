@@ -660,6 +660,7 @@ test_runner_SOURCES = \
 	test/tsk/img/test_vhd.cpp \
 	test/tsk/img/test_vmdk.cpp \
 	test/tsk/util/test_crypto.cpp \
+	test/tsk/hashdb/test_binsrch_index.cpp \
 	test/runner.cpp \
 	$(tsk_auto_libtskauto_la_SOURCES) \
 	$(tsk_base_libtskbase_la_SOURCES) \
