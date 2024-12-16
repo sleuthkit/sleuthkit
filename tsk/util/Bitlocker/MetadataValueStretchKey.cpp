@@ -12,7 +12,7 @@
 
 #include "MetadataValueStretchKey.h"
 
-#include "mbedtls/sha256.h" 
+#include "mbedtls/sha256.h"
 
 MetadataValueStretchKey::MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE valueType, uint8_t* buf, size_t bufLen) : MetadataValue(valueType) {
 
@@ -30,12 +30,12 @@ MetadataValueStretchKey::MetadataValueStretchKey(BITLOCKER_METADATA_VALUE_TYPE v
 
 /**
 * Parse the stetch key entry and generate the stretched key from the given password hash.
-* 
+*
 * @param passwordHash     Previously computed hash of the password/recovery password
 * @param passwordHashLen  Length of the password hash
 * @param stretchKey       Stretched key will be stored here (should be allocated)
 * @param stretchKeyLen    Length of the stretchKey buffer (expected to be BITLOCKER_STRETCH_KEY_SHA256_LEN)
-* 
+*
 * @return SUCCESS on success, GENERAL_ERROR if an error occurs
 */
 BITLOCKER_STATUS MetadataValueStretchKey::parseStretchKeyUsingPassword(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* stretchKey, size_t stretchKeyLen) {
@@ -57,14 +57,14 @@ BITLOCKER_STATUS MetadataValueStretchKey::parseStretchKeyUsingPassword(uint8_t* 
 
 /**
 * Generate stretched key from password hash
-* 
+*
 * @param passwordHash     Previously computed hash of the password/recovery password
 * @param passwordHashLen  Length of the password hash (should be BITLOCKER_STRETCH_KEY_SHA256_LEN)
 * @param salt             The salt from the stretch key entry
 * @param saltLen          Length of the salt (should be BITLOCKER_STRETCH_KEY_SALT_LEN)
 * @param result           Stretched key will be stored here
 * @param resultLen        Length of the result buffer (should be BITLOCKER_STRETCH_KEY_SHA256_LEN)
-* 
+*
 * @return SUCCESS on success, GENERAL_ERROR if an error occurs
 */
 BITLOCKER_STATUS MetadataValueStretchKey::generateStretchedKey(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* salt, size_t saltLen, uint8_t* result, size_t resultLen) {

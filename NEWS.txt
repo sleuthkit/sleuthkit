@@ -10,8 +10,8 @@ Java:
 
 
 ---------------- VERSION 4.12.0 --------------
-- There was a 1-year gap since 4.11.1 and the git log has 441 commits in that timeframe. 
-- Many for small fixes.  
+- There was a 1-year gap since 4.11.1 and the git log has 441 commits in that timeframe.
+- Many for small fixes.
 - This set of release notes is much more of an overview than other releases
 
 What's New:
@@ -74,7 +74,7 @@ Java
 ---------------- VERSION 4.10.1 --------------
 C/C++:
 - Changed Windows build to use Nuget for libewf, libvmdk, libvhdi.
-- Fixed compiler warnings 
+- Fixed compiler warnings
 - Clarrified licenses and added Apache license to distribution
 - Improved error handling for out of memory issues
 - Rejistry++ memory leak fixes
@@ -87,10 +87,10 @@ C/C++:
 - Removed PostgreSQL code (that was used only by Java code)
 - Added Java callback support so that database inserts are done in Java.
 
-Java: 
+Java:
 - Added methods and callbacks as required to allow database population to happen in Java instead of C/C++.
-- Added support to allow Autopsy streaming ingest where files are added in batches. 
-- Added TaggingManager class and concept of a TagSet to support ProjectVic categories. 
+- Added support to allow Autopsy streaming ingest where files are added in batches.
+- Added TaggingManager class and concept of a TagSet to support ProjectVic categories.
 - Fixed changes to normalization and validation of emails and phone numbers.
 - Added a CASE/UCO JAR file that creates JSON-LD based on TSK objects.
 
@@ -98,10 +98,10 @@ Java:
 
 ---------------- VERSION 4.9.0 --------------
 C/C++
-- Removed framework project.  Use Autopsy instead if you need an analysis framework. 
+- Removed framework project.  Use Autopsy instead if you need an analysis framework.
 - Various fixes from Google-based fuzzing.
 - Ensure all reads (even big ones) are sector aligned when reading from Windows device.
-- Ensure all command line tools support new pool command line arguments. 
+- Ensure all command line tools support new pool command line arguments.
 - Create virtual files for APFS unallocated space
 - HFS fix to display type
 
@@ -113,18 +113,18 @@ Java:
 
 ---------------- VERSION 4.8.0 --------------
 C/C++
-- Pool layer was added to support APFS. NOTE: API is likely to change. 
-- Limited APFS support added in libtsk and some of the command line tools. 
--- Encryption support is not complete. 
+- Pool layer was added to support APFS. NOTE: API is likely to change.
+- Limited APFS support added in libtsk and some of the command line tools.
+-- Encryption support is not complete.
 -- Blackbag Technologies submitted the initial PR. Basis Technology
   did some minor refactoring.
 - Refactoring and minor fixes to logical imager
 - Various bug fixes from Google fuzzing efforts and Jonathan B from Afarsec
-- Fixed infinite NTFS loop from cyclical attribute lists.  Reported by X.  
+- Fixed infinite NTFS loop from cyclical attribute lists.  Reported by X.
 - File system bug fixes from uckelman-sf on github
 
-Database: 
-- DB schema was updated to support pools 
+Database:
+- DB schema was updated to support pools
 - Added concept of JSON in Blackboard Attributes
 - Schema supports cascading deletes to enable data source deletion
 
@@ -134,7 +134,7 @@ Java:
 - Removed JavaFX as a dependency by refactoring the recently
   introduced timeline filtering classes.
 
-- Added attachment support to the blackboard helper package. 
+- Added attachment support to the blackboard helper package.
 
 
 
@@ -161,7 +161,7 @@ to make artifacts.
 - Blackboard scope was expanded, including the new postArtifact() method
 that adds event data to database and broadcasts an event to listeners.
 - SleuthkitCase now has an EventBus for database-related events.
-- New TimelineManager and associated filter classes to support new events 
+- New TimelineManager and associated filter classes to support new events
 table
 
 
@@ -183,7 +183,7 @@ C/C++ Code:
 - Acquisition deteails are set in DB for E01 files
 - Fix NTFS decompression issue (from Joe Sylve)
 - Image reading fix when cache fails (Joe Sylve)
-- Fix HFS+ issue with large catalog files (Joe Sylve) 
+- Fix HFS+ issue with large catalog files (Joe Sylve)
 - Fix free memory issue in srch_strings (Derrick Karpo)
 
 Java:
@@ -218,13 +218,13 @@ C/C++ Code:
 - Hashdb bug fixes for corrupt indexes and 0 hashes
 - New code for testing power of number in ExtX code
 
-Java Code: 
+Java Code:
 - New class that allows generic database access
 - New methods that check for duplicate artifacts
-- Added caches for frequently used content 
+- Added caches for frequently used content
 
-Database Schema: 
-- Added Examiner table 
+Database Schema:
+- Added Examiner table
 - Tags are now associated with Examiners
 - Changed parent_path for logical files to be consistent with FS files.
 
@@ -234,8 +234,8 @@ C/C++ Code:
 - Various compiler warning fixes
 - Added small delay into image writer to not starve other threads
 
-Java: 
-- Added more locking to ensure that handles were not closed while other threads were using them. 
+Java:
+- Added more locking to ensure that handles were not closed while other threads were using them.
 - Added APIs to support more queries by data source
 - Added memory-based caching when detecting if an object has children or not.
 
@@ -245,7 +245,7 @@ C/C++ Code:
 - Lots of bounds checking fixes from Google's fuzzing tests.  Thanks Google.
 - Cleanup and fixes from uckelman-sf and others
 - PostgreSQL, libvhdi, & libvmdk are supported for Linux / OS X
-- Fixed display of NTFS GUID in istat - report from Eric Zimmerman. 
+- Fixed display of NTFS GUID in istat - report from Eric Zimmerman.
 - NTFS istat shows details about all FILE_NAME attributes, not just the first.  report from Eric Zimmerman.
 
 Java:
@@ -276,7 +276,7 @@ New Features:
 - New Local Directory type in DB to differentiate with Virtual Directories
 - All blackboard artifacts in DB are now 'content'.  Attachments can now
   be children of their parent message.
-- Added extension as a column in tsk_files table. 
+- Added extension as a column in tsk_files table.
 
 Bug Fixes:
 - Faster resolving of HFS hard links
@@ -305,7 +305,7 @@ Bug Fixes:
 - Bug fixes:
 -- Lots of cleanup and fixes. Including:
 -- memory leaks
--- UTF8 and UTF16 cleanup 
+-- UTF8 and UTF16 cleanup
 -- Missing NTFS files (in fairly rare cases)
 -- Really long folder structures and database inserts
 
@@ -337,15 +337,15 @@ Bug Fixes:
 - New database schema
 - New Sqlite hash database
 - Various bug fixes
-- NTFS pays more attention to sequence and loads metadata only 
-  if it matches. 
-- Added secondary hash database index 
+- NTFS pays more attention to sequence and loads metadata only
+  if it matches.
+- Added secondary hash database index
 
 
 
 ---------------- VERSION 4.1.3 --------------
 - fixed bug that could crash UFS/ExtX in inode_lookup.
-- More bounds checking in ISO9660 code 
+- More bounds checking in ISO9660 code
 - Image layer bounds checking
 - Update version of SQLITE-JDBC
 - changed how java loads navite libraries
@@ -361,7 +361,7 @@ Core:
 - Fixed more visual studio projects to work on 64-bit
 - TskAutoDB considers not finding a VS/FS a critical error.
 
-Java: 
+Java:
 - added method to Image to perform sanity check on image sizes.
 
 fiwalk:
@@ -370,23 +370,23 @@ fiwalk:
 
 
 ---------------- VERSION 4.1.1 --------------
-Core: 
+Core:
 - Added FILE_SHARE_WRITE to all windows open calls.
 - removed unused methods in CRC code that caused compile errors.
-- Added NTFS FNAME times to time2 struct in TSK_FS_META to make them 
+- Added NTFS FNAME times to time2 struct in TSK_FS_META to make them
   easier to access -- should have done this a long time ago!
 - fls -m and tsk_gettimes output NTFS FNAME times to output for timelines.
 - hfind with EnCase hashsets works when DB is specified (and not only index)
-- TskAuto now goes into UNALLOC partitions by default too. 
+- TskAuto now goes into UNALLOC partitions by default too.
 - Added support to automatically find all Cellebrite raw dump files given
-  the name of the first image. 
+  the name of the first image.
 - Added 64-bit windows targets to VisualStudio files.
 - Added NTFS sequence to parent address in directory and directory itself.
 - Updated SQLite code to use sequence when finding parent object ID.
 
 Java:
-- Java bindings JAR files now have native libraries in them. 
-- Logical files are added with a transaction 
+- Java bindings JAR files now have native libraries in them.
+- Logical files are added with a transaction
 
 
 ---------------- VERSION 4.1.0 --------------
@@ -395,7 +395,7 @@ Core:
 - Added Ext4 support (patch from kfairbanks)
 - changed all include paths to be 'tsk' instead of 'tsk3'
 -- IMPORTANT FOR ALL DEVELOPERS!
- 
+
 Framework:
 - Added Linux and MAC support.
 - Added L01 support.
@@ -408,22 +408,22 @@ Java Bindings:
 - added a public method to Content to add ability to close() its tsk handle before the object is gc'd
 - added faster skip() and random seek support to ReadContentInputStream
 - refactored datamodel by pushing common methods up to AbstractFile
-- fixed minor memory leaks 
+- fixed minor memory leaks
 - improved regression testing framework for java bindings datamodel
 
 
 ---------------- VERSION 4.0.2 --------------
-Core: 
+Core:
 New Features:
 - Added fiwalk tool from Simson.  Not supported in Visual Studio yet.
 
 Bug Fixes:
-- Fixed fcat to work on NTFS files (still doesn't support ADS though). 
+- Fixed fcat to work on NTFS files (still doesn't support ADS though).
 - Fixed HFS+ support in tsk_loaddb / SQLite -- root directory was not added.
 - NTFS code now looks at all MFT entries when listing directory contents. It used to only look at unallocated entries for orphan files. This fixes an image that had allocated files missing from the directory b-tree.
-- NTFS code uses sequence number when searching MFT entries for all files. 
-- Libewf detection code change to support v2 API more reliably (ID: 3596212). 
-- NTFS $SII code could crash in rare cases if $SDS was multiple of block size. 
+- NTFS code uses sequence number when searching MFT entries for all files.
+- Libewf detection code change to support v2 API more reliably (ID: 3596212).
+- NTFS $SII code could crash in rare cases if $SDS was multiple of block size.
 
 Framework:
 - Added new API to TskImgDB that returns the base name of an image.
@@ -436,8 +436,8 @@ Java Bindings:
 - added API to get currently processed dir when image is being added,
 - added API to return specific types of children of image, volume system, volume, file system.
 - moved more common methods up to Content interface
-- deprecated context of blackboard attributes, 
-- deprecated SleuthkitCase.runQuery() and SleuthkitCase.closeRunQuery() 
+- deprecated context of blackboard attributes,
+- deprecated SleuthkitCase.runQuery() and SleuthkitCase.closeRunQuery()
 - fixed ReadContentInputStream bugs  (ignoring offset into a buffer, implementing available() )
 - methods that are lazy loading are now thread safe
 - Hash class is now thread-safe
@@ -455,11 +455,11 @@ New Features:
 - performance improvements with FAT code (maps and dir_add)
 - performance improvements with NTFS code (maps)
 - added AONLY flag to block_walk
-- Updated blkls and blkcalc to use AONLY flag -- MUCH faster. 
+- Updated blkls and blkcalc to use AONLY flag -- MUCH faster.
 
 Bug Fixes:
 - Fixed mactime issue where it could choose the wrong timezone that did
-  not follow daylight savings times. 
+  not follow daylight savings times.
 - Fixed file size of alternate data streams in framework.
 - Incorporated memory leak fixes and raw device fixes from ADF Solutions.
 
@@ -472,26 +472,26 @@ New Features:
 - Added JNI bindings / Java data model classes
 - 3314047: Added utf8-specific versions of 'toid' methods for img,vs,fs types
 - 3184429: More consistent printing of unset times (all zerso instead of 1970)
-- New database design that allows for multiple images in the same database 
+- New database design that allows for multiple images in the same database
 - GPT volume system tries other sector sizes if first attempt fails.
 - Added hash calculation and lookup to AutoDB and JNI.
-- Upgraded SQLite to 3.7.9. 
+- Upgraded SQLite to 3.7.9.
 - Added Framework in (windows-only)
 - EnCase hash support
 - Libewf v2 support (it is now non-beta)
 - First file in a raw split or E01 can be specified and the rest of the files
-  are found. 
+  are found.
 - mactime displays times as 0 if the time is not set (isntead of 1970)
-- Changed behavior of 'mactime -y' to use ISO8601 format. 
-- Updated HFS+ code from ATC-NY. 
-- FAT orphan file improvements to reduce false positives. 
-- TskAuto better reports errors. 
+- Changed behavior of 'mactime -y' to use ISO8601 format.
+- Updated HFS+ code from ATC-NY.
+- FAT orphan file improvements to reduce false positives.
+- TskAuto better reports errors.
 - Upgrade build projects from Visual Studio 2008 to 2010.
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.
 Had a Mac image that was failing to resolve which partition table
-to use. 
+to use.
 
 ---------------- VERSION 3.2.3 --------------
 New Features:
@@ -531,7 +531,7 @@ New Features:
 Bug Fixes
 - 3108272: fls arguments for -d and -u
 - 3105539: compile error issues because of SQlite and pthreads
-- 3173095: missing FAT files because of invalid dates. 
+- 3173095: missing FAT files because of invalid dates.
 - 3184419: mingew compile errors.
 - 3191391: surround file name in quotes in mactime -d csv output
 
@@ -543,26 +543,26 @@ volume in the table.
 
 ---------------- VERSION 3.2.0 --------------
 Bug Fixes
-- 3043092: Minor logic errors with ifind code. 
+- 3043092: Minor logic errors with ifind code.
 - FAT performance fix when looking for parent directories
-  in $OrphanFiles. 
+  in $OrphanFiles.
 - 3052302: Crash on NTFS/UFS detection test because of
-  corrupt data -- tsk_malloc error. 
-- 3088447: Error adding attribute because of run collision.  
+  corrupt data -- tsk_malloc error.
+- 3088447: Error adding attribute because of run collision.
   Solved by assigning unique IDs.
 
 New Features:
 - 3012324: Name mangling moved out of library into outer tools
   so that they can see control characters if they want to.  Patch
-  by Anthony Lawrence. 
+  by Anthony Lawrence.
 - 2993806: ENUM values have a specified NONE value if you don't
   want to specify any special flags. Patch by Anthony Lawrence.
-- 3026989: Add -e and -s flags to img_cat.  patch by Simson Garfinkel. 
-- 2941805: Add case sensitive flag to fsstat in HFS.  Patch by Rob Joyce. 
-- 3017764: Changed how default NTFS $DATA attribute was named.  Now it 
-  has no name, while it previously had a fake name of "$Data". 
+- 3026989: Add -e and -s flags to img_cat.  patch by Simson Garfinkel.
+- 2941805: Add case sensitive flag to fsstat in HFS.  Patch by Rob Joyce.
+- 3017764: Changed how default NTFS $DATA attribute was named.  Now it
+  has no name, while it previously had a fake name of "$Data".
 - New TskAuto class.
-- New tsk_loaddb, tsk_recover, tsk_comparedir, and tsk_gettimes tools. 
+- New tsk_loaddb, tsk_recover, tsk_comparedir, and tsk_gettimes tools.
 
 ---------------- VERSION 3.1.3 --------------
 Bug Fixes
@@ -570,16 +570,16 @@ Bug Fixes
 code was not stopping when it found the parent directory.
 - Adjusted sanity / testing code on FAT directory entries to allow
 non-ascii in extensions and reject entries with lots of 0s.
-- 3023606: Ext2 / ffs corrupted file names. 
-- Applied NTFS SID fixes from Mandiant. 
+- 3023606: Ext2 / ffs corrupted file names.
+- Applied NTFS SID fixes from Mandiant.
 - ntfs_load_secure() memory leak patch from Michael Cohen
 
 ---------------- VERSION 3.1.2 --------------
 Bug Fixes
 - 2982426: FAT directory listings were slow because the entire
-image was being scanned for parent directory information. 
+image was being scanned for parent directory information.
 - 2982965: fs_attr length bug fix.
-- 2988619: mmls -B display error. 
+- 2988619: mmls -B display error.
 - 2988330: ntfs SII cluster size increment bug
 - 2991487: Zeroed content in NTFS files that were not fully initialized.
 - 2993767: Slow FAT listings of OrphanFiles because hunt for parent
@@ -592,16 +592,16 @@ of OrphanFiles.
 
 Bug Fixes
 - 2954703: ISO9660 missing files because duplicate files
-had same starting block. 
+had same starting block.
 - 2954707: ISO9660 missing some files with zero length and
 duplicate starting block. Also changed behavior of how
-multiple volume descriptors are processed. 
-- 2955898: Orphan files not found if no deleted file names exist. 
-- 2955899: NTFS internal setting of USED flag. 
-- 2972721: Sorter fails with hash lookup if '-l' is given. 
+multiple volume descriptors are processed.
+- 2955898: Orphan files not found if no deleted file names exist.
+- 2955899: NTFS internal setting of USED flag.
+- 2972721: Sorter fails with hash lookup if '-l' is given.
 - 2941813: Reverse HFS case sensitive flags (internal fix only)
 - 2954448: Debian package typo fixes, etc.
-- 2975245: sorter ignores realloc entries to reduce misleading mismatch entries and duplicate entries. 
+- 2975245: sorter ignores realloc entries to reduce misleading mismatch entries and duplicate entries.
 
 
 ---------------- VERSION 3.1.0 --------------
@@ -617,7 +617,7 @@ other image format libraries.
 requested.
 - 2677107 All image formats supported by AFFLIB can be accessed by
 specifying the "afflib" type.
-- 2206265: sigfind can now process non-raw files. 
+- 2206265: sigfind can now process non-raw files.
 - 2206331: Indirect block addresses are now available in the library
 and command line tools.  They are stored in a different attribute.
 - Removed 'docs' files and moved them to the wiki.
@@ -625,7 +625,7 @@ and command line tools.  They are stored in a different attribute.
 and hdparm now has the same functionality.
 - 2874854: Image layer tools now support non-512 byte device sector
 sizes.  Users can specify sector size using the -b argument to the
-command line tools. This has several consequences: 
+command line tools. This has several consequences:
 -- 'mmls -b' is now 'mmls -B'.  Similarly with istat -b.
 -- Changed command line format for '-o' so that sector size is
 specified only via -b and not using '-o 62@4096'.
@@ -635,7 +635,7 @@ they can fit into the image.
 - 2895607: NTFS SID data is available in the library and 'istat'.
 - 2206341: AFF encrypted images now give more proper error message
 if password is not given.
-- 2351426: mactime is now distributed with Windows execs. 
+- 2351426: mactime is now distributed with Windows execs.
 
 
 Developer-level Changes
@@ -649,12 +649,12 @@ function. Now named tsk_fs_meta_make_ls.
 and integer form.
 
 Bug Fixes:
-- 2568528: incorrect adjustment of attribute FILLER offset.  
-- 2596397: Incorrect date sorting in mactime. 
+- 2568528: incorrect adjustment of attribute FILLER offset.
+- 2596397: Incorrect date sorting in mactime.
 - 2708195: Errors when doing long reads in fragmented attributes.
-- Fixed typo bugs in sorter (reported via e-mail by Drew Hunt). 
+- Fixed typo bugs in sorter (reported via e-mail by Drew Hunt).
 - 2734458: added orphan cache map to prevent slow NTFS listing times.
-- 2655831: Sorter now knows about the ext2 and ext3 types. 
+- 2655831: Sorter now knows about the ext2 and ext3 types.
 - 2725799: ifind not converting UTF16 names properly on Windows
 because it was using endian ordering of file system and not local
 system.
@@ -665,28 +665,28 @@ device.
 - Added the READ_SHARE option to the CreateFile command for split
 image files.  Patch by Christopher Siwy.
 - 2786963: NTFS compression infinite loop fix.
-- 2645156: FAT / blkls error getting slack because allocsize was 
-being set too small (and other values were not being reset).  
-- 2367426: Zeros are set for VDL slack on NTFS files.  
-- 2796945: Inifite loop in fs_attr. 
+- 2645156: FAT / blkls error getting slack because allocsize was
+being set too small (and other values were not being reset).
+- 2367426: Zeros are set for VDL slack on NTFS files.
+- 2796945: Inifite loop in fs_attr.
 - 2821031: Missing fls -m fields.
 - 2840345: Extended DOS partitions in extended partitions are now
 marked as Meta.
 - 2848162: Reading attributes at offsets that are on boundary of
 run fragment.
-- 2824457: Fixed issue reading last block of file system with blkcat. 
+- 2824457: Fixed issue reading last block of file system with blkcat.
 - 2891285: Fixed issue that prevented reads from the last block of
 a file system when using the POSIX-style API.
-- 2825690: Fixed issue that prevented blkls -A from working.  
+- 2825690: Fixed issue that prevented blkls -A from working.
 - 2901365: Allow FAT files to have a 0 wdate.
 - 2900761: Added FAT directory sanity checks to prevent infinite loops.
-- 2895607: Fixed various memory leaks. 
+- 2895607: Fixed various memory leaks.
 - 2907248: Fixed image layer cache crash.
 - 2905750: all file system read() functions now return -1 when
 offset given is past end of file.
 
 
----------------- VERSION 3.0.1 -------------- 
+---------------- VERSION 3.0.1 --------------
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
 Bug: 2265927
 
@@ -703,7 +703,7 @@ for compressed files (Bug: 2475246)
 
 12/29/08: Bug Fix: removed fs_info field from FS_META because it
 was not being set and should have been removed in 3.0. Reported by
-Rob Joyce and Judson Powers.  
+Rob Joyce and Judson Powers.
 
 12/29/08: Bug Fix: orphan files and NTFS files found via parent
 directory have an unknown file name type (instead of being equal
@@ -716,20 +716,20 @@ were not displayed.  (Bug: 2503552).  Reported by Tom Black.
 shown if the MFT address was changed to 0 because fs_dir_add was
 checking the address and name.  Reported by Andy Bontoft.
 
-1/29/09: Update: Fixed fix for bug 2534449.  The fix is in ifind 
-instead of fs_dir_add().  
+1/29/09: Update: Fixed fix for bug 2534449.  The fix is in ifind
+instead of fs_dir_add().
 
 2/2/09: Update: Added RPM spec file from Morgan Weetmam.
 
 
----------------- VERSION 3.0.0 -------------- 
+---------------- VERSION 3.0.0 --------------
 0/00/00: Update: Many, many, many API changes.
 
 2/14/08: Update: Added mmcat tool.
 
-2/26/08: Update: Added flags to mmls to specify partition types. 
+2/26/08: Update: Added flags to mmls to specify partition types.
 
-3/1/08: Update: Major update of man pages. 
+3/1/08: Update: Major update of man pages.
 
 4/14/08: Bug Fix: Fixed the calculation of "actual" last block.
 Off by 1 error.  Reported by steve.
@@ -764,10 +764,10 @@ in them to allow parallel installations of v2 and v3.  Suggested by
 Simson Garfinkel.
 
 8/22/08: Update: Added -b option to sorter to specify minimum file size
-to process.  Suggested by Jeff Kell. 
+to process.  Suggested by Jeff Kell.
 
-8/22/08: Update: Added libewf as a requirement to build win32 so that 
-E01 files are supported. 
+8/22/08: Update: Added libewf as a requirement to build win32 so that
+E01 files are supported.
 
 8/29/08: Update: Added initial mingw patches for cross compiling and
 Windows.  Patches by Michael Cohen.
@@ -776,13 +776,13 @@ Windows.  Patches by Michael Cohen.
 
 9/6/08: Update: Added image layer cache.
 
-9/12/08: Bug Fix: Fixed crash from incorrectly cleared value in FS_DIR 
+9/12/08: Bug Fix: Fixed crash from incorrectly cleared value in FS_DIR
 structure.  Reported and patched by Jason Miller.
 
 9/13/08: Update: Changed d* tool names to blk*.
 
 9/17/08: Update: Finished mingw support so that both tools and
-library work with Unicode file name support.  
+library work with Unicode file name support.
 
 9/22/08: Update: Added new HFS+ code from Judson Powers and Rob Joyce (ATC-NY)
 
@@ -825,10 +825,10 @@ Updates from Joachim Metz.
 3/26/08: Update: Changed some of the header file design for the tools
 so that the define settings in tsk_config.h can be used (for large files).
 
-3/28/08: Update: Added config.h reference to srch_strings to get the 
+3/28/08: Update: Added config.h reference to srch_strings to get the
 LARGEFILE support.
 
-4/5/08: Update: Improved inode argument number parsing function. 
+4/5/08: Update: Improved inode argument number parsing function.
 
 
 ---------------- VERSION 2.51 --------------
@@ -843,23 +843,23 @@ Reported by Russell Reynolds.
 requirements and look for new 48-bit structures needed by disktools.
 Both of these were causing problems on older Linux distros.
 
-2/7/08: Update: hfind will normalize hash values in database so 
+2/7/08: Update: hfind will normalize hash values in database so
 that they are case insensitive.
 
 ---------------- VERSION 2.50 --------------
 12/19/07: Update: Finished upgrade to autotools building design. No
 longer include file, afflib, libewf. Resulted in many source code layout
-changes and sorter now searches for md5, sha1, etc. 
+changes and sorter now searches for md5, sha1, etc.
 
 ---------------- VERSION 2.10 --------------
-7/12/07: Update: 0s are returned for AFF pages that were not imaged.  
+7/12/07: Update: 0s are returned for AFF pages that were not imaged.
 
 7/31/07: Bug Fix: ifind -p could crash if a deleted file name was found
 that did not point to a valid meta data stucture.  (Reported by Andy Bontoft)
 
 8/5/07: Update: Added NSRL support back into sorter.
 
-8/15/07: Update: Errors are given if supplied sector offset is larger than 
+8/15/07: Update: Errors are given if supplied sector offset is larger than
 disk image.  Reported by Simson Garfinkel.
 
 8/16/07: Update: Renamed MD5 and SHA1 functions to TSK_MD5_.. and TSK_SHA_....
@@ -884,16 +884,16 @@ Patch by Rob Joyce.
 walking can start at a specific offset.  Also finished upgrade that
 caches FAT run list to make the fatfs_file_walk_off more efficient.
 
-11/14/07: Update: Fixed few places where off_t was being used 
-instead of OFF_T.  Reported by GiHan Kim. 
+11/14/07: Update: Fixed few places where off_t was being used
+instead of OFF_T.  Reported by GiHan Kim.
 
 11/14/07: Update: Fixed a memory leak in aff.c to free AFF_INFO.
 Reported by GiHan Kim.
 
-11/24/07: Update: Finished review and update of ISO9660 code. 
+11/24/07: Update: Finished review and update of ISO9660 code.
 
 11/26/07: Bug Fix: Fixed 64-bit calculation in HFS+ code.  Submitted
-by Rob Joyce. 
+by Rob Joyce.
 
 11/29/07: Update: removed linking of srch_strings.c and libtsk.  Reported by
 kwizart.
@@ -902,7 +902,7 @@ kwizart.
 the HFS support (flag is in src/fstools/fs_tools_i.h)
 
 11/30/07: Update: restricted the FAT dentry sanity checks to verify
-space padding in the name and latin-only extensions. 
+space padding in the name and latin-only extensions.
 
 12/5/07: Bug Fix: fs_read_file_int had a bug that ignored the type passed
 for NTFS files.  Reported by Dave Collett.
@@ -917,7 +917,7 @@ in volume labels and do more checking on the attribute flag.
 4/6/07: Bug Fix: Inifite loop in ext2 and ffs istat code because of using
 unsigned size_t variable.  Reported by Makoto Shiotsuki.
 
-4/16/07: Bug Fix: Changed use of fseek() to fseeko() in hashtools.  Patch 
+4/16/07: Bug Fix: Changed use of fseek() to fseeko() in hashtools.  Patch
 by Andy Bontoft.
 
 4/16/07: Bug Fix: Changed Win32 SetFilePointer to use LARGE_INTEGER.
@@ -932,11 +932,11 @@ checked).  Reported by Christian Perst.
 4/27/07: Bug Fix: ils -r was showing UNUSED inodes.  Reported by
 Christian Perst.
 
-5/10/07: Update: Redefined the USED and UNUSED flags for NTFS so that 
-UNUSED is set when no attributes exist. 
+5/10/07: Update: Redefined the USED and UNUSED flags for NTFS so that
+UNUSED is set when no attributes exist.
 
 5/16/07: Bug Fix: Fixed several bounds checking bugs that may cause
-a crash if the disk image is corrupt.  Reported by Tim Newsham (iSec 
+a crash if the disk image is corrupt.  Reported by Tim Newsham (iSec
 Partners)
 
 5/17/07: Update: Updated AFFLIB to 2.2.11
@@ -945,7 +945,7 @@ Partners)
 
 5/17/07: Update: Updated file to 4.20
 
-5/29/07: Update: Removed NTFS SID/SDS contributed code because it causes 
+5/29/07: Update: Removed NTFS SID/SDS contributed code because it causes
 crashes on some systems and its output is not entirely clear. (most recent bug
 reported by Andy Scott)
 
@@ -953,7 +953,7 @@ reported by Andy Scott)
 
 6/12/07: Bug Fix: ifind -p was not reporting back info on the allocated name
 when one existed (because strtok was overwritting the name when the search
-continued).   Reported by Andy Bontoft. 
+continued).   Reported by Andy Bontoft.
 
 6/13/07: Update: Updated file to 4.21
 
@@ -962,31 +962,31 @@ continued).   Reported by Andy Bontoft.
 12/19/06: Bug Fix: ifind_path was not setting *result when root inode
 was searched for.  patch by David Collett.
 
-12/29/06: Update: Removed 'strncpy' in ntfs.c to manual assignment of 
-text for '$Data' and 'N/A' for performance reasons. 
+12/29/06: Update: Removed 'strncpy' in ntfs.c to manual assignment of
+text for '$Data' and 'N/A' for performance reasons.
 
-1/11/07: Update: Added duname to FS_INFO that contains a string of 
+1/11/07: Update: Added duname to FS_INFO that contains a string of
 name for a file system's data unit -- Cluster for example.
 
 1/19/07: Bug Fix: ifind_path was returning an error even after some
-files were found.  Errors are now ignored if a file was found.  
-Reported by Michael Cohen. 
+files were found.  Errors are now ignored if a file was found.
+Reported by Michael Cohen.
 
-1/26/07: Bug Fix: Fixed calcuation of inode numbers in fatfs.c 
+1/26/07: Bug Fix: Fixed calcuation of inode numbers in fatfs.c
 (reported by Simson Garfinkel).
 
-2/1/07: Update: Changed aff-install to support symlinked directory. 
+2/1/07: Update: Changed aff-install to support symlinked directory.
 
 2/1/07: Update: img_open modified so that it does not report errors for
 s3:// and http:// files that do not exist.
 
-2/5/07: Update: updated *_read() return values to look for "<0" instead of 
+2/5/07: Update: updated *_read() return values to look for "<0" instead of
 simply "== -1". (suggested by Simson Garfinkel).
 
-2/8/07: Update: removed typedef for uintptr in WIN32 code. 
+2/8/07: Update: removed typedef for uintptr in WIN32 code.
 
-2/13/07: Update: Applied patch from Kim Kulak to update HFS+ code to internal 
-design changes. 
+2/13/07: Update: Applied patch from Kim Kulak to update HFS+ code to internal
+design changes.
 
 2/16/07: Update: Renamed many of the external data structures and flags
 so that they start with TSK_ or tsk_ to prevent name collisions.
@@ -1019,7 +1019,7 @@ was not being properly checked and therefore invalid numbers were not
 being detected.
 
 3/24/07: Bug Fix: A couple of error messages in ntfs_file_walk should
-have been converted to _RECOVER when the _RECOVERY flag was given. 
+have been converted to _RECOVER when the _RECOVERY flag was given.
 
 3/24/07: Update: Changed behavior of ntfs_file_walk.  If no type is
 given, then a default type is chosen for files and dirs.  Now, no error
@@ -1034,7 +1034,7 @@ generated if a FAT file has 0 file size.
 touch files so that the auto* files are in the correct time stamp order.
 
 4/5/07: Bug Fix: Added sanity checks to offsets and addresses in ExtX and
-UFS group descriptors.  Reported by Simson Garfinkel. 
+UFS group descriptors.  Reported by Simson Garfinkel.
 
 
 ---------------- VERSION 2.07 --------------
@@ -1043,14 +1043,14 @@ conflicts with other libraries.
 
 9/18/06: Update: Added tsk_list_* functions and structures.
 
-9/18/06: Update: Added checks for recursive FAT directories. 
+9/18/06: Update: Added checks for recursive FAT directories.
 
 9/20/06: Update: Changed FS_META_* flags for LINK and UNLINK and moved
 them to ILS_? flags.
 
 9/20/06: Update: added flags to ils to find only orphan inodes.
 
-9/20/06: Update: Added Orphan support for FAT, NTFS, UFS, Ext2, ISO. 
+9/20/06: Update: Added Orphan support for FAT, NTFS, UFS, Ext2, ISO.
 
 9/20/06: Update: File walk actions now have a flag to identify if a block
 is SPARSE or not (used to identify if the address being passed is valid
@@ -1072,10 +1072,10 @@ and directories would result in an infinite loop (if FAT is corrupt).
 9/21/06: Update: Added -a and -A to dls to specify allocated and
 unallocated blocks to display.
 
-9/21/06: Update: Updated AFFLIB to 1.6.31. 
+9/21/06: Update: Updated AFFLIB to 1.6.31.
 
 9/22/06: Update: added a fs_read_file() function that allows you to read
-random parts of a file. 
+random parts of a file.
 
 10/10/06: Update: Improved performance of fs_read_file() and added
 new FS_FLAG_META_COMP and FS_FLAG_DATA_COMP flags to show if a file
@@ -1083,15 +1083,15 @@ and data are using file system-level compression (NTFS only).
 
 10/18/06: Bug fix: in fs_data_put_run, added a check to see
 if the head was null before looking up.  An extra error message
-was being created for nothing. 
+was being created for nothing.
 
-10/18/06: Bug Fix: Added a check to the compression buffer 
-to see if it is null in _done(). 
+10/18/06: Bug Fix: Added a check to the compression buffer
+to see if it is null in _done().
 
 10/25/06: Bug Fix: Added some more bounds checks to NTFS uncompression code.
 
 11/3/06: Bug Fix: added check to dcat_lib in case the number of blocks
-requested is too large. 
+requested is too large.
 
 11/07/06: Update: Added fs_read_file_noid wrapper around fs_read_file
 interface.
@@ -1110,14 +1110,14 @@ an unused attribute.  Patch by David Collett.
 was causing errors on Cygwin because OpenSSL libraries could not be found.
 
 11/22/06: Update: Added a tskGetVersion() function to return the string
-of the current version. 
+of the current version.
 
 11/29/06: Update: Added more tsk_error_resets to more places to prevent
-extra error messages from being displayed. 
+extra error messages from being displayed.
 
 11/30/06: Update: Added Caching to the getFAT function and to fs_read.
 
-12/1/06: Update: Changed TSK_LIST to a reverse sorted list of buckets. 
+12/1/06: Update: Changed TSK_LIST to a reverse sorted list of buckets.
 
 12/5/06: Bug Fix: Fixed FS_DATA_INUSE infinite loop bug.
 
@@ -1137,17 +1137,17 @@ accordingly.
 12/7/06: Update: Added a tsk_error_get() function that returns a string
 with the error messages -- can be used instead of tsk_error_print.
 
-12/7/06: Update: fixed some memory leaks in FAT and NTFS code. 
+12/7/06: Update: fixed some memory leaks in FAT and NTFS code.
 
 12/11/06: Bug Fix: fatfs_open error message code referenced a value that
-was in freed memory -- reordered statements.  
+was in freed memory -- reordered statements.
 
 12/15/06: Update: Include VCProj files in build.
 
 
 ---------------- VERSION 2.06 --------------
 8/11/06: Bug Fix: Added back in ASCII/UTF-8 checks to remove control
-characters in file names. 
+characters in file names.
 
 8/11/06: Bug Fix: Added support for fast sym links in UFS1
 
@@ -1160,7 +1160,7 @@ tsk_UTF... routine instead of fs_UTF...
 8/11/06: Update: Updated GPT to fully convert UTF16 to UTF8.
 
 8/11/06: Update: There is now only one aux_tools header file to include
-instead of libauxtools and/or aux_lib, which were nearly identical. 
+instead of libauxtools and/or aux_lib, which were nearly identical.
 
 8/16/06: Bug Fix: ntfs_dent_walk could segfault if two consecutive
 unallocated entries were found that had an MFT entry address of 0.
@@ -1172,22 +1172,22 @@ be included.
 
 8/21/06: Update: mmtools had char * instead of void * for walk callback
 
-8/22/06: Update: Added fs_load_file function that returns a buffer full 
+8/22/06: Update: Added fs_load_file function that returns a buffer full
 with the contents of a file.
 
 8/23/06: Update: Upgraded AFFLIB to 1.6.31 and libewf to 20060820-1.
 
 8/25/06: Update: Created printf wrappers so that output is UTF-16 on
-Windows and UTF-8 on Unix. 
+Windows and UTF-8 on Unix.
 
 8/25/06: Update: Continued port to Windows by starting to use more
-TCHARS and defining needed macros for the Unix side. 
+TCHARS and defining needed macros for the Unix side.
 
 8/25/06: Bug Fix: Fixed crash that could occur because of SDS code
 in NTFS.  (reported by Simson Garfinkel) (BUG: 1546925).
 
 8/25/06: Bug Fix: Fixed crash that could occur because path stack became
-corrupt with deep directories or corrupt images. (reported by Simson 
+corrupt with deep directories or corrupt images. (reported by Simson
 Garfinkel) (BUG: 1546926).
 
 8/25/06: Bug Fix: Fixed infinite loop that could occur when trying to
@@ -1198,15 +1198,15 @@ determine size of FAT directory when the FAT has a loop in it. (BUG:
 entries when inode value is replaced during dent_walk.
 
 8/29/06: Update: Finished Win32 port and changes to handle UTF-16 vs
-UTF-8 inputs.  
+UTF-8 inputs.
 
 8/29/06: Update: Created a parse_inum function to handle parsing inode
-addresses from command line. 
+addresses from command line.
 
-8/30/06: Update: Made progname a local variable instead of global. 
+8/30/06: Update: Made progname a local variable instead of global.
 
 8/31/06: Bug Fix: Fixed a sizeof() error with the memset in fatfs_inode_walk
-for the sect_alloc buffer. 
+for the sect_alloc buffer.
 
 8/31/06: Update: if mktime in dos2unixtime returns any negative value,
 then the return value is set to 0.  Windows and glibc seem to have
@@ -1225,13 +1225,13 @@ FS_INFO (Patch by Wyatt Banks)
 5/22/06: Bug Fix: Updated libewf to 20060520 to fix bug with reported
 image size. (BUG: 1489287)
 
-5/22/06: Bug Fix: Updated AFFLIB to 1.6.24 so that TSK could compile in 
+5/22/06: Bug Fix: Updated AFFLIB to 1.6.24 so that TSK could compile in
 CYGWIN. (BUG: 1493013)
 
 5/22/06: Update: Fixed some more printf statements that were causing
-compile warnings. 
+compile warnings.
 
-5/23/06: Update: Added a file existence check to img_open to make error 
+5/23/06: Update: Added a file existence check to img_open to make error
 message more accurate.
 
 5/23/06: Update: Usage messages had extra "Supported image types message".
@@ -1273,7 +1273,7 @@ specified in the header.
 
 7/10/06: Update: Added -R flag to icat to suppress recovery warnings and
 use this flag in sorter to prevent FAT recovery messages from filling
-up screen.  
+up screen.
 
 7/10/06: Update: file_walk functions now return FS_ERR_RECOVERY error
 codes for most cases if the RECOVERY flag is set -- this allows the
@@ -1358,7 +1358,7 @@ Renamed to mm_guessXX and fs_guessXX.
 
 4/24/06: Upgraded AFFLIB to 1.5.12
 
-4/24/06: split and raw check if the image is a directory 
+4/24/06: split and raw check if the image is a directory
 
 4/24/06: Updated libewf to 20060423-1
 
@@ -1387,13 +1387,13 @@ fs_tools.h (reported by Jaime Chang)
 and instead use only stderr.
 
 8/12/05: Update: If time is 0, then it is put as 00:00:00 instead of
-the default 1970 or 1980 time. 
+the default 1970 or 1980 time.
 
 8/13/05: Update: Added Unicode support for FAT and NTFS (Supported by
 I.D.E.A.L. Technology Corp).
 
 9/2/05: Update: Added Unicode support for UFS and ExtX.  Non-printable
-ASCII characters are no longer replaced with '^.'.  
+ASCII characters are no longer replaced with '^.'.
 
 9/2/05: Update: Improved the directory entry sanity checks for UFS
 and ExtX.
@@ -1404,7 +1404,7 @@ and ExtX.
 abort if a sub-directory is encountered with an error.  If it is the
 top directory explicitly called, then it still gives an error.
 
-9/2/05: Bug Fix: MD5 and SHA-1 values were incorrect under AMD64 
+9/2/05: Bug Fix: MD5 and SHA-1 values were incorrect under AMD64
 systems because the incorrect variable sizes were being used.
 (reported by: Regis Friend Cassidy. BUG: 1280966)
 
@@ -1461,8 +1461,8 @@ space, it could have a documented length that is larger than the
 remaining unallocated space.  This would cause an allocated name
 to be skipped.  BUG: 1210204  Reported by Christopher Betz.
 
-6/13/05: Update: Improved design of all dent code so that there are no 
-more global variables.  
+6/13/05: Update: Improved design of all dent code so that there are no
+more global variables.
 
 6/13/05: Update: Improved design of FAT dent code so that FATFS_INFO
 does not keep track of long file name information.
@@ -1563,7 +1563,7 @@ Marshall (BUG: 1144846)
 3/2/05: Update: non-printable letters in ExtX/UFS file names are
 now replaced by a '.'
 
-3/2/05: Update: Made file system tools more library friendly by 
+3/2/05: Update: Made file system tools more library friendly by
 making stubs for each application.
 
 3/4/05: Update: Redesigned the diskstat tool and created the
@@ -1578,7 +1578,7 @@ number was correct).  Reported by Knut Eckstein.  (BUG: 1158620)
 
 3/11/05: Update: Renamed diskstat, disksreset, sstrings, and imgstat to
 disk_stat, disk_sreset, srch_strings, and img_stat to make the names more
-clear. 
+clear.
 
 3/13/05: Bug Fix: The verbose output for fatfs_file_walk had an
 incorrect sector address.  Reported by Rudolph Pereira.
@@ -1591,7 +1591,7 @@ by secman)
 
 ---------------- VERSION 1.74 --------------
 11/18/04: Bug Fix: FreeBSD 5 would produce incorrect 'icat' output for
-Ext2/3 & UFS1 images because it used a 64-bit on-disk address. 
+Ext2/3 & UFS1 images because it used a 64-bit on-disk address.
 reported by neutrino neutrino.  (BUG: 1068771)
 
 11/30/04: Bug Fix: The makefile in disktools would generate an error
@@ -1635,7 +1635,7 @@ rare)  (BUG: 1049355)
 10/17/04: Update: Added sigfind tool to find binary signatures.
 
 10/27/04: Bug Fix: NTFS is_clust_alloc returned an error when loading
-  $MFT that had attribute list entry.  Now I assume that clusters 
+  $MFT that had attribute list entry.  Now I assume that clusters
   referred to by the $MFT are allocated until the $MFT is loaded.
   (BUG: 1055862).
 
@@ -1669,7 +1669,7 @@ if the year is > 137 (which is the overflow date for the 32-bit UNIX time).
 
 08/16/04: Update: Added first version of sstrings from binutils-2.15
 
-08/20/04: Bug Fix: Fixed a bug where the group number for block 0 of an 
+08/20/04: Bug Fix: Fixed a bug where the group number for block 0 of an
 EXT2FS file system would report -1. 'dstat' no longer displays value when it
 is not part of a block group. (BUG: 1013227)
 
@@ -1680,7 +1680,7 @@ exiting.
 8/26/04: Update: Changed internal design of NTFS to make is_clust_alloc
 
 8/26/04: Update: If an attribute list entry is found with an invalid MFT
-entry address AND the entry is unallocated, then no error message is 
+entry address AND the entry is unallocated, then no error message is
 printed, it is just ignored or logged in verbose mode.
 
 8/29/04: Update: Added support for 32-bit GID and UID in EXTxFS
@@ -1720,12 +1720,12 @@ EXT2FS.
 06/05/04: Update: Added sanity checks in fat to unix time conversion so that
 invalid times are set to 0.
 
-06/08/04: Bug Fix: Added a type cast when size is assigned in FAT 
+06/08/04: Bug Fix: Added a type cast when size is assigned in FAT
 and removed the assignment to a 32-bit signed variable (which was no
 longer needed).  (Bug: 966839)
 
 06/09/04: Bug Fix: Added a type cast to the 'getuX' macros because some
-compilers were assuming it was signed (Bug: 966839).  
+compilers were assuming it was signed (Bug: 966839).
 
 06/11/04: Update: Changed NTFS magic check to use the aa55 at the
 end and fixed the name of the original "magic" value to oemname.
@@ -1734,7 +1734,7 @@ The oemname is now printed in fsstat.
 06/12/04: Bug Fix: The NTFS serial number was being printed with
 bytes in the wrong order in the fsstat output. (BUG: 972207)
 
-06/12/04: Update: The begin offset value in index header for NTFS 
+06/12/04: Update: The begin offset value in index header for NTFS
 was 16-bits instead of 32-bits.
 
 06/22/04: Update: Created a library for the MD5 and SHA1 functions so
@@ -1742,7 +1742,7 @@ that it can be incorporated into other tools.  Also renamed some of the
 indexing tools that hfind uses.
 
 06/23/04: Update: Changed output of 'istat' for NTFS images.  Added more
-data from $STANDARD_INFORMATION.  
+data from $STANDARD_INFORMATION.
 
 07/13/04: Update: Changed output of 'istat' for NTFS images again.  Moved
 more data to the $FILE_NAME section and added new data.
@@ -1788,20 +1788,20 @@ zeros where the file content was.  Therefore the output is now a
 multiple of the data unit size.  Also removed limitation to FAT &
 NTFS.
 
-07/25/04: Update: 'dcalc' now has the '-s' option calculate the 
-original location of data from a slack space image (dls -s).  
-(from Chris Betz).  
+07/25/04: Update: 'dcalc' now has the '-s' option calculate the
+original location of data from a slack space image (dls -s).
+(from Chris Betz).
 
-07/26/04: Update: Created the fs_os.h file and adjusted some of the 
+07/26/04: Update: Created the fs_os.h file and adjusted some of the
 header files for the PRI macros (C99).  Created defines for OSes that do
-not have the macros already defined.  
+not have the macros already defined.
 
 07/26/04: Non-release bug fix: Fixed file record size bug introduced with
 recent changes.
 
 07/27/04: Update: Added GPT support to mmls.
 
-07/29/04: Update: Added '-p' flag to 'ifind' to find deleted NTFS files 
+07/29/04: Update: Added '-p' flag to 'ifind' to find deleted NTFS files
 that point to the given parent directory.  Added '-l and -z' as well.
 
 
@@ -1826,13 +1826,13 @@ address in addition to the sector address.
 
 04/24/04: Update: Added the cluster range to the FAT 'fsstat' output
 
-05/01/04: Update: Improved the FAT version autodetect code.  
+05/01/04: Update: Improved the FAT version autodetect code.
 
 05/02/04: Update: Removed 'H' flag from 'icat'.
 
 05/02/04: Update: Changed all of the FS_FLAG_XXX variables in the
   file system tools to constants that are specific to the usage
-  (NAME, DATA, META, FILE).  
+  (NAME, DATA, META, FILE).
 
 05/03/04: Update: fatfs_inode_walk now goes by sectors instead of clusters
   to get more dentries from slack space.
@@ -1848,23 +1848,23 @@ address in addition to the sector address.
 05/03/04: Update: Added RECOVERY flag to file_walk for deleted file
   recovery
 
-05/03/04: Update: Added FAT file recovery.  
+05/03/04: Update: Added FAT file recovery.
 
-05/03/04: Update: Removed '-H' flag from 'icat'.  Default is to 
+05/03/04: Update: Removed '-H' flag from 'icat'.  Default is to
   display holes.
-  
+
 05/03/04: Update: 'fls -r' will recurse down deleted directories in FAT
 
 05/03/04: Update: 'fsstat' reports FAT clusters that are marked as BAD
 
-05/03/04: Update: 'istat' for FAT now shows recovery clusters for 
+05/03/04: Update: 'istat' for FAT now shows recovery clusters for
   deleted files.
 
 05/04/04: Update:  Added output to 'fsstat' for FAT file systems by adding
   a list of BAD sectors and improving the amount of layout information.  I
-  also changed some of the internal variables. 
+  also changed some of the internal variables.
 
-05/08/04: Update: Removed addr_bsize from FS_INFO, moved block_frags 
+05/08/04: Update: Removed addr_bsize from FS_INFO, moved block_frags
   to FFS_INFO, modified dcat output only data unit size.
 
 05/20/04: Update: Added RECOVERY flag to 'ifind' so that it can find the
@@ -1872,7 +1872,7 @@ address in addition to the sector address.
 
 05/20/04: Update: Added icat recovery options to 'sorter'.
 
-05/20/04: Update: Improved the naming convention in sorter for the 'ils' 
+05/20/04: Update: Improved the naming convention in sorter for the 'ils'
   dead files.
 
 05/21/04: Update: Added outlook to sorter rules (from David Berger)
@@ -1880,7 +1880,7 @@ address in addition to the sector address.
 05/27/04: Bug Fix: Added <linux/unistd.h> to mylseek.c so that it compiles
 with Fedora Core 2 (Patch by Angus Marshall) (BUG: 961908).
 
-05/27/04: Update: Changed the letter with 'fls -l' for FIFO to 'p' 
+05/27/04: Update: Changed the letter with 'fls -l' for FIFO to 'p'
 instead of 'f' (reported by Dave Henkewick).
 
 05/28/04: Update: Added '-u' flag to 'dcat' so that the data unit size
@@ -1914,7 +1914,7 @@ data units instead of size in bytes (suggestion by Harald Katzer).
 
 ---------------- VERSION 1.68 --------------
 01/20/04: Bug Fix: FAT times were an hour too fast during daylight savings.
-  Now use mktime() instead of manual calculation.  Reported by Randall 
+  Now use mktime() instead of manual calculation.  Reported by Randall
   Shane. (BUG: 880606)
 02/01/04: Update: 'hfind -i' now reports the header entry as an invalid
   entry.  The first header row was ignored.
@@ -1931,32 +1931,32 @@ data units instead of size in bytes (suggestion by Harald Katzer).
 11/30/03: Bug Fix: icat would not hide the 'holes' if '-h' was given because
   the _UNALLOC flag was always being passed to file_walk.  (reported by
   Knut Eckstein).  (BUG: 851873)
-11/30/03: Bug Fix: NTFS data_walk was not using _ALLOC and _UNALLOC flags 
+11/30/03: Bug Fix: NTFS data_walk was not using _ALLOC and _UNALLOC flags
   and other code that called it was not either.  (BUG: 851895)
 11/30/03: Bug Fix:  Not all needed commands were using _UNALLOC when they
   called file_walk (although for most cases it did not matter because
-  sparse files would not be found in a directory for example). (Bug: 851897)  
+  sparse files would not be found in a directory for example). (Bug: 851897)
 12/09/03: Bug Fix: FFS and EXT2FS code was using OFF_T type instead of
   size_t for the size of the file. This could result in a file > 2GB
-  as being a negative size on some systems (BUG: 856957). 
+  as being a negative size on some systems (BUG: 856957).
 12/26/03: Bug Fix: ffind would crash for root directory of FAT image.
   Added NULL check and added a NULL name to fake root directory entry.
   (BUG: 871219)
 01/05/04: Bug Fix: The clustcnt value for FAT was incorrectly calculated
   and was too large for FAT12 and FAT16 by 32 sectors.  This could produce
-  extra entries in the 'fsstat' output when the FAT is dumped.  
+  extra entries in the 'fsstat' output when the FAT is dumped.
   (BUG: 871220)
 01/05/04: Bug Fix: ils, fls, and istat were not printing the full size
-  of files that are > 2GB.  (reported by Knut Eckstein) (BUG: 871457) 
+  of files that are > 2GB.  (reported by Knut Eckstein) (BUG: 871457)
 01/05/04: Bug Fix: The EXT2FS and EXT3FS code was not using the
   i_dir_acl value as the upper 32-bits of regular files that are
   > 2GB (BUG:  871458)
 01/06/04: Mitigation: An error was reported where sorter would error
   that icat was being passed a '-1' argument.  I can't find how that would
-  happen, so I added quotes to all arguments so that the next time it 
+  happen, so I added quotes to all arguments so that the next time it
   occurs, the error is more useful (BUG: 845840).
 01/06/04: Update: Incorporated patch from Charles Seeger so that 'cc'
-  can be used and compile time warnings are fixed with Sun 'cc'.  
+  can be used and compile time warnings are fixed with Sun 'cc'.
 01/06/04: Update: Upgraded file from v3.41 to v4.07
 
 
@@ -1964,7 +1964,7 @@ data units instead of size in bytes (suggestion by Harald Katzer).
 09/02/03: Bug Fix: Would not compile under OpenBSD 3 because fs_tools.h
   & mm_tools was missing a defined statement (reported by Randy - m0th_man)
 NOTE: Bugs now will have an entry into the Source Forge bug tracking
-  sytem.  
+  sytem.
 10/13/03: Bug Fix: buffer was not being cleared between uses and length
  incorrectly set in NTFS resulted in false deleted file names being shown
  when the '-r' flag was given.  The extra entries were from the previous
@@ -1978,25 +1978,25 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
   (generic rules to specific rules).  (BUG: 823057)
 10/14/03: Update: 'mmls' prints 'MS LVM' with partition type 0x42 now.
 10/25/03: Bug Fix: NTFS could have a null pointer crash if the image
-  was very corrupt and $Data was not found for the MFT.  
+  was very corrupt and $Data was not found for the MFT.
 11/10/03: Bug Fix: NTFS 'ffind' would only report the file name and not
   the attribute  name because the type and id were ignored.  ffind and
   ntfs_dent were updated - found during NTFS keyword search test.
   (Bug: 831579()
 11/12/03: Update: added support for Solaris x86 partition tables to 'mmls'
-11/12/03: Update: Modified the sparc data structure to add the correct 
+11/12/03: Update: Modified the sparc data structure to add the correct
   location of the 'sanity' magic value.
 11/15/03: Update: Added '-s' flag to 'icat' so that slack space is also
   displayed.
 
 ---------------- VERSION 1.65 --------------
 08/03/03: Bug Fix: 'sorter' now checks for inode values that are too
-  small to avoid 'icat' errors about invalid inode values.  
+  small to avoid 'icat' errors about invalid inode values.
 08/19/03: Update: 'raw' is now a valid type for 'dcat'.
 08/21/03: Update: mactime and sorter look for perl5.6.0 first.
 08/21/03: Update: Removed NSRL support from 'sorter' until a better
  wany to identify the known good and known bad files is found
-08/21/03: Bug Fix: The file path replaces < and > with HTML 
+08/21/03: Bug Fix: The file path replaces < and > with HTML
   encoding for HTML output (ils names were not being shown)
 08/25/03: Update: Added 'nsrl.txt' describing why the NSRL functionality
   was removed.
@@ -2023,15 +2023,15 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 07/16/03: Update: Added support for FreeBSD5
 07/16/03: Update: Added BSD disk labels to mmtools
 07/28/03: Update: Relaxed requirements for DOS directory entries, the wtime
-  can be zero (reported by Adam Uccello).  
+  can be zero (reported by Adam Uccello).
 07/30/03: Update: Added SUN VTOC to mmtools
 07/31/03: Update: Added NetBSD support (adam@monkeybyte.org)
 08/01/03: Update: Added more sanity checks to FAT so that it would not
   try and process NTFS images that have the same MAGIC value
 
 ---------------- VERSION 1.62 --------------
-04/11/03: Bug Fix: 'fsstat' for an FFS file system could report data 
-  fragments in the last group that were larger than the maximum 
+04/11/03: Bug Fix: 'fsstat' for an FFS file system could report data
+  fragments in the last group that were larger than the maximum
   fragment
 04/11/03: Bug Fix: 'ffs' allows the image to not be a multiple of the
   block size.  A read error occurred when it tried to read the last
@@ -2044,7 +2044,7 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 05/27/03: Update: Added 'mask' field to FATFS_INFO structure and changed
   code in fatfs.c to use it.
 05/27/03: Update: isdentry now checks the starting cluster to see if
-  it is a valid size.  
+  it is a valid size.
 05/27/03: Bug Fix: Added a sanitizer to 'sorter' to remove invalid chars
   from the 'file' output and reduce the warnings from Perl.
 05/28/03: Bug Fix: Improved sanitize expression in 'sorter'
@@ -2066,14 +2066,14 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 03/26/03: Update: Added more verbose comments to ntfs_dent.c.
 03/26/03: Bug Fix: 'ifind' for a path could return a result that was
   shorter than the requested name (strncmp was used)
-03/26/03: Update: Short FAT names can be used in 'ifind -n' and 
+03/26/03: Update: Short FAT names can be used in 'ifind -n' and
   error messages were improved
-03/26/03: Bug Fix: A final NTFS Index Buffer was not always processed in 
+03/26/03: Bug Fix: A final NTFS Index Buffer was not always processed in
   ntfs_dent.c, which resulted in files not being shown.  This was fixed
   with debugging help from Matthew Shannon.
 03/27/03: Update: Added an 'index.html' for image thumbnails in sorter
   and added a 'details' link from the thumbnail to the images.html file
-03/27/03: Update: 'sorter' can now take a directory inode to start 
+03/27/03: Update: 'sorter' can now take a directory inode to start
   processing
 03/27/03: Update: added '-z' flag when running 'file' in 'sorter' so that
   compressed file contents are reported
@@ -2081,13 +2081,13 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
   summary of events
 03/27/03: Update: Added support for Version 2 of the NSRL in 'hfind'
 04/01/03: Update: Added support for Hash Keeper to 'hfind'
-04/01/03: Update: Added '-e' flag to 'hfind' for extended info 
+04/01/03: Update: Added '-e' flag to 'hfind' for extended info
   (currently hashkeeper only)
 
 
 ---------------- VERSION 1.60 --------------
 10/31/02: Bug Fix: the unmounting status of EXT2FS in the 'fsstat' command
-  was not correct (reported by Stephane Denis).  
+  was not correct (reported by Stephane Denis).
 11/24/02: Bug Fix: The -v argument was not allowed on istat or fls (Michael
   Stone)
 11/24/02: Bug Fix: When doing an 'ifind' on a UNIX fs, it could abort if it
@@ -2100,13 +2100,13 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
   (suggested by William Salusky).
 11/26/02: Update: Now that there is a '-n' flag with 'ifind', the '-d'
   flag was added to specify the data unit address.  The old syntax of
-  giving the data_unit at the end is no longer supported.  
+  giving the data_unit at the end is no longer supported.
 11/27/02: Update: Added sanity checks on meta data and data unit addresses
   earlier in the code.
 12/12/02: Update: Added additional debug statements to NTFS code
 12/19/02: Update: Moved 'hash' directory to 'hashtools'
 12/19/02: Update: Started development of 'hfind'
-12/31/02: Update: Improved verbose debug statements to show full 64-bit 
+12/31/02: Update: Improved verbose debug statements to show full 64-bit
   offsets
 01/02/03: Update: Finished development of 'hfind' with ability to update
   for next version of NSRL (which may have a different format)
@@ -2122,12 +2122,12 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 01/07/03: Update: Renamed the src/mactime directory to src/timeline.
 01/07/03: Update: Updated README and man pages for hfind and sorter
 01/12/03: Bug Fix: ntfs_mft_lookup was casting a 64-bit value to a 32-bit
-  variable.  This caused MFT Magic errors.  Reported and debugged by 
+  variable.  This caused MFT Magic errors.  Reported and debugged by
   Keven Murphy
 01/12/03: Update: Added verbose argument to 'fls'
-01/12/03: Bug Fix: '-V' argument to 'istat' was doing verbose instead of 
+01/12/03: Bug Fix: '-V' argument to 'istat' was doing verbose instead of
   version
-01/13/03: Update: Changed static sizes of OFF_T and DADDR_T in Linux 
+01/13/03: Update: Changed static sizes of OFF_T and DADDR_T in Linux
   version to the actual 'off_t' and 'daddr_t' types
 01/23/03: Update: Changed use of strtok_r to strtok in ifind.c so that
   Mac 10.1 could compile (Dave Goldsmith).
@@ -2140,7 +2140,7 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 09/24/02: Update: Removal of index sequences for index buffers is now
   done using upd_off, which will allow for NTFS to move the structure in
   the future.
-09/26/02: Update: Added create time for NTFS / STANDARD_INFO to 
+09/26/02: Update: Added create time for NTFS / STANDARD_INFO to
   istat output.
 09/26/02: Update: Changed the method that the NTFS time is converted
   to UNIX time.  Should be more efficient.
@@ -2149,45 +2149,45 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 
 
 ---------------- VERSION 1.51 --------------
-09/10/02: Bug Fix: Fixed a design bug that would not allow attribute 
+09/10/02: Bug Fix: Fixed a design bug that would not allow attribute
   lists in $MFT.  This bug would generate an error that complained about
-  an invalid MFT entry in attribute list.  
+  an invalid MFT entry in attribute list.
 09/10/02: Update: The size of files and directories is now calculated
   after each time proc_attrseq() is called so that it is more up to date
   when dealing with attribute lists.  The size has the sizes of all
-  $Data, $IDX_ROOT, and $IDX_ALLOC streams. 
+  $Data, $IDX_ROOT, and $IDX_ALLOC streams.
 09/10/02: Update: The maxinum number of MFT entries is now calculated
-  each time an MFT entry is processed while loading the MFT.  This 
+  each time an MFT entry is processed while loading the MFT.  This
   allows us to reflect what the maximum possible MFT entry is at that
   given point based on how many attribute lists have been processed.
-09/10/02: Update: Added file version 3.39 to distro (bigger magic files) 
+09/10/02: Update: Added file version 3.39 to distro (bigger magic files)
   (Salusky)
 09/10/02: Bug Fix: fs_data was wasting memory when it was allocated
 09/10/02: Update: added a fs_data_alloc() function
 09/12/02: Bug Fix: Do not give an error if an attribute list of an
-  unallocated file points to an MFT that no longer claims it is a 
+  unallocated file points to an MFT that no longer claims it is a
   member of the list.
 09/12/02: Update: No longer need version to remove update sequence
   values from on-disk buffers
-09/19/02: Bug Fix: fixed memory leak in ntfs_load_ver() 
+09/19/02: Bug Fix: fixed memory leak in ntfs_load_ver()
 09/19/02: Bug Fix: Update sequence errors were displayed because of a
   bug that occurred when an MFT entry crossed a run in $MFT.  Only occurred
   with 512-byte clusters and an odd number of clusters in a run.
 09/19/02: Update: New argument to ils, istat, and fls that allows user to
   specify a time skew in seconds of the compromised system.  Originated
-  from discussion at DFRWS II.  
-09/19/02: Update: Added '-h' argument to mactime to display header info 
+  from discussion at DFRWS II.
+09/19/02: Update: Added '-h' argument to mactime to display header info
 
 ---------------- VERSION 1.50 --------------
 
 04/21/02: icat now displays idxroot attribute for NTFS directories
-04/21/02: fs_dent_print functions now are passed the FS_DATA structure 
+04/21/02: fs_dent_print functions now are passed the FS_DATA structure
   instead of the extra inode and name strings.  (NTFS)
 04/21/02: fs_dent_print functions display alternate data stream size instead
  of the default data size (NTFS)
-04/24/02: Fixed bug in istat that displayed too many fragments with ffs images 
+04/24/02: Fixed bug in istat that displayed too many fragments with ffs images
 04/24/02: Fixed bug in istat that did not display sparse files correctly
-04/24/02: fsstat of FFS images now identifies the fragments at the 
+04/24/02: fsstat of FFS images now identifies the fragments at the
   beginning of cyl groups as data fragments.
 04/26/02: Fixed bug in ext2fs_dent_parse_block that did not advance the
   directory entry pointer far enough each time
@@ -2212,8 +2212,8 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 05/26/02: Fixed bug with FAT that did not return all slack space on file_walk
 05/26/02: Added '-s' flag to dls to extract slack space of FAT and NTFS
 06/07/02: fixed _timezone variable so correct times are shown in CYGWIN
-06/11/02: *_copy_inode now sets the flags for the inode 
-06/11/02: fixed bug in mactimes that displayed a duplicate entry with time 
+06/11/02: *_copy_inode now sets the flags for the inode
+06/11/02: fixed bug in mactimes that displayed a duplicate entry with time
   because of header entries in body file
 06/12/02: Added ntfs.README doc
 06/16/02: Added a comment to file Makefile to make it easier to compile for
@@ -2222,7 +2222,7 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
   to be shown (when ADS in directory)
 06/19/02: added the day of the week to the mactime output (Tan)
 07/09/02: Fixed bug that added extra chars to end of symlink destination
-07/17/02: 1.50 Released 
+07/17/02: 1.50 Released
 
 
 
@@ -2237,10 +2237,10 @@ not the one that lazarus spits out (which start at 1)
 value so that a walk can be ended in the middle of it.
 - FAT support added
 - Improved ifind to better handle fragments
-- '-z' flag to fls and istat now use the time zone string instead of 
+- '-z' flag to fls and istat now use the time zone string instead of
 integer value.
 - no longer prepend / in _dent
-- verify that '-m' directory in fls ends with a '/' 
+- verify that '-m' directory in fls ends with a '/'
 - identify the destination of sym links
 - fsstat tool added
 - fixed caching bug with FAT12 when the value overlapped cache entries

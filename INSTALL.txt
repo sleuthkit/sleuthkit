@@ -33,17 +33,17 @@ installing The Sleuth Kit.
 
 Optional Libraries:
 There are optional features that TSK can use if you have installed
-them before you build and install TSK. 
+them before you build and install TSK.
 
 - AFFLIB: Allows you to process disk images that are stored in the
 AFF format. Version 3.3.6 has been tested to compile and work with this
-release. 
-    Available at: http://www.afflib.org
+release.
+    Available at: https://github.com/sshock/AFFLIBv3
 
 - LibEWF: Allows you to process disk images that are stored in the
 Expert Witness format (EnCase Format).  Version 20130128 has been
-tested to compile and work with this release.   It is the last 
-stable release of libewf and therefore the only one that we 
+tested to compile and work with this release.   It is the last
+stable release of libewf and therefore the only one that we
 currently support.  You can download it from:
 
     https://github.com/sleuthkit/libewf_64bit
@@ -55,22 +55,22 @@ currently support.  You can download it from:
     Available at: http://sourceforge.net/projects/libewf/
 
 - Libvhdi: Allows you to process disk images that are stored in the
-Virtual Hard Disk format (VHD).  
+Virtual Hard Disk format (VHD).
 
     The official repository is available here:
 
     https://github.com/libyal/libvhdi
 
 - Libvmdk: Allows you to process disk images that are stored in the
-VMware Virtual Disk format (VMDK).  
+VMware Virtual Disk format (VMDK).
 
     The official repository is available here:
 
     https://github.com/libyal/libvmdk
 
-- Libvslvm: Allows you to access the Linux Logical Volume Manager (LVM) format 
-that is sotred on a disk image.  A stand-alone version of libbfio is needed 
-to allow libvslvm to directly read from a TSK_IMAGE.  
+- Libvslvm: Allows you to access the Linux Logical Volume Manager (LVM) format
+that is sotred on a disk image.  A stand-alone version of libbfio is needed
+to allow libvslvm to directly read from a TSK_IMAGE.
 
     The official repository is available here:
 
@@ -94,7 +94,7 @@ If there were no errors, then run 'make'.  If you do not have a
 'configure' script, then it is probably because you cloned the
 source code repository. If so, you will need to have automake,
 autoconf, and libtool installed and you can create the configure
-script using the 'bootstrap' script in the root directory. 
+script using the 'bootstrap' script in the root directory.
 
     $ make
 
@@ -107,7 +107,7 @@ be located in the TSK sub-directories.  To install them, type
 
 By default, this will copy everything in to the /usr/local/ structure.
 So, the executables will be in '/usr/local/bin'.  This directory will
-need to be in your PATH if you want to run the TSK commands without 
+need to be in your PATH if you want to run the TSK commands without
 specifying '/usr/local/bin' everytime.
 
 
@@ -119,7 +119,7 @@ If you get an error like:
   libtool: and run autoconf again.
 
 Run:
-    ./bootstrap 
+    ./bootstrap
 
 and then go back to running configure and make.  To run 'bootstrap',
 you'll need to have the autotools installed (see the list at the
@@ -139,7 +139,7 @@ if it is installed.
 the AFFLIB installation (the directory should have 'lib' and 'include'
 directories in it).
 
---without-ewf: Supply this if you want TSK to ignore libewf even
+--without-libewf: Supply this if you want TSK to ignore libewf even
 if it is installed.
 
 --with-libewf=dir: Supply this if you want TSK to look in 'dir' for

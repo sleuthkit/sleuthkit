@@ -13,14 +13,22 @@
 #include "../img/pool.hpp"
 #include "tsk_fs_i.h"
 
-TSK_FS_INFO* apfs_open_auto_detect(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-    TSK_FS_TYPE_ENUM fstype, const char* a_pass, uint8_t test) {
-
+TSK_FS_INFO* apfs_open_auto_detect(
+  TSK_IMG_INFO * img_info,
+  [[maybe_unused]] TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM fstype,
+  const char* a_pass,
+  [[maybe_unused]] uint8_t test)
+{
     return apfs_open(img_info, offset, fstype, a_pass);
 }
 
-TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
-                       TSK_FS_TYPE_ENUM fstype, const char* pass) {
+TSK_FS_INFO* apfs_open(
+  TSK_IMG_INFO * img_info,
+  [[maybe_unused]] TSK_OFF_T offset,
+  TSK_FS_TYPE_ENUM fstype,
+  const char* pass)
+{
   tsk_error_reset();
 
   if (img_info->itype != TSK_IMG_TYPE_POOL) {
@@ -29,7 +37,7 @@ TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
       tsk_error_set_errstr("tsk_apfs_open: Not a pool image");
       return nullptr;
   }
-  IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)img_info; 
+  IMG_POOL_INFO *pool_img = (IMG_POOL_INFO*)img_info;
 
   if (pool_img->pool_info == nullptr) {
     tsk_error_reset();

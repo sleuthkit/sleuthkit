@@ -11,7 +11,7 @@
 /**
  * \file tsk_is_image_supported.cpp
  * Class to test whether a given image can be processed by tsk
- * 
+ *
  * Usage:
  *  Create a TskIsImageSupported object
  *  Call openImage
@@ -24,19 +24,14 @@
 #include <sstream>
 #include <algorithm>
 
-TskIsImageSupported::TskIsImageSupported()
-{
-    m_wasDataFound = false;
-    m_wasEncryptionFound = false;
-    m_wasPossibleEncryptionFound = false;
-    m_wasFileSystemFound = false;
-    m_wasUnsupported = false;
-    m_bitlockerError = false;
-    m_encryptionDesc[0] = '\0';
-    m_possibleEncryptionDesc[0] = '\0';
-    m_unsupportedDesc[0] = '\0';
-    m_bitlockerDesc[0] = '\0';
-}
+TskIsImageSupported::TskIsImageSupported():
+    m_wasDataFound(false),
+    m_wasEncryptionFound(false),
+    m_wasPossibleEncryptionFound(false),
+    m_wasFileSystemFound(false),
+    m_wasUnsupported(false),
+    m_bitlockerError(false)
+{}
 
 bool TskIsImageSupported::isImageSupported()
 {
@@ -49,7 +44,7 @@ bool TskIsImageSupported::isImageEncrypted()
 }
 
 /**
-* Idea is to try to give the user a simple error message explaining the most likely 
+* Idea is to try to give the user a simple error message explaining the most likely
 * reason the image is not supported
 */
 std::string TskIsImageSupported::getSingleLineErrorMessage() {
@@ -57,33 +52,25 @@ std::string TskIsImageSupported::getSingleLineErrorMessage() {
     // and that we have a message to show the user. Most commonly this is a missing
     // or incorrect password.
     if (m_bitlockerError) {
-        if (strnlen(m_bitlockerDesc, 1024) > 0) {
-            return std::string(m_bitlockerDesc);
+        if (!m_bitlockerDesc.empty()) {
+            return m_bitlockerDesc;
         }
         return "BitLocker error"; // Safety message - we should always have a description saved
     }
 
     // Check if we have a known unsupported image type
-    if (strnlen(m_unsupportedDesc, 1024) > 0) {
-        return "Unsupported image type (" + std::string(m_unsupportedDesc) + ")";
+    if (!m_unsupportedDesc.empty()) {
+        return "Unsupported image type (" + m_unsupportedDesc + ")";
     }
 
     // Now report any encryption/possible encryption
     if (m_wasEncryptionFound || m_wasPossibleEncryptionFound) {
-        std::string encDesc = "";
         if (m_wasEncryptionFound) {
-            encDesc = "Encryption detected";
-            if (strnlen(m_encryptionDesc, 1024) > 0) {
-                encDesc += " (" + std::string(m_encryptionDesc) + ")";
-            }
+            return "Encryption detected" + (!m_encryptionDesc.empty() ? " (" + m_encryptionDesc + ')' : "");
         }
         else {
-            encDesc = "Possible encryption detected";
-            if (strnlen(m_possibleEncryptionDesc, 1024) > 0) {
-                encDesc += " (" + std::string(m_possibleEncryptionDesc) + ")";
-            }
+            return "Possible encryption detected" + (!m_possibleEncryptionDesc.empty() ? " (" + m_possibleEncryptionDesc + ')' : "");
         }
-        return encDesc;
     }
 
     // Default message
@@ -115,11 +102,11 @@ void TskIsImageSupported::printResults() {
     printf("\n");
 
     printf("Encryption Type: ");
-    if (strnlen(m_encryptionDesc, 1024) > 0) {
-        printf("%s", m_encryptionDesc);
-    } 
-    else if (strnlen(m_possibleEncryptionDesc, 1024) > 0) {
-        printf("%s", m_possibleEncryptionDesc);
+    if (!m_encryptionDesc.empty()) {
+        printf("%s", m_encryptionDesc.c_str());
+    }
+    else if (!m_possibleEncryptionDesc.empty()) {
+        printf("%s", m_possibleEncryptionDesc.c_str());
     }
     else {
         printf("None");
@@ -133,14 +120,14 @@ void TskIsImageSupported::printResults() {
     }
     else {
         printf("No");
-        if (strnlen(m_unsupportedDesc, 1024) > 0) {
-            printf(" (%s)", m_unsupportedDesc);
+        if (!m_unsupportedDesc.empty()) {
+            printf(" (%s)", m_unsupportedDesc.c_str());
         }
     }
     printf("\n");
 }
 
-uint8_t TskIsImageSupported::handleError() 
+uint8_t TskIsImageSupported::handleError()
 {
     // If encryption was found, update the flags
     TSK_ERROR_INFO* lastError = tsk_error_get_info();
@@ -148,37 +135,34 @@ uint8_t TskIsImageSupported::handleError()
         uint32_t errCode = lastError->t_errno;
 
         if (errCode == TSK_ERR_FS_ENCRYPTED || errCode == TSK_ERR_VS_ENCRYPTED) {
-            strncpy(m_encryptionDesc, lastError->errstr, 1024);
+            m_encryptionDesc = lastError->errstr;
             m_wasEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
             // This is the case where we're confident we have BitLocker encryption but
             // failed to initialize it. The most common cause would be a missing
             // or incorrect password.
-            strncpy(m_encryptionDesc, "BitLocker", 1024);
+            m_encryptionDesc = "BitLocker";
             m_wasEncryptionFound = true;
             m_bitlockerError = true;
-            strncpy(m_bitlockerDesc, "BitLocker status - ", 1024);
-            strncat(m_bitlockerDesc, lastError->errstr, 950);
+            m_bitlockerDesc = std::string("BitLocker status - ") + lastError->errstr;
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
-            strncpy(m_possibleEncryptionDesc, lastError->errstr, 1024);
+            m_possibleEncryptionDesc = lastError->errstr;
             m_wasPossibleEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_IMG_UNSUPTYPE) {
-            strncpy(m_unsupportedDesc, lastError->errstr, 1024);
+            m_unsupportedDesc = lastError->errstr;
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_VS_MULTTYPE) {
             // errstr only contains the "MAC or DOS" part, so add more context
-            strncpy(m_unsupportedDesc, "Multiple volume system types found - ", 1024);
-            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            m_unsupportedDesc = std::string("Multiple volume system types found - ") + lastError->errstr;
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_FS_MULTTYPE) {
             // errstr only contains the "UFS or NTFS" part, so add more context
-            strncpy(m_unsupportedDesc, "Multiple file system types found - ", 1024);
-            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            m_unsupportedDesc = std::string("Multiple file system types found - ") + lastError->errstr;
             m_wasUnsupported = true;
         }
 
@@ -190,8 +174,8 @@ uint8_t TskIsImageSupported::handleError()
 * Prepare the result for dataModel_SleuthkitJNI::isImageSupportedNat.
 * There's some complexity here because BitLocker drives appear to have a very small unencrypted
 * volume followed by the encrypted volume. So we need to check for BitLocker errors instead
-* of just going by whether we were able to open a file system. 
-* 
+* of just going by whether we were able to open a file system.
+*
 * @return Empty string if image is supported, error string if not
 */
 std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
@@ -259,7 +243,7 @@ TskIsImageSupported::filterFs(TSK_FS_INFO * /*fs_info*/)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterPool(const TSK_POOL_INFO * pool_info)
+TskIsImageSupported::filterPool([[maybe_unused]] const TSK_POOL_INFO * pool_info)
 {
     // There's nothing to do, but we need to override this to allow the pool
     // to be processed.
@@ -267,7 +251,7 @@ TskIsImageSupported::filterPool(const TSK_POOL_INFO * pool_info)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
+TskIsImageSupported::filterPoolVol([[maybe_unused]] const TSK_POOL_VOLUME_INFO * pool_vol)
 {
     // There's nothing to do, but we need to override this to allow the pool
     // to be processed.

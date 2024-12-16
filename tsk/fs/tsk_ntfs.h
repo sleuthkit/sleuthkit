@@ -477,7 +477,7 @@ extern "C" {
 
     typedef struct {
         // object ID / GUID of the file
-        uint8_t objid1[4];   // little endian 4-byte value 
+        uint8_t objid1[4];   // little endian 4-byte value
         uint8_t objid2[2];   // little endian 2-byte value
         uint8_t objid3[2];  // little endian 2-byte value
         uint8_t objid4[2];  // big endian 2-byte value
@@ -737,8 +737,8 @@ extern "C" {
 
         /* Number of allocated regular files. 0 until a directory is
          * opened.  Currently used by tools that are built on TSK. */
-        int alloc_file_count;      
-                                    
+        int alloc_file_count;
+
         NTFS_USNJINFO *usnjinfo;        // update sequence number journal
     } NTFS_INFO;
 
@@ -748,7 +748,7 @@ extern "C" {
     extern uint8_t ntfs_attrname_lookup(TSK_FS_INFO *, uint16_t, char *,
         int);
     extern TSK_RETVAL_ENUM ntfs_dinode_lookup(NTFS_INFO *, char *,
-        TSK_INUM_T);
+        TSK_INUM_T, TSK_OFF_T *);
     extern TSK_RETVAL_ENUM ntfs_dir_open_meta(TSK_FS_INFO * a_fs,
         TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr, int recursion_depth);
 
