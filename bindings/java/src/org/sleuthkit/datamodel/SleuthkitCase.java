@@ -3554,9 +3554,33 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer.
 	 */
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
-		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, this);
+		return makeAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, null);
 	}
 
+	/**
+	 * Starts the multi-step process of adding an image data source to the case
+	 * by creating an object that can be used to control the process and get
+	 * progress messages from it.
+	 *
+	 * @param timeZone        The time zone of the image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 *                        unallocated space in the image.
+	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
+	 *                        file systems.
+	 * @param imageCopyPath   Path to which a copy of the image should be
+	 *                        written. Use the empty string to disable image
+	 *                        writing.
+	 * @param password        The password for decrypting the image or null if
+	 *                        not needed.
+	 *
+	 * @return An object that encapsulates control of adding an image via the
+	 *         SleuthKit native code layer.
+	 */
+	@Beta
+	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath, String password) {
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, password, this);
+	}
+	
 	/**
 	 * Get the list of root objects (data sources) from the case database, e.g.,
 	 * image files, logical (local) files, virtual directories.
@@ -10217,7 +10241,28 @@ public class SleuthkitCase {
 	 *                          database.
 	 */
 	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host) throws TskCoreException {
-		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone, host, this);
+		return addImageInfo(deviceObjId, imageFilePaths, timeZone, host, null);
+	}
+	
+
+	/**
+	 * Adds an image to the case database.
+	 *
+	 * @param deviceObjId    The object id of the device associated with the
+	 *                       image.
+	 * @param imageFilePaths The image file paths.
+	 * @param timeZone       The time zone for the image.
+	 * @param host           The host for this image.
+	 * @param password       The password to decrypt the image or null.
+	 *
+	 * @return An Image object.
+	 *
+	 * @throws TskCoreException if there is an error adding the image to case
+	 *                          database.
+	 */
+	@Beta
+	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host, String password) throws TskCoreException {
+		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone, host, password, this);
 		return getImageById(imageId);
 	}
 
@@ -15294,7 +15339,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", null, this);
 	}
 
 	/**
