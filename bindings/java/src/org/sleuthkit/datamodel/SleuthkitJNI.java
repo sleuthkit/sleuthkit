@@ -424,21 +424,16 @@ public class SleuthkitJNI {
 		 *                         the image.
 		 * @param imageFilePaths   The image file paths.
 		 * @param timeZone         The time zone for the image.
-		 * @param addFileSystems   Pass true to attempt to add file systems
-		 *                         within the image to the case database.
-		 * @param addUnallocSpace  Pass true to create virtual files for
-		 *                         unallocated space. Ignored if addFileSystems
-		 *                         is false.
-		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
-		 *                         for FAT file systems. Ignored if
-		 *                         addFileSystems is false.
+		 * @param host             The specified host.
+		 * @param password		   The password to use to decrypt.
+		 * @param skCase           The Sleuth kit case.
 		 *
 		 * @return The object id of the image.
 		 *
 		 * @throws TskCoreException if there is an error adding the image to
 		 *                          case database.
 		 */
-		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host, SleuthkitCase skCase) throws TskCoreException {
+		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host, String password, SleuthkitCase skCase) throws TskCoreException {
 			
 			try {
 				if (host == null) {
@@ -452,7 +447,7 @@ public class SleuthkitJNI {
 					host = skCase.getHostManager().newHost(hostName);
 				}
 				TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks(), host);
-				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false);
+				long tskAutoDbPointer = initializeAddImgNat(dbHelper, timezoneLongToShort(timeZone), false, false, false, password);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
 				long id = finishAddImgNat(tskAutoDbPointer);
 				dbHelper.finish();
@@ -475,12 +470,14 @@ public class SleuthkitJNI {
 		 * @param imageCopyPath    Path to which a copy of the image should be
 		 *                         written. Use the empty string to disable
 		 *                         image writing.
+		 * @param password         The password for decrypting the image.
+		 * @param skCase           The Sleuth Kit case.
 		 *
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath, SleuthkitCase skCase) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath, skCase);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath, String password, SleuthkitCase skCase) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath, password, skCase);
 		}
 
 		/**
@@ -498,6 +495,7 @@ public class SleuthkitJNI {
 			private boolean isCanceled;
 			private final SleuthkitCase skCase;
 			private TskCaseDbBridge dbHelper;
+			private final String password;
 
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
@@ -511,8 +509,10 @@ public class SleuthkitJNI {
 			 * @param imageWriterPath  Path that a copy of the image should be
 			 *                         written to. Use empty string to disable
 			 *                         image writing
+			 * @param password         The password for decrypting the image.
+			 * @param skCase           The Sleuth Kit case.
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath, SleuthkitCase skCase) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath, String password, SleuthkitCase skCase) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
 				this.skipFatFsOrphans = skipFatFsOrphans;
@@ -520,6 +520,7 @@ public class SleuthkitJNI {
 				tskAutoDbPointer = 0;
 				this.isCanceled = false;
 				this.skCase = skCase;
+				this.password = password;
 				
 			}
 
@@ -574,7 +575,7 @@ public class SleuthkitJNI {
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
 							imageHandle = image.getImageHandle();
-							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
+							tskAutoDbPointer = initAddImgNat(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans, password);
 						}
 						if (0 == tskAutoDbPointer) {
 							throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
@@ -2191,9 +2192,9 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	private static native long initAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans, String password) throws TskCoreException;
 
-	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans, String password) throws TskCoreException;
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
