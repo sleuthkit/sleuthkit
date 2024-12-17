@@ -15,9 +15,9 @@
 
 #include "tsk/libtsk.h"
 
+#include <future>
 #include <memory>
-
-
+#include <vector>
 
 class Walker: public TskAuto {
 public:
@@ -38,12 +38,12 @@ public:
   virtual TSK_FILTER_ENUM filterVol([[maybe_unused]] const TSK_VS_PART_INFO* vs_part) override {
     return TSK_FILTER_CONT;
   }
-  
+
   virtual TSK_FILTER_ENUM filterFs([[maybe_unused]] TSK_FS_INFO* fs) override {
     return TSK_FILTER_CONT;
   }
 
-  virtual TSK_RETVAL_ENUM processFile([[maybe_unused]] TSK_FS_FILE* file, [[maybe_unused]] const char*) override { 
+  virtual TSK_RETVAL_ENUM processFile([[maybe_unused]] TSK_FS_FILE* file, [[maybe_unused]] const char*) override {
     return TSK_OK;
   }
 };
@@ -58,8 +58,28 @@ TEST_CASE("xxx") {
     };
     REQUIRE(img);
 
-    Walker w;
-    w.openImageHandle(img.get());
-    return w.findFilesInImg();
+    const auto img_ptr = img.get();
+
+    std::vector<std::future<uint8_t>> results;
+
+    for (size_t i = 0; i < 10; ++i) {
+      std::future<uint8_t> f = std::async(
+        std::launch::async,
+        [img_ptr]() {
+          Walker w;
+          w.openImageHandle(img_ptr);
+          return w.findFilesInImg();
+        }
+      );
+
+      results.push_back(std::move(f));
+    }
+
+    uint8_t x = 0;
+    for (auto& f: results) {
+      f.wait();
+      x |= f.get();
+    }
+    return x;
   };
 }
