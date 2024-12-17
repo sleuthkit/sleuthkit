@@ -934,8 +934,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 }
 
                 // we return 0s for reads past the initsize
-                else if ((off >= fs_attr->nrd.initsize)
-                    && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
+                else if (off >= fs_attr->nrd.initsize
+                    && (a_flags & TSK_FS_FILE_WALK_FLAG_SLACK) == 0) {
                     memset(buf, 0, fs->block_size);
                 }
                 else {
@@ -959,8 +959,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                         free(buf);
                         return 1;
                     }
-                    if ((off + fs->block_size > fs_attr->nrd.initsize)
-                        && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
+                    if (off + fs->block_size > fs_attr->nrd.initsize
+                        && (a_flags & TSK_FS_FILE_WALK_FLAG_SLACK) == 0) {
                         memset(&buf[fs_attr->nrd.initsize - off], 0,
                             fs->block_size -
                             (size_t) (fs_attr->nrd.initsize - off));

@@ -55,12 +55,12 @@ tsk_fs_parse_inum(const TSK_TCHAR * str, TSK_INUM_T * inum,
         *id_used = 0;
 
     /* Make a copy of the input string */
-    tmpstr =
-        (TSK_TCHAR *) tsk_malloc((TSTRLEN(str) + 1) * sizeof(TSK_TCHAR));
+    const size_t tmplen = TSTRLEN(str);
+    tmpstr = (TSK_TCHAR *) tsk_malloc((tmplen + 1) * sizeof(TSK_TCHAR));
     if (tmpstr == NULL)
         return 1;
 
-    TSTRNCPY(tmpstr, str, TSTRLEN(str) + 1);
+    TSTRNCPY(tmpstr, str, tmplen + 1);
 
     if ((tdash = TSTRCHR(tmpstr, _TSK_T('-'))) != NULL) {
         *tdash = '\0';

@@ -321,7 +321,7 @@ uint8_t
             idx_cnt++;
 
             /* Set the previous hash value */
-            strncpy(phash, hash, TSK_HDB_HTYPE_MD5_LEN + 1);
+            strncpy(phash, hash, TSK_HDB_HTYPE_MD5_LEN);
     }
 
     if (idx_cnt > 0) {

@@ -257,7 +257,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 			if (a_fs_dir->names_used >= MAX_DIR_SIZE_TO_PROCESS) {
 				tsk_error_reset();
 				tsk_error_set_errno(TSK_ERR_FS_GENFS);
-				tsk_error_set_errstr("tsk_fs_dir_add: Directory too large to process (addr: %" PRIuSIZE")", a_fs_dir->addr);
+				tsk_error_set_errstr("tsk_fs_dir_add: Directory too large to process (addr: %" PRIuINUM ")", a_fs_dir->addr);
 				return 1;
 			}
 
@@ -715,7 +715,10 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         }
 
         // call the action if we have the right flags.
-        if ((fs_file->name->flags & a_flags) == fs_file->name->flags) {
+        const TSK_FS_NAME_FLAG_ENUM n_flags =
+            (TSK_FS_NAME_FLAG_ENUM) (((a_flags & TSK_FS_DIR_WALK_FLAG_ALLOC) ? TSK_FS_NAME_FLAG_ALLOC : 0) |
+            ((a_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC) ? TSK_FS_NAME_FLAG_UNALLOC : 0));
+        if ((fs_file->name->flags & n_flags) == fs_file->name->flags) {
 
             retval = a_action(fs_file, a_dinfo->dirs, a_ptr);
             if (retval == TSK_WALK_STOP) {
@@ -1167,7 +1170,7 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
      * be fewer callbacks for UNALLOC than ALLOC.
      */
     if (tsk_fs_dir_walk_internal(a_fs, a_fs->root_inum,
-            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_named_dir_walk_cb, NULL, 0)) {
+            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_named_dir_walk_cb, NULL, 0)) {
         tsk_error_errstr2_concat
             ("- tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
         return TSK_ERR;

@@ -306,7 +306,7 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     if (conv_result != TSKconversionOK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-        tsk_error_set_errstr("%s: Error converting %s for inum %"PRIuINUM" from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
+        tsk_error_set_errstr("%s: Error converting %s for inum %" PRIuINUM " from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
         *a_dest = '\0';
         return conv_result;
     }
