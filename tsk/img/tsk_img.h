@@ -108,11 +108,7 @@ extern "C" {
         // the following are protected by cache_lock in IMG_INFO
         TSK_TCHAR **images;    ///< Image names
 
-        tsk_lock_t cache_lock;  ///< Lock for cache and associated values
-        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock)
-        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock)
-        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock)
-        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock)
+        void* cache_holder;
 
         ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 

@@ -1,5 +1,6 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/img/img_open.h"
+#include "tsk/img/legacy_cache.h"
 
 #include <memory>
 
@@ -12,8 +13,11 @@ TEST_CASE("tsk_img_read null img") {
 }
 
 TEST_CASE("tsk_img_read inner function failed") {
+
   const auto closer = [](TSK_IMG_INFO* img) {
-    tsk_deinit_lock(&(img->cache_lock));
+    auto cache = static_cast<LegacyCache*>(img->cache_holder);
+    tsk_deinit_lock(&cache->cache_lock);
+    delete cache;
     tsk_img_free(img);
   };
 
@@ -23,7 +27,10 @@ TEST_CASE("tsk_img_read inner function failed") {
   };
 
   REQUIRE(img);
-  tsk_init_lock(&(img->cache_lock));
+
+  img->cache_holder = new LegacyCache();
+  auto cache = static_cast<LegacyCache*>(img->cache_holder);
+  tsk_init_lock(&cache->cache_lock);
 
   img->cache_read = tsk_img_read_legacy;
 

@@ -50,14 +50,6 @@ ssize_t tsk_img_read_legacy(
   size_t a_len
 );
 
-void tsk_init_cache_lock(TSK_IMG_INFO* img_info);
-
-void tsk_deinit_cache_lock(TSK_IMG_INFO* img_info);
-
-void tsk_take_cache_lock(TSK_IMG_INFO* img_info);
-
-void tsk_release_cache_lock(TSK_IMG_INFO* img_info);
-
 #ifdef __cplusplus
 }
 #endif

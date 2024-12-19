@@ -11,6 +11,7 @@
  */
 
 #include "tsk_img_i.h"
+#include "legacy_cache.h"
 
 #include <memory>
 #include <new>
@@ -67,12 +68,13 @@ tsk_img_read_legacy(
      * the shared variables in the img type specific INFO structs.
      * grab it now so that it is held before any reads.
      */
-    tsk_take_cache_lock(a_img_info);
+    auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
+    tsk_take_lock(&cache->cache_lock);
 
     // if they ask for more than the cache length, skip the cache
     if (a_len + (a_off % 512) > TSK_IMG_INFO_CACHE_LEN) {
         read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
-        tsk_release_cache_lock(a_img_info);
+        tsk_release_lock(&cache->cache_lock);
         return read_count;
     }
 
@@ -92,13 +94,13 @@ tsk_img_read_legacy(
     for (int cache_index = 0; cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
 
         // Look into the in-use cache entries
-        if (a_img_info->cache_len[cache_index] > 0) {
+        if (cache->cache_len[cache_index] > 0) {
 
             // the read_count check makes sure we don't go back in after data was read
             if (read_count == 0
-                && a_img_info->cache_off[cache_index] <= a_off
-                && a_img_info->cache_off[cache_index] +
-                    a_img_info->cache_len[cache_index] >= a_off + len2) {
+                && cache->cache_off[cache_index] <= a_off
+                && cache->cache_off[cache_index] +
+                    cache->cache_len[cache_index] >= a_off + len2) {
 
                 /*
                    if (tsk_verbose)
@@ -108,12 +110,12 @@ tsk_img_read_legacy(
 
                 // We found it...
                 memcpy(a_buf,
-                    &a_img_info->cache[cache_index][a_off -
-                        a_img_info->cache_off[cache_index]], len2);
+                    &cache->cache[cache_index][a_off -
+                        cache->cache_off[cache_index]], len2);
                 read_count = (ssize_t) len2;
 
                 // reset its "age" since it was useful
-                a_img_info->cache_age[cache_index] = CACHE_AGE;
+                cache->cache_age[cache_index] = CACHE_AGE;
 
                 // we don't break out of the loop so that we update all ages
             }
@@ -121,12 +123,12 @@ tsk_img_read_legacy(
                 /* decrease its "age" since it was not useful.
                  * We don't let used ones go below 1 so that they are not
                  * confused with entries that have never been used. */
-                a_img_info->cache_age[cache_index]--;
+                cache->cache_age[cache_index]--;
 
                 // see if this is the most eligible replacement
-                if (a_img_info->cache_len[cache_next] > 0
-                    && a_img_info->cache_age[cache_index] <
-                        a_img_info->cache_age[cache_next])
+                if (cache->cache_len[cache_next] > 0
+                    && cache->cache_age[cache_index] <
+                        cache->cache_age[cache_next])
                     cache_next = cache_index;
             }
         }
@@ -140,7 +142,7 @@ tsk_img_read_legacy(
         size_t read_size = 0;
 
         // round the offset down to a sector boundary
-        a_img_info->cache_off[cache_next] = (a_off / 512) * 512;
+        cache->cache_off[cache_next] = (a_off / 512) * 512;
 
         /*
            if (tsk_verbose)
@@ -152,16 +154,16 @@ tsk_img_read_legacy(
         // Read a full cache block or the remaining data.
         read_size = TSK_IMG_INFO_CACHE_LEN;
 
-        if (a_img_info->cache_off[cache_next] + (TSK_OFF_T)read_size >
+        if (cache->cache_off[cache_next] + (TSK_OFF_T)read_size >
             a_img_info->size) {
             read_size =
                 (size_t) (a_img_info->size -
-                a_img_info->cache_off[cache_next]);
+                cache->cache_off[cache_next]);
         }
 
         read_count = a_img_info->read(a_img_info,
-            a_img_info->cache_off[cache_next],
-            a_img_info->cache[cache_next], read_size);
+            cache->cache_off[cache_next],
+            cache->cache[cache_next], read_size);
 
         // if no error, then set the variables and copy the data
         // Although a read_count of -1 indicates an error,
@@ -170,11 +172,11 @@ tsk_img_read_legacy(
         if (read_count > 0) {
 
             TSK_OFF_T rel_off = 0;
-            a_img_info->cache_age[cache_next] = CACHE_AGE;
-            a_img_info->cache_len[cache_next] = read_count;
+            cache->cache_age[cache_next] = CACHE_AGE;
+            cache->cache_len[cache_next] = read_count;
 
             // Determine the offset relative to the start of the cached data.
-            rel_off = a_off - a_img_info->cache_off[cache_next];
+            rel_off = a_off - cache->cache_off[cache_next];
 
             // Make sure we were able to read sufficient data into the cache.
             if (rel_off > (TSK_OFF_T) read_count) {
@@ -186,21 +188,21 @@ tsk_img_read_legacy(
             }
             // Only copy data when we have something to copy.
             if (len2 > 0) {
-                memcpy(a_buf, &(a_img_info->cache[cache_next][rel_off]), len2);
+                memcpy(a_buf, &(cache->cache[cache_next][rel_off]), len2);
             }
             read_count = (ssize_t) len2;
         }
         else {
-            a_img_info->cache_len[cache_next] = 0;
-            a_img_info->cache_age[cache_next] = 0;
-            a_img_info->cache_off[cache_next] = 0;
+            cache->cache_len[cache_next] = 0;
+            cache->cache_age[cache_next] = 0;
+            cache->cache_off[cache_next] = 0;
 
             // Something went wrong so let's try skipping the cache
             read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
         }
     }
 
-    tsk_release_cache_lock(a_img_info);
+    tsk_release_lock(&cache->cache_lock);
     return read_count;
 }
 

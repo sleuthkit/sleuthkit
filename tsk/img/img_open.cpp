@@ -16,6 +16,7 @@
 
 #include "tsk_img_i.h"
 #include "img_open.h"
+#include "legacy_cache.h"
 
 #include "raw.h"
 #include "logical_img.h"
@@ -293,8 +294,11 @@ TSK_IMG_INFO* img_open(
         return nullptr;
     }
 
+    img_info->cache_holder = new LegacyCache();
+    auto cache = static_cast<LegacyCache*>(img_info->cache_holder);
+
     /* we have a good img_info, set up the cache lock */
-    tsk_init_cache_lock(img_info.get());
+    tsk_init_lock(&cache->cache_lock);
 
     img_info->cache_read = tsk_img_read_legacy;
 
@@ -570,7 +574,10 @@ tsk_img_open_external(
     img_info->close = close;
     img_info->imgstat = imgstat;
 
-    tsk_init_cache_lock(img_info);
+    img_info->cache_holder = new LegacyCache();
+    auto cache = static_cast<LegacyCache*>(img_info->cache_holder);
+    tsk_init_lock(&cache->cache_lock);
+
     return img_info;
 }
 
@@ -694,7 +701,14 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     if (!a_img_info) {
         return;
     }
-    tsk_deinit_cache_lock(a_img_info);
+
+    auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
+    if (cache) {
+        tsk_deinit_lock(&cache->cache_lock);
+        delete cache;
+        a_img_info->cache_holder = nullptr;
+    }
+
     a_img_info->close(a_img_info);
 }
 
@@ -709,6 +723,7 @@ tsk_img_malloc(size_t a_len)
         return nullptr;
     }
     imgInfo->tag = TSK_IMG_INFO_TAG;
+    imgInfo->cache_holder = nullptr;
     return imgInfo;
 }
 
