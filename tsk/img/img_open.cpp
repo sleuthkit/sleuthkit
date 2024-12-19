@@ -294,11 +294,8 @@ TSK_IMG_INFO* img_open(
         return nullptr;
     }
 
-    img_info->cache_holder = new LegacyCache();
-    auto cache = static_cast<LegacyCache*>(img_info->cache_holder);
-
     /* we have a good img_info, set up the cache lock */
-    tsk_init_lock(&cache->cache_lock);
+    img_info->cache_holder = new LegacyCache();
 
     img_info->cache_read = tsk_img_read_legacy;
 
@@ -575,8 +572,6 @@ tsk_img_open_external(
     img_info->imgstat = imgstat;
 
     img_info->cache_holder = new LegacyCache();
-    auto cache = static_cast<LegacyCache*>(img_info->cache_holder);
-    tsk_init_lock(&cache->cache_lock);
 
     return img_info;
 }
@@ -703,11 +698,7 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     }
 
     auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
-    if (cache) {
-        tsk_deinit_lock(&cache->cache_lock);
-        delete cache;
-        a_img_info->cache_holder = nullptr;
-    }
+    delete cache;
 
     a_img_info->close(a_img_info);
 }

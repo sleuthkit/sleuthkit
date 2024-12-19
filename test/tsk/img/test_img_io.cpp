@@ -16,7 +16,6 @@ TEST_CASE("tsk_img_read inner function failed") {
 
   const auto closer = [](TSK_IMG_INFO* img) {
     auto cache = static_cast<LegacyCache*>(img->cache_holder);
-    tsk_deinit_lock(&cache->cache_lock);
     delete cache;
     tsk_img_free(img);
   };
@@ -29,8 +28,6 @@ TEST_CASE("tsk_img_read inner function failed") {
   REQUIRE(img);
 
   img->cache_holder = new LegacyCache();
-  auto cache = static_cast<LegacyCache*>(img->cache_holder);
-  tsk_init_lock(&cache->cache_lock);
 
   img->cache_read = tsk_img_read_legacy;
 

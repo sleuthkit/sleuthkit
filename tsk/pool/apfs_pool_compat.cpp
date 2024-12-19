@@ -335,8 +335,6 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_info->images = origInfo->images;
 
     img_info->cache_holder = new LegacyCache();
-    auto cache = static_cast<LegacyCache*>(img_info->cache_holder);
-    tsk_init_lock(&cache->cache_lock);
 
     return img_info;
 

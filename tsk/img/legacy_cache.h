@@ -1,11 +1,7 @@
 #ifndef _LEGACY_CACHE_H
 #define _LEGACY_CACHE_H
 
-#include "../base/tsk_base.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "../base/tsk_base_i.h"
 
 #define TSK_IMG_INFO_CACHE_NUM  32
 #define TSK_IMG_INFO_CACHE_LEN  65536
@@ -16,10 +12,14 @@ struct LegacyCache {
   TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock)
   int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock)
   size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock)
-};
 
-#ifdef __cplusplus
-}
-#endif
+  LegacyCache();
+
+  ~LegacyCache();
+
+  void lock();
+
+  void unlock();
+};
 
 #endif

@@ -13,12 +13,32 @@
 #include "tsk_img_i.h"
 #include "legacy_cache.h"
 
+#include <chrono>
 #include <memory>
 #include <new>
 
+class Timer {
+public:
+  size_t elapsed() const {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+      stop_time - start_time
+    ).count();
+  }
+
+  void start() {
+    start_time = std::chrono::high_resolution_clock::now();
+  }
+
+  void stop() {
+    stop_time = std::chrono::high_resolution_clock::now();
+  }
+private:
+  std::chrono::high_resolution_clock::time_point start_time, stop_time;
+};
+
 // This function assumes that we hold the cache_lock even though we're not modyfying
 // the cache.  This is because the lower-level read callbacks make the same assumption.
-static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
+static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     char *a_buf, size_t a_len)
 {
     ssize_t nbytes;
@@ -54,6 +74,30 @@ static ssize_t tsk_img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     return nbytes;
 }
 
+ssize_t tsk_img_read_no_cache(
+  TSK_IMG_INFO* a_img_info,
+  TSK_OFF_T a_off,
+  char* a_buf,
+  size_t a_len)
+{
+  Timer timer;
+  Stats& stats = a_img_info->stats;
+
+  ssize_t read_count = 0;
+
+  auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
+  cache->lock();
+  timer.start();
+  read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
+  timer.stop();
+  stats.miss_ns += timer.elapsed();
+  ++stats.misses;
+  stats.miss_bytes += read_count;
+  cache->unlock();
+
+  return read_count;
+}
+
 ssize_t
 tsk_img_read_legacy(
     TSK_IMG_INFO* a_img_info,
@@ -61,6 +105,9 @@ tsk_img_read_legacy(
     char* a_buf,
     size_t a_len)
 {
+    Timer timer;
+    Stats& stats = a_img_info->stats;
+
 #define CACHE_AGE   1000
     ssize_t read_count = 0;
 
@@ -69,12 +116,17 @@ tsk_img_read_legacy(
      * grab it now so that it is held before any reads.
      */
     auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
-    tsk_take_lock(&cache->cache_lock);
+    cache->lock();
 
     // if they ask for more than the cache length, skip the cache
     if (a_len + (a_off % 512) > TSK_IMG_INFO_CACHE_LEN) {
-        read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
-        tsk_release_lock(&cache->cache_lock);
+        timer.start();
+        read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
+        timer.stop();
+        stats.miss_ns += timer.elapsed();
+        ++stats.misses;
+        stats.miss_bytes += read_count;
+        cache->unlock();
         return read_count;
     }
 
@@ -89,6 +141,8 @@ tsk_img_read_legacy(
     }
 
     int cache_next = 0;         // index to lowest age cache (to use next)
+
+    timer.start();
 
     // check if it is in the cache
     for (int cache_index = 0; cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
@@ -118,6 +172,9 @@ tsk_img_read_legacy(
                 cache->cache_age[cache_index] = CACHE_AGE;
 
                 // we don't break out of the loop so that we update all ages
+
+                ++stats.hits;
+                stats.hit_bytes += read_count;
             }
             else {
                 /* decrease its "age" since it was not useful.
@@ -139,6 +196,8 @@ tsk_img_read_legacy(
 
     // if we didn't find it, then load it into the cache_next entry
     if (read_count == 0) {
+        timer.start();
+
         size_t read_size = 0;
 
         // round the offset down to a sector boundary
@@ -198,11 +257,20 @@ tsk_img_read_legacy(
             cache->cache_off[cache_next] = 0;
 
             // Something went wrong so let's try skipping the cache
-            read_count = tsk_img_read_no_cache(a_img_info, a_off, a_buf, a_len);
+            read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
         }
+
+        timer.stop();
+        stats.miss_ns += timer.elapsed();
+        ++stats.misses;
+        stats.miss_bytes += read_count;
+    }
+    else {
+        timer.stop();
+        stats.hit_ns += timer.elapsed();
     }
 
-    tsk_release_lock(&cache->cache_lock);
+    cache->unlock();
     return read_count;
 }
 
