@@ -190,6 +190,9 @@ public class SleuthkitCase {
 	private static final String SCHEMA_MINOR_VERSION_KEY = "SCHEMA_MINOR_VERSION";
 	private static final String CREATION_SCHEMA_MAJOR_VERSION_KEY = "CREATION_SCHEMA_MAJOR_VERSION";
 	private static final String CREATION_SCHEMA_MINOR_VERSION_KEY = "CREATION_SCHEMA_MINOR_VERSION";
+	
+	// key in acquisition tool settings; the password for decrypting an image
+	static final String IMAGE_PASSWORD_KEY = "imagePassword";
 
 	private final ConnectionPool connections;
 	private final Object carvedFileDirsLock = new Object();

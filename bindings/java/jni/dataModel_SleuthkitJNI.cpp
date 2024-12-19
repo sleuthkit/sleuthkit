@@ -806,14 +806,32 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
  * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
  * @param hostId Id of the host (already in the database).
- * @param passwordJ Password for the file system.
+ * @param passwordJ Password for the file system or null for no password.
+ *
+ * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
+ */
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNatPassword(JNIEnv * env,
+    jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jstring passwordJ) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, passwordJ);
+}
+
+/*
+ * Initialize a process for adding an image to a case database.
+ *
+ * @param env Pointer to java environment.
+ * @param obj Pointer the Java class object.
+ * @param timeZone The time zone for the image.
+ * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
+ * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
+ * @param hostId Id of the host (already in the database).
  *
  * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jstring passwordJ) {
-    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, passwordJ);
+    jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
 }
 
 /*
@@ -825,12 +843,30 @@ JNIEXPORT jlong JNICALL
  * @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
  * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
- * @param passwordJ Password for the file system
  *
  * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj,
+    jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
+}
+
+/*
+ * Initialize a process for adding an image to a case database.
+ *
+ * @param env Pointer to java environment.
+ * @param obj Pointer the Java class object.
+ * @param timeZone The time zone for the image.
+ * @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
+ * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
+ * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
+ * @param passwordJ Password for the file system or null for no password.
+ *
+ * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
+ */
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(JNIEnv * env, jclass obj,
     jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jstring passwordJ) {
     jboolean isCopy;
 
