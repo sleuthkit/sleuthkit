@@ -18,9 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.annotations.Beta;
 import com.google.common.base.Strings;
-import com.google.gson.Gson;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -39,7 +37,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.OsAccountManager.NotUserSIDException;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
-import static org.sleuthkit.datamodel.SleuthkitCase.IMAGE_PASSWORD_KEY;
 
 /**
  * This is a utility class to allow the native C code to write to the 
@@ -119,59 +116,33 @@ class TskCaseDbBridge {
         addBatchedLayoutRangesToDb();
         processLayoutFiles();
     }
-  
-	/**
-	 * Add a new image to the database. Intended to be called from the native
-	 * code during the add image process. Will not be called if the image was
-	 * added to the database prior to starting the add image process.
-	 *
-	 * @param type              Type of image.
-	 * @param ssize             Sector size.
-	 * @param timezone          Time zone.
-	 * @param size              Image size.
-	 * @param md5               MD5 hash.
-	 * @param sha1              SHA1 hash.
-	 * @param sha256            SHA256 hash.
-	 * @param deviceId          Device ID.
-	 * @param collectionDetails The collection details.
-	 * @param paths             Data source path(s)
-	 *
-	 * @return The object ID of the new image or -1 if an error occurred
-	 */
-	long addImageInfo(int type, long ssize, String timezone,
-			long size, String md5, String sha1, String sha256, String deviceId,
-			String collectionDetails, String[] paths) {
-		return addImageInfo(type, ssize, timezone, size, md5, sha1, sha256, deviceId, collectionDetails, paths, null);
-	}
-
-	/**
-	 * Add a new image to the database. Intended to be called from the native
-	 * code during the add image process. Will not be called if the image was
-	 * added to the database prior to starting the add image process.
-	 *
-	 * @param type              Type of image.
-	 * @param ssize             Sector size.
-	 * @param timezone          Time zone.
-	 * @param size              Image size.
-	 * @param md5               MD5 hash.
-	 * @param sha1              SHA1 hash.
-	 * @param sha256            SHA256 hash.
-	 * @param deviceId          Device ID.
-	 * @param collectionDetails The collection details.
-	 * @param paths             Data source path(s)
-	 * @param password          The password to decrypt the image or null.
-	 *
-	 * @return The object ID of the new image or -1 if an error occurred
-	 */
-	@Beta
+    
+    /**
+     * Add a new image to the database.
+     * Intended to be called from the native code during the add image process.
+	 * Will not be called if the image was added to the database prior to starting
+	 * the add image process.
+     * 
+     * @param type        Type of image.
+     * @param ssize       Sector size.
+     * @param timezone    Time zone.
+     * @param size        Image size.
+     * @param md5         MD5 hash.
+     * @param sha1        SHA1 hash.
+     * @param sha256      SHA256 hash.
+     * @param deviceId    Device ID.
+     * @param collectionDetails  The collection details.
+     * @param paths       Data source path(s)
+     * 
+     * @return The object ID of the new image or -1 if an error occurred
+     */
     long addImageInfo(int type, long ssize, String timezone, 
             long size, String md5, String sha1, String sha256, String deviceId, 
-            String collectionDetails, String[] paths, String password) {    
-		
+            String collectionDetails, String[] paths) {    
         try {
             beginTransaction();
             long objId = addImageToDb(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), ssize, size,
-                    timezone, md5, sha1, sha256, deviceId, collectionDetails, password, trans);
+                    timezone, md5, sha1, sha256, deviceId, collectionDetails, trans);
             for (int i = 0;i < paths.length;i++) {
                 addImageNameToDb(objId, paths[i], i, trans);
             }
@@ -1042,7 +1013,6 @@ class TskCaseDbBridge {
 	 * @param deviceId          Device ID.
 	 * @param collectionDetails Collection details.
 	 * @param hostId            The ID of a host already in the database.
-	 * @param password          The password to decrypt the image or null.
 	 * @param transaction       Case DB transaction.
 	 *
 	 * @return The newly added Image object ID.
@@ -1051,19 +1021,13 @@ class TskCaseDbBridge {
 	 */
 	private long addImageToDb(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size,
 			String timezone, String md5, String sha1, String sha256,
-			String deviceId, String collectionDetails, String password,
+			String deviceId, String collectionDetails,
 			CaseDbTransaction transaction) throws TskCoreException {
 		try {
 			// Insert a row for the Image into the tsk_objects table.
 			SleuthkitCase.CaseDbConnection connection = transaction.getConnection();
 			long newObjId = caseDb.addObject(0, TskData.ObjectType.IMG.getObjectType(), connection);
 
-			Map<String, Object> acquisitionToolMap = new HashMap<>();
-			if (password != null) {
-				acquisitionToolMap.put(IMAGE_PASSWORD_KEY, password);
-			}
-			String acquisitionToolJson = (new Gson()).toJson(acquisitionToolMap);
-			
 			// Add a row to tsk_image_info
 			// INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)
 			String imageInfoSql = "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)"
@@ -1084,15 +1048,14 @@ class TskCaseDbBridge {
 			connection.executeUpdate(preparedStatement);
 
 			// Add a row to data_source_info
-			String dataSourceInfoSql = "INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details, acquisition_tool_settings, host_id) VALUES (?, ?, ?, ?, ?)"; // NON-NLS
+			String dataSourceInfoSql = "INSERT INTO data_source_info (obj_id, device_id, time_zone, acquisition_details, host_id) VALUES (?, ?, ?, ?, ?)"; // NON-NLS
 			preparedStatement = connection.getPreparedStatement(dataSourceInfoSql, Statement.NO_GENERATED_KEYS);
 			preparedStatement.clearParameters();
 			preparedStatement.setLong(1, newObjId);
 			preparedStatement.setString(2, deviceId);
 			preparedStatement.setString(3, timezone);
 			preparedStatement.setString(4, collectionDetails);
-			preparedStatement.setString(5, acquisitionToolJson);
-			preparedStatement.setLong(6, imageHost.getHostId());
+			preparedStatement.setLong(5, imageHost.getHostId());
 			connection.executeUpdate(preparedStatement);
 
 			return newObjId;
