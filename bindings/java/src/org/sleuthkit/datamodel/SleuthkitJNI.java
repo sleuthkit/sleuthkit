@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -541,7 +542,7 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
-				Image img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId);
+				Image img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId, password, null);
 				run(deviceId, img, sectorSize, new DefaultAddDataSourceCallbacks());
 			}
 			
@@ -976,6 +977,31 @@ public class SleuthkitJNI {
 	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
 		String timeZone, String md5fromSettings, String sha1fromSettings, String sha256fromSettings, String deviceId, Host host) throws TskCoreException {
 		
+		return addImageToDatabase(skCase, imagePaths, sectorSize, timeZone, md5fromSettings, sha1fromSettings, sha256fromSettings, deviceId, null, host);
+	}
+	
+	/**
+	 * Add an image to the database and return the open image.
+	 * 
+	 * @param skCase     The current case.
+	 * @param imagePaths The path(s) to the image (will just be the first for .e01, .001, etc).
+	 * @param sectorSize The sector size (0 for auto-detect).
+	 * @param timeZone   The time zone.
+	 * @param md5fromSettings        MD5 hash (if known).
+	 * @param sha1fromSettings       SHA1 hash (if known).
+	 * @param sha256fromSettings     SHA256 hash (if known).
+	 * @param deviceId   Device ID.
+	 * @param password   The password to decrypt the image.
+	 * @param host       Host.
+	 * 
+	 * @return The Image object.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	@Beta
+	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
+		String timeZone, String md5fromSettings, String sha1fromSettings, String sha256fromSettings, String deviceId, String password, Host host) throws TskCoreException {
+		
 		// Open the image
 		long imageHandle = openImgNat(imagePaths, 1, sectorSize);
 		
@@ -1006,7 +1032,7 @@ public class SleuthkitJNI {
 			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize, 
 				size, null, computedPaths, 
 				timeZone, md5, sha1, sha256, 
-				deviceId, host, transaction);
+				deviceId, host, password, transaction);
 			if (!StringUtils.isEmpty(collectionDetails)) {
 				skCase.setAcquisitionDetails(img, collectionDetails);
 			}

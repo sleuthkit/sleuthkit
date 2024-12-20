@@ -242,13 +242,11 @@ class TskAuto {
      * therefore we can trust the results of getCurVsPartFlag/Desc.
      */
     bool isCurVsValid() const;
-
-  protected:
-    std::string m_fileSystemPassword;
     
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
+    std::string m_fileSystemPassword;
     
     std::vector<error_record> m_errors;
 
