@@ -55,7 +55,7 @@ BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t 
     }
 
     // Otherwise process the password to use later (we won't know whether it's correct or not at this point)
-    if (BITLOCKER_STATUS::SUCCESS != handlePassword(a_password)) {
+    if (BITLOCKER_STATUS::SUCCESS != handlePassword(passwordStr)) {
         // Don't continue if we failed to hash the password
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }

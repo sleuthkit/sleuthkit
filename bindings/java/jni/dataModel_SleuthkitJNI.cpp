@@ -903,12 +903,11 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(JNIEnv * e
         return 0;
     }
 
-    jboolean isCopyPassword;
-    const char* password = NULL;
     if (passwordJ != NULL) {
-        password = (const char*)env->GetStringUTFChars(passwordJ, &isCopyPassword);
+        jboolean isCopyPassword;
+        const char* password = (const char*)env->GetStringUTFChars(passwordJ, &isCopyPassword);
         tskAutoJava->setFileSystemPassword(string(password));
-        env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+        env->ReleaseStringUTFChars(passwordJ, password);
     }
 
     // set the options flags
