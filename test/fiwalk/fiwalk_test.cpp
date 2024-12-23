@@ -65,6 +65,13 @@ TEST_CASE("test_disk_images btrfs_test_image.E01 btrfs", "[fiwalk]") {
       ""
     );
 }
+
+TEST_CASE("test_disk_images 2GB-xfs-raw.E01", "[fiwalk]") {
+    check_image(
+      "test/from_brian/2GB-xfs-raw.E01",
+      ""
+    );
+}
 #endif
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
@@ -130,10 +137,3 @@ TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
     );
 }
 
-
-TEST_CASE("test_disk_images 2GB-xfs-raw.001 xfs", "[fiwalk]") {
-    check_image(
-      "test/from_brian/2GB-xfs-raw.001",
-      ""
-    );
-}

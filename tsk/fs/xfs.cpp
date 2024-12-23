@@ -351,13 +351,13 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
     if(start_inum < fs->first_inum || start_inum > fs->last_inum){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr("%s: start inode: %lu" PRIuINUM "", myname, start_inum);
+        tsk_error_set_errstr("%s: start inode: %" PRIu64 "", myname, start_inum);
         return 1;
     }
     if(end_inum < fs->first_inum || end_inum > fs->last_inum || end_inum < start_inum){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr("%s: end inode: %lu" PRIuINUM "", myname, end_inum);
+        tsk_error_set_errstr("%s: end inode: %" PRIu64 "", myname, end_inum);
         return 1;
     }
 

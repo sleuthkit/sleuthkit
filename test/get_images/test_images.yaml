@@ -41,6 +41,4 @@ sources:
   - btrfs:
       image: https://corp.digitalcorpora.org/corpora/drives/2015-basicmaster/btrfs_testimage_50MB.E01
   - xfs:
-      zipfile: https://files.iblue.team/279b6e00-851e/2GB-xfs/2GB-xfs-raw.zip
-      unzip_image: 2GB-xfs-raw.001
-
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/2GB-xfs-raw.E01
