@@ -219,8 +219,6 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, char *buf)
 
     ent = (xfs_dir2_sf_entry_t*)((char*)(hdr + 1) - (hdr->i8count == 0) * 4); // code of miracle
     
-    uint16_t num_entries_chk = 0;
-
     while (1)
     {
         uint8_t namelen;
@@ -238,7 +236,6 @@ xfs_dent_parse_shortform(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, char *buf)
             tsk_fs_name_free(fs_name);
             return TSK_ERR;
         }
-        num_entries_chk++;
 
         fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
