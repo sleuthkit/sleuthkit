@@ -10,6 +10,7 @@
  * This software is distributed under the Common Public License 1.0
  */
 #include "tsk/tsk_tools_i.h"
+#include "tools/util.h"
 
 #include <memory>
 #include <variant>
@@ -17,9 +18,8 @@
 void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"));
+    tsk_fprintf(stderr,
+        "usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n");
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
@@ -263,7 +263,11 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
     return opts;
 }
 
-int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
+int do_it(
+  const Options& opts,
+  const TSK_TCHAR* const* img_paths,
+  size_t img_paths_len)
+{
     auto [
       flags,
       print_bytes,
@@ -279,7 +283,7 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
 
     /* open the image */
     std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_open(img_paths_len, img_paths, imgtype, ssize),
         tsk_img_close
     };
 
@@ -348,25 +352,15 @@ int do_it(const Options& opts, int argc, TSK_TCHAR** argv) {
 }
 
 int
-main(int argc, char **argv1)
+main(int argc1, char **argv1)
 {
-    TSK_TCHAR **argv;
-#ifdef TSK_WIN32
-    // On Windows, get the wide arguments (mingw doesn't support wmain)
-    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
-        exit(1);
-    }
-#else
-    argv = (TSK_TCHAR **) argv1;
-#endif
+    auto [argv, argc] = argv_to_tsk_tchar(argc1, argv1);
 
-    const auto p = parse_args(argc, argv);
+    const auto p = parse_args(argc, argv.get());
     if (const int* ret = std::get_if<int>(&p)) {
       return *ret;
     }
 
     const auto& opts = std::get<Options>(p);
-    return do_it(opts, argc, argv);
+    return do_it(opts, &argv[OPTIND], argc - OPTIND);
 }

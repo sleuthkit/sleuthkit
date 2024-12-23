@@ -130,7 +130,7 @@ tsk_fs_nofs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     }
 
     /* All swap has is allocated blocks... exit if not wanted */
-    if (!(a_flags & TSK_FS_BLOCK_FLAG_ALLOC)) {
+    if (!(a_flags & TSK_FS_BLOCK_WALK_FLAG_ALLOC)) {
         return 0;
     }
 

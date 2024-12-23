@@ -14,7 +14,9 @@
 #include <locale.h>
 #include <sys/stat.h>
 #include <errno.h>
+
 #include <set>
+#include <string>
 
 #ifdef WIN32
 #include <windows.h>
@@ -162,13 +164,12 @@ uint8_t
     DIR *dp;
     struct dirent *dirp;
     char file[TSK_CD_BUFSIZE];
-    char fullPath[TSK_CD_BUFSIZE];
     struct stat status;
 
-    strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE-1);
-    strncat(fullPath, a_dir, TSK_CD_BUFSIZE-strlen(fullPath)-1);
+    std::string fullPath(m_lclDir);
+    fullPath += a_dir;
 
-    if ((dp = opendir(fullPath)) == NULL) {
+    if ((dp = opendir(fullPath.c_str())) == NULL) {
         fprintf(stderr, "Error opening directory");
         return 1;
     }
@@ -178,10 +179,10 @@ uint8_t
         strncat(file, "/", TSK_CD_BUFSIZE-strlen(file)-1);
         strncat(file, dirp->d_name, TSK_CD_BUFSIZE-strlen(file)-1);
 
-        strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE-1);
-        strncat(fullPath, file, TSK_CD_BUFSIZE-strlen(fullPath)-1);
+        fullPath = m_lclDir;
+        fullPath += file;
 
-        stat(fullPath, &status);
+        stat(fullPath.c_str(), &status);
         if (S_ISDIR(status.st_mode)) {
             // skip the '.' and '..' entries
             if ((dirp->d_name[0] == '.') && ((dirp->d_name[1] == '\0') || ((dirp->d_name[1] == '.') && (dirp->d_name[2] == '\0')))) {

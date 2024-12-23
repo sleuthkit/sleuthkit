@@ -83,7 +83,7 @@ TSK_HDB_BINSRCH_INFO *hdb_binsrch_open(FILE *hDb, const TSK_TCHAR *db_path)
 * @param htype Hash type being used
 * @return 1 on error and 0 on success
 */
-static uint8_t
+uint8_t
     hdb_binsrch_idx_init_hash_type_info(TSK_HDB_BINSRCH_INFO *hdb_binsrch_info, TSK_HDB_HTYPE_ENUM htype)
 {
     if (hdb_binsrch_info->hash_type != TSK_HDB_HTYPE_INVALID_ID) {
@@ -111,20 +111,20 @@ static uint8_t
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
-            _TSK_T("%s-%s.idx"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
         TSNPRINTF(hdb_binsrch_info->idx_idx_fname, flen,
-            _TSK_T("%s-%s.idx2"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx2"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
         return 0;
     case TSK_HDB_HTYPE_SHA1_ID:
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
-            _TSK_T("%s-%s.idx"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
         TSNPRINTF(hdb_binsrch_info->idx_idx_fname, flen,
-            _TSK_T("%s-%s.idx2"),
+            _TSK_T("%s-%") PRIcTSK _TSK_T(".idx2"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
         return 0;
 
@@ -702,7 +702,7 @@ uint8_t
         return 1;
     }
     TSNPRINTF(hdb_binsrch_info->uns_fname, flen,
-        _TSK_T("%s-%s-ns.idx"), hdb_binsrch_info->base.db_fname,
+        _TSK_T("%s-%") PRIcTSK _TSK_T("-ns.idx"), hdb_binsrch_info->base.db_fname,
         TSK_HDB_HTYPE_STR(hdb_binsrch_info->hash_type));
 
 
@@ -1583,6 +1583,9 @@ void
 
     free(hdb_info->idx_fname);
     hdb_info->idx_fname = NULL;
+
+    free(hdb_info->idx_idx_fname);
+    hdb_info->idx_idx_fname = NULL;
 
     if (hdb_info->hIdx) {
         fclose(hdb_info->hIdx);

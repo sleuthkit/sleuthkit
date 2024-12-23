@@ -1170,7 +1170,7 @@ extern "C" {
     typedef enum TSK_FS_FLS_FLAG_ENUM TSK_FS_FLS_FLAG_ENUM;
     extern uint8_t tsk_fs_fls(TSK_FS_INFO * fs,
         TSK_FS_FLS_FLAG_ENUM lclflags, TSK_INUM_T inode,
-        TSK_FS_DIR_WALK_FLAG_ENUM flags, TSK_TCHAR * pre, int32_t skew);
+        TSK_FS_DIR_WALK_FLAG_ENUM flags, const TSK_TCHAR * pre, int32_t skew);
 
     extern uint8_t tsk_fs_icat(TSK_FS_INFO * fs,
         TSK_INUM_T inum,
