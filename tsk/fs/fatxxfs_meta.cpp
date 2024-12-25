@@ -181,7 +181,7 @@ fatxxfs_is_dentry(
     else {
         // the basic test is only for the 'essential data'.
         if (a_do_basic_tests_only == 0) {
-            if (dentry->lowercase & ~(FATXXFS_CASE_LOWER_ALL)) {
+            if (dentry->ntbyte & ~(FATXXFS_CASE_LOWER_ALL)) {
                 if (tsk_verbose)
                     fprintf(stderr, "%s: lower case all\n", func_name);
                 return 0;
@@ -557,7 +557,7 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
             i++) {
             if ((i == 0) && (dentry->name[0] == FATXXFS_SLOT_DELETED))
                 fs_meta->name2->name[0] = '_';
-            else if ((dentry->lowercase & FATXXFS_CASE_LOWER_BASE) &&
+            else if ((dentry->ntbyte & FATXXFS_CASE_LOWER_BASE) &&
                 (dentry->name[i] >= 'A') && (dentry->name[i] <= 'Z'))
                 fs_meta->name2->name[i] = dentry->name[i] + 32;
             else
@@ -570,7 +570,7 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
             for (a = 0;
                 (a < 3) && (dentry->ext[a] != 0) && (dentry->ext[a] != ' ');
                 a++, i++) {
-                if ((dentry->lowercase & FATXXFS_CASE_LOWER_EXT)
+                if ((dentry->ntbyte & FATXXFS_CASE_LOWER_EXT)
                     && (dentry->ext[a] >= 'A') && (dentry->ext[a] <= 'Z'))
                     fs_meta->name2->name[i] = dentry->ext[a] + 32;
                 else
@@ -792,6 +792,12 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
             tsk_fprintf(a_hFile, ", System");
         if (dentry.attrib & FATFS_ATTR_ARCHIVE)
             tsk_fprintf(a_hFile, ", Archive");
+        if (dentry.ntbyte & FATXXFS_ENCRYPTED_DATA) {
+            tsk_fprintf(a_hFile, ", Encrypted");
+
+            if (dentry.ntbyte & FATXXFS_LARGE_EFS_HEADER)
+                tsk_fprintf(a_hFile, ", Large EFS Header");
+        }
 
         tsk_fprintf(a_hFile, "\n");
     }

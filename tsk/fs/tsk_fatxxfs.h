@@ -62,10 +62,13 @@
 #define FATXXFS_IS_83_EXT(c)		\
     (FATXXFS_IS_83_NAME((c)) && ((c) < 0x7f))
 
-/* flags for lowercase field */
-#define FATXXFS_CASE_LOWER_BASE	0x08    /* base is lower case */
-#define FATXXFS_CASE_LOWER_EXT	0x10    /* extension is lower case */
-#define FATXXFS_CASE_LOWER_ALL	0x18    /* both are lower */
+/* flags for ntbyte field */
+#define FATXXFS_CASE_LOWER_BASE	 0x08    /* base is lower case */
+#define FATXXFS_CASE_LOWER_EXT	 0x10    /* extension is lower case */
+#define FATXXFS_CASE_LOWER_ALL	 0x18    /* both are lower */
+#define FATXXFS_ENCRYPTED_DATA	 0x01    /* data is EFS-encrypted */
+#define FATXXFS_LARGE_EFS_HEADER 0x02    /* data has large EFS header (if not set, its size is 4096 bytes) */
+/* other bits are used to store the padding size */
 
 /* flags for seq field */
 #define FATXXFS_LFN_SEQ_FIRST	0x40    /* This bit is set for the first lfn entry */
@@ -139,7 +142,7 @@ extern "C" {
         uint8_t name[8];
         uint8_t ext[3];
         uint8_t attrib;
-        uint8_t lowercase;
+        uint8_t ntbyte;
         uint8_t ctimeten;       /* create times (ctimeten is 0-199) */
         uint8_t ctime[2];
         uint8_t cdate[2];
