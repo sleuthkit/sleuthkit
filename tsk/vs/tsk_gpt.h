@@ -28,6 +28,20 @@ extern "C" {
 #define GPT_HEAD_OFFSET	1
 #define GPT_HEAD_SIG	0x5452415020494645ULL
 
+/*Length of a GUID partition type description*/
+#define GUID_DESC_LEN 256
+
+/* Definiation of GUID struct.
+ * See https://learn.microsoft.com/en-us/windows/win32/api/guiddef/ns-guiddef-guid
+ */
+    typedef struct{
+        uint32_t data_1;
+        uint16_t data_2;
+        uint16_t data_3;
+        uint8_t data_4[8];
+    } gpt_guid;
+
+
     typedef struct {
         uint8_t signature[8];   /* EFI PART */
         uint8_t version[4];
@@ -49,8 +63,8 @@ extern "C" {
 
 /* The location of this is specified in the header - tab_start */
     typedef struct {
-        uint8_t type_guid[16];  /* partition type guid */
-        uint8_t id_guid[16];    /* unique partition GUID */
+        gpt_guid type_guid;         /* partition type GUID */
+        gpt_guid id_guid;           /* unique partition GUID */
         uint8_t start_lba[8];   /* Starting lba of part */
         uint8_t end_lba[8];     /* end lba of part */
         uint8_t flags[8];       /* flags */

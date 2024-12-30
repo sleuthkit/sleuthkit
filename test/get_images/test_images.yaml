@@ -42,3 +42,5 @@ sources:
       image: https://corp.digitalcorpora.org/corpora/drives/2015-basicmaster/btrfs_testimage_50MB.E01
   - xfs:
       image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/2GB-xfs-raw.E01
+  - fat32_with_efs:
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/fat32_with_efs_file.E01
