@@ -1270,21 +1270,25 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
         return 0;
     }
 
+    tsk_take_lock(&m_decrypt_sector_lock);
+    int result = 0;
     if (isAESCBC(m_encryptionType)) {
         if (usesDiffuser(m_encryptionType)) {
-            return decryptSectorAESCBC_diffuser(volumeOffset, data);
+            result = decryptSectorAESCBC_diffuser(volumeOffset, data);
         }
         else {
-            return decryptSectorAESCBC_noDiffuser(volumeOffset, data);
+            result = decryptSectorAESCBC_noDiffuser(volumeOffset, data);
         }
     }
     else if (isAESXTS(m_encryptionType)) {
-        return decryptSectorAESXTS(volumeOffset, data);
+        result = decryptSectorAESXTS(volumeOffset, data);
     }
     else {
         writeError("BitlockerParser::decryptSector: Encryption method not currently supported - " + convertEncryptionTypeToString(m_encryptionType));
-        return -1;
+        result = -1;
     }
+    tsk_release_lock(&m_decrypt_sector_lock);
+    return result;
 }
 
 /**
