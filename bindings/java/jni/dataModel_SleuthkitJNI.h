@@ -180,7 +180,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNatP
  * Method:    initializeAddImgNat
  * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZZ)J
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat
   (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jboolean, jstring);
 
 /*

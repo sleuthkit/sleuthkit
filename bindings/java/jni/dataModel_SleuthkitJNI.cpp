@@ -813,7 +813,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNatPassword(JNIEnv * env,
     jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jstring passwordJ) {
-    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, passwordJ);
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, passwordJ);
 }
 
 /*
@@ -831,7 +831,7 @@ JNIEXPORT jlong JNICALL
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
     jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
-    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
 }
 
 /*
@@ -849,7 +849,7 @@ JNIEXPORT jlong JNICALL
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj,
     jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
-    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
 }
 
 /*
@@ -866,7 +866,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
  * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNatPassword(JNIEnv * env, jclass obj,
+Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(JNIEnv * env, jclass obj,
     jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jstring passwordJ) {
     jboolean isCopy;
 

@@ -448,7 +448,7 @@ public class SleuthkitJNI {
 					host = skCase.getHostManager().newHost(hostName);
 				}
 				TskCaseDbBridge dbHelper = new TskCaseDbBridge(skCase, new DefaultAddDataSourceCallbacks(), host);
-				long tskAutoDbPointer = initializeAddImgNatPassword(dbHelper, timezoneLongToShort(timeZone), false, false, false, password);
+				long tskAutoDbPointer = initializeAddImgPasswordNat(dbHelper, timezoneLongToShort(timeZone), false, false, false, password);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);				
 				long id = finishAddImgNat(tskAutoDbPointer);
 				dbHelper.finish();
@@ -2224,7 +2224,7 @@ public class SleuthkitJNI {
 
 	private static native long initializeAddImgNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
-	private static native long initializeAddImgNatPassword(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans, String password) throws TskCoreException;
+	private static native long initializeAddImgPasswordNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans, String password) throws TskCoreException;
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
