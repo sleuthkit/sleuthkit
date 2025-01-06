@@ -419,7 +419,6 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 	bool debugPrint = false;
 	if (0 == TSTRNCMP(target_path, L"R:\\work\\images\\CT-9539\\uac-DIV30-WORKSTATION-linux-20241113150806\\live_", strlen("R:\\work\\images\\CT-9539\\uac-DIV30-WORKSTATION-linux-20241113150806\\live_"))) {
 		debugPrint = true;
-		//##printf("Searching for cache match for %" PRIttocTSK "\n", target_path);
 	}
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if (logical_img_info->inum_cache[i].path != NULL) {
@@ -471,7 +470,6 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 
 	// If we found a full or partial match, store the values
 	if (best_match_index >= 0) {
-		//##printf("  Found full/partial match: %" PRIttocTSK "\n", logical_img_info->inum_cache[best_match_index].path);
 		*best_inum = logical_img_info->inum_cache[best_match_index].inum;
 		*best_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1));
 		if (*best_path == NULL) {
@@ -479,9 +477,6 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 			return TSK_ERR;
 		}
 		TSTRNCPY(*best_path, logical_img_info->inum_cache[best_match_index].path, TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1);
-	}
-	else {
-		//##printf("  Did not find any matches\n");
 	}
 
 	tsk_release_lock(&(img_info->cache_lock));
@@ -503,12 +498,10 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 	tsk_take_lock(&(img_info->cache_lock));
 	TSK_TCHAR *target_path = NULL;
-	//##printf("Looking for inum %" PRIx64 " in cache\n", target_inum);
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if ((target_path == NULL) && (logical_img_info->inum_cache[i].inum == target_inum)) {
 			// The cache entry was useful so reset the age
 			logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
-			//##printf("inum_cache[%d] = %" PRIx64 " was helpful\n", i, logical_img_info->inum_cache[i].inum);
 
 			// Copy the path
 			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[i].path) + 1));
@@ -536,11 +529,12 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
  * @param logical_fs_info The logical file system
  * @param path            The directory path
  * @param inum            The inum corresponding to the path
+ * @param always_cache    If false, only cache the entry if we have empty space (and it will get a smaller age)
  *
  * @return TSK_OK if successful, TSK_ERR on error
  */
 static TSK_RETVAL_ENUM
-add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum) {
+add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum, bool always_cache) {
 
 	// If the path is very long then don't cache it to make sure the cache stays reasonably small.
 	if (TSTRLEN(path) > LOGICAL_INUM_CACHE_MAX_PATH_LEN) {
@@ -566,6 +560,12 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 			lowest_age = logical_img_info->inum_cache[i].cache_age;
 		}
 	}
+
+	// If the always_cache flag is not set, only continue if we've found an empty space
+	if (!always_cache && logical_img_info->inum_cache[next_slot].inum != LOGICAL_INVALID_INUM) {
+		return TSK_OK;
+	}
+
 	clear_inum_cache_entry(logical_img_info, next_slot);
 
 	// Copy the data
@@ -576,7 +576,12 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	}
 	TSTRNCPY(logical_img_info->inum_cache[next_slot].path, path, TSTRLEN(path) + 1);
 	logical_img_info->inum_cache[next_slot].inum = inum;
-	logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+	if (always_cache) {
+		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+	} else {
+		// We want to remove the random folders first when we run out of space
+		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE / 2;
+	}
 
 	tsk_release_lock(&(img_info->cache_lock));
 	return TSK_OK;
@@ -695,11 +700,30 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		TSK_INUM_T current_inum = *last_inum_ptr + LOGICAL_INUM_DIR_INC;
 		*last_inum_ptr = current_inum;
 
-		// Only cache directories that get us closer to our target
-		if (search_helper->search_type == LOGICALFS_SEARCH_BY_PATH
-			&& TSTRNCMP(current_path, search_helper->target_path, TSTRLEN(current_path)) == 0) {
-			//##printf("add_directory_to_cache inum: %" PRIX64 ", path: %" PRIttocTSK "\n", current_inum, current_path);
-			add_directory_to_cache(logical_fs_info, current_path, current_inum);
+		// There's no perfect way to do the caching. Caching everything here had the problem that if we have a miss then the 
+		// whole cache gets overwritten while we search. So we'll generally only cache directories that get us closer to 
+		// our target (so if we search for something in the same or similar folders it'll be a fast search) and directories 
+		// that are close to the root one (one or two folders deep).
+		size_t current_path_len = TSTRLEN(current_path);
+		size_t path_offset = TSTRLEN(logical_fs_info->base_path) + 1; // The +1 advances past the slash after the root dir
+		bool is_near_root_folder = false;
+		if (search_helper->search_type == LOGICALFS_SEARCH_BY_PATH && path_offset < current_path_len) {
+			int slash_count = 0;
+			for (size_t i = path_offset; i < current_path_len; i++) {
+				if (current_path[i] == '/' || current_path[i] == '\\') {
+					slash_count++;
+				}
+			}
+			is_near_root_folder = (slash_count < 2);
+		}
+		if (search_helper->search_type == LOGICALFS_SEARCH_BY_PATH) {
+			if (is_near_root_folder || TSTRNCMP(current_path, search_helper->target_path, current_path_len) == 0) {
+				add_directory_to_cache(logical_fs_info, current_path, current_inum, true);
+			}
+			else {
+				// This will only add to the cache if we have empty space
+				add_directory_to_cache(logical_fs_info, current_path, current_inum, false);
+			}
 		}
 
 		// Check if we've found it
@@ -784,7 +808,6 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	// Run the search
-	//##printf("Starting search_directory_recursive with path: %" PRIttocTSK ", inum: %" PRIX64 "\n", starting_path, starting_inum);
 	TSK_RETVAL_ENUM result = search_directory_recursive(logical_fs_info, starting_path, &starting_inum, search_helper);
 
 	if (cache_path != NULL) {
@@ -901,7 +924,6 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	TSK_INUM_T last_assigned_inum = logical_fs_info->fs_info.root_inum;
 	TSK_RETVAL_ENUM result = search_directory_recursive(logical_fs_info, logical_fs_info->base_path, &last_assigned_inum, search_helper);
 	free_search_helper(search_helper);
-	printf("last inum dir: %" PRIx64 "\n", last_assigned_inum);
 
 	if (result != TSK_OK) {
 		return LOGICAL_INVALID_INUM;
@@ -961,8 +983,6 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 #endif
 	TSTRNCAT(path_buf, dir_path.c_str(), TSTRLEN(dir_path.c_str()) + 1);
 
-	//##printf("get_inum_from_directory_path for path %" PRIttocTSK "\n", path_buf);
-
 	// Default starting position for search is the base folder
 	TSK_INUM_T starting_inum = logical_fs_info->fs_info.root_inum;
 	const TSK_TCHAR *starting_path = logical_fs_info->base_path;
@@ -977,18 +997,12 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 	if (cache_inum != LOGICAL_INVALID_INUM) {
 		if (TSTRCMP(path_buf, cache_path) == 0) {
 			// We found an exact match - no need to do a search
-			//##printf("  Found exact match in cache - inum: %" PRIx64 "\n", cache_inum);
 			free(cache_path);
 			return cache_inum;
 		}
 		// Otherwise, we at least have a better place to start the search
 		starting_inum = cache_inum;
 		starting_path = cache_path;
-
-		//##printf("  Found partial match in cache - path: %" PRIttocTSK ", inum: % " PRIx64 "\n", cache_path, cache_inum);
-	}
-	else {
-		//##printf("  Did not find any match in cache\n");
 	}
 
 	// Create the struct that holds search params and results
@@ -1064,8 +1078,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		return TSK_ERR;
 	}
 	time_t my_time = time(NULL);
-	//##printf("\n%s : ", ctime(&my_time));
-	//##printf("logicalfs_dir_open_meta - opening dir %" PRIttocTSK "\n", path);
 
 #ifdef TSK_WIN32
 	// Populate the fs_file field
@@ -1228,8 +1240,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		file_inum++;
 	}
 	my_time = time(NULL);
-	//##printf("%s : ", ctime(&my_time));
-	//##printf("logicalfs_dir_open_meta - finished opening dir %" PRIttocTSK "\n", path);
 
 	return TSK_OK;
 }
