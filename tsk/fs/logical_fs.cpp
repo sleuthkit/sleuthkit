@@ -416,10 +416,6 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 	size_t longest_match = 0;
 	size_t target_len = TSTRLEN(target_path);
 
-	bool debugPrint = false;
-	if (0 == TSTRNCMP(target_path, L"R:\\work\\images\\CT-9539\\uac-DIV30-WORKSTATION-linux-20241113150806\\live_", strlen("R:\\work\\images\\CT-9539\\uac-DIV30-WORKSTATION-linux-20241113150806\\live_"))) {
-		debugPrint = true;
-	}
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if (logical_img_info->inum_cache[i].path != NULL) {
 
