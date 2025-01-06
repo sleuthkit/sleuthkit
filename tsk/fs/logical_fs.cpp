@@ -1073,7 +1073,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	if (path == NULL) {
 		return TSK_ERR;
 	}
-	time_t my_time = time(NULL);
 
 #ifdef TSK_WIN32
 	// Populate the fs_file field
@@ -1235,7 +1234,6 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 
 		file_inum++;
 	}
-	my_time = time(NULL);
 
 	return TSK_OK;
 }
