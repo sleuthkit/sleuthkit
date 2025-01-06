@@ -608,8 +608,8 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 	// If we're searching for a file and this is the correct directory, load only the files in the folder and
 	// return the correct one.
 	if (search_helper->search_type == LOGICALFS_SEARCH_BY_INUM
-		&& (*last_inum_ptr == (search_helper->target_inum & 0xffff0000))
-		&& ((search_helper->target_inum & 0xffff) != 0)) {
+		&& (*last_inum_ptr == (search_helper->target_inum & LOGICAL_INUM_DIR_MASK))
+		&& ((search_helper->target_inum & LOGICAL_INUM_FILE_MASK) != 0)) {
 
 #ifdef TSK_WIN32
 		if (TSK_OK != load_dir_and_file_lists_win(parent_path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
@@ -620,7 +620,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		sort(file_names.begin(), file_names.end());
 
 		// Look for the file corresponding to the given inum
-		size_t file_index = (search_helper->target_inum & 0xffff) - 1;
+		size_t file_index = (search_helper->target_inum & LOGICAL_INUM_FILE_MASK) - 1;
 		if (file_names.size() <= file_index) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
@@ -685,11 +685,11 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 
 		// Append the current directory name to the parent path
 		TSTRNCPY(current_path + parent_path_len, dir_names[i].c_str(), TSTRLEN(dir_names[i].c_str()) + 1);
-		if (*last_inum_ptr >= LOGICAL_INUM_DIR_MAX) {
+		if (*last_inum_ptr == LOGICAL_INUM_DIR_MAX) {
 			// We're run out of inums to assign. Return an error.
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-			tsk_error_set_errstr("search_directory_recusive: Too many directories in logical file set (max: 65536)");
+			tsk_error_set_errstr("search_directory_recusive: Too many directories in logical file set");
 			free(current_path);
 			return TSK_ERR;
 		}
@@ -783,7 +783,7 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	const TSK_TCHAR *starting_path = logical_fs_info->base_path;
 
 	// See if the directory is in the cache
-	TSK_INUM_T dir_addr = a_addr & 0xffff0000;
+	TSK_INUM_T dir_addr = a_addr & LOGICAL_INUM_DIR_MASK;
 	TSK_TCHAR *cache_path = find_path_for_inum_in_cache(logical_fs_info, dir_addr);
 	if (cache_path != NULL) {
 		if (dir_addr == a_addr) {
@@ -1046,7 +1046,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		tsk_error_set_errstr("logicalfs_dir_open_meta: NULL fs_dir argument given");
 		return TSK_ERR;
 	}
-	if ((a_addr & 0xffff) != 0) {
+	if ((a_addr & LOGICAL_INUM_FILE_MASK) != 0) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
 		tsk_error_set_errstr("logicalfs_dir_open_meta: Inode %" PRIuINUM " is not a directory", a_addr);
