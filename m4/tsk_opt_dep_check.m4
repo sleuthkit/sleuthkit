@@ -67,7 +67,7 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
       AS_IF([test "x[$]with_$1" = "xyes" -o "x[$]with_$1" = "xmaybe"],
         [
           dnl Check for lib using pkg-config, if we have it
-          m4_ifval([$2], [AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
+          m4_ifnblank([$3], [AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
             [
               SAVED_AX_PACKAGE_REQUIRES="$AX_PACKAGE_REQUIRES"
               SAVED_AX_PACKAGE_REQUIRES_PRIVATE="$AX_PACKAGE_REQUIRES_PRIVATE"
