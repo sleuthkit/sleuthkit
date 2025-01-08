@@ -5,7 +5,7 @@ environment:
   - job_name: Windows Build
     appveyor_build_worker_image: Visual Studio 2019
   - job_name: Linux Build
-    appveyor_build_worker_image: Ubuntu
+    appveyor_build_worker_image: Ubuntu2204
   - job_name: macOS Build
     appveyor_build_worker_image: macos-catalina
 
