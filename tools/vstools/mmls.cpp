@@ -2,7 +2,8 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (C) 2024 Sleuth Kit Labs, LLC
+ * Copyright (c) 2006-2023 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * mmls - list media management structure contents
@@ -13,13 +14,15 @@
 #include "tools/util.h"
 
 #include <memory>
+#include <utility>
 #include <variant>
 
 void
 usage()
 {
-    tsk_fprintf(stderr,
-        "usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n");
+    TFPRINTF(stderr,
+        _TSK_T
+        ("usage: mmls [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BcrvVh] [-aAmM] [-t vstype] image [images]\n"));
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
@@ -31,8 +34,10 @@ usage()
     tsk_fprintf(stderr, "\t-B: print the rounded length in bytes\n");
     tsk_fprintf(stderr,
         "\t-r: recurse and look for other partition tables in partitions (DOS Only)\n");
+    tsk_fprintf(stderr, "\t-c: print CSV output\n");
     tsk_fprintf(stderr, "\t-v: verbose output\n");
     tsk_fprintf(stderr, "\t-V: print the version\n");
+    tsk_fprintf(stderr, "\t-h: help. print this message\n");
     tsk_fprintf(stderr,
         "Unless any of these are specified, all volume types are shown\n");
     tsk_fprintf(stderr, "\t-a: Show allocated volumes\n");
@@ -43,66 +48,67 @@ usage()
 
 struct WalkState {
   bool print_bytes = false;
+  bool csv = false;
   bool recurse = false;
   int recurse_cnt = 0;
   TSK_DADDR_T recurse_list[64] = {0};
 };
 
-/*
- * The callback action for the part_walk
- *
- * Prints the layout information
- */
-static TSK_WALK_RET_ENUM
-part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
+std::pair<TSK_OFF_T, char> size_with_unit(TSK_OFF_T size) {
+    char unit = 'B';
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'K';
+    }
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'M';
+    }
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'G';
+    }
+
+    if (size > 1024) {
+        size /= 1024;
+        unit = 'T';
+    }
+
+    return { size, unit };
+}
+
+TSK_WALK_RET_ENUM
+part_act_tabular(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
 {
-    if (part->flags & TSK_VS_PART_FLAG_META)
-        tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
-
-    /* Neither table or slot were given */
-    else if ((part->table_num == -1) && (part->slot_num == -1))
-        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
-
-    /* Table was not given, but slot was */
-    else if ((part->table_num == -1) && (part->slot_num != -1))
-        tsk_printf("%.3" PRIuPNUM ":  %.3" PRIu8 "       ",
-            part->addr, part->slot_num);
-
-    /* The Table was given, but slot wasn't */
-    else if ((part->table_num != -1) && (part->slot_num == -1))
-        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
-
-    /* Both table and slot were given */
-    else if ((part->table_num != -1) && (part->slot_num != -1))
-        tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
-            part->addr, part->table_num, part->slot_num);
-
     WalkState* ws = static_cast<WalkState*>(ptr);
 
+    if (part->flags & TSK_VS_PART_FLAG_META) {
+        tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
+    }
+    /* Neither table or slot were given */
+    else if ((part->table_num == -1) && (part->slot_num == -1)) {
+        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
+    }
+    /* Table was not given, but slot was */
+    else if ((part->table_num == -1) && (part->slot_num != -1)) {
+        tsk_printf("%.3" PRIuPNUM ":  %.3" PRIu8 "       ",
+            part->addr, part->slot_num);
+    }
+    /* The Table was given, but slot wasn't */
+    else if ((part->table_num != -1) && (part->slot_num == -1)) {
+        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
+    }
+    /* Both table and slot were given */
+    else if ((part->table_num != -1) && (part->slot_num != -1)) {
+        tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
+            part->addr, part->table_num, part->slot_num);
+    }
+
     if (ws->print_bytes) {
-        TSK_OFF_T size;
-        char unit = 'B';
-        size = part->len * part->vs->block_size;
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'K';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'M';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'G';
-        }
-
-        if (size > 1024) {
-            size /= 1024;
-            unit = 'T';
-        }
+        const auto [size, unit] = size_with_unit(part->len * part->vs->block_size);
 
         /* Print the layout */
         tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
@@ -128,19 +134,92 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
     return TSK_WALK_CONT;
 }
 
-static void
-print_header(const TSK_VS_INFO * vs, bool print_bytes)
+/*
+ * The callback action for the part_walk
+ *
+ * Prints the layout information
+ */
+static TSK_WALK_RET_ENUM
+part_act_csv(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void* ptr)
+{
+    WalkState* ws = static_cast<WalkState*>(ptr);
+
+    const char delim = ',';
+
+    if (part->flags & TSK_VS_PART_FLAG_META) {
+        tsk_printf("%.3" PRIuPNUM "%c%s%c", part->addr, delim, "Meta", delim);
+    }
+    /* Neither table or slot were given */
+    else if ((part->table_num == -1) && (part->slot_num == -1)) {
+        tsk_printf("%.3" PRIuPNUM "%c%c", part->addr, delim, delim);
+    }
+    /* Table was not given, but slot was */
+    else if ((part->table_num == -1) && (part->slot_num != -1)) {
+        tsk_printf("%.3" PRIuPNUM "%c%.3" PRIu8 "%c",
+            part->addr, delim, part->slot_num, delim);
+    }
+    /* The Table was given, but slot wasn't */
+    else if ((part->table_num != -1) && (part->slot_num == -1)) {
+        tsk_printf("%.3" PRIuPNUM "%c%c", part->addr, delim, delim);
+    }
+    /* Both table and slot were given */
+    else if ((part->table_num != -1) && (part->slot_num != -1)) {
+        tsk_printf("%.3" PRIuPNUM "%c%.3d:%.3d%c",
+            part->addr, delim, part->table_num, part->slot_num, delim);
+    }
+
+    if (ws->print_bytes) {
+        const auto [size, unit] = size_with_unit(part->len * part->vs->block_size);
+
+        /* Print the layout */
+        tsk_printf("%.10" PRIuDADDR "%c%.10" PRIuDADDR "%c%.10" PRIuDADDR
+           "%c%.4" PRIdOFF "%c%c%s\n", part->start, delim,
+           (TSK_DADDR_T) (part->start + part->len - 1), delim, part->len, delim, size,
+           unit, delim, part->desc);
+    }
+    else {
+        /* Print the layout */
+        tsk_printf("%.10" PRIuDADDR "%c%.10" PRIuDADDR "%c%.10" PRIuDADDR
+            "%c%s\n", part->start, delim,
+            (TSK_DADDR_T) (part->start + part->len - 1), delim, part->len, delim,
+            part->desc);
+    }
+
+    if (ws->recurse && vs->vstype == TSK_VS_TYPE_DOS
+        && part->flags == TSK_VS_PART_FLAG_ALLOC) {
+        if (ws->recurse_cnt < 64) {
+            ws->recurse_list[ws->recurse_cnt++] = part->start * part->vs->block_size;
+        }
+    }
+
+    return TSK_WALK_CONT;
+}
+
+void
+print_header_tabular(const TSK_VS_INFO * vs, bool print_bytes)
 {
     tsk_printf("%s\n", tsk_vs_type_todesc(vs->vstype));
     tsk_printf("Offset Sector: %" PRIuDADDR "\n",
         (TSK_DADDR_T) (vs->offset / vs->block_size));
     tsk_printf("Units are in %d-byte sectors\n\n", vs->block_size);
-    if (print_bytes)
-        tsk_printf
-            ("      Slot      Start        End          Length       Size    Description\n");
-    else
-        tsk_printf
-            ("      Slot      Start        End          Length       Description\n");
+
+    if (print_bytes) {
+        tsk_printf("      Slot      Start        End          Length       Size    Description\n");
+    }
+    else {
+        tsk_printf("      Slot      Start        End          Length       Description\n");
+    }
+}
+
+void
+print_header_csv([[maybe_unused]] const TSK_VS_INFO * vs, bool print_bytes)
+{
+    if (print_bytes) {
+        tsk_printf("ID,Slot,Start,End,Length,Size,Description\n");
+    }
+    else {
+        tsk_printf("ID,Slot,Start,End,Length,Description\n");
+    }
 }
 
 struct Options {
@@ -151,6 +230,7 @@ struct Options {
   TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
   TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
   bool recurse = false;
+  bool csv = false;
   unsigned int verbose = 0;
 };
 
@@ -161,7 +241,7 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
     TSK_TCHAR *cp;
     int ch;
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:cvVh"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             opts.flags |= TSK_VS_PART_FLAG_ALLOC;
@@ -183,6 +263,12 @@ std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv) {
                 return 1;
             }
             break;
+        case _TSK_T('c'):
+            opts.csv = true;
+            break;
+        case _TSK_T('h'):
+          usage();
+          return 1;
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_img_type_print(stderr);
@@ -276,6 +362,7 @@ int do_it(
       imgtype,
       vstype,
       recurse,
+      is_csv,
       _ // verbose
     ] = opts;
 
@@ -312,9 +399,12 @@ int do_it(
         return 1;
     }
 
+    const auto print_header = is_csv ? print_header_csv : print_header_tabular;
+    const auto part_act = is_csv ? part_act_csv : part_act_tabular;
+
     print_header(vs.get(), print_bytes);
 
-    WalkState ws{print_bytes, recurse};
+    WalkState ws{print_bytes, is_csv, recurse};
     if (tsk_vs_part_walk(vs.get(), 0, vs->part_count - 1,
             (TSK_VS_PART_FLAG_ENUM) flags, part_act, &ws)) {
         tsk_error_print(stderr);
