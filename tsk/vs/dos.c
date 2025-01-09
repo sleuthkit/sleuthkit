@@ -1088,7 +1088,7 @@ tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)
     vs->part_count = 0;
     vs->endian = 0;
     vs->block_size = img_info->sector_size;
-    
+
 
     /* Assign functions */
     vs->close = dos_close;

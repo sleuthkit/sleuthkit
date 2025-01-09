@@ -19,8 +19,8 @@
 #include <cstring>
 
 // Forward declarations
-extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
-extern "C" void error_returned(const char* errstr, ...);
+void error_detected(uint32_t errnum, const char* errstr, ...);
+void error_returned(const char* errstr, ...);
 
 static inline const APFSPoolCompat& to_pool(
     const TSK_POOL_INFO* pool_info) noexcept {
@@ -264,7 +264,7 @@ APFSFSCompat::APFSFSCompat(TSK_IMG_INFO* img_info, const TSK_POOL_INFO* pool_inf
 
 uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
   const auto& pool = fs_info_to_pool(&_fsinfo);
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
   APFSFileSystem vol{pool, to_pool_vol_block(&_fsinfo), _crypto.password};
 #else
   APFSFileSystem vol{ pool, to_pool_vol_block(&_fsinfo) };
@@ -477,10 +477,11 @@ uint8_t tsk_apfs_fsstat(TSK_FS_INFO* fs_info, apfs_fsstat_info* info) try {
   return 1;
 }
 
-TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(TSK_FS_DIR** a_fs_dir,
-                                            TSK_INUM_T inode_num,
-                                            int recursion_depth) const
-    noexcept try {
+TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(
+  TSK_FS_DIR** a_fs_dir,
+  TSK_INUM_T inode_num,
+  [[maybe_unused]] int recursion_depth
+) const noexcept try {
   // Sanity checks
   if (a_fs_dir == NULL) {
     tsk_error_reset();
@@ -1100,8 +1101,14 @@ typedef struct {
 } APFS_PRINT_ADDR;
 
 static TSK_WALK_RET_ENUM
-print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+print_addr_act(
+  [[maybe_unused]] TSK_FS_FILE * fs_file,
+  [[maybe_unused]] TSK_OFF_T a_off,
+  TSK_DADDR_T addr,
+  [[maybe_unused]] char *buf,
+  [[maybe_unused]] size_t size,
+  [[maybe_unused]] TSK_FS_BLOCK_FLAG_ENUM flags,
+  [[maybe_unused]] void *ptr)
 {
     APFS_PRINT_ADDR *print = (APFS_PRINT_ADDR *)ptr;
     tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
@@ -1544,7 +1551,7 @@ uint8_t APFSFSCompat::block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_
 }
 
 uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     try {
         if (_crypto.decryptor) {
             _crypto.decryptor->decrypt_buffer(data, APFS_BLOCK_SIZE,
@@ -1570,7 +1577,7 @@ uint8_t APFSFSCompat::decrypt_block(TSK_DADDR_T block_num, void* data) noexcept 
 }
 
 int APFSFSCompat::name_cmp(const char* s1, const char* s2) const noexcept try {
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     const APFSFileSystem vol{ fs_info_to_pool(&_fsinfo), to_pool_vol_block(&_fsinfo),
                            _crypto.password};
 #else

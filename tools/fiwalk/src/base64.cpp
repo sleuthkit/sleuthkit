@@ -108,9 +108,9 @@ static const char Pad64 = '=';
    end of the data is performed using the '=' character.
 
    Since all base64 input is an integral number of octets, only the
-         -------------------------------------------------                       
+         -------------------------------------------------
    following cases can arise:
-   
+
        (1) the final quantum of encoding input is an integral
            multiple of 24 bits; here, the final unit of encoded
 	   output will be an integral multiple of 4 characters
@@ -123,7 +123,7 @@ static const char Pad64 = '=';
 	   characters followed by one "=" padding character.
    */
 
-extern "C" 
+extern "C"
 int
 b64_ntop(unsigned char const *src, size_t srclength, char *target, size_t targsize) {
 	size_t datalength = 0;
@@ -153,7 +153,7 @@ b64_ntop(unsigned char const *src, size_t srclength, char *target, size_t targsi
 		target[datalength++] = Base64[output[2]];
 		target[datalength++] = Base64[output[3]];
 	}
-    
+
 	/* Now we worry about padding. */
 	if (0 != srclength) {
 		/* Get what's left. */

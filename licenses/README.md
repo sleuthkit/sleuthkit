@@ -126,6 +126,14 @@ Copyright (c) 2008 Steven G. Johnson <stevenj@alum.mit.edu>
 
 under GNU General Public License version 3 or later
 
+* ossfuzz/*.cc
+
+```
+Copyright 2020-2021 Google LLC
+```
+
+under Apache License, Version 2.0
+
 * rejistry++/*
 
 ```

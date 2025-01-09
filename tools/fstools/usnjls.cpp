@@ -84,12 +84,12 @@ main(int argc, char **argv1)
 
     while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:lmvV"))) > 0) {
         switch (ch) {
-        case _TSK_T('?'): {
-            default:
-                TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
-                         argv[OPTIND]);
-                usage();
-        }
+        case _TSK_T('?'):
+        default:
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
+                argv[OPTIND]);
+            usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
