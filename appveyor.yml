@@ -7,7 +7,7 @@ environment:
   - job_name: Linux Build
     appveyor_build_worker_image: Ubuntu2204
   - job_name: macOS Build
-    appveyor_build_worker_image: macos-catalina
+    appveyor_build_worker_image: macos-sonoma
 
 matrix:
 
