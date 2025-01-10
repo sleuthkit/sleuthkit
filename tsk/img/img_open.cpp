@@ -178,9 +178,11 @@ img_open_detect_type(
 
     enum Result { OK, UNRECOGNIZED, FAIL };
 
+#if HAVE_LIBEWF || HAVE_LIBAFF4 || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW
     const auto ok_nonnull = [](TSK_IMG_INFO* img_info) {
         return img_info ? OK : UNRECOGNIZED;
     };
+#endif
 
 #if HAVE_LIBAFFLIB
     const auto ok_aff = [](TSK_IMG_INFO* img_info) {
