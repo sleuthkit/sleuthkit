@@ -149,9 +149,6 @@ void APFSPool::clear_cache() noexcept {
 
   auto cache = static_cast<LegacyCache*>(_img->cache_holder);
   cache->lock();
-
-  // Setting the lengths to zero should invalidate the cache.
-  memset(cache->cache_len, 0, sizeof(cache->cache_len));
-
+  cache->clear();
   cache->unlock();
 }

@@ -20,6 +20,8 @@ struct LegacyCache {
   void lock();
 
   void unlock();
+
+  void clear();
 };
 
 #endif
