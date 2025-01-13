@@ -318,6 +318,12 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return -1;
     }
 
+    // FIXME: This check is ridiculous. It will fail only when you pass
+    // in a buffer length that won't fit into 63 bits. You cannot allocate
+    // a buffer that size, and anyway this is here only because no one was
+    // sufficiently careful about the arithmetic below to avoid overflow.
+    // The correct solution is to fix the arithemetic.
+    //
     // Protect a_off against overflowing when a_len is added since TSK_OFF_T
     // maps to an int64 we prefer it over size_t although likely checking
     // for ( a_len > SSIZE_MAX ) is better but the code does not seem to
