@@ -11,9 +11,14 @@
  */
 
 #include "tsk_img_i.h"
+#include "img_cache.h"
 #include "legacy_cache.h"
 
+#include <algorithm>
 #include <chrono>
+#include <cstring>
+#include <functional>
+#include <iterator>
 #include <memory>
 #include <new>
 
@@ -35,6 +40,217 @@ public:
 private:
   std::chrono::high_resolution_clock::time_point start_time, stop_time;
 };
+
+ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
+  size_t pos = 0;
+  for (ssize_t r; pos < len; pos += r) {
+    r = img->read(img, off + pos, buf + pos, len - pos);
+    if (r == -1) {
+      return -1;
+    }
+  }
+  return len;
+}
+
+ssize_t read_chunk(
+  TSK_IMG_INFO* img,
+  TSK_OFF_T coff,
+  size_t clen, char* buf,
+  Cache& cache)
+{
+  if (read_fully(buf, img, coff, clen) == -1) {
+    return -1;
+  }
+  cache.lock();
+  cache.put(coff, buf);
+  cache.unlock();
+  return clen;
+}
+
+Cache& cache_get(TSK_IMG_INFO* img) {
+  return *reinterpret_cast<Cache*>(img->cache_holder);
+}
+
+ssize_t tsk_img_read_lru_own_lock(
+  TSK_IMG_INFO* a_img_info,
+  TSK_OFF_T a_off,
+  char* a_buf,
+  size_t a_len
+)
+{
+  Timer timer;
+  Stats& stats = a_img_info->stats;
+
+  Cache& cache = cache_get(a_img_info);
+  const size_t chunk_size = cache.chunk_size();
+
+  // offset of src end, taking care not to overrun the end of the image
+  const TSK_OFF_T send = a_off + std::min((TSK_OFF_T)a_len, a_img_info->size);
+  // offset of chunk containing src end
+  const TSK_OFF_T cend = send & ~(chunk_size - 1);
+
+  // current src offset
+  TSK_OFF_T soff = a_off;
+  // current chunk offset
+  TSK_OFF_T coff = a_off & ~(chunk_size - 1);
+
+  std::unique_ptr<char[]> cbuf;
+  if (coff < soff || cend < send) {
+    // we will write at least one partial chunk, set up the chunk buffer
+    cbuf.reset(new char[chunk_size]);
+  }
+
+  size_t clen, len, delta;
+  char* dst = a_buf;
+  const char* chunk;
+
+  while (soff < send) {
+    clen = std::min((TSK_OFF_T) chunk_size, a_img_info->size - coff);
+    delta = soff - coff;
+    len = std::min(clen - delta, (size_t)(send - soff));
+
+    cache.lock();
+    timer.start();
+    chunk = cache.get(coff);
+    if (chunk) {
+      // cache hit: copy chunk to buffer
+      std::memcpy(dst, chunk + delta, len);
+      timer.stop();
+      ++stats.hits;
+      stats.hit_ns += timer.elapsed();
+      stats.hit_bytes += len;
+
+      cache.unlock();
+    }
+    else {
+      // cache miss: read into buffer, copy chunk to cache
+      cache.unlock();
+      timer.start();
+
+      if (len < chunk_size) {
+        // We're reading less than a complete chunk, so either the start
+        // or the end of the read is not aligned to a chunk boundary.
+        // Read full chunk into the temporary chunk buffer (because we
+        // still want to cache a full chunk), then copy the portion we
+        // want into dst.
+        if (read_chunk(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
+          return -1;
+        }
+        std::memcpy(dst, cbuf.get() + delta, len);
+      }
+      else {
+        // read a complete chunk
+        if (read_chunk(a_img_info, coff, clen, dst, cache) == -1) {
+          return -1;
+        }
+      }
+
+      timer.stop();
+      cache.lock();
+      ++stats.misses;
+      stats.miss_ns += timer.elapsed();
+      stats.miss_bytes += len;
+      cache.unlock();
+    }
+
+    soff += len;
+    coff += clen;
+    dst += len;
+  }
+
+  return send - a_off;
+}
+
+ssize_t tsk_img_read_lru(
+  TSK_IMG_INFO* a_img_info,
+  TSK_OFF_T a_off,
+  char* a_buf,
+  size_t a_len
+)
+{
+  Timer timer;
+  Stats& stats = a_img_info->stats;
+
+  Cache& cache = cache_get(a_img_info);
+  const size_t chunk_size = cache.chunk_size();
+
+  // offset of src end, taking care not to overrun the end of the image
+  const TSK_OFF_T send = a_off + std::min((TSK_OFF_T)a_len, a_img_info->size);
+  // offset of chunk containing src end
+  const TSK_OFF_T cend = send & ~(chunk_size - 1);
+
+  // current src offset
+  TSK_OFF_T soff = a_off;
+  // current chunk offset
+  TSK_OFF_T coff = a_off & ~(chunk_size - 1);
+
+  std::unique_ptr<char[]> cbuf;
+  if (coff < soff || cend < send) {
+    // we will write at least one partial chunk, set up the chunk buffer
+    cbuf.reset(new char[chunk_size]);
+  }
+
+  size_t clen, len, delta;
+  char* dst = a_buf;
+  const char* chunk;
+
+  const auto unlocker = [](Cache* cache) { cache->unlock(); };
+
+  std::unique_ptr<Cache, decltype(unlocker)> lock_guard(
+    &cache, unlocker
+  );
+
+  while (soff < send) {
+    clen = std::min((TSK_OFF_T) chunk_size, a_img_info->size - coff);
+    delta = soff - coff;
+    len = std::min(clen - delta, (size_t)(send - soff));
+
+    timer.start();
+    chunk = cache.get(coff);
+    if (chunk) {
+      // cache hit: copy chunk to buffer
+      std::memcpy(dst, chunk + delta, len);
+
+      timer.stop();
+      ++stats.hits;
+      stats.hit_ns += timer.elapsed();
+      stats.hit_bytes += len;
+    }
+    else {
+      // cache miss: read into buffer, copy chunk to cache
+      timer.start();
+
+      if (len < chunk_size) {
+        // We're reading less than a complete chunk, so either the start
+        // or the end of the read is not aligned to a chunk boundary.
+        // Read full chunk into the temporary chunk buffer (because we
+        // still want to cache a full chunk), then copy the portion we
+        // want into dst.
+        if (read_chunk(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
+          return -1;
+        }
+        std::memcpy(dst, cbuf.get() + delta, len);
+      }
+      else {
+        // read a complete chunk
+        if (read_chunk(a_img_info, coff, clen, dst, cache) == -1) {
+          return -1;
+        }
+      }
+
+      timer.stop();
+      ++stats.misses;
+      stats.miss_ns += timer.elapsed();
+      stats.miss_bytes += len;
+    }
+
+    soff += len;
+    coff += clen;
+    dst += len;
+  }
+
+  return send - a_off;
+}
 
 // This function assumes that we hold the cache_lock even though we're not modyfying
 // the cache.  This is because the lower-level read callbacks make the same assumption.
