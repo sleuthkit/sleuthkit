@@ -2,6 +2,7 @@
 #include "tsk/img/img_open.h"
 #include "tsk/img/legacy_cache.h"
 
+#include <limits>
 #include <memory>
 
 #include "catch.hpp"
@@ -10,6 +11,57 @@ TEST_CASE("tsk_img_read null img") {
   char buf[1];
   CHECK(tsk_img_read(nullptr, 0, buf, 1) == -1);
   CHECK(tsk_error_get_errno() == TSK_ERR_IMG_ARG);
+}
+
+TEST_CASE("tsk_img_read null buffer") {
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    tsk_img_free
+  };
+  REQUIRE(img);
+
+  CHECK(tsk_img_read(img.get(), 0, nullptr, 1) == -1);
+  CHECK(tsk_error_get_errno() == TSK_ERR_IMG_ARG);
+}
+
+TEST_CASE("tsk_img_read negative offset") {
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    tsk_img_free
+  };
+  REQUIRE(img);
+
+  char buf[1];
+  CHECK(tsk_img_read(img.get(), -1, buf, 1) == -1);
+  CHECK(tsk_error_get_errno() == TSK_ERR_IMG_ARG);
+}
+
+TEST_CASE("tsk_img_read offset past end") {
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    tsk_img_free
+  };
+  REQUIRE(img);
+
+  img->size = 1;
+  char buf[1];
+  CHECK(tsk_img_read(img.get(), 2, buf, 1) == -1);
+  CHECK(tsk_error_get_errno() == TSK_ERR_IMG_READ_OFF);
+}
+
+TEST_CASE("tsk_img_read length overflow") {
+  if (std::numeric_limits<size_t>::max() > std::numeric_limits<TSK_OFF_T>::max()) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
+      (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+      tsk_img_free
+    };
+    REQUIRE(img);
+
+    img->size = 1;
+    char buf[1];
+    CHECK(tsk_img_read(img.get(), 0, buf, std::numeric_limits<size_t>::max()) == -1);
+    CHECK(tsk_error_get_errno() == TSK_ERR_IMG_ARG);
+  }
 }
 
 TEST_CASE("tsk_img_read inner function failed") {
