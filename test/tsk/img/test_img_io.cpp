@@ -50,6 +50,7 @@ TEST_CASE("tsk_img_read offset past end") {
 }
 
 TEST_CASE("tsk_img_read length overflow") {
+  // Overflow isn't possible when size_t is smaller than TSK_OFF_T
   if (std::numeric_limits<size_t>::max() > std::numeric_limits<TSK_OFF_T>::max()) {
     std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
       (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
