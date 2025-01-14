@@ -110,7 +110,7 @@ class TskAuto {
     /**
      * @returns A password that will be used when trying to open each file system or empty.
      */
-    std::string getFileSystemPassword() { return m_fileSystemPassword; }
+    std::string getFileSystemPassword() const { return m_fileSystemPassword; }
 
     /**
      * TskAuto calls this method before it processes the volume system that is found in an 
