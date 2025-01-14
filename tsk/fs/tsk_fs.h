@@ -439,7 +439,10 @@ extern "C" {
     typedef enum TSK_FS_META_CONTENT_TYPE_ENUM {
         TSK_FS_META_CONTENT_TYPE_DEFAULT = 0x0,
         TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1,     ///< Ext4 with extents instead of individual pointers
-        TSK_FS_META_CONTENT_TYPE_EXT4_INLINE = 0x02      ///< Ext4 with inline data
+        TSK_FS_META_CONTENT_TYPE_EXT4_INLINE = 0x02,      ///< Ext4 with inline data
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM = 0x03,
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS = 0x04,
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_BTREE = 0x05
     } TSK_FS_META_CONTENT_TYPE_ENUM;
 
 
@@ -823,9 +826,11 @@ extern "C" {
         TSK_FS_TYPE_HFS_LEGACY= 0x00008000,   ///< HFS file system
         TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
         TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
-               TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+        TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
         TSK_FS_TYPE_BTRFS = 0x00040000,        ///< Btrfs file system
         TSK_FS_TYPE_BTRFS_DETECT = TSK_FS_TYPE_BTRFS, ///< Btrfs auto detection
+        TSK_FS_TYPE_XFS = 0x00080000,           ///< XFS file system
+        TSK_FS_TYPE_XFS_DETECT = 0x00080000,    ///< XFS auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
@@ -892,6 +897,9 @@ extern "C" {
     * \ingroup fslib
     * Macro that takes a file system type and returns 1 if the type
     * is for a YAFFS2 file system. */
+#define TSK_FS_TYPE_ISXFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_XFS_DETECT)?1:0)
+    
 #define TSK_FS_TYPE_ISAPFS(ftype) \
     (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
 

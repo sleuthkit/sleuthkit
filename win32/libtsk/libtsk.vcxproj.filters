@@ -291,6 +291,12 @@
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\xfs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\xfs_dent.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\fs\btrfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>

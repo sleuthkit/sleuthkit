@@ -128,7 +128,6 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     TSK_FS_TYPE_ENUM a_ftype, const char * a_pass)
 {
     TSK_FS_INFO *fs_info;
-
     const struct {
         char* name;
         TSK_FS_INFO* (*open)(TSK_IMG_INFO*, TSK_OFF_T,
@@ -142,6 +141,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "EXT2/3/4", ext2fs_open,  TSK_FS_TYPE_EXT_DETECT     },
         { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
         { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
+        { "XFS",      xfs_open,     TSK_FS_TYPE_XFS_DETECT     },
 #if TSK_USE_HFS
         { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
@@ -309,6 +309,9 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (TSK_FS_TYPE_ISAPFS(a_ftype)) {
         return apfs_open(a_img_info, a_offset, a_ftype, a_pass);
+    }
+    else if (TSK_FS_TYPE_ISXFS(a_ftype)) {
+        return xfs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);

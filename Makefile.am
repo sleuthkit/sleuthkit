@@ -70,6 +70,7 @@ nobase_include_HEADERS = \
 	tsk/fs/tsk_ext2fs.h \
 	tsk/fs/tsk_fatfs.h \
 	tsk/fs/tsk_fatxxfs.h \
+	tsk/fs/tsk_xfs.h \
 	tsk/fs/tsk_ffs.h \
 	tsk/fs/tsk_fs.h \
 	tsk/fs/tsk_hfs.h \
@@ -265,7 +266,9 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/usnjls_lib.cpp \
 	tsk/fs/usn_journal.cpp \
 	tsk/fs/walk_cpp.cpp \
-	tsk/fs/yaffs.cpp
+	tsk/fs/yaffs.cpp \
+	tsk/fs/xfs.cpp \
+	tsk/fs/xfs_dent.cpp
 
 tsk_hashdb_libtskhashdb_la_SOURCES = \
 	tsk/hashdb/binsrch_index.cpp \
