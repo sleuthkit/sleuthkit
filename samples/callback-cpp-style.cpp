@@ -1,4 +1,4 @@
-/* 
+/*
 *
 * This is a sample file that shows how to use some of the basic C++
 * POSIX-style library functions in The Sleuth Kit (www.sleuthkit.org).
@@ -7,11 +7,11 @@
 *
 * Copyright (c) 2008>, Brian Carrier <carrier <at> sleuthkit <dot> org>
 * All rights reserved.
-* 
+*
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions
 * are met:
-* 
+*
 * - Redistributions of source code must retain the above copyright notice,
 *   this list of conditions and the following disclaimer.
 * - Redistributions in binary form must reproduce the above copyright
@@ -46,8 +46,8 @@ static TskHdbInfo *hdb_info;
 #define DO_HASHLOOKUP 0
 
 
-/** 
- * dent_walk callback function 
+/**
+ * dent_walk callback function
  */
 static TSK_WALK_RET_ENUM
 fileAct(TskFsFile * /*fs_file*/, TSK_OFF_T /*a_off*/, TSK_DADDR_T /*addr*/,
@@ -66,7 +66,7 @@ fileAct(TskFsFile * /*fs_file*/, TSK_OFF_T /*a_off*/, TSK_DADDR_T /*addr*/,
 /**
  * Process the contents of a file.
  *
- * @return 1 on error and 0 on success 
+ * @return 1 on error and 0 on success
  */
 static uint8_t
 procFile(TskFsFile * fs_file, const char *path)
@@ -88,7 +88,7 @@ procFile(TskFsFile * fs_file, const char *path)
     /* Note that we could also cycle through all of the attributes in the
      * file by using one of the tsk_fs_attr_get() functions and walking it
      * with tsk_fs_attr_walk(). See the File Systems section of the Library
-     * User's Guide for more details: 
+     * User's Guide for more details:
      * http://www.sleuthkit.org/sleuthkit/docs/api-docs/ */
     if (fs_file->walk
         ((TSK_FS_FILE_WALK_FLAG_ENUM) myflags, fileAct,
@@ -105,7 +105,7 @@ procFile(TskFsFile * fs_file, const char *path)
     else {
         unsigned char hash[16];
 
-        TSK_MD5_Final(hash, &md);
+        TSK_MD5_Final(&md, hash);
 #if 0
         {
             int i;
@@ -137,7 +137,7 @@ procFile(TskFsFile * fs_file, const char *path)
 }
 
 /**
- * file name walk callback.  Walk the contents of each file 
+ * file name walk callback.  Walk the contents of each file
  * that is found.
  */
 static TSK_WALK_RET_ENUM
@@ -162,8 +162,8 @@ dirAct(TskFsFile * fs_file, const char *path, void * /*ptr*/)
 
 
 
-/** 
- * Analyze the volume starting at byte offset 'start' 
+/**
+ * Analyze the volume starting at byte offset 'start'
  * and walk each file that can be found.
  *
  * @param img Disk image to be analyzed.
@@ -206,14 +206,14 @@ procFs(TskImgInfo * img_info, TSK_OFF_T start)
 }
 
 /**
- * Volume system walk callback function that will analyze 
+ * Volume system walk callback function that will analyze
  * each volume to find a file system.
  */
 static TSK_WALK_RET_ENUM
 vsAct(TskVsInfo * vs_info, const TskVsPartInfo * vs_part, void * /*ptr*/)
 {
     if (procFs(const_cast<TskImgInfo *>(vs_info->getImgInfo()), const_cast<TskVsPartInfo *>(vs_part)->getStart() * vs_info->getBlockSize())) {
-        // if we return ERROR here, then the walk will stop.  But, the 
+        // if we return ERROR here, then the walk will stop.  But, the
         // error could just be because we looked into an unallocated volume.
         // do any special error handling / reporting here.
         tsk_error_reset();
@@ -226,11 +226,11 @@ vsAct(TskVsInfo * vs_info, const TskVsPartInfo * vs_part, void * /*ptr*/)
 
 /**
  * Process the data as a volume system to find the partitions
- * and volumes.  
+ * and volumes.
  * File system analysis will be performed on each partition.
  *
  * @param img Image file information structure for data to analyze
- * @param start Byte offset to start analyzing from. 
+ * @param start Byte offset to start analyzing from.
  *
  * @return 1 on error and 0 on success
  */
@@ -239,7 +239,7 @@ procVs(TskImgInfo * img_info, TSK_OFF_T start)
 {
     TskVsInfo *vs_info = new TskVsInfo();;
 
-    // USE mm_walk to get the volumes 
+    // USE mm_walk to get the volumes
     if (vs_info->open(img_info, start, TSK_VS_TYPE_DETECT)) {
         if (tsk_verbose)
             fprintf(stderr,

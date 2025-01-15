@@ -1,0 +1,46 @@
+# Specifies where the disk images go. Environment variable expansion is okay
+dest_dir: test/from_brian
+
+#
+# Each source needs either an `image` or both a `zipfile` and an `unzip`
+# An `xml` is the optional DFXML output
+sources:
+  - step1:
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/imageformat_mmls_1.E01
+      xml:   https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/imageformat_mmls_1.E01.xml
+  - step2:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/3-kwsrch-ntfs.zip
+      unzip_image: 3-kwsrch-ntfs/ntfs-img-kw-1.dd
+      xml: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/3-kwsrch-ntfs.xml
+  - step3:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/4-kwsrch-ext3.zip
+      unzip_image: 4-kwsrch-ext3/ext3-img-kw-1.dd
+  - step4:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/5-fat-daylight.zip
+      unzip_image: 5-fat-daylight/daylight.dd
+  - step5:
+      image: test/data/image.dd
+      xml: test/fiwalk/image_dd.xml
+  - step6:
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.dmg
+  - iso9660:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/14-iso9660-1.zip
+      unzip_image: 14-iso9660-1/iso-dirtree1.iso
+  - fat1:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/2-kwsrch-fat.zip
+      unzip_image: 2-kwsrch-fat/fat-img-kw.dd
+  - fat2:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/6-undel-fat.zip
+      unzip_image: 6-undel-fat/6-fat-undel.dd
+  - exfat1:
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/dftt-2004/exfat1.E01
+  - hfsjtest1:
+      zipfile: https://digitalcorpora.s3.amazonaws.com/corpora/drives/nps-2009-hfsjtest1/image.gen1.zip
+      unzip_image: image.gen1.dmg
+      unzip_xml: image.gen1.xml
+  - btrfs:
+      image: https://corp.digitalcorpora.org/corpora/drives/2015-basicmaster/btrfs_testimage_50MB.E01
+  - xfs:
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/2GB-xfs-raw.E01
+  - fat32_with_efs:
+      image: https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/fat32_with_efs_file.E01

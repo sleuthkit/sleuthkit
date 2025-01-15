@@ -1,8 +1,7 @@
 version: 4.6.0.{build}
 
-environment: 
+environment:
   matrix:
-
   - job_name: Windows Build
     appveyor_build_worker_image: Visual Studio 2019
   - job_name: Linux Build
@@ -11,13 +10,14 @@ environment:
     appveyor_build_worker_image: macos-catalina
 
 matrix:
+
   fast_finish: true
 
 
 # job-specific configurations
-for: 
+for:
 
-  - 
+  -
     matrix:
       only:
         - job_name: Windows Build
@@ -55,22 +55,32 @@ for:
     test_script:
       - cmd: ant -q -f bindings/java test
 
-  - 
+  -
     matrix:
       only:
         - job_name: Linux Build
 
-    build_script:
-      - ./bootstrap
-      - ./configure -q
-      - make -s
+    install:
+      - sudo apt install -y autoconf python3-venv
 
-  - 
+    build_script:
+      - cat /etc/os-release
+      - ./bootstrap
+      - ./configure
+      - make -j
+
+    test_script:
+      - make -j check VERBOSE=1
+
+  -
     matrix:
       only:
         - job_name: macOS Build
 
     build_script:
       - ./bootstrap
-      - ./configure -q
-      - make -s
+      - ./configure
+      - make -j
+
+    test_script:
+      - make -j check VERBOSE=1

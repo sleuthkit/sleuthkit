@@ -38,7 +38,7 @@ LogicalImagerConfiguration::~LogicalImagerConfiguration() {
 
 /*
 * Construct the LogicalImagerRuleSet based on a configuration filename
-* The configuration file is in JSON format. 
+* The configuration file is in JSON format.
 * It has the following key and values.
 
 * "finalize_image_writer" is optional. Default is false. If true, it will finalize the image writer by writing the
@@ -237,7 +237,7 @@ LogicalImagerConfiguration::LogicalImagerConfiguration(const std::string &config
     // check version
     Version currentVersion(m_currentVersion);
     Version version(m_version);
-    
+
     if (!(version == currentVersion || version < currentVersion)) {
         throw std::logic_error("ERROR: unsupported configuration version " + m_version
          + ". Supported version is "
