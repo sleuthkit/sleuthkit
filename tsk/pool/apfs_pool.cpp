@@ -13,7 +13,6 @@
 
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
-#include "../img/legacy_cache.h"
 
 #include <stdexcept>
 

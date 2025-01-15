@@ -305,7 +305,7 @@ TSK_IMG_INFO* img_open(
     iif->cache_clone = legacy_cache_clone;
     iif->cache_clear = legacy_cache_clear;
     iif->cache_free = legacy_cache_free;
-    iif->cache_holder = img_info->cache_create(img_info.get());
+    iif->cache_holder = iif->cache_create(img_info.get());
 
     return img_info.release();
 }
@@ -586,7 +586,7 @@ tsk_img_open_external(
     iif->cache_clone = legacy_cache_clone;
     iif->cache_clear = legacy_cache_clear;
     iif->cache_free = legacy_cache_free;
-    iif->cache_holder = img_info->cache_create(img_info);
+    iif->cache = iif->cache_create(img_info);
 
     return img_info;
 }
@@ -698,6 +698,17 @@ int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const imag
         TSTRNCPY(img_info->images[i], images[i], len + 1);
     }
     return 1;
+}
+
+void tsk_img_cache_setup(TSK_IMG_INFO* img_info) {
+    std::memset(&img_info->stats, 0, sizeof(Stats));
+
+    img_info->cache_read = tsk_img_read_legacy;
+    img_info->cache_create = legacy_cache_create;
+    img_info->cache_clone = legacy_cache_clone;
+    img_info->cache_clear = legacy_cache_clear;
+    img_info->cache_free = legacy_cache_free;
+    img_info->cache_holder = img_info->cache_create(img_info);
 }
 
 /**

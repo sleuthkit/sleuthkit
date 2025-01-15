@@ -1,6 +1,5 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/img/img_open.h"
-#include "tsk/img/legacy_cache.h"
 
 #include <limits>
 #include <memory>

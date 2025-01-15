@@ -14,7 +14,6 @@
 
 #include "tsk/img/pool.hpp"
 #include "tsk/img/tsk_img_i.h"
-#include "tsk/img/legacy_cache.h"
 
 #include <stdexcept>
 
