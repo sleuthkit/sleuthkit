@@ -442,9 +442,11 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 			size_t cache_path_len = TSTRLEN(logical_img_info->inum_cache[i].path);
 			if ((longest_match != target_len) && (cache_path_len > longest_match) && (cache_path_len <= target_len)) {
 				size_t matching_len = 0;
-				if (TSTRICMP(target_path, logical_img_info->inum_cache[i].path) == 0) {
+#ifdef TSK_WIN32
+				if (0 == _wcsnicmp(target_path, logical_img_info->inum_cache[i].path, cache_path_len)) {
 					matching_len = cache_path_len;
 				}
+#endif
 
 				// Save this path if:
 				// - It is longer than our previous best match
