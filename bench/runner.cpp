@@ -15,6 +15,8 @@
 
 #include "tsk/libtsk.h"
 
+//#include "tsk/img/img_cache.h"
+//#include "tsk/img/lru_cache.h"
 #include "tsk/img/tsk_img_i.h"
 
 #include <future>
