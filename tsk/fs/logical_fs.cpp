@@ -437,8 +437,8 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 				// - It is either the full length of the path we're searching for or is a valid
 				//      substring of our path
 				if ((matching_len > longest_match) &&
-					((matching_len == target_len) || (((matching_len < target_len) && 
-						(target_path[matching_len] == L'/') || (target_path[matching_len] == L'\\'))))) {
+					((matching_len == target_len) || ((matching_len < target_len) && 
+						((target_path[matching_len] == L'/') || (target_path[matching_len] == L'\\'))))) {
 
 					// We found the full path or a partial match
 					longest_match = matching_len;
