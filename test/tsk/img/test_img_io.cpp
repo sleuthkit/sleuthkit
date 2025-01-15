@@ -66,25 +66,22 @@ TEST_CASE("tsk_img_read length overflow") {
 }
 
 TEST_CASE("tsk_img_read inner function failed") {
-
-  const auto closer = [](TSK_IMG_INFO* img) {
-    auto cache = static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(img)->cache);
-    delete cache;
-    tsk_img_free(img);
-  };
-
-  std::unique_ptr<TSK_IMG_INFO, decltype(closer)> img{
-    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
-    closer
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    tsk_img_free
   };
 
   REQUIRE(img);
 
-  reinterpret_cast<IMG_INFO*>(img.get())->cache = new LegacyCache();
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
+  iif->cache_read = tsk_img_read_legacy;
+  iif->cache_create = legacy_cache_create;
+  iif->cache_clone = legacy_cache_clone;
+  iif->cache_clear = legacy_cache_clear;
+  iif->cache_free = legacy_cache_free;
+  iif->cache_holder = iif->cache_create(img.get());
 
-  reinterpret_cast<IMG_INFO*>(img.get())->cache_read = tsk_img_read_legacy;
-
-  reinterpret_cast<IMG_INFO*>(img.get())->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
+  iif->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
     return (ssize_t) -1;
   };
 

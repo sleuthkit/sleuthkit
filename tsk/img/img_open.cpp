@@ -298,9 +298,14 @@ TSK_IMG_INFO* img_open(
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
 
-    /* we have a good img_info, set up the cache lock */
-    iif->cache = new LegacyCache();
+    std::memset(&iif->stats, 0, sizeof(Stats));
+
     iif->cache_read = tsk_img_read_legacy;
+    iif->cache_create = legacy_cache_create;
+    iif->cache_clone = legacy_cache_clone;
+    iif->cache_clear = legacy_cache_clear;
+    iif->cache_free = legacy_cache_free;
+    iif->cache_holder = img_info->cache_create(img_info.get());
 
     return img_info.release();
 }
@@ -571,12 +576,17 @@ tsk_img_open_external(
     img_info->sector_size = sector_size ? sector_size : 512;
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
-    iif->cache_read = tsk_img_read_legacy;
+
     iif->read = read;
     iif->close = close;
     iif->imgstat = imgstat;
 
-    iif->cache = new LegacyCache();
+    iif->cache_read = tsk_img_read_legacy;
+    iif->cache_create = legacy_cache_create;
+    iif->cache_clone = legacy_cache_clone;
+    iif->cache_clear = legacy_cache_clear;
+    iif->cache_free = legacy_cache_free;
+    iif->cache_holder = img_info->cache_create(img_info);
 
     return img_info;
 }
@@ -703,10 +713,6 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     }
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
-
-    auto cache = static_cast<LegacyCache*>(iif->cache);
-    delete cache;
-
     iif->close(a_img_info);
 }
 
@@ -721,7 +727,11 @@ tsk_img_malloc(size_t a_len)
         return nullptr;
     }
     imgInfo->tag = TSK_IMG_INFO_TAG;
-    reinterpret_cast<IMG_INFO*>(imgInfo)->cache = nullptr;
+
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
+    iif->cache = nullptr;
+    iif->cache_free = [](TSK_IMG_INFO*){ };
+
     return imgInfo;
 }
 
@@ -734,5 +744,6 @@ tsk_img_free(void *a_ptr)
     TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
     imgInfo->tag = 0;
     tsk_img_free_image_names(imgInfo);
+    imgInfo->cache_free(imgInfo);
     free(imgInfo);
 }

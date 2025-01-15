@@ -24,4 +24,14 @@ struct LegacyCache {
   void clear();
 };
 
+struct TSK_IMG_INFO;
+
+void* legacy_cache_create(TSK_IMG_INFO* img_info);
+
+void* legacy_cache_clone(const TSK_IMG_INFO* img_info);
+
+void legacy_cache_clear(TSK_IMG_INFO* img_info);
+
+void legacy_cache_free(TSK_IMG_INFO* img_info);
+
 #endif

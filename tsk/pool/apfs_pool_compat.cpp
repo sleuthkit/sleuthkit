@@ -321,7 +321,6 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_pool_info->img_info.read = apfs_img_read;
     img_pool_info->img_info.close = apfs_img_close;
     img_pool_info->img_info.imgstat = apfs_img_imgstat;
-    img_pool_info->img_info.cache = new LegacyCache();
 
     // Copy original info from the first TSK_IMG_INFO. There was a check in the
     // APFSPool that _members has only one entry.
@@ -335,6 +334,14 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_info->page_size = origInfo->page_size;
     img_info->spare_size = origInfo->spare_size;
     img_info->images = origInfo->images;
+
+    IMG_INFO* oiif = reinterpret_cast<IMG_INFO*>(origInfo);
+    img_pool_info->img_info->cache_read = oiif->cache_read;
+    img_pool_info->img_info->cache_create = oiif->cache_create;
+    img_pool_info->img_info->cache_clone = oiif->cache_clone;
+    img_pool_info->img_info->cache_clear = oiif->cache_clear;
+    img_pool_info->img_info->cache_free = oiif->cache_free;
+    img_pool_info->img_info->cache = oiif->cache_clone(origInfo);
 
     return img_info;
 

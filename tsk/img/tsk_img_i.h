@@ -43,10 +43,14 @@ struct IMG_INFO {
   Stats stats;
 
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  void* (*cache_create)(TSK_IMG_INFO* img);
+  void* (*cache_clone)(const TSK_IMG_INFO* img);
+  void (*cache_free)(TSK_IMG_INFO* img);
+  void (*cache_clear)(TSK_IMG_INFO* img);
 
-  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
-  void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
-  void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function
+  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);
+  void (*close) (TSK_IMG_INFO *);
+  void (*imgstat) (TSK_IMG_INFO *, FILE *);
 };
 
 extern void *tsk_img_malloc(size_t);

@@ -146,9 +146,5 @@ const std::vector<APFSPool::range> APFSPool::unallocated_ranges() const {
 
 void APFSPool::clear_cache() noexcept {
   _block_cache.clear();
-
-  auto cache = static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(_img)->cache);
-  cache->lock();
-  cache->clear();
-  cache->unlock();
+  reinterpret_cast<IMG_INFO*>(_img)->cache_clear(_img);
 }

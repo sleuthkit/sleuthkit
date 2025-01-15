@@ -1,4 +1,5 @@
 #include "legacy_cache.h"
+#include "tsk_img.h"
 
 #include <cstring>
 
@@ -26,4 +27,23 @@ void LegacyCache::unlock() {
 void LegacyCache::clear() {
   // Setting the lengths to zero should invalidate the cache.
   std::memset(cache_len, 0, sizeof(cache_len));
+}
+
+void* legacy_cache_create(TSK_IMG_INFO*) {
+    return new LegacyCache();
+}
+
+void* legacy_cache_clone(const TSK_IMG_INFO*) {
+    return new LegacyCache();
+}
+
+void legacy_cache_clear(TSK_IMG_INFO* img_info) {
+    auto cache = static_cast<LegacyCache*>(img_info->cache_holder);
+    cache->lock();
+    cache->clear();
+    cache->unlock();
+}
+
+void legacy_cache_free(TSK_IMG_INFO* img_info) {
+    delete static_cast<LegacyCache*>(img_info->cache_holder);
 }
