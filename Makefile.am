@@ -305,6 +305,8 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/legacy_cache.h \
 	tsk/img/logical_img.cpp \
 	tsk/img/logical_img.h \
+	tsk/img/lru_cache.cpp \
+	tsk/img/lru_cache.h \
 	tsk/img/mult_files.cpp \
 	tsk/img/mult_files.h \
 	tsk/img/qcow.cpp \
