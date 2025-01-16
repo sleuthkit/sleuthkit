@@ -236,7 +236,7 @@ jobs:
         if: ${{ matrix.codecov == 'yes' }}
         uses: codecov/codecov-action@v5
         with:
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Create any artifacts that we need to keep
