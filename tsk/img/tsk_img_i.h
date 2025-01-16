@@ -56,7 +56,11 @@ struct IMG_INFO {
 extern void *tsk_img_malloc(size_t);
 extern void tsk_img_free(void *);
 
-extern void tsk_img_cache_setup(TSK_IMG_INFO* img_info);
+extern void tsk_img_cache_setup(
+  TSK_IMG_INFO* img_info,
+  size_t cache_size,
+  size_t cache_chunk_size
+);
 
 extern int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const images[], int num);
 extern void tsk_img_free_image_names(TSK_IMG_INFO* img_info);

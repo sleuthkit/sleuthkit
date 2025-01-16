@@ -700,7 +700,12 @@ int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const imag
     return 1;
 }
 
-void tsk_img_cache_setup(TSK_IMG_INFO* img_info) {
+void tsk_img_cache_setup(
+  TSK_IMG_INFO* img_info,
+  size_t cache_size,
+  size_t cache_chunk_size
+)
+{
     std::memset(&img_info->stats, 0, sizeof(Stats));
 
     img_info->cache_read = tsk_img_read_legacy;
