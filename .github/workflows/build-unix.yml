@@ -232,12 +232,17 @@ jobs:
           test/fiwalk/fiwalk_test -s
           test/runner -s
 
+
+      - name: run gcov
+        if: ${{ matrix.codecov == 'yes' }}
+        run: |
+          gcov $(find . -name '*.gcda')
+
       - name: Upload codecov report
         if: ${{ matrix.codecov == 'yes' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          gcov $(find . -name '*.gcda')
           bash <(curl -s https://codecov.io/bash) -B develop
 
 
