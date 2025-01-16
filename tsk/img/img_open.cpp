@@ -53,6 +53,8 @@
 #include <utility>
 
 const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
+  -1,
+  -1
 };
 
 bool sector_size_ok(unsigned int sector_size) {
@@ -280,7 +282,7 @@ TSK_IMG_INFO* img_open(
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  [[maybe_unused]] const TSK_IMG_OPTIONS* opts
+  const TSK_IMG_OPTIONS* opts
 )
 {
     if (tsk_verbose)
@@ -702,17 +704,27 @@ int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const imag
 
 void tsk_img_cache_setup(
   TSK_IMG_INFO* img_info,
-  size_t cache_size,
-  size_t cache_chunk_size
+  int cache_size,
+  int cache_chunk_size
 )
 {
     std::memset(&img_info->stats, 0, sizeof(Stats));
 
-    img_info->cache_read = tsk_img_read_legacy;
-    img_info->cache_create = legacy_cache_create;
-    img_info->cache_clone = legacy_cache_clone;
-    img_info->cache_clear = legacy_cache_clear;
-    img_info->cache_free = legacy_cache_free;
+    if (cache_size == 0 || cache_chunk_size == 0) {
+        img_info->cache_read = tsk_img_read_no_cache;
+        img_info->cache_create = [](TSK_IMG_INFO*){ return static_cast<void*>(nullptr); };
+        img_info->cache_clone = [](const TSK_IMG_INFO*){ return static_cast<void*>(nullptr); };
+        img_info->cache_clear = [](TSK_IMG_INFO*){};
+        img_info->cache_free = [](TSK_IMG_INFO*){};
+    }
+    else {
+        img_info->cache_read = tsk_img_read_legacy;
+        img_info->cache_create = legacy_cache_create;
+        img_info->cache_clone = legacy_cache_clone;
+        img_info->cache_clear = legacy_cache_clear;
+        img_info->cache_free = legacy_cache_free;
+    }
+
     img_info->cache_holder = img_info->cache_create(img_info);
 }
 

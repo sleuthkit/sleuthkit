@@ -58,8 +58,8 @@ extern void tsk_img_free(void *);
 
 extern void tsk_img_cache_setup(
   TSK_IMG_INFO* img_info,
-  size_t cache_size,
-  size_t cache_chunk_size
+  int cache_size,
+  int cache_chunk_size
 );
 
 extern int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const images[], int num);
