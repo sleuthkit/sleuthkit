@@ -234,12 +234,10 @@ jobs:
 
       - name: Upload codecov report
         if: ${{ matrix.codecov == 'yes' }}
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        run: |
-          gcov $(find . -name '*.gcda')
-          bash <(curl -s https://codecov.io/bash) -B develop
-
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Create any artifacts that we need to keep
         if: ${{ matrix.keep_artifacts == 'yes' }}
