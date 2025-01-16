@@ -1,6 +1,7 @@
 #ifndef _TSK_IMG_IMG_CACHE_H
 #define _TSK_IMG_IMG_CACHE_H
 
+#include <cstddef>
 #include <cstdint>
 
 class Cache {
