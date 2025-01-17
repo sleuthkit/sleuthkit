@@ -23,27 +23,27 @@ class Walker: public TskAuto {
 public:
   virtual ~Walker() {}
 
-  virtual TSK_FILTER_ENUM filterPool([[maybe_unused]] const TSK_POOL_INFO* p) override {
+  virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO*) override {
     return TSK_FILTER_CONT;
   }
 
-  virtual TSK_FILTER_ENUM filterPoolVol([[maybe_unused]] const TSK_POOL_VOLUME_INFO* pv) override {
+  virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO*) override {
     return TSK_FILTER_CONT;
   }
 
-  virtual TSK_FILTER_ENUM filterVs([[maybe_unused]] const TSK_VS_INFO* vs) override {
+  virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO*) override {
     return TSK_FILTER_CONT;
   }
 
-  virtual TSK_FILTER_ENUM filterVol([[maybe_unused]] const TSK_VS_PART_INFO* vs_part) override {
+  virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO*) override {
     return TSK_FILTER_CONT;
   }
 
-  virtual TSK_FILTER_ENUM filterFs([[maybe_unused]] TSK_FS_INFO* fs) override {
+  virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO*) override {
     return TSK_FILTER_CONT;
   }
 
-  virtual TSK_RETVAL_ENUM processFile([[maybe_unused]] TSK_FS_FILE* file, [[maybe_unused]] const char*) override {
+  virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE*, const char*) override {
     return TSK_OK;
   }
 };
