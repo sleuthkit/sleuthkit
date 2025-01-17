@@ -84,7 +84,7 @@ extern "C" {
     } TSK_IMG_TYPE_ENUM;
 
     typedef struct TSK_IMG_OPTIONS {
-
+        int dummy;
     } TSK_IMG_OPTIONS;
 
 #define TSK_IMG_INFO_CACHE_NUM  32
