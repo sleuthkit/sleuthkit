@@ -541,6 +541,18 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 	tsk_take_lock(&(img_info->cache_lock));
 
+	// Check if this entry is already in the cache. 
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		if (logical_img_info->inum_cache[i].inum == inum) {
+			// If we found it and we're always caching then reset the age
+			if (always_cache && logical_img_info->inum_cache[i].cache_age < LOGICAL_INUM_CACHE_MAX_AGE) {
+				logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+			}
+			tsk_release_lock(&(img_info->cache_lock));
+			return TSK_OK;
+		}
+	}
+
 	// Find the next cache slot. If we find an unused slot, use that. Otherwise find the entry
 	// with the lowest age.
 	int next_slot = 0;
@@ -559,6 +571,7 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 
 	// If the always_cache flag is not set, only continue if we've found an empty space
 	if (!always_cache && logical_img_info->inum_cache[next_slot].inum != LOGICAL_INVALID_INUM) {
+		tsk_release_lock(&(img_info->cache_lock));
 		return TSK_OK;
 	}
 
@@ -703,7 +716,8 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		size_t current_path_len = TSTRLEN(current_path);
 		size_t path_offset = TSTRLEN(logical_fs_info->base_path) + 1; // The +1 advances past the slash after the root dir
 		bool is_near_root_folder = false;
-		if (search_helper->search_type == LOGICALFS_SEARCH_BY_PATH && path_offset < current_path_len) {
+		if (((search_helper->search_type == LOGICALFS_SEARCH_BY_PATH) || (search_helper->search_type == LOGICALFS_NO_SEARCH))
+			&& path_offset < current_path_len) {
 			int slash_count = 0;
 			for (size_t i = path_offset; i < current_path_len; i++) {
 				if (current_path[i] == '/' || current_path[i] == '\\') {
@@ -720,6 +734,10 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 				// This will only add to the cache if we have empty space
 				add_directory_to_cache(logical_fs_info, current_path, current_inum, false);
 			}
+		}
+		else if (search_helper->search_type == LOGICALFS_NO_SEARCH && is_near_root_folder) {
+			// Cache the base directories when opening the file system
+			add_directory_to_cache(logical_fs_info, current_path, current_inum, true);
 		}
 
 		// Check if we've found it
