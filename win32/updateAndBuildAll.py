@@ -38,9 +38,11 @@ def find_msbuild():
 
     # Use our hard-coded locations
     for loc in MSBUILD_LOCATIONS:
+        print("Checking",loc,"for",MSBUILD)
         if os.path.exists(loc):
-            msbuild_exe = os.path.join(loc,MSBUILD)
+            msbuild_exe = os.path.join(loc, MSBUILD)
             assert os.path.exists(msbuild_exe)
+            print("found",msbuild_exe)
             return msbuild_exe
     raise FileNotFoundError(f"Could not find {MSBUILD}")
 
