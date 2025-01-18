@@ -82,6 +82,7 @@ extern "C" {
     extern const TSK_TCHAR *hdb_binsrch_get_index_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern uint8_t hdb_binsrch_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
     extern uint8_t hdb_binsrch_open_idx(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
+    extern uint8_t hdb_binsrch_idx_init_hash_type_info(TSK_HDB_BINSRCH_INFO *, TSK_HDB_HTYPE_ENUM);
     extern uint8_t hdb_binsrch_idx_initialize(TSK_HDB_BINSRCH_INFO *, TSK_TCHAR *);
     extern uint8_t hdb_binsrch_idx_add_entry_str(TSK_HDB_BINSRCH_INFO *, char *, TSK_OFF_T);
     extern uint8_t hdb_binsrch_idx_add_entry_bin(TSK_HDB_BINSRCH_INFO *,

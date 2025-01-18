@@ -257,7 +257,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 			if (a_fs_dir->names_used >= MAX_DIR_SIZE_TO_PROCESS) {
 				tsk_error_reset();
 				tsk_error_set_errno(TSK_ERR_FS_GENFS);
-				tsk_error_set_errstr("tsk_fs_dir_add: Directory too large to process (addr: %" PRIuSIZE")", a_fs_dir->addr);
+				tsk_error_set_errstr("tsk_fs_dir_add: Directory too large to process (addr: %" PRIuINUM ")", a_fs_dir->addr);
 				return 1;
 			}
 
@@ -685,7 +685,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         }
         return TSK_WALK_ERROR;
     }
-
     for (i = 0; i < fs_dir->names_used; i++) {
         TSK_WALK_RET_ENUM retval;
 
@@ -703,7 +702,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
         if (((fs_file->name->meta_addr)
                 || (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC))) {
-
             /* Note that the NTFS code behind here has a slight hack to use the
              * correct sequence number based on the data in fs_file->name */
             if (a_fs->file_add_meta(a_fs, fs_file,
@@ -713,10 +711,11 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 tsk_error_reset();
             }
         }
-
         // call the action if we have the right flags.
-        if ((fs_file->name->flags & a_flags) == fs_file->name->flags) {
-
+        const TSK_FS_NAME_FLAG_ENUM n_flags =
+            (TSK_FS_NAME_FLAG_ENUM) (((a_flags & TSK_FS_DIR_WALK_FLAG_ALLOC) ? TSK_FS_NAME_FLAG_ALLOC : 0) |
+            ((a_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC) ? TSK_FS_NAME_FLAG_UNALLOC : 0));
+        if ((fs_file->name->flags & n_flags) == fs_file->name->flags) {
             retval = a_action(fs_file, a_dinfo->dirs, a_ptr);
             if (retval == TSK_WALK_STOP) {
                 tsk_fs_dir_close(fs_dir);
@@ -761,7 +760,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 a_dinfo->save_inum_named = 0;
             }
         }
-
 
         /* Optimization. If we are about to recurse into the
          * orphan directory and we are the last item in the
@@ -898,9 +896,11 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     return TSK_WALK_STOP;
                 }
 
+
                 // reset the save status
                 if (fs_file->name->meta_addr ==
                     TSK_FS_ORPHANDIR_INUM(a_fs)) {
+
                     a_dinfo->save_inum_named = save_bak;
                 }
 
@@ -910,6 +910,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     *a_dinfo->didx[a_dinfo->depth] = '\0';
             }
             else {
+
                 if (tsk_verbose)
                     fprintf(stderr,
                         "tsk_fs_dir_walk_recursive: Loop detected with address %"
@@ -1003,10 +1004,12 @@ tsk_fs_dir_walk_internal(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     // if we were saving the list of named files in the temp list,
     // then now save them to FS_INFO
     if (dinfo.save_inum_named == 1) {
+
         if (retval != TSK_WALK_CONT) {
             /* There was an error and we stopped early, so we should get
              * rid of the partial list we were making.
              */
+
             tsk_list_free(dinfo.list_inum_named);
             dinfo.list_inum_named = NULL;
         }
@@ -1167,7 +1170,7 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
      * be fewer callbacks for UNALLOC than ALLOC.
      */
     if (tsk_fs_dir_walk_internal(a_fs, a_fs->root_inum,
-            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_named_dir_walk_cb, NULL, 0)) {
+            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE | TSK_FS_DIR_WALK_FLAG_NOORPHAN), load_named_dir_walk_cb, NULL, 0)) {
         tsk_error_errstr2_concat
             ("- tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
         return TSK_ERR;

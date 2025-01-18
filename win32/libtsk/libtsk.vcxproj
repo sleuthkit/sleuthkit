@@ -301,7 +301,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBOPENSSL;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;HAVE_LIBMBEDTLS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_DEPRECATE;GUID_WINDOWS;_CRT_SECURE_NO_WARNINGS;HAVE_LIBEWF;HAVE_LIBCRYPTO;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;HAVE_LIBMBEDTLS;WIN32;NDEBUG;_LIB;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -454,7 +454,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\ffind_lib.c" />
     <ClCompile Include="..\..\tsk\fs\ffs.cpp" />
     <ClCompile Include="..\..\tsk\fs\ffs_dent.cpp" />
-    <ClCompile Include="..\..\tsk\fs\fls_lib.c" />
+    <ClCompile Include="..\..\tsk\fs\fls_lib.cpp" />
     <ClCompile Include="..\..\tsk\fs\fs_attr.cpp" />
     <ClCompile Include="..\..\tsk\fs\fs_attrlist.c" />
     <ClCompile Include="..\..\tsk\fs\fs_block.c" />
@@ -485,6 +485,8 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\unix_misc.cpp" />
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp" />
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\xfs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\xfs_dent.cpp" />
     <ClCompile Include="..\..\tsk\fs\btrfs.cpp" />
     <ClCompile Include="..\..\tsk\fs\btrfs_csum.cpp" />
     <ClCompile Include="..\..\tsk\fs\logical_fs.cpp" />

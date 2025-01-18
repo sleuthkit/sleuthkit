@@ -51,6 +51,9 @@
 #include <vector>
 #include <utility>
 
+const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
+};
+
 bool sector_size_ok(unsigned int sector_size) {
     if (sector_size > 0 && sector_size < 512) {
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
@@ -270,10 +273,11 @@ img_open_detect_type(
 }
 
 TSK_IMG_INFO* img_open(
-    int num_img,
-    const TSK_TCHAR* const images[],
-    TSK_IMG_TYPE_ENUM type,
-    unsigned int a_ssize
+  int num_img,
+  const TSK_TCHAR* const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  [[maybe_unused]] const TSK_IMG_OPTIONS* opts
 )
 {
     if (tsk_verbose)
@@ -308,12 +312,24 @@ TSK_IMG_INFO* img_open(
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
-TSK_IMG_INFO *
-tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type,
-    unsigned int a_ssize)
+TSK_IMG_INFO*
+tsk_img_open_sing(
+  const TSK_TCHAR* a_image,
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize)
+{
+    return tsk_img_open_sing_opt(a_image, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+}
+
+TSK_IMG_INFO*
+tsk_img_open_sing_opt(
+  const TSK_TCHAR* a_image,
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  const TSK_IMG_OPTIONS* opts)
 {
     const TSK_TCHAR *const a = a_image;
-    return tsk_img_open(1, &a, type, a_ssize);
+    return tsk_img_open_opt(1, &a, type, a_ssize, opts);
 }
 
 /**
@@ -335,9 +351,22 @@ tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type,
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
-tsk_img_open(int num_img,
-    const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM type,
-    unsigned int a_ssize)
+tsk_img_open(
+  int num_img,
+  const TSK_TCHAR* const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize)
+{
+    return tsk_img_open_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+}
+
+TSK_IMG_INFO*
+tsk_img_open_opt(
+  int num_img,
+  const TSK_TCHAR* const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  const TSK_IMG_OPTIONS* opt)
 {
     // Get rid of any old error messages laying around
     tsk_error_reset();
@@ -346,7 +375,7 @@ tsk_img_open(int num_img,
         return nullptr;
     }
 
-    return img_open(num_img, images, type, a_ssize);
+    return img_open(num_img, images, type, a_ssize, opt);
 }
 
 /**
@@ -362,12 +391,24 @@ tsk_img_open(int num_img,
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
-TSK_IMG_INFO *
-tsk_img_open_utf8_sing(const char *a_image,
-    TSK_IMG_TYPE_ENUM type, unsigned int a_ssize)
+TSK_IMG_INFO*
+tsk_img_open_utf8_sing(
+  const char* a_image,
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize)
+{
+    return tsk_img_open_utf8_sing_opt(a_image, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+}
+
+TSK_IMG_INFO*
+tsk_img_open_utf8_sing_opt(
+  const char* a_image,
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  const TSK_IMG_OPTIONS* opts)
 {
     const char *const a = a_image;
-    return tsk_img_open_utf8(1, &a, type, a_ssize);
+    return tsk_img_open_utf8_opt(1, &a, type, a_ssize, opts);
 }
 
 /**
@@ -390,6 +431,17 @@ tsk_img_open_utf8(
     const char *const images[],
     TSK_IMG_TYPE_ENUM type,
     unsigned int a_ssize)
+{
+    return tsk_img_open_utf8_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+}
+
+TSK_IMG_INFO*
+tsk_img_open_utf8_opt(
+  int num_img,
+  const char *const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  const TSK_IMG_OPTIONS* opts)
 {
     // Get rid of any old error messages laying around
     tsk_error_reset();
@@ -443,7 +495,7 @@ tsk_img_open_utf8(
 #else
     const TSK_TCHAR* const* imgs = images;
 #endif
-    return img_open(num_img, imgs, type, a_ssize);
+    return img_open(num_img, imgs, type, a_ssize, opts);
 }
 
 /**

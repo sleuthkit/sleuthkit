@@ -25,9 +25,6 @@ AC_PATH_PROG(PERL, perl)
 
 TSK_CHECK_PROG_PKGCONFIG
 
-
-
-
 dnl Checks for header files.
 dnl AC_HEADER_MAJOR
 dnl AC_HEADER_SYS_WAIT
@@ -69,11 +66,9 @@ AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
 AC_CHECK_FUNCS([strlcpy strlcat strnlen])
 
 AX_PTHREAD([
-    AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
-    LIBS="$PTHREAD_LIBS $LIBS"
-    CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
-    LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
-    CC="$PTHREAD_CC"],[])
+    AC_DEFINE(HAVE_PTHREAD, 1, [Define if you have POSIX threads libraries and header files.])
+    CC="$PTHREAD_CC"
+    CXX="$PTHREAD_CXX"], [])
 
 dnl Permit single-threaded builds
 AC_ARG_ENABLE([multithreading],
@@ -90,15 +85,8 @@ AC_ARG_ENABLE([java],
 dnl Checks for libraries.
 
 dnl Some platforms will complain about missing included functions if libstdc++ is not included.
-AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++]))
-AC_CHECK_HEADERS(list, , , AC_MSG_ERROR([missing STL list class header]))
-AC_CHECK_HEADERS(map, , , AC_MSG_ERROR([missing STL map class header]))
-AC_CHECK_HEADERS(queue, , , AC_MSG_ERROR([missing STL queue class header]))
-AC_CHECK_HEADERS(set, , , AC_MSG_ERROR([missing STL set class header]))
-AC_CHECK_HEADERS(stack, , , AC_MSG_ERROR([missing STL stack class header]))
-AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header]))
-AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header]))
-AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header]))
+AC_CHECK_LIB(stdc++, main, [], AC_MSG_ERROR([missing libstdc++]))
+AC_SUBST([STDCPP_LIBS], ['-lstdc++'])
 
 dnl Check for sqlite and its dependencies
 AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
@@ -106,9 +94,7 @@ AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
     SAVED_AX_PACKAGE_REQUIRES_PRIVATE="$AX_PACKAGE_REQUIRES_PRIVATE"
     TSK_PKG_CHECK_MODULES([SQLITE3], [], [sqlite3],
     [
-      CFLAGS="$CFLAGS $SQLITE3_CFLAGS"
-      CXXFLAGS="$CXXFLAGS $SQLITE3_CFLAGS"
-      LIBS="$LIBS $SQLITE3_LIBS"
+      SQLITE3_CXXFLAGS="$SQLITE3_CFLAGS"
     ],
     [
       AX_PACKAGE_REQUIRES_PRIVATE="$SAVED_AX_PACKAGE_REQUIRES_PRIVATE"
@@ -122,8 +108,10 @@ AS_IF([test "x$ax_sqlite3" != "xyes"],
   [
     AC_CHECK_HEADERS(
       [sqlite3.h],
-      [AC_CHECK_LIB([dl], [dlopen])
-       AC_CHECK_LIB([sqlite3], [sqlite3_open], [ax_sqlite3=yes], [])]
+      [
+        AC_CHECK_LIB([dl], [dlopen], [ax_dl=yes], [])
+        AC_CHECK_LIB([sqlite3], [sqlite3_open], [ax_sqlite3=yes], [])
+      ]
     )
   ]
 )
@@ -131,21 +119,29 @@ AS_IF([test "x$ax_sqlite3" != "xyes"],
 dnl Compile the bundled sqlite if there is no system one installed
 AC_MSG_CHECKING(which sqlite3 to use)
 AS_IF([test "x$ax_sqlite3" = "xyes"],
-      [AC_MSG_RESULT([system])
-       PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"],
+      [
+        AC_MSG_RESULT([system])
+        PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"
+        SQLITE3_LIBS='-lsqlite3'
+        AS_IF([test "x$ax_dl" = "xyes"], [SQLITE3_LIBS="$SQLITE3_LIBS -ldl"])
+      ],
       [AC_MSG_RESULT([bundled])
-       CPPFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION"]
+       SQLITE3_CPPFLAGS="-DSQLITE_OMIT_LOAD_EXTENSION"]
 )
 AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
 
+AC_SUBST([SQLITE3_CPPFLAGS])
+AC_SUBST([SQLITE3_CXXFLAGS])
+AC_SUBST([SQLITE3_LIBS])
+
 dnl Check if we should link with OpenSSL
-TSK_OPT_DEP_CHECK([libcrypto], [LIBOPENSSL], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
+TSK_OPT_DEP_CHECK([libcrypto], [CRYPTO], [libcrypto], [openssl/sha.h], [crypto], [SHA1])
 dnl Check if we should link with afflib
 dnl note that afflib/utils.h explicitly checks for openssl/pem.h, so we need to test for it also
-TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
+TSK_OPT_DEP_CHECK([afflib], [AFFLIB], [], [afflib/afflib.h], [afflib], [af_open])
 AC_CHECK_HEADERS([openssl/pem.h])
 dnl Check if we should link with libaff4
-TSK_OPT_DEP_CHECK([libaff4], [], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
+TSK_OPT_DEP_CHECK([libaff4], [AFF4], [], [aff4/libaff4-c.h], [aff4], [AFF4_version])
 dnl Check if we should link with zlib
 TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
 dnl Check if we should link with libbfio
@@ -177,7 +173,7 @@ AS_IF(
 )
 
 dnl Check if we should link with libvslvm
-TSK_OPT_DEP_CHECK([libvslvm], [LVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])
+TSK_OPT_DEP_CHECK([libvslvm], [VSLVM], [libvslvm], [libvslvm.h], [vslvm], [libvslvm_get_version])
 
 dnl check for user online input
 AC_ARG_ENABLE([offline],
