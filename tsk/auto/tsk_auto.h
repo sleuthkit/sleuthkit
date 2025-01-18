@@ -108,7 +108,12 @@ class TskAuto {
     void setFileSystemPassword(std::string fileSystemPassword) { m_fileSystemPassword = fileSystemPassword; }
 
     /**
-     * TskAuto calls this method before it processes the volume system that is found in an
+     * @returns A password that will be used when trying to open each file system or empty.
+     */
+    std::string getFileSystemPassword() const { return m_fileSystemPassword; }
+
+    /**
+     * TskAuto calls this method before it processes the volume system that is found in an 
      * image. You can use this to learn about the volume system before it is processed
      * and you can force TskAuto to skip this volume system.
      * @param vs_info volume system details

@@ -88,15 +88,6 @@ dnl Some platforms will complain about missing included functions if libstdc++ i
 AC_CHECK_LIB(stdc++, main, [], AC_MSG_ERROR([missing libstdc++]))
 AC_SUBST([STDCPP_LIBS], ['-lstdc++'])
 
-AC_CHECK_HEADERS(list, , , AC_MSG_ERROR([missing STL list class header]))
-AC_CHECK_HEADERS(map, , , AC_MSG_ERROR([missing STL map class header]))
-AC_CHECK_HEADERS(queue, , , AC_MSG_ERROR([missing STL queue class header]))
-AC_CHECK_HEADERS(set, , , AC_MSG_ERROR([missing STL set class header]))
-AC_CHECK_HEADERS(stack, , , AC_MSG_ERROR([missing STL stack class header]))
-AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header]))
-AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header]))
-AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header]))
-
 dnl Check for sqlite and its dependencies
 AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
   [
