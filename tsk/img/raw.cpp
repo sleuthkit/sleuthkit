@@ -42,8 +42,6 @@
 #define S_IFDIR __S_IFDIR
 #endif
 
-
-
 /**
  * \internal
  * Read from one of the multiple files in a split set of disk images.
@@ -300,6 +298,11 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
         return -1;
     }
 
+    tsk_take_lock(&raw_info->read_lock);
+    std::unique_ptr<tsk_lock_t, void(*)(tsk_lock_t*)> lock_guard(
+      &raw_info->read_lock, tsk_release_lock
+    );
+
     // Find the location of the offset
     for (i = 0; i < raw_info->img_info.num_img; i++) {
 
@@ -457,11 +460,9 @@ raw_close(TSK_IMG_INFO * img_info)
     free(raw_info->max_off);
     free(raw_info->cptr);
 
+    tsk_deinit_lock(&(raw_info->read_lock));
     tsk_img_free(raw_info);
 }
-
-
-
 
 #ifdef TSK_WIN32
 /**
@@ -734,6 +735,9 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
                 raw_info->max_off[i], raw_info->img_info.images[i]);
         }
     }
+
+    // initialize the read lock
+    tsk_init_lock(&raw_info->read_lock);
 
     return (TSK_IMG_INFO*) raw_info.release();
 }

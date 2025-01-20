@@ -40,7 +40,8 @@ extern "C" {
         uint8_t is_winobj;
         TSK_IMG_WRITER *img_writer;
 
-        // the following are protected by cache_lock in IMG_INFO
+        tsk_lock_t read_lock;
+        // the following are protected by read_lock
         TSK_OFF_T *max_off;
         int *cptr;              /* exists for each image - points to entry in cache */
         IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */

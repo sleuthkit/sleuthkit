@@ -38,7 +38,10 @@ extern "C" {
 typedef struct {
     TSK_IMG_INFO img_info;
     AFFILE *af_file;
-    TSK_OFF_T seek_pos;         // shared and protected by cache_lock in IMG_INFO
+
+    tsk_lock_t read_lock;
+    TSK_OFF_T seek_pos;         // shared and protected by read_lock
+
     uint16_t type;              /* TYPE - uses AF_IDENTIFY_x values */
 } IMG_AFF_INFO;
 

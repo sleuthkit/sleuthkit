@@ -232,6 +232,12 @@ jobs:
           test/fiwalk/fiwalk_test -s
           test/runner -s
 
+
+      - name: run gcov
+        if: ${{ matrix.codecov == 'yes' }}
+        run: |
+          gcov $(find . -name '*.gcda')
+
       - name: Upload codecov report
         if: ${{ matrix.codecov == 'yes' }}
         uses: codecov/codecov-action@v5

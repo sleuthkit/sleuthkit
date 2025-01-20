@@ -1,7 +1,15 @@
 SleuthKit 4.13 Release Process
 ------------------------------
 
-`git log --pretty="%h - %s (%an)" sleuthkit-4.13.0..HEAD`
+Write release notes
+-------------------
+Write release notes that do more than summarize the git log (which will be long this time.)
+
+
+Document updates
+----------------
+
+`git log --pretty="%h - %s (%an)" sleuthkit-4.12.0..HEAD`
 
 Testing Code
 ------------

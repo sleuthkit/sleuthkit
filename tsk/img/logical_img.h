@@ -43,12 +43,16 @@ extern "C" {
 		int cache_age;
 	} LOGICAL_INUM_CACHE;
 
+  struct LegacyCache;
+
     typedef struct {
 		TSK_IMG_INFO img_info;
 		TSK_TCHAR * base_path;
 		uint8_t is_winobj;
 
-		// Goes with the cache handling in tsk_img.h.
+		// Does not use the cache handling in tsk_img.h.
+    LegacyCache* cache;
+
 		// To cache blocks, we need to keep track of both the file inum and the offset,
 		// so we need one additional array to track logical file data.
 		TSK_INUM_T cache_inum[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock)
