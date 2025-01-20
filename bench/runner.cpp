@@ -15,8 +15,10 @@
 
 #include "tsk/libtsk.h"
 
-//#include "tsk/img/img_cache.h"
+#include "tsk/img/img_cache.h"
+#include "tsk/img/legacy_cache.h"
 //#include "tsk/img/lru_cache.h"
+#include "tsk/img/no_cache.h"
 #include "tsk/img/tsk_img_i.h"
 
 #include <future>
@@ -150,32 +152,40 @@ void do_walks(TSK_IMG_INFO* img, size_t n) {
 
 void test_caching(
   const char* fname,
-  std::shared_ptr<void> (*fsetup)(TSK_IMG_INFO*),
+  void (*fsetup)(TSK_IMG_INFO*),
   const std::vector<const TSK_TCHAR*>& images,
   size_t threads
 )
 {
   std::cout << fname << ' ' << threads << ' ';
   auto img = open_img(images);
-  const auto holder = fsetup(img.get());
+  img->cache_free(img.get());
+  fsetup(img.get());
+  img->cache_holder = img->cache_create(img.get());
   do_walks(img.get(), threads);
   std::cout << img->stats << '\n';
 }
 
 TEST_CASE("stats") {
-  const std::tuple<const char*, std::shared_ptr<void> (*)(TSK_IMG_INFO*)> caches[] = {
+  const std::tuple<const char*, void (*)(TSK_IMG_INFO*)> caches[] = {
     {
       "tsk_img_read_no_cache",
       [](TSK_IMG_INFO* img) {
         img->cache_read = tsk_img_read_no_cache;
-        return std::shared_ptr<void>{nullptr};
+        img->cache_create = no_cache_create;
+        img->cache_clone = no_cache_clone;
+        img->cache_clear = no_cache_clear;
+        img->cache_free = no_cache_free;
       }
     },
     {
       "tsk_img_read_legacy",
       [](TSK_IMG_INFO* img) {
         img->cache_read = tsk_img_read_legacy;
-        return std::shared_ptr<void>{nullptr};
+        img->cache_create = legacy_cache_create;
+        img->cache_clone = legacy_cache_clone;
+        img->cache_clear = legacy_cache_clear;
+        img->cache_free = legacy_cache_free;
       }
     },
 /*
@@ -186,13 +196,12 @@ TEST_CASE("stats") {
         img->cache_create = lru_cache_create;
         img->cache_clone = lru_cache_clone;
         img->cache_clear = lru_cache_clear;
-        img->cache_free = [](TSK_IMG_INFO*) {};
-
-        std::shared_ptr<Cache> cache{new LRUImgCache(1024)};
-        img->cache_holder = cache.get();
-        return std::static_pointer_cast<void>(cache);
+        img->cache_free = lru_cache_free;
+        img->cache_holder = img->cache_create(img);
       }
     },
+*/
+/*
     {
       "tsk_img_read_lru_tsk_lock",
       [](TSK_IMG_INFO* img) {

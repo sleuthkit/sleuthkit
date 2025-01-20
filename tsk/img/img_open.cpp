@@ -17,6 +17,7 @@
 #include "tsk_img_i.h"
 #include "img_open.h"
 #include "legacy_cache.h"
+#include "no_cache.h"
 
 #include "raw.h"
 #include "logical_img.h"
@@ -712,10 +713,10 @@ void tsk_img_cache_setup(
 
     if (cache_size == 0 || cache_chunk_size == 0) {
         img_info->cache_read = tsk_img_read_no_cache;
-        img_info->cache_create = [](TSK_IMG_INFO*){ return static_cast<void*>(nullptr); };
-        img_info->cache_clone = [](const TSK_IMG_INFO*){ return static_cast<void*>(nullptr); };
-        img_info->cache_clear = [](TSK_IMG_INFO*){};
-        img_info->cache_free = [](TSK_IMG_INFO*){};
+        img_info->cache_create = no_cache_create;
+        img_info->cache_clone = no_cache_clone;
+        img_info->cache_clear = no_cache_clear;
+        img_info->cache_free = no_cache_free;
     }
     else {
         img_info->cache_read = tsk_img_read_legacy;

@@ -13,6 +13,7 @@
 #include "tsk_img_i.h"
 #include "img_cache.h"
 #include "legacy_cache.h"
+#include "no_cache.h"
 
 #include <algorithm>
 #include <chrono>
@@ -305,7 +306,7 @@ ssize_t tsk_img_read_no_cache(
 
   ssize_t read_count = 0;
 
-  auto cache = static_cast<LegacyCache*>(iif->cache);
+  auto cache = static_cast<NoCache*>(iif->cache);
   cache->lock();
   timer.start();
   read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
