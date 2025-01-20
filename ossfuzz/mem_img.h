@@ -49,7 +49,7 @@ static void mem_close(TSK_IMG_INFO *img_info) {
   free(mem_info);
 }
 
-static void mem_imgstat(TSK_IMG_INFO *img_info, FILE *hFile) {}
+static void mem_imgstat(TSK_IMG_INFO *, FILE *) {}
 
 TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   IMG_MEM_INFO *inmemory_img =
