@@ -1,0 +1,40 @@
+# Build OSSFuzz fuzz targets from source.
+name: build_ossfuzz
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+      - develop
+permissions: read-all
+jobs:
+  build_ossfuzz:
+    if: false
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+        - architecture: 'x64'
+          compiler: 'gcc'
+          configure_options: ''
+    steps:
+    - name: Install build dependencies
+      run: |
+        sudo apt-get -y install git
+    - uses: actions/checkout@v4
+      with:
+        repository: google/oss-fuzz
+        path: oss-fuzz
+    - name: Build OSSFuzz fuzz targets
+      working-directory: oss-fuzz
+      run: |
+        # TODO: update ossfuzz script and then remove this work-around
+        # Work around hardcoded -Werror flags https://github.com/sleuthkit/sleuthkit/issues/3012
+        sed 's?./tsk/util/??' -i projects/sleuthkit/build.sh
+        sed 's?./tsk/pool/??' -i projects/sleuthkit/build.sh
+        sed 's?--without-libvmdk?--without-libvmdk --without-libcrypto?' -i projects/sleuthkit/build.sh
+        python3 infra/helper.py build_image --pull sleuthkit 
+        python3 infra/helper.py build_fuzzers --sanitizer address sleuthkit
+        python3 infra/helper.py check_build sleuthkit
