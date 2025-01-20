@@ -14,6 +14,7 @@
 
 #include "tsk/img/pool.hpp"
 #include "tsk/img/tsk_img_i.h"
+#include "tsk/img/legacy_cache.h"
 
 #include <stdexcept>
 
@@ -123,8 +124,6 @@ lvm_logical_volume_img_close(TSK_IMG_INFO * img_info)
     if (img_info != NULL) {
         IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
         libvslvm_logical_volume_free((libvslvm_logical_volume_t **) &( pool_img_info->impl ), NULL);
-
-        tsk_deinit_lock(&(img_info->cache_lock));
         tsk_img_free(img_info);
     }
 }
@@ -208,10 +207,9 @@ TSK_IMG_INFO * LVMPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_D
     img_info->spare_size = origInfo->spare_size;
     img_info->images = origInfo->images;
 
-    tsk_init_lock(&(img_info->cache_lock));
+    img_info->cache_holder = new LegacyCache();
 
     return img_info;
-
 }
 catch (const std::exception &e) {
     tsk_error_reset();

@@ -13,6 +13,7 @@
  */
 
 #include "tsk_img_i.h"
+#include "legacy_cache.h"
 #include "logical_img.h"
 #include "tsk/util/file_system_utils.h"
 
@@ -71,6 +72,9 @@ logical_close(TSK_IMG_INFO * img_info)
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		clear_inum_cache_entry(logical_img_info, i);
 	}
+
+  delete logical_img_info->cache;
+
 	tsk_img_free(img_info);
 }
 
@@ -183,6 +187,8 @@ logical_open(
 		logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] = '\0';
 	}
 #endif
+
+  logical_info->cache = new LegacyCache();
 
 	if (LOGICAL_IMG_DEBUG_PRINT) fprintf(stderr, "logical_open - Image opened successfully\n");
 	fflush(stderr);

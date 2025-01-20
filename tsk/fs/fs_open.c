@@ -28,7 +28,6 @@
 #include "tsk/util/detect_encryption.h"
 #include "encryptionHelper.h"
 #include "tsk/img/unsupported_types.h"
-#include "tsk/img/logical_img.h"
 
 /**
  * \file fs_open.c

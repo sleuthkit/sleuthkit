@@ -93,6 +93,16 @@ extern "C" {
     typedef struct TSK_IMG_INFO TSK_IMG_INFO;
 #define TSK_IMG_INFO_TAG 0x39204231
 
+    typedef struct Stats {
+      size_t hits;
+      size_t hit_ns;
+      size_t hit_bytes;
+      size_t misses;
+      size_t miss_ns;
+      size_t miss_bytes;
+      size_t histogram[64];
+    } Stats;
+
     /**
      * Created when a disk image has been opened and stores general information and handles.
      */
@@ -108,11 +118,10 @@ extern "C" {
         // the following are protected by cache_lock in IMG_INFO
         TSK_TCHAR **images;    ///< Image names
 
-        tsk_lock_t cache_lock;  ///< Lock for cache and associated values
-        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock)
-        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock)
-        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock)
-        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock)
+        void* cache_holder;
+        Stats stats;
+
+        ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 
         ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
         void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()

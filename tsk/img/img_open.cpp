@@ -16,6 +16,7 @@
 
 #include "tsk_img_i.h"
 #include "img_open.h"
+#include "legacy_cache.h"
 
 #include "raw.h"
 #include "logical_img.h"
@@ -177,9 +178,11 @@ img_open_detect_type(
 
     enum Result { OK, UNRECOGNIZED, FAIL };
 
+#if HAVE_LIBEWF || HAVE_LIBAFF4 || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW
     const auto ok_nonnull = [](TSK_IMG_INFO* img_info) {
         return img_info ? OK : UNRECOGNIZED;
     };
+#endif
 
 #if HAVE_LIBAFFLIB
     const auto ok_aff = [](TSK_IMG_INFO* img_info) {
@@ -294,7 +297,9 @@ TSK_IMG_INFO* img_open(
     }
 
     /* we have a good img_info, set up the cache lock */
-    tsk_init_lock(&(img_info->cache_lock));
+    img_info->cache_holder = new LegacyCache();
+
+    img_info->cache_read = tsk_img_read_legacy;
 
     return img_info.release();
 }
@@ -563,11 +568,13 @@ tsk_img_open_external(
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
     img_info->size = size;
     img_info->sector_size = sector_size ? sector_size : 512;
+    img_info->cache_read = tsk_img_read_legacy;
     img_info->read = read;
     img_info->close = close;
     img_info->imgstat = imgstat;
 
-    tsk_init_lock(&(img_info->cache_lock));
+    img_info->cache_holder = new LegacyCache();
+
     return img_info;
 }
 
@@ -691,7 +698,10 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     if (!a_img_info) {
         return;
     }
-    tsk_deinit_lock(&(a_img_info->cache_lock));
+
+    auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
+    delete cache;
+
     a_img_info->close(a_img_info);
 }
 
@@ -706,6 +716,7 @@ tsk_img_malloc(size_t a_len)
         return nullptr;
     }
     imgInfo->tag = TSK_IMG_INFO_TAG;
+    imgInfo->cache_holder = nullptr;
     return imgInfo;
 }
 

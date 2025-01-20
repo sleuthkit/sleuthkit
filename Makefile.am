@@ -297,6 +297,8 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/img_types.c \
 	tsk/img/img_writer.cpp \
 	tsk/img/img_writer.h \
+	tsk/img/legacy_cache.cpp \
+	tsk/img/legacy_cache.h \
 	tsk/img/logical_img.cpp \
 	tsk/img/logical_img.h \
 	tsk/img/mult_files.cpp \
@@ -496,7 +498,7 @@ tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/utils.c \
 	tools/fiwalk/src/utils.h
 
-tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la
+tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la $(TSK_LIBS)
 tools_fiwalk_src_fiwalk_SOURCES = tools/fiwalk/src/fiwalk_main.cpp
 
 EXTRA_DIST += tools/fstools/fscheck.cpp
