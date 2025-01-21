@@ -53,7 +53,7 @@ ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
   return len;
 }
 
-ssize_t read_chunk(
+ssize_t read_chunk_locking(
   TSK_IMG_INFO* img,
   TSK_OFF_T coff,
   size_t clen, char* buf,
@@ -68,11 +68,24 @@ ssize_t read_chunk(
   return clen;
 }
 
+ssize_t read_chunk_nonlocking(
+  TSK_IMG_INFO* img,
+  TSK_OFF_T coff,
+  size_t clen, char* buf,
+  Cache& cache)
+{
+  if (read_fully(buf, img, coff, clen) == -1) {
+    return -1;
+  }
+  cache.put(coff, buf);
+  return clen;
+}
+
 Cache& cache_get(TSK_IMG_INFO* img) {
   return *reinterpret_cast<Cache*>(img->cache_holder);
 }
 
-ssize_t tsk_img_read_lru_own_lock(
+ssize_t tsk_img_read_lru_finer_lock(
   TSK_IMG_INFO* a_img_info,
   TSK_OFF_T a_off,
   char* a_buf,
@@ -134,14 +147,14 @@ ssize_t tsk_img_read_lru_own_lock(
         // Read full chunk into the temporary chunk buffer (because we
         // still want to cache a full chunk), then copy the portion we
         // want into dst.
-        if (read_chunk(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
+        if (read_chunk_locking(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
           return -1;
         }
         std::memcpy(dst, cbuf.get() + delta, len);
       }
       else {
         // read a complete chunk
-        if (read_chunk(a_img_info, coff, clen, dst, cache) == -1) {
+        if (read_chunk_locking(a_img_info, coff, clen, dst, cache) == -1) {
           return -1;
         }
       }
@@ -195,8 +208,8 @@ ssize_t tsk_img_read_lru(
   char* dst = a_buf;
   const char* chunk;
 
+  cache.lock();
   const auto unlocker = [](Cache* cache) { cache->unlock(); };
-
   std::unique_ptr<Cache, decltype(unlocker)> lock_guard(
     &cache, unlocker
   );
@@ -227,14 +240,14 @@ ssize_t tsk_img_read_lru(
         // Read full chunk into the temporary chunk buffer (because we
         // still want to cache a full chunk), then copy the portion we
         // want into dst.
-        if (read_chunk(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
+        if (read_chunk_nonlocking(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
           return -1;
         }
         std::memcpy(dst, cbuf.get() + delta, len);
       }
       else {
         // read a complete chunk
-        if (read_chunk(a_img_info, coff, clen, dst, cache) == -1) {
+        if (read_chunk_nonlocking(a_img_info, coff, clen, dst, cache) == -1) {
           return -1;
         }
       }

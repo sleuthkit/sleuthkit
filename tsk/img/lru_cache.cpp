@@ -1,11 +1,11 @@
 #include "lru_cache.h"
 
 void* lru_cache_create(TSK_IMG_INFO*) {
-  return new LRUImgCache(1024);
+  return new LRUImgCacheLocking(1024);
 }
 
 void* lru_cache_clone(const TSK_IMG_INFO*) {
-  return new LRUImgCache(1024);
+  return new LRUImgCacheLocking(1024);
 }
 
 void lru_cache_clear(TSK_IMG_INFO* img_info) {

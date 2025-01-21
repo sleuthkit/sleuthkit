@@ -88,7 +88,6 @@ private:
   hash_type hash;
 };
 
-const size_t CACHE_SIZE = 1024;
 const size_t CHUNK_SIZE = 65536;
 
 class LRUImgCache: public Cache, LRUCache<uint64_t, std::array<char, CHUNK_SIZE>> {

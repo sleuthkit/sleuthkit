@@ -17,7 +17,7 @@
 
 #include "tsk/img/img_cache.h"
 #include "tsk/img/legacy_cache.h"
-//#include "tsk/img/lru_cache.h"
+#include "tsk/img/lru_cache.h"
 #include "tsk/img/no_cache.h"
 #include "tsk/img/tsk_img_i.h"
 
@@ -188,7 +188,6 @@ TEST_CASE("stats") {
         img->cache_free = legacy_cache_free;
       }
     },
-/*
     {
       "tsk_img_read_lru",
       [](TSK_IMG_INFO* img) {
@@ -197,27 +196,40 @@ TEST_CASE("stats") {
         img->cache_clone = lru_cache_clone;
         img->cache_clear = lru_cache_clear;
         img->cache_free = lru_cache_free;
-        img->cache_holder = img->cache_create(img);
       }
     },
-*/
-/*
     {
-      "tsk_img_read_lru_tsk_lock",
+      "tsk_img_read_lru_finer_lock",
       [](TSK_IMG_INFO* img) {
-        img->cache_read = tsk_img_read_lru_own_lock;
+        img->cache_read = tsk_img_read_lru_finer_lock;
         img->cache_create = lru_cache_create;
         img->cache_clone = lru_cache_clone;
         img->cache_clear = lru_cache_clear;
-        img->cache_free = [](TSK_IMG_INFO*) {};
-//        img->cache_free = lru_cache_free;
+        img->cache_free = lru_cache_free;
+      }
+    },
+    {
+      "tsk_img_read_lru_tsk_lock",
+      [](TSK_IMG_INFO* img) {
+        img->cache_read = tsk_img_read_lru;
+        img->cache_create = [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); };
+        img->cache_clone = lru_cache_clone;
+        img->cache_clear = lru_cache_clear;
+        img->cache_free = lru_cache_free;
 
-        std::shared_ptr<Cache> cache{new LRUImgCacheLockingTsk(1024)};
-        img->cache_holder = cache.get();
-        return std::static_pointer_cast<void>(cache);
+      }
+    },
+    {
+      "tsk_img_read_lru_tsk_finer_lock",
+      [](TSK_IMG_INFO* img) {
+        img->cache_read = tsk_img_read_lru_finer_lock;
+        img->cache_create = [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); };
+        img->cache_clone = lru_cache_clone;
+        img->cache_clear = lru_cache_clear;
+        img->cache_free = lru_cache_free;
+
       }
     }
-*/
   };
 
   std::vector<std::vector<const TSK_TCHAR*>> images{
