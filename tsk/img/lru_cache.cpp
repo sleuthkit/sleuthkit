@@ -1,5 +1,80 @@
 #include "lru_cache.h"
 
+LRUImgCache::LRUImgCache(size_t cache_size): LRUCache(cache_size) {}
+
+const char* LRUImgCache::get(uint64_t key) {
+  return LRUCache::get(key)->data();
+}
+
+void LRUImgCache::put(uint64_t key, const char* val) {
+  std::array<char, CHUNK_SIZE> v;
+  std::copy(val, val + CHUNK_SIZE, std::begin(v));
+  LRUCache::put(key, v);
+}
+
+size_t LRUImgCache::cache_size() const {
+  return size();
+}
+
+size_t LRUImgCache::chunk_size() const {
+  return CHUNK_SIZE;
+}
+
+/*
+  virtual const Stats& stats() const {
+    return the_stats;
+  }
+
+  virtual Stats& stats() {
+    return the_stats;
+  }
+*/
+
+void LRUImgCache::lock() {}
+
+void LRUImgCache::unlock() {}
+
+void LRUImgCache::clear() {
+  LRUCache::clear();
+}
+
+LRUImgCacheLocking::LRUImgCacheLocking(size_t cache_size):
+  LRUImgCache(cache_size),
+  l{m, std::defer_lock}
+{}
+
+void LRUImgCacheLocking::lock() {
+  l.lock();
+}
+
+void LRUImgCacheLocking::unlock() {
+  l.unlock();
+}
+
+void LRUImgCacheLocking::clear() {
+  l.lock();
+  LRUImgCache::clear();
+  l.unlock();
+}
+
+LRUImgCacheLockingTsk::LRUImgCacheLockingTsk(size_t cache_size):
+  LRUImgCache(cache_size)
+{
+  tsk_init_lock(&l);
+}
+
+LRUImgCacheLockingTsk::~LRUImgCacheLockingTsk() {
+  tsk_deinit_lock(&l);
+}
+
+void LRUImgCacheLockingTsk::lock() {
+  tsk_take_lock(&l);
+}
+
+void LRUImgCacheLockingTsk::unlock() {
+  tsk_release_lock(&l);
+}
+
 void* lru_cache_create(TSK_IMG_INFO*) {
   return new LRUImgCacheLocking(1024);
 }

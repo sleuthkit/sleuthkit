@@ -92,25 +92,17 @@ const size_t CHUNK_SIZE = 65536;
 
 class LRUImgCache: public Cache, LRUCache<uint64_t, std::array<char, CHUNK_SIZE>> {
 public:
-  LRUImgCache(size_t cache_size): LRUCache(cache_size) {}
+  LRUImgCache(size_t cache_size);
 
-  virtual const char* get(uint64_t key) {
-    return LRUCache::get(key)->data();
-  }
+  virtual ~LRUImgCache() = default;
 
-  virtual void put(uint64_t key, const char* val) {
-    std::array<char, CHUNK_SIZE> v;
-    std::copy(val, val + CHUNK_SIZE, std::begin(v));
-    LRUCache::put(key, v);
-  }
+  virtual const char* get(uint64_t key);
 
-  virtual size_t cache_size() const {
-    return size();
-  }
+  virtual void put(uint64_t key, const char* val);
 
-  virtual size_t chunk_size() const {
-    return CHUNK_SIZE;
-  }
+  virtual size_t cache_size() const;
+
+  virtual size_t chunk_size() const;
 
 /*
   virtual const Stats& stats() const {
@@ -122,35 +114,24 @@ public:
   }
 */
 
-  virtual void lock() {}
+  virtual void lock();
 
-  virtual void unlock() {}
+  virtual void unlock();
 
-  virtual void clear() {
-    LRUCache::clear();
-  }
+  virtual void clear();
 };
 
 class LRUImgCacheLocking: public LRUImgCache {
 public:
-  LRUImgCacheLocking(size_t cache_size): 
-    LRUImgCache(cache_size),
-    l{m, std::defer_lock}
-  {}
+  LRUImgCacheLocking(size_t cache_size);
 
-  virtual void lock() override {
-    l.lock(); 
-  }
+  virtual ~LRUImgCacheLocking() = default;
 
-  virtual void unlock() override {
-    l.unlock();
-  }
+  virtual void lock() override;
 
-  virtual void clear() override {
-    l.lock();
-    LRUImgCache::clear();
-    l.unlock(); 
-  }
+  virtual void unlock() override;
+
+  virtual void clear() override;
 
 private:
   std::mutex m;
@@ -159,23 +140,13 @@ private:
 
 class LRUImgCacheLockingTsk: public LRUImgCache {
 public:
-  LRUImgCacheLockingTsk(size_t cache_size): 
-    LRUImgCache(cache_size)
-  {
-    tsk_init_lock(&l);
-  }
+  LRUImgCacheLockingTsk(size_t cache_size);
 
-  ~LRUImgCacheLockingTsk() {
-    tsk_deinit_lock(&l);
-  }
+  virtual ~LRUImgCacheLockingTsk();
 
-  virtual void lock() override {
-    tsk_take_lock(&l);
-  }
+  virtual void lock() override;
 
-  virtual void unlock() override {
-    tsk_release_lock(&l);
-  }
+  virtual void unlock() override;
 
 private:
   tsk_lock_t l;
