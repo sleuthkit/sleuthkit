@@ -30,10 +30,6 @@ size_t LRUImgCache::chunk_size() const {
   }
 */
 
-void LRUImgCache::lock() {}
-
-void LRUImgCache::unlock() {}
-
 void LRUImgCache::clear() {
   LRUCache::clear();
 }
@@ -48,11 +44,6 @@ void LRUImgCacheLocking::lock() {
 
 void LRUImgCacheLocking::unlock() {
   mutex.unlock();
-}
-
-void LRUImgCacheLocking::clear() {
-  std::scoped_lock lock{*this};
-  LRUImgCache::clear();
 }
 
 LRUImgCacheLockingTsk::LRUImgCacheLockingTsk(size_t cache_size):
@@ -73,11 +64,6 @@ void LRUImgCacheLockingTsk::unlock() {
   tsk_release_lock(&l);
 }
 
-void LRUImgCacheLockingTsk::clear() {
-  std::scoped_lock lock{*this};
-  LRUImgCache::clear();
-}
-
 void* lru_cache_create(TSK_IMG_INFO*) {
   return new LRUImgCacheLocking(1024);
 }
@@ -88,6 +74,7 @@ void* lru_cache_clone(const TSK_IMG_INFO*) {
 
 void lru_cache_clear(TSK_IMG_INFO* img_info) {
   auto cache = static_cast<Cache*>(img_info->cache_holder);
+  std::scoped_lock lock{*cache};
   cache->clear();
 }
 

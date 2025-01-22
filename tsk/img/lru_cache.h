@@ -96,13 +96,13 @@ public:
 
   virtual ~LRUImgCache() = default;
 
-  virtual const char* get(uint64_t key);
+  virtual const char* get(uint64_t key) override;
 
-  virtual void put(uint64_t key, const char* val);
+  virtual void put(uint64_t key, const char* val) override;
 
-  virtual size_t cache_size() const;
+  virtual size_t cache_size() const override;
 
-  virtual size_t chunk_size() const;
+  virtual size_t chunk_size() const override;
 
 /*
   virtual const Stats& stats() const {
@@ -114,11 +114,7 @@ public:
   }
 */
 
-  virtual void lock();
-
-  virtual void unlock();
-
-  virtual void clear();
+  virtual void clear() override;
 };
 
 class LRUImgCacheLocking: public LRUImgCache {
@@ -130,8 +126,6 @@ public:
   virtual void lock() override;
 
   virtual void unlock() override;
-
-  virtual void clear() override;
 
 private:
   std::mutex mutex;
@@ -146,8 +140,6 @@ public:
   virtual void lock() override;
 
   virtual void unlock() override;
-
-  virtual void clear() override;
 
 private:
   tsk_lock_t l;
