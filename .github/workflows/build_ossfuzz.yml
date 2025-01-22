@@ -11,7 +11,7 @@ on:
 permissions: read-all
 jobs:
   build_ossfuzz:
-    if: false
+    if: true
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -35,6 +35,6 @@ jobs:
         sed 's?./tsk/util/??' -i projects/sleuthkit/build.sh
         sed 's?./tsk/pool/??' -i projects/sleuthkit/build.sh
         sed 's?--without-libvmdk?--without-libvmdk --without-libcrypto?' -i projects/sleuthkit/build.sh
-        python3 infra/helper.py build_image --pull sleuthkit 
+        python3 infra/helper.py build_image --pull sleuthkit
         python3 infra/helper.py build_fuzzers --sanitizer address sleuthkit
         python3 infra/helper.py check_build sleuthkit
