@@ -1,16 +1,6 @@
 #include "no_cache.h"
 #include "tsk_img.h"
 
-NoCache::NoCache(): l{m, std::defer_lock} {}
-
-void NoCache::lock() {
-  l.lock();
-}
-
-void NoCache::unlock() {
-  l.unlock();
-}
-
 void* no_cache_create(TSK_IMG_INFO*) {
   return new NoCache();
 }

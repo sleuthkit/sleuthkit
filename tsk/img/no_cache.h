@@ -6,14 +6,7 @@
 #include <mutex>
 
 struct NoCache {
-  NoCache();
-
-  void lock();
-
-  void unlock();
-
-  std::mutex m;
-  std::unique_lock<std::mutex> l;
+  std::mutex mutex;
 };
 
 struct TSK_IMG_INFO;

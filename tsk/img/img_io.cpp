@@ -313,19 +313,18 @@ ssize_t tsk_img_read_no_cache(
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
 
   Timer timer;
-  Stats& stats = iif->stats;
-
-  ssize_t read_count = 0;
-
-  auto cache = static_cast<NoCache*>(iif->cache);
-  cache->lock();
   timer.start();
-  read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
+  ssize_t read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
   timer.stop();
+
+  // update the stats
+  auto cache = static_cast<NoCache*>(a_img_info->cache_holder);
+  std::scoped_lock lock{cache->mutex};
+
+  Stats& stats = a_img_info->stats;
   stats.miss_ns += timer.elapsed();
   ++stats.misses;
   stats.miss_bytes += read_count;
-  cache->unlock();
 
   return read_count;
 }
