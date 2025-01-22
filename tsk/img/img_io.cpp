@@ -266,8 +266,6 @@ ssize_t tsk_img_read_lru(
   return send - a_off;
 }
 
-// This function assumes that we hold the cache_lock even though we're not modyfying
-// the cache.  This is because the lower-level read callbacks make the same assumption.
 static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     char *a_buf, size_t a_len)
 {
