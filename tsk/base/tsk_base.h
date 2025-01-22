@@ -114,7 +114,7 @@ extern "C" {
 
     // non-windows
 #else
-/* Note that there is an assumption that TSK_MULTITHREADED_LIB was
+/* Note that there is an assumption that TSK_MULTITHREAD_LIB was
  * set only if we have pthreads. If we add a check for HAVE_PTHREAD
  * here, it causes problems when you try to include the library in
  * a tool because they do not have tsk_config.h included.
