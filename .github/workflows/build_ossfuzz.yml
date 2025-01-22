@@ -34,7 +34,9 @@ jobs:
     # Replace the remote pull with the local code
     - name: Inject local Sleuthkit code into OSS-Fuzz build
       run: |
-        mv . oss-fuzz/projects/sleuthkit/repo  # Move the current repository to replace the default cloned repo
+        mkdir -p oss-fuzz/projects/sleuthkit/repo  # Ensure the target directory exists
+        rsync -av --exclude=".git" --delete ./ oss-fuzz/projects/sleuthkit/repo/  # Copy current repo content, excluding Git metadata
+
 
     # Build OSSFuzz fuzz targets
     - name: Build OSSFuzz fuzz targets
