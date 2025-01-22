@@ -18,11 +18,11 @@ jobs:
       run: |
         sudo apt-get -y install git
 
-    # Check out the current repository branch triggering the workflow
+    # Check out the current branch of Sleuthkit triggering the workflow
     - name: Check out current branch
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Ensure the full history is fetched for the current branch
+        fetch-depth: 0  # Ensure the full branch history is fetched
 
     # Check out the OSS-Fuzz repository into a subdirectory
     - name: Check out OSS-Fuzz repository
@@ -31,18 +31,21 @@ jobs:
         repository: google/oss-fuzz
         path: oss-fuzz
 
-    # Build OSSFuzz fuzz targets using the local checkout
+    # Replace the remote pull with the local code
+    - name: Inject local Sleuthkit code into OSS-Fuzz build
+      run: |
+        mv . oss-fuzz/projects/sleuthkit/repo  # Move the current repository to replace the default cloned repo
+
+    # Build OSSFuzz fuzz targets
     - name: Build OSSFuzz fuzz targets
       working-directory: oss-fuzz
-      env:
-        LOCAL_CHECKOUT: /github/workspace  # Point to the current branch
       run: |
         # Work around hardcoded -Werror flags
         sed 's?./tsk/util/??' -i projects/sleuthkit/build.sh
         sed 's?./tsk/pool/??' -i projects/sleuthkit/build.sh
         sed 's?--without-libvmdk?--without-libvmdk --without-libcrypto?' -i projects/sleuthkit/build.sh
 
-        # Use the local checkout instead of the default remote branch
+        # Build using the injected local repository
         python3 infra/helper.py build_image sleuthkit
         python3 infra/helper.py build_fuzzers --sanitizer address sleuthkit
         python3 infra/helper.py check_build sleuthkit
