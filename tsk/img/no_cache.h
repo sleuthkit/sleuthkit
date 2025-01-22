@@ -1,8 +1,6 @@
 #ifndef _NO_CACHE_H
 #define _NO_CACHE_H
 
-#include "../base/tsk_base_i.h"
-
 #include <mutex>
 
 struct NoCache {

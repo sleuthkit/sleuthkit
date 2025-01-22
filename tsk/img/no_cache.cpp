@@ -1,5 +1,5 @@
 #include "no_cache.h"
-#include "tsk_img.h"
+#include "tsk_img_i.h"
 
 void* no_cache_create(TSK_IMG_INFO*) {
   return new NoCache();
