@@ -46,11 +46,10 @@ static ssize_t mem_read(TSK_IMG_INFO *img_info, TSK_OFF_T offset, char *buf,
 
 static void mem_close(TSK_IMG_INFO *img_info) {
   IMG_MEM_INFO *mem_info = reinterpret_cast<IMG_MEM_INFO *>(img_info);
-  tsk_deinit_lock(&(img_info->cache_lock));
   free(mem_info);
 }
 
-static void mem_imgstat(TSK_IMG_INFO *img_info, FILE *hFile) {}
+static void mem_imgstat(TSK_IMG_INFO *, FILE *) {}
 
 TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   IMG_MEM_INFO *inmemory_img =
@@ -66,9 +65,11 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   img->imgstat = mem_imgstat;
   img->size = size;
   img->sector_size = 512;
-  tsk_init_lock(&(img->cache_lock));
   inmemory_img->data = data;
   inmemory_img->size = size;
+
+  tsk_img_cache_setup(img, 0, 0);
+
   return img;
 }
 
