@@ -62,9 +62,8 @@ ssize_t read_chunk_locking(
   if (read_fully(buf, img, coff, clen) == -1) {
     return -1;
   }
-  cache.lock();
+  std::scoped_lock lock{cache};
   cache.put(coff, buf);
-  cache.unlock();
   return clen;
 }
 
@@ -123,22 +122,22 @@ ssize_t tsk_img_read_lru_finer_lock(
     delta = soff - coff;
     len = std::min(clen - delta, (size_t)(send - soff));
 
-    cache.lock();
-    timer.start();
-    chunk = cache.get(coff);
-    if (chunk) {
-      // cache hit: copy chunk to buffer
-      std::memcpy(dst, chunk + delta, len);
-      timer.stop();
-      ++stats.hits;
-      stats.hit_ns += timer.elapsed();
-      stats.hit_bytes += len;
-
-      cache.unlock();
+    {
+      std::scoped_lock lock{cache};
+      timer.start();
+      chunk = cache.get(coff);
+      if (chunk) {
+        // cache hit: copy chunk to buffer
+        std::memcpy(dst, chunk + delta, len);
+        timer.stop();
+        ++stats.hits;
+        stats.hit_ns += timer.elapsed();
+        stats.hit_bytes += len;
+      }
     }
-    else {
+
+    if (!chunk) {
       // cache miss: read into buffer, copy chunk to cache
-      cache.unlock();
       timer.start();
 
       if (len < chunk_size) {
@@ -160,11 +159,10 @@ ssize_t tsk_img_read_lru_finer_lock(
       }
 
       timer.stop();
-      cache.lock();
+      std::scoped_lock lock{cache};
       ++stats.misses;
       stats.miss_ns += timer.elapsed();
       stats.miss_bytes += len;
-      cache.unlock();
     }
 
     soff += len;
@@ -208,11 +206,7 @@ ssize_t tsk_img_read_lru(
   char* dst = a_buf;
   const char* chunk;
 
-  cache.lock();
-  const auto unlocker = [](Cache* cache) { cache->unlock(); };
-  std::unique_ptr<Cache, decltype(unlocker)> lock_guard(
-    &cache, unlocker
-  );
+  std::scoped_lock lock{cache};
 
   while (soff < send) {
     clen = std::min((TSK_OFF_T) chunk_size, a_img_info->size - coff);

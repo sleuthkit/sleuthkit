@@ -134,8 +134,7 @@ public:
   virtual void clear() override;
 
 private:
-  std::mutex m;
-  std::unique_lock<std::mutex> l;
+  std::mutex mutex;
 };
 
 class LRUImgCacheLockingTsk: public LRUImgCache {
@@ -147,6 +146,8 @@ public:
   virtual void lock() override;
 
   virtual void unlock() override;
+
+  virtual void clear() override;
 
 private:
   tsk_lock_t l;
