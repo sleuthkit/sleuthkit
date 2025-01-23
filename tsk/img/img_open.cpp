@@ -59,6 +59,30 @@ const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
   -1
 };
 
+struct CacheFuncs {
+  ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  void* (*create)(TSK_IMG_INFO* img);
+  void* (*clone)(const TSK_IMG_INFO* img);
+  void (*free)(TSK_IMG_INFO* img);
+  void (*clear)(TSK_IMG_INFO* img);
+};
+
+const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
+  tsk_img_read_no_cache,
+  no_cache_create,
+  no_cache_clone,
+  no_cache_free,
+  no_cache_clear
+};
+      
+const CacheFuncs DEFAULT_CACHE_FUNCS{
+  tsk_img_read_legacy,
+  legacy_cache_create,
+  legacy_cache_clone,
+  legacy_cache_free,
+  legacy_cache_clear
+};
+
 bool sector_size_ok(unsigned int sector_size) {
     if (sector_size > 0 && sector_size < 512) {
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
@@ -284,11 +308,7 @@ TSK_IMG_INFO* img_open_x(
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len),
-  void* (*cache_create)(TSK_IMG_INFO* img),
-  void* (*cache_clone)(const TSK_IMG_INFO* img),
-  void (*cache_free)(TSK_IMG_INFO* img),
-  void (*cache_clear)(TSK_IMG_INFO* img),
+  const CacheFuncs& cfuncs,
   const TSK_IMG_OPTIONS* opts
 )
 {
@@ -317,11 +337,12 @@ TSK_IMG_INFO* img_open_x(
     std::memset(&iif->stats, 0, sizeof(Stats));
 
     // set up the cache
-    iif->cache_read = cache_read; 
-    iif->cache_create = cache_create;
-    iif->cache_clone = cache_clone;
-    iif->cache_clear = cache_clear;
-    iif->cache_free = cache_free;
+    iif->cache_read = cfuncs.read; 
+    iif->cache_create = cfuncs.create;
+    iif->cache_clone = cfuncs.clone;
+    iif->cache_clear = cfuncs.clear;
+    iif->cache_free = cfuncs.free;
+
     iif->cache = iif->cache_create(img_info.get());
 
     return img_info.release();
@@ -335,34 +356,14 @@ TSK_IMG_INFO* img_open(
   const TSK_IMG_OPTIONS* opts
 )
 {
-  if (opts->cache_size == 0 || opts->cache_chunk_size == 0) {
-    return img_open_x(
-      num_img,
-      images,
-      type,
-      a_ssize,
-      tsk_img_read_no_cache,
-      no_cache_create,
-      no_cache_clone,
-      no_cache_clear,
-      no_cache_free,
-      opts
-    );
-  }
-  else {
-    return img_open_x(
-      num_img,
-      images,
-      type,
-      a_ssize,
-      tsk_img_read_legacy,
-      legacy_cache_create,
-      legacy_cache_clone,
-      legacy_cache_clear,
-      legacy_cache_free,
-      opts
-    );
-  }
+  return img_open_x(
+    num_img,
+    images,
+    type,
+    a_ssize,
+    (opts->cache_size == 0 || opts->cache_chunk_size == 0) ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS,
+    opts
+  );
 }
 
 #ifdef TSK_WIN32
