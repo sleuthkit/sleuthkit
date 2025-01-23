@@ -279,11 +279,16 @@ img_open_detect_type(
     }
 }
 
-TSK_IMG_INFO* img_open(
+TSK_IMG_INFO* img_open_x(
   int num_img,
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
+  ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len),
+  void* (*cache_create)(TSK_IMG_INFO* img),
+  void* (*cache_clone)(const TSK_IMG_INFO* img),
+  void (*cache_free)(TSK_IMG_INFO* img),
+  void (*cache_clear)(TSK_IMG_INFO* img),
   const TSK_IMG_OPTIONS* opts
 )
 {
@@ -311,15 +316,142 @@ TSK_IMG_INFO* img_open(
 
     std::memset(&iif->stats, 0, sizeof(Stats));
 
-    iif->cache_read = tsk_img_read_legacy;
-    iif->cache_create = legacy_cache_create;
-    iif->cache_clone = legacy_cache_clone;
-    iif->cache_clear = legacy_cache_clear;
-    iif->cache_free = legacy_cache_free;
+    // set up the cache
+    iif->cache_read = cache_read; 
+    iif->cache_create = cache_create;
+    iif->cache_clone = cache_clone;
+    iif->cache_clear = cache_clear;
+    iif->cache_free = cache_free;
     iif->cache = iif->cache_create(img_info.get());
 
     return img_info.release();
 }
+
+TSK_IMG_INFO* img_open(
+  int num_img,
+  const TSK_TCHAR* const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  const TSK_IMG_OPTIONS* opts
+)
+{
+  if (opts->cache_size == 0 || opts->cache_chunk_size == 0) {
+    return img_open_x(
+      num_img,
+      images,
+      type,
+      a_ssize,
+      tsk_img_read_no_cache,
+      no_cache_create,
+      no_cache_clone,
+      no_cache_clear,
+      no_cache_free,
+      opts
+    );
+  }
+  else {
+    return img_open_x(
+      num_img,
+      images,
+      type,
+      a_ssize,
+      tsk_img_read_legacy,
+      legacy_cache_create,
+      legacy_cache_clone,
+      legacy_cache_clear,
+      legacy_cache_free,
+      opts
+    );
+  }
+}
+
+#ifdef TSK_WIN32
+std::optional<
+  std::pair<
+    std::vector<std::unique_ptr<wchar_t[]>>,
+    std::unique_ptr<wchar_t*[]>
+  >
+>
+utf8_to_utf16(
+  const char *const images[],
+  size_t num_img
+)
+{
+    // Get rid of any old error messages laying around
+    tsk_error_reset();
+
+    /* Note that there is an assumption in this code that wchar_t is 2-bytes.
+     * this is a correct assumption for Windows, but not for all systems... */
+
+    // allocate a buffer to store the UTF-16 version of the images.
+    std::vector<std::unique_ptr<wchar_t[]>> images16_vec;
+    for (size_t i = 0; i < num_img; ++i) {
+        // we allocate the buffer with the same number of chars as the UTF-8 length
+        const size_t ilen = std::strlen(images[i]);
+
+        images16_vec.emplace_back(new(std::nothrow) wchar_t[ilen + 1]);
+        if (!images16_vec.back()) {
+            return {};
+        }
+
+        UTF8* utf8 = (UTF8 *) images[i];
+        UTF16* utf16 = (UTF16 *) images16_vec.back().get();
+
+        const TSKConversionResult retval2 =
+            tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
+            &utf16, &utf16[ilen], TSKlenientConversion);
+        if (retval2 != TSKconversionOK) {
+            tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+            tsk_error_set_errstr
+                ("tsk_img_open_utf8: Error converting image %s %d",
+                images[i], retval2);
+            return {};
+        }
+        *utf16 = '\0';
+    }
+
+    std::unique_ptr<wchar_t*[]> images16{
+        new(std::nothrow) wchar_t*[num_img]
+    };
+
+    if (!images16) {
+        return {};
+    }
+
+    for (size_t i = 0; i < num_img; ++i) {
+        images16[i] = images16_vec[i].get();
+    }
+
+    return std::make_pair(std::move(images16_vec), std::move(images16));
+}
+#endif
+
+void tsk_img_cache_setup(
+  TSK_IMG_INFO* img_info,
+  int cache_size,
+  int cache_chunk_size
+)
+{
+    std::memset(&img_info->stats, 0, sizeof(Stats));
+
+    if (cache_size == 0 || cache_chunk_size == 0) {
+        img_info->cache_read = tsk_img_read_no_cache;
+        img_info->cache_create = no_cache_create;
+        img_info->cache_clone = no_cache_clone;
+        img_info->cache_clear = no_cache_clear;
+        img_info->cache_free = no_cache_free;
+    }
+    else {
+        img_info->cache_read = tsk_img_read_legacy;
+        img_info->cache_create = legacy_cache_create;
+        img_info->cache_clone = legacy_cache_clone;
+        img_info->cache_clear = legacy_cache_clear;
+        img_info->cache_free = legacy_cache_free;
+    }
+
+    img_info->cache_holder = img_info->cache_create(img_info);
+}
+
 
 /**
  * \ingroup imglib
@@ -449,65 +581,6 @@ tsk_img_open_utf8(
 {
     return tsk_img_open_utf8_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
 }
-
-#ifdef TSK_WIN32
-std::optional<
-  std::pair<
-    std::vector<std::unique_ptr<wchar_t[]>>,
-    std::unique_ptr<wchar_t*[]>
-  >
->
-utf8_to_utf16(
-  const char *const images[],
-  size_t num_img
-)
-{
-    // Get rid of any old error messages laying around
-    tsk_error_reset();
-
-    /* Note that there is an assumption in this code that wchar_t is 2-bytes.
-     * this is a correct assumption for Windows, but not for all systems... */
-
-    // allocate a buffer to store the UTF-16 version of the images.
-    std::vector<std::unique_ptr<wchar_t[]>> images16_vec;
-    for (size_t i = 0; i < num_img; ++i) {
-        // we allocate the buffer with the same number of chars as the UTF-8 length
-        const size_t ilen = std::strlen(images[i]);
-
-        images16_vec.emplace_back(new(std::nothrow) wchar_t[ilen + 1]);
-        if (!images16_vec.back()) {
-            return {};
-        }
-
-        UTF8* utf8 = (UTF8 *) images[i];
-        UTF16* utf16 = (UTF16 *) images16_vec.back().get();
-
-        const TSKConversionResult retval2 =
-            tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
-            &utf16, &utf16[ilen], TSKlenientConversion);
-        if (retval2 != TSKconversionOK) {
-            tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-            tsk_error_set_errstr
-                ("tsk_img_open_utf8: Error converting image %s %d",
-                images[i], retval2);
-            return {};
-        }
-        *utf16 = '\0';
-    }
-
-    std::unique_ptr<wchar_t*[]> images16{
-        new(std::nothrow) wchar_t*[num_img]
-    };
-    if (!images16) {
-        return {};
-    }
-    for (size_t i = 0; i < num_img; ++i) {
-        images16[i] = images16_vec[i].get();
-    }
-
-    return std::make_pair(std::move(images16_vec), std::move(images16));
-}
-#endif
 
 TSK_IMG_INFO*
 tsk_img_open_utf8_opt(
@@ -724,32 +797,6 @@ int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const imag
         TSTRNCPY(img_info->images[i], images[i], len + 1);
     }
     return 1;
-}
-
-void tsk_img_cache_setup(
-  TSK_IMG_INFO* img_info,
-  int cache_size,
-  int cache_chunk_size
-)
-{
-    std::memset(&img_info->stats, 0, sizeof(Stats));
-
-    if (cache_size == 0 || cache_chunk_size == 0) {
-        img_info->cache_read = tsk_img_read_no_cache;
-        img_info->cache_create = no_cache_create;
-        img_info->cache_clone = no_cache_clone;
-        img_info->cache_clear = no_cache_clear;
-        img_info->cache_free = no_cache_free;
-    }
-    else {
-        img_info->cache_read = tsk_img_read_legacy;
-        img_info->cache_create = legacy_cache_create;
-        img_info->cache_clone = legacy_cache_clone;
-        img_info->cache_clear = legacy_cache_clear;
-        img_info->cache_free = legacy_cache_free;
-    }
-
-    img_info->cache_holder = img_info->cache_create(img_info);
 }
 
 /**
