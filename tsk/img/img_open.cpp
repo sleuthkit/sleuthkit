@@ -50,6 +50,7 @@
 #include <memory>
 #include <new>
 #include <numeric>
+#include <optional>
 #include <vector>
 #include <utility>
 
@@ -286,6 +287,13 @@ TSK_IMG_INFO* img_open(
   const TSK_IMG_OPTIONS* opts
 )
 {
+    // Clear previous error messages
+    tsk_error_reset();
+
+    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
+        return nullptr;
+    }
+
     if (tsk_verbose)
         TFPRINTF(stderr,
             _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
@@ -308,7 +316,7 @@ TSK_IMG_INFO* img_open(
     iif->cache_clone = legacy_cache_clone;
     iif->cache_clear = legacy_cache_clear;
     iif->cache_free = legacy_cache_free;
-    iif->cache_holder = iif->cache_create(img_info.get());
+    iif->cache = iif->cache_create(img_info.get());
 
     return img_info.release();
 }
@@ -382,13 +390,6 @@ tsk_img_open_opt(
   unsigned int a_ssize,
   const TSK_IMG_OPTIONS* opt)
 {
-    // Get rid of any old error messages laying around
-    tsk_error_reset();
-
-    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
-        return nullptr;
-    }
-
     return img_open(num_img, images, type, a_ssize, opt);
 }
 
@@ -449,34 +450,33 @@ tsk_img_open_utf8(
     return tsk_img_open_utf8_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
 }
 
-TSK_IMG_INFO*
-tsk_img_open_utf8_opt(
-  int num_img,
+#ifdef TSK_WIN32
+std::optional<
+  std::pair<
+    std::vector<std::unique_ptr<wchar_t[]>>,
+    std::unique_ptr<wchar_t*[]>
+  >
+>
+utf8_to_utf16(
   const char *const images[],
-  TSK_IMG_TYPE_ENUM type,
-  unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  size_t num_img
+)
 {
     // Get rid of any old error messages laying around
     tsk_error_reset();
 
-    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
-        return nullptr;
-    }
-
-#ifdef TSK_WIN32
     /* Note that there is an assumption in this code that wchar_t is 2-bytes.
      * this is a correct assumption for Windows, but not for all systems... */
 
     // allocate a buffer to store the UTF-16 version of the images.
     std::vector<std::unique_ptr<wchar_t[]>> images16_vec;
-    for (auto i = 0; i < num_img; ++i) {
+    for (size_t i = 0; i < num_img; ++i) {
         // we allocate the buffer with the same number of chars as the UTF-8 length
         const size_t ilen = std::strlen(images[i]);
 
         images16_vec.emplace_back(new(std::nothrow) wchar_t[ilen + 1]);
         if (!images16_vec.back()) {
-            return nullptr;
+            return {};
         }
 
         UTF8* utf8 = (UTF8 *) images[i];
@@ -490,7 +490,7 @@ tsk_img_open_utf8_opt(
             tsk_error_set_errstr
                 ("tsk_img_open_utf8: Error converting image %s %d",
                 images[i], retval2);
-            return nullptr;
+            return {};
         }
         *utf16 = '\0';
     }
@@ -499,16 +499,39 @@ tsk_img_open_utf8_opt(
         new(std::nothrow) wchar_t*[num_img]
     };
     if (!images16) {
-        return nullptr;
+        return {};
     }
-    for (auto i = 0; i < num_img; ++i) {
+    for (size_t i = 0; i < num_img; ++i) {
         images16[i] = images16_vec[i].get();
     }
 
-    const TSK_TCHAR* const* imgs = images16.get();
+    return std::make_pair(std::move(images16_vec), std::move(images16));
+}
+#endif
+
+TSK_IMG_INFO*
+tsk_img_open_utf8_opt(
+  int num_img,
+  const char *const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  const TSK_IMG_OPTIONS* opts)
+{
+#ifdef TSK_WIN32
+    if (!images_ok(num_img, images)) {
+        return nullptr;
+    }
+
+    const auto conv_imgs = utf8_to_utf16(images, static_cast<size_t>(num_img));
+    if (!conv_imgs) {
+        return nullptr;
+    }
+
+    const TSK_TCHAR* const* imgs = conv_imgs->second.get();
 #else
     const TSK_TCHAR* const* imgs = images;
 #endif
+
     return img_open(num_img, imgs, type, a_ssize, opts);
 }
 
