@@ -17,6 +17,7 @@
 #include "tsk_img_i.h"
 #include "img_open.h"
 #include "legacy_cache.h"
+#include "lru_cache.h"
 #include "no_cache.h"
 
 #include "raw.h"
@@ -76,11 +77,11 @@ const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
 };
       
 const CacheFuncs DEFAULT_CACHE_FUNCS{
-  tsk_img_read_legacy,
-  legacy_cache_create,
-  legacy_cache_clone,
-  legacy_cache_free,
-  legacy_cache_clear
+  tsk_img_read_lru_finer_lock,
+  lru_cache_create,
+  lru_cache_clone,
+  lru_cache_free,
+  lru_cache_clear
 };
 
 bool sector_size_ok(unsigned int sector_size) {
