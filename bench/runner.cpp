@@ -127,11 +127,11 @@ Stats do_walk(TSK_IMG_INFO* img) {
 }
 
 template <class Func, class... Types>
-std::vector<std::future<typename std::result_of<Func(Types...)>::type>>
+std::vector<std::future<typename std::invoke_result<Func, Types...>::type>>
 run_tasks(size_t n, Func func, Types... args)
 {
   std::vector<std::thread> threads;
-  std::vector<std::future<typename std::result_of<Func(Types...)>::type>> futures;
+  std::vector<std::future<typename std::invoke_result<Func, Types...>::type>> futures;
 
   for (size_t i = 0; i < n; ++i) {
     std::packaged_task task(func);
