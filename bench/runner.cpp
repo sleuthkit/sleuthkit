@@ -127,22 +127,25 @@ void do_walk(TSK_IMG_INFO* img) {
 template <class Func, class... Types>
 void run_tasks(size_t n, Func func, Types... args)
 {
-  std::vector<std::thread> threads;
-  std::vector<std::future<typename std::result_of<Func(Types...)>::type>> results;
+  std::vector<
+    std::pair<
+      std::thread,
+      std::future<typename std::result_of<Func(Types...)>::type>
+    >
+  > jobs;
 
   for (size_t i = 0; i < n; ++i) {
     std::packaged_task task(func);
-    std::future<typename std::result_of<Func(Types...)>::type> f = task.get_future();
-    threads.emplace_back(std::move(task), args...);
-    results.push_back(std::move(f));
+    auto f = task.get_future();
+    jobs.emplace_back(
+      std::thread(std::move(task), args...),
+      std::move(f)
+    );
   }
 
-  for (auto& t: threads) {
-    t.join();
-  }
-
-  for (auto& f: results) {
-    f.wait();
+  for (auto& j: jobs) {
+    j.first.join();
+    j.second.wait();
   }
 }
 
