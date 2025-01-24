@@ -309,7 +309,7 @@ TSK_IMG_INFO* img_open_x(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
   const CacheFuncs& cfuncs,
-  const TSK_IMG_OPTIONS* opts
+  [[maybe_unused]] const TSK_IMG_OPTIONS* opts
 )
 {
     // Clear previous error messages
