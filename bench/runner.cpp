@@ -21,6 +21,7 @@
 #include "tsk/img/no_cache.h"
 #include "tsk/img/tsk_img_i.h"
 
+#include <cstring>
 #include <future>
 #include <iostream>
 #include <memory>
@@ -114,7 +115,7 @@ std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> open_img(
   return img;
 }
 
-void do_walk(TSK_IMG_INFO* img) {
+Stats do_walk(TSK_IMG_INFO* img) {
   Walker w;
   w.openImageHandle(img);
   if (w.findFilesInImg() != 0) {
@@ -122,114 +123,228 @@ void do_walk(TSK_IMG_INFO* img) {
       std::cerr << w.errorRecordToString(e) << std::endl;
     }
   }
+  return img->stats;
 }
 
 template <class Func, class... Types>
-void run_tasks(size_t n, Func func, Types... args)
+std::vector<std::future<typename std::result_of<Func(Types...)>::type>>
+run_tasks(size_t n, Func func, Types... args)
 {
-  std::vector<
-    std::pair<
-      std::thread,
-      std::future<typename std::result_of<Func(Types...)>::type>
-    >
-  > jobs;
+  std::vector<std::thread> threads;
+  std::vector<std::future<typename std::result_of<Func(Types...)>::type>> futures;
 
   for (size_t i = 0; i < n; ++i) {
     std::packaged_task task(func);
-    auto f = task.get_future();
-    jobs.emplace_back(
-      std::thread(std::move(task), args...),
-      std::move(f)
-    );
+    futures.push_back(task.get_future());
+    threads.emplace_back(std::move(task), args...);
   }
 
-  for (auto& j: jobs) {
-    j.first.join();
-    j.second.wait();
+  for (auto& t: threads) {
+    t.join();
   }
+
+  return futures;
 }
 
-void test_caching(
+struct CacheFuncs {
+  ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  void* (*create)(TSK_IMG_INFO* img);
+  void* (*clone)(const TSK_IMG_INFO* img);
+  void (*free)(TSK_IMG_INFO* img);
+  void (*clear)(TSK_IMG_INFO* img);
+};
+
+void set_cache_funcs(TSK_IMG_INFO* img, const CacheFuncs& cfuncs) {
+  img->cache_read = cfuncs.read;
+  img->cache_create = cfuncs.create;
+  img->cache_clone = cfuncs.clone;
+  img->cache_free = cfuncs.free;
+  img->cache_clear = cfuncs.clear;
+}
+
+void test_caching_shared_img(
   const char* fname,
-  void (*fsetup)(TSK_IMG_INFO*),
+  const CacheFuncs& cfuncs,
   const std::vector<const TSK_TCHAR*>& images,
   size_t threads
 )
 {
-  std::cout << fname << ' ' << threads << ' ';
+  std::cout << fname << " sisc " << threads << ' ';
+
   auto img = open_img(images);
   img->cache_free(img.get());
-  fsetup(img.get());
+  set_cache_funcs(img.get(), cfuncs);
   img->cache_holder = img->cache_create(img.get());
-  run_tasks(threads, do_walk, img.get());
+
+  const auto getimg = [&img]() { return img.get(); };
+
+  const auto futures = run_tasks(
+    threads,
+    [getimg](){ do_walk(getimg()); }
+  );
+
+  for (auto& f: futures) {
+    f.wait();
+  }
+
   std::cout << img->stats << '\n';
+}
+
+void test_caching_own_img(
+  const char* fname,
+  const CacheFuncs& cfuncs,
+  const std::vector<const TSK_TCHAR*>& images,
+  size_t threads
+)
+{
+  std::cout << fname << " oioc " << threads << ' ';
+
+  const auto getimg = [&]() {
+    auto img = open_img(images);
+
+    img->cache_free(img.get());
+    set_cache_funcs(img.get(), cfuncs);
+    img->cache_holder = img->cache_create(img.get());
+
+    return img;
+  };
+
+  auto futures = run_tasks(
+    threads,
+    [getimg](){
+      auto img = getimg();
+      return do_walk(img.get());
+    }
+  );
+
+  // collect the per-thread stats
+  Stats stats{};
+  for (auto& f: futures) {
+    const auto s = f.get();
+
+    stats.hits += s.hits;
+    stats.hit_ns += s.hit_ns;
+    stats.hit_bytes += s.hit_bytes;
+    stats.misses += s.misses;
+    stats.miss_ns += s.miss_ns;
+    stats.miss_bytes += s.miss_bytes;
+  }
+
+  std::cout << stats << '\n';
+}
+
+void test_caching_own_img_shared_cache(
+  const char* fname,
+  const CacheFuncs& cfuncs,
+  const std::vector<const TSK_TCHAR*>& images,
+  size_t threads
+)
+{
+  if (!std::strstr(fname, "finer_lock")) {
+    return;
+  }
+
+  std::cout << fname << " oisc " << threads << ' ';
+
+  auto cache = cfuncs.create(nullptr);
+
+  const auto getimg = [&]() {
+    auto img = open_img(images);
+
+    img->cache_free(img.get());
+    set_cache_funcs(img.get(), cfuncs);
+    img->cache_holder = cache;
+
+    return img;
+  };
+
+  auto futures = run_tasks(
+    threads,
+    [getimg](){
+      auto img = getimg();
+      return do_walk(img.get());
+    }
+  );
+
+  // collect the per-thread stats
+  Stats stats{};
+  for (auto& f: futures) {
+    const auto s = f.get();
+
+    stats.hits += s.hits;
+    stats.hit_ns += s.hit_ns;
+    stats.hit_bytes += s.hit_bytes;
+    stats.misses += s.misses;
+    stats.miss_ns += s.miss_ns;
+    stats.miss_bytes += s.miss_bytes;
+  }
+
+  std::cout << stats << '\n';
 }
 
 TEST_CASE("stats") {
   const std::tuple<
     const char*,
-    void (*)(TSK_IMG_INFO*)
+    CacheFuncs
   > caches[] = {
     {
       "tsk_img_read_no_cache",
-      [](TSK_IMG_INFO* img) {
-        img->cache_read = tsk_img_read_no_cache;
-        img->cache_create = no_cache_create;
-        img->cache_clone = no_cache_clone;
-        img->cache_clear = no_cache_clear;
-        img->cache_free = no_cache_free;
+      CacheFuncs{
+        tsk_img_read_no_cache,
+        no_cache_create,
+        no_cache_clone,
+        no_cache_free,
+        no_cache_clear
       }
     },
     {
       "tsk_img_read_legacy",
-      [](TSK_IMG_INFO* img) {
-        img->cache_read = tsk_img_read_legacy;
-        img->cache_create = legacy_cache_create;
-        img->cache_clone = legacy_cache_clone;
-        img->cache_clear = legacy_cache_clear;
-        img->cache_free = legacy_cache_free;
+      CacheFuncs{
+        tsk_img_read_legacy,
+        legacy_cache_create,
+        legacy_cache_clone,
+        legacy_cache_clear,
+        legacy_cache_free
       }
     },
     {
       "tsk_img_read_lru",
-      [](TSK_IMG_INFO* img) {
-        img->cache_read = tsk_img_read_lru;
-        img->cache_create = lru_cache_create;
-        img->cache_clone = lru_cache_clone;
-        img->cache_clear = lru_cache_clear;
-        img->cache_free = lru_cache_free;
+      CacheFuncs{
+        tsk_img_read_lru,
+        lru_cache_create,
+        lru_cache_clone,
+        lru_cache_clear,
+        lru_cache_free
       }
     },
     {
       "tsk_img_read_lru_finer_lock",
-      [](TSK_IMG_INFO* img) {
-        img->cache_read = tsk_img_read_lru_finer_lock;
-        img->cache_create = lru_cache_create;
-        img->cache_clone = lru_cache_clone;
-        img->cache_clear = lru_cache_clear;
-        img->cache_free = lru_cache_free;
+      CacheFuncs{
+        tsk_img_read_lru_finer_lock,
+        lru_cache_create,
+        lru_cache_clone,
+        lru_cache_clear,
+        lru_cache_free
       }
     },
     {
       "tsk_img_read_lru_tsk_lock",
-      [](TSK_IMG_INFO* img) {
-        img->cache_read = tsk_img_read_lru;
-        img->cache_create = [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); };
-        img->cache_clone = lru_cache_clone;
-        img->cache_clear = lru_cache_clear;
-        img->cache_free = lru_cache_free;
-
+      CacheFuncs{
+        tsk_img_read_lru,
+        [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },
+        lru_cache_clone,
+        lru_cache_clear,
+        lru_cache_free
       }
     },
     {
       "tsk_img_read_lru_tsk_finer_lock",
-      [](TSK_IMG_INFO* img) {
-        img->cache_read = tsk_img_read_lru_finer_lock;
-        img->cache_create = [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); };
-        img->cache_clone = lru_cache_clone;
-        img->cache_clear = lru_cache_clear;
-        img->cache_free = lru_cache_free;
-
+      CacheFuncs{
+        tsk_img_read_lru_finer_lock,
+        [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },
+        lru_cache_clone,
+        lru_cache_clear,
+        lru_cache_free
       }
     }
   };
@@ -239,12 +354,14 @@ TEST_CASE("stats") {
      { _TSK_T("/home/juckelman/Downloads/win7-64-nfury-c-drive.E01") }
   };
 
-  std::cout << "name threads h m \"h bytes\" \"m bytes\" \"h ns\" \"m ns\"\n";
+  std::cout << "name sharing threads h m \"h bytes\" \"m bytes\" \"h ns\" \"m ns\"\n";
 
   for (const auto& imgs: images) {
     for (const auto threads: { 1, 10 }) {
-      for (const auto& [fname, fsetup]: caches) {
-        test_caching(fname, fsetup, imgs, threads);
+      for (const auto& [fname, cfuncs]: caches) {
+        test_caching_shared_img(fname, cfuncs, imgs, threads);
+        test_caching_own_img(fname, cfuncs, imgs, threads);
+        test_caching_own_img_shared_cache(fname, cfuncs, imgs, threads);
       }
     }
   }
