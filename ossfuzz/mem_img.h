@@ -75,6 +75,7 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
 
   inmemory_img->img_info.cache = new LegacyCache();
   inmemory_img->img_info.cache_read = tsk_img_read_legacy;
+  inmemory_img->img_info.cache_free = [](TSK_IMG_INFO*){};
 
   return base;
 }

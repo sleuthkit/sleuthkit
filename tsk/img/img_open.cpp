@@ -16,7 +16,6 @@
 
 #include "tsk_img_i.h"
 #include "img_open.h"
-#include "legacy_cache.h"
 #include "lru_cache.h"
 #include "no_cache.h"
 
@@ -75,7 +74,7 @@ const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
   no_cache_free,
   no_cache_clear
 };
-      
+
 const CacheFuncs DEFAULT_CACHE_FUNCS{
   tsk_img_read_lru_finer_lock,
   lru_cache_create,
@@ -428,33 +427,6 @@ utf8_to_utf16(
 }
 #endif
 
-void tsk_img_cache_setup(
-  TSK_IMG_INFO* img_info,
-  int cache_size,
-  int cache_chunk_size
-)
-{
-    std::memset(&img_info->stats, 0, sizeof(Stats));
-
-    if (cache_size == 0 || cache_chunk_size == 0) {
-        img_info->cache_read = tsk_img_read_no_cache;
-        img_info->cache_create = no_cache_create;
-        img_info->cache_clone = no_cache_clone;
-        img_info->cache_clear = no_cache_clear;
-        img_info->cache_free = no_cache_free;
-    }
-    else {
-        img_info->cache_read = tsk_img_read_legacy;
-        img_info->cache_create = legacy_cache_create;
-        img_info->cache_clone = legacy_cache_clone;
-        img_info->cache_clear = legacy_cache_clear;
-        img_info->cache_free = legacy_cache_free;
-    }
-
-    img_info->cache_holder = img_info->cache_create(img_info);
-}
-
-
 /**
  * \ingroup imglib
  * Opens a single (non-split) disk image file so that it can be read.  This is a
@@ -682,11 +654,14 @@ tsk_img_open_external(
     iif->close = close;
     iif->imgstat = imgstat;
 
-    iif->cache_read = tsk_img_read_legacy;
-    iif->cache_create = legacy_cache_create;
-    iif->cache_clone = legacy_cache_clone;
-    iif->cache_clear = legacy_cache_clear;
-    iif->cache_free = legacy_cache_free;
+    std::memset(&img_info->stats, 0, sizeof(Stats));
+
+    iif->cache_read = DEFAULT_NO_CACHE_FUNCS.read;
+    iif->cache_create = DEFAULT_NO_CACHE_FUNCS.create;
+    iif->cache_clone = DEFAULT_NO_CACHE_FUNCS.clone;
+    iif->cache_free = DEFAULT_NO_CACHE_FUNCS.free;
+    iif->cache_clear = DEFAULT_NO_CACHE_FUNCS.clear;
+
     iif->cache = iif->cache_create(img_info);
 
     return img_info;
