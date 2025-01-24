@@ -124,20 +124,16 @@ void do_walk(TSK_IMG_INFO* img) {
   }
 }
 
-void do_walks(TSK_IMG_INFO* img, size_t n) {
+template <class Func, class... Types>
+void run_tasks(size_t n, Func func, Types... args)
+{
   std::vector<std::thread> threads;
-  std::vector<std::future<void>> results;
+  std::vector<std::future<typename std::result_of<Func(Types...)>::type>> results;
 
   for (size_t i = 0; i < n; ++i) {
-/*
-    std::future<void> f = std::async(
-      std::launch::async,
-      [img]() { do_walk(img); }
-    );
-*/
-    std::packaged_task<void(TSK_IMG_INFO*)> task(do_walk);
-    std::future<void> f = task.get_future();
-    threads.emplace_back(std::move(task), img);
+    std::packaged_task task(func);
+    std::future<typename std::result_of<Func(Types...)>::type> f = task.get_future();
+    threads.emplace_back(std::move(task), args...);
     results.push_back(std::move(f));
   }
 
@@ -162,12 +158,15 @@ void test_caching(
   img->cache_free(img.get());
   fsetup(img.get());
   img->cache_holder = img->cache_create(img.get());
-  do_walks(img.get(), threads);
+  run_tasks(threads, do_walk, img.get());
   std::cout << img->stats << '\n';
 }
 
 TEST_CASE("stats") {
-  const std::tuple<const char*, void (*)(TSK_IMG_INFO*)> caches[] = {
+  const std::tuple<
+    const char*,
+    void (*)(TSK_IMG_INFO*)
+  > caches[] = {
     {
       "tsk_img_read_no_cache",
       [](TSK_IMG_INFO* img) {
