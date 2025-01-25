@@ -19,11 +19,14 @@
 #include <stdint.h>
 
 #include "tsk/tsk_tools_i.h"
+#include "tsk/img/legacy_cache.h"
+#include "tsk/img/tsk_img_i.h"
 
 typedef struct {
   TSK_IMG_INFO img_info;
   const uint8_t *data;
   size_t size;
+  LegacyCache *cache;
 } IMG_MEM_INFO;
 
 static ssize_t mem_read(TSK_IMG_INFO *img_info, TSK_OFF_T offset, char *buf,
@@ -46,6 +49,8 @@ static ssize_t mem_read(TSK_IMG_INFO *img_info, TSK_OFF_T offset, char *buf,
 
 static void mem_close(TSK_IMG_INFO *img_info) {
   IMG_MEM_INFO *mem_info = reinterpret_cast<IMG_MEM_INFO *>(img_info);
+
+  delete mem_info->cache;
   free(mem_info);
 }
 
@@ -65,10 +70,14 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   img->imgstat = mem_imgstat;
   img->size = size;
   img->sector_size = 512;
+
   inmemory_img->data = data;
   inmemory_img->size = size;
+  inmemory_img->cache = new LegacyCache();
 
-  tsk_img_cache_setup(img, 0, 0);
+  // tsk_img_cache_setup(img, 0, 0);
+  img->cache_holder = inmemory_img->cache;
+  img->cache_read = tsk_img_read_legacy;
 
   return img;
 }
