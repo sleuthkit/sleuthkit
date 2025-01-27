@@ -234,10 +234,7 @@ extern "C" {
     };
 
     ~TskImgInfo() {
-        if (m_imgInfo == NULL) {
-            return;
-        }
-        m_imgInfo->close(m_imgInfo);
+        tsk_img_close(m_imgInfo);
     };
 
     TskImgInfo(TSK_IMG_INFO * a_imgInfo) {
