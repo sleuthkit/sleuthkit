@@ -54,7 +54,7 @@ out_pool:
   tsk_pool_close(pool);
 
 out_img:
-  img->close(img);
+  tsk_img_close(img);
 
   return 0;
 }

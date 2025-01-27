@@ -38,6 +38,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     fs->close(fs);
   }
 
-  img->close(img);
+  tsk_img_close(img);
   return 0;
 }

@@ -43,6 +43,8 @@ static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 {
     ssize_t nbytes;
 
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
+
     /* Some of the lower-level methods like block-sized reads.
         * So if the len is not that multiple, then make it. */
     if (a_img_info->sector_size > 0 && a_len % a_img_info->sector_size) {
@@ -54,7 +56,7 @@ static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
             return -1;
         }
 
-        nbytes = a_img_info->read(a_img_info, a_off, buf2.get(), len_tmp);
+        nbytes = iif->read(a_img_info, a_off, buf2.get(), len_tmp);
         if (nbytes < 0) {
             return -1;
         }
@@ -68,7 +70,7 @@ static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         }
     }
     else {
-        nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
+        nbytes = iif->read(a_img_info, a_off, a_buf, a_len);
     }
 
     return nbytes;
@@ -80,12 +82,14 @@ ssize_t tsk_img_read_no_cache(
   char* a_buf,
   size_t a_len)
 {
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
+
   Timer timer;
-  Stats& stats = a_img_info->stats;
+  Stats& stats = iif->stats;
 
   ssize_t read_count = 0;
 
-  auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
+  auto cache = static_cast<LegacyCache*>(iif->cache);
   cache->lock();
   timer.start();
   read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
@@ -105,8 +109,10 @@ tsk_img_read_legacy(
     char* a_buf,
     size_t a_len)
 {
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
+
     Timer timer;
-    Stats& stats = a_img_info->stats;
+    Stats& stats = iif->stats;
 
 #define CACHE_AGE   1000
     ssize_t read_count = 0;
@@ -115,7 +121,7 @@ tsk_img_read_legacy(
      * the shared variables in the img type specific INFO structs.
      * grab it now so that it is held before any reads.
      */
-    auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
+    auto cache = static_cast<LegacyCache*>(iif->cache);
     cache->lock();
 
     // if they ask for more than the cache length, skip the cache
@@ -220,7 +226,7 @@ tsk_img_read_legacy(
                 cache->cache_off[cache_next]);
         }
 
-        read_count = a_img_info->read(a_img_info,
+        read_count = iif->read(a_img_info,
             cache->cache_off[cache_next],
             cache->cache[cache_next], read_size);
 
@@ -336,5 +342,5 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return -1;
     }
 
-    return a_img_info->cache_read(a_img_info, a_off, a_buf, a_len);
+    return reinterpret_cast<IMG_INFO*>(a_img_info)->cache_read(a_img_info, a_off, a_buf, a_len);
 }

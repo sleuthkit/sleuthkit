@@ -164,9 +164,9 @@ logical_open(
 		logical_info->inum_cache[i].cache_age = 0;
 	}
 
-	img_info->read = logical_read;
-	img_info->close = logical_close;
-	img_info->imgstat = logical_imgstat;
+	logical_info->img_info.read = logical_read;
+	logical_info->img_info.close = logical_close;
+	logical_info->img_info.imgstat = logical_imgstat;
 
 	size_t len = TSTRLEN(a_images[0]);
 	logical_info->base_path =

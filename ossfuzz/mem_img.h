@@ -23,10 +23,9 @@
 #include "tsk/img/tsk_img_i.h"
 
 typedef struct {
-  TSK_IMG_INFO img_info;
+  IMG_INFO img_info;
   const uint8_t *data;
   size_t size;
-  LegacyCache *cache;
 } IMG_MEM_INFO;
 
 static ssize_t mem_read(TSK_IMG_INFO *img_info, TSK_OFF_T offset, char *buf,
@@ -49,8 +48,6 @@ static ssize_t mem_read(TSK_IMG_INFO *img_info, TSK_OFF_T offset, char *buf,
 
 static void mem_close(TSK_IMG_INFO *img_info) {
   IMG_MEM_INFO *mem_info = reinterpret_cast<IMG_MEM_INFO *>(img_info);
-
-  delete mem_info->cache;
   free(mem_info);
 }
 
@@ -63,23 +60,23 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   if (inmemory_img == nullptr) {
     return nullptr;
   }
-  img = reinterpret_cast<TSK_IMG_INFO *>(inmemory_img);
-  img->itype = TSK_IMG_TYPE_RAW;
-  img->read = mem_read;
-  img->close = mem_close;
-  img->imgstat = mem_imgstat;
-  img->size = size;
-  img->sector_size = 512;
 
   inmemory_img->data = data;
   inmemory_img->size = size;
-  inmemory_img->cache = new LegacyCache();
 
-  // tsk_img_cache_setup(img, 0, 0);
-  img->cache_holder = inmemory_img->cache;
-  img->cache_read = tsk_img_read_legacy;
+  auto base = inmemory_img->img_info.img_info;
+  base->itype = TSK_IMG_TYPE_RAW;
+  base->size = size;
+  base->sector_size = 512;
 
-  return img;
+  inmemory_img->img_info.read = mem_read;
+  inmemory_img->img_info.close = mem_close;
+  inmemory_img->img_info.imgstat = mem_imgstat;
+
+  inmemory_img->img_info.cache = new LegacyCache();
+  inmemory_img->img_info.cache_read = tsk_img_read_legacy;
+
+  return base;
 }
 
 #endif // # MEM_IMG_H

@@ -115,17 +115,7 @@ extern "C" {
         unsigned int page_size;         ///< page size of NAND page in bytes (defaults to 2048)
         unsigned int spare_size;        ///< spare or OOB size of NAND in bytes (defaults to 64)
 
-        // the following are protected by cache_lock in IMG_INFO
         TSK_TCHAR **images;    ///< Image names
-
-        void* cache_holder;
-        Stats stats;
-
-        ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
-
-        ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
-        void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
-        void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function
     };
 
     // open and close functions

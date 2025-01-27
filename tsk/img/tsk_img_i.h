@@ -35,6 +35,20 @@ extern "C" {
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
+
+struct IMG_INFO {
+  TSK_IMG_INFO img_info;
+
+  void* cache;
+  Stats stats;
+
+  ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+
+  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
+  void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
+  void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function
+};
+
 extern void *tsk_img_malloc(size_t);
 extern void tsk_img_free(void *);
 
