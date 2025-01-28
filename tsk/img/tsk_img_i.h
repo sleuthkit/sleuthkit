@@ -48,9 +48,9 @@ struct IMG_INFO {
   void (*cache_free)(TSK_IMG_INFO* img);
   void (*cache_clear)(TSK_IMG_INFO* img);
 
-  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);
-  void (*close) (TSK_IMG_INFO *);
-  void (*imgstat) (TSK_IMG_INFO *, FILE *);
+  ssize_t (*read)(TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);
+  void (*close)(TSK_IMG_INFO *);
+  void (*imgstat)(TSK_IMG_INFO *, FILE *);
 };
 
 extern void *tsk_img_malloc(size_t);
