@@ -67,7 +67,7 @@ TEST_CASE("tsk_img_read length overflow") {
 
 TEST_CASE("tsk_img_read inner function failed") {
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
-    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
     tsk_img_free
   };
 
@@ -77,7 +77,7 @@ TEST_CASE("tsk_img_read inner function failed") {
   iif->cache_read = tsk_img_read_no_cache;
   iif->cache_create = no_cache_create;
   iif->cache_free = no_cache_free;
-  iif->cache = iiif->cache_create(img.get());
+  iif->cache = iif->cache_create(img.get());
 
   iif->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
     return (ssize_t) -1;

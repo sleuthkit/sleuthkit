@@ -73,11 +73,11 @@ void* lru_cache_clone(const TSK_IMG_INFO*) {
 }
 
 void lru_cache_clear(TSK_IMG_INFO* img_info) {
-  auto cache = static_cast<Cache*>(img_info->cache_holder);
+  auto cache = static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
   std::scoped_lock lock{*cache};
   cache->clear();
 }
 
 void lru_cache_free(TSK_IMG_INFO* img_info) {
-  delete static_cast<Cache*>(img_info->cache_holder);
+  delete static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
 }

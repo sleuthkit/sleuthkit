@@ -1,5 +1,5 @@
 #include "legacy_cache.h"
-#include "tsk_img.h"
+#include "tsk_img_i.h"
 
 #include <cstring>
 
@@ -38,12 +38,12 @@ void* legacy_cache_clone(const TSK_IMG_INFO*) {
 }
 
 void legacy_cache_clear(TSK_IMG_INFO* img_info) {
-    auto cache = static_cast<LegacyCache*>(img_info->cache_holder);
+    auto cache = static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
     cache->lock();
     cache->clear();
     cache->unlock();
 }
 
 void legacy_cache_free(TSK_IMG_INFO* img_info) {
-    delete static_cast<LegacyCache*>(img_info->cache_holder);
+    delete static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
 }

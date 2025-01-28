@@ -43,9 +43,10 @@ private:
 };
 
 ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
   size_t pos = 0;
   for (ssize_t r; pos < len; pos += r) {
-    r = img->read(img, off + pos, buf + pos, len - pos);
+    r = iif->read(img, off + pos, buf + pos, len - pos);
     if (r == -1) {
       return -1;
     }
@@ -80,8 +81,8 @@ ssize_t read_chunk_nonlocking(
   return clen;
 }
 
-Cache& cache_get(TSK_IMG_INFO* img) {
-  return *reinterpret_cast<Cache*>(img->cache_holder);
+Cache& cache_get(IMG_INFO* img) {
+  return *reinterpret_cast<Cache*>(img->cache);
 }
 
 ssize_t tsk_img_read_lru_finer_lock(
@@ -91,10 +92,12 @@ ssize_t tsk_img_read_lru_finer_lock(
   size_t a_len
 )
 {
-  Timer timer;
-  Stats& stats = a_img_info->stats;
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
 
-  Cache& cache = cache_get(a_img_info);
+  Timer timer;
+  Stats& stats = iif->stats;
+
+  Cache& cache = cache_get(iif);
   const size_t chunk_size = cache.chunk_size();
 
   // offset of src end, taking care not to overrun the end of the image
@@ -180,10 +183,12 @@ ssize_t tsk_img_read_lru(
   size_t a_len
 )
 {
-  Timer timer;
-  Stats& stats = a_img_info->stats;
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
 
-  Cache& cache = cache_get(a_img_info);
+  Timer timer;
+  Stats& stats = iif->stats;
+
+  Cache& cache = cache_get(iif);
   const size_t chunk_size = cache.chunk_size();
 
   // offset of src end, taking care not to overrun the end of the image
@@ -312,10 +317,10 @@ ssize_t tsk_img_read_no_cache(
   timer.stop();
 
   // update the stats
-  auto cache = static_cast<NoCache*>(a_img_info->cache_holder);
+  auto cache = static_cast<NoCache*>(iif->cache);
   std::scoped_lock lock{cache->mutex};
 
-  Stats& stats = a_img_info->stats;
+  Stats& stats = iif->stats;
   stats.miss_ns += timer.elapsed();
   ++stats.misses;
   stats.miss_bytes += read_count;

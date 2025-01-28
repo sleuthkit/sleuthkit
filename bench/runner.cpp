@@ -123,7 +123,7 @@ Stats do_walk(TSK_IMG_INFO* img) {
       std::cerr << w.errorRecordToString(e) << std::endl;
     }
   }
-  return img->stats;
+  return reinterpret_cast<IMG_INFO*>(img)->stats;
 }
 
 template <class Func, class... Types>
@@ -155,11 +155,12 @@ struct CacheFuncs {
 };
 
 void set_cache_funcs(TSK_IMG_INFO* img, const CacheFuncs& cfuncs) {
-  img->cache_read = cfuncs.read;
-  img->cache_create = cfuncs.create;
-  img->cache_clone = cfuncs.clone;
-  img->cache_free = cfuncs.free;
-  img->cache_clear = cfuncs.clear;
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
+  iif->cache_read = cfuncs.read;
+  iif->cache_create = cfuncs.create;
+  iif->cache_clone = cfuncs.clone;
+  iif->cache_free = cfuncs.free;
+  iif->cache_clear = cfuncs.clear;
 }
 
 void test_caching_shared_img(
@@ -172,9 +173,12 @@ void test_caching_shared_img(
   std::cout << fname << " sisc " << threads << ' ';
 
   auto img = open_img(images);
-  img->cache_free(img.get());
+
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
+
+  iif->cache_free(img.get());
   set_cache_funcs(img.get(), cfuncs);
-  img->cache_holder = img->cache_create(img.get());
+  iif->cache = iif->cache_create(img.get());
 
   const auto getimg = [&img]() { return img.get(); };
 
@@ -187,7 +191,7 @@ void test_caching_shared_img(
     f.wait();
   }
 
-  std::cout << img->stats << '\n';
+  std::cout << iif->stats << '\n';
 }
 
 void test_caching_own_img(
@@ -202,9 +206,10 @@ void test_caching_own_img(
   const auto getimg = [&]() {
     auto img = open_img(images);
 
-    img->cache_free(img.get());
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
+    iif->cache_free(img.get());
     set_cache_funcs(img.get(), cfuncs);
-    img->cache_holder = img->cache_create(img.get());
+    iif->cache = iif->cache_create(img.get());
 
     return img;
   };
@@ -251,9 +256,10 @@ void test_caching_own_img_shared_cache(
   const auto getimg = [&]() {
     auto img = open_img(images);
 
-    img->cache_free(img.get());
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
+    iif->cache_free(img.get());
     set_cache_funcs(img.get(), cfuncs);
-    img->cache_holder = cache;
+    iif->cache = cache;
 
     return img;
   };

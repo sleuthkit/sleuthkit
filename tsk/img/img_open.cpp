@@ -654,7 +654,7 @@ tsk_img_open_external(
     iif->close = close;
     iif->imgstat = imgstat;
 
-    std::memset(&img_info->stats, 0, sizeof(Stats));
+    std::memset(&iif->stats, 0, sizeof(Stats));
 
     iif->cache_read = DEFAULT_NO_CACHE_FUNCS.read;
     iif->cache_create = DEFAULT_NO_CACHE_FUNCS.create;
@@ -804,7 +804,7 @@ tsk_img_malloc(size_t a_len)
     }
     imgInfo->tag = TSK_IMG_INFO_TAG;
 
-    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
     iif->cache = nullptr;
     iif->cache_free = [](TSK_IMG_INFO*){ };
 
@@ -820,6 +820,6 @@ tsk_img_free(void *a_ptr)
     TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
     imgInfo->tag = 0;
     tsk_img_free_image_names(imgInfo);
-    imgInfo->cache_free(imgInfo);
+    reinterpret_cast<IMG_INFO*>(imgInfo)->cache_free(imgInfo);
     free(imgInfo);
 }
