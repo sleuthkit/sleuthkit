@@ -74,7 +74,7 @@ ssize_t tsk_img_read_no_cache(
   size_t a_len
 );
 
-ssize_t tsk_img_read_lru(
+ssize_t tsk_img_read_cache(
   TSK_IMG_INFO* a_img_info,
   TSK_OFF_T a_off,
   char* a_buf,

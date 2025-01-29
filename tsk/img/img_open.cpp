@@ -80,7 +80,7 @@ const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
 };
 
 const CacheFuncs DEFAULT_CACHE_FUNCS{
-  tsk_img_read_lru,
+  tsk_img_read_cache,
   lru_cache_get,
   lru_cache_put,
   lru_cache_create,

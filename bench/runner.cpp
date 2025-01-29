@@ -312,10 +312,10 @@ TEST_CASE("stats") {
       }
     },
     {
-      "tsk_img_read_lru",
+      "tsk_img_read_cache",
       CacheSetup{
         1024,
-        tsk_img_read_lru,
+        tsk_img_read_cache,
         lru_cache_get,
         lru_cache_put,
         lru_cache_create,
@@ -325,10 +325,10 @@ TEST_CASE("stats") {
       }
     },
     {
-      "tsk_img_read_lru_tsk",
+      "tsk_img_read_cache_tsk",
       CacheSetup{
         1024,
-        tsk_img_read_lru,
+        tsk_img_read_cache,
         lru_cache_get,
         lru_cache_put,
         [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },
