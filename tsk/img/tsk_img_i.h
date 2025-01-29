@@ -46,17 +46,17 @@ struct IMG_INFO {
 
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 
-  const char* (*cache_get)(TSK_IMG_INFO* img, TSK_OFF_T off);
-  void (*cache_put)(TSK_IMG_INFO* img, TSK_OFF_T off, const char* buf);
+  const char* (*cache_get)(void* data, TSK_OFF_T off);
+  void (*cache_put)(void* data, TSK_OFF_T off, const char* buf);
 
   void* (*cache_create)(TSK_IMG_INFO* img);
   void* (*cache_clone)(const TSK_IMG_INFO* img);
-  void (*cache_free)(TSK_IMG_INFO* img);
-  void (*cache_clear)(TSK_IMG_INFO* img);
+  void (*cache_free)(void* data);
+  void (*cache_clear)(void* data);
 
-  ssize_t (*read)(TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);
-  void (*close)(TSK_IMG_INFO *);
-  void (*imgstat)(TSK_IMG_INFO *, FILE *);
+  ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  void (*close)(TSK_IMG_INFO*);
+  void (*imgstat)(TSK_IMG_INFO*, FILE*);
 };
 
 extern void *tsk_img_malloc(size_t);

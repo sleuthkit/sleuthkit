@@ -63,22 +63,20 @@ void* lru_cache_clone(const TSK_IMG_INFO* img) {
   return new LRUImgCacheLocking(reinterpret_cast<const IMG_INFO*>(img)->cache_size);
 }
 
-void lru_cache_clear(TSK_IMG_INFO* img_info) {
-  auto cache = static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
+void lru_cache_clear(void* data) {
+  auto cache = static_cast<Cache*>(data);
   std::scoped_lock lock{*cache};
   cache->clear();
 }
 
-void lru_cache_free(TSK_IMG_INFO* img_info) {
-  delete static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
+void lru_cache_free(void* data) {
+  delete static_cast<Cache*>(data);
 }
 
-const char* lru_cache_get(TSK_IMG_INFO* img_info, TSK_OFF_T off) {
-  auto cache = static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
-  return cache->get(off);
+const char* lru_cache_get(void* data, TSK_OFF_T off) {
+  return static_cast<Cache*>(data)->get(off);
 }
 
-void lru_cache_put(TSK_IMG_INFO* img_info, TSK_OFF_T off, const char* buf) {
-  auto cache = static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
-  cache->put(off, buf);
+void lru_cache_put(void* data, TSK_OFF_T off, const char* buf) {
+  static_cast<Cache*>(data)->put(off, buf);
 }

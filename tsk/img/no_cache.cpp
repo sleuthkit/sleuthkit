@@ -9,8 +9,8 @@ void* no_cache_clone(const TSK_IMG_INFO*) {
   return new NoCache();
 }
 
-void no_cache_clear(TSK_IMG_INFO*) {}
+void no_cache_clear(void*) {}
 
-void no_cache_free(TSK_IMG_INFO* img_info) {
-  delete static_cast<NoCache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
+void no_cache_free(void* data) {
+  delete static_cast<NoCache*>(data);
 }

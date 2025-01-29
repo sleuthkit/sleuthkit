@@ -151,12 +151,12 @@ void* lru_cache_create(TSK_IMG_INFO* img_info);
 
 void* lru_cache_clone(const TSK_IMG_INFO* img_info);
 
-void lru_cache_clear(TSK_IMG_INFO* img_info);
+void lru_cache_clear(void* data);
 
-void lru_cache_free(TSK_IMG_INFO* img_info);
+void lru_cache_free(void* data);
 
-const char* lru_cache_get(TSK_IMG_INFO* img, TSK_OFF_T off);
+const char* lru_cache_get(void* data, TSK_OFF_T off);
 
-void lru_cache_put(TSK_IMG_INFO* img, TSK_OFF_T off, const char* buf);
+void lru_cache_put(void* data, TSK_OFF_T off, const char* buf);
 
 #endif

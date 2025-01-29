@@ -63,7 +63,7 @@ ssize_t read_chunk_locking(
     return -1;
   }
   std::scoped_lock lock{cache};
-  reinterpret_cast<IMG_INFO*>(img)->cache_put(img, coff, buf);
+  reinterpret_cast<IMG_INFO*>(img)->cache_put(&cache, coff, buf);
   return clen;
 }
 
@@ -114,7 +114,7 @@ ssize_t tsk_img_read_lru(
     {
       std::scoped_lock lock{cache};
       timer.start();
-      chunk = iif->cache_get(a_img_info, coff);
+      chunk = iif->cache_get(iif->cache, coff);
       if (chunk) {
         // cache hit: copy chunk to buffer
         std::memcpy(dst, chunk + delta, len);

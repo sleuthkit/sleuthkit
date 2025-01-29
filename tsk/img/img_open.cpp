@@ -61,12 +61,12 @@ const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
 
 struct CacheFuncs {
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
-  const char* (*get)(TSK_IMG_INFO* img, TSK_OFF_T off);
-  void (*put)(TSK_IMG_INFO* img, TSK_OFF_T off, const char* buf);
+  const char* (*get)(void* data, TSK_OFF_T off);
+  void (*put)(void* data, TSK_OFF_T off, const char* buf);
   void* (*create)(TSK_IMG_INFO* img);
   void* (*clone)(const TSK_IMG_INFO* img);
-  void (*free)(TSK_IMG_INFO* img);
-  void (*clear)(TSK_IMG_INFO* img);
+  void (*free)(void* data);
+  void (*clear)(void* data);
 };
 
 const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
@@ -819,7 +819,7 @@ tsk_img_malloc(size_t a_len)
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
     iif->cache = nullptr;
-    iif->cache_free = [](TSK_IMG_INFO*){ };
+    iif->cache_free = [](void*){ };
 
     return imgInfo;
 }
@@ -833,6 +833,9 @@ tsk_img_free(void *a_ptr)
     TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
     imgInfo->tag = 0;
     tsk_img_free_image_names(imgInfo);
-    reinterpret_cast<IMG_INFO*>(imgInfo)->cache_free(imgInfo);
+
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
+    iif->cache_free(iif->cache);
+
     free(imgInfo);
 }
