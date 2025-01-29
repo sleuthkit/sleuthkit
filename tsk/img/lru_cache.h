@@ -155,4 +155,8 @@ void lru_cache_clear(TSK_IMG_INFO* img_info);
 
 void lru_cache_free(TSK_IMG_INFO* img_info);
 
+const char* lru_cache_get(TSK_IMG_INFO* img, TSK_OFF_T off);
+
+void lru_cache_put(TSK_IMG_INFO* img, TSK_OFF_T off, const char* buf);
+
 #endif

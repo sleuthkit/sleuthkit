@@ -171,6 +171,20 @@ extern "C" {
         void (*close) (TSK_IMG_INFO *),
         void (*imgstat) (TSK_IMG_INFO *, FILE *));
 
+    TSK_IMG_INFO* tsk_img_open_utf8_opt_external_cache(
+        int num_img,
+        const char *const images[],
+        TSK_IMG_TYPE_ENUM type,
+        unsigned int a_ssize,
+        const TSK_IMG_OPTIONS* opts,
+// TODO: replace cache_read with cache_get, cache_put
+        ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len),
+        void* (*cache_create)(TSK_IMG_INFO* img),
+        void* (*cache_clone)(const TSK_IMG_INFO* img),
+        void (*cache_free)(TSK_IMG_INFO* img),
+        void (*cache_clear)(TSK_IMG_INFO* img)
+    );
+
     extern void tsk_img_close(TSK_IMG_INFO *);
 
     // read functions

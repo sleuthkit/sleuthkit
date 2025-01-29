@@ -39,10 +39,16 @@ extern "C" {
 struct IMG_INFO {
   TSK_IMG_INFO img_info;
 
+  size_t cache_size;
+  size_t cache_chunk_size;
   void* cache;
   Stats stats;
 
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+
+  const char* (*cache_get)(TSK_IMG_INFO* img, TSK_OFF_T off);
+  void (*cache_put)(TSK_IMG_INFO* img, TSK_OFF_T off, const char* buf);
+
   void* (*cache_create)(TSK_IMG_INFO* img);
   void* (*cache_clone)(const TSK_IMG_INFO* img);
   void (*cache_free)(TSK_IMG_INFO* img);

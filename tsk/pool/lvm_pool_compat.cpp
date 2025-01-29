@@ -207,6 +207,8 @@ TSK_IMG_INFO * LVMPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_D
     img_info->images = origInfo->images;
 
     img_info->cache_read = origInfo->cache_read;
+    img_info->cache_get = origInfo->cache_get;
+    img_info->cache_put = origInfo->cache_put;
     img_info->cache_create = origInfo->cache_create;
     img_info->cache_clone = origInfo->cache_clone;
     img_info->cache_clear = origInfo->cache_clear;

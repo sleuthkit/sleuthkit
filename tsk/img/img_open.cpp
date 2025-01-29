@@ -61,6 +61,8 @@ const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
 
 struct CacheFuncs {
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  const char* (*get)(TSK_IMG_INFO* img, TSK_OFF_T off);
+  void (*put)(TSK_IMG_INFO* img, TSK_OFF_T off, const char* buf);
   void* (*create)(TSK_IMG_INFO* img);
   void* (*clone)(const TSK_IMG_INFO* img);
   void (*free)(TSK_IMG_INFO* img);
@@ -69,6 +71,8 @@ struct CacheFuncs {
 
 const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
   tsk_img_read_no_cache,
+  nullptr,
+  nullptr,
   no_cache_create,
   no_cache_clone,
   no_cache_free,
@@ -77,6 +81,8 @@ const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
 
 const CacheFuncs DEFAULT_CACHE_FUNCS{
   tsk_img_read_lru_finer_lock,
+  lru_cache_get,
+  lru_cache_put,
   lru_cache_create,
   lru_cache_clone,
   lru_cache_free,
@@ -337,7 +343,12 @@ TSK_IMG_INFO* img_open_x(
     std::memset(&iif->stats, 0, sizeof(Stats));
 
     // set up the cache
-    iif->cache_read = cfuncs.read; 
+    iif->cache_size = opts->cache_size == -1 ? 1024 : opts->cache_size;
+    iif->cache_chunk_size = opts->cache_chunk_size;
+
+    iif->cache_read = cfuncs.read;
+    iif->cache_get = cfuncs.get;
+    iif->cache_put = cfuncs.put;
     iif->cache_create = cfuncs.create;
     iif->cache_clone = cfuncs.clone;
     iif->cache_clear = cfuncs.clear;
@@ -657,6 +668,8 @@ tsk_img_open_external(
     std::memset(&iif->stats, 0, sizeof(Stats));
 
     iif->cache_read = DEFAULT_NO_CACHE_FUNCS.read;
+    iif->cache_get = DEFAULT_NO_CACHE_FUNCS.get;
+    iif->cache_put = DEFAULT_NO_CACHE_FUNCS.put;
     iif->cache_create = DEFAULT_NO_CACHE_FUNCS.create;
     iif->cache_clone = DEFAULT_NO_CACHE_FUNCS.clone;
     iif->cache_free = DEFAULT_NO_CACHE_FUNCS.free;

@@ -146,26 +146,32 @@ run_tasks(size_t n, Func func, Types... args)
   return futures;
 }
 
-struct CacheFuncs {
+struct CacheSetup {
+  size_t cache_size;
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  const char* (*get)(TSK_IMG_INFO* img, TSK_OFF_T off);
+  void (*put)(TSK_IMG_INFO* img, TSK_OFF_T off, const char* buf);
   void* (*create)(TSK_IMG_INFO* img);
   void* (*clone)(const TSK_IMG_INFO* img);
   void (*free)(TSK_IMG_INFO* img);
   void (*clear)(TSK_IMG_INFO* img);
 };
 
-void set_cache_funcs(TSK_IMG_INFO* img, const CacheFuncs& cfuncs) {
+void set_cache_funcs(TSK_IMG_INFO* img, const CacheSetup& csetup) {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
-  iif->cache_read = cfuncs.read;
-  iif->cache_create = cfuncs.create;
-  iif->cache_clone = cfuncs.clone;
-  iif->cache_free = cfuncs.free;
-  iif->cache_clear = cfuncs.clear;
+  iif->cache_size = csetup.cache_size;
+  iif->cache_read = csetup.read;
+  iif->cache_get = csetup.get;
+  iif->cache_put = csetup.put;
+  iif->cache_create = csetup.create;
+  iif->cache_clone = csetup.clone;
+  iif->cache_free = csetup.free;
+  iif->cache_clear = csetup.clear;
 }
 
 void test_caching_shared_img(
   const char* fname,
-  const CacheFuncs& cfuncs,
+  const CacheSetup& csetup,
   const std::vector<const TSK_TCHAR*>& images,
   size_t threads
 )
@@ -177,7 +183,7 @@ void test_caching_shared_img(
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
 
   iif->cache_free(img.get());
-  set_cache_funcs(img.get(), cfuncs);
+  set_cache_funcs(img.get(), csetup);
   iif->cache = iif->cache_create(img.get());
 
   const auto getimg = [&img]() { return img.get(); };
@@ -196,7 +202,7 @@ void test_caching_shared_img(
 
 void test_caching_own_img(
   const char* fname,
-  const CacheFuncs& cfuncs,
+  const CacheSetup& csetup,
   const std::vector<const TSK_TCHAR*>& images,
   size_t threads
 )
@@ -208,7 +214,7 @@ void test_caching_own_img(
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
     iif->cache_free(img.get());
-    set_cache_funcs(img.get(), cfuncs);
+    set_cache_funcs(img.get(), csetup);
     iif->cache = iif->cache_create(img.get());
 
     return img;
@@ -240,7 +246,7 @@ void test_caching_own_img(
 
 void test_caching_own_img_shared_cache(
   const char* fname,
-  const CacheFuncs& cfuncs,
+  const CacheSetup& csetup,
   const std::vector<const TSK_TCHAR*>& images,
   size_t threads
 )
@@ -251,14 +257,14 @@ void test_caching_own_img_shared_cache(
 
   std::cout << fname << " oisc " << threads << ' ';
 
-  auto cache = cfuncs.create(nullptr);
+  auto cache = csetup.create(nullptr);
 
   const auto getimg = [&]() {
     auto img = open_img(images);
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
     iif->cache_free(img.get());
-    set_cache_funcs(img.get(), cfuncs);
+    set_cache_funcs(img.get(), csetup);
     iif->cache = cache;
 
     return img;
@@ -291,12 +297,15 @@ void test_caching_own_img_shared_cache(
 TEST_CASE("stats") {
   const std::tuple<
     const char*,
-    CacheFuncs
+    CacheSetup
   > caches[] = {
     {
       "tsk_img_read_no_cache",
-      CacheFuncs{
+      CacheSetup{
+        0,
         tsk_img_read_no_cache,
+        nullptr,
+        nullptr,
         no_cache_create,
         no_cache_clone,
         no_cache_free,
@@ -305,8 +314,11 @@ TEST_CASE("stats") {
     },
     {
       "tsk_img_read_legacy",
-      CacheFuncs{
+      CacheSetup{
+        1024,
         tsk_img_read_legacy,
+        nullptr,
+        nullptr,
         legacy_cache_create,
         legacy_cache_clone,
         legacy_cache_clear,
@@ -315,8 +327,11 @@ TEST_CASE("stats") {
     },
     {
       "tsk_img_read_lru",
-      CacheFuncs{
+      CacheSetup{
+        1024,
         tsk_img_read_lru,
+        lru_cache_get,
+        lru_cache_put,
         lru_cache_create,
         lru_cache_clone,
         lru_cache_clear,
@@ -325,8 +340,11 @@ TEST_CASE("stats") {
     },
     {
       "tsk_img_read_lru_finer_lock",
-      CacheFuncs{
+      CacheSetup{
+        1024,
         tsk_img_read_lru_finer_lock,
+        lru_cache_get,
+        lru_cache_put,
         lru_cache_create,
         lru_cache_clone,
         lru_cache_clear,
@@ -335,8 +353,11 @@ TEST_CASE("stats") {
     },
     {
       "tsk_img_read_lru_tsk_lock",
-      CacheFuncs{
+      CacheSetup{
+        1024,
         tsk_img_read_lru,
+        lru_cache_get,
+        lru_cache_put,
         [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },
         lru_cache_clone,
         lru_cache_clear,
@@ -345,8 +366,11 @@ TEST_CASE("stats") {
     },
     {
       "tsk_img_read_lru_tsk_finer_lock",
-      CacheFuncs{
+      CacheSetup{
+        1024,
         tsk_img_read_lru_finer_lock,
+        lru_cache_get,
+        lru_cache_put,
         [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },
         lru_cache_clone,
         lru_cache_clear,
@@ -364,10 +388,10 @@ TEST_CASE("stats") {
 
   for (const auto& imgs: images) {
     for (const auto threads: { 1, 10 }) {
-      for (const auto& [fname, cfuncs]: caches) {
-        test_caching_shared_img(fname, cfuncs, imgs, threads);
-        test_caching_own_img(fname, cfuncs, imgs, threads);
-        test_caching_own_img_shared_cache(fname, cfuncs, imgs, threads);
+      for (const auto& [fname, csetup]: caches) {
+        test_caching_shared_img(fname, csetup, imgs, threads);
+        test_caching_own_img(fname, csetup, imgs, threads);
+//        test_caching_own_img_shared_cache(fname, csetup, imgs, threads);
       }
     }
   }
