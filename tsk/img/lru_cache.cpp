@@ -75,12 +75,10 @@ void lru_cache_free(TSK_IMG_INFO* img_info) {
 
 const char* lru_cache_get(TSK_IMG_INFO* img_info, TSK_OFF_T off) {
   auto cache = static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
-//  std::scoped_lock lock{*cache};
   return cache->get(off);
 }
 
 void lru_cache_put(TSK_IMG_INFO* img_info, TSK_OFF_T off, const char* buf) {
   auto cache = static_cast<Cache*>(reinterpret_cast<IMG_INFO*>(img_info)->cache);
-//  std::scoped_lock lock{*cache};
   cache->put(off, buf);
 }
