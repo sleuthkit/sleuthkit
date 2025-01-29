@@ -26,6 +26,8 @@
 #include <memory>
 #include <vector>
 
+#ifdef READ_STATS
+
 class Walker: public TskAuto {
 public:
   virtual ~Walker() {}
@@ -54,44 +56,6 @@ public:
     return TSK_OK;
   }
 };
-
-/*
-TEST_CASE("bench") {
-  const TSK_TCHAR* const images[] = { _TSK_T("../fsrip/testdata/img/TinyOSX.E01") };
-
-  BENCHMARK("legacy bench") {
-    std::shared_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-      tsk_img_open(1, images, TSK_IMG_TYPE_EWF_EWF, 0),
-      tsk_img_close
-    };
-    REQUIRE(img);
-
-    const auto img_ptr = img.get();
-
-    std::vector<std::future<uint8_t>> results;
-
-    for (size_t i = 0; i < 10; ++i) {
-      std::future<uint8_t> f = std::async(
-        std::launch::async,
-        [img_ptr]() {
-          Walker w;
-          w.openImageHandle(img_ptr);
-          return w.findFilesInImg();
-        }
-      );
-
-      results.push_back(std::move(f));
-    }
-
-    uint8_t x = 0;
-    for (auto& f: results) {
-      f.wait();
-      x |= f.get();
-    }
-    return x;
-  };
-}
-*/
 
 std::ostream& operator<<(std::ostream& o, const Stats& s) {
   return o << s.hits << ' '
@@ -356,3 +320,5 @@ TEST_CASE("stats") {
     }
   }
 }
+
+#endif

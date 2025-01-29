@@ -36,13 +36,30 @@ extern "C" {
 #define O_BINARY 0
 #endif
 
+//#define READ_STATS
+
+#ifdef READ_STATS
+typedef struct Stats {
+  size_t hits;
+  size_t hit_ns;
+  size_t hit_bytes;
+  size_t misses;
+  size_t miss_ns;
+  size_t miss_bytes;
+  size_t histogram[64];
+} Stats;
+#endif
+
 struct IMG_INFO {
   TSK_IMG_INFO img_info;
 
   size_t cache_size;
   size_t cache_chunk_size;
   void* cache;
+
+#ifdef READ_STATS
   Stats stats;
+#endif
 
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 

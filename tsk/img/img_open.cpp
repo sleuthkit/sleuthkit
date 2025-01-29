@@ -340,7 +340,9 @@ TSK_IMG_INFO* img_open_x(
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
 
+#ifdef READ_STATS
     std::memset(&iif->stats, 0, sizeof(Stats));
+#endif
 
     // set up the cache
     iif->cache_size = opts->cache_size == -1 ? 1024 : opts->cache_size;
@@ -665,7 +667,9 @@ tsk_img_open_external(
     iif->close = close;
     iif->imgstat = imgstat;
 
+#ifdef READ_STATS
     std::memset(&iif->stats, 0, sizeof(Stats));
+#endif
 
     iif->cache_read = DEFAULT_NO_CACHE_FUNCS.read;
     iif->cache_get = DEFAULT_NO_CACHE_FUNCS.get;

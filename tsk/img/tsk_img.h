@@ -94,16 +94,6 @@ extern "C" {
     typedef struct TSK_IMG_INFO TSK_IMG_INFO;
 #define TSK_IMG_INFO_TAG 0x39204231
 
-    typedef struct Stats {
-      size_t hits;
-      size_t hit_ns;
-      size_t hit_bytes;
-      size_t misses;
-      size_t miss_ns;
-      size_t miss_bytes;
-      size_t histogram[64];
-    } Stats;
-
     /**
      * Created when a disk image has been opened and stores general information and handles.
      */

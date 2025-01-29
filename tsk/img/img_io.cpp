@@ -20,7 +20,10 @@
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <mutex>
 #include <new>
+
+#ifdef READ_STATS
 
 class Timer {
 public:
@@ -40,6 +43,7 @@ public:
 private:
   std::chrono::high_resolution_clock::time_point start_time, stop_time;
 };
+#endif
 
 ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
@@ -80,8 +84,10 @@ ssize_t tsk_img_read_cache(
 {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
 
+#ifdef READ_STATS
   Timer timer;
   Stats& stats = iif->stats;
+#endif
 
   Cache& cache = cache_get(iif);
   const size_t chunk_size = cache.chunk_size();
@@ -113,21 +119,27 @@ ssize_t tsk_img_read_cache(
 
     {
       std::scoped_lock lock{cache};
+#ifdef READ_STATS
       timer.start();
+#endif
       chunk = iif->cache_get(iif->cache, coff);
       if (chunk) {
         // cache hit: copy chunk to buffer
         std::memcpy(dst, chunk + delta, len);
+#ifdef READ_STATS
         timer.stop();
         ++stats.hits;
         stats.hit_ns += timer.elapsed();
         stats.hit_bytes += len;
+#endif
       }
     }
 
     if (!chunk) {
       // cache miss: read into buffer, copy chunk to cache
+#ifdef READ_STATS
       timer.start();
+#endif
 
       if (len < chunk_size) {
         // We're reading less than a complete chunk, so either the start
@@ -147,11 +159,13 @@ ssize_t tsk_img_read_cache(
         }
       }
 
+#ifdef READ_STATS
       timer.stop();
       std::scoped_lock lock{cache};
       ++stats.misses;
       stats.miss_ns += timer.elapsed();
       stats.miss_bytes += len;
+#endif
     }
 
     soff += len;
@@ -162,44 +176,6 @@ ssize_t tsk_img_read_cache(
   return send - a_off;
 }
 
-static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
-    char *a_buf, size_t a_len)
-{
-    ssize_t nbytes;
-
-    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
-
-    /* Some of the lower-level methods like block-sized reads.
-        * So if the len is not that multiple, then make it. */
-    if (a_img_info->sector_size > 0 && a_len % a_img_info->sector_size) {
-        size_t len_tmp;
-        len_tmp = roundup(a_len, a_img_info->sector_size);
-
-        std::unique_ptr<char[]> buf2(new(std::nothrow) char[len_tmp]);
-        if (!buf2) {
-            return -1;
-        }
-
-        nbytes = iif->read(a_img_info, a_off, buf2.get(), len_tmp);
-        if (nbytes < 0) {
-            return -1;
-        }
-
-        if (nbytes < (ssize_t) a_len) {
-            memcpy(a_buf, buf2.get(), nbytes);
-        }
-        else {
-            memcpy(a_buf, buf2.get(), a_len);
-            nbytes = (ssize_t)a_len;
-        }
-    }
-    else {
-        nbytes = iif->read(a_img_info, a_off, a_buf, a_len);
-    }
-
-    return nbytes;
-}
-
 ssize_t tsk_img_read_no_cache(
   TSK_IMG_INFO* a_img_info,
   TSK_OFF_T a_off,
@@ -208,19 +184,52 @@ ssize_t tsk_img_read_no_cache(
 {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
 
+#ifdef READ_STATS
   Timer timer;
   timer.start();
-  ssize_t read_count = img_read_no_cache(a_img_info, a_off, a_buf, a_len);
+#endif
+
+  ssize_t read_count;
+
+  /* Some of the lower-level methods like block-sized reads.
+   * So if the len is not that multiple, then make it. */
+  if (a_img_info->sector_size > 0 && a_len % a_img_info->sector_size) {
+    size_t len_tmp;
+    len_tmp = roundup(a_len, a_img_info->sector_size);
+
+    std::unique_ptr<char[]> buf2(new(std::nothrow) char[len_tmp]);
+    if (!buf2) {
+      return -1;
+    }
+
+    read_count = iif->read(a_img_info, a_off, buf2.get(), len_tmp);
+    if (read_count < 0) {
+      return -1;
+    }
+
+    if (read_count < (ssize_t) a_len) {
+      std::memcpy(a_buf, buf2.get(), read_count);
+    }
+    else {
+      std::memcpy(a_buf, buf2.get(), a_len);
+      read_count = (ssize_t)a_len;
+    }
+  }
+  else {
+    read_count = iif->read(a_img_info, a_off, a_buf, a_len);
+  }
+
+#ifdef READ_STATS
   timer.stop();
 
   // update the stats
   auto cache = static_cast<NoCache*>(iif->cache);
   std::scoped_lock lock{cache->mutex};
-
   Stats& stats = iif->stats;
   stats.miss_ns += timer.elapsed();
   ++stats.misses;
   stats.miss_bytes += read_count;
+#endif
 
   return read_count;
 }
