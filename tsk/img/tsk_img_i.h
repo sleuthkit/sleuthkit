@@ -67,13 +67,6 @@ extern void tsk_img_free_image_names(TSK_IMG_INFO* img_info);
 extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR * a_startingName,
     int *a_numFound);
 
-ssize_t tsk_img_read_legacy(
-  TSK_IMG_INFO* a_img_info,
-  TSK_OFF_T a_off,
-  char* a_buf,
-  size_t a_len
-);
-
 ssize_t tsk_img_read_no_cache(
   TSK_IMG_INFO* a_img_info,
   TSK_OFF_T a_off,

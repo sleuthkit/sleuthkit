@@ -16,7 +16,6 @@
 #include "tsk/libtsk.h"
 
 #include "tsk/img/img_cache.h"
-#include "tsk/img/legacy_cache.h"
 #include "tsk/img/lru_cache.h"
 #include "tsk/img/no_cache.h"
 #include "tsk/img/tsk_img_i.h"
@@ -310,19 +309,6 @@ TEST_CASE("stats") {
         no_cache_clone,
         no_cache_free,
         no_cache_clear
-      }
-    },
-    {
-      "tsk_img_read_legacy",
-      CacheSetup{
-        1024,
-        tsk_img_read_legacy,
-        nullptr,
-        nullptr,
-        legacy_cache_create,
-        legacy_cache_clone,
-        legacy_cache_clear,
-        legacy_cache_free
       }
     },
     {
