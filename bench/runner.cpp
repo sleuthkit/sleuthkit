@@ -250,7 +250,7 @@ void test_caching_own_img_shared_cache(
   size_t threads
 )
 {
-  if (!std::strstr(fname, "finer_lock")) {
+  if (!std::strstr(fname, "lru")) {
     return;
   }
 
@@ -312,10 +312,10 @@ TEST_CASE("stats") {
       }
     },
     {
-      "tsk_img_read_lru_finer_lock",
+      "tsk_img_read_lru",
       CacheSetup{
         1024,
-        tsk_img_read_lru_finer_lock,
+        tsk_img_read_lru,
         lru_cache_get,
         lru_cache_put,
         lru_cache_create,
@@ -325,10 +325,10 @@ TEST_CASE("stats") {
       }
     },
     {
-      "tsk_img_read_lru_tsk_finer_lock",
+      "tsk_img_read_lru_tsk",
       CacheSetup{
         1024,
-        tsk_img_read_lru_finer_lock,
+        tsk_img_read_lru,
         lru_cache_get,
         lru_cache_put,
         [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },

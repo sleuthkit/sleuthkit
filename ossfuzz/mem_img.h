@@ -74,7 +74,7 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   inmemory_img->img_info.imgstat = mem_imgstat;
 
   inmemory_img->img_info.cache_size = 1024;
-  inmemory_img->img_info.cache_read = tsk_img_read_lru_finer_lock;
+  inmemory_img->img_info.cache_read = tsk_img_read_lru;
   inmemory_img->img_info.cache_get = lru_cache_get;
   inmemory_img->img_info.cache_put = lru_cache_put;
   inmemory_img->img_info.cache_create = lru_cache_create;

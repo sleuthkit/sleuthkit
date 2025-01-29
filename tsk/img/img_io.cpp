@@ -71,7 +71,7 @@ Cache& cache_get(IMG_INFO* img) {
   return *reinterpret_cast<Cache*>(img->cache);
 }
 
-ssize_t tsk_img_read_lru_finer_lock(
+ssize_t tsk_img_read_lru(
   TSK_IMG_INFO* a_img_info,
   TSK_OFF_T a_off,
   char* a_buf,
