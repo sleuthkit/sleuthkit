@@ -15,7 +15,6 @@
 
 #include "tsk/libtsk.h"
 
-#include "tsk/img/img_cache.h"
 #include "tsk/img/lru_cache.h"
 #include "tsk/img/no_cache.h"
 #include "tsk/img/tsk_img_i.h"
@@ -112,6 +111,7 @@ run_tasks(size_t n, Func func, Types... args)
 struct CacheSetup {
   size_t cache_size;
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  size_t (*chunk_size)(void* data);
   const char* (*get)(void* data, TSK_OFF_T off);
   void (*put)(void* data, TSK_OFF_T off, const char* buf);
   void* (*create)(TSK_IMG_INFO* img);
@@ -123,10 +123,10 @@ struct CacheSetup {
 void set_cache_funcs(TSK_IMG_INFO* img, const CacheSetup& csetup) {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
   iif->cache_size = csetup.cache_size;
+  iif->cache_chunk_size = csetup.chunk_size;
   iif->cache_read = csetup.read;
   iif->cache_get = csetup.get;
   iif->cache_put = csetup.put;
-  iif->cache_create = csetup.create;
   iif->cache_clone = csetup.clone;
   iif->cache_free = csetup.free;
   iif->cache_clear = csetup.clear;
@@ -147,7 +147,7 @@ void test_caching_shared_img(
 
   iif->cache_free(img.get());
   set_cache_funcs(img.get(), csetup);
-  iif->cache = iif->cache_create(img.get());
+  iif->cache = csetup.create(img.get());
 
   const auto getimg = [&img]() { return img.get(); };
 
@@ -178,7 +178,7 @@ void test_caching_own_img(
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
     iif->cache_free(img.get());
     set_cache_funcs(img.get(), csetup);
-    iif->cache = iif->cache_create(img.get());
+    iif->cache = csetup.create(img.get());
 
     return img;
   };
@@ -269,6 +269,7 @@ TEST_CASE("stats") {
         tsk_img_read_no_cache,
         nullptr,
         nullptr,
+        nullptr,
         no_cache_create,
         no_cache_clone,
         no_cache_free,
@@ -280,6 +281,7 @@ TEST_CASE("stats") {
       CacheSetup{
         1024,
         tsk_img_read_cache,
+        lru_cache_chunk_size,
         lru_cache_get,
         lru_cache_put,
         lru_cache_create,
@@ -293,6 +295,7 @@ TEST_CASE("stats") {
       CacheSetup{
         1024,
         tsk_img_read_cache,
+        lru_cache_chunk_size,
         lru_cache_get,
         lru_cache_put,
         [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },
