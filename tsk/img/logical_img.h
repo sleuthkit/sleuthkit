@@ -15,6 +15,8 @@
 #ifndef _LOGICAL_H
 #define _LOGICAL_H
 
+#include "tsk_img_i.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,7 +48,7 @@ extern "C" {
   struct LegacyCache;
 
     typedef struct {
-		TSK_IMG_INFO img_info;
+		IMG_INFO img_info;
 		TSK_TCHAR * base_path;
 		uint8_t is_winobj;
 

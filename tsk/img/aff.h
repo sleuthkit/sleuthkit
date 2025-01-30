@@ -26,6 +26,8 @@
 #include <afflib/afflib_i.h>
 #endif
 
+#include "tsk_img_i.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,7 +38,7 @@ extern "C" {
  * Stores AFF-specific data
  */
 typedef struct {
-    TSK_IMG_INFO img_info;
+    IMG_INFO img_info;
     AFFILE *af_file;
 
     tsk_lock_t read_lock;

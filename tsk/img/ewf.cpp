@@ -355,7 +355,7 @@ ewf_open(int a_num_img,
 
     if (LIBEWF_HANDLE_OPEN(ewf_info->handle,
             images_native,
-            ewf_info->img_info.num_img, LIBEWF_OPEN_READ, &ewf_error) != 1) {
+            img_info->num_img, LIBEWF_OPEN_READ, &ewf_error) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
 
@@ -461,9 +461,10 @@ ewf_open(int a_num_img,
         }
     }
     img_info->itype = TSK_IMG_TYPE_EWF_EWF;
-    img_info->read = &ewf_image_read;
-    img_info->close = &ewf_image_close;
-    img_info->imgstat = &ewf_image_imgstat;
+
+    ewf_info->img_info.read = &ewf_image_read;
+    ewf_info->img_info.close = &ewf_image_close;
+    ewf_info->img_info.imgstat = &ewf_image_imgstat;
 
     // initialize the read lock
     tsk_init_lock(&(ewf_info->read_lock));

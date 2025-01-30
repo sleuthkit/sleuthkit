@@ -74,7 +74,7 @@ bool sector_size_ok(unsigned int sector_size) {
 }
 
 void img_info_deleter(TSK_IMG_INFO* img_info) {
-    img_info->close(img_info);
+    reinterpret_cast<IMG_INFO*>(img_info)->close(img_info);
 }
 
 std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
@@ -296,10 +296,11 @@ TSK_IMG_INFO* img_open(
         return nullptr;
     }
 
-    /* we have a good img_info, set up the cache lock */
-    img_info->cache_holder = new LegacyCache();
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
 
-    img_info->cache_read = tsk_img_read_legacy;
+    /* we have a good img_info, set up the cache lock */
+    iif->cache = new LegacyCache();
+    iif->cache_read = tsk_img_read_legacy;
 
     return img_info.release();
 }
@@ -568,12 +569,14 @@ tsk_img_open_external(
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
     img_info->size = size;
     img_info->sector_size = sector_size ? sector_size : 512;
-    img_info->cache_read = tsk_img_read_legacy;
-    img_info->read = read;
-    img_info->close = close;
-    img_info->imgstat = imgstat;
 
-    img_info->cache_holder = new LegacyCache();
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
+    iif->cache_read = tsk_img_read_legacy;
+    iif->read = read;
+    iif->close = close;
+    iif->imgstat = imgstat;
+
+    iif->cache = new LegacyCache();
 
     return img_info;
 }
@@ -699,10 +702,12 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
         return;
     }
 
-    auto cache = static_cast<LegacyCache*>(a_img_info->cache_holder);
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
+
+    auto cache = static_cast<LegacyCache*>(iif->cache);
     delete cache;
 
-    a_img_info->close(a_img_info);
+    iif->close(a_img_info);
 }
 
 /* tsk_img_malloc - tsk_malloc, then set image tag
@@ -716,7 +721,7 @@ tsk_img_malloc(size_t a_len)
         return nullptr;
     }
     imgInfo->tag = TSK_IMG_INFO_TAG;
-    imgInfo->cache_holder = nullptr;
+    reinterpret_cast<IMG_INFO*>(imgInfo)->cache = nullptr;
     return imgInfo;
 }
 

@@ -15,6 +15,7 @@
 #define _RAW_H
 
 #include "img_writer.h"
+#include "tsk_img_i.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +37,7 @@ extern "C" {
     } IMG_SPLIT_CACHE;
 
     typedef struct {
-        TSK_IMG_INFO img_info;
+        IMG_INFO img_info;
         uint8_t is_winobj;
         TSK_IMG_WRITER *img_writer;
 

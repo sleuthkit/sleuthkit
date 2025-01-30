@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 typedef struct {
-  TSK_IMG_INFO img_info;
+  IMG_INFO img_info;
   AFF4_Handle* handle;
   tsk_lock_t read_lock;   ///< Lock for the handle
 } IMG_AFF4_INFO;

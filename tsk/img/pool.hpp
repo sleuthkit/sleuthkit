@@ -15,13 +15,14 @@
 #define _POOL_H
 
 #include "../pool/tsk_pool.h"
+#include "tsk_img_i.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
     typedef struct {
-        TSK_IMG_INFO img_info;
+        IMG_INFO img_info;
 
         const TSK_POOL_INFO *pool_info;
         TSK_DADDR_T pvol_block;

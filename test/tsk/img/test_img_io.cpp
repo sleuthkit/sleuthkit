@@ -15,7 +15,7 @@ TEST_CASE("tsk_img_read null img") {
 
 TEST_CASE("tsk_img_read null buffer") {
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
-    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
     tsk_img_free
   };
   REQUIRE(img);
@@ -26,7 +26,7 @@ TEST_CASE("tsk_img_read null buffer") {
 
 TEST_CASE("tsk_img_read negative offset") {
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
-    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
     tsk_img_free
   };
   REQUIRE(img);
@@ -38,7 +38,7 @@ TEST_CASE("tsk_img_read negative offset") {
 
 TEST_CASE("tsk_img_read offset past end") {
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
-    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
     tsk_img_free
   };
   REQUIRE(img);
@@ -53,7 +53,7 @@ TEST_CASE("tsk_img_read length overflow") {
   // Overflow isn't possible when size_t is smaller than TSK_OFF_T
   if (std::numeric_limits<size_t>::max() > std::numeric_limits<TSK_OFF_T>::max()) {
     std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
-      (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+      (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
       tsk_img_free
     };
     REQUIRE(img);
@@ -68,23 +68,23 @@ TEST_CASE("tsk_img_read length overflow") {
 TEST_CASE("tsk_img_read inner function failed") {
 
   const auto closer = [](TSK_IMG_INFO* img) {
-    auto cache = static_cast<LegacyCache*>(img->cache_holder);
+    auto cache = static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(img)->cache);
     delete cache;
     tsk_img_free(img);
   };
 
   std::unique_ptr<TSK_IMG_INFO, decltype(closer)> img{
-    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(TSK_IMG_INFO)),
+    (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
     closer
   };
 
   REQUIRE(img);
 
-  img->cache_holder = new LegacyCache();
+  reinterpret_cast<IMG_INFO*>(img.get())->cache = new LegacyCache();
 
-  img->cache_read = tsk_img_read_legacy;
+  reinterpret_cast<IMG_INFO*>(img.get())->cache_read = tsk_img_read_legacy;
 
-  img->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
+  reinterpret_cast<IMG_INFO*>(img.get())->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
     return (ssize_t) -1;
   };
 
