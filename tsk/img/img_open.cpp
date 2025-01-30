@@ -47,6 +47,7 @@
 #endif
 
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <new>
 #include <numeric>
@@ -61,9 +62,10 @@ const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
 
 struct CacheFuncs {
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  size_t (*chunk_size)(void* data);
   const char* (*get)(void* data, TSK_OFF_T off);
   void (*put)(void* data, TSK_OFF_T off, const char* buf);
-  void* (*create)(TSK_IMG_INFO* img);
+  std::function<void*(TSK_IMG_INFO*)> create;
   void* (*clone)(const TSK_IMG_INFO* img);
   void (*free)(void* data);
   void (*clear)(void* data);
@@ -71,6 +73,7 @@ struct CacheFuncs {
 
 const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
   tsk_img_read_no_cache,
+  nullptr,
   nullptr,
   nullptr,
   no_cache_create,
@@ -81,6 +84,7 @@ const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
 
 const CacheFuncs DEFAULT_CACHE_FUNCS{
   tsk_img_read_cache,
+  lru_cache_chunk_size,
   lru_cache_get,
   lru_cache_put,
   lru_cache_create,
@@ -347,17 +351,16 @@ TSK_IMG_INFO* img_open_x(
 
     // set up the cache
     iif->cache_size = opts->cache_size == -1 ? 1024 : opts->cache_size;
-    iif->cache_chunk_size = opts->cache_chunk_size;
 
+    iif->cache_chunk_size = cfuncs.chunk_size;
     iif->cache_read = cfuncs.read;
     iif->cache_get = cfuncs.get;
     iif->cache_put = cfuncs.put;
-    iif->cache_create = cfuncs.create;
     iif->cache_clone = cfuncs.clone;
     iif->cache_clear = cfuncs.clear;
     iif->cache_free = cfuncs.free;
 
-    iif->cache = iif->cache_create(img_info.get());
+    iif->cache = cfuncs.create(img_info.get());
 
     return img_info.release();
 }
@@ -673,14 +676,14 @@ tsk_img_open_external(
 #endif
 
     iif->cache_read = DEFAULT_NO_CACHE_FUNCS.read;
+    iif->cache_chunk_size = DEFAULT_NO_CACHE_FUNCS.chunk_size;
     iif->cache_get = DEFAULT_NO_CACHE_FUNCS.get;
     iif->cache_put = DEFAULT_NO_CACHE_FUNCS.put;
-    iif->cache_create = DEFAULT_NO_CACHE_FUNCS.create;
     iif->cache_clone = DEFAULT_NO_CACHE_FUNCS.clone;
     iif->cache_free = DEFAULT_NO_CACHE_FUNCS.free;
     iif->cache_clear = DEFAULT_NO_CACHE_FUNCS.clear;
 
-    iif->cache = iif->cache_create(img_info);
+    iif->cache = DEFAULT_NO_CACHE_FUNCS.create(img_info);
 
     return img_info;
 }

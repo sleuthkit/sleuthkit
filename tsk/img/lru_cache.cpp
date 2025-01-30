@@ -84,3 +84,8 @@ void lru_cache_put(void* data, TSK_OFF_T off, const char* buf) {
   std::scoped_lock lock{*cache};
   cache->put(off, buf);
 }
+
+size_t lru_cache_chunk_size(void* data) {
+  return static_cast<Cache*>(data)->chunk_size();
+}
+

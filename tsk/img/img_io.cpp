@@ -78,18 +78,15 @@ ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
 ssize_t read_chunk(
   TSK_IMG_INFO* img,
   TSK_OFF_T coff,
-  size_t clen, char* buf,
-  Cache& cache)
+  size_t clen,
+  char* buf)
 {
   if (read_fully(buf, img, coff, clen) == -1) {
     return -1;
   }
-  reinterpret_cast<IMG_INFO*>(img)->cache_put(&cache, coff, buf);
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
+  iif->cache_put(iif->cache, coff, buf);
   return clen;
-}
-
-Cache& cache_get(IMG_INFO* img) {
-  return *reinterpret_cast<Cache*>(img->cache);
 }
 
 ssize_t tsk_img_read_cache(
@@ -106,8 +103,7 @@ ssize_t tsk_img_read_cache(
   Stats& stats = iif->stats;
 #endif
 
-  Cache& cache = cache_get(iif);
-  const size_t chunk_size = cache.chunk_size();
+  const size_t chunk_size = iif->cache_chunk_size(iif->cache);
 
   // offset of src end, taking care not to overrun the end of the image
   const TSK_OFF_T send = a_off + std::min((TSK_OFF_T)a_len, a_img_info->size);
@@ -166,14 +162,14 @@ ssize_t tsk_img_read_cache(
         // Read full chunk into the temporary chunk buffer (because we
         // still want to cache a full chunk), then copy the portion we
         // want into dst.
-        if (read_chunk(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
+        if (read_chunk(a_img_info, coff, clen, cbuf.get()) == -1) {
           return -1;
         }
         std::memcpy(dst, cbuf.get() + delta, len);
       }
       else {
         // read a complete chunk
-        if (read_chunk(a_img_info, coff, clen, dst, cache) == -1) {
+        if (read_chunk(a_img_info, coff, clen, dst) == -1) {
           return -1;
         }
       }
