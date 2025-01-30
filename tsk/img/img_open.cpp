@@ -342,6 +342,7 @@ TSK_IMG_INFO* img_open_x(
 
 #ifdef READ_STATS
     std::memset(&iif->stats, 0, sizeof(Stats));
+    tsk_init_lock(&iif->stats_lock);
 #endif
 
     // set up the cache
@@ -840,6 +841,10 @@ tsk_img_free(void *a_ptr)
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
     iif->cache_free(iif->cache);
+
+#ifdef READ_STATS
+    tsk_deinit_lock(&iif->stats_lock);
+#endif
 
     free(imgInfo);
 }

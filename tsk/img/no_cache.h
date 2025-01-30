@@ -1,11 +1,7 @@
 #ifndef _NO_CACHE_H
 #define _NO_CACHE_H
 
-#include <mutex>
-
-struct NoCache {
-  std::mutex mutex;
-};
+struct NoCache {};
 
 struct TSK_IMG_INFO;
 

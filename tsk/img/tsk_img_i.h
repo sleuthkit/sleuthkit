@@ -59,6 +59,7 @@ struct IMG_INFO {
 
 #ifdef READ_STATS
   Stats stats;
+  tsk_lock_t stats_lock;
 #endif
 
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);

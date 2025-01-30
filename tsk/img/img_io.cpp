@@ -40,9 +40,27 @@ public:
   void stop() {
     stop_time = std::chrono::high_resolution_clock::now();
   }
+
 private:
   std::chrono::high_resolution_clock::time_point start_time, stop_time;
 };
+
+class TskLock {
+public:
+  TskLock(tsk_lock_t* l): l(l) {}
+
+  void lock() {
+    tsk_take_lock(l);
+  }
+
+  void unlock() {
+    tsk_release_lock(l);
+  }
+
+private:
+  tsk_lock_t* l;
+};
+
 #endif
 
 ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
@@ -57,7 +75,7 @@ ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
   return len;
 }
 
-ssize_t read_chunk_locking(
+ssize_t read_chunk(
   TSK_IMG_INFO* img,
   TSK_OFF_T coff,
   size_t clen, char* buf,
@@ -66,7 +84,6 @@ ssize_t read_chunk_locking(
   if (read_fully(buf, img, coff, clen) == -1) {
     return -1;
   }
-  std::scoped_lock lock{cache};
   reinterpret_cast<IMG_INFO*>(img)->cache_put(&cache, coff, buf);
   return clen;
 }
@@ -118,7 +135,6 @@ ssize_t tsk_img_read_cache(
     len = std::min(clen - delta, (size_t)(send - soff));
 
     {
-      std::scoped_lock lock{cache};
 #ifdef READ_STATS
       timer.start();
 #endif
@@ -128,6 +144,9 @@ ssize_t tsk_img_read_cache(
         std::memcpy(dst, chunk + delta, len);
 #ifdef READ_STATS
         timer.stop();
+
+        TskLock tskl(&iif->stats_lock);
+        std::scoped_lock stats_lock{tskl};
         ++stats.hits;
         stats.hit_ns += timer.elapsed();
         stats.hit_bytes += len;
@@ -147,21 +166,23 @@ ssize_t tsk_img_read_cache(
         // Read full chunk into the temporary chunk buffer (because we
         // still want to cache a full chunk), then copy the portion we
         // want into dst.
-        if (read_chunk_locking(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
+        if (read_chunk(a_img_info, coff, clen, cbuf.get(), cache) == -1) {
           return -1;
         }
         std::memcpy(dst, cbuf.get() + delta, len);
       }
       else {
         // read a complete chunk
-        if (read_chunk_locking(a_img_info, coff, clen, dst, cache) == -1) {
+        if (read_chunk(a_img_info, coff, clen, dst, cache) == -1) {
           return -1;
         }
       }
 
 #ifdef READ_STATS
       timer.stop();
-      std::scoped_lock lock{cache};
+
+      TskLock tskl(&iif->stats_lock);
+      std::scoped_lock stats_lock{tskl};
       ++stats.misses;
       stats.miss_ns += timer.elapsed();
       stats.miss_bytes += len;
@@ -222,9 +243,8 @@ ssize_t tsk_img_read_no_cache(
 #ifdef READ_STATS
   timer.stop();
 
-  // update the stats
-  auto cache = static_cast<NoCache*>(iif->cache);
-  std::scoped_lock lock{cache->mutex};
+  TskLock tskl(&iif->stats_lock);
+  std::scoped_lock stats_lock{tskl};
   Stats& stats = iif->stats;
   stats.miss_ns += timer.elapsed();
   ++stats.misses;

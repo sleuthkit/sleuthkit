@@ -74,9 +74,13 @@ void lru_cache_free(void* data) {
 }
 
 const char* lru_cache_get(void* data, TSK_OFF_T off) {
-  return static_cast<Cache*>(data)->get(off);
+  auto cache = static_cast<Cache*>(data);
+  std::scoped_lock lock{*cache};
+  return cache->get(off);
 }
 
 void lru_cache_put(void* data, TSK_OFF_T off, const char* buf) {
-  static_cast<Cache*>(data)->put(off, buf);
+  auto cache = static_cast<Cache*>(data);
+  std::scoped_lock lock{*cache};
+  cache->put(off, buf);
 }
