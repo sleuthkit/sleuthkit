@@ -1,66 +1,68 @@
 #include "lru_cache.h"
 #include "tsk_img_i.h"
 
-LRUImgCache::LRUImgCache(size_t cache_size): LRUCache(cache_size) {}
+LRUBlockCache::LRUBlockCache(size_t cache_size): cache(cache_size) {}
 
-const char* LRUImgCache::get(uint64_t key) {
-  return LRUCache::get(key)->data();
+const char* LRUBlockCache::get(uint64_t key) {
+  return cache.get(key)->data();
 }
 
-void LRUImgCache::put(uint64_t key, const char* val) {
+void LRUBlockCache::put(uint64_t key, const char* val) {
   std::array<char, CHUNK_SIZE> v;
   std::copy(val, val + CHUNK_SIZE, std::begin(v));
-  LRUCache::put(key, v);
+  cache.put(key, v);
 }
 
-size_t LRUImgCache::cache_size() const {
-  return size();
+size_t LRUBlockCache::cache_size() const {
+  return cache.size();
 }
 
-size_t LRUImgCache::chunk_size() const {
+size_t LRUBlockCache::chunk_size() const {
   return CHUNK_SIZE;
 }
 
-void LRUImgCache::clear() {
-  LRUCache::clear();
+void LRUBlockCache::clear() {
+  cache.clear();
 }
 
-LRUImgCacheLocking::LRUImgCacheLocking(size_t cache_size):
-  LRUImgCache(cache_size)
+LRUBlockCacheLocking::LRUBlockCacheLocking(size_t cache_size):
+  LRUBlockCache(cache_size)
 {}
 
-void LRUImgCacheLocking::lock() {
+void LRUBlockCacheLocking::lock() {
   mutex.lock();
 }
 
-void LRUImgCacheLocking::unlock() {
+void LRUBlockCacheLocking::unlock() {
   mutex.unlock();
 }
 
-LRUImgCacheLockingTsk::LRUImgCacheLockingTsk(size_t cache_size):
-  LRUImgCache(cache_size)
+LRUBlockCacheLockingTsk::LRUBlockCacheLockingTsk(size_t cache_size):
+  LRUBlockCache(cache_size)
 {
   tsk_init_lock(&l);
 }
 
-LRUImgCacheLockingTsk::~LRUImgCacheLockingTsk() {
+LRUBlockCacheLockingTsk::~LRUBlockCacheLockingTsk() {
   tsk_deinit_lock(&l);
 }
 
-void LRUImgCacheLockingTsk::lock() {
+void LRUBlockCacheLockingTsk::lock() {
   tsk_take_lock(&l);
 }
 
-void LRUImgCacheLockingTsk::unlock() {
+void LRUBlockCacheLockingTsk::unlock() {
   tsk_release_lock(&l);
 }
 
+using Cache = LRUBlockCacheLocking;
+
 void* lru_cache_create(TSK_IMG_INFO* img) {
-  return new LRUImgCacheLocking(reinterpret_cast<IMG_INFO*>(img)->cache_size);
+  return new Cache(reinterpret_cast<IMG_INFO*>(img)->cache_size);
 }
 
 void* lru_cache_clone(const TSK_IMG_INFO* img) {
-  return new LRUImgCacheLocking(reinterpret_cast<const IMG_INFO*>(img)->cache_size);
+  return new Cache(reinterpret_cast<const IMG_INFO*>(img)->cache_size);
 }
 
 void lru_cache_clear(void* data) {
@@ -88,4 +90,3 @@ void lru_cache_put(void* data, TSK_OFF_T off, const char* buf) {
 size_t lru_cache_chunk_size(void* data) {
   return static_cast<Cache*>(data)->chunk_size();
 }
-

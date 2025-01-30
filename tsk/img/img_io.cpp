@@ -11,8 +11,6 @@
  */
 
 #include "tsk_img_i.h"
-#include "img_cache.h"
-#include "no_cache.h"
 
 #include <algorithm>
 #include <chrono>

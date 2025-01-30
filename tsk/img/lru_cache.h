@@ -1,7 +1,6 @@
 #ifndef _TSK_IMG_LRU_CACHE_H
 #define _TSK_IMG_LRU_CACHE_H
 
-#include "img_cache.h"
 #include "tsk_img_i.h"
 
 #include <array>
@@ -90,56 +89,45 @@ private:
 
 const size_t CHUNK_SIZE = 65536;
 
-class LRUImgCache: public Cache, LRUCache<uint64_t, std::array<char, CHUNK_SIZE>> {
+class LRUBlockCache {
 public:
-  LRUImgCache(size_t cache_size);
+  LRUBlockCache(size_t cache_size);
 
-  virtual ~LRUImgCache() = default;
+  const char* get(uint64_t key);
 
-  virtual const char* get(uint64_t key) override;
+  void put(uint64_t key, const char* val);
 
-  virtual void put(uint64_t key, const char* val) override;
+  size_t cache_size() const;
 
-  virtual size_t cache_size() const override;
+  size_t chunk_size() const;
 
-  virtual size_t chunk_size() const override;
+  void clear();
 
-/*
-  virtual const Stats& stats() const {
-    return the_stats;
-  }
-
-  virtual Stats& stats() {
-    return the_stats;
-  }
-*/
-
-  virtual void clear() override;
+private:
+  LRUCache<uint64_t, std::array<char, CHUNK_SIZE>> cache;
 };
 
-class LRUImgCacheLocking: public LRUImgCache {
+class LRUBlockCacheLocking: public LRUBlockCache {
 public:
-  LRUImgCacheLocking(size_t cache_size);
+  LRUBlockCacheLocking(size_t cache_size);
 
-  virtual ~LRUImgCacheLocking() = default;
+  void lock();
 
-  virtual void lock() override;
-
-  virtual void unlock() override;
+  void unlock();
 
 private:
   std::mutex mutex;
 };
 
-class LRUImgCacheLockingTsk: public LRUImgCache {
+class LRUBlockCacheLockingTsk: public LRUBlockCache {
 public:
-  LRUImgCacheLockingTsk(size_t cache_size);
+  LRUBlockCacheLockingTsk(size_t cache_size);
 
-  virtual ~LRUImgCacheLockingTsk();
+  ~LRUBlockCacheLockingTsk();
 
-  virtual void lock() override;
+  void lock();
 
-  virtual void unlock() override;
+  void unlock();
 
 private:
   tsk_lock_t l;
