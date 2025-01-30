@@ -145,7 +145,7 @@ void test_caching_shared_img(
 
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
 
-  iif->cache_free(img.get());
+  iif->cache_free(iif->cache);
   set_cache_funcs(img.get(), csetup);
   iif->cache = csetup.create(img.get());
 
@@ -176,7 +176,7 @@ void test_caching_own_img(
     auto img = open_img(images);
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
-    iif->cache_free(img.get());
+    iif->cache_free(iif->cache);
     set_cache_funcs(img.get(), csetup);
     iif->cache = csetup.create(img.get());
 
@@ -226,7 +226,7 @@ void test_caching_own_img_shared_cache(
     auto img = open_img(images);
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
-    iif->cache_free(img.get());
+    iif->cache_free(iif->cache);
     set_cache_funcs(img.get(), csetup);
     iif->cache = cache;
 
@@ -298,10 +298,10 @@ TEST_CASE("stats") {
         lru_cache_chunk_size,
         lru_cache_get,
         lru_cache_put,
-        [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUImgCacheLockingTsk(1024)); },
+        [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUBlockCacheLockingTsk(1024)); },
         lru_cache_clone,
         lru_cache_clear,
-        lru_cache_free
+        [](void* data) { delete static_cast<LRUBlockCacheLockingTsk*>(data); },
       }
     }
   };
