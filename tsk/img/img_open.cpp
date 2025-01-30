@@ -62,7 +62,7 @@ const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
 
 struct CacheFuncs {
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
-  size_t (*chunk_size)(void* data);
+  size_t (*chunk_size)(const void* data);
   const char* (*get)(void* data, TSK_OFF_T off);
   void (*put)(void* data, TSK_OFF_T off, const char* buf);
   std::function<void*(TSK_IMG_INFO*)> create;

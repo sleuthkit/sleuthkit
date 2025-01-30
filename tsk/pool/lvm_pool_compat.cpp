@@ -206,14 +206,15 @@ TSK_IMG_INFO * LVMPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_D
     img_info->spare_size = origInfo->spare_size;
     img_info->images = origInfo->images;
 
-    img_info->cache_chunk_size = origInfo->cache_chunk_size;
-    img_info->cache_read = origInfo->cache_read;
-    img_info->cache_get = origInfo->cache_get;
-    img_info->cache_put = origInfo->cache_put;
-    img_info->cache_clone = origInfo->cache_clone;
-    img_info->cache_clear = origInfo->cache_clear;
-    img_info->cache_free = origInfo->cache_free;
-    img_info->cache_holder = origInfo->cache_clone(origInfo);
+    IMG_INFO* oiif = reinterpret_cast<IMG_INFO*>(origInfo);
+    img_pool_info->img_info.cache_read = oiif->cache_read;
+    img_pool_info->img_info.cache_chunk_size = oiif->cache_chunk_size;
+    img_pool_info->img_info.cache_get = oiif->cache_get;
+    img_pool_info->img_info.cache_put = oiif->cache_put;
+    img_pool_info->img_info.cache_clone = oiif->cache_clone;
+    img_pool_info->img_info.cache_clear = oiif->cache_clear;
+    img_pool_info->img_info.cache_free = oiif->cache_free;
+    img_pool_info->img_info.cache = oiif->cache_clone(oiif->cache);
 
     return img_info;
 }

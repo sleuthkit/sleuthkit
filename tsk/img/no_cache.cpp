@@ -5,7 +5,7 @@ void* no_cache_create(TSK_IMG_INFO*) {
   return nullptr;
 }
 
-void* no_cache_clone(const TSK_IMG_INFO*) {
+void* no_cache_clone(const void*) {
   return nullptr;
 }
 

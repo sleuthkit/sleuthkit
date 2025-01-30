@@ -63,11 +63,11 @@ struct IMG_INFO {
 
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 
-  size_t (*cache_chunk_size)(void* data);
+  size_t (*cache_chunk_size)(const void* data);
   const char* (*cache_get)(void* data, TSK_OFF_T off);
   void (*cache_put)(void* data, TSK_OFF_T off, const char* buf);
 
-  void* (*cache_clone)(const TSK_IMG_INFO* img);
+  void* (*cache_clone)(const void* data);
   void (*cache_free)(void* data);
   void (*cache_clear)(void* data);
 

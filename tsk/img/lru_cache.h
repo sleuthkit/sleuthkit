@@ -147,6 +147,6 @@ const char* lru_cache_get(void* data, TSK_OFF_T off);
 
 void lru_cache_put(void* data, TSK_OFF_T off, const char* buf);
 
-size_t lru_cache_chunk_size(void* data);
+size_t lru_cache_chunk_size(const void* data);
 
 #endif
