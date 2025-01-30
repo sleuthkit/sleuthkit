@@ -160,7 +160,7 @@ void test_caching_shared_img(
     f.wait();
   }
 
-  std::cout << iif->stats << '\n';
+  std::cout << iif->stats << std::endl;
 }
 
 void test_caching_own_img(
@@ -204,7 +204,7 @@ void test_caching_own_img(
     stats.miss_bytes += s.miss_bytes;
   }
 
-  std::cout << stats << '\n';
+  std::cout << stats << std::endl;
 }
 
 void test_caching_own_img_shared_cache(
@@ -254,7 +254,7 @@ void test_caching_own_img_shared_cache(
     stats.miss_bytes += s.miss_bytes;
   }
 
-  std::cout << stats << '\n';
+  std::cout << stats << std::endl;
 }
 
 TEST_CASE("stats") {
@@ -311,7 +311,7 @@ TEST_CASE("stats") {
      { _TSK_T("/home/juckelman/Downloads/win7-64-nfury-c-drive.E01") }
   };
 
-  std::cout << "name sharing threads h m \"h bytes\" \"m bytes\" \"h ns\" \"m ns\"\n";
+  std::cout << "name sharing threads h m \"h bytes\" \"m bytes\" \"h ns\" \"m ns\"" << std::endl;
 
   for (const auto& imgs: images) {
     for (const auto threads: { 1, 10 }) {
