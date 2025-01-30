@@ -61,8 +61,8 @@ void* lru_cache_create(TSK_IMG_INFO* img) {
   return new Cache(reinterpret_cast<IMG_INFO*>(img)->cache_size);
 }
 
-void* lru_cache_clone(const TSK_IMG_INFO* img) {
-  return new Cache(reinterpret_cast<const IMG_INFO*>(img)->cache_size);
+void* lru_cache_clone(const void* data) {
+  return new Cache(reinterpret_cast<const Cache*>(data)->cache_size());
 }
 
 void lru_cache_clear(void* data) {
@@ -87,6 +87,6 @@ void lru_cache_put(void* data, TSK_OFF_T off, const char* buf) {
   cache->put(off, buf);
 }
 
-size_t lru_cache_chunk_size(void* data) {
-  return static_cast<Cache*>(data)->chunk_size();
+size_t lru_cache_chunk_size(const void* data) {
+  return static_cast<const Cache*>(data)->chunk_size();
 }

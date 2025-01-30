@@ -66,7 +66,7 @@ struct CacheFuncs {
   const char* (*get)(void* data, TSK_OFF_T off);
   void (*put)(void* data, TSK_OFF_T off, const char* buf);
   std::function<void*(TSK_IMG_INFO*)> create;
-  void* (*clone)(const TSK_IMG_INFO* img);
+  void* (*clone)(const void* data);
   void (*free)(void* data);
   void (*clear)(void* data);
 };

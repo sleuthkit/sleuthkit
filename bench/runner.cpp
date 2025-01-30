@@ -111,11 +111,11 @@ run_tasks(size_t n, Func func, Types... args)
 struct CacheSetup {
   size_t cache_size;
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
-  size_t (*chunk_size)(void* data);
+  size_t (*chunk_size)(const void* data);
   const char* (*get)(void* data, TSK_OFF_T off);
   void (*put)(void* data, TSK_OFF_T off, const char* buf);
   void* (*create)(TSK_IMG_INFO* img);
-  void* (*clone)(const TSK_IMG_INFO* img);
+  void* (*clone)(const void* data);
   void (*free)(void* data);
   void (*clear)(void* data);
 };
