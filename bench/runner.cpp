@@ -286,8 +286,8 @@ TEST_CASE("stats") {
         lru_cache_put,
         lru_cache_create,
         lru_cache_clone,
+        lru_cache_free,
         lru_cache_clear,
-        lru_cache_free
       }
     },
     {
@@ -300,8 +300,8 @@ TEST_CASE("stats") {
         lru_cache_put,
         [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUBlockCacheLockingTsk(1024)); },
         lru_cache_clone,
-        lru_cache_clear,
         [](void* data) { delete static_cast<LRUBlockCacheLockingTsk*>(data); },
+        lru_cache_clear
       }
     }
   };
