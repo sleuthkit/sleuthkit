@@ -1,8 +1,6 @@
 #ifndef _NO_CACHE_H
 #define _NO_CACHE_H
 
-struct NoCache {};
-
 struct TSK_IMG_INFO;
 
 void* no_cache_create(TSK_IMG_INFO* img_info);

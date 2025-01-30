@@ -2,15 +2,13 @@
 #include "tsk_img_i.h"
 
 void* no_cache_create(TSK_IMG_INFO*) {
-  return new NoCache();
+  return nullptr;
 }
 
 void* no_cache_clone(const TSK_IMG_INFO*) {
-  return new NoCache();
+  return nullptr;
 }
 
 void no_cache_clear(void*) {}
 
-void no_cache_free(void* data) {
-  delete static_cast<NoCache*>(data);
-}
+void no_cache_free(void*) {}
