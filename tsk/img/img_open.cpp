@@ -656,9 +656,11 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
   return img_open(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
 }
 
-TSK_IMG_INFO* img_ext_setup(
+TSK_IMG_INFO* img_open_ext(
   [[maybe_unused]] const TSK_IMG_OPTIONS* opts,
-  const TSK_IMG_EXTERNAL_OPTIONS* eopts
+  const TSK_IMG_EXTERNAL_OPTIONS* eopts,
+  int cache_size,
+  const CacheFuncs& cfuncs
 )
 {
   tsk_error_reset();
@@ -706,6 +708,8 @@ TSK_IMG_INFO* img_ext_setup(
   iif->close = eopts->close;
   iif->imgstat = eopts->imgstat;
 
+  img_cache_setup(img_info, cfuncs, cache_size);
+
   return img_info;
 }
 
@@ -717,9 +721,7 @@ TSK_IMG_INFO* tsk_img_open_ext(
   const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
     ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
 
-  auto img_info = img_ext_setup(opts, eopts);
-  img_cache_setup(img_info, cfuncs, opts->cache_size);
-  return img_info;
+  return img_open_ext(opts, eopts, opts->cache_size, cfuncs);
 }
 
 TSK_IMG_INFO* tsk_img_open_ext_cache(
@@ -738,9 +740,7 @@ TSK_IMG_INFO* tsk_img_open_ext_cache(
     copts->clear
   };
 
-  auto img_info = img_ext_setup(opts, eopts);
-  img_cache_setup(img_info, cfuncs, opts->cache_size);
-  return img_info;
+  return img_open_ext(opts, eopts, opts->cache_size, cfuncs);
 }
 
 #if 0
