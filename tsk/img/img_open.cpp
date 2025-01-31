@@ -341,7 +341,7 @@ void img_cache_setup(
 }
 
 std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
-img_open_x(
+img_open(
   int num_img,
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
@@ -506,7 +506,7 @@ tsk_img_open_opt(
 {
   const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
     ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
-  return img_open_x(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
+  return img_open(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
 }
 
 /**
@@ -591,7 +591,7 @@ tsk_img_open_utf8_opt(
 
     const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
       ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
-    return img_open_x(num_img, imgs, type, a_ssize, opts->cache_size, cfuncs).release();
+    return img_open(num_img, imgs, type, a_ssize, opts->cache_size, cfuncs).release();
 }
 
 /**
@@ -653,7 +653,7 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
     copts->clear
   };
 
-  return img_open_x(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
+  return img_open(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
 }
 
 TSK_IMG_INFO* img_ext_setup(
