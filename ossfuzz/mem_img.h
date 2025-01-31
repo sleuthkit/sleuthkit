@@ -75,14 +75,14 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
 
   inmemory_img->img_info.cache_size = 1024;
   inmemory_img->img_info.cache_read = tsk_img_read_cache;
+  inmemory_img->img_info.cache_chunk_size = lru_cache_chunk_size;
   inmemory_img->img_info.cache_get = lru_cache_get;
   inmemory_img->img_info.cache_put = lru_cache_put;
-  inmemory_img->img_info.cache_create = lru_cache_create;
   inmemory_img->img_info.cache_clone = lru_cache_clone;
   inmemory_img->img_info.cache_clear = lru_cache_clear;
   inmemory_img->img_info.cache_free = lru_cache_free;
 
-  inmemory_img->img_info.cache =  inmemory_img->img_info.cache_create(img);
+  inmemory_img->img_info.cache =  lru_cache_create(img);
 
   return base;
 }
