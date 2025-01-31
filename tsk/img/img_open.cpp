@@ -642,6 +642,21 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
   const TSK_IMG_CACHE_OPTIONS* copts
 )
 {
+#ifdef TSK_WIN32
+  if (!images_ok(num_img, images)) {
+      return nullptr;
+  }
+
+  const auto conv_imgs = utf8_to_utf16(images, static_cast<size_t>(num_img));
+  if (!conv_imgs) {
+      return nullptr;
+  }
+
+  const TSK_TCHAR* const* imgs = conv_imgs->second.get();
+#else
+  const TSK_TCHAR* const* imgs = images;
+#endif
+
   CacheFuncs cfuncs{
     tsk_img_read_cache,
     copts->chunk_size,
@@ -653,7 +668,7 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
     copts->clear
   };
 
-  return img_open(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
+  return img_open(num_img, imgs, type, a_ssize, opts->cache_size, cfuncs).release();
 }
 
 TSK_IMG_INFO* img_open_ext(
