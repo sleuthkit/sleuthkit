@@ -83,11 +83,6 @@ extern "C" {
         TSK_IMG_TYPE_UNSUPP = 0xffff      ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
 
-    typedef struct TSK_IMG_OPTIONS {
-        int cache_size;
-        int cache_chunk_size;
-    } TSK_IMG_OPTIONS;
-
 #define TSK_IMG_INFO_CACHE_NUM  32
 #define TSK_IMG_INFO_CACHE_LEN  65536
 
@@ -108,6 +103,30 @@ extern "C" {
 
         TSK_TCHAR **images;    ///< Image names
     };
+
+    typedef struct TSK_IMG_OPTIONS {
+        int cache_size;
+        int cache_chunk_size;
+    } TSK_IMG_OPTIONS;
+
+    typedef struct TSK_IMG_EXTERNAL_OPTIONS {
+        void* ext_img_info;
+        TSK_OFF_T size;
+        unsigned int sector_size;
+        ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char* buf, size_t len);
+        void (*close)(TSK_IMG_INFO* img);
+        void (*imgstat)(TSK_IMG_INFO* img, FILE* f);
+    } TSK_IMG_EXTERNAL_OPTIONS;
+
+    typedef struct TSK_IMG_CACHE_OPTIONS {
+        void* data;
+        size_t (*chunk_size)(const void* data);
+        const char* (*get)(void* data, TSK_OFF_T off);
+        void (*put)(void* data, TSK_OFF_T off, const char* buf);
+        void* (*clone)(const void* data);
+        void (*free)(void* data);
+        void (*clear)(void* data);
+    } TSK_IMG_CACHE_OPTIONS;
 
     // open and close functions
     extern TSK_IMG_INFO *tsk_img_open_sing(const TSK_TCHAR * a_image,
@@ -161,18 +180,24 @@ extern "C" {
         void (*close) (TSK_IMG_INFO *),
         void (*imgstat) (TSK_IMG_INFO *, FILE *));
 
-    TSK_IMG_INFO* tsk_img_open_utf8_opt_external_cache(
+    TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
         int num_img,
         const char *const images[],
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
         const TSK_IMG_OPTIONS* opts,
-        void* data,
-        const char* (*cache_get)(void* data, TSK_OFF_T off),
-        void (*cache_put)(void* data, TSK_OFF_T off, const char* buf),
-        void* (*cache_clone)(const TSK_IMG_INFO* img),
-        void (*cache_free)(void* data),
-        void (*cache_clear)(void* data)
+        const TSK_IMG_CACHE_OPTIONS* copts
+    );
+
+    TSK_IMG_INFO* tsk_img_open_ext(
+        const TSK_IMG_OPTIONS* opts,
+        const TSK_IMG_EXTERNAL_OPTIONS* eopts
+    );
+
+    TSK_IMG_INFO* tsk_img_open_ext_cache(
+        const TSK_IMG_OPTIONS* opts,
+        const TSK_IMG_EXTERNAL_OPTIONS* eopts,
+        const TSK_IMG_CACHE_OPTIONS* copts
     );
 
     extern void tsk_img_close(TSK_IMG_INFO *);

@@ -313,74 +313,65 @@ img_open_detect_type(
     }
 }
 
-TSK_IMG_INFO* img_open_x(
-  int num_img,
-  const TSK_TCHAR* const images[],
-  TSK_IMG_TYPE_ENUM type,
-  unsigned int a_ssize,
+void img_cache_setup(
+  TSK_IMG_INFO* img,
   const CacheFuncs& cfuncs,
-  [[maybe_unused]] const TSK_IMG_OPTIONS* opts
+  int cache_size
 )
 {
-    // Clear previous error messages
-    tsk_error_reset();
-
-    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
-        return nullptr;
-    }
-
-    if (tsk_verbose)
-        TFPRINTF(stderr,
-            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
-            type, num_img, images[0]);
-
-    auto img_info = type == TSK_IMG_TYPE_DETECT ?
-      img_open_detect_type(num_img, images, a_ssize) :
-      img_open_by_type(num_img, images, type, a_ssize);
-
-    if (!img_info) {
-        return nullptr;
-    }
-
-    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
 
 #ifdef READ_STATS
-    std::memset(&iif->stats, 0, sizeof(Stats));
-    tsk_init_lock(&iif->stats_lock);
+  std::memset(&iif->stats, 0, sizeof(Stats));
+  tsk_init_lock(&iif->stats_lock);
 #endif
 
-    // set up the cache
-    iif->cache_size = opts->cache_size == -1 ? 1024 : opts->cache_size;
+  // set up the cache
+  iif->cache_size = cache_size == -1 ? 1024 : cache_size;
 
-    iif->cache_chunk_size = cfuncs.chunk_size;
-    iif->cache_read = cfuncs.read;
-    iif->cache_get = cfuncs.get;
-    iif->cache_put = cfuncs.put;
-    iif->cache_clone = cfuncs.clone;
-    iif->cache_clear = cfuncs.clear;
-    iif->cache_free = cfuncs.free;
+  iif->cache_chunk_size = cfuncs.chunk_size;
+  iif->cache_read = cfuncs.read;
+  iif->cache_get = cfuncs.get;
+  iif->cache_put = cfuncs.put;
+  iif->cache_clone = cfuncs.clone;
+  iif->cache_clear = cfuncs.clear;
+  iif->cache_free = cfuncs.free;
 
-    iif->cache = cfuncs.create(img_info.get());
-
-    return img_info.release();
+  iif->cache = cfuncs.create(img);
 }
 
-TSK_IMG_INFO* img_open(
+std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
+img_open_x(
   int num_img,
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts
+  int cache_size,
+  const CacheFuncs& cfuncs
 )
 {
-  return img_open_x(
-    num_img,
-    images,
-    type,
-    a_ssize,
-    (opts->cache_size == 0 || opts->cache_chunk_size == 0) ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS,
-    opts
-  );
+  // Clear previous error messages
+  tsk_error_reset();
+
+  if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
+    return { nullptr, img_info_deleter };
+  }
+
+  if (tsk_verbose) {
+    TFPRINTF(stderr,
+      _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
+      type, num_img, images[0]);
+  }
+
+  auto img_info = type == TSK_IMG_TYPE_DETECT ?
+    img_open_detect_type(num_img, images, a_ssize) :
+    img_open_by_type(num_img, images, type, a_ssize);
+
+  if (img_info) {
+    img_cache_setup(img_info.get(), cfuncs, cache_size);
+  }
+
+  return img_info;
 }
 
 #ifdef TSK_WIN32
@@ -511,9 +502,11 @@ tsk_img_open_opt(
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opt)
+  const TSK_IMG_OPTIONS* opts)
 {
-    return img_open(num_img, images, type, a_ssize, opt);
+  const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
+    ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
+  return img_open_x(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
 }
 
 /**
@@ -596,7 +589,9 @@ tsk_img_open_utf8_opt(
     const TSK_TCHAR* const* imgs = images;
 #endif
 
-    return img_open(num_img, imgs, type, a_ssize, opts);
+    const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
+      ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
+    return img_open_x(num_img, imgs, type, a_ssize, opts->cache_size, cfuncs).release();
 }
 
 /**
@@ -626,66 +621,126 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
-    tsk_error_reset();
+  TSK_IMG_EXTERNAL_OPTIONS eopts{
+    ext_img_info,
+    size,
+    sector_size,
+    read,
+    close,
+    imgstat
+  };
 
-    // sanity checks
-    if (!sector_size_ok(sector_size)) {
-        return nullptr;
-    }
+  return tsk_img_open_ext(&DEFAULT_IMG_OPTIONS, &eopts);
+}
 
-    if (!ext_img_info) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image info pointer was null");
-        return nullptr;
-    }
+TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
+  int num_img,
+  const char *const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  const TSK_IMG_OPTIONS* opts,
+  const TSK_IMG_CACHE_OPTIONS* copts
+)
+{
+  CacheFuncs cfuncs{
+    tsk_img_read_cache,
+    copts->chunk_size,
+    copts->get,
+    copts->put,
+    [copts](TSK_IMG_INFO*) { return copts->data; },
+    copts->clone,
+    copts->free,
+    copts->clear
+  };
 
-    if (!read) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image read pointer was null");
-        return nullptr;
-    }
+  return img_open_x(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
+}
 
-    if (!close) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image close pointer was null");
-        return nullptr;
-    }
+TSK_IMG_INFO* img_ext_setup(
+  [[maybe_unused]] const TSK_IMG_OPTIONS* opts,
+  const TSK_IMG_EXTERNAL_OPTIONS* eopts
+)
+{
+  tsk_error_reset();
 
-    if (!imgstat) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image imgstat pointer was null");
-        return nullptr;
-    }
+  // sanity checks
+  if (!sector_size_ok(eopts->sector_size)) {
+    return nullptr;
+  }
 
-    // set up the TSK_IMG_INFO members
-    TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ext_img_info;
+  if (!eopts->ext_img_info) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image info pointer was null");
+    return nullptr;
+  }
 
-    img_info->tag = TSK_IMG_INFO_TAG;
-    img_info->itype = TSK_IMG_TYPE_EXTERNAL;
-    img_info->size = size;
-    img_info->sector_size = sector_size ? sector_size : 512;
+  if (!eopts->read) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image read pointer was null");
+    return nullptr;
+  }
 
-    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
+  if (!eopts->close) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image close pointer was null");
+    return nullptr;
+  }
 
-    iif->read = read;
-    iif->close = close;
-    iif->imgstat = imgstat;
+  if (!eopts->imgstat) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image imgstat pointer was null");
+    return nullptr;
+  }
 
-#ifdef READ_STATS
-    std::memset(&iif->stats, 0, sizeof(Stats));
-#endif
+  // set up the TSK_IMG_INFO members
+  TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) eopts->ext_img_info;
 
-    iif->cache_read = DEFAULT_NO_CACHE_FUNCS.read;
-    iif->cache_chunk_size = DEFAULT_NO_CACHE_FUNCS.chunk_size;
-    iif->cache_get = DEFAULT_NO_CACHE_FUNCS.get;
-    iif->cache_put = DEFAULT_NO_CACHE_FUNCS.put;
-    iif->cache_clone = DEFAULT_NO_CACHE_FUNCS.clone;
-    iif->cache_free = DEFAULT_NO_CACHE_FUNCS.free;
-    iif->cache_clear = DEFAULT_NO_CACHE_FUNCS.clear;
+  img_info->tag = TSK_IMG_INFO_TAG;
+  img_info->itype = TSK_IMG_TYPE_EXTERNAL;
+  img_info->size = eopts->size;
+  img_info->sector_size = eopts->sector_size ? eopts->sector_size : 512;
 
-    iif->cache = DEFAULT_NO_CACHE_FUNCS.create(img_info);
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
 
-    return img_info;
+  iif->read = eopts->read;
+  iif->close = eopts->close;
+  iif->imgstat = eopts->imgstat;
+
+  return img_info;
+}
+
+TSK_IMG_INFO* tsk_img_open_ext(
+  const TSK_IMG_OPTIONS* opts,
+  const TSK_IMG_EXTERNAL_OPTIONS* eopts
+)
+{
+  const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
+    ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
+
+  auto img_info = img_ext_setup(opts, eopts);
+  img_cache_setup(img_info, cfuncs, opts->cache_size);
+  return img_info;
+}
+
+TSK_IMG_INFO* tsk_img_open_ext_cache(
+  const TSK_IMG_OPTIONS* opts,
+  const TSK_IMG_EXTERNAL_OPTIONS* eopts,
+  const TSK_IMG_CACHE_OPTIONS* copts)
+{
+  CacheFuncs cfuncs{
+    tsk_img_read_cache,
+    copts->chunk_size,
+    copts->get,
+    copts->put,
+    [copts](TSK_IMG_INFO*) { return copts->data; },
+    copts->clone,
+    copts->free,
+    copts->clear
+  };
+
+  auto img_info = img_ext_setup(opts, eopts);
+  img_cache_setup(img_info, cfuncs, opts->cache_size);
+  return img_info;
 }
 
 #if 0
