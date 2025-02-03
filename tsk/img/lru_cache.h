@@ -70,6 +70,7 @@ public:
 
   void clear() {
     hash.clear();
+    items.clear();
   }
 
   typename std::list<std::pair<key_type, value_type>>::const_iterator begin() const {
