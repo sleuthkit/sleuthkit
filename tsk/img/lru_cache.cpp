@@ -57,8 +57,8 @@ void LRUBlockCacheLockingTsk::unlock() {
 
 using Cache = LRUBlockCacheLocking;
 
-void* lru_cache_create(TSK_IMG_INFO* img) {
-  return new Cache(reinterpret_cast<IMG_INFO*>(img)->cache_size);
+void* lru_cache_create(int cache_size) {
+  return new Cache(cache_size == -1 ? 1024 : cache_size);
 }
 
 void* lru_cache_clone(const void* data) {

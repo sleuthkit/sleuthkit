@@ -52,8 +52,6 @@ typedef struct Stats {
 
 struct IMG_INFO {
   TSK_IMG_INFO img_info;
-
-  size_t cache_size;
   void* cache;
 
 #ifdef READ_STATS

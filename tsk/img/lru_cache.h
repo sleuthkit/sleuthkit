@@ -136,7 +136,7 @@ private:
 
 struct TSK_IMG_INFO;
 
-void* lru_cache_create(TSK_IMG_INFO* img_info);
+void* lru_cache_create(int cache_size);
 
 void* lru_cache_clone(const void* data);
 

@@ -1,7 +1,7 @@
 #include "no_cache.h"
 #include "tsk_img_i.h"
 
-void* no_cache_create(TSK_IMG_INFO*) {
+void* no_cache_create(int) {
   return nullptr;
 }
 

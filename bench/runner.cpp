@@ -114,7 +114,7 @@ struct CacheSetup {
   size_t (*chunk_size)(const void* data);
   const char* (*get)(void* data, TSK_OFF_T off);
   void (*put)(void* data, TSK_OFF_T off, const char* buf);
-  void* (*create)(TSK_IMG_INFO* img);
+  void* (*create)(int cache_size);
   void* (*clone)(const void* data);
   void (*free)(void* data);
   void (*clear)(void* data);
@@ -122,7 +122,6 @@ struct CacheSetup {
 
 void set_cache_funcs(TSK_IMG_INFO* img, const CacheSetup& csetup) {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
-  iif->cache_size = csetup.cache_size;
   iif->cache_chunk_size = csetup.chunk_size;
   iif->cache_read = csetup.read;
   iif->cache_get = csetup.get;
@@ -147,7 +146,7 @@ void test_caching_shared_img(
 
   iif->cache_free(iif->cache);
   set_cache_funcs(img.get(), csetup);
-  iif->cache = csetup.create(img.get());
+  iif->cache = csetup.create(-1);
 
   const auto getimg = [&img]() { return img.get(); };
 
@@ -178,7 +177,7 @@ void test_caching_own_img(
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
     iif->cache_free(iif->cache);
     set_cache_funcs(img.get(), csetup);
-    iif->cache = csetup.create(img.get());
+    iif->cache = csetup.create(-1);
 
     return img;
   };
@@ -220,7 +219,7 @@ void test_caching_own_img_shared_cache(
 
   std::cout << fname << " oisc " << threads << ' ';
 
-  auto cache = csetup.create(nullptr);
+  auto cache = csetup.create(-1);
 
   const auto getimg = [&]() {
     auto img = open_img(images);
@@ -298,7 +297,7 @@ TEST_CASE("stats") {
         lru_cache_chunk_size,
         lru_cache_get,
         lru_cache_put,
-        [](TSK_IMG_INFO*) { return static_cast<void*>(new LRUBlockCacheLockingTsk(1024)); },
+        [](int) { return static_cast<void*>(new LRUBlockCacheLockingTsk(1024)); },
         lru_cache_clone,
         [](void* data) { delete static_cast<LRUBlockCacheLockingTsk*>(data); },
         lru_cache_clear

@@ -65,7 +65,7 @@ struct CacheFuncs {
   size_t (*chunk_size)(const void* data);
   const char* (*get)(void* data, TSK_OFF_T off);
   void (*put)(void* data, TSK_OFF_T off, const char* buf);
-  std::function<void*(TSK_IMG_INFO*)> create;
+  std::function<void*(int)> create;
   void* (*clone)(const void* data);
   void (*free)(void* data);
   void (*clear)(void* data);
@@ -327,8 +327,6 @@ void img_cache_setup(
 #endif
 
   // set up the cache
-  iif->cache_size = cache_size == -1 ? 1024 : cache_size;
-
   iif->cache_chunk_size = cfuncs.chunk_size;
   iif->cache_read = cfuncs.read;
   iif->cache_get = cfuncs.get;
@@ -337,7 +335,7 @@ void img_cache_setup(
   iif->cache_clear = cfuncs.clear;
   iif->cache_free = cfuncs.free;
 
-  iif->cache = cfuncs.create(img);
+  iif->cache = cfuncs.create(cache_size);
 }
 
 std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
@@ -662,7 +660,7 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
     copts->chunk_size,
     copts->get,
     copts->put,
-    [copts](TSK_IMG_INFO*) { return copts->data; },
+    [copts](int) { return copts->data; },
     copts->clone,
     copts->free,
     copts->clear
@@ -749,7 +747,7 @@ TSK_IMG_INFO* tsk_img_open_ext_cache(
     copts->chunk_size,
     copts->get,
     copts->put,
-    [copts](TSK_IMG_INFO*) { return copts->data; },
+    [copts](int) { return copts->data; },
     copts->clone,
     copts->free,
     copts->clear
