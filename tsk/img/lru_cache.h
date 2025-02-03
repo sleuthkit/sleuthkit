@@ -57,7 +57,7 @@ public:
       (r.first->second = items.begin())->first = key;
     }
     else {
-      // found existing key, reset the value and put the item to the front
+      // found existing key, reset the value and move the item to the front
       items.splice(items.begin(), items, r.first->second);
     }
 
