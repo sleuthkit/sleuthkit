@@ -602,7 +602,7 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 #	pushd sorter ; perltidy -b sorter.base ; popd
 #	pushd timeline ; perltidy -b mactime.base ; popd
 
-EXTRA_DIST += tests/runtests.sh
+EXTRA_DIST += test/legacy/runtests.sh
 
 check_SCRIPTS = \
 	test/check_static.sh \
