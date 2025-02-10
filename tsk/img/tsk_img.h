@@ -155,12 +155,6 @@ extern "C" {
         const TSK_IMG_OPTIONS* opts
     );
 
-    extern TSK_IMG_INFO *tsk_img_open_external(void* ext_img_info,
-        TSK_OFF_T size, unsigned int sector_size,
-        ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
-        void (*close) (TSK_IMG_INFO *),
-        void (*imgstat) (TSK_IMG_INFO *, FILE *));
-
     TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
         int num_img,
         const char *const images[],
@@ -168,6 +162,15 @@ extern "C" {
         unsigned int a_ssize,
         const TSK_IMG_OPTIONS* opts,
         void* cache
+    );
+
+    extern TSK_IMG_INFO *tsk_img_open_external(
+        void* ext_img_info,
+        TSK_OFF_T size,
+        unsigned int sector_size,
+        ssize_t (*read)(TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+        void (*close)(TSK_IMG_INFO *),
+        void (*imgstat)(TSK_IMG_INFO *, FILE *)
     );
 
     extern void tsk_img_close(TSK_IMG_INFO *);
