@@ -336,8 +336,7 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
 
     IMG_INFO* oiif = reinterpret_cast<IMG_INFO*>(origInfo);
     img_pool_info->img_info.cache_read = oiif->cache_read;
-    img_pool_info->img_info.cache_clone = oiif->cache_clone;
-    img_pool_info->img_info.cache = oiif->cache_clone(oiif->cache);
+    img_pool_info->img_info.cache = tsk_img_clone_cache(oiif->cache);
 
     return img_info;
 

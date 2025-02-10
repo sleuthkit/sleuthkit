@@ -181,6 +181,8 @@ extern "C" {
         void (*imgstat)(TSK_IMG_INFO *, FILE *)
     );
 
+// TODO: tsk_img_open_external_cache
+
     extern void tsk_img_close(TSK_IMG_INFO *);
 
     // read functions
