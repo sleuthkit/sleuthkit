@@ -72,30 +72,24 @@ void tsk_img_free_cache(TSK_IMG_CACHE* cache) {
   delete cache;
 }
 
+void tsk_img_clear_cache(TSK_IMG_CACHE* cache) {
+  static_cast<LRUBlockCacheLocking*>(cache->cache)->clear();
+}
+
 struct CacheFuncs {
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
   std::function<TSK_IMG_CACHE*(const TSK_IMG_OPTIONS&)> create;
   TSK_IMG_CACHE* (*clone)(const TSK_IMG_CACHE* data);
-  void (*free)(TSK_IMG_CACHE* data);
-  void (*clear)(TSK_IMG_CACHE* data);
 };
 
 TSK_IMG_CACHE* no_cache_clone(const TSK_IMG_CACHE*) {
   return nullptr;
 }
 
-void no_cache_free(TSK_IMG_CACHE*) {
-}
-
-void no_cache_clear(TSK_IMG_CACHE*) {
-}
-
 const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
   tsk_img_read_no_cache,
   [](const TSK_IMG_OPTIONS&) { return static_cast<TSK_IMG_CACHE*>(nullptr); },
   no_cache_clone,
-  no_cache_free,
-  no_cache_clear
 };
 
 void* lru_cache_create(int cache_size) {
@@ -110,21 +104,10 @@ TSK_IMG_CACHE* lru_cache_clone(const TSK_IMG_CACHE* cache) {
   return tsk_img_create_cache(&opts);
 }
 
-void lru_cache_free(TSK_IMG_CACHE* data) {
-  delete static_cast<LRUBlockCacheLocking*>(data->cache);
-}
-
-void lru_cache_clear(TSK_IMG_CACHE* data) {
-  auto cache = static_cast<LRUBlockCacheLocking*>(data->cache);
-  cache->clear();
-}
-
 const CacheFuncs DEFAULT_CACHE_FUNCS{
   tsk_img_read_cache,
   [](const TSK_IMG_OPTIONS& opts) { return tsk_img_create_cache(&opts); },
   lru_cache_clone,
-  lru_cache_free,
-  lru_cache_clear
 };
 
 bool sector_size_ok(unsigned int sector_size) {
@@ -363,8 +346,6 @@ void img_cache_setup(
   // set up the cache
   iif->cache_read = cfuncs.read;
   iif->cache_clone = cfuncs.clone;
-  iif->cache_clear = cfuncs.clear;
-  iif->cache_free = cfuncs.free;
 
   const TSK_IMG_OPTIONS opts{cache_size, -1};
   iif->cache = cfuncs.create(opts);
@@ -735,8 +716,6 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
     tsk_img_read_cache,
     [cache](const TSK_IMG_OPTIONS&) { return cache; },
     DEFAULT_CACHE_FUNCS.clone,
-    DEFAULT_CACHE_FUNCS.free,
-    DEFAULT_CACHE_FUNCS.clear
   };
 
   return img_open(num_img, imgs, type, a_ssize, cache_chunk_size, cfuncs).release();
@@ -881,7 +860,6 @@ tsk_img_malloc(size_t a_len)
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
     iif->cache = nullptr;
-    iif->cache_free = [](TSK_IMG_CACHE*){};
 
     return imgInfo;
 }
@@ -897,7 +875,10 @@ tsk_img_free(void *a_ptr)
     tsk_img_free_image_names(imgInfo);
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
-    iif->cache_free(iif->cache);
+    if (iif->cache) {
+      delete static_cast<LRUBlockCacheLocking*>(iif->cache->cache);
+      delete iif->cache;
+    }
 
 #ifdef READ_STATS
     tsk_deinit_lock(&iif->stats_lock);

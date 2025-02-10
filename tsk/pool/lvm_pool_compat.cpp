@@ -209,8 +209,6 @@ TSK_IMG_INFO * LVMPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_D
     IMG_INFO* oiif = reinterpret_cast<IMG_INFO*>(origInfo);
     img_pool_info->img_info.cache_read = oiif->cache_read;
     img_pool_info->img_info.cache_clone = oiif->cache_clone;
-    img_pool_info->img_info.cache_clear = oiif->cache_clear;
-    img_pool_info->img_info.cache_free = oiif->cache_free;
     img_pool_info->img_info.cache = oiif->cache_clone(oiif->cache);
 
     return img_info;

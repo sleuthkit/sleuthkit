@@ -120,8 +120,6 @@ void set_cache_funcs(TSK_IMG_INFO* img, const CacheSetup& csetup) {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
   iif->cache_read = csetup.read;
   iif->cache_clone = csetup.clone;
-  iif->cache_free = csetup.free;
-  iif->cache_clear = csetup.clear;
 }
 
 void test_caching_shared_img(
@@ -137,7 +135,7 @@ void test_caching_shared_img(
 
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
 
-  iif->cache_free(iif->cache);
+//  iif->cache_free(iif->cache);
   set_cache_funcs(img.get(), csetup);
   iif->cache = csetup.create(-1);
 
@@ -168,7 +166,7 @@ void test_caching_own_img(
     auto img = open_img(images);
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
-    iif->cache_free(iif->cache);
+//    iif->cache_free(iif->cache);
     set_cache_funcs(img.get(), csetup);
     iif->cache = csetup.create(-1);
 
@@ -218,7 +216,7 @@ void test_caching_own_img_shared_cache(
     auto img = open_img(images);
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
-    iif->cache_free(iif->cache);
+//    iif->cache_free(iif->cache);
     set_cache_funcs(img.get(), csetup);
     iif->cache = cache;
 
@@ -263,7 +261,6 @@ TEST_CASE("stats") {
         no_cache_create,
         no_cache_clone,
         no_cache_free,
-        no_cache_clear
       }
     },
 */
@@ -274,21 +271,8 @@ TEST_CASE("stats") {
         tsk_img_read_cache,
         lru_cache_create,
         lru_cache_clone,
-        lru_cache_free,
-        lru_cache_clear,
       }
     },
-    {
-      "tsk_img_read_cache_tsk",
-      CacheSetup{
-        1024,
-        tsk_img_read_cache,
-        [](int) { return static_cast<void*>(new LRUBlockCacheLockingTsk(1024)); },
-        lru_cache_clone,
-        [](void* data) { delete static_cast<LRUBlockCacheLockingTsk*>(data); },
-        lru_cache_clear
-      }
-    }
   };
 
   std::vector<std::vector<const TSK_TCHAR*>> images{
