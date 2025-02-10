@@ -65,10 +65,6 @@ struct IMG_INFO {
 
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 
-  size_t (*cache_chunk_size)(const TSK_IMG_CACHE* cache);
-  const char* (*cache_get)(TSK_IMG_CACHE* cache, TSK_OFF_T off);
-  void (*cache_put)(TSK_IMG_CACHE* cache, TSK_OFF_T off, const char* buf);
-
   TSK_IMG_CACHE* (*cache_clone)(const TSK_IMG_CACHE* cache);
   void (*cache_free)(TSK_IMG_CACHE* cache);
   void (*cache_clear)(TSK_IMG_CACHE* cache);

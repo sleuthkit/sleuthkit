@@ -110,9 +110,6 @@ run_tasks(size_t n, Func func, Types... args)
 struct CacheSetup {
   size_t cache_size;
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
-  size_t (*chunk_size)(const void* data);
-  const char* (*get)(void* data, TSK_OFF_T off);
-  void (*put)(void* data, TSK_OFF_T off, const char* buf);
   void* (*create)(int cache_size);
   void* (*clone)(const void* data);
   void (*free)(void* data);
@@ -121,10 +118,7 @@ struct CacheSetup {
 
 void set_cache_funcs(TSK_IMG_INFO* img, const CacheSetup& csetup) {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
-  iif->cache_chunk_size = csetup.chunk_size;
   iif->cache_read = csetup.read;
-  iif->cache_get = csetup.get;
-  iif->cache_put = csetup.put;
   iif->cache_clone = csetup.clone;
   iif->cache_free = csetup.free;
   iif->cache_clear = csetup.clear;
@@ -266,9 +260,6 @@ TEST_CASE("stats") {
       CacheSetup{
         0,
         tsk_img_read_no_cache,
-        nullptr,
-        nullptr,
-        nullptr,
         no_cache_create,
         no_cache_clone,
         no_cache_free,
@@ -281,9 +272,6 @@ TEST_CASE("stats") {
       CacheSetup{
         1024,
         tsk_img_read_cache,
-        lru_cache_chunk_size,
-        lru_cache_get,
-        lru_cache_put,
         lru_cache_create,
         lru_cache_clone,
         lru_cache_free,
@@ -295,9 +283,6 @@ TEST_CASE("stats") {
       CacheSetup{
         1024,
         tsk_img_read_cache,
-        lru_cache_chunk_size,
-        lru_cache_get,
-        lru_cache_put,
         [](int) { return static_cast<void*>(new LRUBlockCacheLockingTsk(1024)); },
         lru_cache_clone,
         [](void* data) { delete static_cast<LRUBlockCacheLockingTsk*>(data); },
