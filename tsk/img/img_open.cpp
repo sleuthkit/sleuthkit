@@ -619,16 +619,59 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
-  TSK_IMG_EXTERNAL_OPTIONS eopts{
-    ext_img_info,
-    size,
-    sector_size,
-    read,
-    close,
-    imgstat
-  };
+  const auto& cfuncs = DEFAULT_CACHE_FUNCS;
+ 
+  const auto cache_size = DEFAULT_IMG_OPTIONS.cache_size;
 
-  return tsk_img_open_ext(&DEFAULT_IMG_OPTIONS, &eopts);
+  tsk_error_reset();
+
+  // sanity checks
+  if (!sector_size_ok(sector_size)) {
+    return nullptr;
+  }
+
+  if (!ext_img_info) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image info pointer was null");
+    return nullptr;
+  }
+
+  if (!read) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image read pointer was null");
+    return nullptr;
+  }
+
+  if (!close) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image close pointer was null");
+    return nullptr;
+  }
+
+  if (!imgstat) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image imgstat pointer was null");
+    return nullptr;
+  }
+
+  // set up the TSK_IMG_INFO members
+  TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) ext_img_info;
+
+  img_info->tag = TSK_IMG_INFO_TAG;
+  img_info->itype = TSK_IMG_TYPE_EXTERNAL;
+  img_info->size = size;
+  img_info->sector_size = sector_size ? sector_size : 512;
+
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
+
+  iif->read = read;
+  iif->close = close;
+  iif->imgstat = imgstat;
+
+  img_cache_setup(img_info, cfuncs, cache_size);
+
+  return img_info;
+
 }
 
 TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
@@ -637,7 +680,7 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
   const TSK_IMG_OPTIONS* opts,
-  const TSK_IMG_CACHE_OPTIONS* copts
+  void* cache 
 )
 {
 #ifdef TSK_WIN32
@@ -655,105 +698,20 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
   const TSK_TCHAR* const* imgs = images;
 #endif
 
+  const size_t cache_chunk_size = opts->cache_chunk_size >= 0 ? static_cast<size_t>(opts->cache_chunk_size) : 65536;
+
   CacheFuncs cfuncs{
     tsk_img_read_cache,
-    copts->chunk_size,
-    copts->get,
-    copts->put,
-    [copts](int) { return copts->data; },
-    copts->clone,
-    copts->free,
-    copts->clear
+    DEFAULT_CACHE_FUNCS.chunk_size,
+    DEFAULT_CACHE_FUNCS.get,
+    DEFAULT_CACHE_FUNCS.put,
+    [cache](int) { return cache; },
+    DEFAULT_CACHE_FUNCS.clone,
+    DEFAULT_CACHE_FUNCS.free,
+    DEFAULT_CACHE_FUNCS.clear
   };
 
-  return img_open(num_img, imgs, type, a_ssize, opts->cache_size, cfuncs).release();
-}
-
-TSK_IMG_INFO* img_open_ext(
-  [[maybe_unused]] const TSK_IMG_OPTIONS* opts,
-  const TSK_IMG_EXTERNAL_OPTIONS* eopts,
-  int cache_size,
-  const CacheFuncs& cfuncs
-)
-{
-  tsk_error_reset();
-
-  // sanity checks
-  if (!sector_size_ok(eopts->sector_size)) {
-    return nullptr;
-  }
-
-  if (!eopts->ext_img_info) {
-    tsk_error_set_errno(TSK_ERR_IMG_ARG);
-    tsk_error_set_errstr("external image info pointer was null");
-    return nullptr;
-  }
-
-  if (!eopts->read) {
-    tsk_error_set_errno(TSK_ERR_IMG_ARG);
-    tsk_error_set_errstr("external image read pointer was null");
-    return nullptr;
-  }
-
-  if (!eopts->close) {
-    tsk_error_set_errno(TSK_ERR_IMG_ARG);
-    tsk_error_set_errstr("external image close pointer was null");
-    return nullptr;
-  }
-
-  if (!eopts->imgstat) {
-    tsk_error_set_errno(TSK_ERR_IMG_ARG);
-    tsk_error_set_errstr("external image imgstat pointer was null");
-    return nullptr;
-  }
-
-  // set up the TSK_IMG_INFO members
-  TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) eopts->ext_img_info;
-
-  img_info->tag = TSK_IMG_INFO_TAG;
-  img_info->itype = TSK_IMG_TYPE_EXTERNAL;
-  img_info->size = eopts->size;
-  img_info->sector_size = eopts->sector_size ? eopts->sector_size : 512;
-
-  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
-
-  iif->read = eopts->read;
-  iif->close = eopts->close;
-  iif->imgstat = eopts->imgstat;
-
-  img_cache_setup(img_info, cfuncs, cache_size);
-
-  return img_info;
-}
-
-TSK_IMG_INFO* tsk_img_open_ext(
-  const TSK_IMG_OPTIONS* opts,
-  const TSK_IMG_EXTERNAL_OPTIONS* eopts
-)
-{
-  const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
-    ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
-
-  return img_open_ext(opts, eopts, opts->cache_size, cfuncs);
-}
-
-TSK_IMG_INFO* tsk_img_open_ext_cache(
-  const TSK_IMG_OPTIONS* opts,
-  const TSK_IMG_EXTERNAL_OPTIONS* eopts,
-  const TSK_IMG_CACHE_OPTIONS* copts)
-{
-  CacheFuncs cfuncs{
-    tsk_img_read_cache,
-    copts->chunk_size,
-    copts->get,
-    copts->put,
-    [copts](int) { return copts->data; },
-    copts->clone,
-    copts->free,
-    copts->clear
-  };
-
-  return img_open_ext(opts, eopts, opts->cache_size, cfuncs);
+  return img_open(num_img, imgs, type, a_ssize, cache_chunk_size, cfuncs).release();
 }
 
 #if 0
