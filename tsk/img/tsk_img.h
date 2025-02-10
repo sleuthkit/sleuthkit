@@ -155,13 +155,21 @@ extern "C" {
         const TSK_IMG_OPTIONS* opts
     );
 
+    struct TSK_IMG_CACHE;
+
+    typedef struct TSK_IMG_CACHE TSK_IMG_CACHE;
+
+    TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts);
+
+    void tsk_img_free_cache(TSK_IMG_CACHE* cache);
+
     TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
         int num_img,
         const char *const images[],
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
         const TSK_IMG_OPTIONS* opts,
-        void* cache
+        TSK_IMG_CACHE* cache
     );
 
     extern TSK_IMG_INFO *tsk_img_open_external(

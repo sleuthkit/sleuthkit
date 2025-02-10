@@ -1,6 +1,5 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/img/img_open.h"
-#include "tsk/img/no_cache.h"
 
 #include <limits>
 #include <memory>
@@ -75,8 +74,8 @@ TEST_CASE("tsk_img_read inner function failed") {
 
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
   iif->cache_read = tsk_img_read_no_cache;
-  iif->cache_free = no_cache_free;
-  iif->cache = no_cache_create(-1);
+  iif->cache_free = [](TSK_IMG_CACHE*){};
+  iif->cache = nullptr;
 
   iif->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
     return (ssize_t) -1;

@@ -1,8 +1,6 @@
 #ifndef _TSK_IMG_LRU_CACHE_H
 #define _TSK_IMG_LRU_CACHE_H
 
-#include "tsk_img_i.h"
-
 #include <array>
 #include <cstring>
 #include <list>
@@ -116,38 +114,14 @@ public:
 
   void unlock();
 
+  const char* get(uint64_t key);
+
+  void put(uint64_t key, const char* val);
+
+  void clear();
+
 private:
   std::mutex mutex;
 };
-
-class LRUBlockCacheLockingTsk: public LRUBlockCache {
-public:
-  LRUBlockCacheLockingTsk(size_t cache_size);
-
-  ~LRUBlockCacheLockingTsk();
-
-  void lock();
-
-  void unlock();
-
-private:
-  tsk_lock_t l;
-};
-
-struct TSK_IMG_INFO;
-
-void* lru_cache_create(int cache_size);
-
-void* lru_cache_clone(const void* data);
-
-void lru_cache_clear(void* data);
-
-void lru_cache_free(void* data);
-
-const char* lru_cache_get(void* data, TSK_OFF_T off);
-
-void lru_cache_put(void* data, TSK_OFF_T off, const char* buf);
-
-size_t lru_cache_chunk_size(const void* data);
 
 #endif

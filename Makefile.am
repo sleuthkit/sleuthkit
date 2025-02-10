@@ -308,8 +308,6 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/lru_cache.h \
 	tsk/img/mult_files.cpp \
 	tsk/img/mult_files.h \
-	tsk/img/no_cache.cpp \
-	tsk/img/no_cache.h \
 	tsk/img/qcow.cpp \
 	tsk/img/qcow.h \
 	tsk/img/raw.cpp \

@@ -527,8 +527,6 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\img\lru_cache.cpp" />
     <ClCompile Include="..\..\tsk\img\lru_cache.h" />
     <ClCompile Include="..\..\tsk\img\mult_files.cpp" />
-    <ClCompile Include="..\..\tsk\img\no_cache.cpp" />
-    <ClCompile Include="..\..\tsk\img\no_cache.h" />
     <ClCompile Include="..\..\tsk\img\raw.cpp" />
     <ClCompile Include="..\..\tsk\img\logical_img.cpp" />
   </ItemGroup>
