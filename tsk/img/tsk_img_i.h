@@ -50,6 +50,10 @@ typedef struct Stats {
 } Stats;
 #endif
 
+struct TSK_IMG_CACHE {
+  void* cache;
+};
+
 struct IMG_INFO {
   TSK_IMG_INFO img_info;
   TSK_IMG_CACHE* cache;

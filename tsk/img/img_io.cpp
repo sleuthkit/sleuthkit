@@ -11,6 +11,7 @@
  */
 
 #include "tsk_img_i.h"
+#include "lru_cache.h"
 
 #include <algorithm>
 #include <chrono>
@@ -61,6 +62,18 @@ private:
 
 #endif
 
+size_t cache_chunk_size(const TSK_IMG_CACHE* cache) {
+  return reinterpret_cast<const LRUBlockCacheLocking*>(cache->cache)->chunk_size();
+}
+
+const char* cache_get(TSK_IMG_CACHE* cache, TSK_OFF_T off) {
+  return reinterpret_cast<LRUBlockCacheLocking*>(cache->cache)->get(off);
+}
+
+void cache_put(TSK_IMG_CACHE* cache, TSK_OFF_T off, const char* buf) {
+  reinterpret_cast<LRUBlockCacheLocking*>(cache->cache)->put(off, buf);
+}
+
 ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
   size_t pos = 0;
@@ -83,7 +96,7 @@ ssize_t read_chunk(
     return -1;
   }
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
-  iif->cache_put(iif->cache, coff, buf);
+  cache_put(iif->cache, coff, buf);
   return clen;
 }
 
@@ -101,7 +114,7 @@ ssize_t tsk_img_read_cache(
   Stats& stats = iif->stats;
 #endif
 
-  const size_t chunk_size = iif->cache_chunk_size(iif->cache);
+  const size_t chunk_size = cache_chunk_size(iif->cache);
 
   // offset of src end, taking care not to overrun the end of the image
   const TSK_OFF_T send = a_off + std::min((TSK_OFF_T)a_len, a_img_info->size);
@@ -132,7 +145,7 @@ ssize_t tsk_img_read_cache(
 #ifdef READ_STATS
       timer.start();
 #endif
-      chunk = iif->cache_get(iif->cache, coff);
+      chunk = cache_get(iif->cache, coff);
       if (chunk) {
         // cache hit: copy chunk to buffer
         std::memcpy(dst, chunk + delta, len);

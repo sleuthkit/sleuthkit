@@ -54,10 +54,6 @@
 #include <vector>
 #include <utility>
 
-struct TSK_IMG_CACHE {
-  void* cache;
-};
-
 const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
   -1,
   -1
@@ -78,9 +74,6 @@ void tsk_img_free_cache(TSK_IMG_CACHE* cache) {
 
 struct CacheFuncs {
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
-  size_t (*chunk_size)(const TSK_IMG_CACHE* data);
-  const char* (*get)(TSK_IMG_CACHE* data, TSK_OFF_T off);
-  void (*put)(TSK_IMG_CACHE* data, TSK_OFF_T off, const char* buf);
   std::function<TSK_IMG_CACHE*(const TSK_IMG_OPTIONS&)> create;
   TSK_IMG_CACHE* (*clone)(const TSK_IMG_CACHE* data);
   void (*free)(TSK_IMG_CACHE* data);
@@ -99,9 +92,6 @@ void no_cache_clear(TSK_IMG_CACHE*) {
 
 const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
   tsk_img_read_no_cache,
-  nullptr,
-  nullptr,
-  nullptr,
   [](const TSK_IMG_OPTIONS&) { return static_cast<TSK_IMG_CACHE*>(nullptr); },
   no_cache_clone,
   no_cache_free,
@@ -114,7 +104,7 @@ void* lru_cache_create(int cache_size) {
 
 TSK_IMG_CACHE* lru_cache_clone(const TSK_IMG_CACHE* cache) {
   const TSK_IMG_OPTIONS opts{
-    reinterpret_cast<const LRUBlockCacheLocking*>(cache->cache)->cache_size(),
+    static_cast<int>(reinterpret_cast<const LRUBlockCacheLocking*>(cache->cache)->cache_size()),
     -1
   };
   return tsk_img_create_cache(&opts);
@@ -129,25 +119,8 @@ void lru_cache_clear(TSK_IMG_CACHE* data) {
   cache->clear();
 }
 
-const char* lru_cache_get(TSK_IMG_CACHE* data, TSK_OFF_T off) {
-  auto cache = static_cast<LRUBlockCacheLocking*>(data->cache);
-  return cache->get(off);
-}
-
-void lru_cache_put(TSK_IMG_CACHE* data, TSK_OFF_T off, const char* buf) {
-  auto cache = static_cast<LRUBlockCacheLocking*>(data->cache);
-  cache->put(off, buf);
-}
-
-size_t lru_cache_chunk_size(const TSK_IMG_CACHE* data) {
-  return static_cast<const LRUBlockCacheLocking*>(data->cache)->chunk_size();
-}
-
 const CacheFuncs DEFAULT_CACHE_FUNCS{
   tsk_img_read_cache,
-  lru_cache_chunk_size,
-  lru_cache_get,
-  lru_cache_put,
   [](const TSK_IMG_OPTIONS& opts) { return tsk_img_create_cache(&opts); },
   lru_cache_clone,
   lru_cache_free,
@@ -388,10 +361,7 @@ void img_cache_setup(
 #endif
 
   // set up the cache
-  iif->cache_chunk_size = cfuncs.chunk_size;
   iif->cache_read = cfuncs.read;
-  iif->cache_get = cfuncs.get;
-  iif->cache_put = cfuncs.put;
   iif->cache_clone = cfuncs.clone;
   iif->cache_clear = cfuncs.clear;
   iif->cache_free = cfuncs.free;
@@ -763,9 +733,6 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
 
   CacheFuncs cfuncs{
     tsk_img_read_cache,
-    DEFAULT_CACHE_FUNCS.chunk_size,
-    DEFAULT_CACHE_FUNCS.get,
-    DEFAULT_CACHE_FUNCS.put,
     [cache](const TSK_IMG_OPTIONS&) { return cache; },
     DEFAULT_CACHE_FUNCS.clone,
     DEFAULT_CACHE_FUNCS.free,
