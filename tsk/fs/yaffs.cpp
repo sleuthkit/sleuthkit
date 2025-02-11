@@ -32,6 +32,8 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 #include <algorithm>
 #include <string>
 #include <set>
+
+#include <fcntl.h>
 #include <string.h>
 
 #include "tsk_fs_i.h"
