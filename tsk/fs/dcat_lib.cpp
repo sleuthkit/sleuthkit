@@ -24,6 +24,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 
 /**
  * \file dcat_lib.cpp
