@@ -17,6 +17,8 @@
 #include "tsk/img/tsk_img_i.h"
 #include "file_system_utils.h"
 
+#include <cerrno>
+
 #ifdef __APPLE__
 #include <sys/disk.h>
 #endif

@@ -40,6 +40,8 @@
 
 #include "tsk_fs_i.h"
 
+#include <cerrno>
+
 /* call backs for listing details
  *
  * return 1 on error
