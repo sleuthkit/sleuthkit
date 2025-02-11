@@ -89,6 +89,10 @@ ssize_t tsk_img_read_cache(
 
 void tsk_img_clear_cache(TSK_IMG_CACHE* cache);
 
-TSK_IMG_CACHE* tsk_img_clone_cache(const TSK_IMG_CACHE* cache);
+void tsk_img_setup_cache(
+  IMG_INFO* iif,
+  int cache_size,
+  TSK_IMG_CACHE* shared_cache
+);
 
 #endif

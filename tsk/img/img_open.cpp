@@ -309,7 +309,11 @@ img_open_detect_type(
     }
 }
 
-void setup_cache(IMG_INFO* iif, int cache_size, TSK_IMG_CACHE* shared_cache) {
+void tsk_img_setup_cache(
+  IMG_INFO* iif,
+  int cache_size,
+  TSK_IMG_CACHE* shared_cache)
+{
   if (shared_cache) {
     iif->cache = shared_cache;
     iif->cache_owned = true;
@@ -361,7 +365,7 @@ img_open(
     img_open_by_type(num_img, images, type, a_ssize);
 
   if (img_info) {
-    setup_cache(
+    tsk_img_setup_cache(
       reinterpret_cast<IMG_INFO*>(img_info.get()),
       cache_size,
       shared_cache
@@ -673,7 +677,7 @@ tsk_img_open_external(
   iif->close = close;
   iif->imgstat = imgstat;
 
-  setup_cache(iif, DEFAULT_IMG_OPTIONS.cache_size, nullptr);
+  tsk_img_setup_cache(iif, DEFAULT_IMG_OPTIONS.cache_size, nullptr);
 
   return img_info;
 }
