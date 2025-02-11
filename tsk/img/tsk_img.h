@@ -102,6 +102,20 @@ extern "C" {
         unsigned int spare_size;        ///< spare or OOB size of NAND in bytes (defaults to 64)
 
         TSK_TCHAR **images;    ///< Image names
+
+        //
+        // Deprecated members retained for ABI compatibility only.
+        // These should be removed at the next opportunity.
+        //
+        tsk_lock_t cache_lock;  ///< Lock for cache and associated values. Deprecated.
+        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock). Deprecated.
+        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock). Deprecated.
+        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock). Deprecated.
+        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock). Deprecated.
+
+        ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read(). Deprecated.
+        void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close(). Deprecated.
+        void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function. Deprecated.
     };
 
     typedef struct TSK_IMG_OPTIONS {
