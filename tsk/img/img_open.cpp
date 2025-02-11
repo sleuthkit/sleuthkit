@@ -625,6 +625,28 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
+  return tsk_img_open_external_cache(
+    ext_img_info,
+    size,
+    sector_size,
+    read,
+    close,
+    imgstat,
+    nullptr
+  );
+}
+
+TSK_IMG_INFO *
+tsk_img_open_external_cache(
+  void* ext_img_info,
+  TSK_OFF_T size,
+  unsigned int sector_size,
+  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+  void (*close) (TSK_IMG_INFO *),
+  void (*imgstat) (TSK_IMG_INFO *, FILE *),
+  TSK_IMG_CACHE* cache
+)
+{
   tsk_error_reset();
 
   // sanity checks
@@ -670,7 +692,7 @@ tsk_img_open_external(
   iif->close = close;
   iif->imgstat = imgstat;
 
-  tsk_img_setup_cache(iif, DEFAULT_IMG_OPTIONS.cache_size, nullptr);
+  tsk_img_setup_cache(iif, DEFAULT_IMG_OPTIONS.cache_size, cache);
 
   return img_info;
 }

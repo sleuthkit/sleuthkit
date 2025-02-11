@@ -181,7 +181,15 @@ extern "C" {
         void (*imgstat)(TSK_IMG_INFO *, FILE *)
     );
 
-// TODO: tsk_img_open_external_cache
+    extern TSK_IMG_INFO *tsk_img_open_external_cache(
+        void* ext_img_info,
+        TSK_OFF_T size,
+        unsigned int sector_size,
+        ssize_t (*read)(TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+        void (*close)(TSK_IMG_INFO *),
+        void (*imgstat)(TSK_IMG_INFO *, FILE *),
+        TSK_IMG_CACHE* cache
+    );
 
     extern void tsk_img_close(TSK_IMG_INFO *);
 
