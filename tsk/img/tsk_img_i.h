@@ -42,8 +42,10 @@ struct Stats {
 };
 #endif
 
+struct LRUBlockCacheLocking;
+
 struct TSK_IMG_CACHE {
-  void* cache;
+  LRUBlockCacheLocking* cache;
 };
 
 struct IMG_INFO {

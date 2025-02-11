@@ -75,18 +75,18 @@ TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts) {
 
 void tsk_img_free_cache(TSK_IMG_CACHE* cache) {
   if (cache) {
-    delete static_cast<LRUBlockCacheLocking*>(cache->cache);
+    delete cache->cache;
     delete cache;
   }
 }
 
 void tsk_img_clear_cache(TSK_IMG_CACHE* cache) {
-  static_cast<LRUBlockCacheLocking*>(cache->cache)->clear();
+  cache->cache->clear();
 }
 
 TSK_IMG_CACHE* tsk_img_clone_cache(const TSK_IMG_CACHE* cache) {
   const TSK_IMG_OPTIONS opts{
-    static_cast<int>(static_cast<const LRUBlockCacheLocking*>(cache->cache)->cache_size()),
+    static_cast<int>(cache->cache->cache_size()),
     -1
   };
   return tsk_img_create_cache(&opts);

@@ -63,15 +63,15 @@ private:
 #endif
 
 size_t cache_chunk_size(const TSK_IMG_CACHE* cache) {
-  return reinterpret_cast<const LRUBlockCacheLocking*>(cache->cache)->chunk_size();
+  return cache->cache->chunk_size();
 }
 
 const char* cache_get(TSK_IMG_CACHE* cache, TSK_OFF_T off) {
-  return reinterpret_cast<LRUBlockCacheLocking*>(cache->cache)->get(off);
+  return cache->cache->get(off);
 }
 
 void cache_put(TSK_IMG_CACHE* cache, TSK_OFF_T off, const char* buf) {
-  reinterpret_cast<LRUBlockCacheLocking*>(cache->cache)->put(off, buf);
+  cache->cache->put(off, buf);
 }
 
 ssize_t read_fully(char* buf, TSK_IMG_INFO* img, TSK_OFF_T off, size_t len) {
