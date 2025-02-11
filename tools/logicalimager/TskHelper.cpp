@@ -15,6 +15,7 @@
 #include <codecvt>
 
 #include "tsk/base/tsk_base_i.h"
+#include "tsk/img/tsk_img_i.h"
 #include "tsk/fs/tsk_fs_i.h"
 #include "TskHelper.h"
 #include "ReportUtil.h"
