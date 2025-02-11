@@ -17,7 +17,8 @@
 
 // Include the other internal TSK header files
 #include "tsk/base/tsk_base_i.h"
-#include "tsk/img/tsk_img_i.h"
+
+#include "tsk/img/tsk_img.h"
 
 // include the external vs header file
 #include "tsk_vs.h"

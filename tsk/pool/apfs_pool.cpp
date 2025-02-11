@@ -11,6 +11,7 @@
 
 #include "../libtsk.h"
 
+#include "../img/tsk_img_i.h"
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
 
