@@ -81,14 +81,6 @@ void tsk_img_clear_cache(TSK_IMG_CACHE* cache) {
   cache->cache.clear();
 }
 
-TSK_IMG_CACHE* tsk_img_clone_cache(const TSK_IMG_CACHE* cache) {
-  const TSK_IMG_OPTIONS opts{
-    static_cast<int>(cache->cache.cache_size()),
-    -1
-  };
-  return tsk_img_create_cache(&opts);
-}
-
 bool sector_size_ok(unsigned int sector_size) {
     if (sector_size > 0 && sector_size < 512) {
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
