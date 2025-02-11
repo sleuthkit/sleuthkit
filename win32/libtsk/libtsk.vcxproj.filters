@@ -234,7 +234,7 @@
     <ClCompile Include="..\..\tsk\base\XGetopt.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\aff.c">
+    <ClCompile Include="..\..\tsk\img\aff.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_io.cpp">

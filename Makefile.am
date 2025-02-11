@@ -290,7 +290,7 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/aff4.cpp \
 	tsk/img/aff4.h \
-	tsk/img/aff.c \
+	tsk/img/aff.cpp \
 	tsk/img/aff.h \
 	tsk/img/ewf.cpp \
 	tsk/img/ewf.h \
