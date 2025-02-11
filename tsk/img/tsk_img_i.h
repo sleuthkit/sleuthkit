@@ -50,13 +50,14 @@ struct TSK_IMG_CACHE {
 
 struct IMG_INFO {
   TSK_IMG_INFO img_info;
-  TSK_IMG_CACHE* cache;
 
 #ifdef READ_STATS
   Stats stats;
   tsk_lock_t stats_lock;
 #endif
 
+  TSK_IMG_CACHE* cache;
+  bool cache_owned;
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 
   ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);

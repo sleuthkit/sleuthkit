@@ -344,6 +344,7 @@ img_open(
 
     const TSK_IMG_OPTIONS opts{cache_size, -1};
     iif->cache = tsk_img_create_cache(&opts);
+    iif->cache_owned = true;
 
 #ifdef READ_STATS
     std::memset(&iif->stats, 0, sizeof(Stats));
@@ -645,6 +646,7 @@ tsk_img_open_external(
   const auto cache_size = DEFAULT_IMG_OPTIONS.cache_size;
   iif->cache_read = cache_size == 0 ? tsk_img_read_no_cache : tsk_img_read_cache;
   iif->cache = tsk_img_create_cache(&DEFAULT_IMG_OPTIONS);
+  iif->cache_owned = true;
 
 #ifdef READ_STATS
   std::memset(&iif->stats, 0, sizeof(Stats));
@@ -822,6 +824,7 @@ tsk_img_malloc(size_t a_len)
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
     iif->cache = nullptr;
+    iif->cache_owned = false;
 
     return imgInfo;
 }
@@ -837,9 +840,8 @@ tsk_img_free(void *a_ptr)
     tsk_img_free_image_names(imgInfo);
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
-    if (iif->cache) {
-      delete static_cast<LRUBlockCacheLocking*>(iif->cache->cache);
-      delete iif->cache;
+    if (iif->cache && iif->cache_owned) {
+      tsk_img_free_cache(iif->cache);
     }
 
 #ifdef READ_STATS
