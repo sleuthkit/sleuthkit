@@ -680,7 +680,7 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
   const char *const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts,
+  [[maybe_unused]] const TSK_IMG_OPTIONS* opts,
   TSK_IMG_CACHE* cache
 )
 {
