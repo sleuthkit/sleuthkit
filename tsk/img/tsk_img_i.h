@@ -21,8 +21,6 @@
 #include "tsk_img.h"
 
 // other standard includes
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 
 #ifdef __cplusplus
