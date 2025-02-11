@@ -19,6 +19,8 @@
 
 #include <cerrno>
 
+#include <fcntl.h>
+
 #ifdef __APPLE__
 #include <sys/disk.h>
 #endif
@@ -29,7 +31,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
 #endif
 
 #ifndef S_IFMT
