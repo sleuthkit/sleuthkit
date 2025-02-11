@@ -29,6 +29,8 @@
 
 #include "tsk_fs_i.h"
 
+#include <fcntl.h>
+
 #include <cerrno>
 
 
