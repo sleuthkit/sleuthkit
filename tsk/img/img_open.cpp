@@ -66,8 +66,8 @@ TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts) {
   case 0:
     return nullptr;
   case -1:
-    [[fallthrough]];
     cache_size = 1024; 
+    [[fallthrough]];
   default:
     return new TSK_IMG_CACHE{new LRUBlockCacheLocking(cache_size)};
   }
@@ -89,18 +89,6 @@ TSK_IMG_CACHE* tsk_img_clone_cache(const TSK_IMG_CACHE* cache) {
   };
   return tsk_img_create_cache(&opts);
 }
-
-struct CacheFuncs {
-  ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
-};
-
-const CacheFuncs DEFAULT_NO_CACHE_FUNCS{
-  tsk_img_read_no_cache
-};
-
-const CacheFuncs DEFAULT_CACHE_FUNCS{
-  tsk_img_read_cache
-};
 
 bool sector_size_ok(unsigned int sector_size) {
     if (sector_size > 0 && sector_size < 512) {
@@ -324,7 +312,6 @@ img_open_detect_type(
 
 void img_cache_setup(
   TSK_IMG_INFO* img,
-  const CacheFuncs& cfuncs,
   int cache_size
 )
 {
@@ -336,7 +323,7 @@ void img_cache_setup(
 #endif
 
   // set up the cache
-  iif->cache_read = cfuncs.read;
+  iif->cache_read = cache_size == 0 ? tsk_img_read_no_cache : tsk_img_read_cache;
 
   const TSK_IMG_OPTIONS opts{cache_size, -1};
   iif->cache = tsk_img_create_cache(&opts);
@@ -348,8 +335,7 @@ img_open(
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  int cache_size,
-  const CacheFuncs& cfuncs
+  int cache_size
 )
 {
   // Clear previous error messages
@@ -370,7 +356,7 @@ img_open(
     img_open_by_type(num_img, images, type, a_ssize);
 
   if (img_info) {
-    img_cache_setup(img_info.get(), cfuncs, cache_size);
+    img_cache_setup(img_info.get(), cache_size);
   }
 
   return img_info;
@@ -506,9 +492,7 @@ tsk_img_open_opt(
   unsigned int a_ssize,
   const TSK_IMG_OPTIONS* opts)
 {
-  const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
-    ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
-  return img_open(num_img, images, type, a_ssize, opts->cache_size, cfuncs).release();
+  return img_open(num_img, images, type, a_ssize, opts->cache_size).release();
 }
 
 /**
@@ -591,9 +575,7 @@ tsk_img_open_utf8_opt(
     const TSK_TCHAR* const* imgs = images;
 #endif
 
-    const auto& cfuncs = (opts->cache_size == 0 || opts->cache_chunk_size == 0)
-      ? DEFAULT_NO_CACHE_FUNCS : DEFAULT_CACHE_FUNCS;
-    return img_open(num_img, imgs, type, a_ssize, opts->cache_size, cfuncs).release();
+    return img_open(num_img, imgs, type, a_ssize, opts->cache_size).release();
 }
 
 /**
@@ -623,8 +605,6 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
-  const auto& cfuncs = DEFAULT_CACHE_FUNCS;
-
   const auto cache_size = DEFAULT_IMG_OPTIONS.cache_size;
 
   tsk_error_reset();
@@ -672,7 +652,7 @@ tsk_img_open_external(
   iif->close = close;
   iif->imgstat = imgstat;
 
-  img_cache_setup(img_info, cfuncs, cache_size);
+  img_cache_setup(img_info, cache_size);
 
   return img_info;
 }
@@ -703,11 +683,7 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
 
   const size_t cache_chunk_size = opts->cache_chunk_size >= 0 ? static_cast<size_t>(opts->cache_chunk_size) : 65536;
 
-  CacheFuncs cfuncs{
-    tsk_img_read_cache
-  };
-
-  return img_open(num_img, imgs, type, a_ssize, cache_chunk_size, cfuncs).release();
+  return img_open(num_img, imgs, type, a_ssize, cache_chunk_size).release();
 }
 
 #if 0
