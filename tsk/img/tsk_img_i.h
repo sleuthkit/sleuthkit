@@ -31,7 +31,7 @@
 //#define READ_STATS
 
 #ifdef READ_STATS
-typedef struct Stats {
+struct Stats {
   size_t hits;
   size_t hit_ns;
   size_t hit_bytes;
@@ -39,7 +39,7 @@ typedef struct Stats {
   size_t miss_ns;
   size_t miss_bytes;
   size_t histogram[64];
-} Stats;
+};
 #endif
 
 struct TSK_IMG_CACHE {
