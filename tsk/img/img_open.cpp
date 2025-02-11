@@ -309,13 +309,38 @@ img_open_detect_type(
     }
 }
 
+void setup_cache(IMG_INFO* iif, int cache_size, TSK_IMG_CACHE* shared_cache) {
+  if (shared_cache) {
+    iif->cache = shared_cache;
+    iif->cache_owned = true;
+    iif->cache_read = tsk_img_read_cache;
+  }
+  else if (cache_size > 0) {
+    const TSK_IMG_OPTIONS opts{cache_size, -1};
+    iif->cache = tsk_img_create_cache(&opts);
+    iif->cache_owned = true;
+    iif->cache_read = tsk_img_read_cache;
+  }
+  else {
+    iif->cache = nullptr;
+    iif->cache_owned = false;
+    iif->cache_read = tsk_img_read_no_cache;
+  }
+
+#ifdef READ_STATS
+  std::memset(&iif->stats, 0, sizeof(Stats));
+  tsk_init_lock(&iif->stats_lock);
+#endif
+}
+
 std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
 img_open(
   int num_img,
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  int cache_size
+  int cache_size,
+  TSK_IMG_CACHE* shared_cache
 )
 {
   // Clear previous error messages
@@ -336,17 +361,11 @@ img_open(
     img_open_by_type(num_img, images, type, a_ssize);
 
   if (img_info) {
-    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
-    iif->cache_read = cache_size == 0 ? tsk_img_read_no_cache : tsk_img_read_cache;
-
-    const TSK_IMG_OPTIONS opts{cache_size, -1};
-    iif->cache = tsk_img_create_cache(&opts);
-    iif->cache_owned = true;
-
-#ifdef READ_STATS
-    std::memset(&iif->stats, 0, sizeof(Stats));
-    tsk_init_lock(&iif->stats_lock);
-#endif
+    setup_cache(
+      reinterpret_cast<IMG_INFO*>(img_info.get()),
+      cache_size,
+      shared_cache
+    );
   }
 
   return img_info;
@@ -482,7 +501,14 @@ tsk_img_open_opt(
   unsigned int a_ssize,
   const TSK_IMG_OPTIONS* opts)
 {
-  return img_open(num_img, images, type, a_ssize, opts->cache_size).release();
+  return img_open(
+    num_img,
+    images,
+    type,
+    a_ssize,
+    opts->cache_size,
+    nullptr
+  ).release();
 }
 
 /**
@@ -565,7 +591,14 @@ tsk_img_open_utf8_opt(
     const TSK_TCHAR* const* imgs = images;
 #endif
 
-    return img_open(num_img, imgs, type, a_ssize, opts->cache_size).release();
+    return img_open(
+      num_img,
+      imgs,
+      type,
+      a_ssize,
+      opts->cache_size,
+      nullptr
+    ).release();
 }
 
 /**
@@ -640,15 +673,7 @@ tsk_img_open_external(
   iif->close = close;
   iif->imgstat = imgstat;
 
-  const auto cache_size = DEFAULT_IMG_OPTIONS.cache_size;
-  iif->cache_read = cache_size == 0 ? tsk_img_read_no_cache : tsk_img_read_cache;
-  iif->cache = tsk_img_create_cache(&DEFAULT_IMG_OPTIONS);
-  iif->cache_owned = true;
-
-#ifdef READ_STATS
-  std::memset(&iif->stats, 0, sizeof(Stats));
-  tsk_init_lock(&iif->stats_lock);
-#endif
+  setup_cache(iif, DEFAULT_IMG_OPTIONS.cache_size, nullptr);
 
   return img_info;
 }
@@ -677,9 +702,14 @@ TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
   const TSK_TCHAR* const* imgs = images;
 #endif
 
-  const size_t cache_chunk_size = opts->cache_chunk_size >= 0 ? static_cast<size_t>(opts->cache_chunk_size) : 65536;
-
-  return img_open(num_img, imgs, type, a_ssize, cache_chunk_size).release();
+  return img_open(
+    num_img,
+    imgs,
+    type,
+    a_ssize,
+    -1,
+    cache
+  ).release();
 }
 
 #if 0
