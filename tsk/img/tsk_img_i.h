@@ -20,6 +20,8 @@
 // include the external disk image header file
 #include "tsk_img.h"
 
+#include "lru_cache.h"
+
 // other standard includes
 #include <fcntl.h>
 
@@ -42,10 +44,8 @@ struct Stats {
 };
 #endif
 
-struct LRUBlockCacheLocking;
-
 struct TSK_IMG_CACHE {
-  LRUBlockCacheLocking* cache;
+  LRUBlockCacheLocking cache;
 };
 
 struct IMG_INFO {

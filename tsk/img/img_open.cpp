@@ -69,24 +69,21 @@ TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts) {
     cache_size = 1024; 
     [[fallthrough]];
   default:
-    return new TSK_IMG_CACHE{new LRUBlockCacheLocking(cache_size)};
+    return new TSK_IMG_CACHE{LRUBlockCacheLocking(cache_size)};
   }
 }
 
 void tsk_img_free_cache(TSK_IMG_CACHE* cache) {
-  if (cache) {
-    delete cache->cache;
-    delete cache;
-  }
+  delete cache;
 }
 
 void tsk_img_clear_cache(TSK_IMG_CACHE* cache) {
-  cache->cache->clear();
+  cache->cache.clear();
 }
 
 TSK_IMG_CACHE* tsk_img_clone_cache(const TSK_IMG_CACHE* cache) {
   const TSK_IMG_OPTIONS opts{
-    static_cast<int>(cache->cache->cache_size()),
+    static_cast<int>(cache->cache.cache_size()),
     -1
   };
   return tsk_img_create_cache(&opts);
