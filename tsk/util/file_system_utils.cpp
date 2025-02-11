@@ -20,6 +20,8 @@
 #include <cerrno>
 
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifdef __APPLE__
 #include <sys/disk.h>
@@ -28,8 +30,6 @@
 #ifdef TSK_WIN32
 #include <winioctl.h>
 #else
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
