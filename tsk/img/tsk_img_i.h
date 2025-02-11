@@ -23,10 +23,6 @@
 // other standard includes
 #include <fcntl.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Cygwin needs this, but not everyone defines it
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -91,9 +87,5 @@ ssize_t tsk_img_read_cache(
 void tsk_img_clear_cache(TSK_IMG_CACHE* cache);
 
 TSK_IMG_CACHE* tsk_img_clone_cache(const TSK_IMG_CACHE* cache);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
