@@ -74,8 +74,10 @@ TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts) {
 }
 
 void tsk_img_free_cache(TSK_IMG_CACHE* cache) {
-  delete static_cast<LRUBlockCacheLocking*>(cache->cache);
-  delete cache;
+  if (cache) {
+    delete static_cast<LRUBlockCacheLocking*>(cache->cache);
+    delete cache;
+  }
 }
 
 void tsk_img_clear_cache(TSK_IMG_CACHE* cache) {
@@ -310,25 +312,6 @@ img_open_detect_type(
     }
 }
 
-void img_cache_setup(
-  TSK_IMG_INFO* img,
-  int cache_size
-)
-{
-  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img);
-
-#ifdef READ_STATS
-  std::memset(&iif->stats, 0, sizeof(Stats));
-  tsk_init_lock(&iif->stats_lock);
-#endif
-
-  // set up the cache
-  iif->cache_read = cache_size == 0 ? tsk_img_read_no_cache : tsk_img_read_cache;
-
-  const TSK_IMG_OPTIONS opts{cache_size, -1};
-  iif->cache = tsk_img_create_cache(&opts);
-}
-
 std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
 img_open(
   int num_img,
@@ -356,7 +339,16 @@ img_open(
     img_open_by_type(num_img, images, type, a_ssize);
 
   if (img_info) {
-    img_cache_setup(img_info.get(), cache_size);
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
+    iif->cache_read = cache_size == 0 ? tsk_img_read_no_cache : tsk_img_read_cache;
+
+    const TSK_IMG_OPTIONS opts{cache_size, -1};
+    iif->cache = tsk_img_create_cache(&opts);
+
+#ifdef READ_STATS
+    std::memset(&iif->stats, 0, sizeof(Stats));
+    tsk_init_lock(&iif->stats_lock);
+#endif
   }
 
   return img_info;
@@ -605,8 +597,6 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
-  const auto cache_size = DEFAULT_IMG_OPTIONS.cache_size;
-
   tsk_error_reset();
 
   // sanity checks
@@ -652,7 +642,14 @@ tsk_img_open_external(
   iif->close = close;
   iif->imgstat = imgstat;
 
-  img_cache_setup(img_info, cache_size);
+  const auto cache_size = DEFAULT_IMG_OPTIONS.cache_size;
+  iif->cache_read = cache_size == 0 ? tsk_img_read_no_cache : tsk_img_read_cache;
+  iif->cache = tsk_img_create_cache(&DEFAULT_IMG_OPTIONS);
+
+#ifdef READ_STATS
+  std::memset(&iif->stats, 0, sizeof(Stats));
+  tsk_init_lock(&iif->stats_lock);
+#endif
 
   return img_info;
 }
