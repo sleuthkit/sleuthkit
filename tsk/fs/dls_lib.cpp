@@ -40,6 +40,8 @@
 
 #include "tsk_fs_i.h"
 
+#include <fcntl.h>
+
 #include <cerrno>
 
 /* call backs for listing details
