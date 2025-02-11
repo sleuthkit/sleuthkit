@@ -311,8 +311,9 @@ void tsk_img_setup_cache(
     iif->cache_owned = true;
     iif->cache_read = tsk_img_read_cache;
   }
-  else if (cache_size > 0) {
-    const TSK_IMG_OPTIONS opts{cache_size, -1};
+  else if (cache_size != 0) {
+    const TSK_IMG_OPTIONS opts = cache_size == -1
+      ? DEFAULT_IMG_OPTIONS : TSK_IMG_OPTIONS{cache_size, -1};
     iif->cache = tsk_img_create_cache(&opts);
     iif->cache_owned = true;
     iif->cache_read = tsk_img_read_cache;

@@ -73,8 +73,7 @@ TEST_CASE("tsk_img_read inner function failed") {
   REQUIRE(img);
 
   IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
-  iif->cache_read = tsk_img_read_no_cache;
-  iif->cache = nullptr;
+  tsk_img_setup_cache(iif, 0, nullptr);
 
   iif->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
     return (ssize_t) -1;

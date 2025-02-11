@@ -19,7 +19,6 @@
 #include <stdint.h>
 
 #include "tsk/tsk_tools_i.h"
-#include "tsk/img/lru_cache.h"
 #include "tsk/img/tsk_img_i.h"
 
 typedef struct {
@@ -73,9 +72,7 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   inmemory_img->img_info.close = mem_close;
   inmemory_img->img_info.imgstat = mem_imgstat;
 
-  inmemory_img->img_info.cache_read = tsk_img_read_cache;
-
-  inmemory_img->img_info.cache =  lru_cache_create(-1);
+  tsk_img_setup_cache(inmemory_img->img_info, -1, nullptr);
 
   return base;
 }
