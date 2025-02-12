@@ -104,8 +104,9 @@ extern "C" {
         TSK_TCHAR **images;    ///< Image names
 
         //
-        // Deprecated members retained for ABI compatibility only.
-        // These should be removed at the next opportunity.
+        // Deprecated members retained for ABI compatibility only, and are
+        // no longer used by Sleuthkit. They should be removed at the next
+        // opportunity.
         //
         tsk_lock_t cache_lock;  ///< Lock for cache and associated values. Deprecated.
         char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock). Deprecated.
