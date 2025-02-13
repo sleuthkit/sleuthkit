@@ -66,8 +66,8 @@ TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts) {
 
   return new TSK_IMG_CACHE{
     LRUBlockCacheLocking(
-      opts->cache_size == -1 ? 1024 : opts->cache_size,
-      opts->cache_chunk_size == -1 ? 65536 : opts->cache_chunk_size
+      opts->cache_size < 0 ? 1024 : opts->cache_size,
+      opts->cache_chunk_size < 0 ? 65536 : opts->cache_chunk_size
     )
   };
 }
