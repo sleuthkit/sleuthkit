@@ -87,8 +87,6 @@ private:
   hash_type hash;
 };
 
-const size_t CHUNK_SIZE = 65536;
-
 class LRUBlockCache {
 public:
   LRUBlockCache(size_t cache_size, size_t chunk_size);
@@ -104,9 +102,7 @@ public:
   void clear();
 
 private:
-//  LRUCache<uint64_t, std::array<char, CHUNK_SIZE>> cache;
   LRUCache<uint64_t, std::vector<char>> cache;
-
   const size_t ch_size;
 };
 
