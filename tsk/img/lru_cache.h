@@ -72,11 +72,11 @@ public:
     items.clear();
   }
 
-  typename std::list<std::pair<key_type, value_type>>::const_iterator begin() const {
+  typename list_type::const_iterator begin() const {
     return items.cbegin();
   }
 
-  typename std::list<std::pair<key_type, value_type>>::const_iterator end() const {
+  typename list_type::const_iterator end() const {
     return items.cend();
   }
 
