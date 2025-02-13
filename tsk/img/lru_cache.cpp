@@ -1,15 +1,18 @@
 #include "lru_cache.h"
 #include "tsk_img_i.h"
 
-LRUBlockCache::LRUBlockCache(size_t cache_size): cache(cache_size) {}
+LRUBlockCache::LRUBlockCache(size_t cache_size, size_t chunk_size):
+  cache(cache_size),
+  ch_size(chunk_size)
+{}
 
 const char* LRUBlockCache::get(uint64_t key) {
-  return cache.get(key)->data();
+  const auto v = cache.get(key);
+  return v ? v->data() : nullptr;
 }
 
 void LRUBlockCache::put(uint64_t key, const char* val) {
-  std::array<char, CHUNK_SIZE> v;
-  std::copy(val, val + CHUNK_SIZE, std::begin(v));
+  std::vector<char> v(val, val + ch_size);
   cache.put(key, v);
 }
 
@@ -18,15 +21,17 @@ size_t LRUBlockCache::cache_size() const {
 }
 
 size_t LRUBlockCache::chunk_size() const {
-  return CHUNK_SIZE;
+  return ch_size;
 }
 
 void LRUBlockCache::clear() {
   cache.clear();
 }
 
-LRUBlockCacheLocking::LRUBlockCacheLocking(size_t cache_size):
-  LRUBlockCache(cache_size)
+LRUBlockCacheLocking::LRUBlockCacheLocking(
+  size_t cache_size,
+  size_t chunk_size):
+  LRUBlockCache(cache_size, chunk_size)
 {}
 
 void LRUBlockCacheLocking::lock() {

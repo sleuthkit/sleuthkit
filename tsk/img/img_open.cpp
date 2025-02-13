@@ -60,17 +60,14 @@ const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
 };
 
 TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts) {
-  auto cache_size = opts->cache_size;
-
-  switch (cache_size) {
-  case 0:
+  if (opts->cache_size == 0) {
     return nullptr;
-  case -1:
-    cache_size = 1024; 
-    [[fallthrough]];
-  default:
-    return new TSK_IMG_CACHE{LRUBlockCacheLocking(cache_size)};
   }
+
+  return new TSK_IMG_CACHE{LRUBlockCacheLocking(
+    opts->cache_size == -1 ? 1024 : opts->cache_size,
+    opts->cache_chunk_size == -1 ? 65536 : opts->cache_chunk_size
+  )};
 }
 
 void tsk_img_free_cache(TSK_IMG_CACHE* cache) {

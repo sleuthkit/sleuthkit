@@ -7,6 +7,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 template <class K,
           class V,
@@ -90,7 +91,7 @@ const size_t CHUNK_SIZE = 65536;
 
 class LRUBlockCache {
 public:
-  LRUBlockCache(size_t cache_size);
+  LRUBlockCache(size_t cache_size, size_t chunk_size);
 
   const char* get(uint64_t key);
 
@@ -103,12 +104,15 @@ public:
   void clear();
 
 private:
-  LRUCache<uint64_t, std::array<char, CHUNK_SIZE>> cache;
+//  LRUCache<uint64_t, std::array<char, CHUNK_SIZE>> cache;
+  LRUCache<uint64_t, std::vector<char>> cache;
+
+  const size_t ch_size;
 };
 
 class LRUBlockCacheLocking: public LRUBlockCache {
 public:
-  LRUBlockCacheLocking(size_t cache_size);
+  LRUBlockCacheLocking(size_t cache_size, size_t chunk_size);
 
   void lock();
 
