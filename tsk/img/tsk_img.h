@@ -140,14 +140,14 @@ extern "C" {
         const char *const images[], TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize);
 
-    TSK_IMG_INFO *tsk_img_open_sing_opt(
+    extern TSK_IMG_INFO *tsk_img_open_sing_opt(
         const TSK_TCHAR * a_image,
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
         const TSK_IMG_OPTIONS* opts
     );
 
-    TSK_IMG_INFO *tsk_img_open_opt(
+    extern TSK_IMG_INFO *tsk_img_open_opt(
         int num_img,
         const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM,
@@ -155,14 +155,14 @@ extern "C" {
         const TSK_IMG_OPTIONS* opts
     );
 
-    TSK_IMG_INFO *tsk_img_open_utf8_sing_opt(
+    extern TSK_IMG_INFO *tsk_img_open_utf8_sing_opt(
         const char *a_image,
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
         const TSK_IMG_OPTIONS* opts
     );
 
-    TSK_IMG_INFO* tsk_img_open_utf8_opt(
+    extern TSK_IMG_INFO* tsk_img_open_utf8_opt(
         int num_img,
         const char *const images[],
         TSK_IMG_TYPE_ENUM type,
@@ -178,7 +178,7 @@ extern "C" {
 
     void tsk_img_free_cache(TSK_IMG_CACHE* cache);
 
-    TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
+    extern TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
         int num_img,
         const char *const images[],
         TSK_IMG_TYPE_ENUM type,
