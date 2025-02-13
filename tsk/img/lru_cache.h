@@ -36,7 +36,7 @@ public:
     }
   }
 
-  void put(const key_type& key, const value_type& val) {
+  void put(const key_type& key, value_type val) {
     // try adding new key to hash
     auto r = hash.emplace(key, items.end());
     if (r.second) {
@@ -60,7 +60,7 @@ public:
       items.splice(items.begin(), items, r.first->second);
     }
 
-    items.front().second = val;
+    items.front().second = std::move(val);
   }
 
   size_t size() const {

@@ -12,8 +12,7 @@ const char* LRUBlockCache::get(uint64_t key) {
 }
 
 void LRUBlockCache::put(uint64_t key, const char* val) {
-  std::vector<char> v(val, val + ch_size);
-  cache.put(key, v);
+  cache.put(key, std::vector<char>(val, val + ch_size));
 }
 
 size_t LRUBlockCache::cache_size() const {
