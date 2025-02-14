@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
 
-AC_INIT([sleuthkit],[4.12.1])
+AC_INIT([sleuthkit],[4.13.0-RC2])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
