@@ -119,11 +119,6 @@ extern "C" {
         void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function. Deprecated.
     };
 
-    typedef struct TSK_IMG_OPTIONS {
-        int cache_size;
-        int cache_chunk_size;
-    } TSK_IMG_OPTIONS;
-
     // open and close functions
     extern TSK_IMG_INFO *tsk_img_open_sing(const TSK_TCHAR * a_image,
         TSK_IMG_TYPE_ENUM type, unsigned int a_ssize
@@ -140,11 +135,16 @@ extern "C" {
         const char *const images[], TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize);
 
+    typedef struct TSK_IMG_CACHE_OPTIONS {
+        int cache_size;
+        int cache_chunk_size;
+    } TSK_IMG_CACHE_OPTIONS;
+
     extern TSK_IMG_INFO *tsk_img_open_sing_opt(
         const TSK_TCHAR * a_image,
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
     extern TSK_IMG_INFO *tsk_img_open_opt(
@@ -152,14 +152,14 @@ extern "C" {
         const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
     extern TSK_IMG_INFO *tsk_img_open_utf8_sing_opt(
         const char *a_image,
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
     extern TSK_IMG_INFO* tsk_img_open_utf8_opt(
@@ -167,23 +167,22 @@ extern "C" {
         const char *const images[],
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
     struct TSK_IMG_CACHE;
 
     typedef struct TSK_IMG_CACHE TSK_IMG_CACHE;
 
-    TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts);
+    TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_CACHE_OPTIONS* opts);
 
     void tsk_img_free_cache(TSK_IMG_CACHE* cache);
 
-    extern TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
+    extern TSK_IMG_INFO* tsk_img_open_utf8_cache(
         int num_img,
         const char *const images[],
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts,
         TSK_IMG_CACHE* cache
     );
 

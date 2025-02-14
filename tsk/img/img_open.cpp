@@ -54,12 +54,12 @@
 #include <vector>
 #include <utility>
 
-const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
+const TSK_IMG_CACHE_OPTIONS DEFAULT_CACHE_OPTS{
   -1,
   -1
 };
 
-TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_OPTIONS* opts) {
+TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_CACHE_OPTIONS* opts) {
   if (opts->cache_size == 0) {
     return nullptr;
   }
@@ -311,8 +311,8 @@ void tsk_img_setup_cache(
     iif->cache_read = tsk_img_read_cache;
   }
   else if (cache_size != 0) {
-    const TSK_IMG_OPTIONS opts = cache_size == -1
-      ? DEFAULT_IMG_OPTIONS : TSK_IMG_OPTIONS{cache_size, -1};
+    const TSK_IMG_CACHE_OPTIONS opts = cache_size == -1
+      ? DEFAULT_CACHE_OPTS : TSK_IMG_CACHE_OPTIONS{cache_size, -1};
     iif->cache = tsk_img_create_cache(&opts);
     iif->cache_owned = true;
     iif->cache_read = tsk_img_read_cache;
@@ -447,7 +447,7 @@ tsk_img_open_sing(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize)
 {
-    return tsk_img_open_sing_opt(a_image, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_sing_opt(a_image, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -455,7 +455,7 @@ tsk_img_open_sing_opt(
   const TSK_TCHAR* a_image,
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
     const TSK_TCHAR *const a = a_image;
     return tsk_img_open_opt(1, &a, type, a_ssize, opts);
@@ -486,7 +486,7 @@ tsk_img_open(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize)
 {
-    return tsk_img_open_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_opt(num_img, images, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -495,7 +495,7 @@ tsk_img_open_opt(
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
   return img_open(
     num_img,
@@ -526,7 +526,7 @@ tsk_img_open_utf8_sing(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize)
 {
-    return tsk_img_open_utf8_sing_opt(a_image, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_utf8_sing_opt(a_image, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -534,7 +534,7 @@ tsk_img_open_utf8_sing_opt(
   const char* a_image,
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
     const char *const a = a_image;
     return tsk_img_open_utf8_opt(1, &a, type, a_ssize, opts);
@@ -561,7 +561,7 @@ tsk_img_open_utf8(
     TSK_IMG_TYPE_ENUM type,
     unsigned int a_ssize)
 {
-    return tsk_img_open_utf8_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_utf8_opt(num_img, images, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -570,7 +570,7 @@ tsk_img_open_utf8_opt(
   const char *const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
 #ifdef TSK_WIN32
     if (!images_ok(num_img, images)) {
@@ -691,17 +691,16 @@ tsk_img_open_external_cache(
   iif->close = close;
   iif->imgstat = imgstat;
 
-  tsk_img_setup_cache(iif, DEFAULT_IMG_OPTIONS.cache_size, cache);
+  tsk_img_setup_cache(iif, DEFAULT_CACHE_OPTS.cache_size, cache);
 
   return img_info;
 }
 
-TSK_IMG_INFO* tsk_img_open_utf8_opt_cache(
+TSK_IMG_INFO* tsk_img_open_utf8_cache(
   int num_img,
   const char *const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  [[maybe_unused]] const TSK_IMG_OPTIONS* opts,
   TSK_IMG_CACHE* cache
 )
 {
