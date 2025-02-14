@@ -130,6 +130,9 @@ nobase_dist_data_DATA = \
 
 TSK_LIBS = \
 	tsk/libtsk.la \
+	$(TSK_LIB_LIBS)
+
+TSK_LIB_LIBS=\
 	$(PTHREAD_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(CRYPTO_LIBS) \
@@ -366,7 +369,8 @@ tsk_libtsk_la_LIBADD = \
 	tsk/pool/libtskpool.la \
 	tsk/util/Bitlocker/libtskbitlocker.la \
 	tsk/util/libtskutil.la \
-	tsk/vs/libtskvs.la
+	tsk/vs/libtskvs.la \
+	$(TSK_LIB_LIBS)
 
 # current:revision:age
 tsk_libtsk_la_LDFLAGS = $(AM_LDFLAGS) -version-info 21:1:2 $(LIBTSK_LDFLAGS)
