@@ -128,10 +128,7 @@ nobase_dist_data_DATA = \
 # Library
 #
 
-TSK_LIBS = \
-	tsk/libtsk.la \
-	$(TSK_LIB_LIBS)
-
+# libtsk's dependencies
 TSK_LIB_LIBS = \
 	$(PTHREAD_LIBS) \
 	$(SQLITE3_LIBS) \
@@ -146,6 +143,19 @@ TSK_LIB_LIBS = \
 	$(BFIO_LIBS) \
 	$(ZLIB_LIBS) \
 	$(STDCPP_LIBS)
+
+if BUILD_STATIC
+# statically linked executables need linking to libtsk and its deps
+TSK_LIBS = \
+	$(TSK_LIB_LIBS) \
+	tsk/libtsk.la
+else
+# dynamically linked executables need linking only to direct dependencies
+TSK_LIBS = \
+	tsk/libtsk.la \
+	$(PTHREAD_LIBS) \
+	$(STDCPP_LIBS)
+endif
 
 noinst_LTLIBRARIES = \
 	tools/libtsktools.la \
@@ -477,7 +487,7 @@ tools/fiwalk/plugins/Libextract_plugin.class: tools/fiwalk/plugins/Libextract_pl
 
 noinst_LTLIBRARIES += tools/fiwalk/src/libfiwalk.la
 
-tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIBS)
+tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIBS) $(LIBCRYPTO_LIBS)
 tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/arff.cpp \
 	tools/fiwalk/src/arff.h \
