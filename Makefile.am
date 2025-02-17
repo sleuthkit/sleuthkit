@@ -581,7 +581,7 @@ tools_srchtools_srch_strings_SOURCES = tools/srchtools/srch_strings.c
 tools_srchtools_sigfind_LDADD = $(TSK_LIBS)
 tools_srchtools_sigfind_SOURCES = tools/srchtools/sigfind.cpp
 
-tools_vstools_mmls_LDADD = $(TSK_LIBS) tools/libtsktools.la
+tools_vstools_mmls_LDADD = tools/libtsktools.la $(TSK_LIBS)
 tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp
 
 tools_vstools_mmstat_LDADD = $(TSK_LIBS)
