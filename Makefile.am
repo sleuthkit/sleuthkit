@@ -130,9 +130,7 @@ nobase_dist_data_DATA = \
 
 # libtsk's dependencies
 TSK_LIB_LIBS = \
-	$(PTHREAD_LIBS) \
 	$(SQLITE3_LIBS) \
-	$(CRYPTO_LIBS) \
 	$(AFFLIB_LIBS) \
 	$(AFF4_LIBS) \
 	$(EWF_LIBS) \
@@ -142,19 +140,21 @@ TSK_LIB_LIBS = \
 	$(VSLVM_LIBS) \
 	$(BFIO_LIBS) \
 	$(ZLIB_LIBS) \
-	$(STDCPP_LIBS)
+	$(CRYPTO_LIBS) \
+	$(STDCPP_LIBS) \
+	$(PTHREAD_LIBS)
 
 if BUILD_STATIC
 # statically linked executables need linking to libtsk and its deps
 TSK_LIBS = \
-	$(TSK_LIB_LIBS) \
-	tsk/libtsk.la
+	tsk/libtsk.la \
+	$(TSK_LIB_LIBS)
 else
 # dynamically linked executables need linking only to direct dependencies
 TSK_LIBS = \
 	tsk/libtsk.la \
-	$(PTHREAD_LIBS) \
-	$(STDCPP_LIBS)
+	$(STDCPP_LIBS) \
+	$(PTHREAD_LIBS)
 endif
 
 noinst_LTLIBRARIES = \
