@@ -502,7 +502,7 @@ tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/utils.c \
 	tools/fiwalk/src/utils.h
 
-tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la $(TSK_LIBS)
+tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la $(TSK_LIBS) $(AFFLIB_LIBS) $(EWF_LIBS)
 tools_fiwalk_src_fiwalk_SOURCES = tools/fiwalk/src/fiwalk_main.cpp
 
 EXTRA_DIST += tools/fstools/fscheck.cpp
