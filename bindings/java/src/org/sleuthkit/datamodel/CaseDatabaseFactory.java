@@ -40,6 +40,37 @@ class CaseDatabaseFactory {
 	private final SQLHelper dbQueryHelper;
 	private final DbCreationHelper dbCreationHelper;
 		
+	// ssl=true: enables SSL encryption. 
+	// NonValidatingFactory avoids hostname verification.
+	// sslmode=require: This mode makes the encryption mandatory and also requires the connection to fail if it can't be encrypted. 
+	// In this mode, the JDBC driver accepts all server certificates, including self-signed ones.
+	final static String SSL_NONVERIFY_URL = "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&sslmode=require";
+	
+	// ssl=true: enables SSL encryption. 
+	// DefaultJavaSSLFactory: uses application's default JRE keystore to validate server certificate.
+	// sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA. 
+	final static String SSL_VERIFY_DEFAULT_URL = "?ssl=true&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&sslmode=verify-ca";
+
+	/**
+	 * Creates JDBC URL string for implementations that use custom keystore to
+	 * validate PostgreSQL CA-signed SSL certificates. The class that performs
+	 * SSL certificate validation must extend org.postgresql.ssl.WrappedFactory
+	 * and generally must follow the same logic.
+	 *
+	 * ssl=true: enables SSL encryption. 
+	 * sslmode=verify-ca: verifies that the server we are connecting to is trusted by CA.
+	 *
+	 * @param customSslValidationClassName full canonical name of a Java class
+	 *                                     that performs custom SSL certificate
+	 *                                     validation.
+	 *
+	 * @return JDBS URL string used to connect to PosgreSQL server via CA-signed
+	 *         SSL certificate.
+	 */
+	static String getCustomPostrgesSslVerificationUrl(String customSslValidationClassName) {
+		return "?ssl=true&sslfactory=" + customSslValidationClassName + "&sslmode=verify-ca";
+	}
+		
 	/**
 	 * Create a new SQLite case
 	 * 
@@ -381,7 +412,13 @@ class CaseDatabaseFactory {
 			
 			stmt.execute("CREATE INDEX tsk_file_attributes_obj_id ON tsk_file_attributes(obj_id)");
 			
-			
+			// For DC support 
+			stmt.execute("CREATE INDEX tsk_os_accounts_login_name_idx  ON tsk_os_accounts(login_name, db_status, realm_id)");
+			stmt.execute("CREATE INDEX tsk_os_accounts_addr_idx  ON tsk_os_accounts(addr, db_status, realm_id)");
+
+			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_name_idx  ON tsk_os_account_realms(realm_name)");
+			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_addr_idx  ON tsk_os_account_realms(realm_addr)");
+		
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);
 		}
@@ -713,6 +750,19 @@ class CaseDatabaseFactory {
 				.append('/') // NON-NLS
 				.append(encodedDbName);
 			
+			if (info.isSslEnabled()) {				
+				if (info.isSslVerify()) {
+					if (info.getCustomSslValidationClassName().isBlank()) {
+						url.append(SSL_VERIFY_DEFAULT_URL);
+					} else {
+						// use custom SSL certificate validation class
+						url.append(getCustomPostrgesSslVerificationUrl(info.getCustomSslValidationClassName()));
+					}
+				} else {
+					url.append(SSL_NONVERIFY_URL);
+				}
+			}
+			
 			Connection conn;
 			try {
 				Properties props = new Properties();
@@ -736,8 +786,12 @@ class CaseDatabaseFactory {
 		void performPostTableInitialization(Connection conn) throws TskCoreException {
 			try (Statement stmt = conn.createStatement()) {
 				stmt.execute("ALTER SEQUENCE blackboard_artifacts_artifact_id_seq minvalue -9223372036854775808 restart with -9223372036854775808");
+				
+				// CT-9000: Postgres supports composite and partial indexes which results in smaller indexes and faster inserts. 
+				// So in Postgres we can have an index which indexes only tsk_files with non-null MD5 and non-zero size:
+				stmt.execute("CREATE INDEX tsk_files_datasrc_md5_size_partial_index ON tsk_files(data_source_obj_id, md5, size) WHERE md5 IS NOT NULL AND size > 0");
 			} catch (SQLException ex) {
-				throw new TskCoreException("Error altering artifact ID sequence", ex);
+				throw new TskCoreException("Error performing PostgreSQL post table initialization", ex);
 			}
 		}
 	}
@@ -808,7 +862,13 @@ class CaseDatabaseFactory {
 
 		@Override
 		void performPostTableInitialization(Connection conn) throws TskCoreException {
-			// Nothing to do here for SQLite
+			try (Statement stmt = conn.createStatement()) {				
+				// CT-9000: SQLite supports composite indexes but has only limited support for partial indexes 
+				// (partial indexes in SQLite do not support IS NOT NULL as a condition):
+				stmt.execute("CREATE INDEX tsk_files_datasrc_md5_size_index ON tsk_files(data_source_obj_id, md5, size)");
+			} catch (SQLException ex) {
+				throw new TskCoreException("Error performing SQLite post table initialization", ex);
+			}
 		}
 	}
 }

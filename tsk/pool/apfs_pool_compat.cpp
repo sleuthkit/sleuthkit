@@ -12,6 +12,7 @@
 #include "../fs/apfs_fs.hpp"
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
+#include "../img/legacy_cache.h"
 #include "../img/pool.hpp"
 
 #include <stdexcept>
@@ -276,8 +277,6 @@ apfs_img_close(TSK_IMG_INFO * img_info)
         return;
     }
 
-    // Close the pool image
-    tsk_deinit_lock(&(img_info->cache_lock));
     tsk_img_free(img_info);
 }
 
@@ -287,7 +286,8 @@ apfs_img_imgstat(TSK_IMG_INFO * img_info, FILE *file)
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
-    origInfo->imgstat(origInfo, file);
+    IMG_INFO *iif = reinterpret_cast<IMG_INFO*>(origInfo);
+    iif->imgstat(origInfo, file);
 }
 
 static ssize_t
@@ -296,8 +296,8 @@ apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
-
-    return origInfo->read(origInfo, offset, buf, len);
+    IMG_INFO *iif = reinterpret_cast<IMG_INFO*>(origInfo);
+    return iif->read(origInfo, offset, buf, len);
 }
 
 TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {
@@ -321,6 +321,7 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_pool_info->img_info.read = apfs_img_read;
     img_pool_info->img_info.close = apfs_img_close;
     img_pool_info->img_info.imgstat = apfs_img_imgstat;
+    img_pool_info->img_info.cache = new LegacyCache();
 
     // Copy original info from the first TSK_IMG_INFO. There was a check in the
     // APFSPool that _members has only one entry.
@@ -334,8 +335,6 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_info->page_size = origInfo->page_size;
     img_info->spare_size = origInfo->spare_size;
     img_info->images = origInfo->images;
-
-    tsk_init_lock(&(img_info->cache_lock));
 
     return img_info;
 

@@ -8,6 +8,7 @@ import codecs
 import datetime
 import logging
 import os
+import os.path
 import re
 import shutil
 import subprocess
@@ -18,11 +19,32 @@ from sys import platform as _platform
 import time
 import traceback
 
-MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
+MSBUILD_LOCATIONS = [r'C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin',
+                     r'C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin',
+                     r'/cygdrive/c/Program Files (x86)/MSBuild/14.0/Bin/']
+
+MSBUILD = 'MSBuild.exe'
+
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
 MINIMAL = False
+
+def find_msbuild():
+    # First try using shutil to search the patn
+    msbuild_path = shutil.which(MSBUILD)
+    if msbuild_path:
+        return msbuild_path
+
+    # Use our hard-coded locations
+    for loc in MSBUILD_LOCATIONS:
+        print("Checking",loc,"for",MSBUILD)
+        if os.path.exists(loc):
+            msbuild_exe = os.path.join(loc, MSBUILD)
+            assert os.path.exists(msbuild_exe)
+            print("found",msbuild_exe)
+            return msbuild_exe
+    raise FileNotFoundError(f"Could not find {MSBUILD}")
 
 
 def getDependencies(depBranch):
@@ -43,16 +65,21 @@ def getDependencies(depBranch):
             print("Please set the TSK_HOME environment variable")
             sys.exit(1)
         else:
-            # nuget restore 
+            # nuget restore
             os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
-            
+
             print ("Restoring nuget packages.")
             ret = subprocess.call(["nuget", "restore", "tsk-win.sln"] , stdout=sys.stdout)
             if ret != 0:
                 sys.exit("Failed to restore nuget packages")
-                 
+
 
 def buildTSKAll():
+
+    TSK_HOME = os.getenv("TSK_HOME", False)
+    if not TSK_HOME:
+        print("Please set the TSK_HOME environment variable")
+        sys.exit(1)
 
     if not MINIMAL:
         if(passed):
@@ -60,9 +87,14 @@ def buildTSKAll():
         if(passed):
             buildTSK(64, "Release_NoLibs")
 
+
     # MINIMAL is 64-bit for Autopsy and 32-bit with no deps for logical imager et al.
     if(passed):
         buildTSK(32, "Release_NoLibs")
+    if(passed):
+        BuildXPNoLibsFilePath = os.path.join(TSK_HOME, "build_xpnolibs")
+        if os.path.exists(BuildXPNoLibsFilePath):
+            buildTSK(32, "Release_XPNoLibs")
     if(passed):
         buildTSK(64, "Release")
 
@@ -82,9 +114,9 @@ def buildTSK(wPlatform, target):
         sys.exit(1)
     else:
         os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
-                 
+
     vs = []
-    vs.append(MSBUILD_PATH)
+    vs.append(find_msbuild())
     vs.append(os.path.join("tsk-win.sln"))
     vs.append("/p:configuration=" + target)
     if wPlatform == 64:
@@ -103,7 +135,11 @@ def buildTSK(wPlatform, target):
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=sys.stdout)
+    try:
+        ret = subprocess.call(vs, stdout=sys.stdout)
+    except FileNotFoundError as e:
+        logging.error("failing command line: %s",vs)
+        raise
     VSout.close()
     if ret != 0:
         print("ret = " + str(ret))
@@ -145,15 +181,13 @@ def main():
 
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
-    if not os.path.exists(MSBUILD_PATH):
-        print("MS_BUILD Does not exist")
-        sys.stdout.flush()
 
     getDependencies(depBranch)
     buildTSKAll()
 
 class OS:
-  LINUX, MAC, WIN, CYGWIN = range(4)
+    LINUX, MAC, WIN, CYGWIN = range(4)
+
 if __name__ == "__main__":
     global SYS
     if _platform == "linux" or _platform == "linux2":

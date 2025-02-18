@@ -5,11 +5,11 @@
  * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
- * 
+ *
  */
 
  /*
-  * C header file with Sun and internal data structures. 
+  * C header file with Sun and internal data structures.
   */
 
 #ifndef _TSK_SUN_H

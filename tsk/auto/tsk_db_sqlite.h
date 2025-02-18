@@ -1,5 +1,5 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2011-2012 Brian Carrier.  All Rights reserved
@@ -11,7 +11,7 @@
 /**
  * \file tsk_db_sqlite.h
  * Contains the SQLite code for maintaining the case-level database.
- * The class is an extension of TSK abstract database handling class. 
+ * The class is an extension of TSK abstract database handling class.
  */
 
 #ifndef _TSK_DB_SQLITE_H
@@ -25,14 +25,16 @@
 #ifdef HAVE_LIBSQLITE3
   #include <sqlite3.h>
 #else
-  #include "sqlite3.h"
+  #include "../../vendors/sqlite3.h"
 #endif
 
 using std::map;
 using std::vector;
 
+
+
 /** \internal
- * C++ class that wraps the database internals. 
+ * C++ class that wraps the database internals.
  */
 class TskDbSqlite : public TskDb {
   public:
@@ -65,16 +67,16 @@ class TskDbSqlite : public TskDb {
 
     TSK_RETVAL_ENUM addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId);
-    TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
-    TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
-    TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
-    
+
     int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
     int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
-    
+
     bool isDbOpen();
     int createSavepoint(const char *name);
     int revertSavepoint(const char *name);
@@ -117,7 +119,7 @@ class TskDbSqlite : public TskDb {
     TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
         const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size, int64_t & objId, int64_t dataSourceObjId);
-    
+
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
     int addMACTimeEvents(const int64_t data_source_obj_id, const int64_t file_obj_id, std::map<int64_t, time_t> timeMap,

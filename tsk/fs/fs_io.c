@@ -27,6 +27,7 @@
 #include "../pool/tsk_pool.h"
 
 #include "tsk_fs_i.h"
+#include "encryptionHelper.h"
 
 
 /** \internal
@@ -53,7 +54,7 @@ fs_prepost_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf,
         TSK_DADDR_T blk = cur_off / a_fs->block_size;
         size_t read_len = a_fs->block_size - cur_off % a_fs->block_size;
 
-        if ((TSK_OFF_T)read_len > end_off - cur_off) 
+        if ((TSK_OFF_T)read_len > end_off - cur_off)
             read_len = (size_t) (end_off - cur_off);
 
         read_off =
@@ -102,7 +103,7 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
  * @return The number of bytes read or -1 on error.
  */
 ssize_t
-tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len, 
+tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len,
     TSK_DADDR_T crypto_id)
 {
     // do a sanity check on the read bounds, but only if the block
@@ -233,11 +234,22 @@ tsk_fs_read_block_decrypt(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         return -1;
     }
 
-    ssize_t ret_len;
+#ifdef HAVE_LIBMBEDTLS
+    if (a_fs->encryption_type == TSK_FS_ENCRYPTION_TYPE_BITLOCKER) {
+        // Bitlocker moves some sectors from the beginning of the volume
+        // to another spot later in the volume in addition to encrypting them,
+        // so we need to use a custom method to read in the encrypted data
+        // and decrypt it.
+        TSK_DADDR_T offsetInVolume = (TSK_DADDR_T)(a_addr) * a_fs->block_size;
+        return read_and_decrypt_bitlocker_blocks(a_fs, offsetInVolume, a_len, a_buf);
+    }
+#endif
 
+    ssize_t ret_len;
     if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
         TSK_OFF_T off =
             a_fs->offset + (TSK_OFF_T) (a_addr) * a_fs->block_size;
+
         ret_len = tsk_img_read(a_fs->img_info, off, a_buf, a_len);
     }
     else {

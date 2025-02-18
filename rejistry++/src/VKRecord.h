@@ -85,7 +85,7 @@ namespace Rejistry {
         VKRecord(RegistryByteBuffer * buf, uint32_t offset);
         VKRecord(const VKRecord &);
         virtual ~VKRecord() {}
-    
+
         /**
          * Does the record have a non-default name?
          * @returns true if the record has an explicit name, or false if the

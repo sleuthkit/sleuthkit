@@ -1,5 +1,5 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2011-2012 Brian Carrier.  All Rights reserved
@@ -11,7 +11,7 @@
 /**
  * \file tsk_case_db.h
  * Contains the class that creates a case-level database of file system
- * data. 
+ * data.
  */
 
 #ifndef _TSK_AUTO_CASE_H
@@ -27,31 +27,35 @@ using std::string;
 #define TSK_ADD_IMAGE_SAVEPOINT "ADDIMAGE"
 
 /** \internal
- * C++ class that implements TskAuto to load file metadata into a database. 
- * This is used by the TskCaseDb class. 
+ * C++ class that implements TskAuto to load file metadata into a database.
+ * This is used by the TskCaseDb class.
  */
 class TskAutoDb:public TskAuto {
   public:
     TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize) override;
+    virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId);
     virtual uint8_t openImage(const char* a_deviceId = NULL);
     virtual uint8_t openImageUtf8(int, const char *const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
-    virtual void closeImage();
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize) override;
+    virtual uint8_t openImageUtf8(int, const char *const images[],
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId);
+    virtual void closeImage() override;
     virtual void setTz(std::string tzone);
 
-    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
-    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
-    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info);
-    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
-    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
+    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info) override;
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part) override;
+    virtual TSK_FILTER_ENUM filterPool(const TSK_POOL_INFO * pool_info) override;
+    virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol) override;
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info) override;
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
-        const char *path);
+        const char *path) override;
     virtual void createBlockMap(bool flag);
     const std::string getCurDir();
-    
+
     /**
     * Check if we can talk to the database.
     * Returns true if the database is reachable with current credentials, false otherwise.
@@ -67,22 +71,22 @@ class TskAutoDb:public TskAuto {
     virtual void hashFiles(bool flag);
 
     /**
-     * Sets whether or not the file systems for an image should be added when 
-     * the image is added to the case database. The default value is true. 
+     * Sets whether or not the file systems for an image should be added when
+     * the image is added to the case database. The default value is true.
      */
     void setAddFileSystems(bool addFileSystems);
 
     /**
-     * Skip processing of orphans on FAT filesystems.  
+     * Skip processing of orphans on FAT filesystems.
      * This will make the loading of the database much faster
-     * but you will not have all deleted files.  Default value is false. 
+     * but you will not have all deleted files.  Default value is false.
      * @param noFatFsOrphans flag set to true if to skip processing orphans on FAT fs
      */
     virtual void setNoFatFsOrphans(bool noFatFsOrphans);
 
     /**
      * When enabled, records for unallocated file system space will be added to the database. Default value is false.
-     * @param addUnallocSpace If true, create records for contiguous unallocated file system sectors. 
+     * @param addUnallocSpace If true, create records for contiguous unallocated file system sectors.
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace);
 
@@ -109,7 +113,7 @@ class TskAutoDb:public TskAuto {
     uint8_t addFilesInImgToDb();
 
     /**
-     * 
+     *
      */
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
@@ -148,7 +152,7 @@ class TskAutoDb:public TskAuto {
     bool m_addFileSystems;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
-    int64_t m_minChunkSize; ///< -1 for no minimum, 0 for no chunking at all, greater than 0 to wait for that number of chunks before writing to the database 
+    int64_t m_minChunkSize; ///< -1 for no minimum, 0 for no chunking at all, greater than 0 to wait for that number of chunks before writing to the database
     int64_t m_maxChunkSize; ///< Max number of unalloc bytes to process before writing to the database, even if there is no natural break. -1 for no chunking
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
@@ -158,6 +162,12 @@ class TskAutoDb:public TskAuto {
     // store info about them here.
     std::map<int64_t, int64_t> m_poolOffsetToParentId;
     std::map<int64_t, int64_t> m_poolOffsetToVsId;
+
+    // Cached objects
+    vector<TSK_DB_FS_INFO> m_savedFsInfo;
+    vector<TSK_DB_VS_INFO> m_savedVsInfo;
+    vector<TSK_DB_VS_PART_INFO> m_savedVsPartInfo;
+    vector<TSK_DB_OBJECT> m_savedObjects;
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
@@ -186,20 +196,21 @@ class TskAutoDb:public TskAuto {
         const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
-        const TSK_FS_ATTR * fs_attr, const char *path);
+        const TSK_FS_ATTR * fs_attr, const char *path) override;
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
     TSK_RETVAL_ENUM addUnallocatedPoolBlocksToDb(size_t & numPool);
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
-    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, const TSK_DB_FS_INFO & dbFsInfo);
     TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);
     TSK_RETVAL_ENUM addUnallocVsSpaceToDb(size_t & numVsP);
     TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
     TSK_RETVAL_ENUM addUnallocSpaceToDb();
     TSK_RETVAL_ENUM addUnallocBlockFileInChunks(uint64_t byteStart, TSK_OFF_T totalSize, int64_t parentObjId, int64_t dataSourceObjId);
-
+    TSK_RETVAL_ENUM getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPartInfo);
+    TSK_RETVAL_ENUM getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo);
 };
 
 

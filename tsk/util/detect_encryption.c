@@ -147,7 +147,7 @@ calculateEntropy(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
 /**
  * Detect volume-type encryption in the image starting at the given offset.
  * May return null on error. Note that client is responsible for freeing the result.
- * 
+ *
  * @param img_info The open image
  * @param offset   The offset for the beginning of the volume
  *

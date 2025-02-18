@@ -1,0 +1,271 @@
+name: "Build"
+
+# For docker container comparable to Linux build worker:
+#   docker run -it docker.io/library/ubuntu:22.04 bash
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    timeout-minutes: 30
+    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: "macos"
+            arch: "arm64"
+            linkage: "shared"
+            compiler: "gcc"
+            runner: "macos-15"
+            configure_opts: "--with-libewf --disable-java"
+            make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
+            codecov: "yes"
+            prefix: "CODECOV"
+            address_sanitizer: "yes"
+            keep_artifacts: "no"
+
+          - os: "linux"
+            arch: "x86_64"
+            linkage: "shared"
+            compiler: "gcc"
+            runner: "ubuntu-24.04"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java"
+            make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
+            codecov: "no"
+            prefix:
+            address_sanitizer: "yes"
+            keep_artifacts: "yes"
+            suffix: "(with artifacts)"
+
+          - os: "linux"
+            arch: "x86_64"
+            linkage: "shared"
+            compiler: "clang"
+            runner: "ubuntu-24.04"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --disable-java CC=clang CXX=clang++"
+            make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
+            codecov: "no"
+            prefix: ""
+            address_sanitizer: "yes"
+            keep_artifacts: "no"
+
+          - os: "mingw"
+            arch: "x86_64"
+            linkage: "shared"
+            compiler: "gcc"
+            runner: "ubuntu-24.04"
+            configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --enable-shared --disable-static"
+            winearch: 'win64'
+            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
+            wineprefix: '/home/runner/.wine64'
+            codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
+            keep_artifacts: "no"
+
+          - os: "mingw"
+            arch: "x86_64"
+            linkage: "static"
+            compiler: "gcc"
+            runner: "ubuntu-24.04"
+            configure_opts: "--host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --disable-java --disable-shared --enable-static"
+            winearch: 'win64'
+            winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
+            wineprefix: '/home/runner/.wine64'
+            codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
+            keep_artifacts: "no"
+
+          - os: "mingw"
+            arch: "i686"
+            linkage: "shared"
+            compiler: "gcc"
+            runner: "ubuntu-24.04"
+            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static --disable-java"
+            configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --enable-shared --disable-static"
+            winearch: 'win32'
+            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
+            wineprefix: '/home/runner/.wine32'
+            codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
+            keep_artifacts: "no"
+
+          - os: "mingw"
+            arch: "i686"
+            linkage: "static"
+            runner: "ubuntu-24.04"
+            compiler: "gcc"
+            configure_opts:   "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static --disable-java"
+            configure_optsnj: "--host=i686-w64-mingw32 --target=i686-w64-mingw32 --disable-shared --enable-static"
+            winearch: 'win32'
+            winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
+            wineprefix: '/home/runner/.wine32'
+            codecov: "no"
+            prefix: ""
+            address_sanitizer: "no"
+            keep_artifacts: "no"
+
+    steps:
+      - name: Determine number of cores
+        id: cores
+        run: |
+          if [ ${{ startsWith(matrix.runner, 'macos') }} = true ]; then
+            CORES=$(sysctl -n hw.logicalcpu)
+          elif [ ${{ matrix.os == 'mingw' }} = true ]; then
+            # mingw exhausts the memory if too many jobs run concurrently
+            CORES=2
+          else
+            CORES=$(nproc)
+          fi
+          echo "cores=$CORES" >>$GITHUB_OUTPUT
+          echo "Using $CORES cores"
+
+      - name: Install MacOS packages
+        if: ${{ matrix.os == 'macos' }}
+        run: |
+          brew update
+          brew install libtool autoconf automake libtool libewf libmagic
+
+      - name: Install Linux packages
+        if: ${{ matrix.os == 'linux' }}
+        run: |
+          sudo apt update
+          sudo apt install -y autoconf automake g++ libssl-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
+
+      - name: Install Mingw packages and setup for cross-compiling
+        if: ${{ matrix.os == 'mingw' }}
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
+          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
+          sudo update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
+          # This is not working; also requires mingw-w64-x86_64-libgnurx
+          # echo === installing libmagic for mingw ===
+          # wget -q https://astron.com/pub/file/file-5.44.tar.gz # Check for the latest version at https://astron.com/pub/file/
+          # tar -xzf file-5.44.tar.gz
+          # cd file-5.44
+          # ./configure -q ${{ matrix.configure_optsnj}} && make V=0 && sudo make install
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
+
+      - name: Run bootstrap
+        run: |
+          ./bootstrap
+
+      - name: Run configure
+        run: |
+          ./configure ${{ matrix.configure_opts }}
+
+      - name: Get the disk images
+        run: |
+          make test/get_images/test_images.txt
+          cat test/get_images/test_images.txt
+          ls -l test/from_brian
+
+      - name: Run make
+        run: |
+          make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 TESTS=
+
+      - name: Run make check on Mac/Linux
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+
+      - name: Run make check on Mingw
+        if: ${{ matrix.os == 'mingw' }}
+        env:
+          WINEARCH: ${{ matrix.winearch }}
+          WINEPATH: ${{ matrix.winepath }}
+          WINEPREFIX: ${{ matrix.wineprefix }}
+        run: |
+          make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+
+      - name: Clean up
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make distclean
+
+      - name: Run configure with address-sanitizer
+        if: ${{ matrix.address_sanitizer == 'yes' }}
+        run: |
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
+
+      - name: Run make with address-sanitizer
+        if: ${{ matrix.address_sanitizer == 'yes' }}
+        run: |
+          make -j check VERBOSE=1
+
+      - name: Clean up
+        if: ${{ matrix.os != 'mingw' }}
+        run: |
+          make distclean
+
+      - name: Run configure for codecov
+        if: ${{ matrix.codecov == 'yes' }}
+        run: |
+          ./configure ${{ matrix.configure_opts }} CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage'
+
+      - name: Run make for codecov
+        if: ${{ matrix.codecov == 'yes' }}
+        run: |
+          make -j test/fiwalk/fiwalk_test V=0
+          make -j test/runner V=0
+
+      - name: Run unit tests for codecov
+        if: ${{ matrix.codecov == 'yes' }}
+        run: |
+          test/fiwalk/fiwalk_test -s
+          test/runner -s
+
+
+      - name: run gcov
+        if: ${{ matrix.codecov == 'yes' }}
+        run: |
+          gcov $(find . -name '*.gcda')
+
+      - name: Upload codecov report
+        if: ${{ matrix.codecov == 'yes' }}
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Create any artifacts that we need to keep
+        if: ${{ matrix.keep_artifacts == 'yes' }}
+        run: |
+          ./configure ${{ matrix.configure_opts }} CFLAGS='-O2' CXXFLAGS='-O2'
+          make tools/fiwalk/src/fiwalk
+          mkdir executables
+          mv tools/fiwalk/src/.libs/fiwalk executables
+
+      - name: Keep artifacts
+        if: ${{ matrix.keep_artifacts == 'yes' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: executables
+          path: |
+            executables/*
+          retention-days: 15
+
+#      - name: Run distcheck
+#        run: |
+#          ./configure
+#          make distcheck
+#
+#      - uses: ammaraskar/gcc-problem-matcher@0.2.0
+#        name: GCC Problem Matcher
