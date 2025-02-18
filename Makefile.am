@@ -477,7 +477,7 @@ tools/fiwalk/plugins/Libextract_plugin.class: tools/fiwalk/plugins/Libextract_pl
 
 noinst_LTLIBRARIES += tools/fiwalk/src/libfiwalk.la
 
-tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIBS)
+tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIBS) $(LIBCRYPTO_LIBS)
 tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/arff.cpp \
 	tools/fiwalk/src/arff.h \
