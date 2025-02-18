@@ -16,9 +16,12 @@
 #include "tsk_db_sqlite.h"
 #include "guid.h"
 #include "../img/pool.hpp"
+
 #include <string.h>
-#include <sstream>
+#include <sys/stat.h>
+
 #include <algorithm>
+#include <sstream>
 #include <unordered_set>
 
 using std::stringstream;

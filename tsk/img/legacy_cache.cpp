@@ -1,4 +1,5 @@
 #include "legacy_cache.h"
+#include "tsk_img_i.h"
 
 #include <cstring>
 

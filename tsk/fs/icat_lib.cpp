@@ -29,6 +29,9 @@
 
 #include "tsk_fs_i.h"
 
+#include <fcntl.h>
+
+#include <cerrno>
 
 
 /* Call back action for file_walk

@@ -15,7 +15,7 @@
 
 #include <algorithm>
 #include <map>
-#include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
@@ -412,10 +412,6 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 }
 #endif
 
-void unlock(LegacyCache* cache) {
-  cache->unlock();
-};
-
 /*
  * Finds closest cache match for the given path.
  * If best_path is not NULL, caller must free.
@@ -433,8 +429,7 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 
   auto cache = logical_img_info->cache;
-  cache->lock();
-  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
+  std::scoped_lock lock{*cache};
 
 	*best_inum = LOGICAL_INVALID_INUM;
 	*best_path = NULL;
@@ -518,8 +513,7 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 
   auto cache = logical_img_info->cache;
-  cache->lock();
-  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
+  std::scoped_lock lock{*cache};
 
 	TSK_TCHAR *target_path = NULL;
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
@@ -568,8 +562,7 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 
   auto cache = logical_img_info->cache;
-  cache->lock();
-  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
+  std::scoped_lock lock{*cache};
 
 	// Check if this entry is already in the cache. 
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
@@ -1409,8 +1402,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
 
 	auto cache = logical_img_info->cache;
-  cache->lock();
-  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
+  std::scoped_lock lock{*cache};
 
 	// Check if this block is in the cache
 	int cache_next = 0;         // index to lowest age cache (to use next)

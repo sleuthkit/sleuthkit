@@ -234,13 +234,13 @@
     <ClCompile Include="..\..\tsk\base\XGetopt.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\aff.c">
+    <ClCompile Include="..\..\tsk\img\aff.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_io.cpp">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\img_types.c">
+    <ClCompile Include="..\..\tsk\img\img_types.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\mult_files.cpp">
@@ -385,6 +385,9 @@
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\legacy_cache.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\lru_cache.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_open.cpp">

@@ -11,9 +11,9 @@
 
 #include "../libtsk.h"
 
+#include "../img/tsk_img_i.h"
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
-#include "../img/legacy_cache.h"
 
 #include <stdexcept>
 
@@ -146,9 +146,5 @@ const std::vector<APFSPool::range> APFSPool::unallocated_ranges() const {
 
 void APFSPool::clear_cache() noexcept {
   _block_cache.clear();
-
-  auto cache = static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(_img)->cache);
-  cache->lock();
-  cache->clear();
-  cache->unlock();
+  tsk_img_clear_cache(reinterpret_cast<IMG_INFO*>(_img)->cache);
 }

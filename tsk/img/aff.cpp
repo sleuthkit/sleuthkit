@@ -14,8 +14,6 @@
 
 #if HAVE_LIBAFFLIB
 
-typedef int bool;
-
 #include "aff.h"
 
 /* Note: The routine -assumes- we are under a lock on &(img_info->cache_lock)) */

@@ -290,20 +290,22 @@ tsk_hashdb_libtskhashdb_la_SOURCES = \
 tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/aff4.cpp \
 	tsk/img/aff4.h \
-	tsk/img/aff.c \
+	tsk/img/aff.cpp \
 	tsk/img/aff.h \
 	tsk/img/ewf.cpp \
 	tsk/img/ewf.h \
 	tsk/img/img_io.cpp \
 	tsk/img/img_open.cpp \
 	tsk/img/img_open.h \
-	tsk/img/img_types.c \
+	tsk/img/img_types.cpp \
 	tsk/img/img_writer.cpp \
 	tsk/img/img_writer.h \
 	tsk/img/legacy_cache.cpp \
 	tsk/img/legacy_cache.h \
 	tsk/img/logical_img.cpp \
 	tsk/img/logical_img.h \
+	tsk/img/lru_cache.cpp \
+	tsk/img/lru_cache.h \
 	tsk/img/mult_files.cpp \
 	tsk/img/mult_files.h \
 	tsk/img/qcow.cpp \
@@ -669,6 +671,7 @@ test_runner_SOURCES = \
 	test/tsk/img/test_ewf.cpp \
 	test/tsk/img/test_img_io.cpp \
 	test/tsk/img/test_img_open.cpp \
+	test/tsk/img/test_lru_cache.cpp \
 	test/tsk/img/test_mult_files.cpp \
 	test/tsk/img/test_qcow.cpp \
 	test/tsk/img/test_raw.cpp \
@@ -710,6 +713,12 @@ test_legacy_fs_thread_test_SOURCES = \
 
 test_legacy_read_apis_LDADD = $(TSK_LIBS)
 test_legacy_read_apis_SOURCES = test/legacy/read_apis.cpp
+
+check_PROGRAMS += bench/runner
+
+bench_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+bench_runner_LDADD = $(TSK_LIBS)
+bench_runner_SOURCES = bench/runner.cpp
 
 #
 # Java

@@ -12,7 +12,6 @@
 #include "../fs/apfs_fs.hpp"
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
-#include "../img/legacy_cache.h"
 #include "../img/pool.hpp"
 
 #include <stdexcept>
@@ -321,7 +320,6 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_pool_info->img_info.read = apfs_img_read;
     img_pool_info->img_info.close = apfs_img_close;
     img_pool_info->img_info.imgstat = apfs_img_imgstat;
-    img_pool_info->img_info.cache = new LegacyCache();
 
     // Copy original info from the first TSK_IMG_INFO. There was a check in the
     // APFSPool that _members has only one entry.
@@ -336,8 +334,14 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_info->spare_size = origInfo->spare_size;
     img_info->images = origInfo->images;
 
-    return img_info;
+    auto oiif = reinterpret_cast<IMG_INFO*>(origInfo);
+    tsk_img_setup_cache(
+      oiif,
+      oiif->cache ? oiif->cache->cache.cache_size() : 0,
+      nullptr
+    );
 
+    return img_info;
 }
 catch (const std::exception &e) {
     tsk_error_reset();

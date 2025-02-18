@@ -16,7 +16,7 @@
 
 #include "tsk_img_i.h"
 #include "img_open.h"
-#include "legacy_cache.h"
+#include "lru_cache.h"
 
 #include "raw.h"
 #include "logical_img.h"
@@ -46,14 +46,39 @@
 #endif
 
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <new>
 #include <numeric>
+#include <optional>
 #include <vector>
 #include <utility>
 
-const TSK_IMG_OPTIONS DEFAULT_IMG_OPTIONS{
+const TSK_IMG_CACHE_OPTIONS DEFAULT_CACHE_OPTS{
+  -1,
+  -1
 };
+
+TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_CACHE_OPTIONS* opts) {
+  if (opts->cache_size == 0) {
+    return nullptr;
+  }
+
+  return new TSK_IMG_CACHE{
+    LRUBlockCacheLocking(
+      opts->cache_size < 0 ? 1024 : opts->cache_size,
+      opts->cache_chunk_size < 0 ? 65536 : opts->cache_chunk_size
+    )
+  };
+}
+
+void tsk_img_free_cache(TSK_IMG_CACHE* cache) {
+  delete cache;
+}
+
+void tsk_img_clear_cache(TSK_IMG_CACHE* cache) {
+  cache->cache.clear();
+}
 
 bool sector_size_ok(unsigned int sector_size) {
     if (sector_size > 0 && sector_size < 512) {
@@ -275,35 +300,133 @@ img_open_detect_type(
     }
 }
 
-TSK_IMG_INFO* img_open(
+void tsk_img_setup_cache(
+  IMG_INFO* iif,
+  int cache_size,
+  TSK_IMG_CACHE* shared_cache)
+{
+  if (shared_cache) {
+    iif->cache = shared_cache;
+    iif->cache_owned = true;
+    iif->cache_read = tsk_img_read_cache;
+  }
+  else if (cache_size != 0) {
+    const TSK_IMG_CACHE_OPTIONS opts = cache_size == -1
+      ? DEFAULT_CACHE_OPTS : TSK_IMG_CACHE_OPTIONS{cache_size, -1};
+    iif->cache = tsk_img_create_cache(&opts);
+    iif->cache_owned = true;
+    iif->cache_read = tsk_img_read_cache;
+  }
+  else {
+    iif->cache = nullptr;
+    iif->cache_owned = false;
+    iif->cache_read = tsk_img_read_no_cache;
+  }
+
+#ifdef READ_STATS
+  std::memset(&iif->stats, 0, sizeof(Stats));
+  tsk_init_lock(&iif->stats_lock);
+#endif
+}
+
+std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
+img_open(
   int num_img,
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  [[maybe_unused]] const TSK_IMG_OPTIONS* opts
+  int cache_size,
+  TSK_IMG_CACHE* shared_cache
 )
 {
-    if (tsk_verbose)
-        TFPRINTF(stderr,
-            _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
-            type, num_img, images[0]);
+  // Clear previous error messages
+  tsk_error_reset();
 
-    auto img_info = type == TSK_IMG_TYPE_DETECT ?
-      img_open_detect_type(num_img, images, a_ssize) :
-      img_open_by_type(num_img, images, type, a_ssize);
+  if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
+    return { nullptr, img_info_deleter };
+  }
 
-    if (!img_info) {
-        return nullptr;
+  if (tsk_verbose) {
+    TFPRINTF(stderr,
+      _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %" PRIttocTSK "\n"),
+      type, num_img, images[0]);
+  }
+
+  auto img_info = type == TSK_IMG_TYPE_DETECT ?
+    img_open_detect_type(num_img, images, a_ssize) :
+    img_open_by_type(num_img, images, type, a_ssize);
+
+  if (img_info) {
+    tsk_img_setup_cache(
+      reinterpret_cast<IMG_INFO*>(img_info.get()),
+      cache_size,
+      shared_cache
+    );
+  }
+
+  return img_info;
+}
+
+#ifdef TSK_WIN32
+std::optional<
+  std::pair<
+    std::vector<std::unique_ptr<wchar_t[]>>,
+    std::unique_ptr<wchar_t*[]>
+  >
+>
+utf8_to_utf16(
+  const char *const images[],
+  size_t num_img
+)
+{
+    // Get rid of any old error messages laying around
+    tsk_error_reset();
+
+    /* Note that there is an assumption in this code that wchar_t is 2-bytes.
+     * this is a correct assumption for Windows, but not for all systems... */
+
+    // allocate a buffer to store the UTF-16 version of the images.
+    std::vector<std::unique_ptr<wchar_t[]>> images16_vec;
+    for (size_t i = 0; i < num_img; ++i) {
+        // we allocate the buffer with the same number of chars as the UTF-8 length
+        const size_t ilen = std::strlen(images[i]);
+
+        images16_vec.emplace_back(new(std::nothrow) wchar_t[ilen + 1]);
+        if (!images16_vec.back()) {
+            return {};
+        }
+
+        UTF8* utf8 = (UTF8 *) images[i];
+        UTF16* utf16 = (UTF16 *) images16_vec.back().get();
+
+        const TSKConversionResult retval2 =
+            tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
+            &utf16, &utf16[ilen], TSKlenientConversion);
+        if (retval2 != TSKconversionOK) {
+            tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+            tsk_error_set_errstr
+                ("tsk_img_open_utf8: Error converting image %s %d",
+                images[i], retval2);
+            return {};
+        }
+        *utf16 = '\0';
     }
 
-    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
+    std::unique_ptr<wchar_t*[]> images16{
+        new(std::nothrow) wchar_t*[num_img]
+    };
 
-    /* we have a good img_info, set up the cache lock */
-    iif->cache = new LegacyCache();
-    iif->cache_read = tsk_img_read_legacy;
+    if (!images16) {
+        return {};
+    }
 
-    return img_info.release();
+    for (size_t i = 0; i < num_img; ++i) {
+        images16[i] = images16_vec[i].get();
+    }
+
+    return std::make_pair(std::move(images16_vec), std::move(images16));
 }
+#endif
 
 /**
  * \ingroup imglib
@@ -324,7 +447,7 @@ tsk_img_open_sing(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize)
 {
-    return tsk_img_open_sing_opt(a_image, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_sing_opt(a_image, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -332,7 +455,7 @@ tsk_img_open_sing_opt(
   const TSK_TCHAR* a_image,
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
     const TSK_TCHAR *const a = a_image;
     return tsk_img_open_opt(1, &a, type, a_ssize, opts);
@@ -363,7 +486,7 @@ tsk_img_open(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize)
 {
-    return tsk_img_open_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_opt(num_img, images, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -372,16 +495,16 @@ tsk_img_open_opt(
   const TSK_TCHAR* const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opt)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
-    // Get rid of any old error messages laying around
-    tsk_error_reset();
-
-    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
-        return nullptr;
-    }
-
-    return img_open(num_img, images, type, a_ssize, opt);
+  return img_open(
+    num_img,
+    images,
+    type,
+    a_ssize,
+    opts->cache_size,
+    nullptr
+  ).release();
 }
 
 /**
@@ -403,7 +526,7 @@ tsk_img_open_utf8_sing(
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize)
 {
-    return tsk_img_open_utf8_sing_opt(a_image, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_utf8_sing_opt(a_image, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -411,7 +534,7 @@ tsk_img_open_utf8_sing_opt(
   const char* a_image,
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
     const char *const a = a_image;
     return tsk_img_open_utf8_opt(1, &a, type, a_ssize, opts);
@@ -438,7 +561,7 @@ tsk_img_open_utf8(
     TSK_IMG_TYPE_ENUM type,
     unsigned int a_ssize)
 {
-    return tsk_img_open_utf8_opt(num_img, images, type, a_ssize, &DEFAULT_IMG_OPTIONS);
+    return tsk_img_open_utf8_opt(num_img, images, type, a_ssize, &DEFAULT_CACHE_OPTS);
 }
 
 TSK_IMG_INFO*
@@ -447,61 +570,31 @@ tsk_img_open_utf8_opt(
   const char *const images[],
   TSK_IMG_TYPE_ENUM type,
   unsigned int a_ssize,
-  const TSK_IMG_OPTIONS* opts)
+  const TSK_IMG_CACHE_OPTIONS* opts)
 {
-    // Get rid of any old error messages laying around
-    tsk_error_reset();
-
-    if (!images_ok(num_img, images) || !sector_size_ok(a_ssize)) {
-        return nullptr;
-    }
-
 #ifdef TSK_WIN32
-    /* Note that there is an assumption in this code that wchar_t is 2-bytes.
-     * this is a correct assumption for Windows, but not for all systems... */
-
-    // allocate a buffer to store the UTF-16 version of the images.
-    std::vector<std::unique_ptr<wchar_t[]>> images16_vec;
-    for (auto i = 0; i < num_img; ++i) {
-        // we allocate the buffer with the same number of chars as the UTF-8 length
-        const size_t ilen = std::strlen(images[i]);
-
-        images16_vec.emplace_back(new(std::nothrow) wchar_t[ilen + 1]);
-        if (!images16_vec.back()) {
-            return nullptr;
-        }
-
-        UTF8* utf8 = (UTF8 *) images[i];
-        UTF16* utf16 = (UTF16 *) images16_vec.back().get();
-
-        const TSKConversionResult retval2 =
-            tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
-            &utf16, &utf16[ilen], TSKlenientConversion);
-        if (retval2 != TSKconversionOK) {
-            tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-            tsk_error_set_errstr
-                ("tsk_img_open_utf8: Error converting image %s %d",
-                images[i], retval2);
-            return nullptr;
-        }
-        *utf16 = '\0';
-    }
-
-    std::unique_ptr<wchar_t*[]> images16{
-        new(std::nothrow) wchar_t*[num_img]
-    };
-    if (!images16) {
+    if (!images_ok(num_img, images)) {
         return nullptr;
     }
-    for (auto i = 0; i < num_img; ++i) {
-        images16[i] = images16_vec[i].get();
+
+    const auto conv_imgs = utf8_to_utf16(images, static_cast<size_t>(num_img));
+    if (!conv_imgs) {
+        return nullptr;
     }
 
-    const TSK_TCHAR* const* imgs = images16.get();
+    const TSK_TCHAR* const* imgs = conv_imgs->second.get();
 #else
     const TSK_TCHAR* const* imgs = images;
 #endif
-    return img_open(num_img, imgs, type, a_ssize, opts);
+
+    return img_open(
+      num_img,
+      imgs,
+      type,
+      a_ssize,
+      opts->cache_size,
+      nullptr
+    ).release();
 }
 
 /**
@@ -531,54 +624,109 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
-    tsk_error_reset();
+  return tsk_img_open_external_cache(
+    ext_img_info,
+    size,
+    sector_size,
+    read,
+    close,
+    imgstat,
+    nullptr
+  );
+}
 
-    // sanity checks
-    if (!sector_size_ok(sector_size)) {
-        return nullptr;
-    }
+TSK_IMG_INFO *
+tsk_img_open_external_cache(
+  void* ext_img_info,
+  TSK_OFF_T size,
+  unsigned int sector_size,
+  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+  void (*close) (TSK_IMG_INFO *),
+  void (*imgstat) (TSK_IMG_INFO *, FILE *),
+  TSK_IMG_CACHE* cache
+)
+{
+  tsk_error_reset();
 
-    if (!ext_img_info) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image info pointer was null");
-        return nullptr;
-    }
+  // sanity checks
+  if (!sector_size_ok(sector_size)) {
+    return nullptr;
+  }
 
-    if (!read) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image read pointer was null");
-        return nullptr;
-    }
+  if (!ext_img_info) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image info pointer was null");
+    return nullptr;
+  }
 
-    if (!close) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image close pointer was null");
-        return nullptr;
-    }
+  if (!read) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image read pointer was null");
+    return nullptr;
+  }
 
-    if (!imgstat) {
-        tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("external image imgstat pointer was null");
-        return nullptr;
-    }
+  if (!close) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image close pointer was null");
+    return nullptr;
+  }
 
-    // set up the TSK_IMG_INFO members
-    TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) ext_img_info;
+  if (!imgstat) {
+    tsk_error_set_errno(TSK_ERR_IMG_ARG);
+    tsk_error_set_errstr("external image imgstat pointer was null");
+    return nullptr;
+  }
 
-    img_info->tag = TSK_IMG_INFO_TAG;
-    img_info->itype = TSK_IMG_TYPE_EXTERNAL;
-    img_info->size = size;
-    img_info->sector_size = sector_size ? sector_size : 512;
+  // set up the TSK_IMG_INFO members
+  TSK_IMG_INFO* img_info = (TSK_IMG_INFO*) ext_img_info;
 
-    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
-    iif->cache_read = tsk_img_read_legacy;
-    iif->read = read;
-    iif->close = close;
-    iif->imgstat = imgstat;
+  img_info->tag = TSK_IMG_INFO_TAG;
+  img_info->itype = TSK_IMG_TYPE_EXTERNAL;
+  img_info->size = size;
+  img_info->sector_size = sector_size ? sector_size : 512;
 
-    iif->cache = new LegacyCache();
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
 
-    return img_info;
+  iif->read = read;
+  iif->close = close;
+  iif->imgstat = imgstat;
+
+  tsk_img_setup_cache(iif, DEFAULT_CACHE_OPTS.cache_size, cache);
+
+  return img_info;
+}
+
+TSK_IMG_INFO* tsk_img_open_utf8_cache(
+  int num_img,
+  const char *const images[],
+  TSK_IMG_TYPE_ENUM type,
+  unsigned int a_ssize,
+  TSK_IMG_CACHE* cache
+)
+{
+#ifdef TSK_WIN32
+  if (!images_ok(num_img, images)) {
+      return nullptr;
+  }
+
+  const auto conv_imgs = utf8_to_utf16(images, static_cast<size_t>(num_img));
+  if (!conv_imgs) {
+      return nullptr;
+  }
+
+  const TSK_TCHAR* const* imgs = conv_imgs->second.get();
+#else
+  const TSK_TCHAR* const* imgs = images;
+#endif
+
+  return img_open(
+    num_img,
+    imgs,
+    type,
+    a_ssize,
+    -1,
+    cache
+  ).release();
 }
 
 #if 0
@@ -703,10 +851,6 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     }
 
     IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
-
-    auto cache = static_cast<LegacyCache*>(iif->cache);
-    delete cache;
-
     iif->close(a_img_info);
 }
 
@@ -721,7 +865,11 @@ tsk_img_malloc(size_t a_len)
         return nullptr;
     }
     imgInfo->tag = TSK_IMG_INFO_TAG;
-    reinterpret_cast<IMG_INFO*>(imgInfo)->cache = nullptr;
+
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
+    iif->cache = nullptr;
+    iif->cache_owned = false;
+
     return imgInfo;
 }
 
@@ -734,5 +882,15 @@ tsk_img_free(void *a_ptr)
     TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
     imgInfo->tag = 0;
     tsk_img_free_image_names(imgInfo);
+
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(imgInfo);
+    if (iif->cache && iif->cache_owned) {
+      tsk_img_free_cache(iif->cache);
+    }
+
+#ifdef READ_STATS
+    tsk_deinit_lock(&iif->stats_lock);
+#endif
+
     free(imgInfo);
 }

@@ -517,13 +517,15 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\hashdb\nsrl.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp" />
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp" />
-    <ClCompile Include="..\..\tsk\img\aff.c" />
+    <ClCompile Include="..\..\tsk\img\aff.cpp" />
     <ClCompile Include="..\..\tsk\img\ewf.cpp" />
     <ClCompile Include="..\..\tsk\img\img_io.cpp" />
     <ClCompile Include="..\..\tsk\img\img_open.cpp" />
-    <ClCompile Include="..\..\tsk\img\img_types.c" />
+    <ClCompile Include="..\..\tsk\img\img_types.cpp" />
     <ClCompile Include="..\..\tsk\img\legacy_cache.cpp" />
     <ClCompile Include="..\..\tsk\img\legacy_cache.h" />
+    <ClCompile Include="..\..\tsk\img\lru_cache.cpp" />
+    <ClCompile Include="..\..\tsk\img\lru_cache.h" />
     <ClCompile Include="..\..\tsk\img\mult_files.cpp" />
     <ClCompile Include="..\..\tsk\img\raw.cpp" />
     <ClCompile Include="..\..\tsk\img\logical_img.cpp" />

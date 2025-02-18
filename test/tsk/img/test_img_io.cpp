@@ -1,6 +1,5 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/img/img_open.h"
-#include "tsk/img/legacy_cache.h"
 
 #include <limits>
 #include <memory>
@@ -66,25 +65,17 @@ TEST_CASE("tsk_img_read length overflow") {
 }
 
 TEST_CASE("tsk_img_read inner function failed") {
-
-  const auto closer = [](TSK_IMG_INFO* img) {
-    auto cache = static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(img)->cache);
-    delete cache;
-    tsk_img_free(img);
-  };
-
-  std::unique_ptr<TSK_IMG_INFO, decltype(closer)> img{
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_free)> img{
     (TSK_IMG_INFO*) tsk_img_malloc(sizeof(IMG_INFO)),
-    closer
+    tsk_img_free
   };
 
   REQUIRE(img);
 
-  reinterpret_cast<IMG_INFO*>(img.get())->cache = new LegacyCache();
+  IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img.get());
+  tsk_img_setup_cache(iif, 0, nullptr);
 
-  reinterpret_cast<IMG_INFO*>(img.get())->cache_read = tsk_img_read_legacy;
-
-  reinterpret_cast<IMG_INFO*>(img.get())->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
+  iif->read = [](TSK_IMG_INFO*, TSK_OFF_T, char*, size_t) {
     return (ssize_t) -1;
   };
 

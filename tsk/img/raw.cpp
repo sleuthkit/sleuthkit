@@ -19,6 +19,7 @@
 #include "raw.h"
 #include "tsk/util/file_system_utils.h"
 
+#include <cerrno>
 #include <memory>
 
 #ifdef __APPLE__

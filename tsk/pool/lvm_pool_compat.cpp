@@ -14,7 +14,6 @@
 
 #include "tsk/img/pool.hpp"
 #include "tsk/img/tsk_img_i.h"
-#include "tsk/img/legacy_cache.h"
 
 #include <stdexcept>
 
@@ -207,7 +206,12 @@ TSK_IMG_INFO * LVMPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_D
     img_info->spare_size = origInfo->spare_size;
     img_info->images = origInfo->images;
 
-    img_info->cache_holder = new LegacyCache();
+    auto oiif = reinterpret_cast<IMG_INFO*>(origInfo);
+    tsk_img_setup_cache(
+      oiif,
+      oiif->cache ? oiif->cache->cache.cache_size() : 0,
+      nullptr
+    );
 
     return img_info;
 }

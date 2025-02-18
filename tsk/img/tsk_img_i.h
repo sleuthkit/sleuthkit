@@ -20,33 +20,49 @@
 // include the external disk image header file
 #include "tsk_img.h"
 
-// other standard includes
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
+#include "lru_cache.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// other standard includes
+#include <fcntl.h>
 
 // Cygwin needs this, but not everyone defines it
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
 
+//#define READ_STATS
+
+#ifdef READ_STATS
+struct Stats {
+  size_t hits;
+  size_t hit_ns;
+  size_t hit_bytes;
+  size_t misses;
+  size_t miss_ns;
+  size_t miss_bytes;
+  size_t histogram[64];
+};
+#endif
+
+struct TSK_IMG_CACHE {
+  LRUBlockCacheLocking cache;
+};
+
 struct IMG_INFO {
   TSK_IMG_INFO img_info;
 
-  void* cache;
+#ifdef READ_STATS
   Stats stats;
+  tsk_lock_t stats_lock;
+#endif
 
+  TSK_IMG_CACHE* cache;
+  bool cache_owned;
   ssize_t (*cache_read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
 
-  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
-  void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
-  void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function
+  ssize_t (*read)(TSK_IMG_INFO* img, TSK_OFF_T off, char *buf, size_t len);
+  void (*close)(TSK_IMG_INFO*);
+  void (*imgstat)(TSK_IMG_INFO*, FILE*);
 };
 
 extern void *tsk_img_malloc(size_t);
@@ -57,13 +73,6 @@ extern void tsk_img_free_image_names(TSK_IMG_INFO* img_info);
 extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR * a_startingName,
     int *a_numFound);
 
-ssize_t tsk_img_read_legacy(
-  TSK_IMG_INFO* a_img_info,
-  TSK_OFF_T a_off,
-  char* a_buf,
-  size_t a_len
-);
-
 ssize_t tsk_img_read_no_cache(
   TSK_IMG_INFO* a_img_info,
   TSK_OFF_T a_off,
@@ -71,8 +80,19 @@ ssize_t tsk_img_read_no_cache(
   size_t a_len
 );
 
-#ifdef __cplusplus
-}
-#endif
+ssize_t tsk_img_read_cache(
+  TSK_IMG_INFO* a_img_info,
+  TSK_OFF_T a_off,
+  char* a_buf,
+  size_t a_len
+);
+
+void tsk_img_clear_cache(TSK_IMG_CACHE* cache);
+
+void tsk_img_setup_cache(
+  IMG_INFO* iif,
+  int cache_size,
+  TSK_IMG_CACHE* shared_cache
+);
 
 #endif

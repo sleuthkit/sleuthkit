@@ -83,25 +83,11 @@ extern "C" {
         TSK_IMG_TYPE_UNSUPP = 0xffff      ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
 
-    typedef struct TSK_IMG_OPTIONS {
-        int dummy;
-    } TSK_IMG_OPTIONS;
-
 #define TSK_IMG_INFO_CACHE_NUM  32
 #define TSK_IMG_INFO_CACHE_LEN  65536
 
     typedef struct TSK_IMG_INFO TSK_IMG_INFO;
 #define TSK_IMG_INFO_TAG 0x39204231
-
-    typedef struct Stats {
-      size_t hits;
-      size_t hit_ns;
-      size_t hit_bytes;
-      size_t misses;
-      size_t miss_ns;
-      size_t miss_bytes;
-      size_t histogram[64];
-    } Stats;
 
     /**
      * Created when a disk image has been opened and stores general information and handles.
@@ -116,6 +102,21 @@ extern "C" {
         unsigned int spare_size;        ///< spare or OOB size of NAND in bytes (defaults to 64)
 
         TSK_TCHAR **images;    ///< Image names
+
+        //
+        // Deprecated members retained for ABI compatibility only, and are
+        // no longer used by Sleuthkit. They should be removed at the next
+        // opportunity.
+        //
+        tsk_lock_t cache_lock;  ///< Lock for cache and associated values. Deprecated.
+        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock). Deprecated.
+        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock). Deprecated.
+        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock). Deprecated.
+        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock). Deprecated.
+
+        ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read(). Deprecated.
+        void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close(). Deprecated.
+        void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function. Deprecated.
     };
 
     // open and close functions
@@ -134,41 +135,75 @@ extern "C" {
         const char *const images[], TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize);
 
-    TSK_IMG_INFO *tsk_img_open_sing_opt(
+    typedef struct TSK_IMG_CACHE_OPTIONS {
+        int cache_size;
+        int cache_chunk_size;
+    } TSK_IMG_CACHE_OPTIONS;
+
+    extern TSK_IMG_INFO *tsk_img_open_sing_opt(
         const TSK_TCHAR * a_image,
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
-    TSK_IMG_INFO *tsk_img_open_opt(
+    extern TSK_IMG_INFO *tsk_img_open_opt(
         int num_img,
         const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
-    TSK_IMG_INFO *tsk_img_open_utf8_sing_opt(
+    extern TSK_IMG_INFO *tsk_img_open_utf8_sing_opt(
         const char *a_image,
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
-    TSK_IMG_INFO* tsk_img_open_utf8_opt(
+    extern TSK_IMG_INFO* tsk_img_open_utf8_opt(
         int num_img,
         const char *const images[],
         TSK_IMG_TYPE_ENUM type,
         unsigned int a_ssize,
-        const TSK_IMG_OPTIONS* opts
+        const TSK_IMG_CACHE_OPTIONS* opts
     );
 
-    extern TSK_IMG_INFO *tsk_img_open_external(void* ext_img_info,
-        TSK_OFF_T size, unsigned int sector_size,
-        ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
-        void (*close) (TSK_IMG_INFO *),
-        void (*imgstat) (TSK_IMG_INFO *, FILE *));
+    struct TSK_IMG_CACHE;
+
+    typedef struct TSK_IMG_CACHE TSK_IMG_CACHE;
+
+    TSK_IMG_CACHE* tsk_img_create_cache(const TSK_IMG_CACHE_OPTIONS* opts);
+
+    void tsk_img_free_cache(TSK_IMG_CACHE* cache);
+
+    extern TSK_IMG_INFO* tsk_img_open_utf8_cache(
+        int num_img,
+        const char *const images[],
+        TSK_IMG_TYPE_ENUM type,
+        unsigned int a_ssize,
+        TSK_IMG_CACHE* cache
+    );
+
+    extern TSK_IMG_INFO *tsk_img_open_external(
+        void* ext_img_info,
+        TSK_OFF_T size,
+        unsigned int sector_size,
+        ssize_t (*read)(TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+        void (*close)(TSK_IMG_INFO *),
+        void (*imgstat)(TSK_IMG_INFO *, FILE *)
+    );
+
+    extern TSK_IMG_INFO *tsk_img_open_external_cache(
+        void* ext_img_info,
+        TSK_OFF_T size,
+        unsigned int sector_size,
+        ssize_t (*read)(TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+        void (*close)(TSK_IMG_INFO *),
+        void (*imgstat)(TSK_IMG_INFO *, FILE *),
+        TSK_IMG_CACHE* cache
+    );
 
     extern void tsk_img_close(TSK_IMG_INFO *);
 

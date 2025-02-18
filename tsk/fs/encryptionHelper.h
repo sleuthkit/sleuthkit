@@ -1,7 +1,6 @@
 #ifndef _TSK_ENCRYPTION_H
 #define _TSK_ENCRYPTION_H
 
-#include "tsk/img/tsk_img_i.h"
 #include "tsk_fs_i.h"
 
 #ifdef __cplusplus

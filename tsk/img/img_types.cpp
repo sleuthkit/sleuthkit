@@ -18,11 +18,11 @@
 /** \internal
   * used to parse and print supported types
   */
-typedef struct {
-    char *name;
-    uint16_t code;
-    char *comment;
-} IMG_TYPES;
+struct IMG_TYPES {
+    const char* name;
+    TSK_IMG_TYPE_ENUM code;
+    const char* comment;
+};
 
 /** \internal
  * The table used to parse input strings
@@ -53,9 +53,9 @@ static IMG_TYPES img_open_table[] = {
     {"qcow", TSK_IMG_TYPE_QCOW_QCOW, "QEMU Copy On Write (QCOW)"},
 #endif
 #ifdef TSK_WIN32
-	{"logical", TSK_IMG_TYPE_LOGICAL, "Logical Directory"},
+    {"logical", TSK_IMG_TYPE_LOGICAL, "Logical Directory"},
 #endif
-    {NULL, 0, NULL},
+    {nullptr, TSK_IMG_TYPE_DETECT, nullptr},
 };
 
 
@@ -71,9 +71,7 @@ static IMG_TYPES img_open_table[] = {
 TSK_IMG_TYPE_ENUM
 tsk_img_type_toid_utf8(const char *str)
 {
-    IMG_TYPES *sp;
-
-    for (sp = img_open_table; sp->name; sp++) {
+    for (IMG_TYPES* sp = img_open_table; sp->name; sp++) {
         if (strcmp(str, sp->name) == 0) {
             return sp->code;
         }
@@ -165,10 +163,9 @@ tsk_img_type_todesc(TSK_IMG_TYPE_ENUM type)
 TSK_IMG_TYPE_ENUM
 tsk_img_type_supported()
 {
-    TSK_IMG_TYPE_ENUM sup_types = 0;
-    IMG_TYPES *sp;
-    for (sp = img_open_table; sp->name; sp++) {
-        sup_types |= sp->code;
+    TSK_IMG_TYPE_ENUM sup_types = TSK_IMG_TYPE_DETECT;
+    for (IMG_TYPES* sp = img_open_table; sp->name; sp++) {
+        sup_types = static_cast<TSK_IMG_TYPE_ENUM>(sup_types | sp->code);
     }
     return sup_types;
 }

@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <vector>
 
+#include <sys/stat.h>
+
 namespace {
 
 // return non-zero if str ends with suffix, ignoring case

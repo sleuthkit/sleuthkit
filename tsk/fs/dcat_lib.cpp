@@ -21,7 +21,10 @@
 */
 
 #include "tsk_fs_i.h"
+
 #include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
 
 /**
  * \file dcat_lib.cpp

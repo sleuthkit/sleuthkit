@@ -17,6 +17,12 @@
 #include "tsk/img/tsk_img_i.h"
 #include "file_system_utils.h"
 
+#include <cerrno>
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #ifdef __APPLE__
 #include <sys/disk.h>
 #endif
@@ -24,10 +30,7 @@
 #ifdef TSK_WIN32
 #include <winioctl.h>
 #else
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
 #endif
 
 #ifndef S_IFMT
