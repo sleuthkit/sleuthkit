@@ -82,6 +82,8 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef CM_DONE
 #define CM_DONE
 
+#include <stdbool.h>
+
 /******************************************************************************/
 
 /* The following definitions are extracted from my style header file which    */
@@ -91,7 +93,6 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef DONE_STYLE
 
 typedef unsigned long   ulong;
-typedef unsigned        bool;
 typedef unsigned char * p_ubyte_;
 
 #ifndef TRUE
