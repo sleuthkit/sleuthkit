@@ -128,14 +128,9 @@ nobase_dist_data_DATA = \
 # Library
 #
 
-TSK_LIBS = \
-	tsk/libtsk.la \
-	$(TSK_LIB_LIBS)
-
+# libtsk's dependencies
 TSK_LIB_LIBS = \
-	$(PTHREAD_LIBS) \
 	$(SQLITE3_LIBS) \
-	$(CRYPTO_LIBS) \
 	$(AFFLIB_LIBS) \
 	$(AFF4_LIBS) \
 	$(EWF_LIBS) \
@@ -145,7 +140,22 @@ TSK_LIB_LIBS = \
 	$(VSLVM_LIBS) \
 	$(BFIO_LIBS) \
 	$(ZLIB_LIBS) \
-	$(STDCPP_LIBS)
+	$(CRYPTO_LIBS) \
+	$(STDCPP_LIBS) \
+	$(PTHREAD_LIBS)
+
+if BUILD_STATIC
+# statically linked executables need linking to libtsk and its deps
+TSK_LIBS = \
+	tsk/libtsk.la \
+	$(TSK_LIB_LIBS)
+else
+# dynamically linked executables need linking only to direct dependencies
+TSK_LIBS = \
+	tsk/libtsk.la \
+	$(STDCPP_LIBS) \
+	$(PTHREAD_LIBS)
+endif
 
 noinst_LTLIBRARIES = \
 	tools/libtsktools.la \
@@ -477,7 +487,7 @@ tools/fiwalk/plugins/Libextract_plugin.class: tools/fiwalk/plugins/Libextract_pl
 
 noinst_LTLIBRARIES += tools/fiwalk/src/libfiwalk.la
 
-tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIBS)
+tools_fiwalk_src_libfiwalk_la_LIBADD = $(TSK_LIBS) $(LIBCRYPTO_LIBS)
 tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/arff.cpp \
 	tools/fiwalk/src/arff.h \
@@ -502,7 +512,7 @@ tools_fiwalk_src_libfiwalk_la_SOURCES = \
 	tools/fiwalk/src/utils.c \
 	tools/fiwalk/src/utils.h
 
-tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la $(TSK_LIBS)
+tools_fiwalk_src_fiwalk_LDADD = tools/fiwalk/src/libfiwalk.la $(TSK_LIBS) $(AFFLIB_LIBS) $(EWF_LIBS)
 tools_fiwalk_src_fiwalk_SOURCES = tools/fiwalk/src/fiwalk_main.cpp
 
 EXTRA_DIST += tools/fstools/fscheck.cpp
@@ -571,7 +581,7 @@ tools_srchtools_srch_strings_SOURCES = tools/srchtools/srch_strings.c
 tools_srchtools_sigfind_LDADD = $(TSK_LIBS)
 tools_srchtools_sigfind_SOURCES = tools/srchtools/sigfind.cpp
 
-tools_vstools_mmls_LDADD = $(TSK_LIBS) tools/libtsktools.la
+tools_vstools_mmls_LDADD = tools/libtsktools.la $(TSK_LIBS)
 tools_vstools_mmls_SOURCES = tools/vstools/mmls.cpp
 
 tools_vstools_mmstat_LDADD = $(TSK_LIBS)
@@ -681,10 +691,8 @@ test_runner_SOURCES = \
 EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
 
 test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
-test_fiwalk_fiwalk_test_LDADD = $(TSK_LIBS)
-test_fiwalk_fiwalk_test_SOURCES = \
-	test/fiwalk/fiwalk_test.cpp \
-	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+test_fiwalk_fiwalk_test_LDADD = tools/fiwalk/src/libfiwalk.la $(TSK_LIBS)
+test_fiwalk_fiwalk_test_SOURCES = test/fiwalk/fiwalk_test.cpp
 
 EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
 
