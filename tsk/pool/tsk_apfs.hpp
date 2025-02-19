@@ -72,6 +72,8 @@ class APFSPool : public TSKPool {
   // This should give a worst case of caching ~64 MiB of blocks
   static constexpr auto block_cache_size = 1024 * 16;
 
+  std::unique_ptr<APFSSuperblock> _apfsSuperBlock;
+
  protected:
   TSK_IMG_INFO *_img;
   TSK_OFF_T _offset;
@@ -102,6 +104,8 @@ class APFSPool : public TSKPool {
   APFSPool(const APFSPool &) = delete;
   APFSPool &operator=(const APFSPool &) = delete;
 
+  ~APFSPool();
+
   std::vector<APFSFileSystem> volumes() const;
 
   ssize_t read(uint64_t address, char *buf, size_t buf_size) const
@@ -127,7 +131,7 @@ class APFSPool : public TSKPool {
 
   const std::vector<range> unallocated_ranges() const final;
 
-  std::unique_ptr<APFSSuperblock> nx(bool validate = false) const;
+  const APFSSuperblock* nx() const;
 
   inline bool hardware_crypto() const noexcept { return _hw_crypto; }
 
