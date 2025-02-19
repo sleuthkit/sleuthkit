@@ -54,7 +54,7 @@ void TskAuto::setCurVsPart(const TSK_VS_PART_INFO *partInfo) {
     m_curVsPartValid = true;
 }
 
-std::string TskAuto::getCurVsPartDescr() const {
+const std::string& TskAuto::getCurVsPartDescr() const {
     return m_curVsPartDescr;
 }
 

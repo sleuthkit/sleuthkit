@@ -105,7 +105,7 @@ class TskAuto {
     /**
     * Set a password that will be used when trying to open each file system
     */
-    void setFileSystemPassword(std::string fileSystemPassword) { m_fileSystemPassword = fileSystemPassword; }
+    void setFileSystemPassword(const std::string& fileSystemPassword) { m_fileSystemPassword = fileSystemPassword; }
 
     /**
      * @returns A password that will be used when trying to open each file system or empty.
@@ -234,7 +234,7 @@ class TskAuto {
     * get volume description of the lastly processed volume
     * @return volume description string of the lastly processed volume
     */
-    std::string getCurVsPartDescr() const;
+    const std::string& getCurVsPartDescr() const;
 
     /**
      * get volume flags of the lastly processed volume.
