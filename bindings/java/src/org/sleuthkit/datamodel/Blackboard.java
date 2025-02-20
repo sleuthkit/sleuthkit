@@ -1131,11 +1131,7 @@ public final class Blackboard {
 
 			ignoreScoreStatement.executeUpdate();
 
-			// register the deleted result with the transaction so an event can be fired for it. 
-			// ELTODO I don't think we need this?
-			// transaction.registerDeletedAnalysisResult(analysisResult.getObjectID());
-
-			// recalculate the score from scratch
+			// recalculate the score from scratch and send a score change event if the score has changed
 			return caseDb.getScoringManager().updateAggregateScoreAfterDeletion(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), transaction);
 
 		} catch (SQLException ex) {

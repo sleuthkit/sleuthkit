@@ -317,7 +317,6 @@ public class ScoringManager {
 				.map(knownStatus -> TaggingManager.getTagScore(knownStatus));
 		
 		if (tagScore.isPresent() && Score.getScoreComparator().compare(tagScore.get(), newScore) > 0) {
-			// ELTODO investigate tag scores
 			newScore = tagScore.get();
 		}
 		
