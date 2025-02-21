@@ -1042,13 +1042,110 @@ public final class Blackboard {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
 		}
 	}
+	
+	/**
+	 * Ignore the score of the specified analysis result.Updates “ignore_score”
+	 * field in tsk_analysis_results table, and recalculates and updates the
+	 * aggregate score of the content.
+	 *
+	 * Fires an event to indicate that the analysis result score is being
+	 * ignored and that the score of the item has changed.
+	 *
+	 * @param analysisResult AnalysisResult to ignore.
+	 * @param ignore a flag whether to ignore the score.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score ignoreAnalysisResultScore(AnalysisResult analysisResult, boolean ignore) throws TskCoreException {
+
+		CaseDbTransaction transaction = this.caseDb.beginTransaction();
+		try {
+			Score score = ignoreAnalysisResultScore(analysisResult, ignore, transaction);
+			transaction.commit();
+			transaction = null;
+
+			return score;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+		}
+	}
+
+	/**
+	 * Ignore the score of the specified analysis result.
+	 *
+	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * and recalculates and updates the aggregate score of the content. Fires an
+	 * event to indicate that the analysis result score is being ignored and that the
+	 * score of the item has changed.
+	 *
+	 * @param artifactObjId Artifact Obj Id to be ignored
+	 * @param ignore a flag whether to ignore the score.
+	 * @param transaction
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score ignoreAnalysisResultScore(long artifactObjId, boolean ignore, CaseDbTransaction transaction) throws TskCoreException {
+
+		List<AnalysisResult> analysisResults = getAnalysisResultsWhere(" artifacts.artifact_obj_id = " + artifactObjId, transaction.getConnection());
+
+		if (analysisResults.isEmpty()) {
+			throw new TskCoreException(String.format("Analysis Result not found for artifact obj id %d", artifactObjId));
+		}
+
+		return ignoreAnalysisResultScore(analysisResults.get(0), ignore, transaction);
+	}
+
+	/**
+	 * Ignore the score of the specified analysis result.
+	 *
+	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * and recalculates and updates the aggregate score of the content. Fires an
+	 * event to indicate that the analysis result score is being ignored and that the
+	 * score of the item has changed.
+	 *
+	 * @param analysisResult AnalysisResult to ignore.
+	 * @param ignore a flag whether to ignore the score.
+	 * @param transaction    Transaction to use for database operations.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Score ignoreAnalysisResultScore(AnalysisResult analysisResult, boolean ignore, CaseDbTransaction transaction) throws TskCoreException {
+
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+
+			String query = "UPDATE tsk_analysis_results SET ignore_score = CASE WHEN ? THEN 1 ELSE 0 END WHERE artifact_obj_id = ?";
+
+			PreparedStatement ignoreScoreStatement = connection.getPreparedStatement(query, Statement.RETURN_GENERATED_KEYS);
+			ignoreScoreStatement.clearParameters();
+			ignoreScoreStatement.setBoolean(1, ignore);
+			ignoreScoreStatement.setLong(2, analysisResult.getId());
+
+			ignoreScoreStatement.executeUpdate();
+
+			// recalculate the score from scratch and send a score change event if the score has changed
+			return caseDb.getScoringManager().updateAggregateScoreAfterDeletion(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), transaction);
+
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error ignoring score of analysis result with artifact obj id %d", analysisResult.getId()), ex);
+		}
+	}	
 
 	private final static String ANALYSIS_RESULT_QUERY_STRING_GENERIC = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
 			+ " artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, "
 			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 			+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
 			+ " results.conclusion AS conclusion,  results.significance AS significance,  results.priority AS priority,  "
-			+ " results.configuration AS configuration,  results.justification AS justification "
+			+ " results.configuration AS configuration,  results.justification AS justification, "
+			+ " results.ignore_score AS ignore_score "
 			+ " FROM blackboard_artifacts AS artifacts "
 			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
 			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
@@ -1351,7 +1448,8 @@ public final class Blackboard {
 					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
 					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")),
 					new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.Priority.fromID(resultSet.getInt("priority"))),
-					resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification")));
+					resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification"),
+					resultSet.getBoolean("ignore_score")));
 		} //end for each resultSet
 
 		return analysisResults;
