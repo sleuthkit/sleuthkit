@@ -205,28 +205,54 @@ public final class Blackboard {
 			return typeNameToArtifactTypeMap.get(typeName);
 		}
 
-		Statement s = null;
-		ResultSet rs = null;
 		CaseDbTransaction trans = null;
 		try {
 			trans = caseDb.beginTransaction();
 
 			CaseDbConnection connection = trans.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + typeName + "'"); //NON-NLS
-			if (!rs.next()) {
-				rs.close();
-				rs = connection.executeQuery(s, "SELECT MAX(artifact_type_id) AS highest_id FROM blackboard_artifact_types");
+
+			// try to find preexisting type id in database
+			boolean typeFound;
+			try (PreparedStatement findCurrPrepState = connection.prepareStatement(
+					"SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = ?",
+					Statement.RETURN_GENERATED_KEYS)) {
+				findCurrPrepState.setString(1, typeName);
+
+				try (ResultSet rs = connection.executeQuery(findCurrPrepState)) {
+					typeFound = rs.next();
+				}
+			}
+
+			if (!typeFound) {
+				// if not found, get next id
 				int maxID = 0;
-				if (rs.next()) {
-					maxID = rs.getInt("highest_id");
-					if (maxID < MIN_USER_DEFINED_TYPE_ID) {
-						maxID = MIN_USER_DEFINED_TYPE_ID;
-					} else {
-						maxID++;
+				try (Statement getNextIdState = connection.createStatement(); 
+						ResultSet rs = connection.executeQuery(getNextIdState,
+						"SELECT MAX(artifact_type_id) AS highest_id FROM blackboard_artifact_types")) {
+					if (rs.next()) {
+						maxID = rs.getInt("highest_id");
+						if (maxID < MIN_USER_DEFINED_TYPE_ID) {
+							maxID = MIN_USER_DEFINED_TYPE_ID;
+						} else {
+							maxID++;
+						}
 					}
 				}
-				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES ('" + maxID + "', '" + typeName + "', '" + displayName + "', " + category.getID() + " )"); //NON-NLS
+
+				// insert the type
+				try (PreparedStatement insertItemPrepState = connection.prepareStatement(
+						"INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (?, ?, ?, ?)",
+						Statement.RETURN_GENERATED_KEYS)) {
+					insertItemPrepState.setInt(1, maxID);
+					insertItemPrepState.setString(2, typeName);
+					insertItemPrepState.setString(3, displayName);
+					insertItemPrepState.setInt(4, category.getID());
+
+					insertItemPrepState.executeUpdate();
+
+				}
+
+				// cache the type in memory
 				BlackboardArtifact.Type type = new BlackboardArtifact.Type(maxID, typeName, displayName, category);
 				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
@@ -234,6 +260,7 @@ public final class Blackboard {
 				trans = null;
 				return type;
 			} else {
+				// if preexisting, return what we have
 				trans.commit();
 				trans = null;
 				try {
@@ -253,8 +280,6 @@ public final class Blackboard {
 			}
 			throw new BlackboardException("Error adding artifact type: " + typeName, ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
 			if (trans != null) {
 				try {
 					trans.rollback();
@@ -359,29 +384,27 @@ public final class Blackboard {
 		if (this.typeNameToArtifactTypeMap.containsKey(artTypeName)) {
 			return this.typeNameToArtifactTypeMap.get(artTypeName);
 		}
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
+
 		caseDb.acquireSingleUserCaseReadLock();
-		try {
-			connection = caseDb.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE type_name = '" + artTypeName + "'"); //NON-NLS
-			BlackboardArtifact.Type type = null;
-			if (rs.next()) {
-				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
-				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
-				this.typeNameToArtifactTypeMap.put(artTypeName, type);
+		try (CaseDbConnection connection = caseDb.getConnection(); PreparedStatement getTypePrepState = connection.prepareStatement(
+				"SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE type_name = ?",
+				 Statement.RETURN_GENERATED_KEYS)) {
+			getTypePrepState.setString(1, artTypeName);
+
+			try (ResultSet rs = getTypePrepState.executeQuery()) {
+				BlackboardArtifact.Type type = null;
+				if (rs.next()) {
+					type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+							rs.getString("type_name"), rs.getString("display_name"),
+							BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+					this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+					this.typeNameToArtifactTypeMap.put(artTypeName, type);
+				}
+				return type;
 			}
-			return type;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type from the database", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
@@ -747,20 +770,22 @@ public final class Blackboard {
 	 */
 	void initBlackboardArtifactTypes(CaseDbConnection connection) throws SQLException {
 		caseDb.acquireSingleUserCaseWriteLock();
-		try (Statement statement = connection.createStatement()) {
-			/*
-			 * Determine which types, if any, have already been added to the
-			 * case database, and load them into the type caches. For a case
-			 * that is being reopened, this should reduce the number of separate
-			 * INSERT staements that will be executed below.
-			 */
-			ResultSet resultSet = connection.executeQuery(statement, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
-			while (resultSet.next()) {
-				BlackboardArtifact.Type type = new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
-						resultSet.getString("type_name"), resultSet.getString("display_name"),
-						BlackboardArtifact.Category.fromID(resultSet.getInt("category_type")));
-				typeIdToArtifactTypeMap.put(type.getTypeID(), type);
-				typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+		try {
+			try (Statement getExistingStatement = connection.createStatement()) {
+				/*
+				 * Determine which types, if any, have already been added to the
+				 * case database, and load them into the type caches. For a case
+				 * that is being reopened, this should reduce the number of
+				 * separate INSERT staements that will be executed below.
+				 */
+				ResultSet resultSet = connection.executeQuery(getExistingStatement, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
+				while (resultSet.next()) {
+					BlackboardArtifact.Type type = new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
+							resultSet.getString("type_name"), resultSet.getString("display_name"),
+							BlackboardArtifact.Category.fromID(resultSet.getInt("category_type")));
+					typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+					typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+				}
 			}
 
 			/*
@@ -774,21 +799,32 @@ public final class Blackboard {
 			 * ensures that the deprecated types in the former, and not in the
 			 * latter, are added to the case database.
 			 */
+			String insertSql;
+			if (caseDb.getDatabaseType() == TskData.DbType.POSTGRESQL) {
+				insertSql = "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING"; //NON-NLS
+			} else {
+				insertSql = "INSERT OR IGNORE INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (?, ?, ?, ?)"; //NON-NLS
+			}
+
 			for (BlackboardArtifact.ARTIFACT_TYPE type : BlackboardArtifact.ARTIFACT_TYPE.values()) {
 				if (typeIdToArtifactTypeMap.containsKey(type.getTypeID())) {
 					continue;
 				}
-				if (caseDb.getDatabaseType() == TskData.DbType.POSTGRESQL) {
-					statement.execute("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ") ON CONFLICT DO NOTHING"); //NON-NLS
-				} else {
-					statement.execute("INSERT OR IGNORE INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ")"); //NON-NLS
+				try (PreparedStatement insertArtType = connection.getPreparedStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+					insertArtType.setInt(1, type.getTypeID());
+					insertArtType.setString(2, type.getLabel());
+					insertArtType.setString(3, type.getDisplayName());
+					insertArtType.setInt(4, type.getCategory().getID());
+					insertArtType.executeUpdate();
 				}
 				typeIdToArtifactTypeMap.put(type.getTypeID(), new BlackboardArtifact.Type(type));
 				typeNameToArtifactTypeMap.put(type.getLabel(), new BlackboardArtifact.Type(type));
 			}
 			if (caseDb.getDatabaseType() == TskData.DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.values())).getTypeID() + 1;
-				statement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH " + newPrimaryKeyIndex); //NON-NLS
+				try (Statement updateSequenceStatement = connection.createStatement()) {
+					updateSequenceStatement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH " + newPrimaryKeyIndex); //NON-NLS
+				}
 			}
 		} finally {
 			caseDb.releaseSingleUserCaseWriteLock();

@@ -14902,25 +14902,24 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
-			int typeId = -1;
-			if (rs.next()) {
-				typeId = rs.getInt("artifact_type_id");
+		try (CaseDbConnection connection = connections.getConnection(); 
+				PreparedStatement getTypeNamePrepState = connection.prepareStatement(
+				"SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = ?",
+				Statement.RETURN_GENERATED_KEYS)) {
+
+			getTypeNamePrepState.setString(1, artifactTypeName);
+
+			try (ResultSet rs = getTypeNamePrepState.executeQuery()) {
+				int typeId = -1;
+				if (rs.next()) {
+					typeId = rs.getInt("artifact_type_id");
+				}
+				return typeId;
 			}
-			return typeId;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type id", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
