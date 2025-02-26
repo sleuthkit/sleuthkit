@@ -383,10 +383,12 @@ public class SleuthkitCase {
 	 * @param lockingApplicationName The name of the application locking the
 	 *                               case database (null value prevents
 	 *                               locking; 500 character maximum).
+	 * 
+	 * @param useWAL				 Flag to set journal_mode=WAL
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider, String lockingApplicationName) throws Exception {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
@@ -398,7 +400,7 @@ public class SleuthkitCase {
 				? null
 				: LockResources.tryAcquireFileLock(this.caseDirPath, this.databaseName, lockingApplicationName);
 
-		this.connections = new SQLiteConnections(dbPath);
+		this.connections = new SQLiteConnections(dbPath, useWAL);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
 		this.contentProvider = contentProvider;
@@ -3177,8 +3179,8 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Beta
-	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider) throws TskCoreException {
-		return openCase(dbPath, provider, null);
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider) throws TskCoreException {
+		return openCase(dbPath, contentProvider, null);
 	}
 
 	/**
@@ -3194,10 +3196,29 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Beta
-	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider, String lockingApplicationName) throws TskCoreException {
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName) throws TskCoreException {
+		return openCase(dbPath, contentProvider, null, false);
+	}
+	
+	/**
+	 * Open an existing case database.
+	 *
+	 * @param dbPath Path to SQLite case database.
+	 * @param contentProvider Custom provider for file content bytes (can be null).
+	 * @param lockingApplicationName The name of the application locking the
+	 *                               case database (null value prevents
+	 *                               locking; 500 character maximum).
+	 * 
+	 * @param useWAL				 Flag to set journal_mode=WAL
+	 * @return Case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, provider, lockingApplicationName);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
 		} catch (TskUnsupportedSchemaVersionException ex) {
 			//don't wrap in new TskCoreException
 			throw ex;
@@ -3301,8 +3322,8 @@ public class SleuthkitCase {
 	 * @param contentProvider        Custom provider for file bytes (can be
 	 *                               null).
 	 * @param lockingApplicationName The name of the application locking the
-	 *                               case database (null value prevents
-	 *                               locking; 500 character maximum).
+	 *                               case database (null value prevents locking;
+	 *                               500 character maximum).
 	 *
 	 * @return A case database object.
 	 *
@@ -3310,13 +3331,35 @@ public class SleuthkitCase {
 	 */
 	@Beta
 	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName) throws TskCoreException {
+		return newCase(dbPath, contentProvider, null, false);
+	}
+	
+	/**
+	 * Creates a new SQLite case database.
+	 *
+	 * @param dbPath                 Path to where SQlite case database should
+	 *                               be created.
+	 * @param contentProvider        Custom provider for file bytes (can be
+	 *                               null).
+	 * @param lockingApplicationName The name of the application locking the
+	 *                               case database (null value prevents
+	 *                               locking; 500 character maximum).
+	 * 
+	 * @param useWAL				 Flag to set journal_mode=WAL 
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws TskCoreException {
 
 		try {
 			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
 			factory.createCaseDatabase();
 
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -13796,7 +13839,7 @@ public class SleuthkitCase {
 
 		private final Map<String, String> configurationOverrides = new HashMap<String, String>();
 
-		SQLiteConnections(String dbPath) throws SQLException {
+		SQLiteConnections(String dbPath, boolean useWAL) throws SQLException {
 			configurationOverrides.put("acquireIncrement", "2");
 			configurationOverrides.put("initialPoolSize", "5");
 			configurationOverrides.put("minPoolSize", "5");
@@ -13812,7 +13855,9 @@ public class SleuthkitCase {
 			config.setSynchronous(SQLiteConfig.SynchronousMode.OFF); // Reduce I/O operations, we have no OS crash recovery anyway.
 			config.setReadUncommitted(true);
 			config.enforceForeignKeys(true); // Enforce foreign key constraints.
-			config.setPragma(SQLiteConfig.Pragma.JOURNAL_MODE, SQLiteConfig.JournalMode.WAL.getValue());
+			if (useWAL) {
+				config.setJournalMode(SQLiteConfig.JournalMode.WAL);
+			}
 			SQLiteDataSource unpooled = new SQLiteDataSource(config);
 			unpooled.setUrl("jdbc:sqlite:" + dbPath);
 			setPooledDataSource((PooledDataSource) DataSources.pooledDataSource(unpooled, configurationOverrides));
