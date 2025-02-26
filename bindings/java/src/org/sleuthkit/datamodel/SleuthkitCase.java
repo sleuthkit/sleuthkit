@@ -384,7 +384,9 @@ public class SleuthkitCase {
 	 *                               case database (null value prevents
 	 *                               locking; 500 character maximum).
 	 * 
-	 * @param useWAL				 Flag to set journal_mode=WAL
+	 * @param useWAL				 Flag to set journal_mode=WAL. WAL does not 
+	 *								 work over a network file system. For more 
+	 *								 details @see <a href="https://www.sqlite.org/wal.html">https://www.sqlite.org/wal.html</a> 
 	 *
 	 * @throws Exception
 	 */
@@ -3209,7 +3211,9 @@ public class SleuthkitCase {
 	 *                               case database (null value prevents
 	 *                               locking; 500 character maximum).
 	 * 
-	 * @param useWAL				 Flag to set journal_mode=WAL
+	 * @param useWAL				 Flag to set journal_mode=WAL. WAL does not 
+	 *								 work over a network file system. For more 
+	 *								 details @see <a href="https://www.sqlite.org/wal.html">https://www.sqlite.org/wal.html</a> 
 	 * @return Case database object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
@@ -3345,7 +3349,9 @@ public class SleuthkitCase {
 	 *                               case database (null value prevents
 	 *                               locking; 500 character maximum).
 	 * 
-	 * @param useWAL				 Flag to set journal_mode=WAL 
+	 * @param useWAL				 Flag to set journal_mode=WAL. WAL does not 
+	 *								 work over a network file system. For more 
+	 *								 details @see <a href="https://www.sqlite.org/wal.html">https://www.sqlite.org/wal.html</a> 
 	 *
 	 * @return A case database object.
 	 *
