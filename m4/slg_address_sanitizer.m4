@@ -11,7 +11,7 @@ AC_DEFUN([TSK_ADDRESS_SANITIZER], [
     [
       AC_DEFINE(HAVE_ADDRESS_SANITIZER, 1, [enable AddressSanitizer])
       address_sanitizer="yes"
-      CFLAGS="$XFLAGS     -fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope"
+      CFLAGS="$CFLAGS     -fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope"
       CXXFLAGS="$CXXFLAGS -fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope"
       LDFLAGS="$LDFLAGS -fsanitize=address -g"
     ],
@@ -47,7 +47,7 @@ AC_DEFUN([TSK_UNDEFINED_SANITIZER], [
     [
       AC_DEFINE(HAVE_UNDEFINED_SANITIZER, 1, [enable UndefinedSanitizer])
       undefined_sanitizer="yes"
-      CFLAGS="$CXXFLAGS -fsanitize=undefined"
+      CFLAGS="$CFLAGS -fsanitize=undefined"
       CXXFLAGS="$CXXFLAGS -fsanitize=undefined"
       LDFLAGS="$LDFLAGS -fsanitize=undefined -g"
     ],
