@@ -785,12 +785,12 @@ unless ($CI) {
 }
 
 chdir ".." or die "Error changing directories to root";
-#verify_precheckin();
-#chdir "$RELDIR" or die "error changing back into release";
+verify_precheckin();
+chdir "$RELDIR" or die "error changing back into release";
 
 
 # Make a new clone of the repo
-#clone_repo();
+clone_repo();
 
 # Update the version info in that tag
 update_configver();
