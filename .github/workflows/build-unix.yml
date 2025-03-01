@@ -26,12 +26,13 @@ jobs:
             linkage: "shared"
             compiler: "gcc"
             runner: "macos-15"
-            configure_opts: "--with-libewf --disable-java"
+            configure_opts: "--with-libewf --enable-java"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
             codecov: "yes"
             prefix: "CODECOV"
             address_sanitizer: "yes"
             keep_artifacts: "no"
+            enable_java: "yes"
 
           - os: "linux"
             arch: "x86_64"
@@ -136,6 +137,15 @@ jobs:
         run: |
           brew update
           brew install libtool autoconf automake libtool libewf libmagic
+
+      - name: Install MacOS packages Java packages
+        if: ${{ matrix.os == 'macos' }} && ${{ matrix.java == 'yes'}}
+        run: |
+          brew install openjdk@19 ant
+          export JAVA_HOME="$(brew --prefix openjdk)"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          export CPPFLAGS="-I$JAVA_HOME/include"
+          export JNI_CPPFLAGS="-I$JAVA_HOME/include -I$JAVA_HOME/include/darwin"
 
       - name: Install Linux packages
         if: ${{ matrix.os == 'linux' }}
