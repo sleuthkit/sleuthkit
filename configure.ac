@@ -221,7 +221,13 @@ AS_IF([test "x$enable_java" != "xno"], [
 
 dnl if we found everything we need, set ax_java_support for the
 dnl status message and set X_JNI for use in Makefile
-AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
+AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x],
+            [ax_java_support=yes
+            AC_MSG_NOTICE([ax_java_support enabled])
+            ],
+            [ax_java_support=no
+            AC_MSG_NOTICE([ax_java_support disabled. JNI_CPPFLAGS=$JNI_CPP_FLAGS  ANT_FOUND=$ANT_FOUND JAVA=$JAVA])
+            ])
 AM_CONDITIONAL([X_JNI],[test "x$ax_java_support" = "xyes"])
 
 dnl Dependencies for OSS-Fuzz
