@@ -141,7 +141,7 @@ jobs:
       - name: Install MacOS packages Java packages
         if: ${{ matrix.os == 'macos' }} && ${{ matrix.java == 'yes'}}
         run: |
-          brew install openjdk@19 ant
+          brew install openjdk@21 ant
           export JAVA_HOME="$(brew --prefix openjdk)"
           export PATH="$JAVA_HOME/bin:$PATH"
           export CPPFLAGS="-I$JAVA_HOME/include"
