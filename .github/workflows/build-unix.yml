@@ -133,11 +133,13 @@ jobs:
           echo "Using $CORES cores"
 
       - name: Install MacOS packages
+        env:
+          MATRIX_JAVA: '${{ matrix.java}}'
         if: ${{ matrix.os == 'macos' }}
         run: |
           brew update
           brew install libtool autoconf automake libtool libewf libmagic
-          if [ x${{ matrix.java }} == 'xyes' ]; then
+          if [ x$MATRIX_JAVA == 'xyes' ]; then
              brew install openjdk@21 ant
              export JAVA_HOME="$(brew --prefix openjdk)"
              export PATH="$JAVA_HOME/bin:$PATH"
