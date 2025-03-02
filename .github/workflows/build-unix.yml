@@ -139,7 +139,7 @@ jobs:
         run: |
           brew update
           brew install libtool autoconf automake libtool libewf libmagic
-          if [ x$MATRIX_JAVA == 'xyes' ]; then
+          if [ "$MATRIX_JAVA"x == 'yesx' ]; then
              brew install openjdk@21 ant
              export JAVA_HOME="$(brew --prefix openjdk)"
              export PATH="$JAVA_HOME/bin:$PATH"
