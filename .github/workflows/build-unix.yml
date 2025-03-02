@@ -134,12 +134,14 @@ jobs:
 
       - name: Install MacOS packages
         env:
-          MATRIX_JAVA: '${{ matrix.java}}'
+          MATRIX_JAVA: ${{ matrix.java }}
         if: ${{ matrix.os == 'macos' }}
         run: |
           brew update
           brew install libtool autoconf automake libtool libewf libmagic
-          if [ "$MATRIX_JAVA"x == 'yesx' ]; then
+          echo MATRIX_JAVA=$MATRIX_JAVA
+          if [ "$MATRIX_JAVA"x == "yesx" ]; then
+             echo Installing JAVA
              brew install openjdk@21 ant
              export JAVA_HOME="$(brew --prefix openjdk)"
              export PATH="$JAVA_HOME/bin:$PATH"
