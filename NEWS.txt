@@ -1,3 +1,13 @@
+---------------- VERSION 4.13.0 --------------
+C/C++:
+- Added support for btrfs (experimental) and xfs (experimental)
+- Implemented new unit test framework with Catch
+- Updated to C++17. (Update to C++20 pending a solution for compiling for Windows XP)
+
+Java:
+
+
+
 ---------------- VERSION 4.12.1 --------------
 C/C++:
 - Bug fixes from Luis Nassif and Joachim Metz
@@ -2253,5 +2263,3 @@ integer value.
 - removed file system types of linux1 and linux2 and linux
 - added file system type of linux-ext2 (as ext3 is becoming more popular)
 - bug in file command that reported seek error for object files and STDIN
-
-
