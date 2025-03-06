@@ -375,7 +375,7 @@ tsk_libtsk_la_LIBADD = \
 	$(TSK_LIB_LIBS)
 
 # current:revision:age
-tsk_libtsk_la_LDFLAGS = $(AM_LDFLAGS) -version-info 21:1:2 $(LIBTSK_LDFLAGS)
+tsk_libtsk_la_LDFLAGS = $(AM_LDFLAGS) -version-info 22:0:0 $(LIBTSK_LDFLAGS)
 
 EXTRA_DIST += \
 	tsk/tsk_tools_i.h \
@@ -608,7 +608,7 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 #	pushd sorter ; perltidy -b sorter.base ; popd
 #	pushd timeline ; perltidy -b mactime.base ; popd
 
-EXTRA_DIST += tests/runtests.sh
+EXTRA_DIST += test/legacy/runtests.sh
 
 check_SCRIPTS = \
 	test/check_static.sh \
@@ -728,7 +728,7 @@ endif
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
-$(tsk_jar):
+$(tsk_jar): tsk/libtsk.la
 	cd bindings/java ; ant dist $(ant_args)
 
 clean-tsk__jar:
