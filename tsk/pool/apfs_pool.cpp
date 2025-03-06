@@ -13,6 +13,7 @@
 
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
+#include "../img/legacy_cache.h"
 
 #include <stdexcept>
 
@@ -146,10 +147,8 @@ const std::vector<APFSPool::range> APFSPool::unallocated_ranges() const {
 void APFSPool::clear_cache() noexcept {
   _block_cache.clear();
 
-  tsk_take_lock(&(_img->cache_lock));
-
-  // Setting the lengths to zero should invalidate the cache.
-  memset(_img->cache_len, 0, sizeof(_img->cache_len));
-
-  tsk_release_lock(&(_img->cache_lock));
+  auto cache = static_cast<LegacyCache*>(reinterpret_cast<IMG_INFO*>(_img)->cache);
+  cache->lock();
+  cache->clear();
+  cache->unlock();
 }

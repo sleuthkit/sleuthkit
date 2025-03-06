@@ -22,6 +22,8 @@
 
 #include <libvmdk.h>
 
+#include "tsk_img_i.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,7 +32,7 @@ extern "C" {
         unsigned int a_ssize);
 
     typedef struct {
-        TSK_IMG_INFO img_info;
+        IMG_INFO img_info;
         libvmdk_handle_t *handle;
         tsk_lock_t read_lock;   // Lock for reads since according to documentation libvmdk is not fully thread safe yet
     } IMG_VMDK_INFO;

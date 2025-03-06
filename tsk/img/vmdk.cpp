@@ -265,10 +265,12 @@ vmdk_open(int a_num_img,
     else {
         img_info->sector_size = 512;
     }
+
     img_info->itype = TSK_IMG_TYPE_VMDK_VMDK;
-    img_info->read = &vmdk_image_read;
-    img_info->close = &vmdk_image_close;
-    img_info->imgstat = &vmdk_image_imgstat;
+
+    vmdk_info->img_info.read = &vmdk_image_read;
+    vmdk_info->img_info.close = &vmdk_image_close;
+    vmdk_info->img_info.imgstat = &vmdk_image_imgstat;
 
     // initialize the read lock
     tsk_init_lock(&(vmdk_info->read_lock));

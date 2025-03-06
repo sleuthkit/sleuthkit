@@ -748,7 +748,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(
     TSTRNCPY(writer->fileName, outputFileName, TSTRLEN(outputFileName) + 1);
 
     /* Calculation time */
-    writer->imageSize = raw_info->img_info.size;
+    writer->imageSize = raw_info->img_info.img_info.size;
     if (writer->imageSize > VHD_MAX_IMAGE_SIZE) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);

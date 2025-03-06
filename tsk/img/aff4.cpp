@@ -266,9 +266,10 @@ aff4_open(
 
     img_info->sector_size = 512;
     img_info->itype = TSK_IMG_TYPE_AFF4_AFF4;
-    img_info->read = &aff4_image_read;
-    img_info->close = &aff4_image_close;
-    img_info->imgstat = &aff4_image_imgstat;
+
+    aff4_info->img_info.read = &aff4_image_read;
+    aff4_info->img_info.close = &aff4_image_close;
+    aff4_info->img_info.imgstat = &aff4_image_imgstat;
 
     // initialize the API lock
     tsk_init_lock(&(aff4_info->read_lock));

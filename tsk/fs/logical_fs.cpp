@@ -13,16 +13,19 @@
 * Contains the internal TSK logical file system functions.
 */
 
-#include <vector>
-#include <map>
 #include <algorithm>
-#include <string>
+#include <map>
+#include <memory>
 #include <set>
+#include <string>
+#include <vector>
+
 #include <string.h>
 
 #include "tsk_fs_i.h"
 #include "tsk_fs.h"
 #include "tsk_logical_fs.h"
+#include "tsk/img/legacy_cache.h"
 #include "tsk/img/logical_img.h"
 
 #ifdef TSK_WIN32
@@ -409,6 +412,10 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 }
 #endif
 
+void unlock(LegacyCache* cache) {
+  cache->unlock();
+};
+
 /*
  * Finds closest cache match for the given path.
  * If best_path is not NULL, caller must free.
@@ -424,7 +431,10 @@ static TSK_RETVAL_ENUM
 find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *target_path, TSK_TCHAR **best_path, TSK_INUM_T *best_inum) {
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
-	tsk_take_lock(&(img_info->cache_lock));
+
+  auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
 
 	*best_inum = LOGICAL_INVALID_INUM;
 	*best_path = NULL;
@@ -485,13 +495,11 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 		*best_inum = logical_img_info->inum_cache[best_match_index].inum;
 		*best_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1));
 		if (*best_path == NULL) {
-			tsk_release_lock(&(img_info->cache_lock));
 			return TSK_ERR;
 		}
 		TSTRNCPY(*best_path, logical_img_info->inum_cache[best_match_index].path, TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1);
 	}
 
-	tsk_release_lock(&(img_info->cache_lock));
 	return TSK_OK;
 }
 
@@ -508,7 +516,11 @@ static TSK_TCHAR*
 find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_inum) {
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
-	tsk_take_lock(&(img_info->cache_lock));
+
+  auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
+
 	TSK_TCHAR *target_path = NULL;
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if (target_path == NULL && logical_img_info->inum_cache[i].inum == target_inum) {
@@ -519,7 +531,6 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
       const size_t len = TSTRLEN(logical_img_info->inum_cache[i].path);
 			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 			if (target_path == NULL) {
-				tsk_release_lock(&(img_info->cache_lock));
 				return NULL;
 			}
 			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, len + 1);
@@ -532,7 +543,6 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 		}
 	}
 
-	tsk_release_lock(&(img_info->cache_lock));
 	return target_path;
 }
 
@@ -556,7 +566,10 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
-	tsk_take_lock(&(img_info->cache_lock));
+
+  auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
 
 	// Check if this entry is already in the cache. 
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
@@ -565,7 +578,6 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 			if (always_cache && logical_img_info->inum_cache[i].cache_age < LOGICAL_INUM_CACHE_MAX_AGE) {
 				logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
 			}
-			tsk_release_lock(&(img_info->cache_lock));
 			return TSK_OK;
 		}
 	}
@@ -588,7 +600,6 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 
 	// If the always_cache flag is not set, only continue if we've found an empty space
 	if (!always_cache && logical_img_info->inum_cache[next_slot].inum != LOGICAL_INVALID_INUM) {
-		tsk_release_lock(&(img_info->cache_lock));
 		return TSK_OK;
 	}
 
@@ -597,7 +608,6 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	// Copy the data
 	logical_img_info->inum_cache[next_slot].path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(path) + 1));
 	if (logical_img_info->inum_cache[next_slot].path == NULL) {
-		tsk_release_lock(&(img_info->cache_lock));
 		return TSK_ERR;
 	}
 	TSTRNCPY(logical_img_info->inum_cache[next_slot].path, path, TSTRLEN(path) + 1);
@@ -609,7 +619,6 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE / 2;
 	}
 
-	tsk_release_lock(&(img_info->cache_lock));
 	return TSK_OK;
 }
 
@@ -1397,9 +1406,11 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	// the shared variables in the img type specific INFO structs.
 	// Grab it now so that it is held before any reads.
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)a_fs->img_info;
-	TSK_IMG_INFO* img_info = a_fs->img_info;
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
-	tsk_take_lock(&(img_info->cache_lock));
+
+	auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
 
 	// Check if this block is in the cache
 	int cache_next = 0;         // index to lowest age cache (to use next)
@@ -1407,16 +1418,16 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	for (int cache_index = 0; cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
 
 		// Look into the in-use cache entries
-		if (img_info->cache_len[cache_index] > 0) {
+		if (cache->cache_len[cache_index] > 0) {
 			if ((logical_img_info->cache_inum[cache_index] == a_fs_file->meta->addr)
 				// check if non-negative and cast to uint to avoid signed/unsigned comparison warning
-				&& (img_info->cache_off[cache_index] >= 0 && (TSK_DADDR_T)img_info->cache_off[cache_index] == a_block_num)) {
+				&& (cache->cache_off[cache_index] >= 0 && (TSK_DADDR_T)cache->cache_off[cache_index] == a_block_num)) {
 				// We found it
-				memcpy(buf, img_info->cache[cache_index], block_size);
+				memcpy(buf, cache->cache[cache_index], block_size);
 				match_found = true;
 
 				// reset its "age" since it was useful
-				img_info->cache_age[cache_index] = LOGICAL_IMG_CACHE_AGE;
+				cache->cache_age[cache_index] = LOGICAL_IMG_CACHE_AGE;
 
 				// we don't break out of the loop so that we update all ages
 			}
@@ -1424,14 +1435,14 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 				// Decrease its "age" since it was not useful.
 				// We don't let used ones go below 1 so that they are not
 				// confused with entries that have never been used.
-				if (img_info->cache_age[cache_index] > 2) {
-					img_info->cache_age[cache_index]--;
+				if (cache->cache_age[cache_index] > 2) {
+					cache->cache_age[cache_index]--;
 				}
 
 				// See if this is the most eligible replacement
-				if ((img_info->cache_len[cache_next] > 0)
-					&& (img_info->cache_age[cache_index] <
-						img_info->cache_age[cache_next])) {
+				if ((cache->cache_len[cache_next] > 0)
+					&& (cache->cache_age[cache_index] <
+						cache->cache_age[cache_next])) {
 					cache_next = cache_index;
 				}
 			}
@@ -1440,7 +1451,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 
 	// If we found the block in the cache, we're done
 	if (match_found) {
-		tsk_release_lock(&(img_info->cache_lock));
 		return block_size;
 	}
 
@@ -1482,7 +1492,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 				NULL);
 		}
 		if (fd == INVALID_HANDLE_VALUE) {
-			tsk_release_lock(&(img_info->cache_lock));
 			int lastError = (int)GetLastError();
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1528,7 +1537,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
 			(GetLastError() != NO_ERROR)) {
 
-			tsk_release_lock(&(img_info->cache_lock));
 			int lastError = (int)GetLastError();
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_IMG_SEEK);
@@ -1556,7 +1564,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 #ifdef TSK_WIN32
 	DWORD nread;
 	if (FALSE == ReadFile(file_handle_entry->fd, buf, (DWORD)len_to_read, &nread, NULL)) {
-		tsk_release_lock(&(img_info->cache_lock));
 		int lastError = GetLastError();
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
@@ -1573,13 +1580,11 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 #endif
 
 	// Copy the block into the cache
-	memcpy(img_info->cache[cache_next], buf, block_size);
-	img_info->cache_len[cache_next] = block_size;
-	img_info->cache_age[cache_next] = LOGICAL_IMG_CACHE_AGE;
-	img_info->cache_off[cache_next] = a_block_num;
+	memcpy(cache->cache[cache_next], buf, block_size);
+	cache->cache_len[cache_next] = block_size;
+	cache->cache_age[cache_next] = LOGICAL_IMG_CACHE_AGE;
+	cache->cache_off[cache_next] = a_block_num;
 	logical_img_info->cache_inum[cache_next] = a_fs_file->meta->addr;
-
-	tsk_release_lock(&(img_info->cache_lock));
 
 	// If we didn't read the expected number of bytes, return an error
 #ifdef TSK_WIN32
