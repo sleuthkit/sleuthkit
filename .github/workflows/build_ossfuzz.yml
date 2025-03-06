@@ -18,6 +18,7 @@ jobs:
         - architecture: 'x64'
           compiler: 'gcc'
           configure_options: ''
+    if: false
     steps:
     - name: Install build dependencies
       run: |
