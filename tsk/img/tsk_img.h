@@ -364,8 +364,7 @@ extern "C" {
      * \ingroup imglib
      * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer
      * parameter must be castable to a TSK_IMG_INFO pointer.  It is up to
-     * the caller to set the tag value in ext_img_info. This method will
-     * initialize the cache lock.
+     * the caller to set the tag value in ext_img_info.
      *
      * @param ext_img_info Pointer to the partially initialized disk image
      *     structure, having a TSK_IMG_INFO as its first member
@@ -390,8 +389,7 @@ extern "C" {
      * \ingroup imglib
      * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer
      * parameter must be castable to a TSK_IMG_INFO pointer.  It is up to
-     * the caller to set the tag value in ext_img_info. This method will
-     * initialize the cache lock.
+     * the caller to set the tag value in ext_img_info.
      *
      * @param ext_img_info Pointer to the partially initialized disk image
      *     structure, having a TSK_IMG_INFO as its first member
