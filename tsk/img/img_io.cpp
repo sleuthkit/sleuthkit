@@ -261,15 +261,6 @@ ssize_t tsk_img_read_no_cache(
   return read_count;
 }
 
-/**
- * \ingroup imglib
- * Reads data from an open disk image
- * @param a_img_info Disk image to read from
- * @param a_off Byte offset to start reading from
- * @param a_buf Buffer to read into
- * @param a_len Number of bytes to read into buffer
- * @returns -1 on error or number of bytes read
- */
 ssize_t
 tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     char *a_buf, size_t a_len)

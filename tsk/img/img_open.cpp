@@ -428,19 +428,6 @@ utf8_to_utf16(
 }
 #endif
 
-/**
- * \ingroup imglib
- * Opens a single (non-split) disk image file so that it can be read.  This is a
- * wrapper around tsk_img_open().  See it for more details on detection etc. See
- * tsk_img_open_sing_utf8() for a version of this function that always takes
- * UTF-8 as input.
- *
- * @param a_image The path to the image file
- * @param type The disk image type (can be autodetection)
- * @param a_ssize Size of device sector in bytes (or 0 for default)
- *
- * @return Pointer to TSK_IMG_INFO or NULL on error
- */
 TSK_IMG_INFO*
 tsk_img_open_sing(
   const TSK_TCHAR* a_image,
@@ -461,24 +448,6 @@ tsk_img_open_sing_opt(
     return tsk_img_open_opt(1, &a, type, a_ssize, opts);
 }
 
-/**
- * \ingroup imglib
- * Opens one or more disk image files so that they can be read.  If a file format
- * type is specified, this function will call the specific routine to open the file.
- * Otherwise, it will detect the type (it will default to raw if no specific type can
- * be detected).   This function must be called before a disk image can be read from.
- * Note that the data type used to store the image paths is a TSK_TCHAR, which changes
- * depending on a Unix or Windows build.  If you will always have UTF8, then consider
- * using tsk_img_open_utf8().
- *
- * @param num_img The number of images to open (will be > 1 for split images).
- * @param images The path to the image files (the number of files must
- * be equal to num_img and they must be in a sorted order)
- * @param type The disk image type (can be autodetection)
- * @param a_ssize Size of device sector in bytes (or 0 for default)
- *
- * @return Pointer to TSK_IMG_INFO or NULL on error
- */
 TSK_IMG_INFO *
 tsk_img_open(
   int num_img,
@@ -507,19 +476,6 @@ tsk_img_open_opt(
   ).release();
 }
 
-/**
-* \ingroup imglib
- * Opens a single (non-split) disk image file so that it can be read.  This version
- * always takes a UTF-8 encoding of the disk image.  See tsk_img_open_sing() for a
- * version that takes a wchar_t or char depending on the platform.
- * This is a wrapper around tsk_img_open().  See it for more details on detection etc.
- *
- * @param a_image The UTF-8 path to the image file
- * @param type The disk image type (can be autodetection)
- * @param a_ssize Size of device sector in bytes (or 0 for default)
- *
- * @return Pointer to TSK_IMG_INFO or NULL on error
- */
 TSK_IMG_INFO*
 tsk_img_open_utf8_sing(
   const char* a_image,
@@ -540,20 +496,6 @@ tsk_img_open_utf8_sing_opt(
     return tsk_img_open_utf8_opt(1, &a, type, a_ssize, opts);
 }
 
-/**
- * \ingroup imglib
- * Opens one or more disk image files so that they can be read.  This is a wrapper
- * around tsk_img_open() and this version always takes a UTF-8 encoding of the
- * image files.  See its description for more details.
- *
- * @param num_img The number of images to open (will be > 1 for split images).
- * @param images The path to the UTF-8 encoded image files (the number of files must
- * be equal to num_img and they must be in a sorted order)
- * @param type The disk image type (can be autodetection)
- * @param a_ssize Size of device sector in bytes (or 0 for default)
- *
- * @return Pointer to TSK_IMG_INFO or NULL on error
- */
 TSK_IMG_INFO *
 tsk_img_open_utf8(
     int num_img,
@@ -597,23 +539,6 @@ tsk_img_open_utf8_opt(
     ).release();
 }
 
-/**
-* \ingroup imglib
- * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer parameter
- * must be castable to a TSK_IMG_INFO pointer.  It is up to
- * the caller to set the tag value in ext_img_info.  This
- * method will initialize the cache lock.
- *
- * @param ext_img_info Pointer to the partially initialized disk image
- * structure, having a TSK_IMG_INFO as its first member
- * @param size Total size of image in bytes
- * @param sector_size Sector size of device in bytes
- * @param read Pointer to user-supplied read function
- * @param close Pointer to user-supplied close function
- * @param imgstat Pointer to user-supplied imgstat function
- *
- * @return Pointer to TSK_IMG_INFO or NULL on error
- */
 TSK_IMG_INFO *
 tsk_img_open_external(
   void* ext_img_info,
@@ -838,11 +763,6 @@ int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const imag
     return 1;
 }
 
-/**
- * \ingroup imglib
- * Closes an open disk image.
- * @param a_img_info Pointer to the open disk image structure.
- */
 void
 tsk_img_close(TSK_IMG_INFO * a_img_info)
 {
