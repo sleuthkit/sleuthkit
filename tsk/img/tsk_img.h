@@ -149,7 +149,7 @@ extern "C" {
      * called before a disk image can be read from.
      *
      * Note that the data type used to store the image paths is a TSK_TCHAR,
-     * which changes depending on a Unix or Windows build.  If you will always
+     * which changes depending on a Unix or Windows build. If you will always
      * have UTF8, then consider using tsk_img_open_utf8().
      *
      * @param num_img The number of images to open (will be > 1 for split
@@ -174,7 +174,7 @@ extern "C" {
      * version always takes a UTF-8 encoding of the disk image. See
      * tsk_img_open_sing() for a version that takes a wchar_t or char depending
      * on the platform. This is a wrapper around tsk_img_open().  See it for
-     * more details on detection etc.
+     * more details on detection, etc.
      *
      * @param a_image The UTF-8 path to the image file
      * @param type The disk image type (can be autodetection)
@@ -192,7 +192,7 @@ extern "C" {
      * \ingroup imglib
      * Opens one or more disk image files so that they can be read. This is a
      * wrapper around tsk_img_open() and this version always takes a UTF-8
-     * encoding of the image files.  See its description for more details.
+     * encoding of the image files. See its description for more details.
      *
      * @param num_img The number of images to open (will be > 1 for split
      *    images).
