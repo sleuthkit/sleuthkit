@@ -201,7 +201,8 @@ AS_IF([test "x$enable_java" != "xno"], [
     AS_IF(
         [test "x$JAVAC" = x],
         [enable_java=no],
-        [AX_JNI_INCLUDE_DIR
+        [
+	AX_JNI_INCLUDE_DIR
         for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
         do
             JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
@@ -214,14 +215,19 @@ AS_IF([test "x$enable_java" != "xno"], [
         AX_PROG_JAVA
 
         dnl Test is ant is available
-        AC_PATH_PROG([ANT_FOUND], [ant], [])
-	])
-
+	AC_PATH_PROG([ANT], [ant], [no])
+	if test "x$ANT" = "xno"; then
+	    AC_MSG_ERROR([Apache Ant is required but was not found. Install Ant and try again.])
+	fi
+	AC_SUBST(ANT)
+	]
+    )
 ]) dnl test enable_java
+
 
 dnl if we found everything we need, set ax_java_support for the
 dnl status message and set X_JNI for use in Makefile
-AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
+AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
 AM_CONDITIONAL([X_JNI],[test "x$ax_java_support" = "xyes"])
 
 dnl Dependencies for OSS-Fuzz
