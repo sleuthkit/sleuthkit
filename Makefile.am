@@ -773,14 +773,14 @@ clean-tsk_jar:
 clean-tsk_caseuco_jar:
 	cd case-uco/java ; $(ANT) clean
 
-clean-java = clean-tsk_jar clean-tsk_caseuco_jar
+clean_java = clean-tsk_jar clean-tsk_caseuco_jar
 
-clean-local: $(clean-java)
+clean-local: $(clean_java)
 	find $(top_builddir) -type d -name '.deps' -exec rm -rf {} +
 
 .PHONY: clean-tsk_jar clean-tsk_caseuco_jar check-java
 
-check-java:
+check-java: $(tsk_jar)
 	cd bindings/java; $(ANT) test
 
 #
