@@ -727,10 +727,7 @@ tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
 $(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la
-	cd bindings/java ; ant dist $(ant_args)
-
-clean-tsk_jar:
-	cd bindings/java ; ant clean
+	cd bindings/java ; $(ANT) dist $(ant_args)
 
 CLEANFILES += $(tsk_jar)
 
@@ -749,16 +746,21 @@ bindings_java_jni_libtsk_jni_la_SOURCES = \
 tsk_caseuco_jar = $(top_builddir)/case-uco/java/dist/sleuthkit-caseuco-$(PACKAGE_VERSION).jar
 
 $(tsk_caseuco_jar):
-	cd case-uco/java ; ant $(ant_args)
-
-clean-tsk_caseuco_jar:
-	cd case-uco/java ; ant clean
+	cd case-uco/java ; $(ANT) $(ant_args)
 
 CLEANFILES += $(tsk_caseuco_jar)
 
-clean_java = clean-tsk_jar clean-tsk_caseuco_jar
+endif # End of X_JNI check
 
-endif
+# Clean targets should be outside of the conditional
+
+clean-tsk_jar:
+	cd bindings/java ; $(ANT) clean
+
+clean-tsk_caseuco_jar:
+	cd case-uco/java ; $(ANT) clean
+
+clean_java = clean-tsk_jar clean-tsk_caseuco_jar
 
 clean-local: $(clean_java)
 
