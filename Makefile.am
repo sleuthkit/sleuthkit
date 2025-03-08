@@ -726,10 +726,10 @@ endif
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
-$(tsk_jar): tsk/libtsk.la
+$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la
 	cd bindings/java ; ant dist $(ant_args)
 
-clean-tsk__jar:
+clean-tsk_jar:
 	cd bindings/java ; ant clean
 
 CLEANFILES += $(tsk_jar)
