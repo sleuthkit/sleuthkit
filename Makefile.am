@@ -7,6 +7,16 @@ AM_LDFLAGS = $(SQLITE3_LDFLAGS) $(AFFLIB_LDFLAGS) $(CRYPTO_LDFLAGS) $(AFF4_LDFLA
 
 CLEANFILES = *.gcov
 
+# make maintainer-clean by default isn't removing enough. This should help
+MAINTAINERCLEANFILES = \
+    Makefile.in aclocal.m4 configure \
+    m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
+    tsk/tsk_config.h.in tsk/tsk_incs.h \
+    config/compile config/config.guess config/config.sub \
+    config/depcomp config/install-sh config/ltmain.sh \
+    config/missing config/test-driver 
+
+
 # File that we want to include in the dist
 EXTRA_DIST = \
 	API-CHANGES.txt \
@@ -714,6 +724,8 @@ test_legacy_read_apis_SOURCES = test/legacy/read_apis.cpp
 #
 
 # Compile java bindings if all of the dependencies exist
+# tsk_caseuco_jar contains additional Java bindings or integrations with Case-UCO, a standard for digital forensics case exchange.
+
 if X_JNI
 
 if OFFLINE
@@ -763,6 +775,7 @@ clean-tsk_caseuco_jar:
 clean_java = clean-tsk_jar clean-tsk_caseuco_jar
 
 clean-local: $(clean_java)
+	find $(top_builddir) -type d -name '.deps' -exec rm -rf {} +
 
 .PHONY: clean-tsk_jar clean-tsk_caseuco_jar
 
