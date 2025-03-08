@@ -1,0 +1,2 @@
+tar-ignore = "test"
+tar-ignore = "tests"
