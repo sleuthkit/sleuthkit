@@ -14,7 +14,8 @@ MAINTAINERCLEANFILES = \
     tsk/tsk_config.h.in tsk/tsk_incs.h \
     config/compile config/config.guess config/config.sub \
     config/depcomp config/install-sh config/ltmain.sh \
-    config/missing config/test-driver 
+    config/missing config/test-driver \
+    configure~ tsk/tsk_config.h.in~
 
 
 # File that we want to include in the dist
