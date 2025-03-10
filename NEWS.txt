@@ -1,10 +1,18 @@
 ---------------- VERSION 4.13.0 --------------
 C/C++:
+- Added BitLocker support (Windows only)
+- Updated LibVMDK and LibVHDI
+- Updated to Visual Studio 2019
+- Updated logical folder caching
 - Added support for btrfs (experimental) and xfs (experimental)
 - Implemented new unit test framework with Catch
 - Updated to C++17. (Update to C++20 pending a solution for compiling for Windows XP)
+- Other changes from @simsong, @uckelman-sf, @joachimmetz, and others.
 
 Java:
+- Changed how child map was loaded at start up
+- Updated handling of OS Accounts in Java DB, espcially for Linux
+- Updated PostgreSQL SSL configuration
 
 
 
