@@ -7,6 +7,17 @@ AM_LDFLAGS = $(SQLITE3_LDFLAGS) $(AFFLIB_LDFLAGS) $(CRYPTO_LDFLAGS) $(AFF4_LDFLA
 
 CLEANFILES = *.gcov
 
+# make maintainer-clean by default isn't removing enough. This should help
+MAINTAINERCLEANFILES = \
+    Makefile.in aclocal.m4 configure \
+    m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
+    tsk/tsk_config.h.in tsk/tsk_incs.h \
+    config/compile config/config.guess config/config.sub \
+    config/depcomp config/install-sh config/ltmain.sh \
+    config/missing config/test-driver \
+    configure~ tsk/tsk_config.h.in~
+
+
 # File that we want to include in the dist
 EXTRA_DIST = \
 	API-CHANGES.txt \
@@ -375,7 +386,7 @@ tsk_libtsk_la_LIBADD = \
 	$(TSK_LIB_LIBS)
 
 # current:revision:age
-tsk_libtsk_la_LDFLAGS = $(AM_LDFLAGS) -version-info 21:1:2 $(LIBTSK_LDFLAGS)
+tsk_libtsk_la_LDFLAGS = $(AM_LDFLAGS) -version-info 22:0:0 $(LIBTSK_LDFLAGS)
 
 EXTRA_DIST += \
 	tsk/tsk_tools_i.h \
@@ -608,7 +619,7 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 #	pushd sorter ; perltidy -b sorter.base ; popd
 #	pushd timeline ; perltidy -b mactime.base ; popd
 
-EXTRA_DIST += tests/runtests.sh
+EXTRA_DIST += test/legacy/runtests.sh
 
 check_SCRIPTS = \
 	test/check_static.sh \
@@ -716,6 +727,8 @@ test_legacy_read_apis_SOURCES = test/legacy/read_apis.cpp
 #
 
 # Compile java bindings if all of the dependencies exist
+# tsk_caseuco_jar contains additional Java bindings or integrations with Case-UCO, a standard for digital forensics case exchange.
+
 if X_JNI
 
 if OFFLINE
@@ -728,11 +741,8 @@ endif
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
-$(tsk_jar):
-	cd bindings/java ; ant dist $(ant_args)
-
-clean-tsk__jar:
-	cd bindings/java ; ant clean
+$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la
+	cd bindings/java ; $(ANT) dist $(ant_args)
 
 CLEANFILES += $(tsk_jar)
 
@@ -751,18 +761,24 @@ bindings_java_jni_libtsk_jni_la_SOURCES = \
 tsk_caseuco_jar = $(top_builddir)/case-uco/java/dist/sleuthkit-caseuco-$(PACKAGE_VERSION).jar
 
 $(tsk_caseuco_jar):
-	cd case-uco/java ; ant $(ant_args)
-
-clean-tsk_caseuco_jar:
-	cd case-uco/java ; ant clean
+	cd case-uco/java ; $(ANT) $(ant_args)
 
 CLEANFILES += $(tsk_caseuco_jar)
 
+endif # End of X_JNI check
+
+# Clean targets should be outside of the conditional
+
+clean-tsk_jar:
+	cd bindings/java ; $(ANT) clean
+
+clean-tsk_caseuco_jar:
+	cd case-uco/java ; $(ANT) clean
+
 clean_java = clean-tsk_jar clean-tsk_caseuco_jar
 
-endif
-
 clean-local: $(clean_java)
+	find $(top_builddir) -type d -name '.deps' -exec rm -rf {} +
 
 .PHONY: clean-tsk_jar clean-tsk_caseuco_jar
 
