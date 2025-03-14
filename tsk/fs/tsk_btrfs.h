@@ -66,7 +66,7 @@ extern "C" {
 #define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_DEFAULT_SUBVOL  (1ULL << 1)     // supported (only for fsstat - we use FS_TREE as root!)
 #define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_MIXED_GROUPS    (1ULL << 2)     // not relevant
 #define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_COMPRESS_LZO    (1ULL << 3)     // TODO: not (yet) supported (but we handle this on EXTENT_DATA level)
-#define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_COMPRESS_LZOv2  (1ULL << 4)     // reserved flag so far
+#define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_COMPRESS_ZSTD   (1ULL << 4)     // TODO: not (yet) supported (but we handle this on EXTENT_DATA level)
 #define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_BIG_METADATA    (1ULL << 5)     // not relevant
 #define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_EXTENDED_IREF   (1ULL << 6)     // not relevant
 #define BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_RAID56          (1ULL << 7)     // not relevant
@@ -78,6 +78,7 @@ extern "C" {
      BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_DEFAULT_SUBVOL     | \
      BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_MIXED_GROUPS       | \
      BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_COMPRESS_LZO       | \
+     BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_COMPRESS_ZSTD      | \
      BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_BIG_METADATA       | \
      BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_EXTENDED_IREF      | \
      BTRFS_SUPERBLOCK_INCOMPAT_FLAGS_RAID56             | \
