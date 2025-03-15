@@ -42,11 +42,10 @@
 
 use POSIX;
 use strict;
+use DateTime;
+use DateTime::TimeZone;
 
 my $debug = 0;
-
-# %month_to_digit = ("Jan", 1, "Feb", 2, "Mar", 3, "Apr", 4, "May", 5, "Jun", 6,
-#                    "Jul", 7, "Aug", 8, "Sep", 9, "Oct", 10, "Nov", 11, "Dec", 12);
 my %digit_to_month = (
     "01", "Jan", "02", "Feb", "03", "Mar", "04", "Apr",
     "05", "May", "06", "Jun", "07", "Jul", "08", "Aug",
@@ -66,7 +65,8 @@ mactime [-b body_file] [-p password_file] [-g group_file] [-i day|hour idx_file]
 		-i [day | hour] file: Specifies the index file with a summary of results
 		-y: Dates are displayed in ISO 8601 format
 		-m: Dates have month as number instead of word (does not work with -y)
-		-z: Specify the timezone the data came from (in the local system format) (does not work with -y)
+		-z: Specify the timezone the data came from (in the local system format)
+		-Z: Specify the timezone in which the data must be displayed (in the local system format)
 		-g: Specifies the group file location, else GIDs are used
 		-p: Specifies the password file location, else UIDs are used
 		-V: Prints the version to STDOUT
@@ -102,20 +102,12 @@ my %file2other;
 my %gid2names = ();
 my %uid2names = ();
 
-my $_HAS_DATETIME_TIMEZONE = 0;
-
-eval "use DateTime::TimeZone";
-if ($@) {
-    $_HAS_DATETIME_TIMEZONE = 0;
-} else {
-    $_HAS_DATETIME_TIMEZONE = 1;
-}
+my $INPUT_TIMEZONE = DateTime::TimeZone->new( name => 'UTC' );
+my $OUTPUT_TIMEZONE = DateTime::TimeZone->new( name => 'UTC' );
+my $UTC = DateTime::TimeZone->new( name => 'UTC' );
 
 sub get_timezone_list() {
     my @t_list;
-    if ( ! $_HAS_DATETIME_TIMEZONE ) {
-       return @t_list;
-    }
 
     foreach ( DateTime::TimeZone->all_names() ) {
         push( @t_list, $_ );
@@ -215,29 +207,25 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
     elsif (/^-y$/) {
         $iso8601 = 1;
     }
-    elsif (/^-z$/) {
+    elsif (/^-Z$/) {
         shift(@ARGV);
         if (defined $ARGV[0]) {
             my $tz = "$ARGV[0]";
 
             if ($tz =~ m/^list$/i) {
-                if ($_HAS_DATETIME_TIMEZONE) {
-                    my $txt  = "
+                my $txt  = "
 -----------------------------------
-        TIMEZONE LIST
+    TIMEZONE LIST
 -----------------------------------\n";
-                    foreach ( get_timezone_list() ) {
-                        $txt .= $_ . "\n";
-                    }
-                    print( $txt );
+                foreach ( get_timezone_list() ) {
+                    $txt .= $_ . "\n";
                 }
-                else {
-                    print "DateTime module not loaded -- cannot list timezones\n";
-                }
+                print( $txt );
+                
                 exit(0);
             }
             # validate the string if we have DateTime module
-            elsif ($_HAS_DATETIME_TIMEZONE) {
+            else {
                 my $realtz = 0;
                 foreach ( get_timezone_list() ) {
                     if ($tz =~ m/^$_$/i) {
@@ -246,17 +234,57 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
                     }
                 }
                 if ($realtz) {
-                    $ENV{TZ} = $realtz;
+                    ## do not use $ENV{TZ} anymore, as this could be reset by localtime()
+                    # $ENV{TZ} = $realtz;
+                    $OUTPUT_TIMEZONE = DateTime::TimeZone->new( name => $realtz );
+                }
+                else {
+                    print "invalid timezone provided. Use '-Z list' to list valid timezones.\n";
+                    usage();
+                }
+            }
+        }
+        else {
+            print "-Z requires the time zone argument\n";
+            usage();
+        }
+    }
+    elsif (/^-z$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            my $tz = "$ARGV[0]";
+
+            if ($tz =~ m/^list$/i) {
+                my $txt  = "
+-----------------------------------
+    TIMEZONE LIST
+-----------------------------------\n";
+                foreach ( get_timezone_list() ) {
+                    $txt .= $_ . "\n";
+                }
+                print( $txt );
+                
+                exit(0);
+            }
+            # validate the string if we have DateTime module
+            else {
+                my $realtz = 0;
+                foreach ( get_timezone_list() ) {
+                    if ($tz =~ m/^$_$/i) {
+                        $realtz = $_;
+                        last;
+                    }
+                }
+                if ($realtz) {
+                    ## do not use $ENV{TZ} anymore, as this could be reset by localtime()
+                    # $ENV{TZ} = $realtz;
+                    $INPUT_TIMEZONE = DateTime::TimeZone->new( name => $realtz );
                 }
                 else {
                     print "invalid timezone provided. Use '-z list' to list valid timezones.\n";
                     usage();
                 }
             }
-            # blindly take it otherwise
-            else {
-                $ENV{TZ} = $tz;
-            }      
         }
         else {
             print "-z requires the time zone argument\n";
@@ -388,6 +416,19 @@ sub read_body {
             && ($st_ctime < $in_seconds)
             && ($st_crtime < $in_seconds));
 
+        #my $dt = DateTime->from_epoch(
+        #    epoch       =>  $st_ctime,
+        #    time_zone   =>  $INPUT_TIMEZONE);
+        #my $formatted_dt = $dt->iso8601();
+        #print ("$st_ctime -> $formatted_dt\n");
+
+        unless ($INPUT_TIMEZONE->is_utc()) {
+            if (defined $st_mtime) {$st_mtime = localtime_to_utc($st_mtime, $INPUT_TIMEZONE)};
+            if (defined $st_atime) {$st_atime = localtime_to_utc($st_atime, $INPUT_TIMEZONE)};
+            if (defined $st_ctime) {$st_ctime = localtime_to_utc($st_ctime, $INPUT_TIMEZONE)};
+            if (defined $st_crtime) {$st_crtime = localtime_to_utc($st_crtime, $INPUT_TIMEZONE)};
+        }
+
         # add leading zeros to timestamps because we will later sort
         # these using a string-based comparison
         $st_mtime  = sprintf("%.10d", $st_mtime);
@@ -516,6 +557,13 @@ sub print_header {
     print "\n";
 }
 
+sub localtime_to_utc($$) {
+    my $ts = shift;
+    my $timezone = shift;
+    my $dt = DateTime->from_epoch( epoch => $ts, time_zone=>$UTC );
+    my $offset = $timezone->offset_for_datetime($dt);
+    return $ts - $offset;
+}
 #
 # Print the time line
 #
@@ -550,33 +598,7 @@ sub print_tl {
             next;
         }
 
-        my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst);
-        if ($iso8601) {
-            ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
-              gmtime($time);
-        }
-        else {
-            ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
-              localtime($time);
-        }
-
-        # the month here is 0-11, not 1-12, like what we want
-        $mon++;
-
-        print
-"\t($sec,$min,$hour,MDay: $mday,M: $mon,$year,$wday,$yday,$isdst) = ($time)\n"
-          if $debug;
-
-        #
-        # cosmetic change to make it look like unix dates
-        #
-        $mon  = "0$mon"  if $mon < 10;
-        $mday = "0$mday" if $mday < 10;
-        $hour = "0$hour" if $hour < 10;
-        $min  = "0$min"  if $min < 10;
-        $sec  = "0$sec"  if $sec < 10;
-
-        my $yeart = $year + 1900;
+        my $dt = DateTime->from_epoch(epoch=>$time, time_zone=>$OUTPUT_TIMEZONE);
 
         #  How do we print the date?
         #
@@ -586,21 +608,18 @@ sub print_tl {
                 $date_string = "0000-00-00T00:00:00Z";
             }
             else {
-                $date_string =
-"$yeart-$mon-${mday}T$hour:$min:${sec}Z";
+                $date_string = $dt->strftime("%FT%H:%M:%S%z");
             }
         }
         else {
             if ($time == 0) {
-                $date_string = "Xxx Xxx 00 0000 00:00:00";
+                $date_string = "Xxx Xxx 00 0000 00:00:00 +0000";
             }
             elsif ($month_num) {
-                $date_string =
-                  "$digit_to_day{$wday} $mon $mday $yeart $hour:$min:$sec";
+                $date_string = $dt->strftime("%a %m %d %Y %H:%M:%S%z");
             }
             else {
-                $date_string =
-"$digit_to_day{$wday} $digit_to_month{$mon} $mday $yeart $hour:$min:$sec";
+                $date_string = $dt->strftime("%a %b %d %Y %H:%M:%S%z");
             }
         }
 
@@ -610,10 +629,10 @@ sub print_tl {
         #
         if ($old_date_string eq $date_string) {
             if ($iso8601) {
-                $date_string = "                    ";
+                $date_string = "                        ";
             }
             else {
-                $date_string = "                        ";
+                $date_string = "                              ";
             }
             $prev_cnt++
               if ($INDEX ne "");
@@ -626,14 +645,14 @@ sub print_tl {
 
                 # First time it is run
                 if ($prev_day eq "") {
-                    $prev_day  = "$mday $wday $mon $yeart";
-                    $prev_hour = $hour;
+                    $prev_day  = "$dt->day $dt->wday $dt->mon $dt->year";
+                    $prev_hour = $dt->hour;
                     $prev_time = $time;
                     $prev_cnt  = 0;
                 }
 
                 # A new day, so print the results
-                elsif ($prev_day ne "$mday $wday $mon $yeart") {
+                elsif ($prev_day ne "$dt->day $dt->wday $dt->mon $dt->year") {
                     my @prev_vals = split(/ /, $prev_day);
 
                     my $date_str;
@@ -657,14 +676,14 @@ sub print_tl {
 
                     # Reset
                     $prev_cnt  = 0;
-                    $prev_day  = "$mday $wday $mon $yeart";
-                    $prev_hour = $hour;
+                    $prev_day  = "$dt->day $dt->wday $dt->mon $dt->year";
+                    $prev_hour = $dt->hour;
                     $prev_time = $time;
 
                 }
 
                 # Same day, but new hour
-                elsif (($INDEX_TYPE == $INDEX_HOUR) && ($prev_hour != $hour)) {
+                elsif (($INDEX_TYPE == $INDEX_HOUR) && ($prev_hour != $dt->hour)) {
                     my @prev_vals = split(/ /, $prev_day);
 
                     if ($month_num) {
@@ -684,7 +703,7 @@ sub print_tl {
 
                     # Reset
                     $prev_cnt  = 0;
-                    $prev_hour = $hour;
+                    $prev_hour = $dt->hour;
                     $prev_time = $time;
                 }
                 $prev_cnt++;
