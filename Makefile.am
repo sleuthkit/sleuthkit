@@ -140,7 +140,7 @@ nobase_dist_data_DATA = \
 #
 
 TSK_LIBS = \
-	tsk/libtsk.la \
+	tsk/@TSK_LIB@ \
 	$(TSK_LIB_LIBS)
 
 TSK_LIB_LIBS=\
