@@ -82,10 +82,11 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef CM_DONE
 #define CM_DONE
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 
 /******************************************************************************/

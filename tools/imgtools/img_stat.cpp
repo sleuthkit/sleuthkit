@@ -9,6 +9,7 @@
  * This software is distributed under the Common Public License 1.0
  */
 #include "tsk/tsk_tools_i.h"
+#include "tsk/img/tsk_img_i.h"
 
 static TSK_TCHAR *progname;
 
@@ -118,7 +119,7 @@ main(int argc, char **argv1)
         tsk_printf("%s\n", str);
     }
     else {
-        img->imgstat(img, stdout);
+        reinterpret_cast<IMG_INFO*>(img)->imgstat(img, stdout);
     }
 
     tsk_img_close(img);

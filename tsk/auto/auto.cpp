@@ -17,6 +17,7 @@
 #include "tsk/fs/tsk_fatxxfs.h"
 #include "tsk/img/img_writer.h"
 
+#include <memory>
 
 // @@@ Follow through some error paths for sanity check and update docs somewhere to reflect the new scheme
 
@@ -336,10 +337,13 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
         return 1;
     }
 
-    TSK_VS_INFO *vs_info;
-    // Use mm_walk to get the volumes
-    if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
+    std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs_info{
+      tsk_vs_open(m_img_info, a_start, a_vtype),
+      tsk_vs_close
+    };
 
+    // Use mm_walk to get the volumes
+    if (!vs_info) {
         /* If the error code is for encryption, we will register it.
          * If the error code is for multiple volume systems found, register the error
          * and return without trying to load a file system. Otherwise,
@@ -367,18 +371,16 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     }
     // process the volume system
     else {
-        TSK_FILTER_ENUM retval = filterVs(vs_info);
+        TSK_FILTER_ENUM retval = filterVs(vs_info.get());
         if ((retval == TSK_FILTER_STOP) || (retval == TSK_FILTER_SKIP)|| (m_stopAllProcessing))
             return m_errors.empty() ? 0 : 1;
 
         /* Walk the allocated volumes (skip metadata and unallocated volumes) */
-        if (tsk_vs_part_walk(vs_info, 0, vs_info->part_count - 1,
+        if (tsk_vs_part_walk(vs_info.get(), 0, vs_info->part_count - 1,
                 m_volFilterFlags, vsWalkCb, this)) {
             registerError();
-            tsk_vs_close(vs_info);
             return 1;
         }
-        tsk_vs_close(vs_info);
     }
     return m_errors.empty() ? 0 : 1;
 }
