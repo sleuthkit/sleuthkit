@@ -140,10 +140,10 @@ nobase_dist_data_DATA = \
 #
 
 TSK_LIBS = \
-	tsk/@TSK_LIB@ \
+	tsk/libtsk.la \
 	$(TSK_LIB_LIBS)
 
-TSK_LIB_LIBS=\
+TSK_LIB_LIBS = \
 	$(PTHREAD_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(CRYPTO_LIBS) \
@@ -739,8 +739,12 @@ endif
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
-$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la
+$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la tsk/.libs/@TSK_LIB@
 	cd bindings/java ; $(ANT) dist $(ant_args)
+
+dnl Since libtool automatically creates libtsk.so or libtsk.dylib, we add this explicit rule:
+tsk/.libs/@TSK_LIB@: tsk/libtsk.la
+	@true
 
 CLEANFILES += $(tsk_jar)
 
