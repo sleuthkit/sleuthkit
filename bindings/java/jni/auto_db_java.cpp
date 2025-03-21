@@ -450,6 +450,10 @@ TskAutoDbJava::addFsInfo(const TSK_FS_INFO* fs_info, int64_t parObjId,
 * @param dataSourceObjId  Object ID of the data source
 * @returns TSK_ERR on error, TSK_OK on success
 */
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 TSK_RETVAL_ENUM
 TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
     const TSK_FS_ATTR* fs_attr, const char* path,
@@ -472,6 +476,7 @@ TskAutoDbJava::addFsFile(TSK_FS_FILE* fs_file,
     // Add the file to the database
     return addFile(fs_file, fs_attr, path, fsObjId, parObjId, dataSourceObjId);
 }
+#pragma GCC diagnostic pop
 
 /**
 * Extract the extension from the given file name and store it in the supplied string.
@@ -673,15 +678,15 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
 
 	char *sid_str = NULL;
 	jstring sidj = NULL;	// return null across JNI if sid is not available
-	
+
 	if (tsk_fs_file_get_owner_sid(fs_file, &sid_str) == 0) {
 		if (createJString(sid_str, sidj) != TSK_OK) {
 			free(sid_str);
 			return TSK_ERR;
 		}
-		free(sid_str);	
+		free(sid_str);
 	}
-		
+
     // Add the file to the database
     jlong ret_val = m_jniEnv->CallLongMethod(m_javaDbObj, m_addFileMethodID,
         parObjId, fsObjId,
@@ -926,6 +931,10 @@ TskAutoDbJava::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObj
 * @param objId    Object ID of the created virtual dir
 * @param dataSourceObjId  Object ID of the data source
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+
 TSK_RETVAL_ENUM
 TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId,
     int64_t dataSourceObjId) {
@@ -942,6 +951,8 @@ TskAutoDbJava::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objI
     }
     return TSK_OK;
 }
+#pragma GCC diagnostic pop
+
 
 /**
 * Adds a new volume that will hold the unallocated blocks for the pool.

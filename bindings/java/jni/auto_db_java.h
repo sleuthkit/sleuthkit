@@ -30,8 +30,6 @@ using std::string;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Woverloaded-virtual"
 
 /** \internal
  * C++ class that implements TskAuto to load file metadata into a database.
@@ -245,7 +243,6 @@ class TskAutoDbJava :public TskAuto {
 };
 
 #pragma GCC diagnostic pop
-#pragma clang diagnostic pop
 
 
 #endif
