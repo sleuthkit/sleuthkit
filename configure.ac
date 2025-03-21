@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
 
-AC_INIT([sleuthkit], [4.13.0])
+AC_INIT([sleuthkit], [4.13.1])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
@@ -267,6 +267,29 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     ac_cv_header_inttypes_h=$ac_cv_header_inttypes_h
     ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
     ax_multithread=$ax_multithread])
+
+dnl ################################################################
+dnl ## Set TSK_LIB as appropriate for the host
+dnl ##
+AC_CANONICAL_HOST
+
+case "$host_os" in
+    darwin*)
+        TSK_LIB="libtsk.dylib"
+        ;;
+    linux*)
+        TSK_LIB="libtsk.so"
+        ;;
+    *)
+        TSK_LIB="libtsk.la"  # Default for unknown platforms
+        ;;
+esac
+AC_SUBST(TSK_LIB)
+dnl ################
+
+
+dnl ################################################################
+dnl ## set per-host libtool flags
 
 AC_MSG_CHECKING([if libtool needs -no-undefined flag to build shared libraries])
 case "$host" in

@@ -739,10 +739,18 @@ endif
 endif
 
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
+tsk_caseuco_jar = $(top_builddir)/case-uco/java/dist/sleuthkit-caseuco-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
-$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la
+$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la tsk/.libs/@TSK_LIB@
+	@echo '=== BEGIN manually running make as fallback ==='
+	@$(MAKE) -j1 tsk/.libs/@TSK_LIB@
+	@echo '=== END manually running make as fallback ==='
 	cd bindings/java ; $(ANT) dist $(ant_args)
+
+dnl Since libtool automatically creates libtsk.so or libtsk.dylib, we add this explicit rule:
+tsk/.libs/@TSK_LIB@: tsk/libtsk.la
+	@true
 
 CLEANFILES += $(tsk_jar)
 
@@ -758,9 +766,9 @@ bindings_java_jni_libtsk_jni_la_SOURCES = \
 	bindings/java/jni/dataModel_SleuthkitJNI.cpp \
 	bindings/java/jni/dataModel_SleuthkitJNI.h
 
-tsk_caseuco_jar = $(top_builddir)/case-uco/java/dist/sleuthkit-caseuco-$(PACKAGE_VERSION).jar
 
-$(tsk_caseuco_jar):
+$(tsk_caseuco_jar): $(tsk_jar)
+	@$(MAKE) -j1 tsk/.libs/@TSK_LIB@
 	cd case-uco/java ; $(ANT) $(ant_args)
 
 CLEANFILES += $(tsk_caseuco_jar)
