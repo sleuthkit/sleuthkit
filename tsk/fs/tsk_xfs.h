@@ -27,7 +27,6 @@ typedef uint64_t XFS_AGNUM_T;
 typedef uint32_t xfs_dir2_data_aoff_t;   /* argument form */
 typedef uint32_t xfs_dir2_dataptr_t;
 
-#define _MSC_VER  // Uncomment for MSVC, comment for GCC/Clang
 #ifdef _MSC_VER
     // For MSVC
     #define __round_mask(x, y) ((x) < (y) ? 0 : ((y) - 1))
