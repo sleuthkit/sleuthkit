@@ -718,9 +718,9 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
         && (fs_attr->flags & TSK_FS_ATTR_NONRES)
         && (fs_attr->nrd.allocsize > fs_attr->nrd.initsize)) {
-        strcat(name, "-slack");
+        strncat(name, "-slack", 6);
         if (strlen(extension) > 0) {
-            strcat(extension, "-slack");
+            strncat(extension, "-slack", 6);
         }
         jstring slackNamej;
         if (createJString(name, slackNamej) != TSK_OK) {
