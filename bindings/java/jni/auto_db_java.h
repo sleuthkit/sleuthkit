@@ -28,6 +28,11 @@ using std::string;
 #include "jni.h"
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Woverloaded-virtual"
+
 /** \internal
  * C++ class that implements TskAuto to load file metadata into a database.
  * This is used by the TskCaseDb class.
@@ -122,7 +127,7 @@ class TskAutoDbJava :public TskAuto {
     int64_t m_curFsId;      ///< Object ID of file system currently being processed
     int64_t m_curFileId;    ///< Object ID of file currently being processed
     TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed
-    int64_t m_curUnallocDirId;	
+    int64_t m_curUnallocDirId;
     string m_curDirPath;		//< Path of the current directory being processed
     tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath
     string m_curImgTZone;
@@ -182,7 +187,7 @@ class TskAutoDbJava :public TskAuto {
         TskAutoDbJava & tskAutoDbJava;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         TSK_DADDR_T curRangeStart;
         int64_t size;
         const int64_t minChunkSize;
@@ -238,5 +243,9 @@ class TskAutoDbJava :public TskAuto {
     TSK_RETVAL_ENUM getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPartInfo);
     TSK_RETVAL_ENUM getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo);
 };
+
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
+
 
 #endif
