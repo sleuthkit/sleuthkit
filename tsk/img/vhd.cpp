@@ -267,10 +267,12 @@ vhdi_open(int a_num_img,
     else {
         img_info->sector_size = 512;
     }
+
     img_info->itype = TSK_IMG_TYPE_VHD_VHD;
-    img_info->read = &vhdi_image_read;
-    img_info->close = &vhdi_image_close;
-    img_info->imgstat = &vhdi_image_imgstat;
+
+    vhdi_info->img_info.read = &vhdi_image_read;
+    vhdi_info->img_info.close = &vhdi_image_close;
+    vhdi_info->img_info.imgstat = &vhdi_image_imgstat;
 
     // initialize the read lock
     tsk_init_lock(&(vhdi_info->read_lock));

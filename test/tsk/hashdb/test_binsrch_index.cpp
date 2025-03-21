@@ -26,8 +26,9 @@ void test_hdb_binsrch_idx_init_hash_type_info(
      **/
     hdb_binsrch_info->hash_type = TSK_HDB_HTYPE_INVALID_ID;
 
-    TSK_TCHAR *db_name_cpy = (TSK_TCHAR *)tsk_malloc((TSTRLEN(db_name) + 1) * sizeof(TSK_TCHAR));
-    TSTRNCPY(db_name_cpy, db_name, TSTRLEN(db_name) + 1);
+    const auto db_name_cpy_len = TSTRLEN(db_name);
+    TSK_TCHAR *db_name_cpy = (TSK_TCHAR *)tsk_malloc((db_name_cpy_len + 1) * sizeof(TSK_TCHAR));
+    TSTRNCPY(db_name_cpy, db_name, db_name_cpy_len + 1);
     hdb_binsrch_info->base.db_fname = db_name_cpy;
 
     int ret_val = hdb_binsrch_idx_init_hash_type_info(hdb_binsrch_info.get(), htype);

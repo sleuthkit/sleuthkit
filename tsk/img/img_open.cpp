@@ -16,6 +16,7 @@
 
 #include "tsk_img_i.h"
 #include "img_open.h"
+#include "legacy_cache.h"
 
 #include "raw.h"
 #include "logical_img.h"
@@ -73,7 +74,7 @@ bool sector_size_ok(unsigned int sector_size) {
 }
 
 void img_info_deleter(TSK_IMG_INFO* img_info) {
-    img_info->close(img_info);
+    reinterpret_cast<IMG_INFO*>(img_info)->close(img_info);
 }
 
 std::unique_ptr<TSK_IMG_INFO, decltype(&img_info_deleter)>
@@ -177,9 +178,11 @@ img_open_detect_type(
 
     enum Result { OK, UNRECOGNIZED, FAIL };
 
+#if HAVE_LIBEWF || HAVE_LIBAFF4 || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBQCOW
     const auto ok_nonnull = [](TSK_IMG_INFO* img_info) {
         return img_info ? OK : UNRECOGNIZED;
     };
+#endif
 
 #if HAVE_LIBAFFLIB
     const auto ok_aff = [](TSK_IMG_INFO* img_info) {
@@ -293,8 +296,11 @@ TSK_IMG_INFO* img_open(
         return nullptr;
     }
 
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info.get());
+
     /* we have a good img_info, set up the cache lock */
-    tsk_init_lock(&(img_info->cache_lock));
+    iif->cache = new LegacyCache();
+    iif->cache_read = tsk_img_read_legacy;
 
     return img_info.release();
 }
@@ -563,11 +569,15 @@ tsk_img_open_external(
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
     img_info->size = size;
     img_info->sector_size = sector_size ? sector_size : 512;
-    img_info->read = read;
-    img_info->close = close;
-    img_info->imgstat = imgstat;
 
-    tsk_init_lock(&(img_info->cache_lock));
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(img_info);
+    iif->cache_read = tsk_img_read_legacy;
+    iif->read = read;
+    iif->close = close;
+    iif->imgstat = imgstat;
+
+    iif->cache = new LegacyCache();
+
     return img_info;
 }
 
@@ -691,8 +701,13 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     if (!a_img_info) {
         return;
     }
-    tsk_deinit_lock(&(a_img_info->cache_lock));
-    a_img_info->close(a_img_info);
+
+    IMG_INFO* iif = reinterpret_cast<IMG_INFO*>(a_img_info);
+
+    auto cache = static_cast<LegacyCache*>(iif->cache);
+    delete cache;
+
+    iif->close(a_img_info);
 }
 
 /* tsk_img_malloc - tsk_malloc, then set image tag
@@ -706,6 +721,7 @@ tsk_img_malloc(size_t a_len)
         return nullptr;
     }
     imgInfo->tag = TSK_IMG_INFO_TAG;
+    reinterpret_cast<IMG_INFO*>(imgInfo)->cache = nullptr;
     return imgInfo;
 }
 

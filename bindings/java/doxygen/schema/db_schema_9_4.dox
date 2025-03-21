@@ -256,11 +256,11 @@ Stores artifacts associated with objects.
 Additional information for artifacts that are analysis results
 - **artifact_obj_id** - Object id of the associated artifact (artifact_obj_id column in blackboard_artifacts)
 - **significance** - Significance to show if the result shows the object is relevant (as org.sleuthkit.datamodel.Score.Significance enum)
-- **method_category** - Category of the analysis method used (as org.sleuthkit.datamodel.Score.MethodCategory enum)
+- **priority** - Priority of the result (as org.sleuthkit.datamodel.Score.Priority enum)
 - **conclusion** - Optional, text description of the conclusion of the analysis method. 
 - **configuration** - Otional, text description of the analysis method configuration (such as what hash set or keyword list was used)
 - **justification** - Optional, text description of justification of the conclusion and significance. 
-- **ignore_score** - True (1) if score should be ignored when calculating aggregate score, false (0) otherwise. This allows users to ignore a false positive.
+- **ignore_score** - True (1) if score should be ignored when calculating aggregate score, false (0) otherwise. This allows users to ignore a false positive. This is not currently used in the Java code when calculating the aggregate score. 
 
 ## tsk_data_artifacts
 Additional information for artifacts that store extracted data. 
