@@ -718,10 +718,15 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
         && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
         && (fs_attr->flags & TSK_FS_ATTR_NONRES)
         && (fs_attr->nrd.allocsize > fs_attr->nrd.initsize)) {
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
         strncat(name, "-slack", 6);
         if (strlen(extension) > 0) {
             strncat(extension, "-slack", 6);
         }
+#pragma GCC diagnostic pop
+
         jstring slackNamej;
         if (createJString(name, slackNamej) != TSK_OK) {
             free(name);
