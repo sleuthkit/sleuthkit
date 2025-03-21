@@ -474,9 +474,9 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
 
         /* do some sanity checks on the deleted entries
          */
+	uint16_t idxlen = tsk_getu16(fs->endian, a_idxe->idxlen);
         if ((tsk_getu16(fs->endian, a_idxe->strlen) == 0) ||
-            (((uintptr_t) a_idxe + tsk_getu16(fs->endian,
-                        a_idxe->idxlen)) > endaddr_alloc)) {
+            ((uintptr_t) a_idxe + idxlen > endaddr_alloc)) {
 
             /* name space checks */
             if ((fname->nspace != NTFS_FNAME_POSIX) &&
@@ -513,7 +513,12 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                 continue;
             }
         }
-
+	// WARNING: tsk_UTF16toUTF8 used in ntfs_dent_copy_short_only cannot check for
+	// all out of bounds cases.
+        if ((uintptr_t) a_idxe + idxlen > endaddr_alloc) {
+            a_idxe = (ntfs_idxentry *) ((uintptr_t) a_idxe + 4);
+            continue;
+	}
 
         /* For all fname entries, there will exist a DOS style 8.3
          * entry.
