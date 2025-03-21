@@ -4253,7 +4253,7 @@ btrfs_fsstat_print_incompat_flags(FILE * a_file, uint64_t a_flags)
         "DEFAULT_SUBVOL",
         "MIXED_GROUPS",
         "COMPRESS_LZO",
-        "COMPRESS_LZOv2",
+        "COMPRESS_ZSTD",
         "BIG_METADATA",
         "EXTENDED_IREF",
         "RAID56",

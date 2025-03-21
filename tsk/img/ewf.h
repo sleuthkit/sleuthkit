@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "../base/tsk_os_cpp.h"
+#include "tsk_img_i.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +35,7 @@ extern "C" {
         unsigned int a_ssize);
 
     typedef struct {
-        TSK_IMG_INFO img_info;
+        IMG_INFO img_info;
         libewf_handle_t *handle;
         char md5hash[33];
         int md5hash_isset;
