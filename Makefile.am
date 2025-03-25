@@ -99,6 +99,7 @@ nobase_include_HEADERS = \
 	tsk/pool/pool_compat.hpp \
 	tsk/pool/tsk_apfs.h \
 	tsk/pool/tsk_apfs.hpp \
+	tsk/pool/tsk_lvm.hpp \
 	tsk/pool/tsk_pool.h \
 	tsk/pool/tsk_pool.hpp \
 	tsk/tsk_incs.h \
