@@ -29,7 +29,7 @@
  --*/
 
 #if HAVE_CONFIG_H
-#include "../tsk_config.h"
+#include "tsk/tsk_config.h"
 #endif
 
 #ifdef TSK_WIN32

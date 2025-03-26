@@ -18,7 +18,7 @@
 #if HAVE_LIBEWF
 #include "ewf.h"
 
-#include "../base/tsk_os_cpp.h"
+#include "tsk/base/tsk_os_cpp.h"
 
 #include <algorithm>
 #include <cctype>

@@ -15,7 +15,7 @@
 
 #include "tsk_db_sqlite.h"
 #include "guid.h"
-#include "../img/pool.hpp"
+#include "tsk/img/pool.hpp"
 #include <string.h>
 #include <sstream>
 #include <algorithm>

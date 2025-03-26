@@ -28,11 +28,11 @@
 #ifndef _REJISTRY_LIBREJISTRY_H
 #define _REJISTRY_LIBREJISTRY_H
 
-#include "../src/RegistryHive.h"
-#include "../src/RegistryHiveFile.h"
-#include "../src/RegistryHiveBuffer.h"
-#include "../src/RegistryKey.h"
-#include "../src/RegistryValue.h"
-#include "../src/RejistryException.h"
+#include "rejistry++/src/RegistryHive.h"
+#include "rejistry++/src/RegistryHiveFile.h"
+#include "rejistry++/src/RegistryHiveBuffer.h"
+#include "rejistry++/src/RegistryKey.h"
+#include "rejistry++/src/RegistryValue.h"
+#include "rejistry++/src/RejistryException.h"
 
 #endif

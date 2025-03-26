@@ -15,7 +15,7 @@
 #define _TSK_IMG_AFF4_H
 
 #if HAVE_CONFIG_H
-#include "../tsk_config.h"
+#include "tsk/tsk_config.h"
 #endif
 
 #if HAVE_LIBAFF4

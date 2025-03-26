@@ -7,13 +7,13 @@
  *
  * This software is distributed under the Common Public License 1.0
  */
-#include "../libtsk.h"
+#include "tsk/libtsk.h"
 
 #include "decmpfs.h"
 #include "tsk_fs_i.h"
 
-#include "../pool/apfs_pool_compat.hpp"
-#include "../img/pool.hpp"
+#include "tsk/pool/apfs_pool_compat.hpp"
+#include "tsk/img/pool.hpp"
 #include "apfs_compat.hpp"
 
 #include <cstring>

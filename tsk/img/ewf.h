@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#include "../base/tsk_os_cpp.h"
+#include "tsk/base/tsk_os_cpp.h"
 #include "tsk_img_i.h"
 
 #ifdef __cplusplus
