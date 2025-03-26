@@ -9,8 +9,8 @@
  * Brian Carrier.
  */
 
-/* 
- * Header files for EWF-specific data structures and functions. 
+/*
+ * Header files for EWF-specific data structures and functions.
  */
 
 #ifndef _TSK_IMG_EWF_H
@@ -19,13 +19,13 @@
 #if HAVE_LIBEWF
 
 #include <libewf.h>
-#include <string>
 
-// libewf version 2 no longer defines LIBEWF_HANDLE
-#undef HAVE_LIBEWF_V2_API
-#if !defined( LIBEWF_HANDLE )
-#define HAVE_LIBEWF_V2_API
-#endif
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "../base/tsk_os_cpp.h"
+#include "tsk_img_i.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,20 +35,22 @@ extern "C" {
         unsigned int a_ssize);
 
     typedef struct {
-        TSK_IMG_INFO img_info;
+        IMG_INFO img_info;
         libewf_handle_t *handle;
         char md5hash[33];
         int md5hash_isset;
         char sha1hash[41];
         int sha1hash_isset;
-        uint8_t used_ewf_glob;  // 1 if libewf_glob was used during open
         tsk_lock_t read_lock;   ///< Lock for reads since libewf is not thread safe -- only works if you have a single instance of EWF_INFO for all threads.
     } IMG_EWF_INFO;
 
-    
+
 #ifdef __cplusplus
 }
 #endif
     extern std::string ewf_get_details(IMG_EWF_INFO *);
+
+    std::optional<std::vector<TSK_TSTRING>>
+    glob_E01(const TSK_TCHAR* image_native);
 #endif
 #endif

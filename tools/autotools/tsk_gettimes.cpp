@@ -1,6 +1,6 @@
 /*
  ** tsk_gettimes
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
@@ -34,7 +34,7 @@ usage()
                 "\t-z: Time zone of original machine (i.e. EST5EDT or GMT) (only useful with -l)\n");
     tsk_fprintf(stderr,
                 "\t-s seconds: Time skew of original machine (in seconds) (only useful with -l & -m)\n");
-    
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 
     exit(1);
 }
@@ -50,7 +50,7 @@ public:
     virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
-    
+
 private:
     int m_curVolAddr;
     int m_curPoolVol;
@@ -76,7 +76,7 @@ TskGetTimes::TskGetTimes(int32_t a_secSkew, bool a_compute_hash)
 }
 
 // Print errors as they are encountered
-uint8_t TskGetTimes::handleError() 
+uint8_t TskGetTimes::handleError()
 {
     fprintf(stderr, "%s", tsk_error_get());
     return 0;
@@ -92,22 +92,24 @@ TSK_RETVAL_ENUM TskGetTimes::processFile(TSK_FS_FILE * /*fs_file*/, const char *
 TSK_FILTER_ENUM
 TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
 {
-    TSK_TCHAR volName[65];
+    // "vol%d/poolVol%d/" is at most 32 characters long, 12 for the fixed
+    // characters and 10 each for the max int value of 2^31.
+    TSK_TCHAR volName[33];
     if (m_curVolAddr > -1) {
-        TSNPRINTF(volName, 32, _TSK_T("vol%d/"), m_curVolAddr);
+        if (m_curPoolVol > -1) {
+            TSNPRINTF(volName, 33, _TSK_T("vol%d/poolVol%d/"), m_curVolAddr, m_curPoolVol
+            );
+        }
+        else {
+          TSNPRINTF(volName, 33, _TSK_T("vol%d/"), m_curVolAddr);
+        }
     }
     else {
         volName[0] = '\0';
     }
 
-    TSK_TCHAR poolVolName[33];
-    if (m_curPoolVol > -1) {
-        TSNPRINTF(poolVolName, 32, _TSK_T("poolVol%d/"), m_curPoolVol);
-        TSTRNCAT(volName, poolVolName, 32);
-    }
-
     TSK_FS_FLS_FLAG_ENUM fls_flags = (TSK_FS_FLS_FLAG_ENUM)(TSK_FS_FLS_MAC | TSK_FS_FLS_DIR | TSK_FS_FLS_FILE | TSK_FS_FLS_FULL);
-    if(m_compute_hash){
+    if (m_compute_hash) {
         fls_flags = (TSK_FS_FLS_FLAG_ENUM)(fls_flags | TSK_FS_FLS_HASH);
     }
 
@@ -127,7 +129,7 @@ TskGetTimes::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 TSK_FILTER_ENUM
-TskGetTimes::filterPool(const TSK_POOL_INFO * pool_info)
+TskGetTimes::filterPool([[maybe_unused]] const TSK_POOL_INFO * pool_info)
 {
     // There's nothing to do, but we need to override this to allow the pool
     // to be processed.
@@ -153,6 +155,7 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp;
     int32_t sec_skew = 0;
 	bool do_hash = false;
+    const char* password = "";
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -168,15 +171,15 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:s:mvVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:k:s:mvVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
-            
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -187,7 +190,7 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-                
+
 
 
         case _TSK_T('i'):
@@ -202,13 +205,17 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-                
+
         case _TSK_T('s'):
             sec_skew = TATOI(OPTARG);
             break;
 
         case _TSK_T('m'):
             do_hash = true;
+            break;
+
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
             break;
 
         case _TSK_T('v'):
@@ -218,7 +225,7 @@ main(int argc, char **argv1)
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
-                
+
         case 'z':
             {
                 TSK_TCHAR envstr[32];
@@ -227,12 +234,12 @@ main(int argc, char **argv1)
                     tsk_fprintf(stderr, "error setting environment");
                     exit(1);
                 }
-                
+
                 /* we should be checking this somehow */
                 TZSET();
             }
             break;
-                
+
         }
     }
 
@@ -244,16 +251,17 @@ main(int argc, char **argv1)
     }
 
     TskGetTimes tskGetTimes(sec_skew, do_hash);
+    tskGetTimes.setFileSystemPassword(password);
     if (tskGetTimes.openImage(argc - OPTIND, &argv[OPTIND], imgtype,
             ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
-    
+
     if (tskGetTimes.findFilesInImg()) {
         // we already logged the errors
         exit(1);
     }
-    
+
     exit(0);
 }

@@ -26,7 +26,7 @@
  *
  */
 
-// Local includes 
+// Local includes
 #include "RegistryKey.h"
 #include "RejistryException.h"
 

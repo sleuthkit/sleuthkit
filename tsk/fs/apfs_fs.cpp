@@ -31,7 +31,7 @@ void APFSJObjTree::set_snapshot(uint64_t snap_xid) {
   // This type isn't copyable or moveable, so we have to use in-place allocation
   // TODO(JTS): Refactor APFSObjects so that they can be move assigned
   _jobj_root.~APFSJObjBtreeNode();
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
   new (&_jobj_root) APFSJObjBtreeNode(
       &_obj_root, _obj_root.find(_root_tree_oid)->value->paddr,
       _crypto.key.get());
@@ -47,7 +47,7 @@ APFSJObjTree::crypto::crypto(const APFSFileSystem::crypto_info_t& crypto) {
     std::memcpy(key.get(), crypto.vek, 0x20);
     password = crypto.password;
 
-#ifdef HAVE_LIBOPENSSL
+#ifdef HAVE_LIBCRYPTO
     decryptor = std::make_unique<aes_xts_decryptor>(
         aes_xts_decryptor::AES_128, key.get(), nullptr, APFS_CRYPTO_SW_BLKSIZE);
 #endif

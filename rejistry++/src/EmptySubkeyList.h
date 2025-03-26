@@ -43,9 +43,9 @@ namespace Rejistry {
     class EmptySubkeyList : public SubkeyListRecord {
     public:
         EmptySubkeyList(RegistryByteBuffer * buf, uint32_t offset) : SubkeyListRecord(buf, offset) {}
-        
+
         virtual ~EmptySubkeyList() {}
-    
+
         virtual std::vector<NKRecord *> getSubkeys() const {
             return std::vector<NKRecord *>();
         }

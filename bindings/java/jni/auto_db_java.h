@@ -1,5 +1,5 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2020 Brian Carrier.  All Rights reserved
@@ -28,9 +28,12 @@ using std::string;
 #include "jni.h"
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
+
 /** \internal
- * C++ class that implements TskAuto to load file metadata into a database. 
- * This is used by the TskCaseDb class. 
+ * C++ class that implements TskAuto to load file metadata into a database.
+ * This is used by the TskCaseDb class.
  */
 class TskAutoDbJava :public TskAuto {
   public:
@@ -56,22 +59,22 @@ class TskAutoDbJava :public TskAuto {
     const std::string getCurDir();
 
     /**
-     * Sets whether or not the file systems for an image should be added when 
-     * the image is added to the case database. The default value is true. 
+     * Sets whether or not the file systems for an image should be added when
+     * the image is added to the case database. The default value is true.
      */
     void setAddFileSystems(bool addFileSystems);
 
     /**
-     * Skip processing of orphans on FAT filesystems.  
+     * Skip processing of orphans on FAT filesystems.
      * This will make the loading of the database much faster
-     * but you will not have all deleted files.  Default value is false. 
+     * but you will not have all deleted files.  Default value is false.
      * @param noFatFsOrphans flag set to true if to skip processing orphans on FAT fs
      */
     virtual void setNoFatFsOrphans(bool noFatFsOrphans);
 
     /**
      * When enabled, records for unallocated file system space will be added to the database. Default value is false.
-     * @param addUnallocSpace If true, create records for contiguous unallocated file system sectors. 
+     * @param addUnallocSpace If true, create records for contiguous unallocated file system sectors.
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace);
 
@@ -98,7 +101,7 @@ class TskAutoDbJava :public TskAuto {
     uint8_t addFilesInImgToDb();
 
     /**
-     * 
+     *
      */
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
@@ -122,7 +125,7 @@ class TskAutoDbJava :public TskAuto {
     int64_t m_curFsId;      ///< Object ID of file system currently being processed
     int64_t m_curFileId;    ///< Object ID of file currently being processed
     TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed
-    int64_t m_curUnallocDirId;	
+    int64_t m_curUnallocDirId;
     string m_curDirPath;		//< Path of the current directory being processed
     tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath
     string m_curImgTZone;
@@ -133,7 +136,7 @@ class TskAutoDbJava :public TskAuto {
     bool m_addFileSystems;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
-    int64_t m_minChunkSize; ///< -1 for no minimum, 0 for no chunking at all, greater than 0 to wait for that number of chunks before writing to the database 
+    int64_t m_minChunkSize; ///< -1 for no minimum, 0 for no chunking at all, greater than 0 to wait for that number of chunks before writing to the database
     int64_t m_maxChunkSize; ///< Max number of unalloc bytes to process before writing to the database, even if there is no natural break. -1 for no chunking
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
@@ -182,7 +185,7 @@ class TskAutoDbJava :public TskAuto {
         TskAutoDbJava & tskAutoDbJava;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         TSK_DADDR_T curRangeStart;
         int64_t size;
         const int64_t minChunkSize;
@@ -200,7 +203,7 @@ class TskAutoDbJava :public TskAuto {
 
     TSK_RETVAL_ENUM addUnallocatedPoolBlocksToDb(size_t & numPool);
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
-    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_IMG_INFO* curImgInfo, const TSK_DB_FS_INFO & dbFsInfo);
     TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);
     TSK_RETVAL_ENUM addUnallocVsSpaceToDb(size_t & numVsP);
     TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
@@ -235,7 +238,11 @@ class TskAutoDbJava :public TskAuto {
         int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t& objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocatedPoolVolume(int vol_index, int64_t parObjId, int64_t& objId);
-
+    TSK_RETVAL_ENUM getVsPartById(int64_t objId, TSK_VS_PART_INFO & vsPartInfo);
+    TSK_RETVAL_ENUM getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo);
 };
+
+#pragma GCC diagnostic pop
+
 
 #endif

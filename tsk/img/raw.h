@@ -2,12 +2,12 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
 
-/* 
+/*
  * Contains the single raw data file-specific functions and structures.
  */
 
@@ -15,6 +15,7 @@
 #define _RAW_H
 
 #include "img_writer.h"
+#include "tsk_img_i.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,11 +37,12 @@ extern "C" {
     } IMG_SPLIT_CACHE;
 
     typedef struct {
-        TSK_IMG_INFO img_info;
+        IMG_INFO img_info;
         uint8_t is_winobj;
         TSK_IMG_WRITER *img_writer;
 
-        // the following are protected by cache_lock in IMG_INFO
+        tsk_lock_t read_lock;
+        // the following are protected by read_lock
         TSK_OFF_T *max_off;
         int *cptr;              /* exists for each image - points to entry in cache */
         IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */

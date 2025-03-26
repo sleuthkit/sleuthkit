@@ -1,14 +1,15 @@
 /*
  * imgstat
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
  */
 #include "tsk/tsk_tools_i.h"
+#include "tsk/img/tsk_img_i.h"
 
 static TSK_TCHAR *progname;
 
@@ -62,6 +63,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -117,7 +119,7 @@ main(int argc, char **argv1)
         tsk_printf("%s\n", str);
     }
     else {
-        img->imgstat(img, stdout);
+        reinterpret_cast<IMG_INFO*>(img)->imgstat(img, stdout);
     }
 
     tsk_img_close(img);

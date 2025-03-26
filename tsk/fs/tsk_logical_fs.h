@@ -19,17 +19,22 @@
 extern "C" {
 #endif
 
-#define LOGICAL_ROOT_INUM 0x10000
-#define LOGICAL_INUM_DIR_INC 0x10000
+#define LOGICAL_INUM_DIR_MASK  0xffffffff00000000
+#define LOGICAL_INUM_FILE_MASK 0x00000000ffffffff
+
+#define LOGICAL_ROOT_INUM 0x100000000
+#define LOGICAL_INUM_DIR_INC 0x100000000
 #define LOGICAL_BLOCK_SIZE TSK_IMG_INFO_CACHE_LEN
 #define LOGICAL_MAX_PATH_UNICODE 32767
+#define LOGICAL_INUM_DIR_MAX 0xffffffff00000000
+#define LOGICAL_MAX_ATTR_RUN 0x7fffffff // see fs_attr.c
 
 /*
 * Structure of an logcial file system handle.
 */
 typedef struct {
 	TSK_FS_INFO fs_info;    /* super class */
-	TSK_TCHAR * base_path;  // Base path - pointer to data in IMG_DIR_INFO 
+	TSK_TCHAR * base_path;  // Base path - pointer to data in IMG_DIR_INFO
 } LOGICALFS_INFO;
 
 typedef enum  {

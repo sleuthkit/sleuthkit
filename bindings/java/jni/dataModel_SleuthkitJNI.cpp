@@ -1,6 +1,6 @@
 /*
  ** dataModel_SleuthkitJNI
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2018 Brian Carrier.  All Rights reserved
@@ -43,9 +43,9 @@ static std::vector<TSK_HDB_INFO *> hashDbs;
 * TSK_FS_FILE still needs be maintained for opening and closing.
 */
 typedef struct {
-    uint32_t tag; 
-    TSK_FS_FILE *fs_file; 
-    TSK_FS_ATTR *fs_attr; 
+    uint32_t tag;
+    TSK_FS_FILE *fs_file;
+    TSK_FS_ATTR *fs_attr;
 } TSK_JNI_FILEHANDLE;
 #define TSK_JNI_FILEHANDLE_TAG 0x10101214
 
@@ -55,7 +55,7 @@ typedef struct {
 /**
 * Sets flag to throw an TskCoreException back up to the Java code with a specific message.
 * Note: exception is thrown to Java code after the native function returns
-* not when setThrowTskCoreError() is invoked - this must be addressed in the code following the exception 
+* not when setThrowTskCoreError() is invoked - this must be addressed in the code following the exception
 * @param the java environment to send the exception to
 * @param msg message string
  */
@@ -70,7 +70,7 @@ setThrowTskCoreError(JNIEnv * env, const char *msg)
 /**
 * Sets flag to throw an TskCoreException back up to the Java code with the currently set error message.
 * Note: exception is thrown to Java code after the native function returns
-* not when setThrowTskCoreError() is invoked - this must be addressed in the code following the exception 
+* not when setThrowTskCoreError() is invoked - this must be addressed in the code following the exception
 * @param the java environment to send the exception to
 */
 static void
@@ -83,7 +83,7 @@ setThrowTskCoreError(JNIEnv * env)
 /**
 * Sets flag to throw an TskDataException back up to the Java code with a specific message.
 * Note: exception is thrown to Java code after the native function returns
-* not when setThrowTskDataError() is invoked - this must be addressed in the code following the exception 
+* not when setThrowTskDataError() is invoked - this must be addressed in the code following the exception
 * @param the java environment to send the exception to
 * @param msg message string
  */
@@ -99,7 +99,7 @@ setThrowTskDataError(JNIEnv * env, const char *msg)
 /**
 * Sets flag to throw an TskDataException back up to the Java code with the currently set error message.
 * Note: exception is thrown to Java code after the native function returns
-* not when setThrowTskDataError() is invoked - this must be addressed in the code following the exception 
+* not when setThrowTskDataError() is invoked - this must be addressed in the code following the exception
 * @param the java environment to send the exception to
 */
 static void
@@ -212,7 +212,9 @@ castJniFileHandle(JNIEnv * env, jlong ptr)
     return lcl;
 }
 
-static TskCaseDb * 
+// 2025-03-01 - slg - this function no longer used?
+#if 0
+static TskCaseDb *
 castCaseDb(JNIEnv * env, jlong ptr)
 {
     TskCaseDb *lcl = ((TskCaseDb *) ptr);
@@ -224,13 +226,14 @@ castCaseDb(JNIEnv * env, jlong ptr)
 
     return lcl;
 }
+#endif
 
 /**
  * Convert a jstring (UTF-8) to a TCHAR to pass into TSK methods.
  * @param buffer Buffer to store resulting string into
  * @param size Length of buffer
  * @param strJ string to convert
- * @returns 1 on error 
+ * @returns 1 on error
  */
 static int
 toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
@@ -278,7 +281,7 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbOpenNat(JNIEnv * env,
-    jclass obj, jstring pathJ) 
+    [[maybe_unused]] jclass obj, jstring pathJ)
 {
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
@@ -288,7 +291,7 @@ JNIEXPORT jint JNICALL
         setThrowTskCoreError(env, tsk_error_get_errstr());
         return -1;
     }
-    
+
     // The index of the pointer in the vector is used as a handle for the
     // database.
     hashDbs.push_back(db);
@@ -304,7 +307,7 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbNewNat(JNIEnv * env,
-    jclass obj, jstring pathJ)
+    [[maybe_unused]] jclass obj, jstring pathJ)
 {
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
@@ -321,7 +324,7 @@ JNIEXPORT jint JNICALL
 
     // The index of the pointer in the vector is used as a handle for the
     // database.
-    hashDbs.push_back(db);    
+    hashDbs.push_back(db);
     return (jint)hashDbs.size();
 }
 
@@ -334,7 +337,7 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
-    JNIEnv *env, jclass obj, jint dbHandle)
+    JNIEnv *env, [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -359,7 +362,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCommitTransactionNat(
-    JNIEnv *env, jclass obj, jint dbHandle)
+    JNIEnv *env, [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -384,7 +387,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCommitTransactionNat(
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbRollbackTransactionNat(
-    JNIEnv *env, jclass obj, jint dbHandle)
+    JNIEnv *env, [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -413,7 +416,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbRollbackTransactionNat(
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbAddEntryNat(JNIEnv * env,
-    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J,
+    [[maybe_unused]] jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J,
     jstring commentJ, jint dbHandle)
 {
     if((size_t) dbHandle > hashDbs.size()) {
@@ -438,7 +441,7 @@ JNIEXPORT jint JNICALL
     const char * sha1 = hashSha1J ? (const char *) env->GetStringUTFChars(hashSha1J, &isCopy) : NULL;
     const char * sha256 = hashSha256J ? (const char *) env->GetStringUTFChars(hashSha256J, &isCopy) : NULL;
     const char * comment = commentJ ? (const char *) env->GetStringUTFChars(commentJ, &isCopy) : NULL;
-   
+
     if (tsk_hdb_add_entry(db, name, md5, sha1, sha256, comment)) {
         setThrowTskCoreError(env, tsk_error_get_errstr());
     }
@@ -447,7 +450,7 @@ JNIEXPORT jint JNICALL
         env->ReleaseStringUTFChars(filenameJ, (const char *) name);
     }
 
-    if (hashMd5J) { 
+    if (hashMd5J) {
         env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
     }
 
@@ -475,7 +478,7 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jboolean JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsUpdateableNat(JNIEnv * env,
-    jclass obj, jint dbHandle)
+    [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -501,7 +504,7 @@ JNIEXPORT jboolean JNICALL
  */
 JNIEXPORT jboolean JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsReindexableNat(JNIEnv * env,
-    jclass obj, jint dbHandle)
+    [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -514,10 +517,10 @@ JNIEXPORT jboolean JNICALL
         return (jboolean)false;
     }
 
-    return (jboolean)((tsk_hdb_uses_external_indexes(db) == 1) && 
+    return (jboolean)((tsk_hdb_uses_external_indexes(db) == 1) &&
                       (tsk_hdb_is_idx_only(db) == 0));
 }
- 
+
 /**
  * Gets the path of a hash database.
  * @param env Pointer to Java environment from which this method was called.
@@ -527,7 +530,7 @@ JNIEXPORT jboolean JNICALL
  */
 JNIEXPORT jstring JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbPathNat(JNIEnv * env,
-    jclass obj, jint dbHandle)
+    [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -564,7 +567,7 @@ JNIEXPORT jstring JNICALL
  */
 JNIEXPORT jstring JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexPathNat(JNIEnv * env,
-    jclass obj, jint dbHandle)
+    [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -600,12 +603,12 @@ JNIEXPORT jstring JNICALL
  * @param env Pointer to Java environment from which this method was called.
  * @param obj The Java object from which this method was called.
  * @param dbHandle A handle for the hash database.
- * @return True if the hash database is an external index serving as a 
+ * @return True if the hash database is an external index serving as a
  * database.
  */
 JNIEXPORT jboolean JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsIdxOnlyNat(JNIEnv * env,
-    jclass obj, jint dbHandle)
+    [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -629,7 +632,7 @@ JNIEXPORT jboolean JNICALL
  * @return The display name.
  */
 JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbGetDisplayName
-  (JNIEnv * env, jclass obj, jint dbHandle)
+  (JNIEnv * env, [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -657,8 +660,8 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbGetDis
  * @param dbHandle A handle for the hash database.
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCloseAll(JNIEnv * env,
-    jclass obj) 
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCloseAll([[maybe_unused]] JNIEnv * env,
+    [[maybe_unused]] jclass obj)
 {
     for (std::vector<TSK_HDB_INFO *>::iterator it = hashDbs.begin(); it != hashDbs.end(); ++it) {
         if (NULL != *it) {
@@ -677,7 +680,7 @@ JNIEXPORT void JNICALL
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbClose(JNIEnv * env,
-    jclass obj, jint dbHandle) 
+    [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -705,7 +708,7 @@ JNIEXPORT void JNICALL
  * @return True if the hash is found in the hash database, false otherwise.
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
-(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) 
+(JNIEnv * env, [[maybe_unused]] jclass obj, jstring hash, jint dbHandle)
 {
     if ((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -724,7 +727,7 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLooku
     int8_t retval = tsk_hdb_lookup_str(db, cHashStr, TSK_HDB_FLAG_QUICK, NULL, NULL);
     if (retval == -1) {
         setThrowTskCoreError(env, tsk_error_get_errstr());
-    } 
+    }
     else if (retval) {
         file_known = true;
     }
@@ -742,7 +745,7 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLooku
  * @return A HashInfo object if the hash is found, NULL otherwise.
  */
 JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
-(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
+(JNIEnv * env, [[maybe_unused]] jclass obj, jstring hash, jint dbHandle) {
     if ((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return NULL;
@@ -753,13 +756,13 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
         setThrowTskCoreError(env, "Invalid database handle");
         return NULL;
     }
-    
+
     jboolean isCopy;
     const char *inputHash = (const char *) env->GetStringUTFChars(hash, &isCopy);
-    TskHashInfo result; 
+    TskHashInfo result;
     int8_t returnCode = tsk_hdb_lookup_verbose_str(db, inputHash, (void*)&result);
     env->ReleaseStringUTFChars(hash, (const char *) inputHash);
-    
+
     if (returnCode == -1) {
         setThrowTskCoreError(env, tsk_error_get_errstr());
         return NULL;
@@ -772,10 +775,10 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
     // the Java version of a HashInfo object.
     const char *md5 = result.hashMd5.c_str();
     jstring md5j = env->NewStringUTF(md5);
-            
+
     const char *sha1 = result.hashSha1.c_str();
     jstring sha1j = env->NewStringUTF(sha1);
-            
+
     const char *sha256 = result.hashSha2_256.c_str();
     jstring sha256j = env->NewStringUTF(sha256);
 
@@ -806,13 +809,32 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
  * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
  * @param hostId Id of the host (already in the database).
+ * @param passwordJ Password for the file system or null for no password.
+ *
+ * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
+ */
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNatPassword(JNIEnv * env,
+    [[maybe_unused]] jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jstring passwordJ) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, passwordJ);
+}
+
+/*
+ * Initialize a process for adding an image to a case database.
+ *
+ * @param env Pointer to java environment.
+ * @param obj Pointer the Java class object.
+ * @param timeZone The time zone for the image.
+ * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
+ * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
+ * @param hostId Id of the host (already in the database).
  *
  * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
-    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans);
+    [[maybe_unused]] jclass obj, jobject callbackObj, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
 }
 
 /*
@@ -824,13 +846,31 @@ JNIEXPORT jlong JNICALL
  * @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
  * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
  * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
- * @param hostId The ID of the host (already in database).
  *
  * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj,
-    jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat([[maybe_unused]] JNIEnv * env, [[maybe_unused]] jclass obj,
+    jobject callbackObj, jstring timeZone, [[maybe_unused]] jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(env, obj, callbackObj, timeZone, true, addUnallocSpace, skipFatFsOrphans, NULL);
+}
+
+/*
+ * Initialize a process for adding an image to a case database.
+ *
+ * @param env Pointer to java environment.
+ * @param obj Pointer the Java class object.
+ * @param timeZone The time zone for the image.
+ * @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
+ * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
+ * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
+ * @param passwordJ Password for the file system or null for no password.
+ *
+ * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
+ */
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(JNIEnv * env, [[maybe_unused]] jclass obj,
+    jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jstring passwordJ) {
     jboolean isCopy;
 
     if (env->GetStringUTFLength(timeZone) > 0) {
@@ -866,6 +906,13 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
         return 0;
     }
 
+    if (passwordJ != NULL) {
+        jboolean isCopyPassword;
+        const char* password = (const char*)env->GetStringUTFChars(passwordJ, &isCopyPassword);
+        tskAutoJava->setFileSystemPassword(string(password));
+        env->ReleaseStringUTFChars(passwordJ, password);
+    }
+
     // set the options flags
     tskAutoJava->setAddFileSystems(addFileSystems?true:false);
     if (addFileSystems) {
@@ -893,7 +940,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
 
 /*
  * Add an image to a database using a pre-created process, which can be cancelled.
- * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an 
+ * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an
  * error, you do not need to call revert or commit and the 'process' handle will be deleted.
  *
  * @param env pointer to java environment this was called from
@@ -906,18 +953,18 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jcla
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runOpenAndAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, jstring timeZone) {
+    [[maybe_unused]] jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, jstring timeZone) {
 
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
-        setThrowTskCoreError(env, 
+        setThrowTskCoreError(env,
             "runOpenAndAddImgNat: Invalid TskAutoDbJava object passed in");
         return;
     }
 
     jboolean isCopy;
     const char *device_id = NULL;
-    if (NULL != deviceId) {    
+    if (NULL != deviceId) {
         device_id = (const char *) env->GetStringUTFChars(deviceId, &isCopy);
         if (NULL == device_id) {
             setThrowTskCoreError(env, "runOpenAndAddImgNat: Can't convert data source id string");
@@ -1008,8 +1055,8 @@ JNIEXPORT void JNICALL
 */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jlong img_id, jstring timeZone, jstring imageWriterPathJ) {
-    
+    [[maybe_unused]] jclass obj, jlong process, jstring deviceId, jlong a_img_info, jlong img_id, jstring timeZone, jstring imageWriterPathJ) {
+
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *)process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env,
@@ -1096,7 +1143,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat(JNIEnv * env,
-    jclass obj, jlong process) {
+    [[maybe_unused]] jclass obj, jlong process) {
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env,
@@ -1116,7 +1163,7 @@ JNIEXPORT void JNICALL
 */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_finishAddImgNat(JNIEnv * env,
-    jclass obj, jlong process) {
+    [[maybe_unused]] jclass obj, jlong process) {
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *)process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env,
@@ -1146,7 +1193,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_finishAddImgNat(JNIEnv * env,
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_openImgNat(JNIEnv * env,
-    jclass obj, jobjectArray paths, jint num_imgs, jint sector_size) {
+    [[maybe_unused]] jclass obj, jobjectArray paths, jint num_imgs, jint sector_size) {
     TSK_IMG_INFO *img_info;
     jboolean isCopy;
 
@@ -1188,7 +1235,7 @@ JNIEXPORT jlong JNICALL
  */
 JNIEXPORT jobjectArray JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getPathsForImageNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+    [[maybe_unused]] jclass obj, jlong a_img_info) {
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1224,7 +1271,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getPathsForImageNat(JNIEnv * env,
         }
         img_ptrs[i] = img2;
     }
-#else 
+#else
     img_ptrs = img_info->images;
 #endif
 
@@ -1242,7 +1289,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getPathsForImageNat(JNIEnv * env,
  */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getSizeForImageNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+    [[maybe_unused]] jclass obj, jlong a_img_info) {
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1259,7 +1306,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getSizeForImageNat(JNIEnv * env,
  */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getTypeForImageNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+    [[maybe_unused]] jclass obj, jlong a_img_info) {
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1276,7 +1323,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getTypeForImageNat(JNIEnv * env,
 */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getSectorSizeForImageNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+    [[maybe_unused]] jclass obj, jlong a_img_info) {
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1292,7 +1339,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getSectorSizeForImageNat(JNIEnv * env,
 */
 JNIEXPORT jstring JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getMD5HashForImageNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+    [[maybe_unused]] jclass obj, jlong a_img_info) {
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1300,7 +1347,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getMD5HashForImageNat(JNIEnv * env,
         return 0;
     }
     // env->NewStringUTF(img_ptrs[i])
-#if HAVE_LIBEWF 
+#if HAVE_LIBEWF
     if (img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
         IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)img_info;
         if (ewf_info->md5hash_isset) {
@@ -1316,7 +1363,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getMD5HashForImageNat(JNIEnv * env,
 */
 JNIEXPORT jstring JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getSha1HashForImageNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+    [[maybe_unused]] jclass obj, jlong a_img_info) {
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1324,7 +1371,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getSha1HashForImageNat(JNIEnv * env,
         return 0;
     }
     // env->NewStringUTF(img_ptrs[i])
-#if HAVE_LIBEWF 
+#if HAVE_LIBEWF
     if (img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
         IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)img_info;
         if (ewf_info->sha1hash_isset) {
@@ -1340,7 +1387,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getSha1HashForImageNat(JNIEnv * env,
 */
 JNIEXPORT jstring JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getCollectionDetailsForImageNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+    [[maybe_unused]] jclass obj, jlong a_img_info) {
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1348,7 +1395,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getCollectionDetailsForImageNat(JNIEnv
         return 0;
     }
     // env->NewStringUTF(img_ptrs[i])
-#if HAVE_LIBEWF 
+#if HAVE_LIBEWF
     if (img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
         IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)img_info;
         ewf_get_details(ewf_info);
@@ -1366,7 +1413,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getCollectionDetailsForImageNat(JNIEnv
  * @param vsOffset the offset of the volume system in bytes
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVsNat
-    (JNIEnv * env, jclass obj, jlong a_img_info, jlong vsOffset) {
+    (JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_img_info, jlong vsOffset) {
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
         //exception already set
@@ -1392,7 +1439,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVsNat
  */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
-    jclass obj, jlong a_vs_info, jlong vol_id)
+    [[maybe_unused]] jclass obj, jlong a_vs_info, jlong vol_id)
 {
     TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
     if (vs_info == 0) {
@@ -1418,7 +1465,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
 */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat(JNIEnv * env,
-    jclass obj, jlong a_img_info, jlong offset)
+    [[maybe_unused]] jclass obj, jlong a_img_info, jlong offset)
 {
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -1445,7 +1492,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openPoolNat(JNIEnv * env,
 * @param pool_block the block number of the pool volume
 */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForPoolNat
-(JNIEnv * env, jclass obj, jlong a_pool_info, jlong pool_block) {
+(JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_pool_info, jlong pool_block) {
 
     TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);
     if (pool_info == 0) {
@@ -1463,19 +1510,55 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForP
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_img_info the pointer to the parent img object
- * @param fs_offset the offset in bytes to the file system 
+ * @param fs_offset the offset in bytes to the file system
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
-    (JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset) {
+    (JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_img_info, jlong fs_offset) {
+    TSK_IMG_INFO* img_info = castImgInfo(env, a_img_info);
+    if (img_info == 0) {
+        //exception already set
+        return 0;
+    }
+
+    TSK_FS_INFO* fs_info;
+    fs_info =
+        tsk_fs_open_img(img_info, (TSK_OFF_T)fs_offset,
+            TSK_FS_TYPE_DETECT);
+    if (fs_info == NULL) {
+        setThrowTskCoreError(env, tsk_error_get());
+    }
+    return (jlong)fs_info;
+}
+
+/*
+ * Open file system with the given offset
+ * @return the created TSK_FS_INFO pointer
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the pointer to the parent img object
+ * @param fs_offset the offset in bytes to the file system
+ * @param password Password for the file system
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsDecryptNat
+    (JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_img_info, jlong fs_offset, jstring passwordJ) {
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
         //exception already set
         return 0;
     }
+
+    const char* password = NULL;
+    jboolean isCopy;
+    if (passwordJ != NULL) {
+        password = (const char*)env->GetStringUTFChars(passwordJ, &isCopy);
+    }
+
     TSK_FS_INFO *fs_info;
     fs_info =
-        tsk_fs_open_img(img_info, (TSK_OFF_T) fs_offset,
-        TSK_FS_TYPE_DETECT);
+        tsk_fs_open_img_decrypt(img_info, (TSK_OFF_T) fs_offset,
+        TSK_FS_TYPE_DETECT, password);
+    env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+
     if (fs_info == NULL) {
         setThrowTskCoreError(env, tsk_error_get());
     }
@@ -1495,7 +1578,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
  */
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
-    jclass obj, jlong a_fs_info, jlong file_id, jint attr_type, jint attr_id)
+    [[maybe_unused]] jclass obj, jlong a_fs_info, jlong file_id, jint attr_type, jint attr_id)
 {
     TSK_FS_INFO *fs_info = castFsInfo(env, a_fs_info);
     if (fs_info == 0) {
@@ -1503,7 +1586,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
         return 0;
     }
 
-    
+
     TSK_FS_FILE *file_info;
     //open file
     file_info = tsk_fs_file_open_meta(fs_info, NULL, (TSK_INUM_T) file_id);
@@ -1513,7 +1596,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
     }
 
     //open attribute
-    const TSK_FS_ATTR * tsk_fs_attr = 
+    const TSK_FS_ATTR * tsk_fs_attr =
         tsk_fs_file_attr_get_type(file_info, (TSK_FS_ATTR_TYPE_ENUM)attr_type, (uint16_t)attr_id, 1);
     if (tsk_fs_attr == NULL) {
         tsk_fs_file_close(file_info);
@@ -1522,7 +1605,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
     }
 
     //allocate file handle structure to encapsulate file and attribute
-    TSK_JNI_FILEHANDLE * fileHandle = 
+    TSK_JNI_FILEHANDLE * fileHandle =
         (TSK_JNI_FILEHANDLE *) tsk_malloc(sizeof(TSK_JNI_FILEHANDLE));
     if (fileHandle == NULL) {
         tsk_fs_file_close(file_info);
@@ -1584,7 +1667,7 @@ copyBufToByteArray(JNIEnv * env, jbyteArray jbuf, const char *buf, ssize_t len)
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
-    jclass obj, jlong a_img_info, jbyteArray jbuf, jlong offset, jlong len)
+    [[maybe_unused]] jclass obj, jlong a_img_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     //use fixed size stack-allocated buffer if possible
     char fixed_buf [FIXED_BUF_SIZE];
@@ -1648,7 +1731,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
 */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readPoolNat(JNIEnv * env,
-    jclass obj, jlong a_pool_info, jbyteArray jbuf, jlong offset, jlong len)
+    [[maybe_unused]] jclass obj, jlong a_pool_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     //use fixed size stack-allocated buffer if possible
     char fixed_buf[FIXED_BUF_SIZE];
@@ -1712,7 +1795,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readPoolNat(JNIEnv * env,
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
-    jclass obj, jlong a_vs_info, jbyteArray jbuf, jlong offset, jlong len)
+    [[maybe_unused]] jclass obj, jlong a_vs_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     //use fixed size stack-allocated buffer if possible
     char fixed_buf [FIXED_BUF_SIZE];
@@ -1777,7 +1860,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
 
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
-    jclass obj, jlong a_vol_info, jbyteArray jbuf, jlong offset, jlong len)
+    [[maybe_unused]] jclass obj, jlong a_vol_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     //use fixed size stack-allocated buffer if possible
     char fixed_buf [FIXED_BUF_SIZE];
@@ -1841,7 +1924,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
-    jclass obj, jlong a_fs_info, jbyteArray jbuf, jlong offset, jlong len)
+    [[maybe_unused]] jclass obj, jlong a_fs_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     //use fixed size stack-allocated buffer if possible
     char fixed_buf [FIXED_BUF_SIZE];
@@ -1896,7 +1979,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
 
 /**
  * Flag used by readFileNat to specify if the offset is relative to the start of the file
- * or the start of the slack space 
+ * or the start of the slack space
  */
 typedef enum {
     TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_FILE = 0x00,
@@ -1915,7 +1998,7 @@ typedef enum {
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
-    jclass obj, jlong a_file_handle, jbyteArray jbuf, jlong offset, jint offset_type, jlong len)
+    [[maybe_unused]] jclass obj, jlong a_file_handle, jbyteArray jbuf, jlong offset, jint offset_type, jlong len)
 {
     //use fixed size stack-allocated buffer if possible
     char fixed_buf [FIXED_BUF_SIZE];
@@ -1984,20 +2067,20 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
  * @returns -1 on error (and throws exception)
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDataTextNat
-  (JNIEnv *env, jclass obj, jlong a_file_handle, jstring a_tmp_path)
+  (JNIEnv *env, [[maybe_unused]] jclass obj, jlong a_file_handle, jstring a_tmp_path)
 {
     const TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_handle);
     if (file_handle == 0) {
         //exception already set
         return -1;
     }
-    
+
     // check the pointers
     if (file_handle->fs_file == NULL || file_handle->fs_file->fs_info == NULL || file_handle->fs_file->meta == NULL) {
         setThrowTskCoreError(env, "NULL pointers for istat file.");
         return -1;
     }
-    TSK_FS_INFO *fs_info = file_handle->fs_file->fs_info;   
+    TSK_FS_INFO *fs_info = file_handle->fs_file->fs_info;
 
     // open a file to write the details to
     jboolean isCopy;
@@ -2009,7 +2092,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDat
         return -1;
     }
     env->ReleaseStringUTFChars(a_tmp_path, str8);
-    
+
     if (fs_info->istat(fs_info, TSK_FS_ISTAT_RUNLIST, hFile, file_handle->fs_file->meta->addr, 0, 0) != 0) {
         fclose(hFile);
         setThrowTskCoreError(env);
@@ -2028,7 +2111,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDat
  */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat(JNIEnv * env,
-    jclass obj, jlong a_img_info)
+    [[maybe_unused]] jclass obj, jlong a_img_info)
 {
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     if (img_info == 0) {
@@ -2045,7 +2128,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat(JNIEnv * env,
  * @param a_vs_info the pointer to the volume system object
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeVsNat
-    (JNIEnv * env, jclass obj, jlong a_vs_info) {
+    (JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_vs_info) {
     TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
     if (vs_info == 0) {
         //exception already set
@@ -2061,7 +2144,7 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeVsNat
  * @param a_fs_info the pointer to the file system object
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
-    (JNIEnv * env, jclass obj, jlong a_fs_info) {
+    (JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_fs_info) {
     TSK_FS_INFO *fs_info = castFsInfo(env, a_fs_info);
     if (fs_info == 0) {
         //exception already set
@@ -2077,7 +2160,7 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
 * @param a_pool_info the pointer to the pool object
 */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closePoolNat
-(JNIEnv * env, jclass obj, jlong a_pool_info) {
+(JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_pool_info) {
     TSK_POOL_INFO *pool_info = castPoolInfo(env, a_pool_info);
     if (pool_info == 0) {
         //exception already set
@@ -2094,14 +2177,14 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closePoolNat
  */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
-    jclass obj, jlong a_file_info)
+    [[maybe_unused]] jclass obj, jlong a_file_info)
 {
     TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_info);
     if (file_handle == 0) {
         //exception already set
         return;
     }
-    
+
     TSK_FS_FILE * file_info = file_handle->fs_file;
     tsk_fs_file_close(file_info); //also closes the attribute
 
@@ -2119,7 +2202,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
  */
 JNIEXPORT jstring JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
-    jclass obj)
+    [[maybe_unused]] jclass obj)
 {
     const char *cversion = tsk_version_get_str();
     jstring jversion = (*env).NewStringUTF(cversion);
@@ -2133,7 +2216,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
  */
 JNIEXPORT jstring JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
-    (JNIEnv * env,jclass obj, jlong dbHandle)
+    (JNIEnv * env,[[maybe_unused]] jclass obj, jlong dbHandle)
 {
     TskAutoDbJava *tskAuto = ((TskAutoDbJava *) dbHandle);
     const std::string curDir = tskAuto->getCurDir();
@@ -2149,7 +2232,7 @@ JNIEXPORT jstring JNICALL
  */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
-    (JNIEnv * env, jclass obj, jstring logPath)
+    (JNIEnv * env, [[maybe_unused]] jclass obj, jstring logPath)
 {
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(logPath, &isCopy);
@@ -2170,7 +2253,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
  */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCreateIndexNat (JNIEnv * env,
-    jclass obj, jint dbHandle)
+    [[maybe_unused]] jclass obj, jint dbHandle)
 {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -2198,7 +2281,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCreateIndexNat (JNIEnv * env,
         // an NSRL hash database.
         TSNPRINTF(idx_type, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
     }
-  
+
     if (tsk_hdb_make_index(db, idx_type) != 0) {
         setThrowTskCoreError(env, tsk_error_get_errstr());
     }
@@ -2212,7 +2295,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCreateIndexNat (JNIEnv * env,
  * @return True if the index exists.
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexExistsNat
-  (JNIEnv * env, jclass obj, jint dbHandle) {
+  (JNIEnv * env, [[maybe_unused]] jclass obj, jint dbHandle) {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return (jboolean)false;
@@ -2236,8 +2319,8 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndex
  * @return size of device, set throw jni exception on error
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSizeNat
-  (JNIEnv * env, jclass obj, jstring devPathJ) {
-     
+  (JNIEnv * env, [[maybe_unused]] jclass obj, jstring devPathJ) {
+
       jlong devSize = 0;
       const char* devPath = env->GetStringUTFChars(devPathJ, 0);
 
@@ -2246,7 +2329,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
         tsk_img_open_utf8_sing(devPath, TSK_IMG_TYPE_DETECT, 0);
       if (img_info == NULL) {
         setThrowTskCoreError(env, tsk_error_get());
-        env->ReleaseStringUTFChars(devPathJ , devPath); 
+        env->ReleaseStringUTFChars(devPathJ , devPath);
         return -1;
       }
 
@@ -2255,7 +2338,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
 
       //cleanup
       tsk_img_close(img_info);
-      env->ReleaseStringUTFChars(devPathJ , devPath); 
+      env->ReleaseStringUTFChars(devPathJ , devPath);
 
       return devSize;
 }
@@ -2268,36 +2351,81 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
  * @return true if the image can be processed, false otherwise
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
-  (JNIEnv * env, jclass obj, jstring imagePathJ) {
-      
+(JNIEnv* env, [[maybe_unused]] jclass obj, jstring imagePathJ) {
+
     TskIsImageSupported tskIsImage;
     TSK_TCHAR imagePathT[1024];
     toTCHAR(env, imagePathT, 1024, imagePathJ);
 
     // It seems like passing &imagePathT should work instead of making this new array,
     // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
-    TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
+    TSK_TCHAR** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
     bool result;
     imagePaths[0] = imagePathT;
     if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
         result = false;
-    } else {
+    }
+    else {
         if (tskIsImage.findFilesInImg()) {
             result = false;
-        } else {
+        }
+        else {
             if (tskIsImage.isImageSupported()) {
                 result = true;
             }
             else {
                 result = false;
-            }   
+            }
         }
     }
 
     // Cleanup
     free(imagePaths);
 
-    return (jboolean) result;
+    return (jboolean)result;
+}
+
+/*
+ * Test whether an image is supported
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param imagePathJ the image path
+ * @param passwordJ  the password to try for any file systems found
+ * @return empty string if the image can be processed, error message otherwise
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedStringNat
+  (JNIEnv * env, [[maybe_unused]] jclass obj, jstring imagePathJ, jstring passwordJ) {
+
+    TskIsImageSupported tskIsImage;
+    TSK_TCHAR imagePathT[1024];
+    toTCHAR(env, imagePathT, 1024, imagePathJ);
+
+    jboolean isCopy;
+    const char* password = NULL;
+    if (passwordJ != NULL) {
+        password = (const char*)env->GetStringUTFChars(passwordJ, &isCopy);
+        tskIsImage.setFileSystemPassword(string(password));
+        env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+    }
+
+    jstring resultStr = env->NewStringUTF(""); // This will stay empty if we can open the image/file system
+
+    // It seems like passing &imagePathT should work instead of making this new array,
+    // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
+    TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
+    imagePaths[0] = imagePathT;
+    if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
+        resultStr = env->NewStringUTF("Error opening image");
+    } else {
+        tskIsImage.findFilesInImg();
+        resultStr = env->NewStringUTF(tskIsImage.getMessageForIsImageSupportedNat().c_str());
+    }
+
+    // Cleanup
+    tskIsImage.closeImage();
+    free(imagePaths);
+
+    return resultStr;
 }
 
 /*
@@ -2305,7 +2433,7 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
 * @return the current version
 */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getSleuthkitVersionNat
-(JNIEnv * env, jclass obj) {
+([[maybe_unused]] JNIEnv * env, [[maybe_unused]] jclass obj) {
     return (jlong)TSK_VERSION_NUM;
 }
 
@@ -2317,7 +2445,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getSleuthkitVe
  * @param a_img_info the image info pointer
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
-(JNIEnv * env, jclass obj, jlong a_img_info) {
+(JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_img_info) {
     // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     return tsk_img_writer_finish(img_info);
@@ -2327,7 +2455,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWrit
  * Get the progess of the finishImage process as an integer from 0 to 100
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getFinishImageProgressNat
-(JNIEnv * env, jclass obj, jlong a_img_info) {
+(JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_img_info) {
     // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
@@ -2343,7 +2471,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getFinishImageP
 * Cancel the finishImage process
 */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_cancelFinishImageNat
-(JNIEnv * env, jclass obj, jlong a_img_info) {
+(JNIEnv * env, [[maybe_unused]] jclass obj, jlong a_img_info) {
     // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;

@@ -1,6 +1,6 @@
 /*
  ** The Sleuth Kit
- ** 
+ **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2021 Brian Carrier.  All Rights reserved
  **
@@ -11,7 +11,7 @@
 /**
  * \file tsk_is_image_supported.cpp
  * Class to test whether a given image can be processed by tsk
- * 
+ *
  * Usage:
  *  Create a TskIsImageSupported object
  *  Call openImage
@@ -24,6 +24,8 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/util/detect_encryption.h"
 
+#include <string>
+
 class TskIsImageSupported:public TskAuto {
 
 
@@ -35,17 +37,21 @@ public:
     virtual TSK_FILTER_ENUM filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
+    std::string getMessageForIsImageSupportedNat();
     bool isImageSupported();
     bool isImageEncrypted();
+    std::string getSingleLineErrorMessage();
     void printResults();
-    
+
 private:
     bool m_wasDataFound;
     bool m_wasEncryptionFound;
     bool m_wasPossibleEncryptionFound;
     bool m_wasFileSystemFound;
     bool m_wasUnsupported;
-    char m_encryptionDesc[1024];
-    char m_possibleEncryptionDesc[1024];
-    char m_unsupportedDesc[1024];
+    bool m_bitlockerError;
+    std::string m_encryptionDesc;
+    std::string m_possibleEncryptionDesc;
+    std::string m_unsupportedDesc;
+    std::string m_bitlockerDesc;
 };

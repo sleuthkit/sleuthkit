@@ -191,28 +191,32 @@ extern "C" {
 
     /* Specific file system routines */
     extern TSK_FS_INFO *ext2fs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *ffs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *, TSK_OFF_T);
     extern TSK_FS_INFO *swapfs_open(TSK_IMG_INFO *, TSK_OFF_T);
     extern TSK_FS_INFO *iso9660_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *hfs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
-	extern TSK_FS_INFO *logical_fs_open(TSK_IMG_INFO *);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *xfs_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *logical_fs_open(TSK_IMG_INFO *);
 
     /* Specific pool file system routines */
     extern TSK_FS_INFO *apfs_open_auto_detect(TSK_IMG_INFO*, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM, uint8_t);
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *apfs_open(TSK_IMG_INFO*, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, const char*);
+    extern TSK_FS_INFO *btrfs_open(TSK_IMG_INFO*, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char *, uint8_t);
 
     /* Generic functions for swap and raw -- many say "not supported" */
     extern uint8_t tsk_fs_nofs_fsstat(TSK_FS_INFO * fs, FILE * hFile);
