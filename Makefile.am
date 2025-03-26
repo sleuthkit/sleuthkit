@@ -602,13 +602,15 @@ EXTRA_DIST += \
 	tools/timeline/mactime.base \
 	tools/timeline/.perltidyrc
 
-tools/timeline/mactime: tools/timeline/mactime.base Makefile
+tools/timeline/mactime: $(srcdir)/tools/timeline/mactime.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$VER=\"$(VERSION)\";" >>$@
 	@cat $(srcdir)/tools/timeline/mactime.base >>$@
 	@chmod +x $@
 
-tools/sorter/sorter: tools/sorter/sorter.base Makefile
+tools/sorter/sorter: $(srcdir)/tools/sorter/sorter.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$BIN_DIR=\"$(bindir)\";" >>$@
 	@echo "my \$$DATA_DIR=\"$(datadir)\";" >>$@
