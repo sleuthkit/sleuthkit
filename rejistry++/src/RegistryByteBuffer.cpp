@@ -35,8 +35,8 @@
 // Local includes
 #include "RegistryByteBuffer.h"
 #include "RejistryException.h"
-#include "tsk/base/tsk_base.h"
-#include "tsk/base/tsk_unicode.h"
+#include "../../tsk/base/tsk_base.h"
+#include "../../tsk/base/tsk_unicode.h"
 
 namespace Rejistry {
 
