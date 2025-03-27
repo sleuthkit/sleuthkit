@@ -624,7 +624,8 @@ tools/sorter/sorter: $(srcdir)/tools/sorter/sorter.base Makefile
 
 EXTRA_DIST += test/legacy/runtests.sh
 
-check_SCRIPTS = \
+## Check system
+check_script_files = \
 	test/check_static.sh \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
@@ -636,6 +637,9 @@ check_SCRIPTS = \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
+
+check_SCRIPTS = $(check_script_files)
+EXTRA_DIST += $(check_script_files)
 
 TESTS =	\
 	test/runner \
@@ -712,7 +716,7 @@ get_images_inputs = \
     test/get_images/test_images.yaml
 
 test/get_images/test_images.txt: $(get_images_inputs)
-	bash test/get_images/get_test_images.bash
+	bash $(srcdir)/test/get_images/get_test_images.bash
 
 EXTRA_DIST += $(get_images_inputs)
 
