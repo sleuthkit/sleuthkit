@@ -690,7 +690,8 @@ test_runner_SOURCES = \
 	test/tsk/img/test_vmdk.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
-	test/runner.cpp
+	test/runner.cpp \
+	vendors/catch.hpp
 
 EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
 
