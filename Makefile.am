@@ -703,8 +703,20 @@ test_fiwalk_fiwalk_test_SOURCES = \
 
 EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
 
-test/get_images/test_images.txt: test/get_images/test_images.yaml test/get_images/get_test_images.bash test/get_images/get_test_images.py
-	test/get_images/get_test_images.bash
+# System for getting test images
+# This will be replaced with a sub repo
+
+get_images_inputs = \
+    test/get_images/get_test_images.bash \
+    test/get_images/get_test_images.py \
+    test/get_images/test_images.yaml
+
+test/get_images/test_images.txt: $(get_images_inputs)
+	bash test/get_images/get_test_images.bash
+
+EXTRA_DIST += $(get_images_inputs)
+
+##
 
 CLEANFILES += test/get_images/test_images.txt
 
