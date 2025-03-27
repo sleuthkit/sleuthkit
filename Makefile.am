@@ -699,7 +699,7 @@ test_runner_SOURCES = \
 
 EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
 
-test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/vendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_LDADD = $(TSK_LIBS)
 test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
