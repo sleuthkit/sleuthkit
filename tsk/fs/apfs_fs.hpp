@@ -10,10 +10,10 @@
 #pragma once
 
 #if HAVE_CONFIG_H
-#include "../tsk_config.h"
+#include "tsk/tsk_config.h"
 #endif
 
-#include "../util/crypto.hpp"
+#include "tsk/util/crypto.hpp"
 #include "apfs_fs.h"
 #include "tsk_apfs.hpp"
 

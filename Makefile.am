@@ -602,13 +602,15 @@ EXTRA_DIST += \
 	tools/timeline/mactime.base \
 	tools/timeline/.perltidyrc
 
-tools/timeline/mactime: tools/timeline/mactime.base Makefile
+tools/timeline/mactime: $(srcdir)/tools/timeline/mactime.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$VER=\"$(VERSION)\";" >>$@
 	@cat $(srcdir)/tools/timeline/mactime.base >>$@
 	@chmod +x $@
 
-tools/sorter/sorter: tools/sorter/sorter.base Makefile
+tools/sorter/sorter: $(srcdir)/tools/sorter/sorter.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$BIN_DIR=\"$(bindir)\";" >>$@
 	@echo "my \$$DATA_DIR=\"$(datadir)\";" >>$@
@@ -622,7 +624,8 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 
 EXTRA_DIST += test/legacy/runtests.sh
 
-check_SCRIPTS = \
+## Check system
+check_script_files = \
 	test/check_static.sh \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
@@ -634,6 +637,9 @@ check_SCRIPTS = \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
+
+check_SCRIPTS = $(check_script_files)
+EXTRA_DIST += $(check_script_files)
 
 TESTS =	\
 	test/runner \
@@ -688,11 +694,12 @@ test_runner_SOURCES = \
 	test/tsk/img/test_vmdk.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
-	test/runner.cpp
+	test/runner.cpp \
+	vendors/catch.hpp
 
 EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
 
-test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/vendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_LDADD = $(TSK_LIBS)
 test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
@@ -700,8 +707,20 @@ test_fiwalk_fiwalk_test_SOURCES = \
 
 EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
 
-test/get_images/test_images.txt: test/get_images/test_images.yaml test/get_images/get_test_images.bash test/get_images/get_test_images.py
-	test/get_images/get_test_images.bash
+# System for getting test images
+# This will be replaced with a sub repo
+
+get_images_inputs = \
+    test/get_images/get_test_images.bash \
+    test/get_images/get_test_images.py \
+    test/get_images/test_images.yaml
+
+test/get_images/test_images.txt: $(get_images_inputs)
+	bash $(srcdir)/test/get_images/get_test_images.bash
+
+EXTRA_DIST += $(get_images_inputs)
+
+##
 
 CLEANFILES += test/get_images/test_images.txt
 

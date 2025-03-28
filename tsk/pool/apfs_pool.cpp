@@ -9,11 +9,11 @@
  */
 #include "tsk_apfs.hpp"
 
-#include "../libtsk.h"
+#include "tsk/libtsk.h"
 
-#include "../fs/tsk_apfs.hpp"
-#include "../fs/tsk_fs_i.h"
-#include "../img/legacy_cache.h"
+#include "tsk/fs/tsk_apfs.hpp"
+#include "tsk/fs/tsk_fs_i.h"
+#include "tsk/img/legacy_cache.h"
 
 #include <stdexcept>
 

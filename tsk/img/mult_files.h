@@ -2,7 +2,7 @@
 #define MULT_FILES_H
 
 #include "tsk_img_i.h"
-#include "../base/tsk_os_cpp.h"
+#include "tsk/base/tsk_os_cpp.h"
 
 #include <functional>
 #include <sstream>

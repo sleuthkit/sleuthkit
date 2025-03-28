@@ -15,7 +15,7 @@
 #ifdef HAVE_LIBSQLITE3
   #include <sqlite3.h>
 #else
-  #include "../../vendors/sqlite3.h"
+  #include "vendors/sqlite3.h"
 #endif
 
 /**
@@ -441,7 +441,7 @@ uint8_t
     }
 
     // Convert the md5 string to a binary blob, since that's how md5 hashes
-    // are stored in the database.	
+    // are stored in the database.
     uint8_t *hashBlob = sqlite_hdb_str_to_blob(md5);
     if (NULL == hashBlob) {
         return 1;

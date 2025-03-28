@@ -9,11 +9,11 @@
  */
 #include "apfs_pool_compat.hpp"
 
-#include "../fs/apfs_fs.hpp"
-#include "../fs/tsk_apfs.hpp"
-#include "../fs/tsk_fs_i.h"
-#include "../img/legacy_cache.h"
-#include "../img/pool.hpp"
+#include "tsk/fs/apfs_fs.hpp"
+#include "tsk/fs/tsk_apfs.hpp"
+#include "tsk/fs/tsk_fs_i.h"
+#include "tsk/img/legacy_cache.h"
+#include "tsk/img/pool.hpp"
 
 #include <stdexcept>
 
@@ -345,4 +345,3 @@ catch (const std::exception &e) {
     tsk_error_set_errstr("%s", e.what());
     return NULL;
 }
-

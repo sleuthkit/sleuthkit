@@ -7,10 +7,8 @@ MYDIR=$(dirname "$0")
 pushd $MYDIR
 if [ ! -d venv ]; then
     python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-else
-    source venv/bin/activate
 fi
+source venv/bin/activate
+pip install -r requirements.txt
 popd
 python3 test/get_images/get_test_images.py

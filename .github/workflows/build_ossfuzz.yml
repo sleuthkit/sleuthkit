@@ -19,7 +19,6 @@ jobs:
         - architecture: 'x64'
           compiler: 'gcc'
           configure_options: ''
-    if: false
     steps:
     - name: Install build dependencies
       run: |
@@ -36,6 +35,6 @@ jobs:
         sed 's?./tsk/util/??' -i projects/sleuthkit/build.sh
         sed 's?./tsk/pool/??' -i projects/sleuthkit/build.sh
         sed 's?--without-libvmdk?--without-libvmdk --without-libcrypto?' -i projects/sleuthkit/build.sh
-        python3 infra/helper.py build_image --pull sleuthkit 
+        python3 infra/helper.py build_image --pull sleuthkit
         python3 infra/helper.py build_fuzzers --sanitizer address sleuthkit
         python3 infra/helper.py check_build sleuthkit
