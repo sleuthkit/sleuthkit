@@ -17,8 +17,8 @@
 #include <memory>
 #include <unordered_map>
 
-#include "../fs/tsk_apfs.h"
-#include "../util/lw_shared_ptr.hpp"
+#include "tsk/fs/tsk_apfs.h"
+#include "tsk/util/lw_shared_ptr.hpp"
 
 class APFSSuperblock;
 class APFSFileSystem;

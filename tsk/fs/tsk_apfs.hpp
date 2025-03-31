@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../base/tsk_base.h"
-#include "../img/tsk_img.h"
-#include "../pool/tsk_apfs.hpp"
-#include "../util/lw_shared_ptr.hpp"
-#include "../util/span.hpp"
+#include "tsk/base/tsk_base.h"
+#include "tsk/img/tsk_img.h"
+#include "tsk/pool/tsk_apfs.hpp"
+#include "tsk/util/lw_shared_ptr.hpp"
+#include "tsk/util/span.hpp"
 
 #include "tsk_apfs.h"
 
@@ -18,7 +18,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "../auto/guid.h"
+#include "tsk/auto/guid.h"
 
 // Helper function to see if a bitfield flag is set
 template <typename T, typename U,

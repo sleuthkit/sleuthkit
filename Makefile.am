@@ -99,6 +99,7 @@ nobase_include_HEADERS = \
 	tsk/pool/pool_compat.hpp \
 	tsk/pool/tsk_apfs.h \
 	tsk/pool/tsk_apfs.hpp \
+	tsk/pool/tsk_lvm.hpp \
 	tsk/pool/tsk_pool.h \
 	tsk/pool/tsk_pool.hpp \
 	tsk/tsk_incs.h \
@@ -601,13 +602,15 @@ EXTRA_DIST += \
 	tools/timeline/mactime.base \
 	tools/timeline/.perltidyrc
 
-tools/timeline/mactime: tools/timeline/mactime.base Makefile
+tools/timeline/mactime: $(srcdir)/tools/timeline/mactime.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$VER=\"$(VERSION)\";" >>$@
 	@cat $(srcdir)/tools/timeline/mactime.base >>$@
 	@chmod +x $@
 
-tools/sorter/sorter: tools/sorter/sorter.base Makefile
+tools/sorter/sorter: $(srcdir)/tools/sorter/sorter.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$BIN_DIR=\"$(bindir)\";" >>$@
 	@echo "my \$$DATA_DIR=\"$(datadir)\";" >>$@
@@ -621,7 +624,8 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 
 EXTRA_DIST += test/legacy/runtests.sh
 
-check_SCRIPTS = \
+## Check system
+check_script_files = \
 	test/check_static.sh \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
@@ -633,6 +637,9 @@ check_SCRIPTS = \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
+
+check_SCRIPTS = $(check_script_files)
+EXTRA_DIST += $(check_script_files)
 
 TESTS =	\
 	test/runner \
@@ -687,11 +694,12 @@ test_runner_SOURCES = \
 	test/tsk/img/test_vmdk.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
-	test/runner.cpp
+	test/runner.cpp \
+	vendors/catch.hpp
 
 EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
 
-test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/vendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_LDADD = $(TSK_LIBS)
 test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
@@ -699,8 +707,20 @@ test_fiwalk_fiwalk_test_SOURCES = \
 
 EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
 
-test/get_images/test_images.txt: test/get_images/test_images.yaml test/get_images/get_test_images.bash test/get_images/get_test_images.py
-	test/get_images/get_test_images.bash
+# System for getting test images
+# This will be replaced with a sub repo
+
+get_images_inputs = \
+    test/get_images/get_test_images.bash \
+    test/get_images/get_test_images.py \
+    test/get_images/test_images.yaml
+
+test/get_images/test_images.txt: $(get_images_inputs)
+	bash $(srcdir)/test/get_images/get_test_images.bash
+
+EXTRA_DIST += $(get_images_inputs)
+
+##
 
 CLEANFILES += test/get_images/test_images.txt
 
@@ -739,10 +759,18 @@ endif
 endif
 
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
+tsk_caseuco_jar = $(top_builddir)/case-uco/java/dist/sleuthkit-caseuco-$(PACKAGE_VERSION).jar
 jardir = $(prefix)/share/java
 
-$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la
+$(tsk_jar): tsk/libtsk.la bindings/java/jni/libtsk_jni.la tsk/.libs/@TSK_LIB@
+	@echo '=== BEGIN manually running make as fallback ==='
+	@$(MAKE) -j1 tsk/.libs/@TSK_LIB@
+	@echo '=== END manually running make as fallback ==='
 	cd bindings/java ; $(ANT) dist $(ant_args)
+
+dnl Since libtool automatically creates libtsk.so or libtsk.dylib, we add this explicit rule:
+tsk/.libs/@TSK_LIB@: tsk/libtsk.la
+	@true
 
 CLEANFILES += $(tsk_jar)
 
@@ -758,9 +786,9 @@ bindings_java_jni_libtsk_jni_la_SOURCES = \
 	bindings/java/jni/dataModel_SleuthkitJNI.cpp \
 	bindings/java/jni/dataModel_SleuthkitJNI.h
 
-tsk_caseuco_jar = $(top_builddir)/case-uco/java/dist/sleuthkit-caseuco-$(PACKAGE_VERSION).jar
 
-$(tsk_caseuco_jar):
+$(tsk_caseuco_jar): $(tsk_jar)
+	@$(MAKE) -j1 tsk/.libs/@TSK_LIB@
 	cd case-uco/java ; $(ANT) $(ant_args)
 
 CLEANFILES += $(tsk_caseuco_jar)
@@ -770,10 +798,18 @@ endif # End of X_JNI check
 # Clean targets should be outside of the conditional
 
 clean-tsk_jar:
+if ANT_DETECTED
 	cd bindings/java ; $(ANT) clean
+else
+	echo ANT not detected. bindings/java will not be cleaned
+endif
 
 clean-tsk_caseuco_jar:
+if ANT_DETECTED
 	cd case-uco/java ; $(ANT) clean
+else
+	echo ANT not detected. case-uco/java will not be cleaned
+endif
 
 clean_java = clean-tsk_jar clean-tsk_caseuco_jar
 

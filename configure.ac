@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
 
-AC_INIT([sleuthkit], [4.13.0])
+AC_INIT([sleuthkit], [4.13.1])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
@@ -195,6 +195,10 @@ AM_COND_IF([CUSTOM_DEFAULT_JAR_LOCATION],
 )
 
 dnl Test for the various Java things that we need for bindings
+dnl First, test is ant is available since we now use it for the build system
+dnl But don't make it required
+AC_PATH_PROG([ANT], [ant], [no])
+AM_CONDITIONAL([ANT_DETECTED], [test "x$ANT" != "xno"])
 AS_IF([test "x$enable_java" != "xno"], [
     dnl javac is needed to compile the JAR file
     AX_PROG_JAVAC
@@ -214,17 +218,14 @@ AS_IF([test "x$enable_java" != "xno"], [
         dnl we had one report of a system with javac and not java
         AX_PROG_JAVA
 
+        if test "x$ANT" = "xno"; then
+            AC_MSG_ERROR([Apache Ant is required but was not found. Install Ant and try again.])
+        fi
+        AC_SUBST(ANT)
 	]
     )
 ]) dnl test enable_java
 
-dnl Test is ant is available since we now use it for the build system
-dnl BC - TODO - Add this to the enable Java section and uncomment below
-AC_PATH_PROG([ANT], [ant], [no])
-dnl if test "x$ANT" = "xno"; then
-dnl    AC_MSG_ERROR([Apache Ant is required but was not found. Install Ant and try again.])
-dnl fi
-AC_SUBST(ANT)
 
 
 dnl if we found everything we need, set ax_java_support for the
@@ -266,6 +267,29 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     ac_cv_header_inttypes_h=$ac_cv_header_inttypes_h
     ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
     ax_multithread=$ax_multithread])
+
+dnl ################################################################
+dnl ## Set TSK_LIB as appropriate for the host
+dnl ##
+AC_CANONICAL_HOST
+
+case "$host_os" in
+    darwin*)
+        TSK_LIB="libtsk.dylib"
+        ;;
+    linux*)
+        TSK_LIB="libtsk.so"
+        ;;
+    *)
+        TSK_LIB="libtsk.la"  # Default for unknown platforms
+        ;;
+esac
+AC_SUBST(TSK_LIB)
+dnl ################
+
+
+dnl ################################################################
+dnl ## set per-host libtool flags
 
 AC_MSG_CHECKING([if libtool needs -no-undefined flag to build shared libraries])
 case "$host" in
