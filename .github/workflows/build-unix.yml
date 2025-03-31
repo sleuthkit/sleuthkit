@@ -185,11 +185,17 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }}
 
-      - name: Get the disk images
+      - name: Checkout test data
+        uses: actions/checkout@v4
+        with:
+          repository: sleuthkit/sleuthkit_test_data
+          path: ../sleuthkit_test_data
+
+      - name: List the test data
         run: |
-          make test/get_images/test_images.txt
-          cat test/get_images/test_images.txt
-          ls -l test/from_brian
+          cd ../sleuthkit_test_data
+          pwd
+          find . -ls
 
       - name: Run make
         run: |
@@ -219,7 +225,7 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
 
-      - name: Run make with address-sanitizer
+      - name: Check with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
           make -j check VERBOSE=1
@@ -237,15 +243,15 @@ jobs:
       - name: Run make for codecov
         if: ${{ matrix.codecov == 'yes' }}
         run: |
-          make -j test/fiwalk/fiwalk_test V=0
-          make -j test/runner V=0
+          make -j check V=0
+          #make -j test/fiwalk/fiwalk_test V=0
+          #make -j test/runner V=0
 
-      - name: Run unit tests for codecov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          test/fiwalk/fiwalk_test -s
-          test/runner -s
-
+#      - name: Run unit tests for codecov
+#        if: ${{ matrix.codecov == 'yes' }}
+#        run: |
+#          test/fiwalk/fiwalk_test -s
+#          test/runner -s
 
       - name: run gcov
         if: ${{ matrix.codecov == 'yes' }}
@@ -276,10 +282,10 @@ jobs:
             executables/*
           retention-days: 15
 
-#      - name: Run distcheck
-#        run: |
-#          ./configure
-#          make distcheck
-#
-#      - uses: ammaraskar/gcc-problem-matcher@0.2.0
-#        name: GCC Problem Matcher
+      - name: Run distcheck
+        run: |
+          ./configure
+          make distcheck
+
+      - uses: ammaraskar/gcc-problem-matcher@0.2.0
+        name: GCC Problem Matcher
