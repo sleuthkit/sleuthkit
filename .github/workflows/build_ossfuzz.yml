@@ -38,16 +38,16 @@ jobs:
         cp -r ../sleuthkit projects/sleuthkit
         # Update build script to properly configure without -Werror
         cat > projects/sleuthkit/build.sh << 'EOF'
-#!/bin/bash -eu
-cd $SRC/sleuthkit
-# Run autogen to generate configure script
-./bootstrap
-# Configure with necessary options, explicitly disabling -Werror
-./configure --disable-libewf --disable-libvmdk --disable-libcrypto CFLAGS="$CFLAGS -Wno-error" CXXFLAGS="$CXXFLAGS -Wno-error"
-make -j$(nproc)
-# Copy fuzzers to output directory
-find . -name "fuzz_*" -type f -executable -exec cp {} $OUT/ \;
-EOF
+        #!/bin/bash -eu
+        cd $SRC/sleuthkit
+        # Run autogen to generate configure script
+        ./bootstrap
+        # Configure with necessary options, explicitly disabling -Werror
+        ./configure --disable-libewf --disable-libvmdk --disable-libcrypto CFLAGS="$CFLAGS -Wno-error" CXXFLAGS="$CXXFLAGS -Wno-error"
+        make -j$(nproc)
+        # Copy fuzzers to output directory
+        find . -name "fuzz_*" -type f -executable -exec cp {} $OUT/ \;
+        EOF
         chmod +x projects/sleuthkit/build.sh
         python3 infra/helper.py build_image --pull sleuthkit
         python3 infra/helper.py build_fuzzers --sanitizer address sleuthkit
