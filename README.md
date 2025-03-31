@@ -15,7 +15,7 @@ the tool or customize it to specific needs.
 The Sleuth Kit uses code from the file system analysis tools of
 The Coroner's Toolkit (TCT) by Wietse Venema and Dan Farmer.  The
 TCT code was modified for platform independence.  In addition,
-support was added for the NTFS (see [wiki/ntfs](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes)) 
+support was added for the NTFS (see [wiki/ntfs](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes))
 and FAT (see [wiki/fat](http://wiki.sleuthkit.org/index.php?title=FAT_Implementation_Notes)) file systems.  Previously, The Sleuth Kit was
 called The @stake Sleuth Kit (TASK).  The Sleuth Kit is now independent
 of any commercial or academic organizations.
@@ -34,9 +34,9 @@ The Sleuth Kit allows one to analyze a disk or file system image
 created by 'dd', or a similar application that creates a raw image.
 These tools are low-level and each performs a single task.  When
 used together, they can perform a full analysis.  For a more detailed
-description of these tools, refer to [wiki/filesystem](http://wiki.sleuthkit.org/index.php?title=TSK_Tool_Overview). 
+description of these tools, refer to [wiki/filesystem](http://wiki.sleuthkit.org/index.php?title=TSK_Tool_Overview).
 The tools are briefly described in a file system layered approach.  Each
-tool name begins with a letter that is assigned to the layer.  
+tool name begins with a letter that is assigned to the layer.
 
 ### File System Layer:
 A disk contains one or more partitions (or slices).  Each of these
@@ -52,7 +52,7 @@ time, and the details about each "group" in UNIX file systems.
 The content layer of a file system contains the actual file content,
 or data.  Data is stored in large chunks, with names such as blocks,
 fragments, and clusters.  All tools in this layer begin with the letters
-'blk'.  
+'blk'.
 
 The blkcat tool can be used to display the contents of a specific unit of
 the file system (similar to what 'dd' can do with a few arguments).
@@ -75,7 +75,7 @@ descriptive data such as dates and size as well as the addresses of the
 data units.  This layer describes the file in terms that the computer
 can process efficiently.   The structures that the data is stored in
 have names such as inode and directory entry.  All tools in this layer
-begin with an 'i'.  
+begin with an 'i'.
 
 The 'ils' program lists some values of the metadata structures.
 By default, it will only list the unallocated ones.  The 'istat'
@@ -87,7 +87,7 @@ contents of the data units allocated to the metadata structure
 which metadata structure has allocated a given content unit or
 file name.
 
-Refer to the [ntfs wiki](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes) 
+Refer to the [ntfs wiki](http://wiki.sleuthkit.org/index.php?title=NTFS_Implementation_Notes)
 for information on addressing metadata attributes in NTFS.
 
 ### Human Interface Layer (file):
@@ -95,7 +95,7 @@ The human interface layer allows one to interact with files in a
 manner that is more convenient than directly with the metadata
 layer.  In some operating systems there are separate structures for
 the metadata and human interface layers while others combine them.
-All tools in this layer begin with the letter 'f'.  
+All tools in this layer begin with the letter 'f'.
 
 The 'fls' program lists file and directory names.  This tool will
 display the names of deleted files as well.  The 'ffind' program will
@@ -125,8 +125,8 @@ Also included is the 'hfind' tool.  The 'hfind' tool allows one to create
 an index of a hash database and perform quick lookups using a binary
 search algorithm.  The 'hfind' tool can perform lookups on the NIST
 National Software Reference Library (NSRL) (www.nsrl.nist.gov) and
-files created from the 'md5' or 'md5sum' command.   Refer to the 
-[wiki/hfind](http://wiki.sleuthkit.org/index.php?title=Hfind) file for more details.  
+files created from the 'md5' or 'md5sum' command.   Refer to the
+[wiki/hfind](http://wiki.sleuthkit.org/index.php?title=Hfind) file for more details.
 
 #### File Type Categories
 Different types of files typically have different internal structure.
@@ -146,6 +146,17 @@ and ignore known good files.  Refer to the [wiki/sorter](http://wiki.sleuthkit.o
 file for more details.
 
 
+## TESTING
+Both unit and end-to-end tests are located in the [test](test/) directory. Small and legacy disk images are located in [test/data](test/data/). Some tests require disk images that are include in the [Github repository](https://github.com/sleuthkit/sleuthkit_test_data); large disk images are distributed as compressed (.E01) images using [git's extensions for large objects](https://git-lfs.com/).  By default, this repo resides at [../sleuthkit_test_data](../sleuthkit_test_data]. However, it can be installed elsewhere by setting the environment variable `SLEUTHKIT_TEST_DATA_DIR`.
+
+If the disk images are not present, tests requiring the disk images will generate a warning but not an error.
+
+- Tests can be run by typing `make check`.
+
+- Tests can be run on a new distribution by typing `make distcheck`.
+
+
+
 ## LICENSE
 There are a variety of licenses used in TSK based on where they
 were first developed.  The licenses are located in the [licenses
@@ -160,14 +171,14 @@ Public License.
 - The modifications to 'mactime' from the original 'mactime' in TCT
 and 'mac-daddy' are released under the Common Public License.
 
-The library uses utilities that were released under MIT and BSD 3-clause. 
+The library uses utilities that were released under MIT and BSD 3-clause.
 
 
 ## INSTALL
 For installation instructions, refer to the INSTALL.txt document.
 
 ## OTHER DOCS
-The [wiki](http://wiki.sleuthkit.org/index.php?title=Main_Page) contains documents that 
+The [wiki](http://wiki.sleuthkit.org/index.php?title=Main_Page) contains documents that
 describe the provided tools in more detail.  The Sleuth Kit Informer is a newsletter that contains
 new documentation and articles.
 
@@ -182,4 +193,3 @@ announcements list.
 Brian Carrier
 
 carrier at sleuthkit dot org
- 
