@@ -115,8 +115,8 @@ TEST_CASE("test_disk_images image.gen1.dmg", "[fiwalk]") {
 
 TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
     check_image(
-      "from_brian/image.dd",
-      "from_brian/image_dd.xml"
+      "ufs/image.E01",
+      "ufs/image_dd.xml"
     );
 }
 
