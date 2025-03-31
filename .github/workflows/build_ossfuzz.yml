@@ -7,6 +7,7 @@ on:
 permissions: read-all
 jobs:
   build_ossfuzz:
+    name: Build oss-fuzz
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/develop'
     strategy:
