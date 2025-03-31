@@ -191,10 +191,11 @@ jobs:
           repository: sleuthkit/sleuthkit_test_data
           path: ../sleuthkit_test_data
 
-      - name: List the test data
+      - name: Unpack and List the test data
         run: |
           cd ../sleuthkit_test_data
           pwd
+          make unpack
           find . -ls
 
       - name: Run make

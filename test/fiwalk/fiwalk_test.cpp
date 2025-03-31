@@ -72,14 +72,14 @@ TEST_CASE("test_disk_images imageformat_mmls_1.E01", "[fiwalk]") {
 
 TEST_CASE("test_disk_images btrfs_test_image.E01 btrfs", "[fiwalk]") {
     check_image(
-      "from_brian/btrfs_testimage_50MB.E01",
+      "btrfs/btrfs_testimage_50MB.E01",
       ""
     );
 }
 
 TEST_CASE("test_disk_images 2GB-xfs-raw.E01", "[fiwalk]") {
     check_image(
-      "from_brian/2GB-xfs-raw.E01",
+      "xfs/2GB-xfs-raw.E01",
       ""
     );
 }
@@ -87,29 +87,29 @@ TEST_CASE("test_disk_images 2GB-xfs-raw.E01", "[fiwalk]") {
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "from_brian/ntfs-img-kw-1.dd",
-      "from_brian/3-kwsrch-ntfs.xml"
+      "from_brian/3-kwsrch-ntfs/ntfs-img-kw-1.dd",
+      "from_brian/3-kwsrch-ntfs/3-kwsrch-ntfs.xml"
     );
 }
 
 TEST_CASE("test_disk_images ext3-img-kw-1.dd", "[fiwalk]") {
     check_image(
-      "from_brian/ext3-img-kw-1.dd",
-      ""
+      "from_brian/4-kwsrch-ext3/ext3-img-kw-1.dd",
+      "from_brian/4-kwsrch-ext3/ext3-img-kw-1.dd.xml"
     );
 }
 
 TEST_CASE("test_disk_images daylight.dd", "[fiwalk]") {
     check_image(
-      "from_brian/daylight.dd",
-      ""
+      "from_brian/5-fat-daylight/daylight.dd",
+      "from_brian/5-fat-daylight/daylight.xml"
     );
 }
 
 TEST_CASE("test_disk_images image.gen1.dmg", "[fiwalk]") {
     check_image(
-      "from_brian/image.gen1.dmg",
-      ""
+      "nps-2009-hfsjtest1/image.gen1.dmg",
+      "nps-2009-hfsjtest1/image.gen1.xml"
     );
 }
 
