@@ -1,18 +1,14 @@
 # Build OSSFuzz fuzz targets from source.
 name: build_ossfuzz
 on:
-  push:
-    branches:
-      - '**'
-  pull_request:
-    branches:
-      - main
-      - develop
+  schedule:
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
+  workflow_dispatch:
 permissions: read-all
 jobs:
   build_ossfuzz:
-    if: false
     runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/develop'
     strategy:
       matrix:
         include:
@@ -27,14 +23,32 @@ jobs:
       with:
         repository: google/oss-fuzz
         path: oss-fuzz
+    - name: Checkout SleuthKit repository
+      uses: actions/checkout@v4
+      with:
+        path: sleuthkit
     - name: Build OSSFuzz fuzz targets
       working-directory: oss-fuzz
+      env:
+        # Override CFLAGS to remove -Werror and add sanitizer flags
+        CFLAGS: "-O2 -fno-omit-frame-pointer -g -fsanitize=address"
+        CXXFLAGS: "-O2 -fno-omit-frame-pointer -g -fsanitize=address"
       run: |
-        # TODO: update ossfuzz script and then remove this work-around
-        # Work around hardcoded -Werror flags https://github.com/sleuthkit/sleuthkit/issues/3012
-        sed 's?./tsk/util/??' -i projects/sleuthkit/build.sh
-        sed 's?./tsk/pool/??' -i projects/sleuthkit/build.sh
-        sed 's?--without-libvmdk?--without-libvmdk --without-libcrypto?' -i projects/sleuthkit/build.sh
+        # Copy SleuthKit source to oss-fuzz projects directory
+        cp -r ../sleuthkit projects/sleuthkit
+        # Update build script to properly configure without -Werror
+        cat > projects/sleuthkit/build.sh << 'EOF'
+#!/bin/bash -eu
+cd $SRC/sleuthkit
+# Run autogen to generate configure script
+./bootstrap
+# Configure with necessary options, explicitly disabling -Werror
+./configure --disable-libewf --disable-libvmdk --disable-libcrypto CFLAGS="$CFLAGS -Wno-error" CXXFLAGS="$CXXFLAGS -Wno-error"
+make -j$(nproc)
+# Copy fuzzers to output directory
+find . -name "fuzz_*" -type f -executable -exec cp {} $OUT/ \;
+EOF
+        chmod +x projects/sleuthkit/build.sh
         python3 infra/helper.py build_image --pull sleuthkit
         python3 infra/helper.py build_fuzzers --sanitizer address sleuthkit
         python3 infra/helper.py check_build sleuthkit
