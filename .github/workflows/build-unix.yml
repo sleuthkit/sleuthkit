@@ -155,7 +155,7 @@ jobs:
         if: ${{ matrix.os == 'linux' }}
         run: |
           sudo apt update
-          sudo apt install -y ant autoconf automake g++ libssl-dev afflib afflib-tools libaff4-dev libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
+          sudo apt install -y ant autoconf automake g++ libssl-dev afflib afflib-tools libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
 
       - name: Install Mingw packages and setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
