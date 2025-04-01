@@ -207,3 +207,4 @@ venv
 wget-log
 TAGS
 test/from_brian/
+*.log

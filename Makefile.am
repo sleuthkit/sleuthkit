@@ -634,6 +634,7 @@ check_script_files = \
 	test/img_dump/test_imgs_E01.sh \
 	test/legacy/runtests.sh \
 	test/tools/tool_differ.sh \
+	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
