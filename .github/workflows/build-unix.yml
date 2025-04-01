@@ -150,6 +150,8 @@ jobs:
              export CPPFLAGS="-I$JAVA_HOME/include"
              export JNI_CPPFLAGS="-I$JAVA_HOME/include -I$JAVA_HOME/include/darwin"
           fi
+          echo search for aff
+          find /opt/homebrew -name 'aff*'
 
       - name: Install Linux packages
         if: ${{ matrix.os == 'linux' }}
