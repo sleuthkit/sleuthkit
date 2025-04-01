@@ -634,6 +634,7 @@ check_script_files = \
 	test/img_dump/test_imgs_E01.sh \
 	test/legacy/runtests.sh \
 	test/tools/tool_differ.sh \
+	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
@@ -647,6 +648,7 @@ TESTS =	\
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
 	test/legacy/runtests.sh \
+	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh
 
@@ -697,32 +699,11 @@ test_runner_SOURCES = \
 	test/runner.cpp \
 	vendors/catch.hpp
 
-EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
-
 test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/vendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_LDADD = $(TSK_LIBS)
 test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
 	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
-
-EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
-
-# System for getting test images
-# This will be replaced with a sub repo
-
-get_images_inputs = \
-    test/get_images/get_test_images.bash \
-    test/get_images/get_test_images.py \
-    test/get_images/test_images.yaml
-
-test/get_images/test_images.txt: $(get_images_inputs)
-	bash $(top_srcdir)/test/get_images/get_test_images.bash
-
-EXTRA_DIST += $(get_images_inputs)
-
-##
-
-CLEANFILES += test/get_images/test_images.txt
 
 test_img_dump_img_dump_LDADD = $(TSK_LIBS)
 test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
