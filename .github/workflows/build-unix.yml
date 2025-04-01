@@ -181,6 +181,8 @@ jobs:
 
       - name: Run bootstrap
         run: |
+          echo CPPFLAGS=$CPPFLAGS
+          echo LDFLAGS=$LDFLAGS
           ./bootstrap
 
       - name: Run configure
