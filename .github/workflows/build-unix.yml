@@ -139,6 +139,8 @@ jobs:
           MATRIX_ENABLE_JAVA: ${{ matrix.enable_java }}
         if: ${{ matrix.os == 'macos' }}
         run: |
+          CPPFLAGS=-I/opt/homebrew/include/
+          LDFLAGS=-L/opt/homebrew/lib/
           brew update
           brew install libtool autoconf automake libtool libewf libmagic afflib
           echo MATRIX_ENABLE_JAVA=$MATRIX_ENABLE_JAVA
@@ -147,7 +149,7 @@ jobs:
              brew install openjdk@17
              export JAVA_HOME="$(brew --prefix openjdk)"
              export PATH="$JAVA_HOME/bin:$PATH"
-             export CPPFLAGS="-I$JAVA_HOME/include"
+             export CPPFLAGS="-I$JAVA_HOME/include $CPPFLAGS"
              export JNI_CPPFLAGS="-I$JAVA_HOME/include -I$JAVA_HOME/include/darwin"
           fi
           echo search for aff
