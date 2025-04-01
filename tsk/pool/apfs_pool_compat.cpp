@@ -14,7 +14,9 @@
 #include "tsk/fs/tsk_fs_i.h"
 #include "tsk/img/legacy_cache.h"
 #include "tsk/img/pool.hpp"
+#include "tsk/img/tsk_img_i.h"
 
+#include <memory>
 #include <stdexcept>
 
 APFSPoolCompat::~APFSPoolCompat() {
@@ -302,15 +304,20 @@ apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
 TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {
 
-    IMG_POOL_INFO *img_pool_info;
-    TSK_IMG_INFO *img_info;
+    const auto deleter = [](IMG_POOL_INFO* img_pool_info) {
+        tsk_img_free(img_pool_info);
+    };
 
-    if ((img_pool_info =
-        (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO))) == NULL) {
-        return NULL;
+    std::unique_ptr<IMG_POOL_INFO, decltype(deleter)> img_pool_info{
+        (IMG_POOL_INFO *) tsk_img_malloc(sizeof(IMG_POOL_INFO)),
+        deleter
+    };
+
+    if (!img_pool_info) {
+        return nullptr;
     }
 
-    img_info = (TSK_IMG_INFO *)img_pool_info;
+    TSK_IMG_INFO *img_info = (TSK_IMG_INFO *) img_pool_info.get();
 
     img_info->tag = TSK_IMG_INFO_TAG;
     img_info->itype = TSK_IMG_TYPE_POOL;
@@ -325,19 +332,19 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
 
     // Copy original info from the first TSK_IMG_INFO. There was a check in the
     // APFSPool that _members has only one entry.
-    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
-    const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
+    const auto pool = static_cast<APFSPoolCompat*>(pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->_members[0].first;
 
     img_info->size = origInfo->size;
-    img_info->num_img = origInfo->num_img;
     img_info->sector_size = origInfo->sector_size;
     img_info->page_size = origInfo->page_size;
     img_info->spare_size = origInfo->spare_size;
-    img_info->images = origInfo->images;
 
-    return img_info;
+    if (!tsk_img_copy_image_names(img_info, origInfo->images, origInfo->num_img)) {
+        return nullptr;
+    }
 
+    return (TSK_IMG_INFO*) img_pool_info.release();
 }
 catch (const std::exception &e) {
     tsk_error_reset();
