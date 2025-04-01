@@ -71,6 +71,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture; 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -435,6 +436,7 @@ public class SleuthkitCase {
 	}
 
 	private void init() throws Exception {
+		initOptimizeDb();
 		blackboard = new Blackboard(this);
 		updateDatabaseSchema(null); 
 		try (CaseDbConnection connection = connections.getConnection()) {
@@ -462,6 +464,46 @@ public class SleuthkitCase {
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this); 
+		try (CaseDbConnection connection = connections.getConnection()) {
+			optimizeDb(connection);
+		} catch (Throwable t) {
+			logger.log(Level.WARNING, "Unable to do optimization of database after initializing db schema", t);
+		}
+	}
+	
+	/**
+	 * Performs optimization on initialization per
+	 * https://www.sqlite.org/pragma.html#pragma_optimize advice regarding
+	 * long-lived connections.
+	 */
+	private void initOptimizeDb() {
+		if (this.dbType == SQLITE) {
+			try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement()) {
+				statement.execute("PRAGMA optimize=0x10002");
+			} catch (Throwable t) {
+				logger.log(Level.WARNING, "Unable to do initializing optimization of database", t);
+			}
+		}
+	}
+	
+	private AtomicLong timeInOptimize = new AtomicLong(0);
+	
+	/**
+	 * Performs optimization based on
+	 * https://www.sqlite.org/pragma.html#pragma_optimize advice regarding
+	 * long-lived connections.
+	 */
+	private void optimizeDb(CaseDbConnection conn) {
+		long startTime = System.currentTimeMillis();
+		if (this.dbType == SQLITE) {
+			try (Statement statement = conn.createStatement()) {
+				statement.execute("PRAGMA optimize");
+			} catch (Throwable t) {
+				logger.log(Level.WARNING, "Unable to do optimization of database", t);
+			}
+		}
+		long endTime = System.currentTimeMillis();
+		timeInOptimize.addAndGet(endTime - startTime);
 	}
 	
 	/**
@@ -11192,6 +11234,7 @@ public class SleuthkitCase {
 
 		fileSystemIdMap.clear();
 
+		logger.info("Time running optimize was " + this.timeInOptimize + "ms.");
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
@@ -14619,6 +14662,7 @@ public class SleuthkitCase {
 		public void commit() throws TskCoreException {
 			try {
 				this.connection.commitTransaction();
+				this.sleuthkitCase.optimizeDb(connection);
 			} catch (SQLException ex) {
 				throw new TskCoreException("Failed to commit transaction on case database", ex);
 			} finally {
