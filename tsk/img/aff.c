@@ -14,8 +14,6 @@
 
 #if HAVE_LIBAFFLIB
 
-typedef int bool;
-
 #include "aff.h"
 
 /* Note: The routine -assumes- we are under a lock on &(img_info->cache_lock)) */
@@ -37,8 +35,12 @@ aff_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
         return -1;
     }
 
+    tsk_take_lock(&aff_info->read_lock);
+
     if (aff_info->seek_pos != offset) {
         if (af_seek(aff_info->af_file, offset, SEEK_SET) != (uint64_t)offset) {
+            tsk_release_lock(&aff_info->read_lock);
+
             tsk_error_reset();
             // @@@ ADD more specific error messages
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
@@ -52,6 +54,8 @@ aff_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
     cnt = af_read(aff_info->af_file, (unsigned char *) buf, len);
     if (cnt < 0) {
+        tsk_release_lock(&aff_info->read_lock);
+
         // @@@ Add more specific error message
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
@@ -73,6 +77,7 @@ aff_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     }
 
     aff_info->seek_pos += cnt;
+    tsk_release_lock(&aff_info->read_lock);
     return cnt;
 }
 
@@ -216,6 +221,7 @@ aff_close(TSK_IMG_INFO * img_info)
 {
     IMG_AFF_INFO *aff_info = (IMG_AFF_INFO *) img_info;
     af_close(aff_info->af_file);
+    tsk_deinit_lock(&aff_info->read_lock);
     tsk_img_free(aff_info);
 }
 
@@ -290,9 +296,10 @@ aff_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize)
     aff_info->af_file = NULL;
 
     img_info = (TSK_IMG_INFO *) aff_info;
-    img_info->read = aff_read;
-    img_info->close = aff_close;
-    img_info->imgstat = aff_imgstat;
+
+    aff_info->img_info.read = aff_read;
+    aff_info->img_info.close = aff_close;
+    aff_info->img_info.imgstat = aff_imgstat;
 
     // Save the image path in TSK_IMG_INFO - this is mostly for consistency
     // with the other image types and is not currently used
@@ -365,6 +372,10 @@ aff_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize)
     af_seek(aff_info->af_file, 0, SEEK_SET);
     aff_info->seek_pos = 0;
     free(image);
+
+    // initialize the read lock
+    tsk_init_lock(&aff_info->read_lock);
+
     return img_info;
 
 on_error:
