@@ -79,7 +79,7 @@ TEST_CASE("test_disk_images btrfs_test_image.E01 btrfs", "[fiwalk]") {
 
 TEST_CASE("test_disk_images 2GB-xfs-raw.E01", "[fiwalk]") {
     check_image(
-      "xfs/2GB-xfs-raw.E01",
+      "xfs/xfs-raw-2GB.E01",
       ""
     );
 }
@@ -122,14 +122,14 @@ TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
 
 TEST_CASE("test_disk_images iso-dirtree1.iso", "[fiwalk]") {
     check_image(
-      "from_brian/iso-dirtree1.iso",
+      "from_brian/14-iso9660-1/iso-dirtree1.iso",
       ""
     );
 }
 
 TEST_CASE("test_disk_images fat-img-kw.dd", "[fiwalk]") {
     check_image(
-      "from_brian/fat-img-kw.dd",
+      "from_brian/2-kwsrch-fat/fat-img-kw.dd",
       ""
     );
 }
@@ -143,7 +143,7 @@ TEST_CASE("test_disk_images 6-fat-undel.dd", "[fiwalk]") {
 
 TEST_CASE("test_disk_images image.gen1.dmg hfsj1", "[fiwalk]") {
     check_image(
-      "from_brian/image.gen1.dmg",
+      "nps-2009-hfsjtest1/image.gen1.dmg",
       ""
     );
 }

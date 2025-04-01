@@ -192,7 +192,7 @@ jobs:
           git clone https://github.com/sleuthkit/sleuthkit_test_data
           cd sleuthkit_test_data
           make unpack
-          find . -ls
+          find . -ls | grep -v '[.]git'
 
       - name: Run make
         run: |
