@@ -185,16 +185,11 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }}
 
-      - name: Checkout test data
-        uses: actions/checkout@v4
-        with:
-          repository: sleuthkit/sleuthkit_test_data
-          path: ../sleuthkit_test_data
-
       - name: Unpack and List the test data
         run: |
           cd ../sleuthkit_test_data
           pwd
+          git clone https://github.com/sleuthkit/sleuthkit_test_data
           make unpack
           find . -ls
 
