@@ -187,9 +187,10 @@ jobs:
 
       - name: Unpack and List the test data
         run: |
-          cd ../sleuthkit_test_data
+          cd ..
           pwd
           git clone https://github.com/sleuthkit/sleuthkit_test_data
+          cd sleuthkit_test_data
           make unpack
           find . -ls
 
