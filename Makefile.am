@@ -648,6 +648,7 @@ TESTS =	\
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
 	test/legacy/runtests.sh \
+	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh
 
