@@ -142,7 +142,7 @@ jobs:
           export CPPFLAGS=-I/opt/homebrew/include/
           export LDFLAGS=-L/opt/homebrew/lib/
           brew update
-          brew install libtool autoconf automake libtool libewf libmagic afflib
+          brew install libtool autoconf automake libtool libewf libmagic afflib wget
           echo MATRIX_ENABLE_JAVA=$MATRIX_ENABLE_JAVA
           if [ ${MATRIX_ENABLE_JAVA}x == "yesx" ]; then
              echo Installing JAVA
@@ -161,14 +161,14 @@ jobs:
         if: ${{ matrix.os == 'linux' }}
         run: |
           sudo apt update
-          sudo apt install -y ant autoconf automake g++ libssl-dev afflib-tools libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev
+          sudo apt install -y ant autoconf automake g++ libssl-dev afflib-tools libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev wget
 
       - name: Install Mingw packages and setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
         run: |
           sudo dpkg --add-architecture i386
           sudo apt update
-          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64
+          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64 wget
           sudo update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
           # This is not working; also requires mingw-w64-x86_64-libgnurx
           # echo === installing libmagic for mingw ===
@@ -197,7 +197,8 @@ jobs:
         run: |
           cd ..
           pwd
-          git clone https://github.com/sleuthkit/sleuthkit_test_data
+          wget https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
+          unzip sleuthkit_test_data.zip
           cd sleuthkit_test_data
           make unpack
           find . -ls | grep -v '[.]git'
