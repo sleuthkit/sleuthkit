@@ -7,7 +7,10 @@ if [ -n "$WINE" ]; then
   EXEEXT=.exe
 fi
 
+if [ ! -d ${SLEUTHKIT_TEST_DATA_DIR:=../sleuthkit_test_data} ]; then echo $SLEUTHKIT_TEST_DATA_DIR does not exist ; exit 1 ; fi
+
 CMD="${1/\$EXEEXT/$EXEEXT}"
+CMD="${CMD/\$DATA_DIR/$SLEUTHKIT_TEST_DATA_DIR}"
 EXP="$2"
 
 echo -n "checking '$CMD': "
