@@ -1333,7 +1333,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
 
         // finds VS related to the FS
         TSK_DB_VS_INFO curVsDbInfo;
-        if(getVsByFsId(curFsDbInfo->objId, curVsDbInfo) == TSK_ERR){
+        if (getVsByFsId(curFsDbInfo.objId, curVsDbInfo) == TSK_ERR) {
             // FS is not inside a VS
             if (tsk_verbose) {
                 tsk_fprintf(stderr, "TskAutoDbJava::addUnallocFsSpaceToDb: FS not inside a VS, adding the unnalocated space\n");
@@ -1343,7 +1343,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                     allFsProcessRet = TSK_ERR;
         }
         else {
-            if ((curVsDbInfo.vstype == TSK_VS_TYPE_APFS)||(curVsDbInfo.vstype == TSK_VS_TYPE_LVM)){
+            if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS || curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
 
                 TSK_DB_OBJECT fsObjInfo;
                 if (m_db->getObjectInfo ( curFsDbInfo->objId, fsObjInfo) == TSK_ERR ) {
@@ -1428,7 +1428,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
 
                 }
                 #ifdef HAVE_LIBVSLVM
-                if ( curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
 
                     const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
                     if (pool == nullptr) {
@@ -1484,7 +1484,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                 }
                 #endif /* HAVE_LIBVSLVM */
 
-                if (curVsDbInfo.vstype == TSK_VS_TYPE_UNSUPP){
+                if (curVsDbInfo.vstype == TSK_VS_TYPE_UNSUPP) {
                     tsk_error_set_errstr2(
                         "TskAutoDb::addUnallocFsSpaceToDb: VS Type not supported");
                     registerError();
