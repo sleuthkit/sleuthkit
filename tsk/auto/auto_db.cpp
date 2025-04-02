@@ -1419,7 +1419,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
 
             }
             #ifdef HAVE_LIBVSLVM
-            if (curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
+            else if (curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
                 const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
                 if (pool == nullptr) {
                     tsk_error_set_errstr2(
