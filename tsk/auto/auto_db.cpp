@@ -1326,8 +1326,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
     numFs = m_savedFsInfo.size();
     TSK_RETVAL_ENUM allFsProcessRet = TSK_OK;
 
-
-    for (vector<TSK_DB_FS_INFO>::iterator curFsDbInfo = m_savedFsInfo.begin(); curFsDbInfo!= m_savedFsInfo.end(); ++curFsDbInfo) {
+    for (auto& curFsDbInfo : m_savedFsInfo) {
         if (m_stopAllProcessing)
             break;
 
@@ -1338,7 +1337,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
             if (tsk_verbose) {
                 tsk_fprintf(stderr, "TskAutoDbJava::addUnallocFsSpaceToDb: FS not inside a VS, adding the unnalocated space\n");
             }
-            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(m_img_info, *curFsDbInfo);
+            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(m_img_info, curFsDbInfo);
             if (retval == TSK_ERR)
                     allFsProcessRet = TSK_ERR;
         }
@@ -1346,7 +1345,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
             if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS || curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
 
                 TSK_DB_OBJECT fsObjInfo;
-                if (m_db->getObjectInfo ( curFsDbInfo->objId, fsObjInfo) == TSK_ERR ) {
+                if (m_db->getObjectInfo(curFsDbInfo.objId, fsObjInfo) == TSK_ERR) {
                     tsk_error_set_errstr(
                             "TskAutoDb::addUnallocFsSpaceToDb: error getting Object by ID"
                             );
@@ -1366,9 +1365,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                     return TSK_ERR;
                 }
 
-
-
-
                 if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS) {
                         const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS);
                         if (pool == nullptr) {
@@ -1383,7 +1379,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         if (pool_img != NULL) {
                             TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
                             if (fs_info) {
-                                TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, *curFsDbInfo);
+                                TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, curFsDbInfo);
                                 if (retval == TSK_ERR)
                                                 allFsProcessRet = TSK_ERR;
 
@@ -1394,8 +1390,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                                     tsk_pool_close(pool);
                                     allFsProcessRet = TSK_STOP;
                                 }
-
-
                             }
                             else {
                                 if (pool->vol_list->flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
@@ -1450,7 +1444,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         allFsProcessRet = TSK_ERR;
                     }
                     else {
-                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo->fType);
+                        TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo.fType);
                         if (fs_info == NULL) {
                             tsk_img_close(pool_vol_img);
                             tsk_pool_close(pool);
@@ -1462,7 +1456,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                             allFsProcessRet = TSK_ERR;
                         }
                         else {
-                            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, *curFsDbInfo);
+                            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, curFsDbInfo);
                             if (retval == TSK_ERR){
                                 tsk_error_set_errstr2(
                                         "TskAutoDb::addUnallocFsSpaceToDb: Error getting unallocated space");
@@ -1492,7 +1486,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                 }
             }
             else {
-                if (addFsInfoUnalloc(m_img_info, *curFsDbInfo) == TSK_ERR){
+                if (addFsInfoUnalloc(m_img_info, curFsDbInfo) == TSK_ERR) {
                     allFsProcessRet = TSK_ERR;
                 }
             }
