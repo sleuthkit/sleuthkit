@@ -1325,7 +1325,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
     numFs = m_savedFsInfo.size();
     TSK_RETVAL_ENUM allFsProcessRet = TSK_OK;
 
-    for (auto& curFsDbInfo : m_savedFsInfo) {
+    for (const auto& curFsDbInfo : m_savedFsInfo) {
         if (m_stopAllProcessing)
             break;
 
