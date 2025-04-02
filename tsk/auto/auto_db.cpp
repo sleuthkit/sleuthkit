@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <memory>
 #include <sstream>
 
 using std::stringstream;
@@ -1374,13 +1375,17 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                 const auto pool_img = pool->get_img_info(pool, curVsPartInfo.start);
 
                 if (pool_img != NULL) {
-                    TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
+                    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+                        apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, ""),
+                        tsk_fs_close
+                    };
+
                     if (fs_info) {
                         TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, curFsDbInfo);
-                        if (retval == TSK_ERR)
-                                        allFsProcessRet = TSK_ERR;
+                        if (retval == TSK_ERR) {
+                            allFsProcessRet = TSK_ERR;
+                        }
 
-                        tsk_fs_close(fs_info);
                         tsk_img_close(pool_img);
 
                         if (retval == TSK_STOP) {
@@ -1439,8 +1444,12 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                     allFsProcessRet = TSK_ERR;
                 }
                 else {
-                    TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo.fType);
-                    if (fs_info == NULL) {
+                    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+                        tsk_fs_open_img(pool_vol_img, 0, curFsDbInfo.fType),
+                        tsk_fs_close
+                    };
+
+                    if (!fs_info) {
                         tsk_img_close(pool_vol_img);
                         tsk_pool_close(pool);
                         tsk_error_set_errstr2(
@@ -1460,7 +1469,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                             allFsProcessRet = TSK_ERR;
                         }
 
-                        tsk_fs_close(fs_info);
                         tsk_img_close(pool_vol_img);
 
                         if (retval == TSK_STOP) {
