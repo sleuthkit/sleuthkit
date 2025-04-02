@@ -1363,59 +1363,59 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
             }
 
             if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS) {
-                    const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS);
-                    if (pool == nullptr) {
-                        tsk_error_set_errstr2(
-                            "TskAutoDb::addUnallocFsSpaceToDb:: Error opening pool. ");
-                        tsk_error_set_errstr2("Offset: %" PRIdOFF, curVsDbInfo.offset);
-                        registerError();
-                        allFsProcessRet = TSK_ERR;
-                    }
-                    const auto pool_img = pool->get_img_info(pool, curVsPartInfo.start);
+                const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS);
+                if (pool == nullptr) {
+                    tsk_error_set_errstr2(
+                        "TskAutoDb::addUnallocFsSpaceToDb:: Error opening pool. ");
+                    tsk_error_set_errstr2("Offset: %" PRIdOFF, curVsDbInfo.offset);
+                    registerError();
+                    allFsProcessRet = TSK_ERR;
+                }
+                const auto pool_img = pool->get_img_info(pool, curVsPartInfo.start);
 
-                    if (pool_img != NULL) {
-                        TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
-                        if (fs_info) {
-                            TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, curFsDbInfo);
-                            if (retval == TSK_ERR)
-                                            allFsProcessRet = TSK_ERR;
+                if (pool_img != NULL) {
+                    TSK_FS_INFO *fs_info = apfs_open(pool_img, 0, TSK_FS_TYPE_APFS, "");
+                    if (fs_info) {
+                        TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_img, curFsDbInfo);
+                        if (retval == TSK_ERR)
+                                        allFsProcessRet = TSK_ERR;
 
-                            tsk_fs_close(fs_info);
-                            tsk_img_close(pool_img);
-
-                            if (retval == TSK_STOP) {
-                                tsk_pool_close(pool);
-                                allFsProcessRet = TSK_STOP;
-                            }
-                        }
-                        else {
-                            if (pool->vol_list->flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
-                                tsk_error_reset();
-                                tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
-                                tsk_error_set_errstr(
-                                    "TskAutoDb::addUnallocFsSpaceToDb: Encrypted APFS file system");
-                                tsk_error_set_errstr2("Block: %" PRIdOFF, curVsPartInfo.start);
-                                registerError();
-                            }
-                            else {
-                                tsk_error_set_errstr2(
-                                    "TskAutoDb::addUnallocFsSpaceToDb: Error opening APFS file system");
-                                registerError();
-                            }
-
-                            tsk_img_close(pool_img);
-                            tsk_pool_close(pool);
-                            allFsProcessRet = TSK_ERR;
-                        }
+                        tsk_fs_close(fs_info);
                         tsk_img_close(pool_img);
+
+                        if (retval == TSK_STOP) {
+                            tsk_pool_close(pool);
+                            allFsProcessRet = TSK_STOP;
+                        }
                     }
                     else {
+                        if (pool->vol_list->flags & TSK_POOL_VOLUME_FLAG_ENCRYPTED) {
+                            tsk_error_reset();
+                            tsk_error_set_errno(TSK_ERR_FS_ENCRYPTED);
+                            tsk_error_set_errstr(
+                                "TskAutoDb::addUnallocFsSpaceToDb: Encrypted APFS file system");
+                            tsk_error_set_errstr2("Block: %" PRIdOFF, curVsPartInfo.start);
+                            registerError();
+                        }
+                        else {
+                            tsk_error_set_errstr2(
+                                "TskAutoDb::addUnallocFsSpaceToDb: Error opening APFS file system");
+                            registerError();
+                        }
+
+                        tsk_img_close(pool_img);
                         tsk_pool_close(pool);
-                        tsk_error_set_errstr2(
-                            "TskAutoDb::addUnallocFsSpaceToDb: Error opening APFS pool");
-                        registerError();
                         allFsProcessRet = TSK_ERR;
                     }
+                    tsk_img_close(pool_img);
+                }
+                else {
+                    tsk_pool_close(pool);
+                    tsk_error_set_errstr2(
+                        "TskAutoDb::addUnallocFsSpaceToDb: Error opening APFS pool");
+                    registerError();
+                    allFsProcessRet = TSK_ERR;
+                }
 
             }
             #ifdef HAVE_LIBVSLVM
@@ -1469,7 +1469,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         }
                     }
                 }
-
             }
             #endif /* HAVE_LIBVSLVM */
 
