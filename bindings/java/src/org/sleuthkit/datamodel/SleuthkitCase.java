@@ -486,7 +486,14 @@ public class SleuthkitCase {
 		}
 	}
 	
-	private AtomicLong timeInOptimize = new AtomicLong(0);
+	// the total time taken in optimize.  this is 
+	private final AtomicLong timeInOptimize = new AtomicLong(0);
+	
+	// Tracks the minimum time of the next run of optimize.
+	private final AtomicLong minNextRun = new AtomicLong(0);
+	
+	// Run optimize no more than every 10 minutes.
+	private static final long OPTIMIZE_REFRESH_WINDOW = 5 * 60 * 1000;
 	
 	/**
 	 * Performs optimization based on
@@ -494,16 +501,41 @@ public class SleuthkitCase {
 	 * long-lived connections.
 	 */
 	private void optimizeDb(CaseDbConnection conn) {
-		long startTime = System.currentTimeMillis();
-		if (this.dbType == SQLITE) {
-			try (Statement statement = conn.createStatement()) {
-				statement.execute("PRAGMA optimize");
-			} catch (Throwable t) {
-				logger.log(Level.WARNING, "Unable to do optimization of database", t);
-			}
+		// only run for sqlite
+		if (this.dbType != SQLITE) {
+			return;
 		}
+		
+		// get current time
+		long thisStart = System.currentTimeMillis();
+		
+		/**
+		 * Atomically checks the minimum next run time and updates if necessary.
+		 * If current start time is greater than or equal to the current
+		 * minNextRun time, the minNextRun time will be updated to be the
+		 * current start time with OPTIMIZE_REFRESH_WINDOW (10 minutes) added to
+		 * it, and optimize will run.
+		 */
+		long prevMinNextRun = minNextRun.getAndAccumulate(thisStart,
+				(minNextRun, curTime) -> {
+					return curTime >= minNextRun ? curTime + OPTIMIZE_REFRESH_WINDOW : minNextRun;
+				});
+		
+		// no optimize to be performed yet; return
+		if (thisStart < prevMinNextRun) {
+			return;
+		}
+		
+		// run optimize
+		try (Statement statement = conn.createStatement()) {
+			statement.execute("PRAGMA optimize");
+		} catch (Throwable t) {
+			logger.log(Level.WARNING, "Unable to do optimization of database", t);
+		}
+
+		// track time taken
 		long endTime = System.currentTimeMillis();
-		timeInOptimize.addAndGet(endTime - startTime);
+		timeInOptimize.addAndGet(endTime - thisStart);
 	}
 	
 	/**
