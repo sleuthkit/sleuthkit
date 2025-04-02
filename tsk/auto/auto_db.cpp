@@ -1364,8 +1364,12 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
             }
 
             if (curVsDbInfo.vstype == TSK_VS_TYPE_APFS) {
-                const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS);
-                if (pool == nullptr) {
+                std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+                    tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_APFS),
+                    tsk_pool_close
+                };
+
+                if (!pool) {
                     tsk_error_set_errstr2(
                         "TskAutoDb::addUnallocFsSpaceToDb:: Error opening pool. ");
                     tsk_error_set_errstr2("Offset: %" PRIdOFF, curVsDbInfo.offset);
@@ -1374,7 +1378,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                 }
 
                 std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
-                    pool->get_img_info(pool, curVsPartInfo.start),
+                    pool->get_img_info(pool.get(), curVsPartInfo.start),
                     tsk_img_close
                 };
 
@@ -1391,7 +1395,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         }
 
                         if (retval == TSK_STOP) {
-                            tsk_pool_close(pool);
                             allFsProcessRet = TSK_STOP;
                         }
                     }
@@ -1410,23 +1413,24 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                             registerError();
                         }
 
-                        tsk_pool_close(pool);
                         allFsProcessRet = TSK_ERR;
                     }
                 }
                 else {
-                    tsk_pool_close(pool);
                     tsk_error_set_errstr2(
                         "TskAutoDb::addUnallocFsSpaceToDb: Error opening APFS pool");
                     registerError();
                     allFsProcessRet = TSK_ERR;
                 }
-
             }
             #ifdef HAVE_LIBVSLVM
             else if (curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
-                const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
-                if (pool == nullptr) {
+                std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+                    tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM),
+                    tsk_pool_close
+                };
+
+                if (!pool) {
                     tsk_error_set_errstr2(
                     "findFilesInPool: Error opening pool");
                     registerError();
@@ -1434,12 +1438,11 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                 }
 
                 std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_vol_img{
-                    pool->get_img_info(pool, curVsPartInfo.start),
+                    pool->get_img_info(pool.get(), curVsPartInfo.start),
                     tsk_img_close
                 };
 
                 if (!pool_vol_img) {
-                    tsk_pool_close(pool);
                     tsk_error_set_errstr2(
                         "TskAutoDb::addUnallocFsSpaceToDb: Error opening LVM logical volume: %" PRIdOFF "",
                         curVsPartInfo.start);
@@ -1473,7 +1476,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         }
 
                         if (retval == TSK_STOP) {
-                            tsk_pool_close(pool);
                             allFsProcessRet = TSK_STOP;
                         }
                     }
