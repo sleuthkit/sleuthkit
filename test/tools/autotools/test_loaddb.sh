@@ -1,7 +1,12 @@
 #!/bin/bash -e
 
-/bin/rm -f apfs_pool.db
-"tools/autotools/tsk_loaddb$EXEEXT" -d apfs_pool.db $SLEUTHKIT_TEST_DATA_DIR/apfs/apfs_pool.E01
+doit () {
+    echo scan $1
+    /bin/rm -f testdb.db
+    "tools/autotools/tsk_loaddb$EXEEXT" -d testdb.db $1
+    echo scan $1 done
+}
 
-/bin/rm -f issue_3235.db
-"tools/autotools/tsk_loaddb$EXEEXT" -d issue_3235.db $SLEUTHKIT_TEST_DATA_DIR/fuzzing/lvm_test_issue_3235.E01
+doit $SLEUTHKIT_TEST_DATA_DIR/from_brian/1-extend-part/ext-part-test-2.dd
+doit $SLEUTHKIT_TEST_DATA_DIR/apfs/apfs_pool.E01
+doit $SLEUTHKIT_TEST_DATA_DIR/fuzzing/lvm_test_issue_3235.E01
