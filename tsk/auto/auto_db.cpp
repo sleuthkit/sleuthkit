@@ -1201,7 +1201,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, con
         return TSK_ERR;
     }
 
-    if(m_stopAllProcessing) {
+    if (m_stopAllProcessing) {
         tsk_fs_close(fsInfo);
         return TSK_OK;
     }
@@ -1318,8 +1318,7 @@ TSK_RETVAL_ENUM TskAutoDb::getVsByFsId(int64_t objId, TSK_DB_VS_INFO & vsDbInfo)
 * @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
 */
 TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
-
-    if(m_stopAllProcessing) {
+    if (m_stopAllProcessing) {
         return TSK_OK;
     }
 
@@ -1423,7 +1422,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                 }
                 #ifdef HAVE_LIBVSLVM
                 if (curVsDbInfo.vstype == TSK_VS_TYPE_LVM) {
-
                     const auto pool = tsk_pool_open_img_sing(m_img_info, curVsDbInfo.offset, TSK_POOL_TYPE_LVM);
                     if (pool == nullptr) {
                         tsk_error_set_errstr2(
@@ -1431,7 +1429,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         registerError();
                         allFsProcessRet = TSK_ERR;
                     }
-
 
                     TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, curVsPartInfo.start);
                     if (pool_vol_img == NULL) {
@@ -1688,7 +1685,7 @@ const std::string TskAutoDb::getCurDir() {
 
 
 bool TskAutoDb::isDbOpen() {
-    if(m_db!=NULL) {
+    if (m_db != NULL) {
         return m_db->isDbOpen();
     }
     return false;
