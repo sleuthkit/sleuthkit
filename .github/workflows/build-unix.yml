@@ -212,13 +212,17 @@ jobs:
         run: |
           make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
-      - name: Run make check on Linux with core dump enabled
+      - name: Run make check on Linux (trap failure)
         if: ${{ matrix.os == 'linux' }}
-        id: run_tests
         run: |
-          set -e
+          set +e
           ulimit -c unlimited
-          make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 || echo "TEST_FAILED=1" >> $GITHUB_ENV
+          make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1
+          RESULT=$?
+          echo "make check exit code: $RESULT"
+          if [ $RESULT -ne 0 ]; then
+            echo "TEST_FAILED=1" >> $GITHUB_ENV
+          fi
 
       - name: Show core dump backtrace if tests failed
         if: ${{ env.TEST_FAILED == '1' && matrix.os == 'linux' }}
