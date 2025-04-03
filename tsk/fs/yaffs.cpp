@@ -2431,7 +2431,6 @@ static uint8_t
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     TSK_FS_META *fs_meta;
-    TSK_FS_FILE *fs_file;
     YAFFSFS_INFO *yfs = (YAFFSFS_INFO *)fs;
     char ls[12];
     YAFFSFS_PRINT_ADDR print;
@@ -2442,7 +2441,12 @@ static uint8_t
 
     yaffscache_version_find_by_inode(yfs, inum, &version, &obj);
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inum),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         return 1;
     }
     fs_meta = fs_file->meta;
@@ -2514,7 +2518,7 @@ static uint8_t
 
     if (flags & TSK_FS_ISTAT_RUNLIST){
         const TSK_FS_ATTR *fs_attr_default =
-            tsk_fs_file_attr_get_type(fs_file,
+            tsk_fs_file_attr_get_type(fs_file.get(),
                 TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
             if (tsk_fs_attr_print(fs_attr_default, hFile)) {
@@ -2528,7 +2532,7 @@ static uint8_t
         print.idx = 0;
         print.hFile = hFile;
 
-        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+        if (tsk_fs_file_walk(fs_file.get(), TSK_FS_FILE_WALK_FLAG_AONLY,
             (TSK_FS_FILE_WALK_CB)print_addr_act, (void *)&print)) {
             tsk_fprintf(hFile, "\nError reading file:  ");
             tsk_error_print(hFile);
@@ -2538,8 +2542,6 @@ static uint8_t
             tsk_fprintf(hFile, "\n");
         }
     }
-
-    tsk_fs_file_close(fs_file);
 
     return 0;
 }
