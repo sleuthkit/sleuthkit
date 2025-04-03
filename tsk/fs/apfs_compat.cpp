@@ -563,7 +563,6 @@ TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(
 uint8_t APFSFSCompat::inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INUM_T end_inum,
     TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB action, void* ptr) {
 
-    TSK_FS_FILE *fs_file;
     TSK_INUM_T inum;
 
     if (end_inum < start_inum) {
@@ -593,36 +592,31 @@ uint8_t APFSFSCompat::inode_walk(TSK_FS_INFO* fs, TSK_INUM_T start_inum, TSK_INU
         flags = (TSK_FS_META_FLAG_ENUM)(flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
     }
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file)
         return 1;
     if ((fs_file->meta =
         tsk_fs_meta_alloc(sizeof(APFSJObject))) == NULL)
         return 1;
 
     for (inum = start_inum; inum < end_inum; inum++) {
-
-        int result = fs->file_add_meta(fs, fs_file, inum);
+        int result = fs->file_add_meta(fs, fs_file.get(), inum);
         if (result == TSK_OK) {
-
             if ((fs_file->meta->flags & flags) == fs_file->meta->flags) {
-                int retval = action(fs_file, ptr);
+                int retval = action(fs_file.get(), ptr);
                 if (retval == TSK_WALK_STOP) {
-                    tsk_fs_file_close(fs_file);
                     return 0;
                 }
                 else if (retval == TSK_WALK_ERROR) {
-                    tsk_fs_file_close(fs_file);
                     return 1;
                 }
             }
         }
     }
-
-
-    /*
-    * Cleanup.
-    */
-    tsk_fs_file_close(fs_file);
 
     return TSK_OK;
 }
@@ -1133,8 +1127,12 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
                 "APFS istat: inode_num: %" PRIuINUM " numblock: %" PRIu32 "\n",
                 inode_num, numblock);
 
-  const auto fs_file = tsk_fs_file_open_meta(fs, nullptr, inode_num);
-  if (fs_file == nullptr) {
+  std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+    tsk_fs_file_open_meta(fs, nullptr, inode_num),
+    tsk_fs_file_close
+  };
+
+  if (!fs_file) {
     error_returned("APFS istat: getting metadata for the file");
     return 1;
   }
@@ -1287,7 +1285,7 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
   }
 
   // Force the loading of all attributes.
-  (void)tsk_fs_file_attr_get(fs_file);
+  (void)tsk_fs_file_attr_get(fs_file.get());
 
   const TSK_FS_ATTR* compressionAttr = nullptr;
 
@@ -1295,9 +1293,9 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
   tsk_fprintf(hFile, "\nAttributes: \n");
   if (fs_file->meta->attr != nullptr) {
     // cycle through the attributes
-    const auto cnt = tsk_fs_file_attr_getsize(fs_file);
+    const auto cnt = tsk_fs_file_attr_getsize(fs_file.get());
     for (auto i = 0; i < cnt; ++i) {
-      const auto fs_attr = tsk_fs_file_attr_get_idx(fs_file, i);
+      const auto fs_attr = tsk_fs_file_attr_get_idx(fs_file.get(), i);
 
       if (fs_attr == nullptr) {
         continue;
@@ -1330,7 +1328,7 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
             APFS_PRINT_ADDR print_addr;
             print_addr.idx = 0;
             print_addr.hFile = hFile;
-            if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
+            if (tsk_fs_file_walk_type(fs_file.get(), fs_attr->type,
                 fs_attr->id,
                 TSK_FS_FILE_WALK_FLAG_ENUM((TSK_FS_FILE_WALK_FLAG_AONLY |
                     TSK_FS_FILE_WALK_FLAG_SLACK)),
@@ -1384,7 +1382,6 @@ uint8_t APFSFSCompat::istat(TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE* hFile,
 
   // TODO(JTS): compression stuff
 
-  tsk_fs_file_close(fs_file);
   return 0;
 } catch (const std::exception& e) {
   tsk_error_reset();
