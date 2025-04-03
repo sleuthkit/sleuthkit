@@ -436,7 +436,6 @@ public class SleuthkitCase {
 	}
 
 	private void init() throws Exception {
-		initOptimizeDb();
 		blackboard = new Blackboard(this);
 		updateDatabaseSchema(null); 
 		try (CaseDbConnection connection = connections.getConnection()) {
@@ -463,81 +462,9 @@ public class SleuthkitCase {
 		osAccountManager = new OsAccountManager(this);
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
-		hostAddressManager = new HostAddressManager(this); 
-		try (CaseDbConnection connection = connections.getConnection()) {
-			optimizeDb(connection);
-		} catch (Throwable t) {
-			logger.log(Level.WARNING, "Unable to do optimization of database after initializing db schema", t);
-		}
+		hostAddressManager = new HostAddressManager(this);
 	}
-	
-	/**
-	 * Performs optimization on initialization per
-	 * https://www.sqlite.org/pragma.html#pragma_optimize advice regarding
-	 * long-lived connections.
-	 */
-	private void initOptimizeDb() {
-		if (this.dbType == SQLITE) {
-			try (CaseDbConnection connection = connections.getConnection(); Statement statement = connection.createStatement()) {
-				statement.execute("PRAGMA optimize=0x10002");
-			} catch (Throwable t) {
-				logger.log(Level.WARNING, "Unable to do initializing optimization of database", t);
-			}
-		}
-	}
-	
-	// the total time taken in optimize.  this is 
-	private final AtomicLong timeInOptimize = new AtomicLong(0);
-	
-	// Tracks the minimum time of the next run of optimize.
-	private final AtomicLong minNextRun = new AtomicLong(0);
-	
-	// Run optimize no more than every 10 minutes.
-	private static final long OPTIMIZE_REFRESH_WINDOW = 5 * 60 * 1000;
-	
-	/**
-	 * Performs optimization based on
-	 * https://www.sqlite.org/pragma.html#pragma_optimize advice regarding
-	 * long-lived connections.
-	 */
-	private void optimizeDb(CaseDbConnection conn) {
-		// only run for sqlite
-		if (this.dbType != SQLITE) {
-			return;
-		}
 		
-		// get current time
-		long thisStart = System.currentTimeMillis();
-		
-		/**
-		 * Atomically checks the minimum next run time and updates if necessary.
-		 * If current start time is greater than or equal to the current
-		 * minNextRun time, the minNextRun time will be updated to be the
-		 * current start time with OPTIMIZE_REFRESH_WINDOW (10 minutes) added to
-		 * it, and optimize will run.
-		 */
-		long prevMinNextRun = minNextRun.getAndAccumulate(thisStart,
-				(minNextRun, curTime) -> {
-					return curTime >= minNextRun ? curTime + OPTIMIZE_REFRESH_WINDOW : minNextRun;
-				});
-		
-		// no optimize to be performed yet; return
-		if (thisStart < prevMinNextRun) {
-			return;
-		}
-		
-		// run optimize
-		try (Statement statement = conn.createStatement()) {
-			statement.execute("PRAGMA optimize");
-		} catch (Throwable t) {
-			logger.log(Level.WARNING, "Unable to do optimization of database", t);
-		}
-
-		// track time taken
-		long endTime = System.currentTimeMillis();
-		timeInOptimize.addAndGet(endTime - thisStart);
-	}
-	
 	/**
 	 * Returns the custom content provider for this case if one exists.
 	 * Otherwise, returns null.
@@ -11266,7 +11193,6 @@ public class SleuthkitCase {
 
 		fileSystemIdMap.clear();
 
-		logger.info("Time running optimize was " + this.timeInOptimize + "ms.");
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
@@ -13919,6 +13845,9 @@ public class SleuthkitCase {
 	private final class SQLiteConnections extends ConnectionPool {
 
 		private final Map<String, String> configurationOverrides = new HashMap<String, String>();
+		
+		// the total time taken to run PRAGMA OPTIMIZE. 
+		private final AtomicLong timeInOptimize = new AtomicLong(0);
 
 		SQLiteConnections(String dbPath, boolean useWAL) throws SQLException {
 			configurationOverrides.put("acquireIncrement", "2");
@@ -13953,8 +13882,41 @@ public class SleuthkitCase {
 					logger.log(Level.WARNING, String.format("Thread %s (ID = %d) already has an open transaction.  New connection may encounter SQLITE_BUSY error. ", Thread.currentThread().getName(), Thread.currentThread().getId()), new Throwable());
 				}
 			}
-			return new SQLiteConnection(getPooledDataSource().getConnection());
+			java.sql.Connection conn = getPooledDataSource().getConnection();
+			runOptimize(conn);
+			CaseDbConnection caseDbConn = new SQLiteConnection(conn);
+			return caseDbConn;
 		}
+
+		/**
+		 * Performs optimization based on
+		 * https://www.sqlite.org/pragma.html#pragma_optimize advice regarding
+		 * long-lived connections.
+		 */
+		private void runOptimize(java.sql.Connection conn) {
+
+			// get current time
+			long thisStart = System.currentTimeMillis();
+
+			// run optimize
+			try (Statement statement = conn.createStatement()) {
+				statement.execute("PRAGMA optimize");
+			} catch (Throwable t) {
+				logger.log(Level.WARNING, "Unable to do optimization of database", t);
+			}
+
+			// track time taken
+			long endTime = System.currentTimeMillis();
+			timeInOptimize.addAndGet(endTime - thisStart);
+		}
+
+		@Override
+		void close() throws TskCoreException {
+			logger.info("Time running 'PRAGMA optimize' was " + this.timeInOptimize + "ms.");
+			super.close();
+		}
+		
+		
 	}
 
 	/**
@@ -14694,7 +14656,6 @@ public class SleuthkitCase {
 		public void commit() throws TskCoreException {
 			try {
 				this.connection.commitTransaction();
-				this.sleuthkitCase.optimizeDb(connection);
 			} catch (SQLException ex) {
 				throw new TskCoreException("Failed to commit transaction on case database", ex);
 			} finally {
