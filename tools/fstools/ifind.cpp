@@ -24,6 +24,7 @@
 #include <time.h>
 
 #include <memory>
+#include <new>
 
 static TSK_TCHAR *progname;
 static uint8_t localflags;
@@ -85,7 +86,7 @@ main(int argc, char **argv1)
     extern int OPTIND;
     TSK_DADDR_T block = 0;      /* the block to find */
     TSK_INUM_T parinode = 0;
-    TSK_TCHAR *path = NULL;
+    std::unique_ptr<TSK_TCHAR[]> path;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
 
@@ -171,11 +172,12 @@ main(int argc, char **argv1)
                 }
                 type = IFIND_PATH;
                 len = (TSTRLEN(OPTARG) + 1) * sizeof(TSK_TCHAR);
-                if ((path = (TSK_TCHAR *) malloc(len)) == NULL) {
+                path.reset(new(std::nothrow) TSK_TCHAR[len]);
+                if (!path) {
                     tsk_fprintf(stderr, "error allocating memory\n");
                     exit(1);
                 }
-                TSTRNCPY(path, OPTARG, TSTRLEN(OPTARG) + 1);
+                TSTRNCPY(path.get(), OPTARG, TSTRLEN(OPTARG) + 1);
                 break;
             }
         case 'o':
@@ -245,8 +247,6 @@ main(int argc, char **argv1)
     /* We need at least one more argument */
     if (OPTIND >= argc) {
         tsk_fprintf(stderr, "Missing image name\n");
-        if (path)
-            free(path);
         usage();
     }
 
@@ -262,8 +262,6 @@ main(int argc, char **argv1)
 
     if (!img) {
         tsk_error_print(stderr);
-        if (path)
-            free(path);
         exit(1);
     }
 
@@ -360,12 +358,10 @@ main(int argc, char **argv1)
         int retval;
         TSK_INUM_T inum;
 
-        if (-1 == (retval = tsk_fs_ifind_path(fs.get(), path, &inum))) {
+        if (-1 == (retval = tsk_fs_ifind_path(fs.get(), path.get(), &inum))) {
             tsk_error_print(stderr);
-            free(path);
             exit(1);
         }
-        free(path);
         if (retval == 1)
             tsk_printf("File not found\n");
         else
