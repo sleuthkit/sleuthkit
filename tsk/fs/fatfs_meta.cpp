@@ -1127,7 +1127,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
     unsigned int flags = a_selection_flags;
     TSK_INUM_T end_inum_tmp = 0;
-    TSK_FS_FILE *fs_file =  NULL;
     TSK_DADDR_T ssect = 0;
     TSK_DADDR_T lsect = 0;
     TSK_DADDR_T sect = 0;
@@ -1202,7 +1201,11 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     /* Allocate a TSK_FS_FILE object with a TSK_FS_META object to populate and
      * pass to the callback function when an inode that fits the inode
      * selection criteria is found. */
-    if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(a_fs),
+        tsk_fs_file_close
+    };
+    if (!fs_file) {
         return 1;
     }
 
@@ -1218,24 +1221,20 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             TSK_WALK_RET_ENUM retval = TSK_WALK_CONT;
 
             if (fatfs_make_root(fatfs, fs_file->meta)) {
-                tsk_fs_file_close(fs_file);
                 return 1;
             }
 
-            retval = a_action(fs_file, a_ptr);
+            retval = a_action(fs_file.get(), a_ptr);
             if (retval == TSK_WALK_STOP) {
-                tsk_fs_file_close(fs_file);
                 return 0;
             }
             else if (retval == TSK_WALK_ERROR) {
-                tsk_fs_file_close(fs_file);
                 return 1;
             }
         }
 
         a_start_inum++;
         if (a_start_inum == a_end_inum) {
-            tsk_fs_file_close(fs_file);
             return 0;
         }
     }
@@ -1243,14 +1242,12 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
     // Taking 128 MiB as an arbitrary upper bound
     if ((bitmap_len == 0) || (bitmap_len > (128 * 1024 * 1024))) {
-        tsk_fs_file_close(fs_file);
         return 1;
     }
 
     /* Allocate a bitmap to keep track of which sectors are allocated to
      * directories. */
     if ((dir_sectors_bitmap = (uint8_t*)tsk_malloc(bitmap_len)) == NULL) {
-        tsk_fs_file_close(fs_file);
         return 1;
     }
 
@@ -1266,7 +1263,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
         /* Manufacture an inode for the root directory. */
         if (fatfs_make_root(fatfs, fs_file->meta)) {
-            tsk_fs_file_close(fs_file);
             free(dir_sectors_bitmap);
             return 1;
         }
@@ -1274,10 +1270,9 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         /* Do a file_walk on the root directory to set the bits in the
          * directory sectors bitmap for each sector allocated to the root
          * directory. */
-        if (tsk_fs_file_walk(fs_file,
+        if (tsk_fs_file_walk(fs_file.get(),
                 (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_SLACK | TSK_FS_FILE_WALK_FLAG_AONLY),
                 inode_walk_file_act, (void*)dir_sectors_bitmap)) {
-            tsk_fs_file_close(fs_file);
             free(dir_sectors_bitmap);
             return 1;
         }
@@ -1291,7 +1286,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 (void *) dir_sectors_bitmap)) {
             tsk_error_errstr2_concat
                 ("- fatfs_inode_walk: mapping directories");
-            tsk_fs_file_close(fs_file);
             free(dir_sectors_bitmap);
             return 1;
         }
@@ -1316,7 +1310,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         tsk_error_set_errstr
             ("%s: Begin inode in sector too big for image: %"
             PRIuDADDR, func_name, ssect);
-        tsk_fs_file_close(fs_file);
         free(dir_sectors_bitmap);
         return 1;
     }
@@ -1328,7 +1321,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         tsk_error_set_errstr
             ("%s: End inode in sector too big for image: %"
             PRIuDADDR, func_name, lsect);
-        tsk_fs_file_close(fs_file);
         free(dir_sectors_bitmap);
         return 1;
     }
@@ -1336,7 +1328,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     /* Allocate a buffer big enough to read in a cluster at a time. */
     if ((dino_buf = (char*)tsk_malloc(fatfs->csize << fatfs->ssize_sh)) ==
         NULL) {
-        tsk_fs_file_close(fs_file);
         free(dir_sectors_bitmap);
         return 1;
     }
@@ -1376,7 +1367,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 tsk_error_set_errstr2
                     ("%s (root dir): sector: %" PRIuDADDR,
                     func_name, sect);
-                tsk_fs_file_close(fs_file);
                 free(dir_sectors_bitmap);
                 free(dino_buf);
                 return 1;
@@ -1403,7 +1393,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 continue;
             }
             else if (cluster_is_alloc == -1) {
-                tsk_fs_file_close(fs_file);
                 free(dir_sectors_bitmap);
                 free(dino_buf);
                 return 1;
@@ -1436,7 +1425,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 }
                 tsk_error_set_errstr2("%s: sector: %"
                     PRIuDADDR, func_name, sect);
-                tsk_fs_file_close(fs_file);
                 free(dir_sectors_bitmap);
                 free(dino_buf);
                 return 1;
@@ -1510,7 +1498,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     continue;
                 }
 
-                retval2 = fatfs->dinode_copy(fatfs, inum, dep, cluster_is_alloc, fs_file);
+                retval2 = fatfs->dinode_copy(fatfs, inum, dep, cluster_is_alloc, fs_file.get());
 
                 if (retval2 != TSK_OK) {
                     if (retval2 == TSK_COR) {
@@ -1522,7 +1510,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                         continue;
                     }
                     else {
-                        tsk_fs_file_close(fs_file);
                         free(dir_sectors_bitmap);
                         free(dino_buf);
                         return 1;
@@ -1537,15 +1524,13 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 }
 
                 /* Do the callback. */
-                retval = a_action(fs_file, a_ptr);
+                retval = a_action(fs_file.get(), a_ptr);
                 if (retval == TSK_WALK_STOP) {
-                    tsk_fs_file_close(fs_file);
                     free(dir_sectors_bitmap);
                     free(dino_buf);
                     return 0;
                 }
                 else if (retval == TSK_WALK_ERROR) {
-                    tsk_fs_file_close(fs_file);
                     free(dir_sectors_bitmap);
                     free(dino_buf);
                     return 1;
@@ -1579,41 +1564,34 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
             if (inum == fatfs->mbr_virt_inum) {
                 if (fatfs_make_mbr(fatfs, fs_file->meta)) {
-                    tsk_fs_file_close(fs_file);
                     return 1;
                 }
             }
             else if (inum == fatfs->fat1_virt_inum) {
                 if (fatfs_make_fat(fatfs, 1, fs_file->meta)) {
-                    tsk_fs_file_close(fs_file);
                     return 1;
                 }
             }
             else if (inum == fatfs->fat2_virt_inum && fatfs->numfat == 2) {
                 if (fatfs_make_fat(fatfs, 2, fs_file->meta)) {
-                    tsk_fs_file_close(fs_file);
                     return 1;
                 }
             }
             else if (inum == TSK_FS_ORPHANDIR_INUM(a_fs)) {
                 if (tsk_fs_dir_make_orphan_dir_meta(a_fs, fs_file->meta)) {
-                    tsk_fs_file_close(fs_file);
                     return 1;
                 }
             }
 
-            retval = a_action(fs_file, a_ptr);
+            retval = a_action(fs_file.get(), a_ptr);
             if (retval == TSK_WALK_STOP) {
-                tsk_fs_file_close(fs_file);
                 return 0;
             }
             else if (retval == TSK_WALK_ERROR) {
-                tsk_fs_file_close(fs_file);
                 return 1;
             }
         }
     }
 
-    tsk_fs_file_close(fs_file);
     return 0;
 }
