@@ -1,3 +1,33 @@
+---------------- VERSION 4.14.0 --------------
+- This release reverts many changes from 4.13.0. It is more close to 4.12.1 than it is to 4.13.0.
+- It was created from the Dec 3, 2024 ct-3.13.0 tag (28a838d) and has changes from the Sleuth Kit Labs team.
+  - Added BitLocker support (Windows only)
+  - Updated LibVMDK and LibVHDI
+  - Updated to Visual Studio 2019
+  - Updated logical folder caching
+  - Java changes listed below
+- It does not have the experimental btrfs or bfs, and other changes that went into 4.13.0. Those will go into a future release (perhaps as a v5 so that there can be parallel releases). 
+
+
+
+
+---------------- VERSION 4.13.0 --------------
+C/C++:
+- Added BitLocker support (Windows only)
+- Updated LibVMDK and LibVHDI
+- Updated to Visual Studio 2019
+- Updated logical folder caching
+- Added support for btrfs (experimental) and xfs (experimental)
+- Implemented new unit test framework with Catch
+- Updated to C++17. (Update to C++20 pending a solution for compiling for Windows XP)
+- Other changes from @simsong, @uckelman-sf, @joachimmetz, and others.
+
+Java:
+- Changed how child map was loaded at start up
+- Updated handling of OS Accounts in Java DB, especially for Linux
+- Updated PostgreSQL SSL configuration
+
+
 ---------------- VERSION 4.12.1 --------------
 C/C++:
 - Bug fixes from Luis Nassif and Joachim Metz
