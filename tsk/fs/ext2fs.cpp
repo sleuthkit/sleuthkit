@@ -2360,28 +2360,30 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         or_in = tsk_getu32(fs->endian, sb->s_last_orphan);
 
         while (or_in) {
-            TSK_FS_FILE *fs_file;
-
             if ((or_in > fs->last_inum) || (or_in < fs->first_inum))
                 break;
 
             tsk_fprintf(hFile, "%" PRIu32 ", ", or_in);
 
-            if ((fs_file = tsk_fs_file_alloc(fs)) == NULL) {
+            std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+                tsk_fs_file_alloc(fs),
+                tsk_fs_file_close
+            };
+
+            if (!fs_file) {
                 /* Ignore this error */
                 tsk_error_reset();
                 break;
             }
 
             /* Get the next one */
-            if (ext2fs_inode_lookup(fs, fs_file, or_in)) {
+            if (ext2fs_inode_lookup(fs, fs_file.get(), or_in)) {
                 /* Ignore this error */
                 tsk_error_reset();
                 break;
             }
 
             or_in = (uint32_t) fs_file->meta->time2.ext2.dtime;
-            tsk_fs_file_close(fs_file);
         }
         tsk_fprintf(hFile, "\n");
     }
@@ -2867,7 +2869,6 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     TSK_FS_META *fs_meta;
-    TSK_FS_FILE *fs_file;
     char ls[12];
     EXT2FS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
@@ -2899,7 +2900,12 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         return 1;
     }
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inum),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         free(dino_buf);
         return 1;
     }
@@ -3035,7 +3041,6 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         ssize_t cnt;
 
         if ((buf = (char*) tsk_malloc(fs->block_size)) == NULL) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
@@ -3063,7 +3068,6 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
             }
             tsk_error_set_errstr2("ext2fs_istat: ACL block %" PRIu32,
                 tsk_getu32(fs->endian, dino_buf->i_file_acl));
-            tsk_fs_file_close(fs_file);
             free(buf);
             free(dino_buf);
             return 1;
@@ -3346,7 +3350,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
 
         if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
             const TSK_FS_ATTR *fs_attr_default =
-                tsk_fs_file_attr_get_type(fs_file,
+                tsk_fs_file_attr_get_type(fs_file.get(),
                     TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
             if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
                 if (tsk_fs_attr_print(fs_attr_default, hFile)) {
@@ -3360,7 +3364,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
             print.idx = 0;
             print.hFile = hFile;
 
-            if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+            if (tsk_fs_file_walk(fs_file.get(), TSK_FS_FILE_WALK_FLAG_AONLY,
                 print_addr_act, (void *)&print)) {
                 tsk_fprintf(hFile, "\nError reading file:  ");
                 tsk_error_print(hFile);
@@ -3373,7 +3377,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
 
         if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS) {
             const TSK_FS_ATTR *fs_attr_extent =
-                tsk_fs_file_attr_get_type(fs_file,
+                tsk_fs_file_attr_get_type(fs_file.get(),
                     TSK_FS_ATTR_TYPE_UNIX_EXTENT, 0, 0);
             if (fs_attr_extent) {
                 tsk_fprintf(hFile, "\nExtent Blocks:\n");
@@ -3403,7 +3407,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
             }
         }
         else {
-            fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
+            fs_attr_indir = tsk_fs_file_attr_get_type(fs_file.get(),
                 TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
             if (fs_attr_indir) {
                 tsk_fprintf(hFile, "\nIndirect Blocks:\n");
@@ -3429,7 +3433,6 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         }
     }
 
-    tsk_fs_file_close(fs_file);
     free(dino_buf);
     return 0;
 }
