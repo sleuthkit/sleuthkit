@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #endif
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 static void
@@ -41,7 +43,6 @@ usage()
 int
 main(int argc, char **argv1)
 {
-    TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     int ch;
     TSK_OFF_T start_sector = 0;
@@ -134,9 +135,12 @@ main(int argc, char **argv1)
         usage();
     }
 
-    if ((img =
-            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
-                ssize)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
@@ -171,7 +175,7 @@ main(int argc, char **argv1)
             len = sizeof(buf);
         }
 
-        cnt = tsk_img_read(img, done, buf, len);
+        cnt = tsk_img_read(img.get(), done, buf, len);
         if (cnt != (ssize_t) len) {
             if (cnt >= 0) {
                 tsk_fprintf(stderr,
@@ -182,18 +186,15 @@ main(int argc, char **argv1)
             else {
                 tsk_error_print(stderr);
             }
-            tsk_img_close(img);
             exit(1);
         }
 
         if (fwrite(buf, cnt, 1, stdout) != 1) {
             fprintf(stderr,
                 "img_cat: Error writing to stdout:  %s", strerror(errno));
-            tsk_img_close(img);
             exit(1);
         }
     }
 
-    tsk_img_close(img);
     exit(0);
 }
