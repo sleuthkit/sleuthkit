@@ -12,6 +12,8 @@
 #include "tsk/tsk_tools_i.h"
 #include <locale.h>
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 /* usage - explain and terminate */
@@ -40,11 +42,9 @@ int
 main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
 
     TSK_INUM_T inum;
     int ch;
@@ -129,6 +129,15 @@ main(int argc, char **argv1)
         usage();
     }
 
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        nullptr,
+        tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        nullptr,
+        tsk_fs_close
+    };
 
     /* open image - there is an optional inode address at the end of args
      *
@@ -136,42 +145,41 @@ main(int argc, char **argv1)
      */
     if (tsk_fs_parse_inum(argv[argc - 1], &inum, NULL, NULL, NULL, NULL)) {
         /* Not an inode at the end */
-        if ((img =
-                tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
+        img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             exit(1);
         }
-        if ((imgaddr * img->sector_size) >= img->size) {
+
+        if (imgaddr * img->sector_size >= img->size) {
             tsk_fprintf(stderr,
                 "Sector offset supplied is larger than disk image (maximum: %"
                 PRIu64 ")\n", img->size / img->sector_size);
             exit(1);
         }
 
-        if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
+        fs.reset(tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype));
+        if (!fs) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            tsk_img_close(img);
             exit(1);
         }
 
         inum = fs->journ_inum;
     }
     else {
-        if ((img =
-                tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
+        img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             exit(1);
         }
 
-        if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
+        fs.reset(tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype));
+        if (!fs) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            tsk_img_close(img);
             exit(1);
         }
     }
@@ -179,8 +187,6 @@ main(int argc, char **argv1)
     if (fs->jopen == NULL) {
         tsk_fprintf(stderr,
             "Journal support does not exist for this file system\n");
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
@@ -188,8 +194,6 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Inode value is too large for image (%" PRIuINUM ")\n",
             fs->last_inum);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
@@ -197,25 +201,17 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Inode value is too small for image (%" PRIuINUM ")\n",
             fs->first_inum);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
-    if (fs->jopen(fs, inum)) {
+    if (fs->jopen(fs.get(), inum)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
-    if (fs->jentry_walk(fs, 0, 0, NULL)) {
+    if (fs->jentry_walk(fs.get(), 0, 0, NULL)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
-    tsk_fs_close(fs);
-    tsk_img_close(img);
     exit(0);
 }
