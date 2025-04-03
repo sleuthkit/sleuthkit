@@ -339,12 +339,15 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void * that)
 
 int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 {
-    TSK_FS_INFO *fs_info;
     uint32_t sector_size = img_info->sector_size;
 
     /* Try it as a file system */
-    fs_info = tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT);
-    if (fs_info == NULL) {
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+      tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT),
+      tsk_fs_close
+    };
+
+    if (!fs_info) {
 	comment("TSK_Error '%s' at sector %" PRIuDADDR " offset %" PRIuDADDR " sector_size=%u",
 		tsk_error_get(),start/sector_size,start,sector_size);
 
@@ -353,7 +356,7 @@ int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     }
 
     comment("fs start: %" PRIuDADDR, start);
-    if(x){
+    if (x) {
 	char buf[1024];
 	snprintf(buf,sizeof(buf),"offset='%" PRIuDADDR "'",start);
 	x->push("volume",buf);
@@ -366,8 +369,8 @@ int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     /*Special Processing for FAT to report cluster and sector size*/
     if(TSK_FS_TYPE_ISFAT(fs_info->ftype))
     {
-        partition_info("sector_size",((FATFS_INFO *)fs_info)->ssize);
-        partition_info("block_size",((FATFS_INFO *)fs_info)->csize * ((FATFS_INFO *)fs_info)->ssize);
+        partition_info("sector_size",((FATFS_INFO *)fs_info.get())->ssize);
+        partition_info("block_size",((FATFS_INFO *)fs_info.get())->csize * ((FATFS_INFO *)fs_info.get())->ssize);
     }
     else
     {
@@ -393,16 +396,15 @@ int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     }
 
     int ret = 0;
-    if (tsk_fs_dir_walk(fs_info, fs_info->root_inum,
+    if (tsk_fs_dir_walk(fs_info.get(), fs_info->root_inum,
                         (TSK_FS_DIR_WALK_FLAG_ENUM) dir_walk_flags, dir_act, this)) {
 	comment("TSK Error: tsk_fs_dir_walk: ",tsk_error_get());
 	ret = -1;
     }
     else {
 	/* We could do some analysis of unallocated blocks at this point...  */
-	tsk_fs_close(fs_info);
     }
-    if(x) x->pop();
+    if (x) x->pop();
     comment("end of volume");
     return ret;
 }
