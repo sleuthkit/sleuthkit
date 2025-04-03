@@ -6,7 +6,8 @@ name: "Build"
 on:
   push:
     branches:
-      - '**'
+      - main
+      - develop
   pull_request:
     branches:
       - main
