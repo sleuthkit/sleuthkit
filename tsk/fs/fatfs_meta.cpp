@@ -27,6 +27,8 @@
 #include "tsk_fatxxfs.h"
 #include "tsk_exfatfs.h"
 
+#include <memory>
+
 TSK_FS_ATTR_TYPE_ENUM
 fatfs_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 {
@@ -930,7 +932,6 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
     const char* func_name = "fatfs_istat";
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
     TSK_FS_META *fs_meta = NULL;
-    TSK_FS_FILE *fs_file = NULL;
     TSK_FS_META_NAME_LIST *fs_name_list = NULL;
     FATFS_PRINT_ADDR print;
     char timeBuf[128];
@@ -943,7 +944,12 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
     }
 
     /* Create a TSK_FS_FILE corresponding to the specified inode. */
-    if ((fs_file = tsk_fs_file_open_meta(a_fs, NULL, a_inum)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(a_fs, NULL, a_inum),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         return 1;
     }
     fs_meta = fs_file->meta;
@@ -1024,7 +1030,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
     tsk_fprintf(a_hFile, "\nSectors:\n");
     if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
         const TSK_FS_ATTR *fs_attr_default =
-            tsk_fs_file_attr_get_type(fs_file,
+            tsk_fs_file_attr_get_type(fs_file.get(),
                 TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
             if (tsk_fs_attr_print(fs_attr_default, a_hFile)) {
@@ -1043,7 +1049,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
         print.istat_seen = 0;
         print.idx = 0;
         print.hFile = a_hFile;
-        if (tsk_fs_file_walk(fs_file,
+        if (tsk_fs_file_walk(fs_file.get(),
             (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
             print_addr_act, (void *)&print)) {
             tsk_fprintf(a_hFile, "\nError reading file\n");
@@ -1055,7 +1061,6 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
         }
     }
 
-    tsk_fs_file_close(fs_file);
     return 0;
 }
 
