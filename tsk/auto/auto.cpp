@@ -455,8 +455,12 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         return TSK_ERR;
     }
 
-    const auto pool = tsk_pool_open_img_sing(m_img_info, start, ptype);
-    if (pool == nullptr) {
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+        tsk_pool_open_img_sing(m_img_info, start, ptype),
+        tsk_pool_close
+    };
+
+    if (!pool) {
         tsk_error_set_errstr2(
             "findFilesInPool: Error opening pool");
         registerError();
@@ -464,35 +468,35 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
     }
 
     // see if the super class wants to continue with this.
-    TSK_FILTER_ENUM retval1 = filterPool(pool);
+    TSK_FILTER_ENUM retval1 = filterPool(pool.get());
     if (retval1 == TSK_FILTER_SKIP)
         return TSK_OK;
     else if (retval1 == TSK_FILTER_STOP)
         return TSK_STOP;
 
     if (pool->ctype == TSK_POOL_TYPE_APFS) {
-
         TSK_POOL_VOLUME_INFO *vol_info = pool->vol_list;
         while (vol_info != NULL) {
-
             TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
-            if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing)) {
-                tsk_pool_close(pool);
+            if (filterRetval == TSK_FILTER_STOP || m_stopAllProcessing) {
                 return TSK_STOP;
             }
 
             if (filterRetval != TSK_FILTER_SKIP) {
-                TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, vol_info->block);
-                if (pool_vol_img != NULL) {
-                    TSK_FS_INFO *fs_info = apfs_open(pool_vol_img, 0, TSK_FS_TYPE_APFS, "");
-                    if (fs_info) {
-                        TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
-                        tsk_fs_close(fs_info);
+                std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_vol_img{
+                    pool->get_img_info(pool.get(), vol_info->block),
+                    tsk_img_close
+                };
 
-                        // TODO: what if retval != TSK_STOP, shouldn't pool_vol_img be closed?
+                if (pool_vol_img) {
+                    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+                        apfs_open(pool_vol_img.get(), 0, TSK_FS_TYPE_APFS, ""),
+                        tsk_fs_close
+                    };
+
+                    if (fs_info) {
+                        TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info.get(), fs_info->root_inum);
                         if (retval == TSK_STOP) {
-                            tsk_img_close(pool_vol_img);
-                            tsk_pool_close(pool);
                             return TSK_STOP;
                         }
                     }
@@ -510,15 +514,10 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                                 "findFilesInPool: Error opening APFS file system");
                             registerError();
                         }
-                        tsk_img_close(pool_vol_img);
-                        tsk_pool_close(pool);
                         return TSK_ERR;
                     }
-
-                    tsk_img_close(pool_vol_img);
                 }
                 else {
-                    tsk_pool_close(pool);
                     tsk_error_set_errstr2(
                         "findFilesInPool: Error opening APFS pool");
                     registerError();
@@ -530,31 +529,35 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
         }
     }
 #ifdef HAVE_LIBVSLVM
-    if (pool->ctype == TSK_POOL_TYPE_LVM) {
+    else if (pool->ctype == TSK_POOL_TYPE_LVM) {
         TSK_POOL_VOLUME_INFO *vol_info = pool->vol_list;
         while (vol_info != NULL) {
-
             // The call to filterPoolVol is needed to ensure the object state is
             // correctly set for filling the database.
             TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
-            if ((filterRetval == TSK_FILTER_STOP) || (m_stopAllProcessing)) {
+            if (filterRetval == TSK_FILTER_STOP || m_stopAllProcessing) {
                 tsk_pool_close(pool);
                 return TSK_STOP;
             }
 
-            TSK_IMG_INFO *pool_vol_img = pool->get_img_info(pool, vol_info->block);
-            if (pool_vol_img == NULL) {
-                tsk_pool_close(pool);
+            std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_vol_img{
+                pool->get_img_info(pool.get(), vol_info->block),
+                tsk_img_close
+            }
+
+            if (!pool_vol_img) {
                 tsk_error_set_errstr2(
                     "findFilesInPool: Error opening LVM logical volume: %" PRIdOFF "",
                     vol_info->block);
                 registerError();
                 return TSK_ERR;
             }
-            TSK_FS_INFO *fs_info = tsk_fs_open_img(pool_vol_img, 0, TSK_FS_TYPE_DETECT);
-            if (fs_info == NULL) {
-                tsk_img_close(pool_vol_img);
-                tsk_pool_close(pool);
+ 
+            std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{                      tsk_fs_open_img(pool_vol_img.get(), 0, TSK_FS_TYPE_DETECT),
+                tsk_fs_close
+            }
+
+            if (!fs_info) {
                 tsk_error_set_errstr2(
                     "findFilesInPool: Unable to open file system in LVM logical volume: %" PRIdOFF "",
                     vol_info->block);
@@ -563,11 +566,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
             }
             TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
 
-            tsk_fs_close(fs_info);
-            tsk_img_close(pool_vol_img);
-
             if (retval == TSK_STOP) {
-                tsk_pool_close(pool);
                 return TSK_STOP;
             }
             vol_info = vol_info->next;
@@ -575,7 +574,6 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
     }
 #endif /* HAVE_LIBVSLVM */
     else {
-        tsk_pool_close(pool);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_POOL_UNSUPTYPE);
         tsk_error_set_errstr("%d", pool->ctype);
@@ -584,11 +582,10 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
     }
 
     // Store the pool_info for later use. It will be closed at the end of the add image process.
-    m_poolInfos.push_back(pool);
+    m_poolInfos.push_back(pool.release());
 
     return TSK_OK;
 }
-
 
 /**
  * Starts in a specified byte offset of the opened disk images and looks for a
@@ -621,8 +618,17 @@ TSK_RETVAL_ENUM
 		}
 	}
 
-    TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+        tsk_fs_open_img_decrypt(
+            m_img_info,
+            a_start,
+            a_ftype,
+            m_fileSystemPassword.c_str()
+        ),
+        tsk_fs_close
+    };
+
+    if (!fs_info) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();
@@ -642,9 +648,7 @@ TSK_RETVAL_ENUM
         }
     }
 
-    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
-    tsk_fs_close(fs_info);
-
+    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info.get(), fs_info->root_inum);
     if (m_errors.empty() == false)
         return TSK_ERR;
     else
@@ -721,8 +725,17 @@ uint8_t
 		}
 	}
 
-    TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+        tsk_fs_open_img_decrypt(
+            m_img_info,
+            a_start,
+            a_ftype,
+            m_fileSystemPassword.c_str()
+        ),
+        tsk_fs_close
+    };
+
+    if (!fs_info) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();
@@ -741,9 +754,8 @@ uint8_t
         }
     }
 
-    findFilesInFsInt(fs_info, a_inum);
+    findFilesInFsInt(fs_info.get(), a_inum);
 
-    tsk_fs_close(fs_info);
     return m_errors.empty() ? 0 : 1;
 }
 
