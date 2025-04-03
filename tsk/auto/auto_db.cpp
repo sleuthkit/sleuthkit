@@ -480,7 +480,6 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 TSK_FILTER_ENUM
 TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
-    TSK_FS_FILE *file_root;
     m_foundStructure = true;
 
     if (m_poolFound) {
@@ -505,14 +504,15 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
         }
     }
 
-
     // We won't hit the root directory on the walk, so open it now
-    if ((file_root = tsk_fs_file_open(fs_info, NULL, "/")) != NULL) {
-        processFile(file_root, "");
-        tsk_fs_file_close(file_root);
-        file_root = NULL;
-    }
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file_root{
+        tsk_fs_file_open(fs_info, NULL, "/"),
+        tsk_fs_file_close
+    };
 
+    if (file_root) {
+        processFile(file_root.get(), "");
+    }
 
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
@@ -527,7 +527,6 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     }
 
     setFileFilterFlags(filterFlags);
-
 
     // Save the file system info for creating unallocated blocks later
     TSK_DB_FS_INFO fs_info_db;
