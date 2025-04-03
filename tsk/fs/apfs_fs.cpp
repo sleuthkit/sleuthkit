@@ -143,8 +143,13 @@ void APFSJObject::add_entry(const jit::value_type& e) {
       const auto k = e.key.template as<dir_record_key>();
       const auto value = e.value.template as<apfs_dir_record>();
 
-      _children.emplace_back(
-          child_entry{std::string(k->name, k->name_len() - 1U), *value});
+      size_t e_size = e.value.count();
+
+      // TODO: handle error conditions more transparent to the user.
+      if ((e_size > 18) && (k->name_len() > 1) && (k->name_len() <= e_size - 18)) {
+        _children.emplace_back(
+            child_entry{std::string(k->name, k->name_len() - 1U), *value});
+      }
       break;
     }
 
