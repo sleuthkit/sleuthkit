@@ -30,7 +30,11 @@
 #include "tsk_fs_i.h"
 #include "tsk_ext2fs.h"
 #include "tsk/base/crc.h"
+
 #include <stddef.h>
+
+#include <memory>
+
 //#define Ext4_DBG 1
 //#define EXT4_CHECKSUMS 1
 
@@ -1098,7 +1102,6 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T inum;
     TSK_INUM_T end_inum_tmp;
     TSK_INUM_T ibase = 0;
-    TSK_FS_FILE *fs_file;
     unsigned int myflags;
     ext2fs_inode *dino_buf = NULL;
     uint8_t *ea_buf = NULL;
@@ -1165,13 +1168,16 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     }
 
-    fs_file = tsk_fs_file_alloc(fs);
-    if (fs_file == NULL)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file)
         return 1;
 
     fs_file->meta = tsk_fs_meta_alloc(EXT2FS_FILE_CONTENT_LEN);
     if (fs_file->meta == NULL) {
-        free(fs_file);
         return 1;
     }
 
@@ -1191,8 +1197,6 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     dino_buf = (ext2fs_inode *) tsk_malloc(size);
     if (dino_buf == NULL) {
-        free(fs_file->meta);
-        free(fs_file);
         return 1;
     }
 
@@ -1214,7 +1218,6 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         if (ext2fs_imap_load(ext2fs, grp_num)) {
             tsk_release_lock(&ext2fs->lock);
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
             return 1;
         }
         ibase =
@@ -1227,7 +1230,6 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         if ((ibase > inum) || (inum - ibase) >= (fs->block_size * 8)) {
             tsk_release_lock(&ext2fs->lock);
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
@@ -1249,8 +1251,6 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
         if (ext2fs_dinode_load(ext2fs, inum, dino_buf, &ea_buf, &ea_buf_len)) {
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
-
             return 1;
         }
 
@@ -1273,29 +1273,22 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             continue;
         }
 
-
         /*
          * Fill in a file system-independent inode structure and pass control
          * to the application.
          */
-        if (ext2fs_dinode_copy(ext2fs, fs_file, inum, dino_buf, ea_buf, ea_buf_len)) {
+        if (ext2fs_dinode_copy(ext2fs, fs_file.get(), inum, dino_buf, ea_buf, ea_buf_len)) {
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
-
             return 1;
         }
 
-        retval = a_action(fs_file, a_ptr);
+        retval = a_action(fs_file.get(), a_ptr);
         if (retval == TSK_WALK_STOP) {
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
-
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
-
             return 1;
         }
     }
@@ -1308,23 +1301,16 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
         if (tsk_fs_dir_make_orphan_dir_meta(fs, fs_file->meta)) {
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
-
             return 1;
         }
         /* call action */
-        retval = a_action(fs_file, a_ptr);
+        retval = a_action(fs_file.get(), a_ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
-
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
             free(dino_buf);
-            tsk_fs_file_close(fs_file);
-
             return 1;
         }
     }
@@ -1333,7 +1319,6 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      * Cleanup.
      */
     free(dino_buf);
-    tsk_fs_file_close(fs_file);
 
     return 0;
 }
