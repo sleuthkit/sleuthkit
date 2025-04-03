@@ -27,6 +27,8 @@
 #include "unicode_escape.h"
 #include "tsk/fs/tsk_fatfs.h"
 
+#include <memory>
+
 #define MAX_SPARSE_SIZE 1024*1024*64
 
 #ifdef _MSC_VER
@@ -523,28 +525,29 @@ void fiwalk::process_scalpel_audit_file(TSK_IMG_INFO *img_info,const char *audit
 
 int fiwalk::process_image_file(int argc,char * const *argv,const char *audit_file,uint32_t sector_size)
 {
-    TSK_IMG_INFO *img_info;
     int count = 0;
 
-    assert(argc!=0);
+    assert(argc != 0);
 
-    img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_info{
+        tsk_img_open_utf8(argc, (const char **)argv, TSK_IMG_TYPE_DETECT, sector_size),
+        tsk_img_close
+    };
 
-    if (img_info==0){
-	comment("TSK Error (img_open) %s sector_size=%u",tsk_error_get(),sector_size);
+    if (!img_info) {
+      comment("TSK Error (img_open) %s sector_size=%u",tsk_error_get(),sector_size);
     } else {
 	if(audit_file){
 	    comment("audit file: %s",audit_file);
-	    process_scalpel_audit_file(img_info,audit_file);
+	    process_scalpel_audit_file(img_info.get(), audit_file);
 	}
-	else{
-	    int r = proc_vs(img_info);
-	    if (r<0){
+	else {
+	    int r = proc_vs(img_info.get());
+	    if (r < 0){
 		comment("TSK Error (do_dimage) %s",tsk_error_get());
 	    }
-	    if(r>0) count += r;
+	    if (r > 0) count += r;
 	}
-	tsk_img_close(img_info);
     }
     return count;
 }
