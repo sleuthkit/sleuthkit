@@ -27,11 +27,13 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 *	Yorktown Heights, NY 10598, USA
 --*/
 
-#include <vector>
-#include <map>
 #include <algorithm>
+#include <map>
+#include <memory>
 #include <string>
 #include <set>
+#include <vector>
+
 #include <string.h>
 
 #include "tsk_fs_i.h"
@@ -2014,7 +2016,6 @@ static uint8_t
     TSK_FS_META_WALK_CB a_action, void *a_ptr)
 {
     YAFFSFS_INFO *yfs = (YAFFSFS_INFO *)fs;
-    TSK_FS_FILE *fs_file;
     TSK_RETVAL_ENUM result;
 
     uint32_t start_obj_id;
@@ -2060,12 +2061,16 @@ static uint8_t
             flags = (TSK_FS_META_FLAG_ENUM)(flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
     }
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file)
         return 1;
     if ((fs_file->meta =
         tsk_fs_meta_alloc(YAFFS_FILE_CONTENT_LEN)) == NULL)
         return 1;
-
 
     for (obj_id = start_obj_id; obj_id <= end_obj_id; obj_id++) {
         int retval;
@@ -2080,24 +2085,20 @@ static uint8_t
             if (flags & TSK_FS_META_FLAG_ALLOC) {
                 // Allocated only - just look at current version
                 if (yaffscache_obj_id_and_version_to_inode(obj_id, curr_obj->yco_latest->ycv_version, &curr_inode) != TSK_OK) {
-                    tsk_fs_file_close(fs_file);
                     return 1;
                 }
 
                 // It's possible for the current version to be unallocated if the last header was a deleted or unlinked header
                 if(yaffs_is_version_allocated(yfs, curr_inode)){
-                    if (yaffs_inode_lookup(fs, fs_file, curr_inode) != TSK_OK) {
-                        tsk_fs_file_close(fs_file);
+                    if (yaffs_inode_lookup(fs, fs_file.get(), curr_inode) != TSK_OK) {
                         return 1;
                     }
 
-                    retval = a_action(fs_file, a_ptr);
+                    retval = a_action(fs_file.get(), a_ptr);
                     if (retval == TSK_WALK_STOP) {
-                        tsk_fs_file_close(fs_file);
                         return 0;
                     }
                     else if (retval == TSK_WALK_ERROR) {
-                        tsk_fs_file_close(fs_file);
                         return 1;
                     }
                 }
@@ -2105,23 +2106,19 @@ static uint8_t
             if (flags & TSK_FS_META_FLAG_UNALLOC){
                 for (version = curr_obj->yco_latest; version != NULL; version = version->ycv_prior) {
                     if (yaffscache_obj_id_and_version_to_inode(obj_id, version->ycv_version, &curr_inode) != TSK_OK) {
-                        tsk_fs_file_close(fs_file);
                         return 1;
                     }
 
-                    if(! yaffs_is_version_allocated(yfs, curr_inode)){
-                        if (yaffs_inode_lookup(fs, fs_file, curr_inode) != TSK_OK) {
-                            tsk_fs_file_close(fs_file);
+                    if(!yaffs_is_version_allocated(yfs, curr_inode)){
+                        if (yaffs_inode_lookup(fs, fs_file.get(), curr_inode) != TSK_OK) {
                             return 1;
                         }
 
-                        retval = a_action(fs_file, a_ptr);
+                        retval = a_action(fs_file.get(), a_ptr);
                         if (retval == TSK_WALK_STOP) {
-                            tsk_fs_file_close(fs_file);
                             return 0;
                         }
                         else if (retval == TSK_WALK_ERROR) {
-                            tsk_fs_file_close(fs_file);
                             return 1;
                         }
                     }
@@ -2135,7 +2132,6 @@ static uint8_t
     /*
     * Cleanup.
     */
-    tsk_fs_file_close(fs_file);
     return 0;
 }
 
