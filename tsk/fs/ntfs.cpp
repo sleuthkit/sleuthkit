@@ -20,6 +20,9 @@
 #include "tsk_ntfs.h"
 
 #include <ctype.h>
+
+#include <memory>
+
 #include "encryptionHelper.h"
 
 /**
@@ -3143,7 +3146,6 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 static uint8_t
 ntfs_load_attrdef(NTFS_INFO * ntfs)
 {
-    TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *fs_attr;
     TSK_FS_INFO *fs = &ntfs->fs_info;
     TSK_FS_LOAD_FILE load_file;
@@ -3152,14 +3154,18 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
     if (ntfs->attrdef)
         return 1;
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_ATTR)) == NULL)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_ATTR),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file)
         return 1;
 
     fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, (TSK_FS_ATTR_TYPE_ENUM
 ) NTFS_ATYPE_DATA);
     if (!fs_attr) {
         //("Data attribute not found in $Attr");
-        tsk_fs_file_close(fs_file);
         return 1;
     }
 
@@ -3169,7 +3175,6 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
     load_file.left = load_file.total = (size_t) fs_attr->size;
     load_file.base = load_file.cur = (char*) tsk_malloc((size_t) fs_attr->size);
     if (load_file.cur == NULL) {
-        tsk_fs_file_close(fs_file);
         return 1;
     }
     ntfs->attrdef = (ntfs_attrdef *) load_file.base;
@@ -3177,7 +3182,6 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
     if (tsk_fs_attr_walk(fs_attr,
             TSK_FS_FILE_WALK_FLAG_NONE, tsk_fs_load_file_action, (void *) &load_file)) {
         tsk_error_errstr2_concat(" - load_attrdef");
-        tsk_fs_file_close(fs_file);
         free(ntfs->attrdef);
         ntfs->attrdef = NULL;
         return 1;
@@ -3187,14 +3191,12 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
         tsk_error_set_errstr
             ("load_attrdef: space still left after walking $Attr data");
-        tsk_fs_file_close(fs_file);
         free(ntfs->attrdef);
         ntfs->attrdef = NULL;
         return 1;
     }
 
     ntfs->attrdef_len = (size_t) fs_attr->size;
-    tsk_fs_file_close(fs_file);
     return 0;
 }
 
@@ -3395,10 +3397,14 @@ static uint8_t
 ntfs_load_ver(NTFS_INFO * ntfs)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
-    TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *fs_attr;
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_VOL)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_VOL),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         return 1;
     }
 
@@ -3408,7 +3414,6 @@ ntfs_load_ver(NTFS_INFO * ntfs)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr("Volume Info attribute not found in $Volume");
-        tsk_fs_file_close(fs_file);
         return 1;
     }
 
@@ -3433,7 +3438,6 @@ ntfs_load_ver(NTFS_INFO * ntfs)
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("unknown version: %d.%d\n",
                 vinfo->maj_ver, vinfo->min_ver);
-            tsk_fs_file_close(fs_file);
             return 1;
         }
     }
@@ -3445,7 +3449,6 @@ ntfs_load_ver(NTFS_INFO * ntfs)
         return 1;
     }
 
-    tsk_fs_file_close(fs_file);
     return 0;
 }
 
@@ -3856,7 +3859,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     const TSK_FS_ATTR *fs_attr_sds = NULL;
     const TSK_FS_ATTR *fs_attr_sii = NULL;
     NTFS_SXX_BUFFER sii_buffer;
-    TSK_FS_FILE *secure = NULL;
     ssize_t cnt;
 
     ntfs->sii_data.buffer = NULL;
@@ -3869,7 +3871,11 @@ ntfs_load_secure(NTFS_INFO * ntfs)
 
     // Open $Secure. The $SDS stream contains all the security descriptors
     // and is indexed by $SII and $SDH.
-    secure = tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_SECURE);
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> secure{
+        tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_SECURE),
+        tsk_fs_file_close
+    };
+
     if (!secure) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -3887,7 +3893,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: $Secure file has no attributes\n");
         tsk_error_reset();
-        tsk_fs_file_close(secure);
         return 0;
     }
 
@@ -3900,7 +3905,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error getting $Secure:$SII IDX_ALLOC attribute\n");
         tsk_error_reset();
-        tsk_fs_file_close(secure);
         return 0;
 
     }
@@ -3912,7 +3916,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error getting $Secure:$SDS $Data attribute\n");
         tsk_error_reset();
-        tsk_fs_file_close(secure);
         return 0;
     }
 
@@ -3946,7 +3949,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         tsk_error_reset();
 
         free(sii_buffer.buffer);
-        tsk_fs_file_close(secure);
         return 0;
     }
 
@@ -3955,7 +3957,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     if ((ntfs->sii_data.buffer =
             (char *) tsk_malloc(sii_buffer.size)) == NULL) {
         free(sii_buffer.buffer);
-        tsk_fs_file_close(secure);
         return 1;
     }
     ntfs->sii_data.size = sii_buffer.size;
@@ -3963,7 +3964,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // parse sii_buffer into ntfs->sii_data.
     ntfs_proc_sii(fs, &sii_buffer);
     free(sii_buffer.buffer);
-
 
     /* Now we copy $SDS into NTFS_INFO. We do not do any processing in this step. */
 
@@ -3981,8 +3981,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         ntfs->sii_data.buffer = NULL;
         ntfs->sii_data.used = 0;
         ntfs->sii_data.size = 0;
-        tsk_fs_file_close(secure);
-
         return 0;
     }
     ntfs->sds_data.used = 0;
@@ -3992,7 +3990,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         ntfs->sii_data.buffer = NULL;
         ntfs->sii_data.used = 0;
         ntfs->sii_data.size = 0;
-        tsk_fs_file_close(secure);
         return 1;
     }
 
@@ -4016,11 +4013,9 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         ntfs->sds_data.buffer = NULL;
         ntfs->sds_data.used = 0;
         ntfs->sds_data.size = 0;
-        tsk_fs_file_close(secure);
         return 0;
     }
 
-    tsk_fs_file_close(secure);
     return 0;
 }
 
@@ -4181,7 +4176,6 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     unsigned int myflags;
     TSK_INUM_T mftnum;
-    TSK_FS_FILE *fs_file;
     TSK_INUM_T end_inum_tmp;
     ntfs_mft *mft;
     /*
@@ -4256,18 +4250,20 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         }
     }
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file)
         return 1;
 
     if ((fs_file->meta = tsk_fs_meta_alloc(NTFS_FILE_CONTENT_LEN)) == NULL) {
         // JRB: Coverity CID: 348
-        if (fs_file)
-            tsk_fs_file_close(fs_file);
         return 1;
     }
 
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
-        tsk_fs_file_close(fs_file);
         return 1;
     }
     // we need to handle fs->last_inum specially because it is for the
@@ -4293,7 +4289,6 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 tsk_error_reset();
                 continue;
             }
-            tsk_fs_file_close(fs_file);
             free(mft);
             return 1;
         }
@@ -4324,7 +4319,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
         /* copy into generic format */
         if ((retval =
-                ntfs_dinode_copy(ntfs, fs_file, (char *) mft,
+                ntfs_dinode_copy(ntfs, fs_file.get(), (char *) mft,
                     mftnum)) != TSK_OK) {
             // continue on if there were only corruption problems
             if (retval == TSK_COR) {
@@ -4333,7 +4328,6 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 tsk_error_reset();
                 continue;
             }
-            tsk_fs_file_close(fs_file);
             free(mft);
             return 1;
         }
@@ -4345,14 +4339,12 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             continue;
 
         /* call action */
-        retval = a_action(fs_file, ptr);
+        retval = a_action(fs_file.get(), ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(mft);
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(mft);
             return 1;
         }
@@ -4365,25 +4357,21 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         int retval;
 
         if (tsk_fs_dir_make_orphan_dir_meta(fs, fs_file->meta)) {
-            tsk_fs_file_close(fs_file);
             free(mft);
             return 1;
         }
         /* call action */
-        retval = a_action(fs_file, ptr);
+        retval = a_action(fs_file.get(), ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(mft);
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(mft);
             return 1;
         }
     }
 
-    tsk_fs_file_close(fs_file);
     free(mft);
     return 0;
 }
@@ -4414,7 +4402,6 @@ static uint8_t
 ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
-    TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *fs_attr;
     char asc[512];
     ntfs_attrdef *attrdeftmp;
@@ -4435,7 +4422,12 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     /*
      * Volume
      */
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_VOL)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_VOL),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_errstr2_concat
@@ -4479,8 +4471,6 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fprintf(hFile, "Volume Name: %s\n", asc);
     }
 
-    tsk_fs_file_close(fs_file);
-    fs_file = NULL;
     fs_attr = NULL;
     if (ntfs->ver == NTFS_VINFO_NT)
         tsk_fprintf(hFile, "Version: Windows NT\n");
@@ -4637,7 +4627,6 @@ ntfs_istat(
   [[maybe_unused]] TSK_DADDR_T numblock,
   int32_t sec_skew)
 {
-    TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *fs_attr;
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_mft *mft;
@@ -4656,7 +4645,12 @@ ntfs_istat(
         return 1;
     }
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inum),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         tsk_error_errstr2_concat(" - istat");
         free(mft);
         return 1;
@@ -4722,7 +4716,7 @@ ntfs_istat(
             tsk_getu32(fs->endian, si->own_id));
 
 #if TSK_USE_SID
-        ntfs_file_get_sidstr(fs_file, &sid_str);
+        ntfs_file_get_sidstr(fs_file.get(), &sid_str);
 
         tsk_fprintf(hFile, "Security ID: %" PRIu32 "  (%s)\n",
             tsk_getu32(fs->endian, si->sec_id), sid_str ? sid_str : "");
@@ -5042,12 +5036,12 @@ ntfs_istat(
         int cnt, i;
 
         // cycle through the attributes
-        cnt = tsk_fs_file_attr_getsize(fs_file);
+        cnt = tsk_fs_file_attr_getsize(fs_file.get());
         for (i = 0; i < cnt; i++) {
             char type[512];
 
             const TSK_FS_ATTR *fs_attr =
-                tsk_fs_file_attr_get_idx(fs_file, i);
+                tsk_fs_file_attr_get_idx(fs_file.get(), i);
             if (!fs_attr)
                 continue;
 
@@ -5082,7 +5076,7 @@ ntfs_istat(
                 else {
                     print_addr.idx = 0;
                     print_addr.hFile = hFile;
-                    if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
+                    if (tsk_fs_file_walk_type(fs_file.get(), fs_attr->type,
                         fs_attr->id,
                         (TSK_FS_FILE_WALK_FLAG_ENUM)
                         (TSK_FS_FILE_WALK_FLAG_AONLY |
@@ -5115,7 +5109,6 @@ ntfs_istat(
         }
     }
 
-    tsk_fs_file_close(fs_file);
     free(mft);
     return 0;
 }
