@@ -443,12 +443,15 @@ vs_act(TSK_VS_INFO * vs_info, const TSK_VS_PART_INFO * vs_part, void *that)
  */
 int fiwalk::proc_vs(TSK_IMG_INFO * img_info)
 {
-    TSK_VS_INFO *vs_info;
     int start = 0;
 
-    // USE mm_walk to get the volumes
-    if ((vs_info = tsk_vs_open(img_info, start, TSK_VS_TYPE_DETECT)) == NULL) {
+    std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs_info{
+        tsk_vs_open(img_info, start, TSK_VS_TYPE_DETECT),
+        tsk_vs_close
+    };
 
+    // USE mm_walk to get the volumes
+    if (!vs_info) {
         /* There was no volume system, but there could be a file system.
 	 * Look for one at well-known locations
 	 */
@@ -470,12 +473,10 @@ int fiwalk::proc_vs(TSK_IMG_INFO * img_info)
         if (tsk_verbose) fprintf(stderr, "Volume system open, examining each\n");
 
         /* Walk the allocated volumes (skip metadata and unallocated volumes) */
-        if (tsk_vs_part_walk(vs_info, 0, vs_info->part_count-1,
+        if (tsk_vs_part_walk(vs_info.get(), 0, vs_info->part_count-1,
                              (TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC), vs_act, (void *)this)) {
-            tsk_vs_close(vs_info);
             return -1;
         }
-        tsk_vs_close(vs_info);
     }
     return vs_count;
 }
