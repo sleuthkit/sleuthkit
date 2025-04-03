@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
+import com.google.gson.Gson;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.mchange.v2.c3p0.DataSources;
 import com.mchange.v2.c3p0.PooledDataSource;
@@ -190,6 +191,9 @@ public class SleuthkitCase {
 	private static final String SCHEMA_MINOR_VERSION_KEY = "SCHEMA_MINOR_VERSION";
 	private static final String CREATION_SCHEMA_MAJOR_VERSION_KEY = "CREATION_SCHEMA_MAJOR_VERSION";
 	private static final String CREATION_SCHEMA_MINOR_VERSION_KEY = "CREATION_SCHEMA_MINOR_VERSION";
+	
+	// key in acquisition tool settings; the password for decrypting an image
+	static final String IMAGE_PASSWORD_KEY = "imagePassword";
 
 	private final ConnectionPool connections;
 	private final Object carvedFileDirsLock = new Object();
@@ -379,10 +383,14 @@ public class SleuthkitCase {
 	 * @param lockingApplicationName The name of the application locking the
 	 *                               case database (null value prevents
 	 *                               locking; 500 character maximum).
+	 * 
+	 * @param useWAL				 Flag to set journal_mode=WAL. WAL does not 
+	 *								 work over a network file system. For more 
+	 *								 details @see <a href="https://www.sqlite.org/wal.html">https://www.sqlite.org/wal.html</a> 
 	 *
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider, String lockingApplicationName) throws Exception {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
@@ -394,7 +402,7 @@ public class SleuthkitCase {
 				? null
 				: LockResources.tryAcquireFileLock(this.caseDirPath, this.databaseName, lockingApplicationName);
 
-		this.connections = new SQLiteConnections(dbPath);
+		this.connections = new SQLiteConnections(dbPath, useWAL);
 		this.caseHandle = caseHandle;
 		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
 		this.contentProvider = contentProvider;
@@ -3173,8 +3181,8 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Beta
-	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider) throws TskCoreException {
-		return openCase(dbPath, provider, null);
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider) throws TskCoreException {
+		return openCase(dbPath, contentProvider, null);
 	}
 
 	/**
@@ -3190,10 +3198,31 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Beta
-	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider provider, String lockingApplicationName) throws TskCoreException {
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName) throws TskCoreException {
+		return openCase(dbPath, contentProvider, null, false);
+	}
+	
+	/**
+	 * Open an existing case database.
+	 *
+	 * @param dbPath Path to SQLite case database.
+	 * @param contentProvider Custom provider for file content bytes (can be null).
+	 * @param lockingApplicationName The name of the application locking the
+	 *                               case database (null value prevents
+	 *                               locking; 500 character maximum).
+	 * 
+	 * @param useWAL				 Flag to set journal_mode=WAL. WAL does not 
+	 *								 work over a network file system. For more 
+	 *								 details @see <a href="https://www.sqlite.org/wal.html">https://www.sqlite.org/wal.html</a> 
+	 * @return Case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, provider, lockingApplicationName);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
 		} catch (TskUnsupportedSchemaVersionException ex) {
 			//don't wrap in new TskCoreException
 			throw ex;
@@ -3297,8 +3326,8 @@ public class SleuthkitCase {
 	 * @param contentProvider        Custom provider for file bytes (can be
 	 *                               null).
 	 * @param lockingApplicationName The name of the application locking the
-	 *                               case database (null value prevents
-	 *                               locking; 500 character maximum).
+	 *                               case database (null value prevents locking;
+	 *                               500 character maximum).
 	 *
 	 * @return A case database object.
 	 *
@@ -3306,13 +3335,37 @@ public class SleuthkitCase {
 	 */
 	@Beta
 	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName) throws TskCoreException {
+		return newCase(dbPath, contentProvider, null, false);
+	}
+	
+	/**
+	 * Creates a new SQLite case database.
+	 *
+	 * @param dbPath                 Path to where SQlite case database should
+	 *                               be created.
+	 * @param contentProvider        Custom provider for file bytes (can be
+	 *                               null).
+	 * @param lockingApplicationName The name of the application locking the
+	 *                               case database (null value prevents
+	 *                               locking; 500 character maximum).
+	 * 
+	 * @param useWAL				 Flag to set journal_mode=WAL. WAL does not 
+	 *								 work over a network file system. For more 
+	 *								 details @see <a href="https://www.sqlite.org/wal.html">https://www.sqlite.org/wal.html</a> 
+	 *
+	 * @return A case database object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	@Beta
+	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws TskCoreException {
 
 		try {
 			CaseDatabaseFactory factory = new CaseDatabaseFactory(dbPath);
 			factory.createCaseDatabase();
 
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -3554,9 +3607,33 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer.
 	 */
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
-		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, this);
+		return makeAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, null);
 	}
 
+	/**
+	 * Starts the multi-step process of adding an image data source to the case
+	 * by creating an object that can be used to control the process and get
+	 * progress messages from it.
+	 *
+	 * @param timeZone        The time zone of the image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 *                        unallocated space in the image.
+	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
+	 *                        file systems.
+	 * @param imageCopyPath   Path to which a copy of the image should be
+	 *                        written. Use the empty string to disable image
+	 *                        writing.
+	 * @param password        The password for decrypting the image or null if
+	 *                        not needed.
+	 *
+	 * @return An object that encapsulates control of adding an image via the
+	 *         SleuthKit native code layer.
+	 */
+	@Beta
+	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath, String password) {
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, password, this);
+	}
+	
 	/**
 	 * Get the list of root objects (data sources) from the case database, e.g.,
 	 * image files, logical (local) files, virtual directories.
@@ -7088,6 +7165,36 @@ public class SleuthkitCase {
 			String timezone, String md5, String sha1, String sha256,
 			String deviceId, Host host,
 			CaseDbTransaction transaction) throws TskCoreException {
+
+		return addImage(type, sectorSize, size, displayName, imagePaths, timezone, md5, sha1, sha256, deviceId, host, null, transaction);
+	}
+
+	/**
+	 * Add an image to the database.
+	 *
+	 * @param type        Type of image
+	 * @param sectorSize  Sector size
+	 * @param size        Image size
+	 * @param displayName Display name for the image
+	 * @param imagePaths  Image path(s)
+	 * @param timezone    Time zone
+	 * @param md5         MD5 hash
+	 * @param sha1        SHA1 hash
+	 * @param sha256      SHA256 hash
+	 * @param deviceId    Device ID
+	 * @param host        Host
+	 * @param password    The password to decrypt the image.
+	 * @param transaction Case DB transaction
+	 *
+	 * @return the newly added Image
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public Image addImage(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName, List<String> imagePaths,
+			String timezone, String md5, String sha1, String sha256,
+			String deviceId, Host host, String password,
+			CaseDbTransaction transaction) throws TskCoreException {
 		Statement statement = null;
 		try {
 			// Insert a row for the Image into the tsk_objects table.
@@ -7141,6 +7248,12 @@ public class SleuthkitCase {
 				}
 			}
 
+			Map<String, Object> acquisitionToolMap = new HashMap<>();
+			if (password != null) {
+				acquisitionToolMap.put(IMAGE_PASSWORD_KEY, password);
+			}
+			String acquisitionToolJson = (new Gson()).toJson(acquisitionToolMap);
+
 			// Add a row to data_source_info
 			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_SOURCE_INFO);
 			statement = connection.createStatement();
@@ -7149,6 +7262,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(3, timezone);
 			preparedStatement.setLong(4, new Date().getTime());
 			preparedStatement.setLong(5, host.getHostId());
+			preparedStatement.setString(6, acquisitionToolJson);
 			connection.executeUpdate(preparedStatement);
 
 			// Create the new Image object
@@ -10217,7 +10331,28 @@ public class SleuthkitCase {
 	 *                          database.
 	 */
 	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host) throws TskCoreException {
-		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone, host, this);
+		return addImageInfo(deviceObjId, imageFilePaths, timeZone, host, null);
+	}
+	
+
+	/**
+	 * Adds an image to the case database.
+	 *
+	 * @param deviceObjId    The object id of the device associated with the
+	 *                       image.
+	 * @param imageFilePaths The image file paths.
+	 * @param timeZone       The time zone for the image.
+	 * @param host           The host for this image.
+	 * @param password       The password to decrypt the image or null.
+	 *
+	 * @return An Image object.
+	 *
+	 * @throws TskCoreException if there is an error adding the image to case
+	 *                          database.
+	 */
+	@Beta
+	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, Host host, String password) throws TskCoreException {
+		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone, host, password, this);
 		return getImageById(imageId);
 	}
 
@@ -13635,7 +13770,7 @@ public class SleuthkitCase {
 		INSERT_IMAGE_NAME("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (?, ?, ?)"),
 		INSERT_IMAGE_INFO("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256, display_name)"
 				+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone, added_date_time, host_id) VALUES (?, ?, ?, ?, ?)"),
+		INSERT_DATA_SOURCE_INFO("INSERT INTO data_source_info (obj_id, device_id, time_zone, added_date_time, host_id, acquisition_tool_settings) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_INFO("INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (?, ?, ?, ?)"),
 		INSERT_VS_PART_SQLITE("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags) VALUES (?, ?, ?, ?, ?, ?)"),
 		INSERT_VS_PART_POSTGRESQL("INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags) VALUES (?, ?, ?, ?, ?, ?)"),
@@ -13710,7 +13845,7 @@ public class SleuthkitCase {
 
 		private final Map<String, String> configurationOverrides = new HashMap<String, String>();
 
-		SQLiteConnections(String dbPath) throws SQLException {
+		SQLiteConnections(String dbPath, boolean useWAL) throws SQLException {
 			configurationOverrides.put("acquireIncrement", "2");
 			configurationOverrides.put("initialPoolSize", "5");
 			configurationOverrides.put("minPoolSize", "5");
@@ -13726,6 +13861,9 @@ public class SleuthkitCase {
 			config.setSynchronous(SQLiteConfig.SynchronousMode.OFF); // Reduce I/O operations, we have no OS crash recovery anyway.
 			config.setReadUncommitted(true);
 			config.enforceForeignKeys(true); // Enforce foreign key constraints.
+			if (useWAL) {
+				config.setJournalMode(SQLiteConfig.JournalMode.WAL);
+			}
 			SQLiteDataSource unpooled = new SQLiteDataSource(config);
 			unpooled.setUrl("jdbc:sqlite:" + dbPath);
 			setPooledDataSource((PooledDataSource) DataSources.pooledDataSource(unpooled, configurationOverrides));
@@ -14816,25 +14954,24 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
-		try {
-			connection = connections.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
-			int typeId = -1;
-			if (rs.next()) {
-				typeId = rs.getInt("artifact_type_id");
+		try (CaseDbConnection connection = connections.getConnection(); 
+				PreparedStatement getTypeNamePrepState = connection.prepareStatement(
+				"SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = ?",
+				Statement.RETURN_GENERATED_KEYS)) {
+
+			getTypeNamePrepState.setString(1, artifactTypeName);
+
+			try (ResultSet rs = getTypeNamePrepState.executeQuery()) {
+				int typeId = -1;
+				if (rs.next()) {
+					typeId = rs.getInt("artifact_type_id");
+				}
+				return typeId;
 			}
-			return typeId;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type id", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -15294,7 +15431,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", null, this);
 	}
 
 	/**
