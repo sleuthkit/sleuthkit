@@ -66,6 +66,7 @@
 #include "tsk_iso9660.h"
 #include <ctype.h>
 
+#include <memory>
 
 /* free all memory used by inode linked list */
 static void
@@ -1270,7 +1271,6 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     const char *myname = "iso9660_inode_walk";
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_INUM_T inum, end_inum_tmp;
-    TSK_FS_FILE *fs_file;
     unsigned int myflags;
     iso9660_inode *dinode;
 
@@ -1334,8 +1334,12 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         }
     }
 
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+    if (!fs_file)
         return 1;
 
     if ((fs_file->meta =
@@ -1363,7 +1367,6 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     for (inum = start; inum <= end_inum_tmp; inum++) {
         int retval;
         if (iso9660_dinode_load(iso, inum, dinode)) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
@@ -1386,9 +1389,8 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
             continue;
         }
 
-        retval = action(fs_file, ptr);
+        retval = action(fs_file.get(), ptr);
         if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
@@ -1404,29 +1406,24 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         int retval;
 
         if (tsk_fs_dir_make_orphan_dir_meta(fs, fs_file->meta)) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
         /* call action */
-        retval = action(fs_file, ptr);
+        retval = action(fs_file.get(), ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
     }
 
-
     /*
      * Cleanup.
      */
-    tsk_fs_file_close(fs_file);
     free(dinode);
     return 0;
 }
