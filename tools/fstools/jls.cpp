@@ -134,16 +134,13 @@ main(int argc, char **argv1)
         tsk_img_close
     };
 
-    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
-        nullptr,
-        tsk_fs_close
-    };
-
     /* open image - there is an optional inode address at the end of args
      *
      * Check the final argument and see if it is a number
      */
-    if (tsk_fs_parse_inum(argv[argc - 1], &inum, NULL, NULL, NULL, NULL)) {
+    const bool have_inum = !tsk_fs_parse_inum(argv[argc - 1], &inum, NULL, NULL, NULL, NULL);
+
+    if (!have_inum) {
         /* Not an inode at the end */
         img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
         if (!img) {
@@ -157,16 +154,6 @@ main(int argc, char **argv1)
                 PRIu64 ")\n", img->size / img->sector_size);
             exit(1);
         }
-
-        fs.reset(tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype));
-        if (!fs) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
-            exit(1);
-        }
-
-        inum = fs->journ_inum;
     }
     else {
         img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
@@ -174,20 +161,28 @@ main(int argc, char **argv1)
             tsk_error_print(stderr);
             exit(1);
         }
+    }
 
-        fs.reset(tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype));
-        if (!fs) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
-            exit(1);
-        }
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype),
+        tsk_fs_close
+    };
+
+    if (!fs) {
+        tsk_error_print(stderr);
+        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+            tsk_fs_type_print(stderr);
+        exit(1);
     }
 
     if (fs->jopen == NULL) {
         tsk_fprintf(stderr,
             "Journal support does not exist for this file system\n");
         exit(1);
+    }
+
+    if (!have_inum) {
+        inum = fs->journ_inum;
     }
 
     if (inum > fs->last_inum) {
