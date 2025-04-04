@@ -25,6 +25,7 @@
  * NTFS file name processing internal functions.
  */
 
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -1431,7 +1432,6 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     TSK_FS_FILE * fs_file, TSK_FS_META_NAME_LIST * fs_name_list,
     TSK_FS_DIR_WALK_CB action, void *ptr)
 {
-    TSK_FS_FILE *fs_file_par;
     TSK_FS_META_NAME_LIST *fs_name_list_par;
     uint8_t decrem = 0;
     size_t len = 0, i;
@@ -1447,8 +1447,12 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
         return 1;
     }
 
-    fs_file_par = tsk_fs_file_open_meta(fs, NULL, fs_name_list->par_inode);
-    if (fs_file_par == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file_par{
+        tsk_fs_file_open_meta(fs, NULL, fs_name_list->par_inode),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file_par) {
         tsk_error_errstr2_concat(" - ntfs_find_file_rec");
         return 1;
     }
@@ -1486,7 +1490,6 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
         if (decrem)
             dinfo->depth--;
 
-        tsk_fs_file_close(fs_file_par);
         return (retval == TSK_WALK_ERROR) ? 1 : 0;
     }
 
@@ -1528,7 +1531,6 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
              */
             if (TSK_WALK_ERROR == action(fs_file,
                     (const char *) ((uintptr_t) begin + 1), ptr)) {
-                tsk_fs_file_close(fs_file_par);
                 return 1;
             }
         }
@@ -1537,7 +1539,6 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
         else {
             if (ntfs_find_file_rec(fs, dinfo, fs_file, fs_name_list_par,
                     action, ptr)) {
-                tsk_fs_file_close(fs_file_par);
                 return 1;
             }
         }
@@ -1546,8 +1547,6 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
         if (decrem)
             dinfo->depth--;
     }
-
-    tsk_fs_file_close(fs_file_par);
 
     return 0;
 }
@@ -1580,8 +1579,6 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     TSK_FS_META_NAME_LIST *fs_name_list;
     char *attr = NULL;
     NTFS_DINFO dinfo;
-    TSK_FS_FILE *fs_file;
-    ntfs_mft *mft;
     TSK_RETVAL_ENUM r_enum;
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
 
@@ -1593,42 +1590,45 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
             PRIuINUM "\n", inode_toid);
         return 1;
     }
-    if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
+
+    std::unique_ptr<ntfs_mft, decltype(&free)> mft{
+        (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b),
+        free
+    };
+
+    if (!mft) {
         return 1;
     }
-    r_enum = ntfs_dinode_lookup(ntfs, (char *) mft, inode_toid, 0);
+
+    r_enum = ntfs_dinode_lookup(ntfs, (char *) mft.get(), inode_toid, 0);
     if (r_enum == TSK_ERR) {
-        free(mft);
         return 1;
     }
+
     // open the file to ID
-    fs_file = tsk_fs_file_open_meta(fs, NULL, inode_toid);
-    if (fs_file == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inode_toid),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         tsk_error_errstr2_concat("- ntfs_find_file");
-        tsk_fs_file_close(fs_file);
-        free(mft);
         return 1;
     }
 
     // see if its allocation status meets the callback needs
     if ((fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)
         && ((dir_walk_flags & TSK_FS_DIR_WALK_FLAG_ALLOC) == 0)) {
-        tsk_fs_file_close(fs_file);
-        free(mft);
         return 1;
     }
     else if ((fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)
         && ((dir_walk_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC) == 0)) {
-        tsk_fs_file_close(fs_file);
-        free(mft);
         return 1;
     }
-
 
     /* Allocate a name and fill in some details  */
     if ((fs_file->name =
             tsk_fs_name_alloc(NTFS_MAXNAMLEN_UTF8, 0)) == NULL) {
-        free(mft);
         return 1;
     }
     fs_file->name->meta_addr = inode_toid;
@@ -1670,8 +1670,6 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
             tsk_error_set_errstr("find_file: Type %" PRIu32 " Id %" PRIu16
                 " not found in MFT %" PRIuINUM "", type_toid, id_toid,
                 inode_toid);
-            tsk_fs_file_close(fs_file);
-            free(mft);
             return 1;
         }
 
@@ -1698,31 +1696,23 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
         /* if this is in the root directory, then call back */
         if (fs_name_list->par_inode == NTFS_ROOTINO) {
 
-            retval = action(fs_file, dinfo.didx[0], ptr);
+            retval = action(fs_file.get(), dinfo.didx[0], ptr);
             if (retval == TSK_WALK_STOP) {
-                tsk_fs_file_close(fs_file);
-                free(mft);
                 return 0;
             }
             else if (retval == TSK_WALK_ERROR) {
-                tsk_fs_file_close(fs_file);
-                free(mft);
                 return 1;
             }
         }
         /* call the recursive function on the parent to get the full path */
         else {
-            if (ntfs_find_file_rec(fs, &dinfo, fs_file, fs_name_list,
+            if (ntfs_find_file_rec(fs, &dinfo, fs_file.get(), fs_name_list,
                     action, ptr)) {
-                tsk_fs_file_close(fs_file);
-                free(mft);
                 return 1;
             }
         }
     }                           /* end of name loop */
 
-    tsk_fs_file_close(fs_file);
-    free(mft);
     return 0;
 }
 
