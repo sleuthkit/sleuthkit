@@ -84,6 +84,13 @@ TEST_CASE("test_disk_images 2GB-xfs-raw.E01", "[fiwalk]") {
       ""
     );
 }
+
+TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
+    check_image(
+      "ufs/image.E01",
+      "ufs/image_dd.xml"
+    );
+}
 #endif
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
@@ -111,13 +118,6 @@ TEST_CASE("test_disk_images image.gen1.dmg", "[fiwalk]") {
     check_image(
       "nps-2009-hfsjtest1/image.gen1.dmg",
       "nps-2009-hfsjtest1/image.gen1.xml"
-    );
-}
-
-TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
-    check_image(
-      "ufs/image.E01",
-      "ufs/image_dd.xml"
     );
 }
 
