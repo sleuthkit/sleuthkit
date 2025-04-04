@@ -414,12 +414,12 @@ TskAuto::hasPool(TSK_OFF_T a_start)
         return false;
     }
 
-    const auto pool = tsk_pool_open_img_sing(m_img_info, a_start, TSK_POOL_TYPE_DETECT);
-    if (pool == nullptr) {
-        return false;
-    }
-    tsk_pool_close(pool);
-    return true;
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+        tsk_pool_open_img_sing(m_img_info, a_start, TSK_POOL_TYPE_DETECT),
+        tsk_pool_close
+    };
+
+    return static_cast<bool>(pool);
 }
 
 /**
