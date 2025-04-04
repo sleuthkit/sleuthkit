@@ -292,7 +292,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                  * stable copy of the last known good allocation bitmap.
                  * Therefore, the SleuthKit will use the first bitmap to
                  * determine which clusters are allocated. */
-                if (~(dentry->flags & 0x01)) {
+                if (!(dentry->flags & 0x01)) {
                     first_sector_of_alloc_bitmap = FATFS_CLUST_2_SECT(a_fatfs, tsk_getu32(fs->endian, dentry->first_cluster_of_bitmap));
                     alloc_bitmap_length_in_bytes = tsk_getu64(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
                     last_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap + (roundup(alloc_bitmap_length_in_bytes, a_fatfs->ssize) / a_fatfs->ssize) - 1;
