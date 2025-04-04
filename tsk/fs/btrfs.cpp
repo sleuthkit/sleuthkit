@@ -2952,13 +2952,17 @@ btrfs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
             a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
     }
 
-    TSK_FS_FILE *file = tsk_fs_file_alloc(a_fs);
-    if (!file)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file{
+        tsk_fs_file_alloc(a_fs),
+        tsk_fs_file_close
+    };
+
+    if (!file) {
         return 1;
+    }
 
     file->meta = tsk_fs_meta_alloc(BTRFS_FILE_CONTENT_LEN);
     if (!file->meta) {
-        tsk_fs_file_close(file);
         return 1;
     }
 
@@ -2994,7 +2998,7 @@ btrfs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
         }
 
         // invoke callback
-        int retval = a_action(file, a_ptr);
+        int retval = a_action(file.get(), a_ptr);
         if (retval == TSK_WALK_STOP)
             break;
         if (retval == TSK_WALK_ERROR) {
@@ -3005,11 +3009,8 @@ btrfs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
 
     // cleanup
     btrfs_inodewalk_free(iw);
-    tsk_fs_file_close(file);
     return result;
 }
-
-
 
 /*
  * directory
