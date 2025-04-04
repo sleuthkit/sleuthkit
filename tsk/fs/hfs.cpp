@@ -5812,7 +5812,6 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
-    TSK_FS_FILE *fs_file;
     char hfs_mode[12];
     HFS_PRINT_ADDR print;
     HFS_ENTRY entry;
@@ -5828,7 +5827,12 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
             "hfs_istat: inum: %" PRIuINUM " numblock: %" PRIu32 "\n",
             inum, numblock);
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inum),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         error_returned("hfs_istat: getting metadata for the file");
         return 1;
     }
@@ -6084,7 +6088,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 print.startBlock = 0;
                 print.blockCount = 0;
 
-                if (tsk_fs_file_walk_type(fs_file,
+                if (tsk_fs_file_walk_type(fs_file.get(),
                     TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
                     (TSK_FS_FILE_WALK_FLAG_ENUM) (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
@@ -6113,7 +6117,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 print.startBlock = 0;
                 print.blockCount = 0;
 
-                if (tsk_fs_file_walk_type(fs_file,
+                if (tsk_fs_file_walk_type(fs_file.get(),
                     TSK_FS_ATTR_TYPE_HFS_RSRC, HFS_FS_ATTR_ID_RSRC,
                     (TSK_FS_FILE_WALK_FLAG_ENUM) (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
@@ -6132,7 +6136,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     }
 
     // Force the loading of all attributes.
-    (void) tsk_fs_file_attr_get(fs_file);
+    (void) tsk_fs_file_attr_get(fs_file.get());
 
     /* Print all of the attributes */
     tsk_fprintf(hFile, "\nAttributes: \n");
@@ -6140,11 +6144,11 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
         int cnt, i;
 
         // cycle through the attributes
-        cnt = tsk_fs_file_attr_getsize(fs_file);
+        cnt = tsk_fs_file_attr_getsize(fs_file.get());
         for (i = 0; i < cnt; ++i) {
             const char *type;   // type of the attribute as a string
             const TSK_FS_ATTR *fs_attr =
-                tsk_fs_file_attr_get_idx(fs_file, i);
+                tsk_fs_file_attr_get_idx(fs_file.get(), i);
             if (!fs_attr)
                 continue;
 
@@ -6314,7 +6318,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     }
 
     // This will return NULL if there is an error, or if there are no resources
-    rd = hfs_parse_resource_fork(fs_file);
+    rd = hfs_parse_resource_fork(fs_file.get());
     // TODO: Should check the errnum here to see if there was an error
 
     if (rd != NULL) {
@@ -6329,11 +6333,8 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     // This is OK to call with NULL
     free_res_descriptor(rd);
 
-    tsk_fs_file_close(fs_file);
     return 0;
 }
-
-
 
 static TSK_FS_ATTR_TYPE_ENUM
 hfs_get_default_attr_type(const TSK_FS_FILE * a_file)
