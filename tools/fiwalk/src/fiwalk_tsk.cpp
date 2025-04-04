@@ -27,6 +27,8 @@
 #include "unicode_escape.h"
 #include "tsk/fs/tsk_fatfs.h"
 
+#include <memory>
+
 #define MAX_SPARSE_SIZE 1024*1024*64
 
 #ifdef _MSC_VER
@@ -337,12 +339,15 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void * that)
 
 int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 {
-    TSK_FS_INFO *fs_info;
     uint32_t sector_size = img_info->sector_size;
 
     /* Try it as a file system */
-    fs_info = tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT);
-    if (fs_info == NULL) {
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+      tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT),
+      tsk_fs_close
+    };
+
+    if (!fs_info) {
 	comment("TSK_Error '%s' at sector %" PRIuDADDR " offset %" PRIuDADDR " sector_size=%u",
 		tsk_error_get(),start/sector_size,start,sector_size);
 
@@ -351,7 +356,7 @@ int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     }
 
     comment("fs start: %" PRIuDADDR, start);
-    if(x){
+    if (x) {
 	char buf[1024];
 	snprintf(buf,sizeof(buf),"offset='%" PRIuDADDR "'",start);
 	x->push("volume",buf);
@@ -364,8 +369,8 @@ int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     /*Special Processing for FAT to report cluster and sector size*/
     if(TSK_FS_TYPE_ISFAT(fs_info->ftype))
     {
-        partition_info("sector_size",((FATFS_INFO *)fs_info)->ssize);
-        partition_info("block_size",((FATFS_INFO *)fs_info)->csize * ((FATFS_INFO *)fs_info)->ssize);
+        partition_info("sector_size",((FATFS_INFO *)fs_info.get())->ssize);
+        partition_info("block_size",((FATFS_INFO *)fs_info.get())->csize * ((FATFS_INFO *)fs_info.get())->ssize);
     }
     else
     {
@@ -391,16 +396,15 @@ int fiwalk::proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     }
 
     int ret = 0;
-    if (tsk_fs_dir_walk(fs_info, fs_info->root_inum,
+    if (tsk_fs_dir_walk(fs_info.get(), fs_info->root_inum,
                         (TSK_FS_DIR_WALK_FLAG_ENUM) dir_walk_flags, dir_act, this)) {
 	comment("TSK Error: tsk_fs_dir_walk: ",tsk_error_get());
 	ret = -1;
     }
     else {
 	/* We could do some analysis of unallocated blocks at this point...  */
-	tsk_fs_close(fs_info);
     }
-    if(x) x->pop();
+    if (x) x->pop();
     comment("end of volume");
     return ret;
 }
@@ -439,12 +443,15 @@ vs_act(TSK_VS_INFO * vs_info, const TSK_VS_PART_INFO * vs_part, void *that)
  */
 int fiwalk::proc_vs(TSK_IMG_INFO * img_info)
 {
-    TSK_VS_INFO *vs_info;
     int start = 0;
 
-    // USE mm_walk to get the volumes
-    if ((vs_info = tsk_vs_open(img_info, start, TSK_VS_TYPE_DETECT)) == NULL) {
+    std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs_info{
+        tsk_vs_open(img_info, start, TSK_VS_TYPE_DETECT),
+        tsk_vs_close
+    };
 
+    // USE mm_walk to get the volumes
+    if (!vs_info) {
         /* There was no volume system, but there could be a file system.
 	 * Look for one at well-known locations
 	 */
@@ -466,12 +473,10 @@ int fiwalk::proc_vs(TSK_IMG_INFO * img_info)
         if (tsk_verbose) fprintf(stderr, "Volume system open, examining each\n");
 
         /* Walk the allocated volumes (skip metadata and unallocated volumes) */
-        if (tsk_vs_part_walk(vs_info, 0, vs_info->part_count-1,
+        if (tsk_vs_part_walk(vs_info.get(), 0, vs_info->part_count-1,
                              (TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC), vs_act, (void *)this)) {
-            tsk_vs_close(vs_info);
             return -1;
         }
-        tsk_vs_close(vs_info);
     }
     return vs_count;
 }
@@ -523,28 +528,29 @@ void fiwalk::process_scalpel_audit_file(TSK_IMG_INFO *img_info,const char *audit
 
 int fiwalk::process_image_file(int argc,char * const *argv,const char *audit_file,uint32_t sector_size)
 {
-    TSK_IMG_INFO *img_info;
     int count = 0;
 
-    assert(argc!=0);
+    assert(argc != 0);
 
-    img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_info{
+        tsk_img_open_utf8(argc, (const char **)argv, TSK_IMG_TYPE_DETECT, sector_size),
+        tsk_img_close
+    };
 
-    if (img_info==0){
-	comment("TSK Error (img_open) %s sector_size=%u",tsk_error_get(),sector_size);
+    if (!img_info) {
+      comment("TSK Error (img_open) %s sector_size=%u",tsk_error_get(),sector_size);
     } else {
 	if(audit_file){
 	    comment("audit file: %s",audit_file);
-	    process_scalpel_audit_file(img_info,audit_file);
+	    process_scalpel_audit_file(img_info.get(), audit_file);
 	}
-	else{
-	    int r = proc_vs(img_info);
-	    if (r<0){
+	else {
+	    int r = proc_vs(img_info.get());
+	    if (r < 0){
 		comment("TSK Error (do_dimage) %s",tsk_error_get());
 	    }
-	    if(r>0) count += r;
+	    if (r > 0) count += r;
 	}
-	tsk_img_close(img_info);
     }
     return count;
 }

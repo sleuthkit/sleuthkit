@@ -21,8 +21,10 @@
  */
 
 #include "tsk_is_image_supported.h"
-#include <sstream>
+
 #include <algorithm>
+#include <memory>
+#include <sstream>
 
 TskIsImageSupported::TskIsImageSupported():
     m_wasDataFound(false),
@@ -195,8 +197,17 @@ std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
     // We've seen a lot of issues with .vmdk files. If the image has a .vmdk extension, try to open again
     // to get a more specific error string.
     if ((TSTRLEN(m_img_info->images[0]) > 5) && (TSTRICMP(&(m_img_info->images[0][TSTRLEN(m_img_info->images[0]) - 5]), _TSK_T(".vmdk")) == 0)) {
-        TSK_IMG_INFO* tempInfo = tsk_img_open(m_img_info->num_img, m_img_info->images, TSK_IMG_TYPE_VMDK_VMDK, m_img_info->sector_size);
-        if (tempInfo == NULL) {
+        std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> tempInfo{
+            tsk_img_open(
+                m_img_info->num_img,
+                m_img_info->images,
+                TSK_IMG_TYPE_VMDK_VMDK,
+                m_img_info->sector_size
+            ),
+            tsk_img_close
+        };
+
+        if (!tempInfo) {
             // The vmdk open code failed. The first line should contain everything we need.
             std::stringstream ss(tsk_error_get_errstr());
             std::string firstLine = "";
@@ -219,10 +230,7 @@ std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
                 return std::string("Error opening VMDK (" + firstLine + ")");
             }
         }
-        else {
-            // This is the case where we successfully opened the vmdk but it perhaps did not have a file system.
-            tsk_img_close(tempInfo);
-        }
+        // Otherwise, we successfully opened the vmdk but it perhaps did not have a file system.
     }
 
     return getSingleLineErrorMessage();

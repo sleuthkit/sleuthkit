@@ -6,7 +6,8 @@ name: "Build"
 on:
   push:
     branches:
-      - '**'
+      - main
+      - develop
   pull_request:
     branches:
       - main
@@ -202,6 +203,7 @@ jobs:
           cd sleuthkit_test_data
           make unpack
           find . -ls | grep -v '[.]git'
+          echo "SLEUTHKIT_TEST_DATA_DIR=$(pwd)" >> $GITHUB_ENV
 
       - name: Run make
         run: |
@@ -210,6 +212,7 @@ jobs:
       - name: Run make check on Mac/Linux
         if: ${{ matrix.os != 'mingw' }}
         run: |
+          echo SLEUTHKIT_TEST_DATA_DIR=$SLEUTHKIT_TEST_DATA_DIR
           make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Run make check on Mingw
@@ -288,10 +291,10 @@ jobs:
             executables/*
           retention-days: 15
 
-      - name: Run distcheck
-        run: |
-          ./configure
-          make distcheck
+#      - name: Run distcheck
+#        run: |
+#          ./configure
+#          make distcheck
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher

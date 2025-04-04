@@ -66,6 +66,7 @@
 #include "tsk_iso9660.h"
 #include <ctype.h>
 
+#include <memory>
 
 /* free all memory used by inode linked list */
 static void
@@ -1270,7 +1271,6 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     const char *myname = "iso9660_inode_walk";
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_INUM_T inum, end_inum_tmp;
-    TSK_FS_FILE *fs_file;
     unsigned int myflags;
     iso9660_inode *dinode;
 
@@ -1334,8 +1334,12 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         }
     }
 
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+    if (!fs_file)
         return 1;
 
     if ((fs_file->meta =
@@ -1363,7 +1367,6 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     for (inum = start; inum <= end_inum_tmp; inum++) {
         int retval;
         if (iso9660_dinode_load(iso, inum, dinode)) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
@@ -1386,9 +1389,8 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
             continue;
         }
 
-        retval = action(fs_file, ptr);
+        retval = action(fs_file.get(), ptr);
         if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
@@ -1404,29 +1406,24 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         int retval;
 
         if (tsk_fs_dir_make_orphan_dir_meta(fs, fs_file->meta)) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
         /* call action */
-        retval = action(fs_file, ptr);
+        retval = action(fs_file.get(), ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
     }
 
-
     /*
      * Cleanup.
      */
-    tsk_fs_file_close(fs_file);
     free(dinode);
     return 0;
 }
@@ -2082,7 +2079,6 @@ iso9660_istat(
   int32_t sec_skew)
 {
     ISO_INFO *iso = (ISO_INFO *) fs;
-    TSK_FS_FILE *fs_file;
     iso9660_dentry dd;
     iso9660_inode *dinode;
     char timeBuf[128];
@@ -2090,7 +2086,12 @@ iso9660_istat(
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inum),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file)
         return 1;
 
     tsk_fprintf(hFile, "Entry: %" PRIuINUM "\n", inum);
@@ -2106,7 +2107,6 @@ iso9660_istat(
 
     if (iso9660_dinode_load(iso, inum, dinode)) {
         tsk_error_set_errstr2("iso9660_istat");
-        tsk_fs_file_close(fs_file);
         free(dinode);
         return 1;
     }
@@ -2246,7 +2246,7 @@ iso9660_istat(
     tsk_fprintf(hFile, "\nSectors:\n");
     if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
         const TSK_FS_ATTR *fs_attr_default =
-            tsk_fs_file_attr_get_type(fs_file,
+            tsk_fs_file_attr_get_type(fs_file.get(),
                 TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
             if (tsk_fs_attr_print(fs_attr_default, hFile)) {
@@ -2275,7 +2275,6 @@ iso9660_istat(
         tsk_fprintf(hFile, "\n");
     }
 
-    tsk_fs_file_close(fs_file);
     free(dinode);
     return 0;
 }

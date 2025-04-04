@@ -11,6 +11,8 @@
 
 #include "tsk/tsk_tools_i.h"
 
+#include <memory>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -46,7 +48,6 @@ main(int argc, char **argv)
     uint8_t block[1024];
 
     char **err = NULL;
-    TSK_IMG_INFO *img_info;
     TSK_OFF_T cur_offset;
     int sig_offset = 0, rel_offset = 0;
     int read_size, bs = 512;
@@ -271,9 +272,12 @@ main(int argc, char **argv)
         usage();
     }
 
-    if ((img_info =
-         tsk_img_open_utf8_sing(argv[optind],
-                      TSK_IMG_TYPE_DETECT, 0)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_info{
+        tsk_img_open_utf8_sing(argv[optind], TSK_IMG_TYPE_DETECT, 0),
+        tsk_img_close
+    };
+
+    if (!img_info) {
         tsk_error_print(stderr);
         exit(1);
     }
@@ -296,7 +300,7 @@ main(int argc, char **argv)
         ssize_t retval;
 
         /* Read the signature area */
-        retval = tsk_img_read(img_info, cur_offset,
+        retval = tsk_img_read(img_info.get(), cur_offset,
                                     (char *)block, read_size);
         if (retval == 0) {
             break;
@@ -322,6 +326,5 @@ main(int argc, char **argv)
         cur_offset += bs;
     }
 
-    tsk_img_close(img_info);
     exit(0);
 }

@@ -17,8 +17,9 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_btrfs.h"
-#include <cassert>
 
+#include <cassert>
+#include <memory>
 
 
 /*
@@ -2951,13 +2952,17 @@ btrfs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
             a_flags = (TSK_FS_META_FLAG_ENUM) (a_flags | TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
     }
 
-    TSK_FS_FILE *file = tsk_fs_file_alloc(a_fs);
-    if (!file)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file{
+        tsk_fs_file_alloc(a_fs),
+        tsk_fs_file_close
+    };
+
+    if (!file) {
         return 1;
+    }
 
     file->meta = tsk_fs_meta_alloc(BTRFS_FILE_CONTENT_LEN);
     if (!file->meta) {
-        tsk_fs_file_close(file);
         return 1;
     }
 
@@ -2993,7 +2998,7 @@ btrfs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
         }
 
         // invoke callback
-        int retval = a_action(file, a_ptr);
+        int retval = a_action(file.get(), a_ptr);
         if (retval == TSK_WALK_STOP)
             break;
         if (retval == TSK_WALK_ERROR) {
@@ -3004,11 +3009,8 @@ btrfs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
 
     // cleanup
     btrfs_inodewalk_free(iw);
-    tsk_fs_file_close(file);
     return result;
 }
-
-
 
 /*
  * directory
@@ -4529,16 +4531,20 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
             [[maybe_unused]] TSK_DADDR_T a_numblock, int32_t a_sec_skew)
 {
     BTRFS_INFO *btrfs = (BTRFS_INFO*) a_fs;
-    TSK_FS_FILE *file;
     char ls[12];
     char time_buffer[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    file = tsk_fs_file_open_meta(a_fs, NULL, a_inum);
-    if (!file)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file{
+        tsk_fs_file_open_meta(a_fs, NULL, a_inum),
+        tsk_fs_file_close
+    };
+
+    if (!file) {
         return 1;
+    }
 
     TSK_FS_META *meta = file->meta;
 
@@ -4552,7 +4558,6 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
         uint64_t subvol;
         TSK_INUM_T inum;
         if (!btrfs_inum_virt2real_map(btrfs, a_inum, &subvol, &inum)) {
-            tsk_fs_file_close(file);
             return 1;
         }
 
@@ -4633,11 +4638,10 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
 
     // print extended attributes
     tsk_fprintf(a_file, "Extended attributes:\n");
-    int attribute_count = tsk_fs_file_attr_getsize(file);
+    int attribute_count = tsk_fs_file_attr_getsize(file.get());
     for (int i = 0; i < attribute_count; i++) {
-        const TSK_FS_ATTR *attr = tsk_fs_file_attr_get_idx(file, i);
+        const TSK_FS_ATTR *attr = tsk_fs_file_attr_get_idx(file.get(), i);
         if (!attr) {
-            tsk_fs_file_close(file);
             return 1;
         }
         if (attr->type == TSK_FS_ATTR_TYPE_UNIX_XATTR)
@@ -4654,19 +4658,15 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
         helper.file = a_file;
         helper.index = 0;
 
-        if (tsk_fs_file_walk(file, TSK_FS_FILE_WALK_FLAG_AONLY, btrfs_istat_filewalk_cb, &helper)) {
-            tsk_fs_file_close(file);
+        if (tsk_fs_file_walk(file.get(), TSK_FS_FILE_WALK_FLAG_AONLY, btrfs_istat_filewalk_cb, &helper)) {
             return 1;
         }
         if (helper.index)
             tsk_fprintf(a_file, "\n");
     }
 
-    tsk_fs_file_close(file);
     return 0;
 }
-
-
 
 /*
  * unimplemented functions
@@ -4903,11 +4903,19 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
+    const auto deleter = [](BTRFS_INFO* btrfs) {
+      tsk_fs_close(&btrfs->fs_info);
+    };
+
+    std::unique_ptr<BTRFS_INFO, decltype(deleter)> btrfs{
+      (BTRFS_INFO*) tsk_fs_malloc(sizeof(BTRFS_INFO)),
+      deleter
+    };
 
     // create struct (mem is zeroed!)
-    BTRFS_INFO *btrfs = (BTRFS_INFO*) tsk_fs_malloc(sizeof(BTRFS_INFO));
-    if (!btrfs)
+    if (!btrfs) {
         return NULL;
+    }
 
     // init struct
     TSK_FS_INFO *fs = &btrfs->fs_info;
@@ -4949,13 +4957,11 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->jopen = btrfs_jopen;
     fs->fscheck = btrfs_fscheck;
 
-
     // derive superblock
-    if (!btrfs_superblock_search(btrfs)) {
+    if (!btrfs_superblock_search(btrfs.get())) {
         btrfs_error(TSK_ERR_FS_MAGIC, "No valid superblock found in btrfs_open");
         if (tsk_verbose)
             tsk_fprintf(stderr, "btrfs_open: No valid superblock found\n");
-        tsk_fs_close(fs);
         return NULL;
     }
 #ifdef BTRFS_DEBUG
@@ -4980,7 +4986,6 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_fprintf(stderr, "btrfs_open: Unsupported superblock incompat_flags:\n");
             btrfs_fsstat_print_incompat_flags(stderr, incompat_flags_unsupported);
         }
-        tsk_fs_close(fs);
         return NULL;
     }
 
@@ -5008,14 +5013,13 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     // init physical <-> logical address mapping
     // step 1 - parse superblock system chunks for initial mapping
-    btrfs->chunks = btrfs_chunks_from_superblock(btrfs);
+    btrfs->chunks = btrfs_chunks_from_superblock(btrfs.get());
 
     // step 2 - based on this, replace it with chunk tree mapping
     BTRFS_CACHED_CHUNK_MAPPING *old_chunks = btrfs->chunks;
-    btrfs->chunks = btrfs_chunks_from_chunktree(btrfs);
+    btrfs->chunks = btrfs_chunks_from_chunktree(btrfs.get());
     if (!btrfs->chunks) {
         tsk_error_errstr2_concat("- btrfs_open: parsing chunk tree");
-        tsk_fs_close(fs);
         return NULL;
     }
     delete old_chunks;
@@ -5024,16 +5028,14 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // init virtual <-> real inum mapping
     btrfs->subvolumes = new btrfs_subvolumes_t;
     btrfs->virt2real_inums = new btrfs_virt2real_inums_t;
-    if (!btrfs_parse_subvolumes(btrfs)) {
+    if (!btrfs_parse_subvolumes(btrfs.get())) {
         tsk_error_errstr2_concat("- btrfs_open: parsing all subvolumes");
-        tsk_fs_close(fs);
         return NULL;
     }
 
     // set root inum (using FS_TREE instead of possible custom default subvol)
-    if (!btrfs_inum_real2virt_map(btrfs, BTRFS_OBJID_FS_TREE, btrfs_subvol_root_inum(btrfs, BTRFS_OBJID_FS_TREE), &fs->root_inum)) {
+    if (!btrfs_inum_real2virt_map(btrfs.get(), BTRFS_OBJID_FS_TREE, btrfs_subvol_root_inum(btrfs.get(), BTRFS_OBJID_FS_TREE), &fs->root_inum)) {
         tsk_error_set_errstr2("btrfs_open: mapping root inum");
-        tsk_fs_close(fs);
         return NULL;
     }
 
@@ -5041,17 +5043,14 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->first_inum = 0;
     fs->last_inum = fs->inum_count - 1;
 
-
     // derive extent tree root node address
-    if (!btrfs_root_tree_derive_subtree_address(btrfs, BTRFS_OBJID_EXTENT_TREE, &btrfs->extent_tree_root_node_address)) {
-        tsk_fs_close(fs);
+    if (!btrfs_root_tree_derive_subtree_address(btrfs.get(), BTRFS_OBJID_EXTENT_TREE, &btrfs->extent_tree_root_node_address)) {
         return NULL;
     }
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "btrfs_open: SB mirror: %d, node size: %ld block size: %d, blocks: %p virtual inodes: %lud subvols: %zd, label: '%s'\n",
                 btrfs->sb_mirror_index, btrfs->sb->nodesize, fs->block_size, fs->block_count, fs->inum_count, btrfs->subvolumes->size(), btrfs->sb->label);
-
 
 #ifdef BTRFS_DEBUG
     // debug parsing some trees
@@ -5068,7 +5067,6 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     btrfs_root_tree_derive_subtree_address(btrfs, 0x07, &tmp_tree_root);
     btrfs_tree_dump(btrfs, tmp_tree_root, "checksum tree");
-
 
     // output subvolumes
     for (btrfs_subvolumes_t::iterator it = btrfs->subvolumes->begin(); it != btrfs->subvolumes->end(); it++) {
@@ -5100,5 +5098,5 @@ btrfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             btrfs_debug("0x%4" PRIx64 " 0x%4" PRIx64 " -> %4" PRId64 "\n", it->first, ii->first, ii->second);
 #endif
 
-    return fs;
+    return (TSK_FS_INFO*) btrfs.release();
 }

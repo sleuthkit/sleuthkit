@@ -27,6 +27,8 @@
 
 #include "tsk_fatxxfs.h"
 
+#include <memory>
+
 /*
  * Implementation NOTES
  *
@@ -440,7 +442,6 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	FATXXFS_SB *fatsb = (FATXXFS_SB*)(&fatfs->boot_sector_buffer);
 	int i = 0;
     TSK_DADDR_T sectors = 0;
-	TSK_FS_DIR * test_dir1; // Directories used to try opening the root directory
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -827,23 +828,30 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	// and we find more entries by removing the short name test for allocated directories, then assume
 	// this is the case where we have no short names
 	fatfs->subtype = TSK_FATFS_SUBTYPE_SPEC;
-	test_dir1 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
-	if (test_dir1 != NULL && test_dir1->names_used <= 4){ // At most four automatic directories ($MBR, $FAT1, $FAT1, $OrphanFiles)
-	    TSK_FS_DIR * test_dir2; //  to see if it's the Android FAT version
+    // Directories used to try opening the root directory
+    std::unique_ptr<TSK_FS_DIR, decltype(&tsk_fs_dir_close)> test_dir1{
+	      tsk_fs_dir_open_meta(fs, fs->root_inum),
+        tsk_fs_dir_close
+    }; 
 
-		fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
-		test_dir2 = tsk_fs_dir_open_meta(fs, fs->root_inum);
+	if (test_dir1 && test_dir1->names_used <= 4){ // At most four automatic directories ($MBR, $FAT1, $FAT1, $OrphanFiles)
 
-		if (test_dir2 != NULL && test_dir2->names_used > test_dir1->names_used){
+		    fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
+
+        //  to see if it's the Android FAT version
+        std::unique_ptr<TSK_FS_DIR, decltype(&tsk_fs_dir_close)> test_dir2{
+		        tsk_fs_dir_open_meta(fs, fs->root_inum),
+            tsk_fs_dir_close
+        }; 
+
+		if (test_dir2 && test_dir2->names_used > test_dir1->names_used){
 			fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		}
 		else{
 			fatfs->subtype = TSK_FATFS_SUBTYPE_SPEC;
 		}
-		tsk_fs_dir_close(test_dir2);
 	}
-	tsk_fs_dir_close(test_dir1);
 
     return 0;
 }

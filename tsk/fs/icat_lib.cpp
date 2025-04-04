@@ -29,7 +29,7 @@
 
 #include "tsk_fs_i.h"
 
-
+#include <memory>
 
 /* Call back action for file_walk
  */
@@ -63,8 +63,6 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
     TSK_FS_ATTR_TYPE_ENUM type, uint8_t type_used,
     uint16_t id, uint8_t id_used, TSK_FS_FILE_WALK_FLAG_ENUM flags)
 {
-    TSK_FS_FILE *fs_file;
-
 #ifdef TSK_WIN32
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
         tsk_error_reset();
@@ -75,7 +73,12 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
         return 1;
     }
 #endif
-    fs_file = tsk_fs_file_open_meta(fs, NULL, inum);
+
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inum),
+        tsk_fs_file_close
+    };
+
     if (!fs_file) {
         return 1;
     }
@@ -84,21 +87,17 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
         if (id_used == 0) {
             flags = (TSK_FS_FILE_WALK_FLAG_ENUM) (flags | TSK_FS_FILE_WALK_FLAG_NOID);
         }
-        if (tsk_fs_file_walk_type(fs_file, type, id, flags, icat_action,
+
+        if (tsk_fs_file_walk_type(fs_file.get(), type, id, flags, icat_action,
                 NULL)) {
-            tsk_fs_file_close(fs_file);
             return 1;
         }
     }
     else {
-        if (tsk_fs_file_walk(fs_file, flags, icat_action, NULL)) {
-            tsk_fs_file_close(fs_file);
+        if (tsk_fs_file_walk(fs_file.get(), flags, icat_action, NULL)) {
             return 1;
         }
     }
-
-
-    tsk_fs_file_close(fs_file);
 
     return 0;
 }

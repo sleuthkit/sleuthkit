@@ -24,10 +24,6 @@ void check_image(std::string img_path, std::string dfxml2_path) {
     if (data_dir == nullptr){
         data_dir = DEFAULT_SLEUTHKIT_TEST_DATA_DIR;
     }
-    img_path = std::string(data_dir)  + std::string("/") + img_path;
-
-    CAPTURE(img_path);
-    INFO("test: fiwalk " << img_path)
 
     /* the output XML file should be the XML file with a 2 added.
      * If there is no XML file, then add ".xml2" to the image file.
@@ -38,6 +34,11 @@ void check_image(std::string img_path, std::string dfxml2_path) {
     else {
         dfxml2_path   = std::string(data_dir) + std::string("/") + dfxml2_path + std::string("2");
     }
+
+    img_path = std::string(data_dir) + std::string("/") + img_path;
+
+    CAPTURE(img_path);
+    INFO("test: fiwalk " << img_path)
 
     const int argc = 1;
     char* const argv[] = { &img_path[0], nullptr };
@@ -83,6 +84,13 @@ TEST_CASE("test_disk_images 2GB-xfs-raw.E01", "[fiwalk]") {
       ""
     );
 }
+
+TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
+    check_image(
+      "ufs/image.E01",
+      "ufs/image_dd.xml"
+    );
+}
 #endif
 
 TEST_CASE("test_disk_images ntfs-img-kw-1.dd", "[fiwalk]") {
@@ -110,13 +118,6 @@ TEST_CASE("test_disk_images image.gen1.dmg", "[fiwalk]") {
     check_image(
       "nps-2009-hfsjtest1/image.gen1.dmg",
       "nps-2009-hfsjtest1/image.gen1.xml"
-    );
-}
-
-TEST_CASE("test_disk_images image.dd", "[fiwalk]") {
-    check_image(
-      "ufs/image.E01",
-      "ufs/image_dd.xml"
     );
 }
 

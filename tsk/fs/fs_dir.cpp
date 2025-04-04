@@ -17,6 +17,8 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+#include <memory>
+
 /** \internal
 * Allocate a FS_DIR structure to load names into.
 *
@@ -652,13 +654,16 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_INUM_T a_addr, TSK_FS_DIR_WALK_FLAG_ENUM a_flags,
     TSK_FS_DIR_WALK_CB a_action, void *a_ptr, int macro_recursion_depth)
 {
-    TSK_FS_DIR *fs_dir;
-    TSK_FS_FILE *fs_file;
     size_t i;
     int* indexToOrderedIndex = NULL;
 
     // get the list of entries in the directory
-    if ((fs_dir = tsk_fs_dir_open_meta_internal(a_fs, a_addr, macro_recursion_depth + 1)) == NULL) {
+    std::unique_ptr<TSK_FS_DIR, decltype(&tsk_fs_dir_close)> fs_dir{
+        tsk_fs_dir_open_meta_internal(a_fs, a_addr, macro_recursion_depth + 1),
+        tsk_fs_dir_close
+    };
+
+    if (!fs_dir) {
         return TSK_WALK_ERROR;
     }
 
@@ -666,11 +671,9 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     if (a_addr == a_fs->root_inum) {
         indexToOrderedIndex = (int *)tsk_malloc(fs_dir->names_used * sizeof(int));
         if (indexToOrderedIndex == NULL) {
-            tsk_fs_dir_close(fs_dir);
             return TSK_WALK_ERROR;
         }
         if (TSK_OK != prioritizeDirNames(fs_dir->names, fs_dir->names_used, indexToOrderedIndex)) {
-            tsk_fs_dir_close(fs_dir);
             return TSK_WALK_ERROR;
         }
     }
@@ -678,13 +681,18 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     /* Allocate a file structure for the callbacks.  We
      * will allocate fs_meta structures as needed and
      * point into the fs_dir structure for the names. */
-    if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
-        tsk_fs_dir_close(fs_dir);
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(a_fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         if (indexToOrderedIndex != NULL) {
             free(indexToOrderedIndex);
         }
         return TSK_WALK_ERROR;
     }
+
     for (i = 0; i < fs_dir->names_used; i++) {
         TSK_WALK_RET_ENUM retval;
 
@@ -700,11 +708,11 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
         /* load the fs_meta structure if possible.
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
-        if (((fs_file->name->meta_addr)
-                || (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC))) {
+        if (fs_file->name->meta_addr
+                || (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
             /* Note that the NTFS code behind here has a slight hack to use the
              * correct sequence number based on the data in fs_file->name */
-            if (a_fs->file_add_meta(a_fs, fs_file,
+            if (a_fs->file_add_meta(a_fs, fs_file.get(),
                     fs_file->name->meta_addr)) {
                 if (tsk_verbose)
                     tsk_error_print(stderr);
@@ -716,11 +724,9 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
             (TSK_FS_NAME_FLAG_ENUM) (((a_flags & TSK_FS_DIR_WALK_FLAG_ALLOC) ? TSK_FS_NAME_FLAG_ALLOC : 0) |
             ((a_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC) ? TSK_FS_NAME_FLAG_UNALLOC : 0));
         if ((fs_file->name->flags & n_flags) == fs_file->name->flags) {
-            retval = a_action(fs_file, a_dinfo->dirs, a_ptr);
+            retval = a_action(fs_file.get(), a_dinfo->dirs, a_ptr);
             if (retval == TSK_WALK_STOP) {
-                tsk_fs_dir_close(fs_dir);
                 fs_file->name = NULL;
-                tsk_fs_file_close(fs_file);
 
                 if (indexToOrderedIndex != NULL) {
                     free(indexToOrderedIndex);
@@ -737,9 +743,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 return TSK_WALK_STOP;
             }
             else if (retval == TSK_WALK_ERROR) {
-                tsk_fs_dir_close(fs_dir);
                 fs_file->name = NULL;
-                tsk_fs_file_close(fs_file);
                 if (indexToOrderedIndex != NULL) {
                     free(indexToOrderedIndex);
                 }
@@ -767,9 +771,9 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
          * then save inum_named now to FS_INFO so that we can use
          * it for the orphan folder.  Otherwise, we do a full
          * inode walk again for nothing. */
-        if ((fs_file->name->meta_addr == TSK_FS_ORPHANDIR_INUM(a_fs)) &&
-            (i == fs_dir->names_used-1) &&
-            (a_dinfo->save_inum_named == 1)) {
+        if (fs_file->name->meta_addr == TSK_FS_ORPHANDIR_INUM(a_fs) &&
+            i == fs_dir->names_used-1 &&
+            a_dinfo->save_inum_named == 1) {
             save_inum_named(a_fs, a_dinfo);
             a_dinfo->save_inum_named = 0;
         }
@@ -803,9 +807,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
                 if (tsk_stack_push(a_dinfo->stack_seen,
                         fs_file->name->meta_addr)) {
-                    tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
-                    tsk_fs_file_close(fs_file);
                     if (indexToOrderedIndex != NULL) {
                         free(indexToOrderedIndex);
                     }
@@ -831,9 +833,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                             PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
                     }
 
-                    tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
-                    tsk_fs_file_close(fs_file);
                     if (indexToOrderedIndex != NULL) {
                         free(indexToOrderedIndex);
                     }
@@ -866,9 +866,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                      * did not load, but if we ran out
                      * of memory we should stop */
                     if (tsk_error_get_errno() & TSK_ERR_AUX) {
-                        tsk_fs_dir_close(fs_dir);
                         fs_file->name = NULL;
-                        tsk_fs_file_close(fs_file);
 
                         if (indexToOrderedIndex != NULL) {
                             free(indexToOrderedIndex);
@@ -886,16 +884,13 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     tsk_error_reset();
                 }
                 else if (retval == TSK_WALK_STOP) {
-                    tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
-                    tsk_fs_file_close(fs_file);
 
                     if (indexToOrderedIndex != NULL) {
                         free(indexToOrderedIndex);
                     }
                     return TSK_WALK_STOP;
                 }
-
 
                 // reset the save status
                 if (fs_file->name->meta_addr ==
@@ -928,9 +923,7 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         }
     }
 
-    tsk_fs_dir_close(fs_dir);
     fs_file->name = NULL;
-    tsk_fs_file_close(fs_file);
 
     if (indexToOrderedIndex != NULL) {
         free(indexToOrderedIndex);

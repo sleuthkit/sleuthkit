@@ -28,6 +28,8 @@
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
 
+#include <memory>
+
 
 /*******************************************************************************
  * Find an unallocated NTFS MFT entry based on its parent directory
@@ -228,13 +230,14 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     is_done = 0;
     while (is_done == 0) {
         size_t i;
-        TSK_FS_FILE *fs_file_alloc = NULL;      // set to the allocated file that is our target
-        TSK_FS_FILE *fs_file_del = NULL;        // set to an unallocated file that matches our criteria
-
-        TSK_FS_DIR *fs_dir = NULL;
 
         // open the next directory in the recursion
-        if ((fs_dir = tsk_fs_dir_open_meta(a_fs, next_meta)) == NULL) {
+        std::unique_ptr<TSK_FS_DIR, decltype(&tsk_fs_dir_close)> fs_dir{
+           tsk_fs_dir_open_meta(a_fs, next_meta),
+           tsk_fs_dir_close
+        };
+
+        if (!fs_dir) {
             free(cpath);
             return -1;
         }
@@ -243,7 +246,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
          * problem where a file was a disk image and opening it as
          * a directory found the directory entries inside of the file
          * and this caused problems... */
-        if ( !TSK_FS_IS_DIR_META(fs_dir->fs_file->meta->type)) {
+        if (!TSK_FS_IS_DIR_META(fs_dir->fs_file->meta->type)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("Address %" PRIuINUM
@@ -252,14 +255,27 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             return -1;
         }
 
-        // cycle through each entry
-        for (i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
+        std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file_alloc{
+            nullptr,  // set to the allocated file that is our target
+            tsk_fs_file_close
+        };
 
-            TSK_FS_FILE *fs_file;
+        std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file_del{
+            nullptr,  // set to an unallocated file that matches our criteria
+            tsk_fs_file_close
+        };
+
+        // cycle through each entry
+        for (i = 0; i < tsk_fs_dir_getsize(fs_dir.get()); i++) {
+
             uint8_t found_name = 0;
 
-            if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
-                tsk_fs_dir_close(fs_dir);
+            std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+                tsk_fs_dir_get(fs_dir.get(), i),
+                tsk_fs_file_close
+            };
+
+            if (!fs_file) {
                 free(cpath);
                 return -1;
             }
@@ -288,10 +304,10 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                         int cnt, i;
 
                         // cycle through the attributes
-                        cnt = tsk_fs_file_attr_getsize(fs_file);
+                        cnt = tsk_fs_file_attr_getsize(fs_file.get());
                         for (i = 0; i < cnt; i++) {
                             const TSK_FS_ATTR *fs_attr =
-                                tsk_fs_file_attr_get_idx(fs_file, i);
+                                tsk_fs_file_attr_get_idx(fs_file.get(), i);
                             if (!fs_attr)
                                 continue;
 
@@ -311,22 +327,17 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                  * it is unallocated, keep on going to see if we can get
                  * an allocated hit */
                 if (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC) {
-                    fs_file_alloc = fs_file;
+                    fs_file_alloc = std::move(fs_file);
                     break;
                 }
                 else {
                     // if we already have an unalloc and its addr is 0, then use the new one
-                    if ((fs_file_del)
-                        && (fs_file_del->name->meta_addr == 0)) {
-                        tsk_fs_file_close(fs_file_del);
+                    if (fs_file_del
+                        && fs_file_del->name->meta_addr == 0) {
+                        fs_file_del.reset();
                     }
-                    fs_file_del = fs_file;
+                    fs_file_del = std::move(fs_file);
                 }
-            }
-            // close the file if we did not save it for future analysis.
-            else {
-                tsk_fs_file_close(fs_file);
-                fs_file = NULL;
             }
         }
 
@@ -338,9 +349,9 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
 
             // choose the alloc one first (if they both exist)
             if (fs_file_alloc)
-                fs_file_tmp = fs_file_alloc;
+                fs_file_tmp = fs_file_alloc.get();
             else
-                fs_file_tmp = fs_file_del;
+                fs_file_tmp = fs_file_del.get();
 
             pname = cur_dir;    // save a copy of the current name pointer
 
@@ -361,12 +372,6 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                     tsk_fs_name_copy(a_fs_name, fs_file_tmp->name);
                 }
 
-                if (fs_file_alloc)
-                    tsk_fs_file_close(fs_file_alloc);
-                if (fs_file_del)
-                    tsk_fs_file_close(fs_file_del);
-
-                tsk_fs_dir_close(fs_dir);
                 free(cpath);
                 return 0;
             }
@@ -380,24 +385,12 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
 
             // update the value for the next directory to open
             next_meta = fs_file_tmp->name->meta_addr;
-
-            if (fs_file_alloc) {
-                tsk_fs_file_close(fs_file_alloc);
-                fs_file_alloc = NULL;
-            }
-            if (fs_file_del) {
-                tsk_fs_file_close(fs_file_del);
-                fs_file_del = NULL;
-            }
         }
 
         // no hit in directory
         else {
             is_done = 1;
         }
-
-        tsk_fs_dir_close(fs_dir);
-        fs_dir = NULL;
     }
 
     free(cpath);

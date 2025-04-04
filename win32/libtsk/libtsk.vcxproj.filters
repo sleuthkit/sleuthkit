@@ -84,7 +84,7 @@
     <ClCompile Include="..\..\tsk\fs\fatfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ffind_lib.c">
+    <ClCompile Include="..\..\tsk\fs\ffind_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ffs.cpp">
@@ -285,7 +285,7 @@
     <ClCompile Include="..\..\tsk\hashdb\encase.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\exfatfs.c">
+    <ClCompile Include="..\..\tsk\fs\exfatfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
@@ -315,7 +315,7 @@
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\fatxxfs.c">
+    <ClCompile Include="..\..\tsk\fs\fatxxfs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c">
