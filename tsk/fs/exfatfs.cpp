@@ -212,7 +212,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("Not an exFAT file system (invalid root directory sector address)");
         if (tsk_verbose) {
-            fprintf(stderr, "%s: Invalid root directory sector address (%"PRIuDADDR")\n", func_name, a_fatfs->rootsect);
+            fprintf(stderr, "%s: Invalid root directory sector address (%" PRIuDADDR ")\n", func_name, a_fatfs->rootsect);
         }
         return FATFS_FAIL;
     }
