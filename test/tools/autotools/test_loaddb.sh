@@ -1,5 +1,9 @@
 #!/bin/bash -e
 
+if [ -n "$WINE" ]; then
+  EXEEXT=.exe
+fi
+
 doit () {
     echo scan $1
     /bin/rm -f testdb.db
