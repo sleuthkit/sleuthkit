@@ -84,7 +84,7 @@
     <ClCompile Include="..\..\tsk\fs\fatfs_meta.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\ffind_lib.c">
+    <ClCompile Include="..\..\tsk\fs\ffind_lib.cpp">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\ffs.cpp">
