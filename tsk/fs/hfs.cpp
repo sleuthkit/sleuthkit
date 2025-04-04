@@ -6418,7 +6418,6 @@ hfs_open(
     unsigned int len;
     TSK_FS_INFO *fs;
     ssize_t cnt;
-    TSK_FS_FILE *file;          // The root directory, or the metadata directories
     TSK_INUM_T inum;            // The inum (or CNID) of the metadata directories
     int8_t result;              // of tsk_fs_path2inum()
 
@@ -6715,16 +6714,20 @@ hfs_open(
     /* Creation Times */
 
     // First, the root
-    file = tsk_fs_file_open_meta(fs, NULL, 2);
-    if (file != NULL) {
-        hfs->root_crtime = file->meta->crtime;
-        hfs->has_root_crtime = TRUE;
-        tsk_fs_file_close(file);
+    {
+        std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file{
+            tsk_fs_file_open_meta(fs, NULL, 2),
+            tsk_fs_file_close
+        };
+
+        if (file) {
+            hfs->root_crtime = file->meta->crtime;
+            hfs->has_root_crtime = TRUE;
+        }
+        else {
+            hfs->has_root_crtime = FALSE;
+        }
     }
-    else {
-        hfs->has_root_crtime = FALSE;
-    }
-    file = NULL;
 
     // disable hard link traversal while finding the hard
     // link directories themselves (to prevent problems if
@@ -6746,12 +6749,15 @@ hfs_open(
         "/" UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
         UTF8_NULL_REPLACE "HFS+ Private Data", &inum, NULL);
     if (result == 0) {
-        TSK_FS_FILE *file_tmp = tsk_fs_file_open_meta(fs, NULL, inum);
-        if (file_tmp != NULL) {
+        std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file_tmp{
+            tsk_fs_file_open_meta(fs, NULL, inum),
+            tsk_fs_file_close
+        };
+
+        if (file_tmp) {
             hfs->meta_crtime = file_tmp->meta->crtime;
             hfs->has_meta_crtime = TRUE;
             hfs->meta_inum = inum;
-            tsk_fs_file_close(file_tmp);
         }
     }
 
@@ -6765,12 +6771,15 @@ hfs_open(
         tsk_fs_path2inum(fs, "/.HFS+ Private Directory Data\r", &inum,
         NULL);
     if (result == 0) {
-        TSK_FS_FILE *file_tmp = tsk_fs_file_open_meta(fs, NULL, inum);
-        if (file_tmp != NULL) {
+        std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file_tmp{
+            tsk_fs_file_open_meta(fs, NULL, inum),
+            tsk_fs_file_close
+        };
+
+        if (file_tmp) {
             hfs->metadir_crtime = file_tmp->meta->crtime;
             hfs->has_meta_dir_crtime = TRUE;
             hfs->meta_dir_inum = inum;
-            tsk_fs_file_close(file_tmp);
         }
     }
 
