@@ -5239,7 +5239,6 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_FS_META_WALK_CB action, void *ptr)
 {
     TSK_INUM_T inum;
-    TSK_FS_FILE *fs_file;
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -5288,11 +5287,18 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         }
     }
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
-        return 1;
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
 
-    if ((fs_file->meta = tsk_fs_meta_alloc(HFS_FILE_CONTENT_LEN)) == NULL)
+    if (!fs_file) {
         return 1;
+    }
+
+    if ((fs_file->meta = tsk_fs_meta_alloc(HFS_FILE_CONTENT_LEN)) == NULL) {
+        return 1;
+    }
 
     if (start_inum > end_inum)
         XSWAP(start_inum, end_inum);
@@ -5300,7 +5306,7 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     for (inum = start_inum; inum <= end_inum; ++inum) {
         int retval;
 
-        if (hfs_inode_lookup(fs, fs_file, inum)) {
+        if (hfs_inode_lookup(fs, fs_file.get(), inum)) {
             // deleted files may not exist in the catalog
             if (tsk_error_get_errno() == TSK_ERR_FS_INODE_NUM) {
                 tsk_error_reset();
@@ -5315,18 +5321,15 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             continue;
 
         /* call action */
-        retval = action(fs_file, ptr);
+        retval = action(fs_file.get(), ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             return 1;
         }
     }
 
-    tsk_fs_file_close(fs_file);
     return 0;
 }
 
