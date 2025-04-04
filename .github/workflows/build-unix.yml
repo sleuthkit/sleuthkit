@@ -61,6 +61,14 @@ jobs:
             keep_artifacts: "no"
             enable_java: "yes"
 
+          - os: "linux"
+            arch: "x86_64"
+            linkage: "static"
+            runner: "ubuntu-22.04"
+            configure_opts: "--enable-static --disable-shared --disable-java --without-afflib --without-libcrypto --without-libewf --without-libvhdi --without-libvmdk"
+            # remove after testing: configure_opts: "--enable-static --disable-shared --disable-java"
+            codecov: "no"
+
           - os: "mingw"
             arch: "x86_64"
             linkage: "shared"
