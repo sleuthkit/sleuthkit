@@ -4531,16 +4531,20 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
             [[maybe_unused]] TSK_DADDR_T a_numblock, int32_t a_sec_skew)
 {
     BTRFS_INFO *btrfs = (BTRFS_INFO*) a_fs;
-    TSK_FS_FILE *file;
     char ls[12];
     char time_buffer[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    file = tsk_fs_file_open_meta(a_fs, NULL, a_inum);
-    if (!file)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> file{
+        tsk_fs_file_open_meta(a_fs, NULL, a_inum),
+        tsk_fs_file_close
+    };
+
+    if (!file) {
         return 1;
+    }
 
     TSK_FS_META *meta = file->meta;
 
@@ -4554,7 +4558,6 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
         uint64_t subvol;
         TSK_INUM_T inum;
         if (!btrfs_inum_virt2real_map(btrfs, a_inum, &subvol, &inum)) {
-            tsk_fs_file_close(file);
             return 1;
         }
 
@@ -4635,11 +4638,10 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
 
     // print extended attributes
     tsk_fprintf(a_file, "Extended attributes:\n");
-    int attribute_count = tsk_fs_file_attr_getsize(file);
+    int attribute_count = tsk_fs_file_attr_getsize(file.get());
     for (int i = 0; i < attribute_count; i++) {
-        const TSK_FS_ATTR *attr = tsk_fs_file_attr_get_idx(file, i);
+        const TSK_FS_ATTR *attr = tsk_fs_file_attr_get_idx(file.get(), i);
         if (!attr) {
-            tsk_fs_file_close(file);
             return 1;
         }
         if (attr->type == TSK_FS_ATTR_TYPE_UNIX_XATTR)
@@ -4656,19 +4658,15 @@ btrfs_istat(TSK_FS_INFO * a_fs, [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM istat_fl
         helper.file = a_file;
         helper.index = 0;
 
-        if (tsk_fs_file_walk(file, TSK_FS_FILE_WALK_FLAG_AONLY, btrfs_istat_filewalk_cb, &helper)) {
-            tsk_fs_file_close(file);
+        if (tsk_fs_file_walk(file.get(), TSK_FS_FILE_WALK_FLAG_AONLY, btrfs_istat_filewalk_cb, &helper)) {
             return 1;
         }
         if (helper.index)
             tsk_fprintf(a_file, "\n");
     }
 
-    tsk_fs_file_close(file);
     return 0;
 }
-
-
 
 /*
  * unimplemented functions
