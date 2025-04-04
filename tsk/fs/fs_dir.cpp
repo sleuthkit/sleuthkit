@@ -654,12 +654,16 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_INUM_T a_addr, TSK_FS_DIR_WALK_FLAG_ENUM a_flags,
     TSK_FS_DIR_WALK_CB a_action, void *a_ptr, int macro_recursion_depth)
 {
-    TSK_FS_DIR *fs_dir;
     size_t i;
     int* indexToOrderedIndex = NULL;
 
     // get the list of entries in the directory
-    if ((fs_dir = tsk_fs_dir_open_meta_internal(a_fs, a_addr, macro_recursion_depth + 1)) == NULL) {
+    std::unique_ptr<TSK_FS_DIR, decltype(&tsk_fs_dir_close)> fs_dir{
+        tsk_fs_dir_open_meta_internal(a_fs, a_addr, macro_recursion_depth + 1),
+        tsk_fs_dir_close
+    };
+
+    if (!fs_dir) {
         return TSK_WALK_ERROR;
     }
 
@@ -667,11 +671,9 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     if (a_addr == a_fs->root_inum) {
         indexToOrderedIndex = (int *)tsk_malloc(fs_dir->names_used * sizeof(int));
         if (indexToOrderedIndex == NULL) {
-            tsk_fs_dir_close(fs_dir);
             return TSK_WALK_ERROR;
         }
         if (TSK_OK != prioritizeDirNames(fs_dir->names, fs_dir->names_used, indexToOrderedIndex)) {
-            tsk_fs_dir_close(fs_dir);
             return TSK_WALK_ERROR;
         }
     }
@@ -685,7 +687,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     };
 
     if (!fs_file) {
-        tsk_fs_dir_close(fs_dir);
         if (indexToOrderedIndex != NULL) {
             free(indexToOrderedIndex);
         }
@@ -725,7 +726,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         if ((fs_file->name->flags & n_flags) == fs_file->name->flags) {
             retval = a_action(fs_file.get(), a_dinfo->dirs, a_ptr);
             if (retval == TSK_WALK_STOP) {
-                tsk_fs_dir_close(fs_dir);
                 fs_file->name = NULL;
 
                 if (indexToOrderedIndex != NULL) {
@@ -743,7 +743,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 return TSK_WALK_STOP;
             }
             else if (retval == TSK_WALK_ERROR) {
-                tsk_fs_dir_close(fs_dir);
                 fs_file->name = NULL;
                 if (indexToOrderedIndex != NULL) {
                     free(indexToOrderedIndex);
@@ -808,7 +807,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
                 if (tsk_stack_push(a_dinfo->stack_seen,
                         fs_file->name->meta_addr)) {
-                    tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
                     if (indexToOrderedIndex != NULL) {
                         free(indexToOrderedIndex);
@@ -835,7 +833,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                             PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
                     }
 
-                    tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
                     if (indexToOrderedIndex != NULL) {
                         free(indexToOrderedIndex);
@@ -869,7 +866,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                      * did not load, but if we ran out
                      * of memory we should stop */
                     if (tsk_error_get_errno() & TSK_ERR_AUX) {
-                        tsk_fs_dir_close(fs_dir);
                         fs_file->name = NULL;
 
                         if (indexToOrderedIndex != NULL) {
@@ -888,7 +884,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     tsk_error_reset();
                 }
                 else if (retval == TSK_WALK_STOP) {
-                    tsk_fs_dir_close(fs_dir);
                     fs_file->name = NULL;
 
                     if (indexToOrderedIndex != NULL) {
@@ -896,7 +891,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     }
                     return TSK_WALK_STOP;
                 }
-
 
                 // reset the save status
                 if (fs_file->name->meta_addr ==
@@ -929,7 +923,6 @@ tsk_fs_dir_walk_recursive(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         }
     }
 
-    tsk_fs_dir_close(fs_dir);
     fs_file->name = NULL;
 
     if (indexToOrderedIndex != NULL) {
