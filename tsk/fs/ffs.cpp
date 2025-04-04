@@ -1689,7 +1689,6 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 {
     FFS_INFO *ffs = (FFS_INFO *) fs;
     TSK_FS_META *fs_meta;
-    TSK_FS_FILE *fs_file;
     char ls[12];
     FFS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
@@ -1699,7 +1698,12 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_open_meta(fs, NULL, inum),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         return 1;
     }
     fs_meta = fs_file->meta;
@@ -1775,7 +1779,6 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
             char *blk_buf;
 
             if ((blk_buf = (char*) tsk_malloc(ffs->ffsbsize_b)) == NULL) {
-                tsk_fs_file_close(fs_file);
                 free(dino_buf);
                 return 1;
             }
@@ -1807,7 +1810,6 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                     tsk_error_set_errstr2
                         ("ffs_istat: FFS2 extended attribute 0 at %"
                         PRIu64, tsk_getu64(fs->endian, in->di_extb[0]));
-                    tsk_fs_file_close(fs_file);
                     free(blk_buf);
                     free(dino_buf);
                     return 1;
@@ -1850,7 +1852,6 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                     tsk_error_set_errstr2
                         ("ffs_istat: FFS2 extended attribute 1 at %"
                         PRIu64, tsk_getu64(fs->endian, in->di_extb[1]));
-                    tsk_fs_file_close(fs_file);
                     free(blk_buf);
                     free(dino_buf);
                     return 1;
@@ -1885,7 +1886,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
     if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-        const TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
+        const TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file.get(),
             TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_direct && (fs_attr_direct->flags & TSK_FS_ATTR_NONRES)) {
             if (tsk_fs_attr_print(fs_attr_direct, hFile)) {
@@ -1899,11 +1900,10 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
         print.idx = 0;
         print.hFile = hFile;
 
-        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+        if (tsk_fs_file_walk(fs_file.get(), TSK_FS_FILE_WALK_FLAG_AONLY,
             print_addr_act, (void *)&print)) {
             tsk_fprintf(hFile, "\nError reading blocks in file\n");
             tsk_error_print(hFile);
-            tsk_fs_file_close(fs_file);
             return 1;
         }
 
@@ -1911,7 +1911,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
             tsk_fprintf(hFile, "\n");
     }
 
-    fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
+    fs_attr_indir = tsk_fs_file_attr_get_type(fs_file.get(),
         TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
     if (fs_attr_indir) {
         tsk_fprintf(hFile, "\nIndirect Blocks:\n");
@@ -1937,7 +1937,6 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
         }
     }
 
-    tsk_fs_file_close(fs_file);
     return 0;
 }
 
