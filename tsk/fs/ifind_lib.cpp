@@ -231,10 +231,13 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     while (is_done == 0) {
         size_t i;
 
-        TSK_FS_DIR *fs_dir = NULL;
-
         // open the next directory in the recursion
-        if ((fs_dir = tsk_fs_dir_open_meta(a_fs, next_meta)) == NULL) {
+        std::unique_ptr<TSK_FS_DIR, decltype(&tsk_fs_dir_close)> fs_dir{
+           tsk_fs_dir_open_meta(a_fs, next_meta),
+           tsk_fs_dir_close
+        };
+
+        if (!fs_dir) {
             free(cpath);
             return -1;
         }
@@ -243,7 +246,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
          * problem where a file was a disk image and opening it as
          * a directory found the directory entries inside of the file
          * and this caused problems... */
-        if ( !TSK_FS_IS_DIR_META(fs_dir->fs_file->meta->type)) {
+        if (!TSK_FS_IS_DIR_META(fs_dir->fs_file->meta->type)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("Address %" PRIuINUM
@@ -263,17 +266,16 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         };
 
         // cycle through each entry
-        for (i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
+        for (i = 0; i < tsk_fs_dir_getsize(fs_dir.get()); i++) {
 
             uint8_t found_name = 0;
 
             std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
-                tsk_fs_dir_get(fs_dir, i),
+                tsk_fs_dir_get(fs_dir.get(), i),
                 tsk_fs_file_close
             };
 
             if (!fs_file) {
-                tsk_fs_dir_close(fs_dir);
                 free(cpath);
                 return -1;
             }
@@ -370,7 +372,6 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                     tsk_fs_name_copy(a_fs_name, fs_file_tmp->name);
                 }
 
-                tsk_fs_dir_close(fs_dir);
                 free(cpath);
                 return 0;
             }
@@ -390,9 +391,6 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         else {
             is_done = 1;
         }
-
-        tsk_fs_dir_close(fs_dir);
-        fs_dir = NULL;
     }
 
     free(cpath);
