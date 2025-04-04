@@ -31,6 +31,8 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
+#include <memory>
+
 /**
  * \internal
  * Parses the MBR of an exFAT file system to obtain file system size
@@ -660,7 +662,6 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
 {
     FATFS_INFO *fatfs = NULL;
     EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
-    TSK_FS_FILE *fs_file = NULL;
 
     assert(a_fs != NULL);
     assert(a_hFile != NULL);
@@ -668,7 +669,12 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
     fatfs = (FATFS_INFO*)a_fs;
     exfatbs = (EXFATFS_MASTER_BOOT_REC*)&(fatfs->boot_sector_buffer);
 
-    if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(a_fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         return FATFS_FAIL;
     }
 
@@ -685,7 +691,7 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         exfatbs->vol_serial_no[3], exfatbs->vol_serial_no[2],
         exfatbs->vol_serial_no[1], exfatbs->vol_serial_no[0]);
 
-    if (exfatfs_find_volume_label_dentry(fatfs, fs_file) == 0) {
+    if (exfatfs_find_volume_label_dentry(fatfs, fs_file.get()) == 0) {
         tsk_fprintf(a_hFile, "Volume Label (from root directory): %s\n", fs_file->meta->name2->name);
     }
     else {
@@ -701,8 +707,6 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         tsk_getu64(a_fs->endian, exfatbs->partition_offset));
 
     tsk_fprintf(a_hFile, "Number of FATs: %d\n", fatfs->numfat);
-
-    tsk_fs_file_close(fs_file);
 
     return FATFS_OK;
 }

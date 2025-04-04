@@ -400,7 +400,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\apfs_open.cpp" />
     <ClCompile Include="..\..\tsk\fs\decmpfs.cpp" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_dent.cpp" />
-    <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs.cpp" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_meta.cpp" />
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
