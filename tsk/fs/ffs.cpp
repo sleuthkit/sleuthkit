@@ -30,7 +30,7 @@
 #include "tsk_fs_i.h"
 #include "tsk_ffs.h"
 
-
+#include <memory>
 
 /* ffs_group_load - load cylinder group descriptor info into cache
  *
@@ -849,7 +849,6 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     ffs_cgd *cg = NULL;
     TSK_INUM_T inum;
     unsigned char *inosused = NULL;
-    TSK_FS_FILE *fs_file;
     unsigned int myflags;
     TSK_INUM_T ibase = 0;
     TSK_INUM_T end_inum_tmp;
@@ -899,8 +898,6 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         }
     }
 
-
-
     /* If we are looking for orphan files and have not yet filled
      * in the list of unalloc inodes that are pointed to, then fill
      * in the list
@@ -913,8 +910,14 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         }
     }
 
-    if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         return 1;
+    }
 
     if ((fs_file->meta = tsk_fs_meta_alloc(FFS_FILE_CONTENT_LEN)) == NULL)
         return 1;
@@ -966,14 +969,12 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
 
         if (ffs_dinode_load(ffs, inum, dino_buf)) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
 
-
-        if ((fs->ftype == TSK_FS_TYPE_FFS1)
-            || (fs->ftype == TSK_FS_TYPE_FFS1B)) {
+        if (fs->ftype == TSK_FS_TYPE_FFS1
+            || fs->ftype == TSK_FS_TYPE_FFS1B) {
             /* both inode forms are the same for the required fields */
             ffs_inode1 *in1 = (ffs_inode1 *) dino_buf;
 
@@ -1012,19 +1013,16 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
          * to the application.
          */
         if (ffs_dinode_copy(ffs, fs_file->meta, inum, dino_buf)) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
 
-        retval = action(fs_file, ptr);
+        retval = action(fs_file.get(), ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
@@ -1037,19 +1035,16 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         int retval;
 
         if (tsk_fs_dir_make_orphan_dir_meta(fs, fs_file->meta)) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
         /* call action */
-        retval = action(fs_file, ptr);
+        retval = action(fs_file.get(), ptr);
         if (retval == TSK_WALK_STOP) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 0;
         }
         else if (retval == TSK_WALK_ERROR) {
-            tsk_fs_file_close(fs_file);
             free(dino_buf);
             return 1;
         }
@@ -1058,12 +1053,10 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     /*
      * Cleanup.
      */
-    tsk_fs_file_close(fs_file);
     free(dino_buf);
 
     return 0;
 }
-
 
 TSK_FS_BLOCK_FLAG_ENUM
 ffs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
