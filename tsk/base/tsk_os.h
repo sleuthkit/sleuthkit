@@ -200,7 +200,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TZSET	tzset
 #define TZNAME	tzname
 
-#define PRIcTSK _TSK_T("hs")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
+#define PRIcTSK _TSK_T("s")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
 #define PRIttocTSK  "s"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
 #define PRIuSIZE "zu"           ///< printf macro to print a size_t value in non-Windows printf codes
 

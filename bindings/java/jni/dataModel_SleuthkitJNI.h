@@ -172,6 +172,22 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * Method:    initAddImgNat
  * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZ)J
  */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNatPassword
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    initializeAddImgNat
+ * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZZ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jboolean, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    initAddImgNat
+ * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZ)J
+ */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
   (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean);
 

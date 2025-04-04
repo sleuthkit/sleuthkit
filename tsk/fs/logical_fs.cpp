@@ -415,6 +415,7 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 	int best_match_index = -1;
 	size_t longest_match = 0;
 	size_t target_len = TSTRLEN(target_path);
+
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if (logical_img_info->inum_cache[i].path != NULL) {
 
@@ -436,7 +437,8 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 				// - It is either the full length of the path we're searching for or is a valid
 				//      substring of our path
 				if ((matching_len > longest_match) &&
-					((matching_len == target_len) || (((matching_len < target_len) && (target_path[matching_len] == L'/'))))) {
+					((matching_len == target_len) || ((matching_len < target_len) && 
+						((target_path[matching_len] == L'/') || (target_path[matching_len] == L'\\'))))) {
 
 					// We found the full path or a partial match
 					longest_match = matching_len;
@@ -523,11 +525,12 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
  * @param logical_fs_info The logical file system
  * @param path            The directory path
  * @param inum            The inum corresponding to the path
+ * @param always_cache    If false, only cache the entry if we have empty space (and it will get a smaller age)
  *
  * @return TSK_OK if successful, TSK_ERR on error
  */
 static TSK_RETVAL_ENUM
-add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum) {
+add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum, bool always_cache) {
 
 	// If the path is very long then don't cache it to make sure the cache stays reasonably small.
 	if (TSTRLEN(path) > LOGICAL_INUM_CACHE_MAX_PATH_LEN) {
@@ -537,6 +540,18 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 	tsk_take_lock(&(img_info->cache_lock));
+
+	// Check if this entry is already in the cache. 
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		if (logical_img_info->inum_cache[i].inum == inum) {
+			// If we found it and we're always caching then reset the age
+			if (always_cache && logical_img_info->inum_cache[i].cache_age < LOGICAL_INUM_CACHE_MAX_AGE) {
+				logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+			}
+			tsk_release_lock(&(img_info->cache_lock));
+			return TSK_OK;
+		}
+	}
 
 	// Find the next cache slot. If we find an unused slot, use that. Otherwise find the entry
 	// with the lowest age.
@@ -553,6 +568,13 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 			lowest_age = logical_img_info->inum_cache[i].cache_age;
 		}
 	}
+
+	// If the always_cache flag is not set, only continue if we've found an empty space
+	if (!always_cache && logical_img_info->inum_cache[next_slot].inum != LOGICAL_INVALID_INUM) {
+		tsk_release_lock(&(img_info->cache_lock));
+		return TSK_OK;
+	}
+
 	clear_inum_cache_entry(logical_img_info, next_slot);
 
 	// Copy the data
@@ -563,7 +585,12 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	}
 	TSTRNCPY(logical_img_info->inum_cache[next_slot].path, path, TSTRLEN(path) + 1);
 	logical_img_info->inum_cache[next_slot].inum = inum;
-	logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+	if (always_cache) {
+		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+	} else {
+		// We want to remove the random folders first when we run out of space
+		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE / 2;
+	}
 
 	tsk_release_lock(&(img_info->cache_lock));
 	return TSK_OK;
@@ -594,8 +621,8 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 	// If we're searching for a file and this is the correct directory, load only the files in the folder and
 	// return the correct one.
 	if (search_helper->search_type == LOGICALFS_SEARCH_BY_INUM
-		&& (*last_inum_ptr == (search_helper->target_inum & 0xffff0000))
-		& ((search_helper->target_inum & 0xffff) != 0)) {
+		&& (*last_inum_ptr == (search_helper->target_inum & LOGICAL_INUM_DIR_MASK))
+		&& ((search_helper->target_inum & LOGICAL_INUM_FILE_MASK) != 0)) {
 
 #ifdef TSK_WIN32
 		if (TSK_OK != load_dir_and_file_lists_win(parent_path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
@@ -606,7 +633,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		sort(file_names.begin(), file_names.end());
 
 		// Look for the file corresponding to the given inum
-		size_t file_index = (search_helper->target_inum & 0xffff) - 1;
+		size_t file_index = (search_helper->target_inum & LOGICAL_INUM_FILE_MASK) - 1;
 		if (file_names.size() <= file_index) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
@@ -652,7 +679,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 #endif
 	size_t parent_path_len = TSTRLEN(current_path);
 
-	for (size_t i = 0; i < dir_names.size();i++) {
+	for (size_t i = 0; i < dir_names.size(); i++) {
 
 		// If we don't have space for this name, increase the size of the buffer
 		if (TSTRLEN(dir_names[i].c_str()) > allocated_dir_name_len) {
@@ -671,9 +698,47 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 
 		// Append the current directory name to the parent path
 		TSTRNCPY(current_path + parent_path_len, dir_names[i].c_str(), TSTRLEN(dir_names[i].c_str()) + 1);
+		if (*last_inum_ptr == LOGICAL_INUM_DIR_MAX) {
+			// We're run out of inums to assign. Return an error.
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+			tsk_error_set_errstr("search_directory_recusive: Too many directories in logical file set");
+			free(current_path);
+			return TSK_ERR;
+		}
 		TSK_INUM_T current_inum = *last_inum_ptr + LOGICAL_INUM_DIR_INC;
 		*last_inum_ptr = current_inum;
-		add_directory_to_cache(logical_fs_info, current_path, current_inum);
+
+		// There's no perfect way to do the caching. Caching everything here had the problem that if we have a miss then the 
+		// whole cache gets overwritten while we search. So we'll generally only cache directories that get us closer to 
+		// our target (so if we search for something in the same or similar folders it'll be a fast search) and directories 
+		// that are close to the root one (one or two folders deep).
+		size_t current_path_len = TSTRLEN(current_path);
+		size_t path_offset = TSTRLEN(logical_fs_info->base_path) + 1; // The +1 advances past the slash after the root dir
+		bool is_near_root_folder = false;
+		if (((search_helper->search_type == LOGICALFS_SEARCH_BY_PATH) || (search_helper->search_type == LOGICALFS_NO_SEARCH))
+			&& path_offset < current_path_len) {
+			int slash_count = 0;
+			for (size_t i = path_offset; i < current_path_len; i++) {
+				if (current_path[i] == '/' || current_path[i] == '\\') {
+					slash_count++;
+				}
+			}
+			is_near_root_folder = (slash_count < 2);
+		}
+		if (search_helper->search_type == LOGICALFS_SEARCH_BY_PATH) {
+			if (is_near_root_folder || TSTRNCMP(current_path, search_helper->target_path, current_path_len) == 0) {
+				add_directory_to_cache(logical_fs_info, current_path, current_inum, true);
+			}
+			else {
+				// This will only add to the cache if we have empty space
+				add_directory_to_cache(logical_fs_info, current_path, current_inum, false);
+			}
+		}
+		else if (search_helper->search_type == LOGICALFS_NO_SEARCH && is_near_root_folder) {
+			// Cache the base directories when opening the file system
+			add_directory_to_cache(logical_fs_info, current_path, current_inum, true);
+		}
 
 		// Check if we've found it
 		if ((search_helper->search_type == LOGICALFS_SEARCH_BY_PATH)
@@ -736,7 +801,7 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	const TSK_TCHAR *starting_path = logical_fs_info->base_path;
 
 	// See if the directory is in the cache
-	TSK_INUM_T dir_addr = a_addr & 0xffff0000;
+	TSK_INUM_T dir_addr = a_addr & LOGICAL_INUM_DIR_MASK;
 	TSK_TCHAR *cache_path = find_path_for_inum_in_cache(logical_fs_info, dir_addr);
 	if (cache_path != NULL) {
 		if (dir_addr == a_addr) {
@@ -999,7 +1064,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		tsk_error_set_errstr("logicalfs_dir_open_meta: NULL fs_dir argument given");
 		return TSK_ERR;
 	}
-	if ((a_addr & 0xffff) != 0) {
+	if ((a_addr & LOGICAL_INUM_FILE_MASK) != 0) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
 		tsk_error_set_errstr("logicalfs_dir_open_meta: Inode %" PRIuINUM " is not a directory", a_addr);

@@ -205,28 +205,54 @@ public final class Blackboard {
 			return typeNameToArtifactTypeMap.get(typeName);
 		}
 
-		Statement s = null;
-		ResultSet rs = null;
 		CaseDbTransaction trans = null;
 		try {
 			trans = caseDb.beginTransaction();
 
 			CaseDbConnection connection = trans.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + typeName + "'"); //NON-NLS
-			if (!rs.next()) {
-				rs.close();
-				rs = connection.executeQuery(s, "SELECT MAX(artifact_type_id) AS highest_id FROM blackboard_artifact_types");
+
+			// try to find preexisting type id in database
+			boolean typeFound;
+			try (PreparedStatement findCurrPrepState = connection.prepareStatement(
+					"SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = ?",
+					Statement.RETURN_GENERATED_KEYS)) {
+				findCurrPrepState.setString(1, typeName);
+
+				try (ResultSet rs = connection.executeQuery(findCurrPrepState)) {
+					typeFound = rs.next();
+				}
+			}
+
+			if (!typeFound) {
+				// if not found, get next id
 				int maxID = 0;
-				if (rs.next()) {
-					maxID = rs.getInt("highest_id");
-					if (maxID < MIN_USER_DEFINED_TYPE_ID) {
-						maxID = MIN_USER_DEFINED_TYPE_ID;
-					} else {
-						maxID++;
+				try (Statement getNextIdState = connection.createStatement(); 
+						ResultSet rs = connection.executeQuery(getNextIdState,
+						"SELECT MAX(artifact_type_id) AS highest_id FROM blackboard_artifact_types")) {
+					if (rs.next()) {
+						maxID = rs.getInt("highest_id");
+						if (maxID < MIN_USER_DEFINED_TYPE_ID) {
+							maxID = MIN_USER_DEFINED_TYPE_ID;
+						} else {
+							maxID++;
+						}
 					}
 				}
-				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES ('" + maxID + "', '" + typeName + "', '" + displayName + "', " + category.getID() + " )"); //NON-NLS
+
+				// insert the type
+				try (PreparedStatement insertItemPrepState = connection.prepareStatement(
+						"INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (?, ?, ?, ?)",
+						Statement.RETURN_GENERATED_KEYS)) {
+					insertItemPrepState.setInt(1, maxID);
+					insertItemPrepState.setString(2, typeName);
+					insertItemPrepState.setString(3, displayName);
+					insertItemPrepState.setInt(4, category.getID());
+
+					insertItemPrepState.executeUpdate();
+
+				}
+
+				// cache the type in memory
 				BlackboardArtifact.Type type = new BlackboardArtifact.Type(maxID, typeName, displayName, category);
 				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
@@ -234,6 +260,7 @@ public final class Blackboard {
 				trans = null;
 				return type;
 			} else {
+				// if preexisting, return what we have
 				trans.commit();
 				trans = null;
 				try {
@@ -253,8 +280,6 @@ public final class Blackboard {
 			}
 			throw new BlackboardException("Error adding artifact type: " + typeName, ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
 			if (trans != null) {
 				try {
 					trans.rollback();
@@ -359,29 +384,27 @@ public final class Blackboard {
 		if (this.typeNameToArtifactTypeMap.containsKey(artTypeName)) {
 			return this.typeNameToArtifactTypeMap.get(artTypeName);
 		}
-		CaseDbConnection connection = null;
-		Statement s = null;
-		ResultSet rs = null;
+
 		caseDb.acquireSingleUserCaseReadLock();
-		try {
-			connection = caseDb.getConnection();
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE type_name = '" + artTypeName + "'"); //NON-NLS
-			BlackboardArtifact.Type type = null;
-			if (rs.next()) {
-				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
-				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
-				this.typeNameToArtifactTypeMap.put(artTypeName, type);
+		try (CaseDbConnection connection = caseDb.getConnection(); PreparedStatement getTypePrepState = connection.prepareStatement(
+				"SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE type_name = ?",
+				 Statement.RETURN_GENERATED_KEYS)) {
+			getTypePrepState.setString(1, artTypeName);
+
+			try (ResultSet rs = getTypePrepState.executeQuery()) {
+				BlackboardArtifact.Type type = null;
+				if (rs.next()) {
+					type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+							rs.getString("type_name"), rs.getString("display_name"),
+							BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+					this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+					this.typeNameToArtifactTypeMap.put(artTypeName, type);
+				}
+				return type;
 			}
-			return type;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type from the database", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			closeConnection(connection);
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
@@ -747,20 +770,22 @@ public final class Blackboard {
 	 */
 	void initBlackboardArtifactTypes(CaseDbConnection connection) throws SQLException {
 		caseDb.acquireSingleUserCaseWriteLock();
-		try (Statement statement = connection.createStatement()) {
-			/*
-			 * Determine which types, if any, have already been added to the
-			 * case database, and load them into the type caches. For a case
-			 * that is being reopened, this should reduce the number of separate
-			 * INSERT staements that will be executed below.
-			 */
-			ResultSet resultSet = connection.executeQuery(statement, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
-			while (resultSet.next()) {
-				BlackboardArtifact.Type type = new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
-						resultSet.getString("type_name"), resultSet.getString("display_name"),
-						BlackboardArtifact.Category.fromID(resultSet.getInt("category_type")));
-				typeIdToArtifactTypeMap.put(type.getTypeID(), type);
-				typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+		try {
+			try (Statement getExistingStatement = connection.createStatement()) {
+				/*
+				 * Determine which types, if any, have already been added to the
+				 * case database, and load them into the type caches. For a case
+				 * that is being reopened, this should reduce the number of
+				 * separate INSERT staements that will be executed below.
+				 */
+				ResultSet resultSet = connection.executeQuery(getExistingStatement, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
+				while (resultSet.next()) {
+					BlackboardArtifact.Type type = new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
+							resultSet.getString("type_name"), resultSet.getString("display_name"),
+							BlackboardArtifact.Category.fromID(resultSet.getInt("category_type")));
+					typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+					typeNameToArtifactTypeMap.put(type.getTypeName(), type);
+				}
 			}
 
 			/*
@@ -774,21 +799,32 @@ public final class Blackboard {
 			 * ensures that the deprecated types in the former, and not in the
 			 * latter, are added to the case database.
 			 */
+			String insertSql;
+			if (caseDb.getDatabaseType() == TskData.DbType.POSTGRESQL) {
+				insertSql = "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING"; //NON-NLS
+			} else {
+				insertSql = "INSERT OR IGNORE INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (?, ?, ?, ?)"; //NON-NLS
+			}
+
 			for (BlackboardArtifact.ARTIFACT_TYPE type : BlackboardArtifact.ARTIFACT_TYPE.values()) {
 				if (typeIdToArtifactTypeMap.containsKey(type.getTypeID())) {
 					continue;
 				}
-				if (caseDb.getDatabaseType() == TskData.DbType.POSTGRESQL) {
-					statement.execute("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ") ON CONFLICT DO NOTHING"); //NON-NLS
-				} else {
-					statement.execute("INSERT OR IGNORE INTO blackboard_artifact_types (artifact_type_id, type_name, display_name, category_type) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "' , " + type.getCategory().getID() + ")"); //NON-NLS
+				try (PreparedStatement insertArtType = connection.getPreparedStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+					insertArtType.setInt(1, type.getTypeID());
+					insertArtType.setString(2, type.getLabel());
+					insertArtType.setString(3, type.getDisplayName());
+					insertArtType.setInt(4, type.getCategory().getID());
+					insertArtType.executeUpdate();
 				}
 				typeIdToArtifactTypeMap.put(type.getTypeID(), new BlackboardArtifact.Type(type));
 				typeNameToArtifactTypeMap.put(type.getLabel(), new BlackboardArtifact.Type(type));
 			}
 			if (caseDb.getDatabaseType() == TskData.DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.values())).getTypeID() + 1;
-				statement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH " + newPrimaryKeyIndex); //NON-NLS
+				try (Statement updateSequenceStatement = connection.createStatement()) {
+					updateSequenceStatement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH " + newPrimaryKeyIndex); //NON-NLS
+				}
 			}
 		} finally {
 			caseDb.releaseSingleUserCaseWriteLock();
@@ -1042,13 +1078,110 @@ public final class Blackboard {
 			throw new TskCoreException(String.format("Error deleting analysis result with artifact obj id %d", analysisResult.getId()), ex);
 		}
 	}
+	
+	/**
+	 * Ignore the score of the specified analysis result.Updates “ignore_score”
+	 * field in tsk_analysis_results table, and recalculates and updates the
+	 * aggregate score of the content.
+	 *
+	 * Fires an event to indicate that the analysis result score is being
+	 * ignored and that the score of the item has changed.
+	 *
+	 * @param analysisResult AnalysisResult to ignore.
+	 * @param ignore a flag whether to ignore the score.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score ignoreAnalysisResultScore(AnalysisResult analysisResult, boolean ignore) throws TskCoreException {
+
+		CaseDbTransaction transaction = this.caseDb.beginTransaction();
+		try {
+			Score score = ignoreAnalysisResultScore(analysisResult, ignore, transaction);
+			transaction.commit();
+			transaction = null;
+
+			return score;
+		} finally {
+			if (transaction != null) {
+				transaction.rollback();
+			}
+		}
+	}
+
+	/**
+	 * Ignore the score of the specified analysis result.
+	 *
+	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * and recalculates and updates the aggregate score of the content. Fires an
+	 * event to indicate that the analysis result score is being ignored and that the
+	 * score of the item has changed.
+	 *
+	 * @param artifactObjId Artifact Obj Id to be ignored
+	 * @param ignore a flag whether to ignore the score.
+	 * @param transaction
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 */
+	public Score ignoreAnalysisResultScore(long artifactObjId, boolean ignore, CaseDbTransaction transaction) throws TskCoreException {
+
+		List<AnalysisResult> analysisResults = getAnalysisResultsWhere(" artifacts.artifact_obj_id = " + artifactObjId, transaction.getConnection());
+
+		if (analysisResults.isEmpty()) {
+			throw new TskCoreException(String.format("Analysis Result not found for artifact obj id %d", artifactObjId));
+		}
+
+		return ignoreAnalysisResultScore(analysisResults.get(0), ignore, transaction);
+	}
+
+	/**
+	 * Ignore the score of the specified analysis result.
+	 *
+	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * and recalculates and updates the aggregate score of the content. Fires an
+	 * event to indicate that the analysis result score is being ignored and that the
+	 * score of the item has changed.
+	 *
+	 * @param analysisResult AnalysisResult to ignore.
+	 * @param ignore a flag whether to ignore the score.
+	 * @param transaction    Transaction to use for database operations.
+	 *
+	 * @return New score of the content.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Score ignoreAnalysisResultScore(AnalysisResult analysisResult, boolean ignore, CaseDbTransaction transaction) throws TskCoreException {
+
+		try {
+			CaseDbConnection connection = transaction.getConnection();
+
+			String query = "UPDATE tsk_analysis_results SET ignore_score = CASE WHEN ? THEN 1 ELSE 0 END WHERE artifact_obj_id = ?";
+
+			PreparedStatement ignoreScoreStatement = connection.getPreparedStatement(query, Statement.RETURN_GENERATED_KEYS);
+			ignoreScoreStatement.clearParameters();
+			ignoreScoreStatement.setBoolean(1, ignore);
+			ignoreScoreStatement.setLong(2, analysisResult.getId());
+
+			ignoreScoreStatement.executeUpdate();
+
+			// recalculate the score from scratch and send a score change event if the score has changed
+			return caseDb.getScoringManager().updateAggregateScoreAfterDeletion(analysisResult.getObjectID(), analysisResult.getDataSourceObjectID(), transaction);
+
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error ignoring score of analysis result with artifact obj id %d", analysisResult.getId()), ex);
+		}
+	}	
 
 	private final static String ANALYSIS_RESULT_QUERY_STRING_GENERIC = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
 			+ " artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, "
 			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 			+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
 			+ " results.conclusion AS conclusion,  results.significance AS significance,  results.priority AS priority,  "
-			+ " results.configuration AS configuration,  results.justification AS justification "
+			+ " results.configuration AS configuration,  results.justification AS justification, "
+			+ " results.ignore_score AS ignore_score "
 			+ " FROM blackboard_artifacts AS artifacts "
 			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
 			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
@@ -1351,7 +1484,8 @@ public final class Blackboard {
 					resultSet.getInt("artifact_type_id"), resultSet.getString("type_name"), resultSet.getString("display_name"),
 					BlackboardArtifact.ReviewStatus.withID(resultSet.getInt("review_status_id")),
 					new Score(Score.Significance.fromID(resultSet.getInt("significance")), Score.Priority.fromID(resultSet.getInt("priority"))),
-					resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification")));
+					resultSet.getString("conclusion"), resultSet.getString("configuration"), resultSet.getString("justification"),
+					resultSet.getBoolean("ignore_score")));
 		} //end for each resultSet
 
 		return analysisResults;
