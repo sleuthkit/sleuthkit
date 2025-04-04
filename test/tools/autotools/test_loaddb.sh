@@ -7,7 +7,7 @@ fi
 doit () {
     echo scan $1
     /bin/rm -f testdb.db
-    "tools/autotools/tsk_loaddb$EXEEXT" -d testdb.db $1
+    $WINE "tools/autotools/tsk_loaddb$EXEEXT" -d testdb.db $1
     echo scan $1 done
 }
 
