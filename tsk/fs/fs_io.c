@@ -24,7 +24,7 @@
 
 #include <errno.h>
 
-#include "../pool/tsk_pool.h"
+#include "tsk/pool/tsk_pool.h"
 
 #include "tsk_fs_i.h"
 #include "encryptionHelper.h"

@@ -14,7 +14,7 @@
 #ifndef _POOL_H
 #define _POOL_H
 
-#include "../pool/tsk_pool.h"
+#include "tsk/pool/tsk_pool.h"
 #include "tsk_img_i.h"
 
 #ifdef __cplusplus

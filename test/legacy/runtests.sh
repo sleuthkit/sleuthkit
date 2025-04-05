@@ -10,7 +10,9 @@ EXIT_IGNORE=77
 
 NOHARDFAIL=yes
 
-IMAGE_DIR=test/from_brian
+if [ ! -d ${SLEUTHKIT_TEST_DATA_DIR:=../sleuthkit_test_data} ]; then echo $SLEUTHKIT_TEST_DATA_DIR does not exist ; exit 1 ; fi
+
+IMAGE_DIR=$SLEUTHKIT_TEST_DATA_DIR
 NTHREADS=1
 NITERS=1
 

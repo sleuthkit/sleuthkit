@@ -26,6 +26,8 @@
 #include "tsk/tsk_tools_i.h"
 #include <locale.h>
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 /* usage - explain and terminate */
@@ -67,18 +69,14 @@ usage()
     exit(1);
 }
 
-
-
 /* main - open file system, list inode info */
 int
 main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
     TSK_OFF_T pvol_block = 0;
@@ -246,6 +244,11 @@ main(int argc, char **argv1)
         usage();
     }
 
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        nullptr,
+        tsk_img_close
+    };
+
     /* We need to determine if an inode or inode range was given */
     if ((dash = TSTRCHR(argv[argc - 1], _TSK_T('-'))) == NULL) {
         /* Check if is a single number */
@@ -253,36 +256,14 @@ main(int argc, char **argv1)
         if (*cp || *cp == *argv[argc - 1]) {
             /* Not a number - consider it a file name */
             image = argv[OPTIND];
-            if ((img =
-                    tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                        imgtype, ssize)) == NULL) {
-                tsk_error_print(stderr);
-                exit(1);
-            }
-            if ((imgaddr * img->sector_size) >= img->size) {
-                tsk_fprintf(stderr,
-                    "Sector offset supplied is larger than disk image (maximum: %"
-                    PRIu64 ")\n", img->size / img->sector_size);
-                exit(1);
-            }
+            img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
         }
         else {
             /* Single address set end addr to start */
             ilast = istart;
             set_range = 0;
             image = argv[OPTIND];
-            if ((img =
-                    tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                        imgtype, ssize)) == NULL) {
-                tsk_error_print(stderr);
-                exit(1);
-            }
-            if ((imgaddr * img->sector_size) >= img->size) {
-                tsk_fprintf(stderr,
-                    "Sector offset supplied is larger than disk image (maximum: %"
-                    PRIu64 ")\n", img->size / img->sector_size);
-                exit(1);
-            }
+            img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
         }
     }
     else {
@@ -294,18 +275,8 @@ main(int argc, char **argv1)
             /* Not a number - consider it a file name */
             *dash = _TSK_T('-');
             image = argv[OPTIND];
-            if ((img =
-                    tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                        imgtype, ssize)) == NULL) {
-                tsk_error_print(stderr);
-                exit(1);
-            }
-            if ((imgaddr * img->sector_size) >= img->size) {
-                tsk_fprintf(stderr,
-                    "Sector offset supplied is larger than disk image (maximum: %"
-                    PRIu64 ")\n", img->size / img->sector_size);
-                exit(1);
-            }
+            img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
+
         }
         else {
             dash++;
@@ -315,56 +286,55 @@ main(int argc, char **argv1)
                 dash--;
                 *dash = '-';
                 image = argv[OPTIND];
-                if ((img =
-                        tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                            imgtype, ssize)) == NULL) {
-                    tsk_error_print(stderr);
-                    exit(1);
-                }
-                if ((imgaddr * img->sector_size) >= img->size) {
-                    tsk_fprintf(stderr,
-                        "Sector offset supplied is larger than disk image (maximum: %"
-                        PRIu64 ")\n", img->size / img->sector_size);
-                    exit(1);
-                }
+                img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
             }
             else {
                 set_range = 0;
                 /* It was a block range, so do not include it in the open */
                 image = argv[OPTIND];
-                if ((img =
-                        tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                            imgtype, ssize)) == NULL) {
-                    tsk_error_print(stderr);
-                    exit(1);
-                }
-                if ((imgaddr * img->sector_size) >= img->size) {
-                    tsk_fprintf(stderr,
-                        "Sector offset supplied is larger than disk image (maximum: %"
-                        PRIu64 ")\n", img->size / img->sector_size);
-                    exit(1);
-                }
+                img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
+
             }
         }
     }
 
+    if (!img) {
+        tsk_error_print(stderr);
+        exit(1);
+    }
+
+    if (imgaddr * img->sector_size >= img->size) {
+        tsk_fprintf(stderr,
+            "Sector offset supplied is larger than disk image (maximum: %"
+            PRIu64 ")\n", img->size / img->sector_size);
+        exit(1);
+    }
+
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+        nullptr,
+        tsk_pool_close
+    };
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
+        nullptr,
+        tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        nullptr,
+        tsk_fs_close
+    };
+
     if (pvol_block == 0) {
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size,
-            fstype, password)) == NULL) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
-            tsk_img_close(img);
-            exit(1);
-        }
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+
     }
     else {
-        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-        if (pool == NULL) {
+        pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+        if (!pool) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_pool_type_print(stderr);
-            tsk_img_close(img);
             exit(1);
         }
 
@@ -374,14 +344,16 @@ main(int argc, char **argv1)
             offset = 0;
         }
 #endif /* HAVE_LIBVSLVM */
-        img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
-            tsk_img_close(img);
-            exit(1);
-        }
+        pool_img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+        // FIXME: Will crash if !pool_img
+        fs.reset(tsk_fs_open_img_decrypt(pool_img.get(), offset, fstype, password));
+    }
+
+    if (!fs) {
+        tsk_error_print(stderr);
+        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+            tsk_fs_type_print(stderr);
+        exit(1);
     }
 
     /* do we need to set the range or just check them? */
@@ -413,15 +385,11 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tsk_fs_ils(fs, (TSK_FS_ILS_FLAG_ENUM) ils_flags, istart, ilast,
+    if (tsk_fs_ils(fs.get(), (TSK_FS_ILS_FLAG_ENUM) ils_flags, istart, ilast,
             (TSK_FS_META_FLAG_ENUM) flags, sec_skew, image)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
-    tsk_fs_close(fs);
-    tsk_img_close(img);
     exit(0);
 }

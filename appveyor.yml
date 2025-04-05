@@ -83,5 +83,14 @@ for:
       - ./configure
       - make -j
 
+    get_test_data:
+      - cd ..
+      - pwd
+      - curl https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip -o sleuthkit_test_data.zip
+      - unzip sleuthkit_test_data.zip
+      - cd sleuthkit_test_data
+      - make unpack
+      - find . -ls | grpe -v '[.]git'
+
     test_script:
       - make -j check VERBOSE=1
