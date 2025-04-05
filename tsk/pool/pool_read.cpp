@@ -7,7 +7,7 @@
  *
  * This software is distributed under the Common Public License 1.0
  */
-#include "../libtsk.h"
+#include "tsk/libtsk.h"
 
 #include "pool_compat.hpp"
 #include "tsk_pool.hpp"

@@ -12,7 +12,7 @@
 void error_detected(uint32_t errnum, const char* errstr, ...);
 void error_returned(const char* errstr, ...);
 
-#include "../libtsk.h"
+#include "tsk/libtsk.h"
 #include "tsk_fs_i.h"
 #include "decmpfs.h"
 

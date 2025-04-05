@@ -61,6 +61,10 @@ typedef enum {
  * internal list. Those can be retrieved with getErrorList().  If you want to deal with errors
  * differently, you must implement handleError().
  */
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
+
 class TskAuto {
   public:
     unsigned int m_tag;
@@ -113,7 +117,7 @@ class TskAuto {
     std::string getFileSystemPassword() const { return m_fileSystemPassword; }
 
     /**
-     * TskAuto calls this method before it processes the volume system that is found in an 
+     * TskAuto calls this method before it processes the volume system that is found in an
      * image. You can use this to learn about the volume system before it is processed
      * and you can force TskAuto to skip this volume system.
      * @param vs_info volume system details
@@ -317,6 +321,7 @@ class TskAuto {
     void setStopProcessing();
 };
 
+#pragma GCC diagnostic pop
 
 #endif
 

@@ -7,7 +7,7 @@
  *
  * This software is distributed under the Common Public License 1.0
  */
-#include "../util/crypto.hpp"
+#include "tsk/util/crypto.hpp"
 #include "apfs_fs.hpp"
 #include "tsk_apfs.hpp"
 

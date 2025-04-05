@@ -122,7 +122,7 @@ sub update_code {
 	open (IN, "<configure.ac") or die "error opening configure.ac to get version";
 	$VER = "";
 	while (<IN>) {
-		if (/^AC_INIT\(sleuthkit, ([\d\w\.]+)\)/) {
+		if (/^AC_INIT\(\[sleuthkit\],\s*\[([\d\w\.]+)\]\)/) {
 			$VER = $1;
 			last;
 		}

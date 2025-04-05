@@ -15,6 +15,8 @@
 #include <fcntl.h>
 #endif
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 void
@@ -41,12 +43,10 @@ usage()
 int
 main(int argc, char **argv1)
 {
-    TSK_VS_INFO *vs;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
     int ch;
     TSK_OFF_T imgaddr = 0;
-    TSK_IMG_INFO *img;
     TSK_PNUM_T pnum;
     TSK_DADDR_T addr;
     const TSK_VS_PART_INFO *vs_part;
@@ -134,13 +134,17 @@ main(int argc, char **argv1)
     }
 
     /* open the image */
-    if ((img =
-            tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                imgtype, ssize)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
-    if ((imgaddr * img->sector_size) >= img->size) {
+
+    if (imgaddr * img->sector_size >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / img->sector_size);
@@ -153,7 +157,12 @@ main(int argc, char **argv1)
     }
 
     /* process the partition tables */
-    if ((vs = tsk_vs_open(img, imgaddr * img->sector_size, vstype)) == NULL) {
+    std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs{
+        tsk_vs_open(img.get(), imgaddr * img->sector_size, vstype),
+        tsk_vs_close
+    };
+
+    if (!vs) {
         tsk_error_print(stderr);
         if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
             tsk_vs_type_print(stderr);
@@ -168,7 +177,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    vs_part = tsk_vs_part_get(vs, pnum);
+    vs_part = tsk_vs_part_get(vs.get(), pnum);
     if (vs_part == NULL) {
         tsk_fprintf(stderr, "Error looking up partition\n");
         exit(1);
@@ -203,7 +212,5 @@ main(int argc, char **argv1)
         }
     }
 
-    tsk_vs_close(vs);
-    tsk_img_close(img);
     exit(0);
 }
