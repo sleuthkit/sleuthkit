@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,6 +51,7 @@ public class DerivedFile extends AbstractFile {
 	 *                           added.
 	 * @param objId              The object id of the file in the case database.
 	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param fileSystemObjectId The object id of the file system. May be null.
 	 * @param name               The name of the file.
 	 * @param dirType            The type of the file, usually as reported in
 	 *                           the name structure of the file system. May be
@@ -72,6 +73,8 @@ public class DerivedFile extends AbstractFile {
 	 * @param mtime              The modified time of the file.
 	 * @param md5Hash            The MD5 hash of the file, null if not yet
 	 *                           calculated.
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state of the file from a hash
 	 *                           database lookup, null if not yet looked up.
 	 * @param parentPath         The path of the parent of the file.
@@ -90,12 +93,14 @@ public class DerivedFile extends AbstractFile {
 	DerivedFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId, 
 			String name,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size,
 			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, String sha256Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
 			String parentPath,
 			String localPath,
 			long parentId,
@@ -106,9 +111,9 @@ public class DerivedFile extends AbstractFile {
 			Long osAccountObjId) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
-		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
+		super(db, objId, dataSourceObjectId, fileSystemObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId, Collections.emptyList());
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, ownerUid, osAccountObjId,  TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 		setLocalFilePath(localPath);
 		setEncodingType(encodingType);
 	}
@@ -262,57 +267,4 @@ public class DerivedFile extends AbstractFile {
 			return "DerivedMethod{" + "derived_id=" + derivedId + ", toolName=" + toolName + ", toolVersion=" + toolVersion + ", other=" + other + ", rederiveDetails=" + rederiveDetails + '}'; //NON-NLS
 		}
 	}
-
-	/**
-	 * Constructs a representation of a file or directory that has been derived
-	 * from another file and is stored outside of the data source (e.g., on a
-	 * user's machine). A typical example of a derived file is a file extracted
-	 * from an archive file.
-	 *
-	 * @param db         The case database to which the file has been added.
-	 * @param objId      The object id of the file in the case database.
-	 * @param name       The name of the file.
-	 * @param dirType    The type of the file, usually as reported in the name
-	 *                   structure of the file system. May be set to
-	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType   The type of the file, usually as reported in the
-	 *                   metadata structure of the file system. May be set to
-	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag    The allocated status of the file, usually as reported
-	 *                   in the name structure of the file system.
-	 * @param metaFlags  The allocated status of the file, usually as reported
-	 *                   in the metadata structure of the file system.
-	 * @param size       The size of the file.
-	 * @param ctime      The changed time of the file.
-	 * @param crtime     The created time of the file.
-	 * @param atime      The accessed time of the file.
-	 * @param mtime      The modified time of the file.
-	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
-	 * @param knownState The known state of the file from a hash database
-	 *                   lookup, null if not yet looked up.
-	 * @param parentPath The path of the parent of the file.
-	 * @param localPath  The absolute path of the file in secondary storage.
-	 * @param parentId   The object id of parent of the file.
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	protected DerivedFile(SleuthkitCase db,
-			long objId,
-			String name,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size,
-			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, FileKnown knownState,
-			String parentPath,
-			String localPath,
-			long parentId) {
-		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
-				ctime, crtime, atime, mtime,
-				md5Hash, null, knownState,
-				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT);
-	}
-
 }

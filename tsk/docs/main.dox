@@ -14,6 +14,7 @@ The User's Guide describes the various components of TSK and how to use them.  I
   - \subpage basepage 
   - \subpage imgpage 
   - \subpage vspage 
+  - \subpage poolpage
   - \subpage fspage 
   - \subpage hashdbpage
   - \subpage autopage

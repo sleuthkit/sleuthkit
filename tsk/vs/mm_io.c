@@ -9,7 +9,7 @@
  */
 
 /** \file mm_io.c
- * Contains the wrapper code that allows one to read sectors from 
+ * Contains the wrapper code that allows one to read sectors from
  * a TSK_VS_INFO or TSK_VS_PART_INFO structure.  These functions
  * call the underlying TSK_IMG_INFO functions.
  */
@@ -25,7 +25,7 @@
  * @param a_addr Sector address to read from, relative to start of VOLUME SYSTEM.
  * @param a_buf Buffer to store data in
  * @param a_len Amount of data to read (in bytes - must be a multiple of block_size)
- * @returns Number of bytes read or -1 on error 
+ * @returns Number of bytes read or -1 on error
  */
 ssize_t
 tsk_vs_read_block(TSK_VS_INFO * a_vs, TSK_DADDR_T a_addr, char *a_buf,
@@ -53,7 +53,7 @@ tsk_vs_read_block(TSK_VS_INFO * a_vs, TSK_DADDR_T a_addr, char *a_buf,
  * @param a_off Byte offset to read from, relative to start of VOLUME in volume system.
  * @param a_buf Buffer to store data in
  * @param a_len Amount of data to read (in bytes)
- * @returns Number of bytes read or -1 on error 
+ * @returns Number of bytes read or -1 on error
  */
 ssize_t
 tsk_vs_part_read(const TSK_VS_PART_INFO * a_vs_part, TSK_OFF_T a_off,
@@ -74,7 +74,7 @@ tsk_vs_part_read(const TSK_VS_PART_INFO * a_vs_part, TSK_OFF_T a_off,
  * @param a_addr Block address to start reading from, relative to start of VOLUME in volume system.
  * @param a_buf Buffer to store data in
  * @param a_len Amount of data to read (in bytes - must be a multiple of block_size)
- * @returns Number of bytes read or -1 on error 
+ * @returns Number of bytes read or -1 on error
  */
 ssize_t
 tsk_vs_part_read_block(const TSK_VS_PART_INFO * a_vs_part,

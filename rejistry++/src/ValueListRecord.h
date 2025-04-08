@@ -44,9 +44,9 @@ namespace Rejistry {
         typedef ValueListRecord * ValueListRecordPtr;
 
         ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues);
-        
+
         virtual ~ValueListRecord() {}
-    
+
         /**
          * @returns The list of value records. The caller is responsible
          * for freeing these records.

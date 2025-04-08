@@ -39,7 +39,8 @@ public final class IngestModuleInfo {
 		DATA_SOURCE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.DataSourceLevel.displayName")),
 		FILE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.FileLevel.displayName")),
 		DATA_ARTIFACT(bundle.getString("IngestModuleInfo.IngestModuleType.DataArtifact.displayName")),
-		MULTIPLE("IngestModuleInfo.IngestModuleType.Multiple.displayName");
+		MULTIPLE("IngestModuleInfo.IngestModuleType.Multiple.displayName"),
+		ANALYSIS_RESULT(bundle.getString("IngestModuleInfo.IngestModuleType.AnalysisResult.displayName"));
 
 		private final String displayName;
 

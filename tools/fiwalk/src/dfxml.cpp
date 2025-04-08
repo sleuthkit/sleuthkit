@@ -29,7 +29,7 @@ using namespace std;
 #include <string.h>
 #include <stdlib.h>
 #ifndef _MSC_VER
-  #include <sys/param.h>
+#include <sys/param.h>
 #endif
 #include <assert.h>
 #include <fcntl.h>
@@ -138,57 +138,31 @@ string xml::xmlstrip(const string &xml)
 
 /****************************************************************/
 
-xml::xml():outf(),out(&cout),tags(),tag_stack(),tempfilename(),tempfile_template("/tmp/xml_XXXXXXXX"),
-	   t0(),make_dtd(false),outfilename()
-{
-    gettimeofday(&t0,0);
-    *out << xml_header;
-}
-
 /* This should be rewritten so that the temp file is done on close, not on open */
-xml::xml(const std::string &outfilename_, bool /*makeDTD*/):
-    outf(outfilename_.c_str(),ios_base::out),
-    out(),tags(),tag_stack(),tempfilename(),tempfile_template(outfilename_+"_tmp_XXXXXXXX"),
-    t0(),make_dtd(false),outfilename(outfilename_)
+xml::xml(std::ostream &os, bool make_dtd_):
+    out(os),tags(),tag_stack(),
+    t0(),make_dtd(make_dtd_)
 {
     gettimeofday(&t0,0);
-    if(!outf.is_open()){
-	perror(outfilename_.c_str());
-	exit(1);
-    }
-    out = &outf;						// use this one instead
-    *out << xml_header;
+    out << xml_header;
 }
 
 
 
 
 
-void xml::set_tempfile_template(const std::string &temp)
-{
-    tempfile_template = temp;
-}
-
-
-
-
-
-void xml::close()
-{
-    outf.close();
-}
 
 void xml::write_dtd()
 {
-    *out << "<!DOCTYPE fiwalk\n";
-    *out << "[\n";
+    out << "<!DOCTYPE fiwalk\n";
+    out << "[\n";
     for(set<string>::const_iterator it = tags.begin(); it != tags.end(); it++){
-	*out << "<!ELEMENT " << *it << "ANY >\n";
+	out << "<!ELEMENT " << *it << "ANY >\n";
     }
-    *out << "<!ATTLIST volume startsector CDATA #IMPLIED>\n";
-    *out << "<!ATTLIST run start CDATA #IMPLIED>\n";
-    *out << "<!ATTLIST run len CDATA #IMPLIED>\n";
-    *out << "]>\n";
+    out << "<!ATTLIST volume startsector CDATA #IMPLIED>\n";
+    out << "<!ATTLIST run start CDATA #IMPLIED>\n";
+    out << "<!ATTLIST run len CDATA #IMPLIED>\n";
+    out << "]>\n";
 }
 
 /**
@@ -196,6 +170,7 @@ void xml::write_dtd()
  */
 void xml::verify_tag(string tag)
 {
+    assert(tag.size()>0);
     if(tag[0]=='/') tag = tag.substr(1);
     if(tag.find(" ") != string::npos){
 	cerr << "tag '" << tag << "' contains space. Cannot continue.\n";
@@ -206,28 +181,28 @@ void xml::verify_tag(string tag)
 
 void xml::puts(const string &v)
 {
-    *out << v;
+    out << v;
 }
 
 void xml::spaces()
 {
-    for(u_int i=0;i<tag_stack.size();i++){
-	*out << "  ";
+    for(uint32_t i=0;i<tag_stack.size();i++){
+	out << "  ";
     }
 }
 
-void xml::tagout(const string &tag,const string &attribute)
+void xml::tagout(const string tag,const string attribute)
 {
     verify_tag(tag);
-    *out << "<" << tag;
-    if(attribute.size()>0) *out << " " << attribute;
-    *out << ">";
+    out << "<" << tag;
+    if(attribute.size()>0) out << " " << attribute;
+    out << ">";
 }
 
 #if (!defined(HAVE_VASPRINTF)) || defined(_WIN32)
 #ifndef _WIN32
 #define ms_printf __print
-#define __MINGW_ATTRIB_NONNULL(x) 
+#define __MINGW_ATTRIB_NONNULL(x)
 #endif
 
 extern "C" {
@@ -238,10 +213,10 @@ extern "C" {
      */
 #ifdef _GNUC_
     int vasprintf(char **ret,const char *fmt,va_list ap)
-	__attribute__((__format__(ms_printf, 2, 0))) 
+	__attribute__((__format__(ms_printf, 2, 0)))
 	__MINGW_ATTRIB_NONNULL(2) ;
 #endif
-    int vasprintf(char **ret,const char *fmt,va_list ap) 
+    int vasprintf(char **ret,const char *fmt,va_list ap)
     {
 	/* Figure out how long the result will be */
 	char buf[65536];
@@ -263,22 +238,22 @@ void xml::printf(const char *fmt,...)
     /** printf to stream **/
     char *ret = 0;
     if(vasprintf(&ret,fmt,ap) < 0){
-	*out << "xml::xmlprintf: " << strerror(errno);
+	out << "xml::xmlprintf: " << strerror(errno);
 	exit(EXIT_FAILURE);
     }
-    *out << ret;
+    out << ret;
     free(ret);
     /** end printf to stream **/
 
     va_end(ap);
 }
 
-void xml::push(const string &tag,const string &attribute)
+void xml::push(const string tag,const string attribute)
 {
     spaces();
     tag_stack.push(tag);
     tagout(tag,attribute);
-    *out << '\n';
+    out << '\n';
 }
 
 void xml::pop()
@@ -288,7 +263,8 @@ void xml::pop()
     tag_stack.pop();
     spaces();
     tagout("/"+tag,"");
-    *out << '\n';
+    out << '\n';
+    out.flush();
 }
 
 
@@ -307,7 +283,7 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
 #define b(val, base, end) ((val << (__WORDSIZE-end-1)) >> (__WORDSIZE-end+base-1))
     unsigned long eax, ebx, ecx, edx;
     cpuid(0);
-    
+
     snprintf(buf,sizeof(buf),"%.4s%.4s%.4s", (char *)&ebx, (char *)&edx, (char *)&ecx);
     push("cpuid");
     xmlout("identification",buf);
@@ -322,7 +298,7 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
     xmlout("clflush_size", (int64_t) b(ebx, 8, 15) * 8);
     xmlout("nproc", (int64_t) b(ebx, 16, 23));
     xmlout("apicid", (int64_t) b(ebx, 24, 31));
-    
+
     cpuid(0x80000006);
     xmlout("L1_cache_size", (int64_t) b(ecx, 16, 31) * 1024);
     pop();
@@ -350,9 +326,9 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
 	}
     }
 #endif
-#endif	
+#endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (defined(__MINGW32__) && !defined(_UCRT))
 #define TM_FORMAT "%Y-%m-%dT%H:%M:%SZ"
 #else
 #define TM_FORMAT "%FT%TZ"
@@ -365,7 +341,7 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
     xmlout("username",getpwuid(getuid())->pw_name);
 #endif
 #endif
-    
+
     time_t t = time(0);
     strftime(buf,sizeof(buf),TM_FORMAT,gmtime(&t));
     xmlout("start_time",buf);
@@ -393,7 +369,7 @@ void xml::add_rusage()
 	struct timeval t1;
 	gettimeofday(&t1,0);
 	struct timeval t;
-	
+
 	t.tv_sec = t1.tv_sec - t0.tv_sec;
 	if(t1.tv_usec > t0.tv_usec){
 	    t.tv_usec = t1.tv_usec - t0.tv_usec;
@@ -414,8 +390,8 @@ void xml::add_rusage()
  ****************************************************************/
 void xml::xmlcomment(const string &comment_)
 {
-    *out << "<!-- " << comment_ << " -->\n";
-    out->flush();
+    out << "<!-- " << comment_ << " -->\n";
+    out.flush();
 }
 
 
@@ -432,14 +408,14 @@ void xml::xmlprintf(const std::string &tag,const std::string &attribute, const c
 	cerr << "xml::xmlprintf: " << strerror(errno) << "\n";
 	exit(EXIT_FAILURE);
     }
-    *out << ret;
+    out << ret;
     free(ret);
     /** end printf to stream **/
 
     va_end(ap);
     tagout("/"+tag,"");
-    *out << '\n';
-    out->flush();
+    out << '\n';
+    out.flush();
 }
 
 void xml::xmlout(const string &tag,const string &value,const string &attribute,bool escape_value)
@@ -449,12 +425,12 @@ void xml::xmlout(const string &tag,const string &value,const string &attribute,b
 	tagout(tag,attribute+"/");
     } else {
 	tagout(tag,attribute);
-	if(escape_value) *out << xmlescape(value);
-	else *out << value;
+	if(escape_value) out << xmlescape(value);
+	else out << value;
 	tagout("/"+tag,"");
     }
-    *out << "\n";
-    out->flush();
+    out << "\n";
+    out.flush();
 }
 
 #ifdef HAVE_LIBEWF
@@ -506,4 +482,3 @@ void xml::add_DFXML_build_environment()
 #endif
     pop();
 }
-

@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2007-2011 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2007-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */

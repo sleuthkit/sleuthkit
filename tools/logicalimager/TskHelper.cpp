@@ -229,7 +229,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         }
     }
 
-    // Get the first part of the directory path. 
+    // Get the first part of the directory path.
     cur_name_to_match = (char *)strtok_r(cpath, "/", &strtok_last);
     cur_attr_to_match = NULL;
 
@@ -334,7 +334,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         path_matched.clear();
     }
 
-    // we loop until we know the outcome and then exit. 
+    // we loop until we know the outcome and then exit.
     // everything should return from inside the loop.
     is_done = 0;
     while (is_done == 0) {
@@ -344,7 +344,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         TSK_FS_DIR *fs_dir = NULL;
         bool bIsCachedFSDir = false;
 
-        if (NULL != starting_fs_dir) {	// if we found a partial cache hit, then use the cached TSK_FS_DIR as a starting point 
+        if (NULL != starting_fs_dir) {	// if we found a partial cache hit, then use the cached TSK_FS_DIR as a starting point
             fs_dir = starting_fs_dir;
             bIsCachedFSDir = true;      // remember this is a cached TSK_FS_DIR, so we don't close it
             starting_fs_dir = NULL;		// not valid for subsequent iterations
@@ -483,7 +483,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
             else if (fs_name->flags & TSK_FS_NAME_FLAG_ALLOC) {
                 fs_name_best = fs_name;
             }
-            // we found an unallocated entry 
+            // we found an unallocated entry
             else {
                 // if the existing 'best' is alloc, it wins
                 if (fs_name_best->flags & TSK_FS_NAME_FLAG_ALLOC) {
@@ -518,7 +518,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                 path_matched.append(cur_name_to_match);
             }
 
-            // save the matched path and its inum/TSK_FS_DIR to cache 
+            // save the matched path and its inum/TSK_FS_DIR to cache
             if (fs_name_best->flags & TSK_FS_NAME_FLAG_ALLOC) {
                 TSK_FS_DIR *cache_fs_dir = NULL;
                 Path2InumCacheData *pCacheData = NULL;
@@ -560,7 +560,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
                         if ((fs_file2->meta->flags & TSK_FS_NAME_FLAG_ALLOC) && (fs_file2->meta->seq != fs_name_best->meta_seq)) { // MFT entry has been reallocated
                             isReallocated = true;
                         }
-                        else if ((fs_file2->meta->flags & TSK_FS_NAME_FLAG_UNALLOC) && (fs_file2->meta->seq + 1 != fs_name_best->meta_seq)) { // MFT entry has been reallocated 
+                        else if ((fs_file2->meta->flags & TSK_FS_NAME_FLAG_UNALLOC) && (fs_file2->meta->seq + 1 != fs_name_best->meta_seq)) { // MFT entry has been reallocated
                             isReallocated = true;
 
                         }
@@ -615,7 +615,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
         if (!bIsCachedFSDir) {
             tsk_fs_dir_close(fs_dir);
         }
-        fs_dir = NULL;  
+        fs_dir = NULL;
     }
 
     // std::out << "TSKHlprPath2inum(): Not found = " << std::string(a_path) << std::endl;

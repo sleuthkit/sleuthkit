@@ -172,6 +172,22 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * Method:    initAddImgNat
  * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZ)J
  */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNatPassword
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    initializeAddImgNat
+ * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZZ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jboolean, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    initAddImgNat
+ * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZ)J
+ */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
   (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean);
 
@@ -262,6 +278,14 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getImgInfoForP
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
   (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    openFsDecryptNat
+ * Signature: (JJLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsDecryptNat
+  (JNIEnv *, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -445,7 +469,15 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
  * Signature: (Ljava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
-  (JNIEnv *, jclass, jstring);
+  (JNIEnv *, jclass, jstring, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    isImageSupportedStringNat
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedStringNat
+(JNIEnv*, jclass, jstring, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

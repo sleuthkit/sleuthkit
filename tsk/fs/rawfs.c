@@ -3,11 +3,11 @@
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved
 **
 **
 ** This software is distributed under the Common Public License 1.0
-** 
+**
 */
 
 #include "tsk_fs_i.h"
@@ -15,7 +15,7 @@
 
 /**
  *\file rawfs.c
- * Contains internal "raw" specific file system functions.  The raw file system is used to process 
+ * Contains internal "raw" specific file system functions.  The raw file system is used to process
  * an arbitrary chunk of data as 512-byte sectors that have no other structure.
  * This means that you can use the data-level tools, but that is it.  Because raw and swapfs
  * are very similar implementations, they share many of the tsk_fs_nofs_XXX functions, such as
@@ -26,7 +26,7 @@
 
 /** \internal
  * Open part of a disk image as a raw file system -- which basically means that it has no file system structure.
- * The data is considered to be in 512-byte sectors. 
+ * The data is considered to be in 512-byte sectors.
  *
  * @param img_info Disk image to analyze
  * @param offset Byte offset where "file system" starts

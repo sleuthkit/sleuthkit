@@ -24,15 +24,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.Score.Priority;
 import org.sleuthkit.datamodel.Score.Significance;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
  * The scoring manager is responsible for updating and querying the score of
@@ -67,7 +70,7 @@ public class ScoringManager {
 	public Score getAggregateScore(long objId) throws TskCoreException {
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getAggregateScore(objId, connection);
+			return getAggregateScore(objId, false, connection).orElse(Score.SCORE_UNKNOWN);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
@@ -88,11 +91,15 @@ public class ScoringManager {
 		if (objIds.isEmpty()) {
 			return Collections.emptyMap();
 		}
+		
+		// We need to deduplicate the list of object IDs. Otherwise the map  
+		// below breaks and throws an exception.
+		Set<Long> set = new HashSet<>(objIds);
 
 		String queryString = "SELECT obj_id, significance, priority FROM tsk_aggregate_score WHERE obj_id in "
-				+ objIds.stream().map(l -> l.toString()).collect(Collectors.joining(",", "(", ")"));
+				+ set.stream().map(l -> l.toString()).collect(Collectors.joining(",", "(", ")"));
 
-		Map<Long, Score> results = objIds.stream().collect(Collectors.toMap( key -> key, key -> Score.SCORE_UNKNOWN));
+		Map<Long, Score> results = set.stream().collect(Collectors.toMap( key -> key, key -> Score.SCORE_UNKNOWN));
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
@@ -116,34 +123,36 @@ public class ScoringManager {
 	 * given transaction.
 	 *
 	 * @param objId      Object id.
+	 * @param forUpdate   set to true if a FOR UPDATE lock is required. This is a pgsql only option. 
 	 * @param transaction Transaction that provides the connection to use.
 	 *
 	 * @return Score, if it is found, unknown otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Score getAggregateScore(long objId, CaseDbTransaction transaction) throws TskCoreException {
+	private Optional<Score> getAggregateScore(long objId, boolean forUpdate, CaseDbTransaction transaction) throws TskCoreException {
 		CaseDbConnection connection = transaction.getConnection();
-		return getAggregateScore(objId, connection);
+		return getAggregateScore(objId, forUpdate, connection);
 	}
 
 	/**
 	 * Get the aggregate score for the given object.
 	 *
 	 * @param objId Object id.
+	 * @param forUpdate   set to true if a FOR UPDATE lock is required. This is a pgsql only option. 
 	 * @param connection Connection to use for the query.
 	 *
 	 * @return Score, if it is found, SCORE_UNKNOWN otherwise.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Score getAggregateScore(long objId, CaseDbConnection connection) throws TskCoreException {
-		String queryString = "SELECT significance, priority FROM tsk_aggregate_score WHERE obj_id = " + objId;
+	private Optional<Score> getAggregateScore(long objId, boolean forUpdate, CaseDbConnection connection) throws TskCoreException {
+		String queryString = "SELECT significance, priority FROM tsk_aggregate_score WHERE obj_id = " + objId + (forUpdate? " FOR UPDATE " : "");
 		try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
 			if (rs.next()) {
-				return new Score(Significance.fromID(rs.getInt("significance")), Priority.fromID(rs.getInt("priority")));
+				return Optional.of(new Score(Significance.fromID(rs.getInt("significance")), Priority.fromID(rs.getInt("priority"))));
 			} else {
-				return Score.SCORE_UNKNOWN;
+				return Optional.empty();
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("SQLException thrown while running query: " + queryString, ex);
@@ -157,37 +166,58 @@ public class ScoringManager {
 	 * @param objId              Object id of the object.
 	 * @param dataSourceObjectId Data source object id, may be null.
 	 * @param score              Score to be inserted/updated.
+	 * @param updateOnly		 If score was previously recorded and need to be
+	 *							 an updated - send true. 
 	 * @param transaction        Transaction to use for the update.
 	 *
 	 * @throws TskCoreException
 	 */
-	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, CaseDbTransaction transaction) throws TskCoreException {
+	private void setAggregateScore(long objId, Long dataSourceObjectId, Score score, boolean updateOnly, CaseDbTransaction transaction) throws TskCoreException {
 
-		String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , priority) VALUES (?, ?, ?, ?)"
-				+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, priority = ?";
+		if (updateOnly) {
+			String updateSQLString = " UPDATE tsk_aggregate_score SET significance = ?, priority = ? where obj_id = ?" ;
 
-		CaseDbConnection connection = transaction.getConnection();
-		try {
-			PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQLString, Statement.NO_GENERATED_KEYS);
-			preparedStatement.clearParameters();
+			CaseDbConnection connection = transaction.getConnection();
+			try {
+				PreparedStatement preparedStatement = connection.getPreparedStatement(updateSQLString, Statement.NO_GENERATED_KEYS);
+				preparedStatement.clearParameters();
 
-			preparedStatement.setLong(1, objId);
-			if (dataSourceObjectId != null) {
-				preparedStatement.setLong(2, dataSourceObjectId);
-			} else {
-				preparedStatement.setNull(2, java.sql.Types.NULL);
+				preparedStatement.setInt(1, score.getSignificance().getId());
+				preparedStatement.setInt(2, score.getPriority().getId());
+				
+				preparedStatement.setLong(3, objId);
+				 
+				connection.executeUpdate(preparedStatement);
+			} catch (SQLException ex) {
+				throw new TskCoreException(String.format("Error updating aggregate score, query: %s for objId = %d", updateSQLString, objId), ex);//NON-NLS 
 			}
-			preparedStatement.setInt(3, score.getSignificance().getId());
-			preparedStatement.setInt(4, score.getPriority().getId());
+		} else {
 
-			preparedStatement.setInt(5, score.getSignificance().getId());
-			preparedStatement.setInt(6, score.getPriority().getId());
+			String insertSQLString = "INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance , priority) VALUES (?, ?, ?, ?)"
+					+ " ON CONFLICT (obj_id) DO UPDATE SET significance = ?, priority = ?";
 
-			connection.executeUpdate(preparedStatement);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error updating aggregate score, query: %s for objId = %d", insertSQLString, objId), ex);//NON-NLS
-		}  
+			CaseDbConnection connection = transaction.getConnection();
+			try {
+				PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQLString, Statement.NO_GENERATED_KEYS);
+				preparedStatement.clearParameters();
 
+				preparedStatement.setLong(1, objId);
+				if (dataSourceObjectId != null) {
+					preparedStatement.setLong(2, dataSourceObjectId);
+				} else {
+					preparedStatement.setNull(2, java.sql.Types.NULL);
+				}
+				preparedStatement.setInt(3, score.getSignificance().getId());
+				preparedStatement.setInt(4, score.getPriority().getId());
+
+				preparedStatement.setInt(5, score.getSignificance().getId());
+				preparedStatement.setInt(6, score.getPriority().getId());
+
+				connection.executeUpdate(preparedStatement);
+			} catch (SQLException ex) {
+				throw new TskCoreException(String.format("Error updating aggregate score, query: %s for objId = %d", insertSQLString, objId), ex);//NON-NLS
+			}
+		}
 	}
 
 
@@ -216,24 +246,19 @@ public class ScoringManager {
 		 * and calculate these outside of a transaction.  We opted for table locking for performance
 		 * reasons so that we can still add the analysis results in a batch.  That remains an option
 		 * if we get into deadlocks with the current design. 
-		 */
-		try {
-			CaseDbConnection connection = transaction.getConnection();
-			connection.getAggregateScoreTableWriteLock();
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting exclusive write lock on aggregate score table", ex);//NON-NLS
-		}
-			
+		 */  
 		
 		// Get the current score 
-		Score currentAggregateScore = ScoringManager.this.getAggregateScore(objId, transaction);
+		// Will get a "FOR UPDATE" lock in postgresql 
+		Optional<Score> oCurrentAggregateScore = ScoringManager.this.getAggregateScore(objId, db.getDatabaseType().equals(DbType.POSTGRESQL), transaction);
+
+		Score currentAggregateScore = oCurrentAggregateScore.orElse(Score.SCORE_UNKNOWN);
 
 		// If current score is Unknown And newscore is not Unknown - allow None (good) to be recorded
 		// or if the new score is higher than the current score
 		if  ( (currentAggregateScore.compareTo(Score.SCORE_UNKNOWN) == 0 && newResultScore.compareTo(Score.SCORE_UNKNOWN) != 0)
-			  || (Score.getScoreComparator().compare(newResultScore, currentAggregateScore) > 0)) {
-			setAggregateScore(objId, dataSourceObjectId, newResultScore, transaction);
-			
+				|| (Score.getScoreComparator().compare(newResultScore, currentAggregateScore) > 0)) {
+			setAggregateScore(objId, dataSourceObjectId, newResultScore, oCurrentAggregateScore.isPresent(), transaction);  // If score is present, do an update. 
 			// register score change in the transaction.
 			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentAggregateScore, newResultScore));
 			return newResultScore;
@@ -266,14 +291,11 @@ public class ScoringManager {
 		 * reasons so that we can still add the analysis results in a batch.  That remains an option
 		 * if we get into deadlocks with the current design. 
 		 */
-		try {
-			connection.getAggregateScoreTableWriteLock();
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting exclusive write lock on aggregate score table", ex);//NON-NLS
-		}
-			
+  
 		// Get the current score 
-		Score currentScore = ScoringManager.this.getAggregateScore(objId, transaction);
+		Optional<Score> oCurrentAggregateScore = ScoringManager.this.getAggregateScore(objId, db.getDatabaseType().equals(DbType.POSTGRESQL), transaction);
+
+		Score currentScore = oCurrentAggregateScore.orElse(Score.SCORE_UNKNOWN);		
 
 		// Calculate the score from scratch by getting all of them and getting the highest
 		List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResults(objId, connection);
@@ -287,7 +309,7 @@ public class ScoringManager {
 
 		// get the maximum score of the calculated aggregate score of analysis results
 		// or the score derived from the maximum known status of a content tag on this content.
-		Optional<Score> tagScore = db.getTaggingManager().getMaxTagKnownStatus(objId, transaction)
+		Optional<Score> tagScore = db.getTaggingManager().getMaxTagType(objId, transaction)
 				.map(knownStatus -> TaggingManager.getTagScore(knownStatus));
 		
 		if (tagScore.isPresent() && Score.getScoreComparator().compare(tagScore.get(), newScore) > 0) {
@@ -296,7 +318,7 @@ public class ScoringManager {
 		
 		// only change the DB if we got a new score. 
 		if (newScore.compareTo(currentScore) != 0) {
-			setAggregateScore(objId, dataSourceObjectId, newScore, transaction);
+			setAggregateScore(objId, dataSourceObjectId, newScore, oCurrentAggregateScore.isPresent(), transaction);
 
 			// register the score change with the transaction so an event can be fired for it. 
 			transaction.registerScoreChange(new ScoreChange(objId, dataSourceObjectId, currentScore, newScore));

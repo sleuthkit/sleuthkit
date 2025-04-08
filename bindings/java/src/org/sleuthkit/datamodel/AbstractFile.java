@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2021 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.annotations.Beta;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.ref.SoftReference;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -37,6 +39,7 @@ import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskData.CollectedStatus;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -54,6 +57,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final TSK_FS_META_TYPE_ENUM metaType;
 	protected TSK_FS_NAME_FLAG_ENUM dirFlag;
 	protected Set<TSK_FS_META_FLAG_ENUM> metaFlags;
+	protected final Long fileSystemObjectId;  // File system object ID; may be null
 	protected long size;
 	protected final long metaAddr, ctime, crtime, atime, mtime;
 	protected final int metaSeq;
@@ -89,6 +93,16 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String sha256Hash;
 	private boolean sha256HashDirty = false;
+	
+	/*
+	 * SHA-1 hash
+	 */
+	protected String sha1Hash;
+	private boolean sha1HashDirty = false;
+	
+	private TskData.CollectedStatus collected; // Collected status of file data	
+	private boolean collectedDirty = false;
+	
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
 	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
@@ -104,6 +118,11 @@ public abstract class AbstractFile extends AbstractContent {
 	private final Long osAccountObjId; // obj id of the owner's OS account, may be null
 	
 	private volatile String uniquePath;
+	private volatile FileSystem parentFileSystem;
+	
+	private final boolean tryContentProviderStream;
+	private Object contentProviderStreamLock = new Object();
+	private SoftReference<ContentProviderStream> contentProviderStreamRef = null;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -113,6 +132,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param objId              object id in tsk_objects table
 	 * @param dataSourceObjectId The object id of the root data source of this
 	 *                           file.
+	 * @param fileSystemObjectId The object id of the file system. Can be null (or 0 representing null)
 	 * @param attrType
 	 * @param attrId
 	 * @param name               name field of the file
@@ -131,10 +151,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param modes
 	 * @param uid
 	 * @param gid
-	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
-	 *                           present
-	 * @param sha256Hash         sha256 hash of the file, or null or "NULL" if
-	 *                           not present
+	 * @param md5Hash            md5sum of the file, or null if not present
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
@@ -143,11 +162,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           including the '.'), can be null.
 	 * @param ownerUid           Owner uid/SID, can be null if not available.
 	 * @param osAccountObjectId	 Object Id of the owner OsAccount, may be null.
+	 * @param collected			 Collected status of file data
 	 *
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
+			Long fileSystemObjectId,
 			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			String name,
 			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
@@ -158,15 +179,28 @@ public abstract class AbstractFile extends AbstractContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes,
 			int uid, int gid,
-			String md5Hash, String sha256Hash, FileKnown knownState,
+			String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
 			String parentPath,
 			String mimeType,
 			String extension,
 			String ownerUid,
 			Long osAccountObjectId,
+			TskData.CollectedStatus collected,
 			List<Attribute> fileAttributes) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
+		if (fileSystemObjectId != null) {
+			// When reading from the result set, nulls are converted to zeros.
+			// Switch it to null.
+			if (fileSystemObjectId > 0) {
+				this.fileSystemObjectId = fileSystemObjectId;
+			} else {
+				this.fileSystemObjectId = null;
+			}
+		} else {
+			this.fileSystemObjectId = null;
+		}
 		this.attrType = attrType;
 		this.attrId = attrId;
 		this.fileType = fileType;
@@ -187,6 +221,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 		this.md5Hash = md5Hash;
 		this.sha256Hash = sha256Hash;
+		this.sha1Hash = sha1Hash;
 		if (knownState == null) {
 			this.knownState = FileKnown.UNKNOWN;
 		} else {
@@ -198,6 +233,10 @@ public abstract class AbstractFile extends AbstractContent {
 		this.encodingType = TskData.EncodingType.NONE;
 		this.ownerUid = ownerUid;
 		this.osAccountObjId = osAccountObjectId;
+		this.collected = collected;
+		// any item that is marked as YES_REPO and there is a custom content provider for the db will attempt to use the content provider to provide data
+		// this will be flipped to false if there is no content provider stream from the content provider for this file
+		this.tryContentProviderStream = collected == CollectedStatus.YES_REPO && db.getContentProvider() != null;
 		if (Objects.nonNull(fileAttributes) && !fileAttributes.isEmpty()) {
 			this.fileAttributesCache.addAll(fileAttributes);
 			loadedAttributesCacheFromDb = true;
@@ -528,6 +567,28 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Sets the SHA-1 hash for this file.
+	 *
+	 * IMPORTANT: The SHA-1 hash is set for this AbstractFile object, but it
+	 * is not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param sha1Hash The SHA-1 hash of the file.
+	 */
+	public void setSha1Hash(String sha1Hash) {
+		this.sha1Hash = sha1Hash;
+		this.sha1HashDirty = true;
+	}
+
+	/**
+	 * Get the SHA-1 hash value as calculated, if present
+	 *
+	 * @return SHA-1 hash string, if it is present or null if it is not
+	 */
+	public String getSha1Hash() {
+		return this.sha1Hash;
+	}
+	
+	/**
 	 * Gets the attributes of this File
 	 *
 	 * @return
@@ -537,7 +598,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public List<Attribute> getAttributes() throws TskCoreException {
 		synchronized (this) {
 			if (!loadedAttributesCacheFromDb) {
-				ArrayList<Attribute> attributes = getSleuthkitCase().getFileAttributes(this);
+				ArrayList<Attribute> attributes = getSleuthkitCase().getBlackboard().getFileAttributes(this);
 				fileAttributesCache.clear();
 				fileAttributesCache.addAll(attributes);
 				loadedAttributesCacheFromDb = true;
@@ -681,6 +742,25 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public long getDataSourceObjectId() {
 		return dataSourceObjectId;
+	}
+	
+	/**
+	 * Gets the collected status of the file data.
+	 * 
+	 * @return The collected.
+	 */
+	public TskData.CollectedStatus getCollected() {
+		return collected;
+	}
+	
+	/**
+	 * Sets the collected status of the file data.
+	 * 
+	 * @param collected The file data's collected status
+	 */
+	public void setCollected(TskData.CollectedStatus collected) {
+		this.collected = collected;
+		collectedDirty = true;
 	}
 
 	/**
@@ -828,6 +908,27 @@ public abstract class AbstractFile extends AbstractContent {
 	public boolean isDir() {
 		return (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR)
 				|| metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR));
+	}
+	
+	/**
+	 * Count of Abstract File's children of specified types. The types are
+	 * instances of TskData.TSK_FS_NAME_TYPE_ENUM types and the matching is
+	 * performed against the tsk_files.dir_type column. Some usage examples are
+	 * to get a count of all subdirectories, which requires searching for all
+	 * children of types TskData.TSK_FS_NAME_TYPE_ENUM.DIR "OR"
+	 * TskData.TSK_FS_NAME_TYPE_ENUM.VIRT_DIR.
+	 *
+	 * @param types List of TskData.TSK_FS_NAME_TYPE_ENUM types.
+	 *
+	 * @return Total count of children of the specified types.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException exception thrown if a
+	 *                                                  critical error occurs
+	 *                                                  within tsk core
+	 */
+	@Beta
+	public int countChildrenOfType(List<TSK_FS_NAME_TYPE_ENUM> types) throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildrenCountByType(this, types);
 	}
 
 	/**
@@ -992,12 +1093,48 @@ public abstract class AbstractFile extends AbstractContent {
 	short getMetaFlagsAsInt() {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
+	
+	/**
+	 * Attempts to get cached or load the content provider stream for this file.
+	 * If none exists, returns null.
+	 *
+	 * NOTE: Does not check the value for tryContentProviderStream before
+	 * attempting.
+	 *
+	 * @return The content stream for this file or null if none exists.
+	 *
+	 * @throws TskCoreException
+	 */
+	private ContentProviderStream getContentProviderStream() throws TskCoreException {
+		synchronized (contentProviderStreamLock) {
+			// try to get soft reference content provider stream
+			ContentProviderStream contentProviderStream = contentProviderStreamRef == null ? null : contentProviderStreamRef.get();
+			// load if not cached and then cache if present
+			if (contentProviderStream == null) {
+				ContentStreamProvider provider = getSleuthkitCase().getContentProvider();
+				contentProviderStream = provider == null ? null : provider.getContentStream(this).orElse(null);
 
+				if (contentProviderStream == null) {
+					throw new TskCoreException(MessageFormat.format("Could not get content provider string for file with obj id: {0}, path: {1}",
+							getId(),
+							getUniquePath()));
+				}
+
+				this.contentProviderStreamRef = new SoftReference<>(contentProviderStream);
+			}
+
+			return contentProviderStream;
+		}
+	}
+	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		//template method
-		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
-		if (localPathSet) {
+		// try to use content provider stream if should use
+		if (tryContentProviderStream) {
+			ContentProviderStream contentProviderStream = getContentProviderStream();
+			return contentProviderStream.read(buf, offset, len);
+		} else if (localPathSet) {
+			//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
 			return readLocal(buf, offset, len);
 		} else {
 			return readInt(buf, offset, len);
@@ -1163,13 +1300,14 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Check if the file exists. If non-local always true, if local, checks if
-	 * actual local path exists
+	 * Check if the file exists. If non-local or file is marked with YES_REPO
+	 * and there is a content provider always true, if local, checks if actual
+	 * local path exists
 	 *
 	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {
@@ -1184,13 +1322,13 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Check if the file exists and is readable. If non-local (e.g. within an
-	 * image), always true, if local, checks if actual local path exists and is
-	 * readable
+	 * image) or file is marked with YES_REPO and there is a content provider,
+	 * always true, if local, checks if actual local path exists and is readable
 	 *
 	 * @return true if the file is readable
 	 */
 	public boolean canRead() {
-		if (!localPathSet) {
+		if (tryContentProviderStream || !localPathSet) {
 			return true;
 		} else {
 			try {
@@ -1246,6 +1384,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void finalize() throws Throwable {
 		try {
@@ -1270,7 +1409,7 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "\t" + "metaAddr " + metaAddr + "\t" + "metaSeq " + metaSeq + "\t" + "metaFlags " + metaFlags //NON-NLS
 				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes //NON-NLS
 				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size //NON-NLS
-				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash + "\t" + "sha256Hash " + sha256Hash //NON-NLS
+				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash + "\t" + "sha256Hash " + sha256Hash + "\t" + "sha1Hash " + sha1Hash//NON-NLS
 				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath //NON-NLS
 				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile //NON-NLS
 				+ "]\t";
@@ -1336,7 +1475,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                          properties to the case database.
 	 */
 	public void save(CaseDbTransaction transaction) throws TskCoreException {
-		if (!(md5HashDirty || sha256HashDirty || mimeTypeDirty || knownStateDirty)) {
+		if (!(md5HashDirty || sha256HashDirty || sha1HashDirty || mimeTypeDirty || knownStateDirty || collectedDirty)) {
 			return;
 		}
 
@@ -1356,11 +1495,23 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 			updateSql += "sha256 = '" + this.getSha256Hash() + "'";
 		}
+		if (sha1HashDirty) {
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
+			}
+			updateSql += "sha1 = '" + this.getSha1Hash() + "'";
+		}
 		if (knownStateDirty) {
 			if (!updateSql.isEmpty()) {
 				updateSql += ", ";
 			}
 			updateSql += "known = '" + this.getKnown().getFileKnownValue() + "'";
+		}
+		if (collectedDirty) {
+			if (!updateSql.isEmpty()) {
+				updateSql += ", ";
+			}
+			updateSql += "collected = '" + this.getCollected().getType() + "'";
 		}
 		updateSql = "UPDATE tsk_files SET " + updateSql + " WHERE obj_id = " + this.getId();
 
@@ -1369,8 +1520,10 @@ public abstract class AbstractFile extends AbstractContent {
 			connection.executeUpdate(statement, updateSql);
 			md5HashDirty = false;
 			sha256HashDirty = false;
+			sha1HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
+			collectedDirty = false;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error updating properties of file %s (obj_id = %s)", getName(), getId()), ex);
 		}
@@ -1397,22 +1550,116 @@ public abstract class AbstractFile extends AbstractContent {
 		return Optional.ofNullable(osAccountObjId);
 	}
 	
+	/**
+	 * Sets the parent file system of this file or directory.
+	 *
+	 * @param parent The parent file system object.
+	 */
+	void setFileSystem(FileSystem parent) {
+		parentFileSystem = parent;
+	}
+	
+	/**
+	 * Get the object id of the parent file system of this file or directory if it exists.
+	 *
+	 * @return The parent file system id.
+	 */
+	public Optional<Long> getFileSystemObjectId() {
+		return Optional.ofNullable(fileSystemObjectId);
+	}
+	
+	/**
+	 * Check if this AbstractFile belongs to a file system.
+	 * 
+	 * @return True if the file belongs to a file system, false otherwise.
+	 */
+	public boolean hasFileSystem() {
+		return fileSystemObjectId != null;
+	}
+	
+	/**
+	 * Gets the parent file system of this file or directory.
+	 * If the AbstractFile object is not FsContent, hasFileSystem() should
+	 * be called before this method to ensure the file belongs to a file
+	 * system.
+	 *
+	 * @return The file system object of the parent.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException If the file does not belong to a file system or
+	 *     another error occurs.
+	 */
+	public FileSystem getFileSystem() throws TskCoreException {
+		if (fileSystemObjectId == null) {
+			throw new TskCoreException("File with ID: " + this.getId() + " does not belong to a file system");
+		}
+		if (parentFileSystem == null) {
+			synchronized (this) {
+				if (parentFileSystem == null) {
+					parentFileSystem = getSleuthkitCase().getFileSystemById(fileSystemObjectId, AbstractContent.UNKNOWN_ID);
+				}
+			}
+		}
+		return parentFileSystem;
+	}
+	
+	/**
+	 * Get the full path to this file or directory, starting with a "/" and the
+	 * data source name and then all the other segments in the path.
+	 *
+	 * @return A unique path for this object.
+	 *
+	 * @throws TskCoreException if there is an error querying the case database.
+	 */
 	@Override
 	public String getUniquePath() throws TskCoreException {
 
 		if (uniquePath == null) {
-			Content dataSource = getDataSource();
-			if (dataSource instanceof LocalFilesDataSource) {
-				if(dataSource != this) {
-					uniquePath = dataSource.getUniquePath() + parentPath + getName();
+			if (getFileSystemObjectId().isPresent()) {
+				// For file system files, construct the path using the path to
+				// the file system, the parent path, and the file name. FileSystem
+				// objects are cached so this is unlikely to perform any
+				// database operations.
+				StringBuilder sb = new StringBuilder();
+				sb.append(getFileSystem().getUniquePath());
+				if (! parentPath.isEmpty()) {
+					sb.append(parentPath);
 				} else {
-					uniquePath =  "/" + getName();
+					// The parent path may not be set in older cases.
+					sb.append("/");
 				}
+				sb.append(getName());
+				uniquePath = sb.toString();
 			} else {
-				uniquePath = super.getUniquePath();
+				if ((this instanceof LayoutFile) && (parentPath.equals("/"))) {
+					// This may be the case where the layout file is a direct child of a 
+					// volume. We want to make sure to include the volume information if present,
+					// so go up the directory structure instead of using the optimized code.
+					uniquePath = super.getUniquePath();
+				} else if (getName().equals(VirtualDirectory.NAME_CARVED) || getName().equals(VirtualDirectory.NAME_UNALLOC) || 
+						parentPath.startsWith("/" + VirtualDirectory.NAME_CARVED) || parentPath.startsWith("/" + VirtualDirectory.NAME_UNALLOC)) {
+					// We can make $Unalloc and $CarvedFiles under volumes without being part of a file system.
+					// As above, we want to make sure to include the volume information if present,
+					// so go up the directory structure instead of using the optimized code.
+					uniquePath = super.getUniquePath();
+				} else {
+					// Optimized code to use for most files. Construct the path
+					// using the data source name, the parent path, and the file name.
+					// DataSource objects are cached so this is unlikely to perform any
+				    // database operations.
+					String dataSourceName = "";
+					Content dataSource = getDataSource();
+					if (dataSource != null) {
+					  dataSourceName = dataSource.getUniquePath(); 
+					}
+					if (! parentPath.isEmpty()) {
+						uniquePath = dataSourceName + parentPath + getName();
+					} else {
+						// The parent path may not be set in older cases.
+						uniquePath = dataSourceName + "/" + getName();
+					}
+				}
 			}
 		}
-
 		return uniquePath;
 	}
 
@@ -1439,92 +1686,6 @@ public abstract class AbstractFile extends AbstractContent {
 	@Override
 	public DataArtifact newDataArtifact(BlackboardArtifact.Type artifactType, Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 		return super.newDataArtifact(artifactType, attributesList, getOsAccountObjectId().orElse(null));
-	}
-
-	/**
-	 * Initializes common fields used by AbstactFile implementations (objects in
-	 * tsk_files table)
-	 *
-	 * @param db         case / db handle where this file belongs to
-	 * @param objId      object id in tsk_objects table
-	 * @param attrType
-	 * @param attrId
-	 * @param name       name field of the file
-	 * @param fileType   type of the file
-	 * @param metaAddr
-	 * @param metaSeq
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
-	 * @param md5Hash    md5sum of the file, or null or "NULL" if not present
-	 * @param knownState knownState status of the file, or null if unknown
-	 *                   (default)
-	 * @param parentPath
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
-			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
-	}
-
-	/**
-	 * Initializes common fields used by AbstactFile implementations (objects in
-	 * tsk_files table). This deprecated version has attrId filed defined as a
-	 * short which has since been changed to an int.
-	 *
-	 * @param db                 case / db handle where this file belongs to
-	 * @param objId              object id in tsk_objects table
-	 * @param dataSourceObjectId The object id of the root data source of this
-	 *                           file.
-	 * @param attrType
-	 * @param attrId
-	 * @param name               name field of the file
-	 * @param fileType           type of the file
-	 * @param metaAddr
-	 * @param metaSeq
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
-	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
-	 *                           present
-	 * @param knownState         knownState status of the file, or null if
-	 *                           unknown (default)
-	 * @param parentPath
-	 * @param mimeType           The MIME type of the file, can be null
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	AbstractFile(SleuthkitCase db, long objId, long dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
-			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, null, knownState, parentPath, null, null, OsAccount.NO_OWNER_ID, OsAccount.NO_ACCOUNT, Collections.emptyList());
 	}
 
 	/**
@@ -1611,5 +1772,75 @@ public abstract class AbstractFile extends AbstractContent {
 	@Deprecated
 	public static long timeToEpoch(String time) {
 		return TimeUtilities.timeToEpoch(time);
+	}
+	
+		/**
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table)
+	 *
+	 * @param db                 case / db handle where this file belongs to
+	 * @param objId              object id in tsk_objects table
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 *                           file.
+	 * @param fileSystemObjectId The object id of the file system. Can be null (or 0 representing null)
+	 * @param attrType
+	 * @param attrId
+	 * @param name               name field of the file
+	 * @param fileType           type of the file
+	 * @param metaAddr
+	 * @param metaSeq
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash            md5sum of the file, or null if not present
+	 * @param sha256Hash         sha256 hash of the file, or null if not present
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
+	 * @param knownState         knownState status of the file, or null if
+	 *                           unknown (default)
+	 * @param parentPath
+	 * @param mimeType           The MIME type of the file, can be null.
+	 * @param extension          The extension part of the file name (not
+	 *                           including the '.'), can be null.
+	 * @param ownerUid           Owner uid/SID, can be null if not available.
+	 * @param osAccountObjectId	 Object Id of the owner OsAccount, may be null.
+	 *
+	 * @deprecated
+	 */
+	@Deprecated
+	AbstractFile(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
+			Long fileSystemObjectId,
+			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			String name,
+			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
+			long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			short modes,
+			int uid, int gid,
+			String md5Hash, String sha256Hash, String sha1Hash, 
+			FileKnown knownState,
+			String parentPath,
+			String mimeType,
+			String extension,
+			String ownerUid,
+			Long osAccountObjectId,
+			List<Attribute> fileAttributes) {
+		this(db, objId, dataSourceObjectId, fileSystemObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, 
+				dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, 
+				md5Hash, sha256Hash, sha1Hash, knownState, parentPath, mimeType, extension, 
+				ownerUid, osAccountObjectId, TskData.CollectedStatus.UNKNOWN, fileAttributes);
 	}
 }

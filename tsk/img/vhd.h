@@ -7,8 +7,8 @@
  *
  */
 
-/* 
- * Header files for VHD-specific data structures and functions. 
+/*
+ * Header files for VHD-specific data structures and functions.
  */
 
 #ifndef _TSK_IMG_VHDI_H
@@ -22,6 +22,8 @@
 
 #include <libvhdi.h>
 
+#include "tsk_img_i.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,7 +32,7 @@ extern "C" {
         unsigned int a_ssize);
 
     typedef struct {
-        TSK_IMG_INFO img_info;
+        IMG_INFO img_info;
         libvhdi_file_t *handle;
         tsk_lock_t read_lock;   // Lock for reads since according to documentation libvhdi is not fully thread safe yet
     } IMG_VHDI_INFO;

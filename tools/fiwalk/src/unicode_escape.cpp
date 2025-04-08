@@ -1,7 +1,7 @@
 /**
  * unicode_escape.cpp:
  * Escape unicode that is not valid.
- * 
+ *
  * References:
  * http://www.ietf.org/rfc/rfc3987.txt
  * http://en.wikipedia.org/wiki/UTF-8
@@ -83,13 +83,13 @@ bool invalid_utf8unichar(uint32_t unichar)
 	
     // Plane 2
     if(unichar > 0x2bfff && unichar < 0x2f000) return true;
-    
+
     // Planes 3--13 are unassigned
     if(unichar >= 0x30000 && unichar < 0xdffff) return true;
 
     // Above Plane 16 is invalid
     if(unichar > 0x10FFFF) return true;	// above plane 16?
-    
+
     return false;			// must be valid
 }
 
@@ -135,12 +135,12 @@ std::string validateOrEscapeUTF8(std::string input)
 	    // check for invalid code point for this encoding
 	    if(invalid_utf8unichar(unichar)
 	       || ((uint8_t)input.at(i)==0xc0)
-	       || (unichar <= 0x7f)){ 
+	       || (unichar <= 0x7f)){
 		output += hexesc((uint8_t)input.at(i++));
 		output += hexesc((uint8_t)input.at(i++));
 		continue;
 	    }
-			      
+			
 	    output += (uint8_t)input.at(i++);	// byte1
 	    output += (uint8_t)input.at(i++);	// byte2
 	    continue;
@@ -154,7 +154,7 @@ std::string validateOrEscapeUTF8(std::string input)
 	    uint32_t unichar = (((uint8_t)input.at(i) & 0x0f) << 12)
 		| (((uint8_t)input.at(i+1) & 0x3f) << 6)
 		| (((uint8_t)input.at(i+2) & 0x3f));
-	    
+	
 	    if(invalid_utf8unichar(unichar) || unichar<=0x7ff){ // invalid code points
 		output += hexesc((uint8_t)input.at(i++));
 		output += hexesc((uint8_t)input.at(i++));
@@ -166,7 +166,7 @@ std::string validateOrEscapeUTF8(std::string input)
 	    output += (uint8_t)input.at(i++);	// byte3
 	    continue;
 	}
-	    
+	
 	// utf8 4 bytes (1111 0xxx prefix)
 	if((( ch & 0xf8) == 0xf0)
 	   && (i+3 < input.length())
@@ -232,7 +232,7 @@ int main(int argc,char **argv)
     exit(1);
 
     /* Generic fuzzing. Try random attempts */
-    
+
 
     std::string line;
     while(getline(std::cin,line)){

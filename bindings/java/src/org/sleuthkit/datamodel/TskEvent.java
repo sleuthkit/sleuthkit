@@ -307,6 +307,63 @@ public interface TskEvent {
 	}
 
 	/**
+	 * An event published when one or more OS accounts are merged.
+	 */
+	public final static class OsAccountsMergedTskEvent extends TskObjectsEvent<MergedAccountsPair> {
+
+		/**
+		 * Constructs an event published when one or more OS accounts are
+		 * merged.
+		 *
+		 * @param mergedAccounts List of the merged OS accounts.
+		 */
+		OsAccountsMergedTskEvent(List<MergedAccountsPair> mergedAccounts) {
+			super(mergedAccounts);
+		}
+
+
+		/**
+		 * Gets the pairs of merged accounts
+		 * 
+		 * @return 
+		 */
+		public List<MergedAccountsPair> getMergedAccountPairs() {
+			return getDataModelObjects();
+		}
+
+	}
+
+	/**
+	 * Container to encapsulate the merged account ids, contains both the source and destination account ids.
+	 */
+	public final static class MergedAccountsPair {
+
+		private final Long sourceOsAccountId;
+		private final Long destinationOsAccountId;
+
+		public MergedAccountsPair(Long sourceOsAccountId, Long destinationOsAccountId) {
+			this.sourceOsAccountId = sourceOsAccountId;
+			this.destinationOsAccountId = destinationOsAccountId;
+		}
+
+		/**
+		 * Gets the source os account id. This is the account that was marked as "MERGED"
+		 * @return The TSK object ID of the source os account
+		 */
+		public Long getSourceOsAccountId() {
+			return sourceOsAccountId;
+		}
+
+		/**
+		 * Gets the destination os account id. This is the account that the source was merged into.
+		 * @return The TSK object ID of the destination os account
+		 */
+		public Long getDestinationOsAccountId() {
+			return destinationOsAccountId;
+		}
+	}
+	
+	/**
 	 * An event published when one or more OS account instances are added.
 	 */
 	public final static class OsAcctInstancesAddedTskEvent extends TskObjectsEvent<OsAccountInstance> {

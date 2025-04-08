@@ -145,6 +145,7 @@ public class Image extends AbstractContent implements DataSource {
 		//frees nothing, as we are caching image handles
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {

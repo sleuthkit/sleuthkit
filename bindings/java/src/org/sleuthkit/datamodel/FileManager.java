@@ -83,16 +83,16 @@ public class FileManager {
     }
 	
 	/**
-     * Find all files with the exact given name and exact parent path.
-     * 
+	 * Find all files with the exact given name and exact parent path.
+	 * 
 	 * @param dataSource The data source to search within.
-     * @param name Exact file name to match.
+	 * @param name Exact file name to match.
 	 * @param path Exact parent path.
-     * 
-     * @return A list of matching files.
-     * 
-     * @throws TskCoreException 
-     */
+	 * 
+	 * @return A list of matching files.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	public List<AbstractFile> findFilesExactNameExactPath(Content dataSource, String name, String path) throws TskCoreException {
 		
 		// Database paths will always start and end with a forward slash, so add those if not present

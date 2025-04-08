@@ -57,7 +57,7 @@
 **        each copy of the program.
 */
 
-/* 
+/*
  * Contains the structures and function APIs for ISO9660 file system support.
  */
 
@@ -202,9 +202,9 @@ typedef struct {
 
 /* generic volume descriptor */
 typedef struct {
-    uint8_t type;               ///<  volume descriptor type 
-    char magic[ISODCL(2, 6)];   ///< magic number. "CD001" 
-    char ver[ISODCL(7, 7)];     ///< volume descriptor version 
+    uint8_t type;               ///<  volume descriptor type
+    char magic[ISODCL(2, 6)];   ///< magic number. "CD001"
+    char ver[ISODCL(7, 7)];     ///< volume descriptor version
     char x[ISODCL(8, 2048)];    ///< Depends on descriptor type
 } iso9660_gvd;
 
@@ -386,7 +386,7 @@ typedef struct {
     uint32_t path_tab_addr;     /* address of path table */
     uint32_t root_addr;         /* address of root dir extent */
     iso9660_pvd_node *pvd;      ///< Head of primary volume descriptor list (there should be only one...)
-    iso9660_svd_node *svd;      ///< Head of secondary volume descriptor list 
+    iso9660_svd_node *svd;      ///< Head of secondary volume descriptor list
     iso9660_inode_node *in_list;        /* list of inodes */
     uint8_t rr_found;           /* 1 if rockridge found */
 } ISO_INFO;
@@ -446,7 +446,7 @@ typedef struct {
     uint8_t len_id;             ///< length of extension id (in bytes)
     uint8_t len_des;            ///< length of extension desc (in bytes)
     uint8_t len_src;            ///< Length of extension spec source (in bytes)
-    uint8_t ext_ver;            ///< Version id 
+    uint8_t ext_ver;            ///< Version id
     char ext_id[1];             ///< Extension ID text (with length of len_id);
     // next is the extension descriptor text
     // next is the extension source text

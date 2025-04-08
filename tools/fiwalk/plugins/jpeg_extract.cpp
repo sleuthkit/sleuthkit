@@ -19,7 +19,7 @@ int main(int argc,char **argv)
 	fprintf(stderr,"usage: %s <filename>",argv[0]);
 	exit(1);
     }
-    sprintf(cmdbuf,"exif -m %s 2>/dev/null",argv[1]);
+    snprintf(cmdbuf, sizeof(cmdbuf), "exif -m %s 2>/dev/null",argv[1]);
     FILE *f = popen(cmdbuf,"r");
     if(!f) perror(cmdbuf);
 

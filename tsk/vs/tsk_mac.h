@@ -8,7 +8,7 @@
  */
 
   /*
-   * C header file with Mac and internal data structures. 
+   * C header file with Mac and internal data structures.
    */
 
 #ifndef _TSK_MAC_H

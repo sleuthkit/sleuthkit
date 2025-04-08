@@ -58,7 +58,7 @@ namespace Rejistry {
         uint32_t getDWord(uint32_t offset) const;
 
         uint64_t getQWord(uint32_t offset) const;
-        
+
         std::string getASCIIString(uint32_t offset, uint32_t length) const;
 
         std::wstring getUTF16String(uint32_t offset, uint32_t length) const;

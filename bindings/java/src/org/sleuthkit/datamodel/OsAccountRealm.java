@@ -47,7 +47,7 @@ public final class OsAccountRealm {
 	private final String realmName; // realm name
 	
 	private final String realmAddr; // realm address
-	private String signature; // either realm address or name (if address is not known)
+	private String signature; // either realm address or name (if address is not known), plus a scope indicator
 	private final Host host;	// if the realm consists of a single host.  Will be null if the realm is domain scoped. 
 	private final ScopeConfidence scopeConfidence; // confidence in realm scope.
 	private final RealmDbStatus dbStatus; // Status of row in database.
@@ -59,7 +59,7 @@ public final class OsAccountRealm {
 	 * @param realmName       Realm name, may be null.
 	 * @param realmAddr       Unique numeric address for realm, may be null only
 	 *                        if realm name is not null.
-	 * @param signature       Either the address or the name.
+	 * @param signature       Either the address or the name, plus a scope indicator.
 	 * @param host            Host if the realm is host scoped.
 	 * @param scopeConfidence Scope confidence.
 	 */

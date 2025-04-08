@@ -68,6 +68,7 @@ namespace Rejistry {
         case ValueData::VALTYPE_DWORD:
             return _buf->getDWord(0);
         case ValueData::VALTYPE_QWORD:
+        case ValueData::VALTYPE_FILETIME :
             return _buf->getQWord(0);
         case ValueData::VALTYPE_BIG_ENDIAN:
             // TODO: convert to big endian.
@@ -103,6 +104,8 @@ namespace Rejistry {
             return L"REG_FULL_RESOURCE_DESCRIPTOR";
         case ValueData::VALTYPE_RESOURCE_REQUIREMENTS_LIST:
             return L"REG_RESOURCE_REQUIREMENTS_LIST";
+        case ValueData::VALTYPE_FILETIME:
+            return L"REG_FILETIME";
         default:
             return L"Unrecognized type";
         }

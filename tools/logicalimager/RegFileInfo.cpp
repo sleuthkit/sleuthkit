@@ -10,7 +10,7 @@
 
 #include "RegFileInfo.h"
 
-RegFileInfo::RegFileInfo(std::string &aName, std::string &aPath, RegHiveType::Enum a_hiveType, 
+RegFileInfo::RegFileInfo(std::string &aName, std::string &aPath, RegHiveType::Enum a_hiveType,
                          TSK_OFF_T aOff, TSK_INUM_T aMetaAddr, RegParser *a_regParser) :
     m_name(aName),
     m_path(aPath),

@@ -21,13 +21,13 @@ const char *hexbuf(char *dst,int dst_len,const unsigned char *bin,int bytes,int 
     while(bytes>0 && dst_len > 3){
 //	int add_spaces = 0;
 
-	sprintf(dst,fmt,*bin); // convert the next byte
+	snprintf(dst, 3, fmt,*bin); // convert the next byte
 	dst += 2;
 	bin += 1;
 	dst_len -= 2;
 	bytes--;
 	charcount++;			// how many characters
-	
+
 //	if(flag & HEXBUF_SPACE2) add_spaces = 1;
 	if((flag & HEXBUF_SPACE4) && charcount%2==0){
 	    *dst++ = ' ';
@@ -37,5 +37,3 @@ const char *hexbuf(char *dst,int dst_len,const unsigned char *bin,int bytes,int 
     }
     return start;			// return the start
 }
-
-
