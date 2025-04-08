@@ -29,10 +29,14 @@ tsk_fs_file_alloc(TSK_FS_INFO * a_fs)
     TSK_FS_FILE *fs_file;
 
     fs_file = (TSK_FS_FILE *) tsk_malloc(sizeof(TSK_FS_FILE));
-    if (fs_file == NULL)
-        return NULL;
+    if (!fs_file) {
+        return nullptr;
+    }
+
     fs_file->fs_info = a_fs;
     fs_file->tag = TSK_FS_FILE_TAG;
+    fs_file->meta = nullptr;
+    fs_file->name = nullptr;
     return fs_file;
 }
 
@@ -59,8 +63,9 @@ tsk_fs_file_reset(TSK_FS_FILE * a_fs_file)
 void
 tsk_fs_file_close(TSK_FS_FILE * a_fs_file)
 {
-    if ((a_fs_file == NULL) || (a_fs_file->tag != TSK_FS_FILE_TAG))
+    if (a_fs_file == NULL || a_fs_file->tag != TSK_FS_FILE_TAG) {
         return;
+    }
 
     a_fs_file->tag = 0;
 

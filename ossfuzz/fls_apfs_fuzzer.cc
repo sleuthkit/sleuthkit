@@ -15,46 +15,50 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <memory>
+
 #include "tsk/tsk_tools_i.h"
 #include "tsk/fs/tsk_fs.h"
 #include "tsk/pool/tsk_pool.h"
 #include "mem_img.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-  TSK_IMG_INFO* img;
-  TSK_IMG_INFO* pool_img;
-  TSK_FS_INFO* fs;
-  const TSK_POOL_INFO* pool;
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    mem_open(data, size);
+    tsk_img_close
+  };
 
-  img = mem_open(data, size);
-  if (img == nullptr) {
+  if (!img) {
     return 0;
   }
-  pool = tsk_pool_open_img_sing(img, 0, TSK_POOL_TYPE_APFS);
 
-  if (pool == nullptr) {
-    goto out_img;
+  std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+    tsk_pool_open_img_sing(img.get(), 0, TSK_POOL_TYPE_APFS),
+    tsk_pool_close
+  };
+
+  if (!pool) {
+    return 0;
   }
+
   // Pool start block is APFS container specific and is hard coded for now
-  pool_img = pool->get_img_info(pool, (TSK_DADDR_T) 106);
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
+    pool->get_img_info(pool.get(), (TSK_DADDR_T) 106),
+    tsk_img_close
+  };
 
-  if (pool_img == nullptr) {
-    goto out_pool;
+  if (!pool_img) {
+    return 0;
   }
-  fs = tsk_fs_open_img_decrypt(pool_img, 0, TSK_FS_TYPE_APFS_DETECT, "");
 
-  if (fs != nullptr) {
-    tsk_fs_fls(fs, TSK_FS_FLS_FULL, fs->root_inum, TSK_FS_DIR_WALK_FLAG_RECURSE, nullptr, 0);
+  std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+    tsk_fs_open_img_decrypt(pool_img.get(), 0, TSK_FS_TYPE_APFS_DETECT, ""),
+    tsk_fs_close
+  };
 
-    fs->close(fs);
+  if (fs) {
+    tsk_fs_fls(fs.get(), TSK_FS_FLS_FULL, fs->root_inum, TSK_FS_DIR_WALK_FLAG_RECURSE, nullptr, 0);
   }
-  tsk_img_close(pool_img);
-
-out_pool:
-  tsk_pool_close(pool);
-
-out_img:
-  tsk_img_close(img);
 
   return 0;
 }

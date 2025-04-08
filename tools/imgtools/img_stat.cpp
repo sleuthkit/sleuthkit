@@ -11,6 +11,8 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/img/tsk_img_i.h"
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 static void
@@ -35,7 +37,6 @@ usage()
 int
 main(int argc, char **argv1)
 {
-    TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     int ch;
     uint8_t type = 0;
@@ -107,9 +108,12 @@ main(int argc, char **argv1)
         usage();
     }
 
-    if ((img =
-            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
-                ssize)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
@@ -119,9 +123,8 @@ main(int argc, char **argv1)
         tsk_printf("%s\n", str);
     }
     else {
-        reinterpret_cast<IMG_INFO*>(img)->imgstat(img, stdout);
+        reinterpret_cast<IMG_INFO*>(img.get())->imgstat(img.get(), stdout);
     }
 
-    tsk_img_close(img);
     exit(0);
 }

@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <memory>
+
 #include "tsk/tsk_tools_i.h"
 #include "mem_img.h"
 
@@ -28,21 +30,24 @@ static TSK_WALK_RET_ENUM part_act(TSK_VS_INFO *vs, const TSK_VS_PART_INFO *part,
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-  TSK_IMG_INFO *img;
-  TSK_VS_INFO *vs;
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    mem_open(data, size);
+    tsk_img_close
+  };
 
-  img = mem_open(data, size);
-  if (img == nullptr)
+  if (!img) {
     return 0;
-
-  vs = tsk_vs_open(img, 0, VSTYPE);
-  if (vs != nullptr) {
-    tsk_vs_part_walk(vs, 0, vs->part_count - 1, TSK_VS_PART_FLAG_ALL, part_act,
-                     nullptr);
-
-    tsk_vs_close(vs);
   }
 
-  tsk_img_close(img);
+  std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs{
+    tsk_vs_open(img.get(), 0, VSTYPE);
+    tsk_vs_close
+  };
+
+  if (vs) {
+    tsk_vs_part_walk(vs, 0, vs->part_count - 1, TSK_VS_PART_FLAG_ALL, part_act,
+                     nullptr);
+  }
+
   return 0;
 }

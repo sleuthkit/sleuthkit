@@ -230,7 +230,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/dls_lib.cpp \
 	tsk/fs/dstat_lib.cpp \
 	tsk/fs/encryptionHelper.cpp \
-	tsk/fs/exfatfs.c \
+	tsk/fs/exfatfs.cpp \
 	tsk/fs/exfatfs_dent.cpp \
 	tsk/fs/exfatfs_meta.cpp \
 	tsk/fs/ext2fs.cpp \
@@ -240,10 +240,10 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/fatfs_dent.cpp \
 	tsk/fs/fatfs_meta.cpp \
 	tsk/fs/fatfs_utils.c \
-	tsk/fs/fatxxfs.c \
+	tsk/fs/fatxxfs.cpp \
 	tsk/fs/fatxxfs_dent.c \
 	tsk/fs/fatxxfs_meta.cpp \
-	tsk/fs/ffind_lib.c \
+	tsk/fs/ffind_lib.cpp \
 	tsk/fs/ffs.cpp \
 	tsk/fs/ffs_dent.cpp \
 	tsk/fs/fls_lib.cpp \

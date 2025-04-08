@@ -23,6 +23,8 @@
 #include <locale.h>
 #include <time.h>
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 /* usage - explain and terminate */
@@ -64,11 +66,9 @@ int
 main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
     const char * password = "";
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
@@ -231,35 +231,53 @@ main(int argc, char **argv1)
     /*
      * Open the file system.
      */
-    if ((img =
-            tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                imgtype, ssize)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
-    if ((imgaddr * img->sector_size) >= img->size) {
+
+    if (imgaddr * img->sector_size >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / img->sector_size);
         exit(1);
     }
 
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+        nullptr,
+        tsk_pool_close
+    };
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
+        nullptr,
+        tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        nullptr,
+        tsk_fs_close
+    };
+
     if (pvol_block == 0) {
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size,
-                                          fstype, password)) == NULL) {
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+         if (!fs) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            tsk_img_close(img);
             exit(1);
         }
-    } else {
-        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-        if (pool == NULL) {
+    }
+    else {
+        pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+        if (!pool) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_pool_type_print(stderr);
-            tsk_img_close(img);
             exit(1);
         }
 
@@ -269,12 +287,13 @@ main(int argc, char **argv1)
             offset = 0;
         }
 #endif /* HAVE_LIBVSLVM */
-        img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
+        pool_img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+        // FIXME: Will crash if !pool_img
+        fs.reset(tsk_fs_open_img_decrypt(pool_img.get(), offset, fstype, password));
+        if (!fs) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            tsk_img_close(img);
             exit(1);
         }
     }
@@ -283,8 +302,6 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Metadata address is too large for image (%" PRIuINUM ")\n",
             fs->last_inum);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
@@ -292,23 +309,17 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Metadata address is too small for image (%" PRIuINUM ")\n",
             fs->first_inum);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
     if (snap_id > 0) {
-      tsk_apfs_set_snapshot(fs, (uint64_t)snap_id);
+      tsk_apfs_set_snapshot(fs.get(), (uint64_t)snap_id);
     }
 
-    if (fs->istat(fs, (TSK_FS_ISTAT_FLAG_ENUM) istat_flags, stdout, inum, numblock, sec_skew)) {
+    if (fs->istat(fs.get(), (TSK_FS_ISTAT_FLAG_ENUM) istat_flags, stdout, inum, numblock, sec_skew)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
-    tsk_fs_close(fs);
-    tsk_img_close(img);
     exit(0);
 }

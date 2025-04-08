@@ -31,6 +31,8 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
+#include <memory>
+
 /**
  * \internal
  * Parses the MBR of an exFAT file system to obtain file system size
@@ -210,7 +212,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("Not an exFAT file system (invalid root directory sector address)");
         if (tsk_verbose) {
-            fprintf(stderr, "%s: Invalid root directory sector address (%"PRIuDADDR")\n", func_name, a_fatfs->rootsect);
+            fprintf(stderr, "%s: Invalid root directory sector address (%" PRIuDADDR ")\n", func_name, a_fatfs->rootsect);
         }
         return FATFS_FAIL;
     }
@@ -290,7 +292,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                  * stable copy of the last known good allocation bitmap.
                  * Therefore, the SleuthKit will use the first bitmap to
                  * determine which clusters are allocated. */
-                if (~(dentry->flags & 0x01)) {
+                if (!(dentry->flags & 0x01)) {
                     first_sector_of_alloc_bitmap = FATFS_CLUST_2_SECT(a_fatfs, tsk_getu32(fs->endian, dentry->first_cluster_of_bitmap));
                     alloc_bitmap_length_in_bytes = tsk_getu64(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
                     last_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap + (roundup(alloc_bitmap_length_in_bytes, a_fatfs->ssize) / a_fatfs->ssize) - 1;
@@ -660,7 +662,6 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
 {
     FATFS_INFO *fatfs = NULL;
     EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
-    TSK_FS_FILE *fs_file = NULL;
 
     assert(a_fs != NULL);
     assert(a_hFile != NULL);
@@ -668,7 +669,12 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
     fatfs = (FATFS_INFO*)a_fs;
     exfatbs = (EXFATFS_MASTER_BOOT_REC*)&(fatfs->boot_sector_buffer);
 
-    if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
+    std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+        tsk_fs_file_alloc(a_fs),
+        tsk_fs_file_close
+    };
+
+    if (!fs_file) {
         return FATFS_FAIL;
     }
 
@@ -685,7 +691,7 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         exfatbs->vol_serial_no[3], exfatbs->vol_serial_no[2],
         exfatbs->vol_serial_no[1], exfatbs->vol_serial_no[0]);
 
-    if (exfatfs_find_volume_label_dentry(fatfs, fs_file) == 0) {
+    if (exfatfs_find_volume_label_dentry(fatfs, fs_file.get()) == 0) {
         tsk_fprintf(a_hFile, "Volume Label (from root directory): %s\n", fs_file->meta->name2->name);
     }
     else {
@@ -701,8 +707,6 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         tsk_getu64(a_fs->endian, exfatbs->partition_offset));
 
     tsk_fprintf(a_hFile, "Number of FATs: %d\n", fatfs->numfat);
-
-    tsk_fs_file_close(fs_file);
 
     return FATFS_OK;
 }

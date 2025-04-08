@@ -17,8 +17,10 @@
 #include "guid.h"
 #include "tsk/img/pool.hpp"
 #include <string.h>
-#include <sstream>
+
 #include <algorithm>
+#include <memory>
+#include <sstream>
 #include <unordered_set>
 
 using std::stringstream;
@@ -1228,7 +1230,6 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
     int uid = 0;
     int type = TSK_FS_ATTR_TYPE_NOT_FOUND;
     int idx = 0;
-    char* zSQL;
 
     if (fs_file->name == NULL)
         return 0;
@@ -1326,34 +1327,37 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         return 1;
     }
 
-	zSQL = sqlite3_mprintf(
-		"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
-		"VALUES ("
-		"%" PRId64 ",%" PRId64 ","
-		"%" PRId64 ","
-		"%d,"
-		"%d,%d,'%q',"
-		"%" PRIuINUM ",%d,"
-		"%d,%d,%d,%d,"
-		"%" PRId64 ","
-		"%llu,%llu,%llu,%llu,"
-		"%d,%d,%d,%Q,%d,"
-		"'%q','%q')",
-		fsObjId, objId,
-		dataSourceObjId,
-		TSK_DB_FILES_TYPE_FS,
-		type, idx, name,
-		fs_file->name->meta_addr, fs_file->name->meta_seq,
-		fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-		size,
-		(unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-		meta_mode, gid, uid, md5TextPtr, known,
-		escaped_path, extension);
+    std::unique_ptr<char, decltype(&sqlite3_free)> zSQL{
+	      sqlite3_mprintf(
+            "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+            "VALUES ("
+            "%" PRId64 ",%" PRId64 ","
+            "%" PRId64 ","
+            "%d,"
+            "%d,%d,'%q',"
+            "%" PRIuINUM ",%d,"
+            "%d,%d,%d,%d,"
+            "%" PRId64 ","
+            "%llu,%llu,%llu,%llu,"
+            "%d,%d,%d,%Q,%d,"
+            "'%q','%q')",
+            fsObjId, objId,
+            dataSourceObjId,
+            TSK_DB_FILES_TYPE_FS,
+            type, idx, name,
+            fs_file->name->meta_addr, fs_file->name->meta_seq,
+            fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+            size,
+            (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
+            meta_mode, gid, uid, md5TextPtr, known,
+            escaped_path, extension
+        ),
+        sqlite3_free
+    };
 
-	if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+	if (attempt_exec(zSQL.get(), "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
 		free(name);
 		free(escaped_path);
-		sqlite3_free(zSQL);
 		return 1;
 	}
 
@@ -1374,7 +1378,6 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         {
             free(name);
             free(escaped_path);
-            sqlite3_free(zSQL);
             return 1;
         };
     }
@@ -1411,39 +1414,39 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 		}
 
 		// Run the same insert with the new name, size, and type
-		zSQL = sqlite3_mprintf(
-			"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
-			"VALUES ("
-			"%" PRId64 ",%" PRId64 ","
-			"%" PRId64 ","
-			"%d,"
-			"%d,%d,'%q',"
-			"%" PRIuINUM ",%d,"
-			"%d,%d,%d,%d,"
-			"%" PRId64 ","
-			"%llu,%llu,%llu,%llu,"
-			"%d,%d,%d,NULL,%d,"
-			"'%q','%q')",
-			fsObjId, objId,
-			dataSourceObjId,
-			TSK_DB_FILES_TYPE_SLACK,
-			type, idx, name,
-			fs_file->name->meta_addr, fs_file->name->meta_seq,
-			TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
-			slackSize,
-			(unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime,
-			meta_mode, gid, uid, known,
-			escaped_path,extension);
+		zSQL.reset(
+        sqlite3_mprintf(
+            "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
+            "VALUES ("
+            "%" PRId64 ",%" PRId64 ","
+            "%" PRId64 ","
+            "%d,"
+            "%d,%d,'%q',"
+            "%" PRIuINUM ",%d,"
+            "%d,%d,%d,%d,"
+            "%" PRId64 ","
+            "%llu,%llu,%llu,%llu,"
+            "%d,%d,%d,NULL,%d,"
+            "'%q','%q')",
+            fsObjId, objId,
+            dataSourceObjId,
+            TSK_DB_FILES_TYPE_SLACK,
+            type, idx, name,
+            fs_file->name->meta_addr, fs_file->name->meta_seq,
+            TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
+            slackSize,
+            (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime,
+            meta_mode, gid, uid, known,
+            escaped_path, extension
+        )
+    );
 
-		if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+		if (attempt_exec(zSQL.get(), "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
 			free(name);
 			free(escaped_path);
-			sqlite3_free(zSQL);
 			return 1;
 		}
     }
-
-    sqlite3_free(zSQL);
 
     free(name);
     free(escaped_path);
