@@ -25,14 +25,14 @@
  * \file DirectSubkeyListRecord.cpp
  *
  */
-
+#include <memory>
 // Local includes
 #include "DirectSubkeyListRecord.h"
 #include "REGFHeader.h"
 #include "RejistryException.h"
 
 namespace Rejistry {
-    
+
     std::vector<NKRecord *> DirectSubkeyListRecord::getSubkeys() const {
         std::vector<NKRecord *> subkeyList;
         uint16_t listLength = getListLength();
@@ -41,7 +41,7 @@ namespace Rejistry {
             uint32_t relativeOffset = LIST_START_OFFSET + (index * _itemSize);
             uint32_t offset = getDWord(relativeOffset);
             uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
-            std::auto_ptr< Cell > c(new Cell(_buf, parentOffset));
+            std::unique_ptr< Cell > c(new Cell(_buf, parentOffset));
             if (c.get() == NULL) {
                 throw RegistryParseException("Failed to create Cell for key record.");
             }
@@ -49,7 +49,7 @@ namespace Rejistry {
             subkeyList.push_back(c->getNKRecord());
         }
 
-        return subkeyList;        
+        return subkeyList;
     }
 
 };

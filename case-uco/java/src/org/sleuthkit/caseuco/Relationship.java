@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,5 +54,21 @@ class Relationship extends UcoObject {
     Relationship isDirectional(boolean isDirectional) {
         this.isDirectional = isDirectional;
         return this;
+    }
+
+    String getSource() {
+        return source;
+    }
+
+    String getTarget() {
+        return target;
+    }
+
+    String getKindOfRelationship() {
+        return kindOfRelationship;
+    }
+
+    Boolean getIsDirectional() {
+        return isDirectional;
     }
 }

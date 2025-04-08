@@ -19,7 +19,7 @@
 std::string ValTypStrArr[] = {
   "REG_NONE",                    // ( 0 )   // No value type
   "REG_SZ",                      // ( 1 )   // Unicode nul terminated string
-  "REG_EXPAND_SZ",               // ( 2 )   // Unicode nul terminated string - (with environment variable references)                  
+  "REG_EXPAND_SZ",               // ( 2 )   // Unicode nul terminated string - (with environment variable references)
   "REG_BINARY",                  // ( 3 )   // Free form binary
   "REG_DWORD" ,                  // ( 4 )   // 32-bit number
   "REG_DWORD_BIG_ENDIAN ",       // ( 5 )   // 32-bit number
@@ -52,11 +52,11 @@ RegVal::RegVal(std::wstring &valName) : m_registryValue(NULL), m_valName(valName
     m_vMultiString.clear();
 }
 
-RegVal::RegVal(std::wstring &valName, int valType, long valLen) : 
+RegVal::RegVal(std::wstring &valName, int valType, long valLen) :
     m_registryValue(NULL),
     m_valName(valName),
     m_valType(valType),
-    m_valLen(valLen) 
+    m_valLen(valLen)
 {
     m_dwData = 0;
     m_dwData64 = 0;
@@ -118,7 +118,7 @@ RegVal::~RegVal() {
 
 /*
 * Initialize a RegVal object
-* 
+*
 * @param value Rejistry::RegistryValue pointer to value
 * @returns 0 on success, -1 otherwise
 */
@@ -176,7 +176,7 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
 
 /*
 * Set binary data
-* 
+*
 * @param pData point to data
 */
 void RegVal::setBinaryData(unsigned char *pData) {
@@ -196,7 +196,7 @@ void RegVal::addMultiStringData(std::wstring &strData) {
 
 /*
 * Get the valType string
-* 
+*
 * @return string associated with valType value
 */
 std::string RegVal::valTypeStr() {
@@ -243,7 +243,7 @@ std::string hexprintBuf(const unsigned char *buf, size_t maxSize, size_t len) {
 /*
 * Return RegVal data object as a wstring
 *
-* @returns wstring of the data 
+* @returns wstring of the data
 */
 std::wstring RegVal::dataToStr() {
     std::wstringstream wss;

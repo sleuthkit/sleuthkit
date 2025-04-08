@@ -20,6 +20,7 @@
 package org.sleuthkit.datamodel;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,8 +33,11 @@ public class TimeUtilities {
 	private static final Logger LOGGER = Logger.getLogger(TimeUtilities.class.getName());
 	private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
 	
+	private TimeUtilities(){		
+	}
+	
 	/**
-	 * Return the epoch into string in ISO 8601 dateTime format
+	 * Return the epoch into string in yyyy-MM-dd HH:mm:ss format
 	 *
 	 * @param epoch time in seconds
 	 *
@@ -48,7 +52,7 @@ public class TimeUtilities {
 	}
 
 	/**
-	 * Return the epoch into string in ISO 8601 dateTime format, 
+	 * Return the epoch into string in yyyy-MM-dd HH:mm:ss format, 
 	 * in the given timezone
 	 *
 	 * @param epoch time in seconds
@@ -65,6 +69,20 @@ public class TimeUtilities {
 			}
 		}
 		return time;
+	}
+	
+	/**
+	 * Return the epoch into string in ISO8601 format, in the given timezone.
+	 *
+	 * @param epoch time in seconds
+	 * @param tzone time zone
+	 *
+	 * @return formatted date time string as
+	 */
+	public static String epochToTimeISO8601(long epoch, TimeZone tzone) {
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		formatter.setTimeZone(tzone);
+		return formatter.format(new Date(epoch));
 	}
 	
 	/**

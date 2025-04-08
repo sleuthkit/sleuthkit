@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,5 +43,13 @@ class ComputerSpecification extends Facet {
     ComputerSpecification setProcessorArchitecture(String processorArchitecture) {
         this.processorArchitecture = processorArchitecture;
         return this;
+    }
+
+    String getHostName() {
+        return hostName;
+    }
+
+    String getProcessorArchitecture() {
+        return processorArchitecture;
     }
 }

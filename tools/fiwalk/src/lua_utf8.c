@@ -25,20 +25,20 @@ int sarn_utf8_next(const unsigned char* str)
 		return 0;
 	if (*str < 224 && RANGE_SND(str[1]))
 		return 2;
-	if (RANGE(*str, 225, 239) && *str != 237 
+	if (RANGE(*str, 225, 239) && *str != 237
 		&& RANGE_SND(str[1]) && RANGE_SND(str[2]))
 		return 3;
 	if (*str == 224 && RANGE(str[1],160,191) && RANGE_SND(str[2]))
 		return 3;
 	if (*str == 237 && RANGE(str[1],128,159) && RANGE_SND(str[2]))
 		return 3;
-	if (RANGE(*str, 241, 243) && RANGE_SND(str[1]) 
+	if (RANGE(*str, 241, 243) && RANGE_SND(str[1])
 		&& RANGE_SND(str[2]) && RANGE_SND(str[3]))
 		return 4;
-	if (*str == 240 && RANGE(str[1],144,191) 
+	if (*str == 240 && RANGE(str[1],144,191)
 		&& RANGE_SND(str[2]) && RANGE_SND(str[3]))
 		return 4;
-	if (*str == 244 && RANGE(str[1],128,143) 
+	if (*str == 244 && RANGE(str[1],128,143)
 		&& RANGE_SND(str[2]) && RANGE_SND(str[3]))
 		return 4;
 	return 0;
@@ -58,7 +58,7 @@ int sarn_utf8_prev(unsigned char* str, int remain)
 	BACK(str,remain);
 	if (UTF8_BOM(str))
 		return 3;
-	if (RANGE(*str, 225, 239) && *str != 237 
+	if (RANGE(*str, 225, 239) && *str != 237
 		&& RANGE_SND(str[1]) && RANGE_SND(str[2]))
 		return 3;
 	if (*str == 224 && RANGE(str[1],160,191) && RANGE_SND(str[2]))
@@ -67,13 +67,13 @@ int sarn_utf8_prev(unsigned char* str, int remain)
 		return 3;
 	
 	BACK(str,remain);
-	if (RANGE(*str, 241, 243) && RANGE_SND(str[1]) 
+	if (RANGE(*str, 241, 243) && RANGE_SND(str[1])
 		&& RANGE_SND(str[2]) && RANGE_SND(str[3]))
 		return 4;
-	if (*str == 240 && RANGE(str[1],144,191) 
+	if (*str == 240 && RANGE(str[1],144,191)
 		&& RANGE_SND(str[2]) && RANGE_SND(str[3]))
 		return 4;
-	if (*str == 244 && RANGE(str[1],128,143) 
+	if (*str == 244 && RANGE(str[1],128,143)
 		&& RANGE_SND(str[2]) && RANGE_SND(str[3]))
 		return 4;
 	/* fail back */

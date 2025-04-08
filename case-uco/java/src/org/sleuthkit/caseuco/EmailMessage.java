@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -117,5 +117,53 @@ class EmailMessage extends Facet {
     EmailMessage setInReplyTo(CyberItem replyTo) {
         this.inReplyTo = replyTo.getId();
         return this;
+    }
+
+    String getReceivedTime() {
+        return receivedTime;
+    }
+
+    String getSentTime() {
+        return sentTime;
+    }
+
+    String getBcc() {
+        return bcc;
+    }
+
+    String getCc() {
+        return cc;
+    }
+
+    String getFrom() {
+        return from;
+    }
+
+    String getHeaderRaw() {
+        return headerRaw;
+    }
+
+    String getMessageID() {
+        return messageID;
+    }
+
+    String getSubject() {
+        return subject;
+    }
+
+    String getSender() {
+        return sender;
+    }
+
+    String getInReplyTo() {
+        return inReplyTo;
+    }
+
+    String getBody() {
+        return body;
+    }
+
+    String getContentType() {
+        return contentType;
     }
 }

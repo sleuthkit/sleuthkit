@@ -1,10 +1,10 @@
 /*
 ** blkcat
-** The  Sleuth Kit 
+** The  Sleuth Kit
 **
 ** Given an image , block number, and size, display the contents
 ** of the block to stdout.
-** 
+**
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
@@ -22,6 +22,8 @@
 #include "tsk/tsk_tools_i.h"
 #include <locale.h>
 
+#include <memory>
+
 #define BLKLS_TYPE _TSK_T("blkls")
 #define RAW_STR "raw"
 
@@ -32,7 +34,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-u usize] image [images] unit_addr [num]\n"),
+        ("usage: %" PRIttocTSK " [-ahsvVw] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-k password] [-u usize] image [images] unit_addr [num]\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: displays in all ASCII \n");
     tsk_fprintf(stderr, "\t-h: displays in hexdump-like fashion\n");
@@ -48,6 +50,7 @@ usage()
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
+    tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
     tsk_fprintf(stderr,
         "\t-s: display basic block stats such as unit size, fragments, etc.\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -61,16 +64,13 @@ usage()
     exit(1);
 }
 
-
 int
 main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
     TSK_OFF_T pvol_block = 0;
@@ -101,7 +101,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:f:hi:o:P:su:vVw"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:f:hi:k:o:P:su:vVw"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             format |= TSK_FS_BLKCAT_ASCII;
@@ -111,7 +111,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -131,7 +131,7 @@ main(int argc, char **argv1)
             }
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -145,7 +145,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -180,7 +180,7 @@ main(int argc, char **argv1)
         case _TSK_T('u'):
             usize = TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || cp == OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid block size: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid block size: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -195,9 +195,12 @@ main(int argc, char **argv1)
         case _TSK_T('w'):
             format |= TSK_FS_BLKCAT_HTML;
             break;
+        case _TSK_T('k'):
+            password = argv1[OPTIND - 1];
+            break;
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
         }
@@ -231,21 +234,14 @@ main(int argc, char **argv1)
     /* default number of units is 1 */
     read_num_units = 1;
 
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        nullptr,
+        tsk_img_close
+    };
+
     /* Get the block address */
     if (format & TSK_FS_BLKCAT_STAT) {
-        if ((img =
-                tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
-            tsk_error_print(stderr);
-            exit(1);
-        }
-        if ((imgaddr * img->sector_size) >= img->size) {
-            tsk_fprintf(stderr,
-                "Sector offset supplied is larger than disk image (maximum: %"
-                PRIu64 ")\n", img->size / img->sector_size);
-            exit(1);
-        }
-
+        img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
     }
     else {
         addr = TSTRTOULL(argv[argc - 2], &cp, 0);
@@ -254,30 +250,18 @@ main(int argc, char **argv1)
             /* Not a number, so it is the image name and we do not have a length */
             addr = TSTRTOULL(argv[argc - 1], &cp, 0);
             if (*cp || *cp == *argv[argc - 1]) {
-                TFPRINTF(stderr, _TSK_T("Invalid block address: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid block address: %" PRIttocTSK "\n"),
                     argv[argc - 1]);
                 usage();
             }
 
-            if ((img =
-                    tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                        imgtype, ssize)) == NULL) {
-                tsk_error_print(stderr);
-                exit(1);
-            }
-            if ((imgaddr * img->sector_size) >= img->size) {
-                tsk_fprintf(stderr,
-                    "Sector offset supplied is larger than disk image (maximum: %"
-                    PRIu64 ")\n", img->size / img->sector_size);
-                exit(1);
-            }
-
+            img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
         }
         else {
             /* We got a number, so take the length as well while we are at it */
             read_num_units = TSTRTOULL(argv[argc - 1], &cp, 0);
             if (*cp || *cp == *argv[argc - 1]) {
-                TFPRINTF(stderr, _TSK_T("Invalid size: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid size: %" PRIttocTSK "\n"),
                     argv[argc - 1]);
                 usage();
             }
@@ -287,55 +271,74 @@ main(int argc, char **argv1)
                 usage();
             }
 
-            if ((img =
-                    tsk_img_open(argc - OPTIND - 2, &argv[OPTIND],
-                        imgtype, ssize)) == NULL) {
-
-                tsk_error_print(stderr);
-                exit(1);
-            }
-            if ((imgaddr * img->sector_size) >= img->size) {
-                tsk_fprintf(stderr,
-                    "Sector offset supplied is larger than disk image (maximum: %"
-                    PRIu64 ")\n", img->size / img->sector_size);
-                exit(1);
-            }
+            img.reset(tsk_img_open(argc - OPTIND - 2, &argv[OPTIND], imgtype, ssize));
         }
     }
 
+    if (!img) {
+        tsk_error_print(stderr);
+        exit(1);
+    }
+
+    if (imgaddr * img->sector_size >= img->size) {
+        tsk_fprintf(stderr,
+            "Sector offset supplied is larger than disk image (maximum: %"
+            PRIu64 ")\n", img->size / img->sector_size);
+         exit(1);
+    }
+
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+        nullptr,
+        tsk_pool_close
+    };
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
+        nullptr,
+        tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        nullptr,
+        tsk_fs_close
+    };
+
     if (pvol_block == 0) {
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size,
-            fstype, password)) == NULL) {
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+        if (!fs) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
             exit(1);
         }
     }
     else {
-        const TSK_POOL_INFO *pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-        if (pool == NULL) {
+        pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+        if (!pool) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_pool_type_print(stderr);
-            img->close(img);
             exit(1);
         }
 
-        img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-        if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
+        pool_img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+        // FIXME: Will crash if !pool_img
+        fs.reset(tsk_fs_open_img_decrypt(pool_img.get(), offset, fstype, password));
+        if (!fs) {
             tsk_error_print(stderr);
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
                 tsk_fs_type_print(stderr);
-            img->close(img);
             exit(1);
         }
     }
 
-
     /* Set the default size if given */
-    if ((usize != 0) &&
+    if (usize != 0 &&
         (TSK_FS_TYPE_ISRAW(fs->ftype) || TSK_FS_TYPE_ISSWAP(fs->ftype))) {
         TSK_DADDR_T sectors;
         int orig_dsize, new_dsize;
@@ -366,29 +369,20 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Data unit address too large for image (%" PRIuDADDR ")\n",
             fs->last_block);
-        fs->close(fs);
-        img->close(img);
         exit(1);
     }
     if (addr < fs->first_block) {
         tsk_fprintf(stderr,
             "Data unit address too small for image (%" PRIuDADDR ")\n",
             fs->first_block);
-        fs->close(fs);
-        img->close(img);
         exit(1);
     }
 
-    if (tsk_fs_blkcat(fs, (TSK_FS_BLKCAT_FLAG_ENUM) format, addr,
+    if (tsk_fs_blkcat(fs.get(), (TSK_FS_BLKCAT_FLAG_ENUM) format, addr,
             read_num_units)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
         exit(1);
     }
-
-    fs->close(fs);
-    img->close(img);
 
     exit(0);
 }

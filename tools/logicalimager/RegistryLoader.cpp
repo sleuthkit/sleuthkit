@@ -81,16 +81,16 @@ std::string toNormalizedOutputPathName(const std::string &aPath) {
     char ext[_MAX_EXT];
 
 
-    // if its a UNC path and not drive letter                                                                        
+    // if its a UNC path and not drive letter
     if ((TskHelper::startsWith(aPath, "\\\\") || TskHelper::startsWith(aPath, "//")) &&
         aPath.find(":") == std::string::npos) {
 
         pathNameNoDrive = aPath;
-        TskHelper::replaceAll(pathNameNoDrive, "\\", "/");         // change to unix style slash                            
-        TskHelper::replaceAll(pathNameNoDrive, "//", "/", 2);      // fix any redundant slashes                             
+        TskHelper::replaceAll(pathNameNoDrive, "\\", "/");         // change to unix style slash
+        TskHelper::replaceAll(pathNameNoDrive, "//", "/", 2);      // fix any redundant slashes
 
-                                                        // resolve UNC hostname to FQDN                                                                          
-        size_t secondSlashPos = pathNameNoDrive.find_first_of("/", 2); // look for / after the hostname          
+                                                        // resolve UNC hostname to FQDN
+        size_t secondSlashPos = pathNameNoDrive.find_first_of("/", 2); // look for / after the hostname
         if (std::string::npos != secondSlashPos) {
             std::string hostname = pathNameNoDrive.substr(2, secondSlashPos - 2);
             std::string targetPath = pathNameNoDrive.substr(secondSlashPos);
@@ -98,7 +98,7 @@ std::string toNormalizedOutputPathName(const std::string &aPath) {
 
             pathNameNoDrive = "//" + hostFQDN + targetPath;
         }
-        else {  // Theres a UNC hostname but no sharename/targetPath                                             
+        else {  // Theres a UNC hostname but no sharename/targetPath
             std::string hostname = pathNameNoDrive.substr(2, std::string::npos);
             std::string hostFQDN = getFQDN(hostname);
 
@@ -110,14 +110,14 @@ std::string toNormalizedOutputPathName(const std::string &aPath) {
     _splitpath_s(aPath.c_str(), drive, dir, fname, ext);
 
     pathNameNoDrive = std::string(dir) + std::string(fname) + std::string(ext);
-    TskHelper::replaceAll(pathNameNoDrive, "\\", "/");    // change to fwd slashes so they can be looked up by TskAuto          
+    TskHelper::replaceAll(pathNameNoDrive, "\\", "/");    // change to fwd slashes so they can be looked up by TskAuto
 
-                                               // @TODO - remove this when fixing CT-2372                                                                       
-    if (TskHelper::startsWith(pathNameNoDrive, "/")) {    // strip the leading slash                                            
+                                               // @TODO - remove this when fixing CT-2372
+    if (TskHelper::startsWith(pathNameNoDrive, "/")) {    // strip the leading slash
         pathNameNoDrive.erase(0, 1);
     }
 
-    TskHelper::replaceAll(pathNameNoDrive, "//", "/");         // fix any redundant slashes                                     
+    TskHelper::replaceAll(pathNameNoDrive, "//", "/");         // fix any redundant slashes
     return pathNameNoDrive;
 }
 
@@ -307,7 +307,7 @@ int RegistryLoader::findSystemRegFiles(TSK_FS_INFO *a_fs_info) {
                 continue;
             }
 
-            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(SYS_REG_FILES_DIR), hiveType, 
+            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(SYS_REG_FILES_DIR), hiveType,
                 fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
 
             m_regSystemFiles.push_back(pRegFileInfo);
@@ -372,7 +372,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &
         // get the entry
         if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
             ReportUtil::consoleOutput(stderr, "Error in finding User Registry files. Some User Registry files may not be analyzed.\n");
-            ReportUtil::consoleOutput(stderr, "findUserRegFiles(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n", 
+            ReportUtil::consoleOutput(stderr, "findUserRegFiles(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n",
                 i, filenameInfo.getINUM(), tsk_error_get());
             continue;
         }
@@ -403,7 +403,7 @@ int RegistryLoader::findUserRegFiles(TSK_FS_INFO *a_fs_info, const std::string &
  * @param aUserDirName Name of user for folder
  * @returns -1 on error and 0 on success
  */
-int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a_dir_inum, const std::string &a_userFolderPath, 
+int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a_dir_inum, const std::string &a_userFolderPath,
                                             const std::string &aUserDirName) {
     TSK_FS_DIR *fs_dir;
 
@@ -423,7 +423,7 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
         const TSK_FS_NAME *fs_name;
         if ((fs_name = tsk_fs_dir_get_name(fs_dir, i)) == NULL) {
             ReportUtil::consoleOutput(stderr, "Error in finding NTUSER Registry files. Some User Registry files may not be analyzed.\n");
-            ReportUtil::consoleOutput(stderr, "findNTUserRegFilesInDir(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n", 
+            ReportUtil::consoleOutput(stderr, "findNTUserRegFilesInDir(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n",
                 i, a_dir_inum, tsk_error_get());
             continue;
         }
@@ -449,10 +449,10 @@ int RegistryLoader::findNTUserRegFilesInDir(TSK_FS_INFO *a_fs_info, TSK_INUM_T a
                 ReportUtil::consoleOutput(stderr, "findNTUserRegFilesInDir(): loadHive() failed for file = %s\n", fs_file->name->name);
                 continue;
             }
-            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(a_userFolderPath + "/" + aUserDirName), hiveType, 
+            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(a_userFolderPath + "/" + aUserDirName), hiveType,
                 fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
 
-            // assume the folder name where the REG file is found is the username 
+            // assume the folder name where the REG file is found is the username
             if (aUserDirName.length() > 0) {
                 if (_stricmp(aUserDirName.c_str(), "All Users") != 0) { // thats not a real username
 
@@ -501,7 +501,7 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
 
     if (retval == -1) {
         ReportUtil::consoleOutput(stderr, "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.\n");
-        ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): tsk_fs_path2inum() failed for dir = %s, errno = %s\n", 
+        ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): tsk_fs_path2inum() failed for dir = %s, errno = %s\n",
             usrClassSubdir.c_str(), tsk_error_get());
         return -1;
     }
@@ -525,7 +525,7 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
             // get the entry
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
                 ReportUtil::consoleOutput(stderr, "Error in finding USRCLASS Registry files. Some User Registry files may not be analyzed.\n");
-                ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n", 
+                ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): Error getting directory entry = %zu in dir inum = %" PRIuINUM ", errno = %s\n",
                     i, filenameInfo.getINUM(), tsk_error_get());
                 continue;
             }
@@ -546,7 +546,7 @@ int RegistryLoader::findUsrClassRegFile(TSK_FS_INFO *a_fs_info, const std::strin
                                 ReportUtil::consoleOutput(stderr, "findUsrClassRegFile(): loadHive() failed for file = %s\n", fs_file->name->name);
                                 return -1;
                             }
-                            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(usrClassSubdir), hiveType, 
+                            RegFileInfo *pRegFileInfo = new RegFileInfo(fName, toNormalizedOutputPathName(usrClassSubdir), hiveType,
                                 fs_file->fs_info->offset, fs_file->meta->addr, pRegParser);
 
                             // determine the user for this file, from the homedir name

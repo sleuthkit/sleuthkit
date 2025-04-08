@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2019 Basis Technology Corp.
+ * Copyright 2019-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,29 +21,50 @@ package org.sleuthkit.datamodel.blackboardutils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import org.sleuthkit.datamodel.Blackboard.BlackboardException;
 import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.Content;
 import org.sleuthkit.datamodel.SleuthkitCase;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- * This class helps ingest modules create miscellaneous artifacts.
- *
+ * A class that helps modules to create various types of artifacts.
  */
 public final class ArtifactsHelper extends ArtifactHelperBase {
 
+	private static final BlackboardArtifact.Type INSTALLED_PROG_TYPE = new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_INSTALLED_PROG);
+
 	/**
-	 * Creates an artifact helper for modules to create artifacts.
+	 * Constructs an instance of a class that helps modules to create various
+	 * types of artifacts.
 	 *
-	 * @param caseDb     Sleuthkit case database.
-	 * @param moduleName Name of module using the helper.
-	 * @param srcContent Source content for the artifacts.
-	 *
+	 * @param caseDb      The case database.
+	 * @param moduleName  The name of the module creating the artifacts.
+	 * @param srcContent  The source/parent content of the artifacts.
+	 * @param ingestJobId The numeric identifier of the ingest job within which
+	 *                    the artifacts are being created, may be null.
 	 */
+	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent, Long ingestJobId) {
+		super(caseDb, moduleName, srcContent, ingestJobId);
+	}
+
+	/**
+	 * Constructs an instance of a class that helps modules to create various
+	 * types of artifacts.
+	 *
+	 * @param caseDb     The case database.
+	 * @param moduleName The name of the module creating the artifacts.
+	 * @param srcContent The source/parent content of the artifacts.
+	 *
+	 * @deprecated Use ArtifactsHelper(SleuthkitCase caseDb, String moduleName,
+	 * Content srcContent, Long ingestJobId) instead.
+	 */
+	@Deprecated
 	public ArtifactsHelper(SleuthkitCase caseDb, String moduleName, Content srcContent) {
-		super(caseDb, moduleName, srcContent);
+		this(caseDb, moduleName, srcContent, null);
 	}
 
 	/**
@@ -54,7 +75,7 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @return Installed program artifact added.
 	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws TskCoreException		  If there is an error creating the artifact.
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled) throws TskCoreException, BlackboardException {
@@ -73,17 +94,13 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 	 *
 	 * @return Installed program artifact added.
 	 *
-	 * @throws TskCoreException		If there is an error creating the artifact.
+	 * @throws TskCoreException		  If there is an error creating the artifact.
 	 * @throws BlackboardException	If there is a problem posting the artifact.
 	 */
 	public BlackboardArtifact addInstalledProgram(String programName, long dateInstalled,
 			Collection<BlackboardAttribute> otherAttributesList) throws TskCoreException, BlackboardException {
 
-		BlackboardArtifact installedProgramArtifact;
 		Collection<BlackboardAttribute> attributes = new ArrayList<>();
-
-		// create artifact
-		installedProgramArtifact = getContent().newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_INSTALLED_PROG);
 
 		// construct attributes 
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME, getModuleName(), programName));
@@ -91,10 +108,14 @@ public final class ArtifactsHelper extends ArtifactHelperBase {
 
 		// add the attributes 
 		attributes.addAll(otherAttributesList);
-		installedProgramArtifact.addAttributes(attributes);
+
+		// create artifact
+		Content content = getContent();
+		BlackboardArtifact installedProgramArtifact = content.newDataArtifact(INSTALLED_PROG_TYPE, attributes);
 
 		// post artifact 
-		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName());
+		Optional<Long> ingestJobId = getIngestJobId();
+		getSleuthkitCase().getBlackboard().postArtifact(installedProgramArtifact, getModuleName(), ingestJobId.orElse(null));
 
 		// return the artifact
 		return installedProgramArtifact;

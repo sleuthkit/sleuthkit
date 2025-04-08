@@ -1,6 +1,8 @@
 #include "tsk/tsk_tools_i.h"
 #include <locale.h>
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 static void
@@ -8,7 +10,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-tvV] [-p pooltype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image\n"),
+        ("usage: %" PRIttocTSK " [-tvV] [-p pooltype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image\n"),
         progname);
     tsk_fprintf(stderr, "\t-t: display type only\n");
     tsk_fprintf(stderr,
@@ -57,15 +59,16 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -78,7 +81,7 @@ main(int argc, char **argv1)
             pooltype = tsk_pool_type_toid(OPTARG);
             if (pooltype == TSK_POOL_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported pool container type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -89,7 +92,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -122,12 +125,16 @@ main(int argc, char **argv1)
         usage();
     }
 
-    const auto img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
-                ssize);
-    if (img == nullptr) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
+
     if ((imgaddr * img->sector_size) >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
@@ -135,12 +142,15 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    const auto pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-    if (pool == nullptr) {
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+        tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype),
+        tsk_pool_close
+    };
+
+    if (!pool) {
         tsk_error_print(stderr);
         if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
             tsk_pool_type_print(stderr);
-        img->close(img);
         exit(1);
     }
 
@@ -148,15 +158,11 @@ main(int argc, char **argv1)
         tsk_printf("%s\n", tsk_pool_type_toname(pool->ctype));
     }
     else {
-        if (pool->poolstat(pool, stdout)) {
+        if (pool->poolstat(pool.get(), stdout)) {
             tsk_error_print(stderr);
-            pool->close(pool);
-            img->close(img);
             exit(1);
         }
     }
 
-    pool->close(pool);
-    img->close(img);
     exit(0);
 }

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,5 +47,13 @@ class Annotation extends UcoObject {
     Annotation addObject(String object) {
         this.object.add(object);
         return this;
+    }
+
+    List<String> getTags() {
+        return tags;
+    }
+
+    List<String> getObject() {
+        return object;
     }
 }

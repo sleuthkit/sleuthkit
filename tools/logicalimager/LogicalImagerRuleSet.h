@@ -44,7 +44,7 @@ public:
         return m_rules;
     }
 
-    void constructRuleSet(const nlohmann::json ruleSet, 
+    void constructRuleSet(const nlohmann::json ruleSet,
         std::vector<std::pair<const MatchedRuleInfo *, std::vector<LogicalImagerRuleBase *>>> &ourRules
     );
 

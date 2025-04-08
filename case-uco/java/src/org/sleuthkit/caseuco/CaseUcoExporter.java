@@ -85,6 +85,7 @@ import org.sleuthkit.datamodel.Volume;
 import org.sleuthkit.datamodel.VolumeSystem;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.BlackboardArtifact;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_INTERESTING_ITEM;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TimelineEventType;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -121,7 +122,7 @@ public class CaseUcoExporter {
      * Creates a default CaseUcoExporter.
      *
      * @param sleuthkitCase The sleuthkit case instance containing the data to
-     * be exported.
+     *                      be exported.
      */
     public CaseUcoExporter(SleuthkitCase sleuthkitCase) {
         this(sleuthkitCase, new Properties());
@@ -135,9 +136,9 @@ public class CaseUcoExporter {
      * README.md file.
      *
      * @param sleuthkitCase The sleuthkit case instance containing the data to
-     * be exported.
-     * @param props Properties instance containing supported configuration
-     * parameters.
+     *                      be exported.
+     * @param props         Properties instance containing supported
+     *                      configuration parameters.
      */
     public CaseUcoExporter(SleuthkitCase sleuthkitCase, Properties props) {
         this.sleuthkitCase = sleuthkitCase;
@@ -153,7 +154,7 @@ public class CaseUcoExporter {
      * contain a URL).
      *
      * @param uuidService A custom UUID implementation, which will be used to
-     * generate @id values in all export methods.
+     *                    generate @id values in all export methods.
      *
      * @return reference to this, for chaining configuration method calls.
      */
@@ -196,6 +197,7 @@ public class CaseUcoExporter {
      * Exports an AbstractFile instance to CASE.
      *
      * @param file AbstractFile instance to export
+     *
      * @return A collection of CASE JSON elements
      *
      * @throws TskCoreException If an error occurred during database access.
@@ -207,10 +209,11 @@ public class CaseUcoExporter {
     /**
      * Exports an AbstractFile instance to CASE.
      *
-     * @param file AbstractFile instance to export
+     * @param file      AbstractFile instance to export
      * @param localPath The location of the file on secondary storage, somewhere
-     * other than the case. Example: local disk. This value will be ignored if
-     * null
+     *                  other than the case. Example: local disk. This value
+     *                  will be ignored if null
+     *
      * @return A collection of CASE JSON elements
      *
      * @throws TskCoreException If an error occurred during database access.
@@ -257,7 +260,9 @@ public class CaseUcoExporter {
      * Exports a ContentTag instance to CASE.
      *
      * @param contentTag ContentTag instance to export
+     *
      * @return A collection of CASE JSON elements
+     *
      * @throws TskCoreException If an error occurred during database access.
      */
     public List<JsonElement> exportContentTag(ContentTag contentTag) throws TskCoreException {
@@ -276,7 +281,9 @@ public class CaseUcoExporter {
      * Exports a DataSource instance to CASE.
      *
      * @param dataSource DataSource instance to export
+     *
      * @return A collection of CASE JSON elements
+     *
      * @throws TskCoreException If an error occurred during database access.
      */
     public List<JsonElement> exportDataSource(DataSource dataSource) throws TskCoreException {
@@ -313,7 +320,9 @@ public class CaseUcoExporter {
      * Exports a FileSystem instance to CASE.
      *
      * @param fileSystem FileSystem instance to export
+     *
      * @return A collection of CASE JSON elements
+     *
      * @throws TskCoreException If an error occurred during database access.
      */
     public List<JsonElement> exportFileSystem(FileSystem fileSystem) throws TskCoreException {
@@ -335,6 +344,7 @@ public class CaseUcoExporter {
      * Exports a Pool instance to CASE.
      *
      * @param pool Pool instance to export
+     *
      * @return A collection of CASE JSON elements
      *
      * @throws TskCoreException If an error occurred during database access.
@@ -357,7 +367,9 @@ public class CaseUcoExporter {
      * Exports a Volume instance to CASE.
      *
      * @param volume Volume instance to export
+     *
      * @return A collection of CASE JSON elements
+     *
      * @throws TskCoreException If an error occurred during database access.
      */
     public List<JsonElement> exportVolume(Volume volume) throws TskCoreException {
@@ -384,6 +396,7 @@ public class CaseUcoExporter {
      * Exports a VolumeSystem instance to CASE.
      *
      * @param volumeSystem VolumeSystem instance to export
+     *
      * @return A collection of CASE JSON elements
      *
      * @throws TskCoreException If an error occurred during database access.
@@ -406,14 +419,21 @@ public class CaseUcoExporter {
      * Exports a BlackboardArtifact instance to CASE.
      *
      * @param artifact BlackboardArtifact instance to export
+     *
      * @return A collection of CASE JSON elements
      *
-     * @throws TskCoreException If an error occurred during database access.
-     * @throws ContentNotExportableException if the content could not be
-     * exported, even in part, to CASE.
+     * @throws TskCoreException                            If an error occurred
+     *                                                     during database
+     *                                                     access.
+     * @throws ContentNotExportableException               if the content could
+     *                                                     not be exported, even
+     *                                                     in part, to CASE.
      * @throws BlackboardJsonAttrUtil.InvalidJsonException If a JSON valued
-     * attribute could not be correctly deserialized.
+     *                                                     attribute could not
+     *                                                     be correctly
+     *                                                     deserialized.
      */
+    @SuppressWarnings("deprecation")
     public List<JsonElement> exportBlackboardArtifact(BlackboardArtifact artifact) throws TskCoreException,
             ContentNotExportableException, BlackboardJsonAttrUtil.InvalidJsonException {
         List<JsonElement> output = new ArrayList<>();
@@ -439,8 +459,6 @@ public class CaseUcoExporter {
             assembleHashsetHit(uuid, artifact, output);
         } else if (TSK_DEVICE_ATTACHED.getTypeID() == artifactTypeId) {
             assembleDeviceAttached(uuid, artifact, output);
-        } else if (TSK_INTERESTING_FILE_HIT.getTypeID() == artifactTypeId) {
-            assembleInterestingFileHit(uuid, artifact, output);
         } else if (TSK_EMAIL_MSG.getTypeID() == artifactTypeId) {
             assembleEmailMessage(uuid, artifact, output);
         } else if (TSK_EXTRACTED_TEXT.getTypeID() == artifactTypeId) {
@@ -477,8 +495,8 @@ public class CaseUcoExporter {
             assembleProgRun(uuid, artifact, output);
         } else if (TSK_ENCRYPTION_DETECTED.getTypeID() == artifactTypeId) {
             assembleEncryptionDetected(uuid, artifact, output);
-        } else if (TSK_INTERESTING_ARTIFACT_HIT.getTypeID() == artifactTypeId) {
-            assembleInterestingArtifact(uuid, artifact, output);
+        } else if (TSK_INTERESTING_FILE_HIT.getTypeID() == artifactTypeId || TSK_INTERESTING_ARTIFACT_HIT.getTypeID() == artifactTypeId || TSK_INTERESTING_ITEM.getTypeID() == artifactTypeId) {
+            assembleInterestingItem(uuid, artifact, output);
         } else if (TSK_GPS_ROUTE.getTypeID() == artifactTypeId) {
             assembleGPSRoute(uuid, artifact, output);
         } else if (TSK_REMOTE_DRIVE.getTypeID() == artifactTypeId) {
@@ -685,13 +703,6 @@ public class CaseUcoExporter {
         addToOutput(new BlankRelationshipNode()
                 .setSource(assertion.getId())
                 .setTarget(uuid), output);
-    }
-
-    private void assembleInterestingFileHit(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
-        Assertion export = new Assertion(uuid);
-        export.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SET_NAME));
-        export.setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
-        addToOutput(export, output);
     }
 
     private void assembleExtractedText(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
@@ -1132,11 +1143,10 @@ public class CaseUcoExporter {
         addToOutput(export, output);
     }
 
-    private void assembleInterestingArtifact(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
+    private void assembleInterestingItem(String uuid, BlackboardArtifact artifact, List<JsonElement> output) throws TskCoreException {
         Assertion export = new Assertion(uuid);
         export.setName(getValueIfPresent(artifact, StandardAttributeTypes.TSK_SET_NAME));
         export.setStatement(getValueIfPresent(artifact, StandardAttributeTypes.TSK_COMMENT));
-
         Long associatedArtifactId = getLongIfPresent(artifact, StandardAttributeTypes.TSK_ASSOCIATED_ARTIFACT);
         if (associatedArtifactId != null) {
             BlackboardArtifact associatedArtifact = artifact.getSleuthkitCase().getBlackboardArtifact(associatedArtifactId);
@@ -1354,10 +1364,9 @@ public class CaseUcoExporter {
         Trace export = new Trace(uuid);
         addToOutput(export, output);
 
-        BlackboardAttribute associatedArtifactID = artifact.getAttribute(StandardAttributeTypes.TSK_ASSOCIATED_ARTIFACT);
-        if (associatedArtifactID != null) {
-            long artifactID = associatedArtifactID.getValueLong();
-            BlackboardArtifact associatedArtifact = artifact.getSleuthkitCase().getArtifactByArtifactId(artifactID);
+        Long associatedArtifactId = getLongIfPresent(artifact, StandardAttributeTypes.TSK_ASSOCIATED_ARTIFACT);
+        if (associatedArtifactId != null) {
+            BlackboardArtifact associatedArtifact = artifact.getSleuthkitCase().getBlackboardArtifact(associatedArtifactId);
             if (associatedArtifact != null) {
                 addToOutput(new BlankRelationshipNode()
                         .setSource(uuid)

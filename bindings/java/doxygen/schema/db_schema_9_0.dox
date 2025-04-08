@@ -1,0 +1,7 @@
+/*! \page db_schema_9_0_page TSK & Autopsy Database Schema (Schema version 9.0)
+
+Schema 9.0 is not associated with a released version of Autopsy and is almost the same as schema 9.1. 
+
+Please see the \ref db_schema_9_1_page page for all changes from schema 8.6 to schema 9.0.
+
+*/

@@ -1,9 +1,9 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved
 **
 **
 ** This software is distributed under the Common Public License 1.0
@@ -14,7 +14,7 @@
 
 /**
  *\file swapfs.c
- * Contains the internal "swapfs" specific functions. The "swap" file system is used to process 
+ * Contains the internal "swapfs" specific functions. The "swap" file system is used to process
  * an arbitrary chunk of data as 4096-byte pages that have no other structure.
  * This means that you can use the data-level tools, but that is it.  This is similar to
  * the rawfs code, but a different block size. This is primarily intended for Unix systems
@@ -24,12 +24,12 @@
 
 
 /** \internal
- * Open part of a disk image as "swap" space.  This assumes no structure exists. 
+ * Open part of a disk image as "swap" space.  This assumes no structure exists.
  * Data are organized into 4096-byte pages.
  *
  * @param img_info Disk image to analyze
  * @param offset Byte offset where swap space starts.
- * @returns NULL on error 
+ * @returns NULL on error
  */
 TSK_FS_INFO *
 swapfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset)

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2022 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,6 +39,7 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	private final long objectId;
 	private final String deviceId;
 	private final String timezone;
+	private volatile Host host;
 
 	private static final Logger LOGGER = Logger.getLogger(LocalFilesDataSource.class.getName());
 
@@ -62,13 +63,14 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 * @param timezone           The timezone for the data source.
 	 * @param md5Hash            The MD5 hash for the virtual directory.
 	 * @param sha256Hash         The SHA-256 hash for the virtual directory.
+	 * @param sha1Hash           SHA-1 hash of the file, or null if not present
 	 * @param knownState         The known state for the virtual directory
 	 * @param parentPath         The parent path for the virtual directory,
 	 *                           should be "/" if the virtual directory is a
 	 *                           data source.
 	 */
-	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, String sha256Hash, TskData.FileKnown knownState, String parentPath) {
-		super(db, objId, dataSourceObjectId, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, knownState, parentPath);
+	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, String sha256Hash, String sha1Hash, TskData.FileKnown knownState, String parentPath) {
+		super(db, objId, dataSourceObjectId, null, name, dirType, metaType, dirFlag, metaFlags, md5Hash, sha256Hash, sha1Hash, knownState, parentPath);
 		this.objectId = objId;
 		this.deviceId = deviceId;
 		this.timezone = timezone;
@@ -181,18 +183,38 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 		return contentSize;
 	}
 	
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		return "/" + getName();
+	}
+
 	/**
 	 * Sets the acquisition details field in the case database.
-	 * 
+	 *
 	 * @param details The acquisition details
-	 * 
+	 *
 	 * @throws TskCoreException Thrown if the data can not be written
 	 */
 	@Override
 	public void setAcquisitionDetails(String details) throws TskCoreException {
 		getSleuthkitCase().setAcquisitionDetails(this, details);
 	}
-	
+
+	/**
+	 * Sets the acquisition tool details such as its name, version number and
+	 * any settings used during the acquisition to acquire data.
+	 *
+	 * @param name     The name of the acquisition tool. May be NULL.
+	 * @param version  The acquisition tool version number. May be NULL.
+	 * @param settings The settings used by the acquisition tool. May be NULL.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	@Override
+	public void setAcquisitionToolDetails(String name, String version, String settings) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionToolDetails(this, name, version, settings);
+	}
+  
 	/**
 	 * Gets the acquisition details field from the case database.
 	 * 
@@ -203,6 +225,69 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	@Override
 	public String getAcquisitionDetails() throws TskCoreException {
 		return getSleuthkitCase().getAcquisitionDetails(this);
+	}
+
+
+	/**
+	 * Gets the acquisition tool settings field from the case database.
+	 *
+	 * @return The acquisition tool settings. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	@Override
+	public String getAcquisitionToolSettings() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_settings");
+	}
+
+	/**
+	 * Gets the acquisition tool name field from the case database.
+	 *
+	 * @return The acquisition tool name. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolName() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_name");
+	}
+
+	/**
+	 * Gets the acquisition tool version field from the case database.
+	 *
+	 * @return The acquisition tool version. May be Null if not set.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public String getAcquisitionToolVersion() throws TskCoreException{
+		return getSleuthkitCase().getDataSourceInfoString(this, "acquisition_tool_version");
+	}
+	
+	/**
+	 * Gets the host for this data source.
+	 * 
+	 * @return The host
+	 * 
+	 * @throws TskCoreException 
+	 */
+	@Override
+	public Host getHost() throws TskCoreException {
+		// This is a check-then-act race condition that may occasionally result
+		// in additional processing but is safer than using locks.
+		if (host == null) {
+			host = getSleuthkitCase().getHostManager().getHostByDataSource(this);
+		}
+		return host;
+	}	
+
+	/**
+	 * Gets the added date field from the case database.
+	 *
+	 * @return The date time when the image was added in epoch seconds.
+	 *
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	public Long getDateAdded() throws TskCoreException {
+		return getSleuthkitCase().getDataSourceInfoLong(this, "added_date_time");
 	}
 
 	/**
@@ -236,6 +321,34 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	}
 	
 	/**
+	 * Accepts a content visitor (Visitor design pattern).
+	 *
+	 * @param <T>     The type returned by the visitor.
+	 * @param visitor A ContentVisitor supplying an algorithm to run using this
+	 *                virtual directory as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+	
+	/**
+	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
+	 *
+	 * @param <T>     The type returned by the visitor.
+	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
+	 *                this virtual directory as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+	
+	/**
 	 * Constructs a local/logical files and/or directories data source.
 	 *
 	 * @param db                 The case database.
@@ -263,6 +376,6 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 */
 	@Deprecated
 	public LocalFilesDataSource(SleuthkitCase db, long objId, long dataSourceObjectId, String deviceId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, String timezone, String md5Hash, TskData.FileKnown knownState, String parentPath) {
-		this(db, objId, dataSourceObjectId, deviceId, name, dirType, metaType, dirFlag, metaFlags, timezone, md5Hash, null, knownState, parentPath);
+		this(db, objId, dataSourceObjectId, deviceId, name, dirType, metaType, dirFlag, metaFlags, timezone, md5Hash, null, null, knownState, parentPath);
 	}	
 }

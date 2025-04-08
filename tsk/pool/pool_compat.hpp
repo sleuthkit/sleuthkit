@@ -16,6 +16,7 @@
 
 template <typename T,
           typename = std::enable_if_t<std::is_base_of<TSKPool, T>::value>>
+
 class TSKPoolCompat : public T {
  protected:
   TSK_POOL_INFO _info{};
@@ -30,6 +31,8 @@ class TSKPoolCompat : public T {
 
  public:
   template <typename... Args>
+
+
   TSKPoolCompat(TSK_POOL_TYPE_ENUM type, Args &&... args) noexcept(
       std::is_nothrow_constructible<T, Args...>::value)
       : T(std::forward<Args>(args)...) {

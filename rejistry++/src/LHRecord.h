@@ -43,9 +43,9 @@ namespace Rejistry {
         static const std::string MAGIC;
 
         LHRecord(RegistryByteBuffer * buf, uint32_t offset);
-        
+
         virtual ~LHRecord() {}
-    
+
     private:
         LHRecord() {};
         LHRecord(const LHRecord &);

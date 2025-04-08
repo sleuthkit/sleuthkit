@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,5 +78,29 @@ class ContentData extends Facet {
     ContentData setDataPayloadReferenceUrl(UcoObject url) {
         this.dataPayloadReferenceUrl = url.getId();
         return this;
+    }
+
+    Long getSizeInBytes() {
+        return sizeInBytes;
+    }
+
+    String getMimeType() {
+        return mimeType;
+    }
+
+    List<Hash> getHashes() {
+        return hashes;
+    }
+
+    String getDataPayload() {
+        return dataPayload;
+    }
+
+    String getOwner() {
+        return owner;
+    }
+
+    String getDataPayloadReferenceUrl() {
+        return dataPayloadReferenceUrl;
     }
 }

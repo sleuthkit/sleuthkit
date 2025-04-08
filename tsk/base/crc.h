@@ -82,6 +82,13 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef CM_DONE
 #define CM_DONE
 
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /******************************************************************************/
 
 /* The following definitions are extracted from my style header file which    */
@@ -91,7 +98,6 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef DONE_STYLE
 
 typedef unsigned long   ulong;
-typedef unsigned        bool;
 typedef unsigned char * p_ubyte_;
 
 #ifndef TRUE
@@ -120,8 +126,8 @@ typedef struct
    int   cm_width;   /* Parameter: Width in bits [8,32].       */
    ulong cm_poly;    /* Parameter: The algorithm's polynomial. */
    ulong cm_init;    /* Parameter: Initial register value.     */
-   bool  cm_refin;   /* Parameter: Reflect input bytes?        */
-   bool  cm_refot;   /* Parameter: Reflect output CRC?         */
+   unsigned cm_refin;   /* Parameter: Reflect input bytes?        */
+   unsigned cm_refot;   /* Parameter: Reflect output CRC?         */
    ulong cm_xorot;   /* Parameter: XOR this to output CRC.     */
 
    ulong cm_reg;     /* Context: Context during execution.     */
@@ -166,7 +172,13 @@ ulong cm_tab P_((p_cm_t p_cm,int index));
 
 void crc16(p_cm_t crc_context, unsigned char const *buff, unsigned int size);
 
+#ifdef __cplusplus
+}
 #endif
+
+
+#endif
+
 
 /******************************************************************************/
 /*                             End of crcmodel.h                              */

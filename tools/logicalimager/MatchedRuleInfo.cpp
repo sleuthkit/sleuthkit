@@ -15,7 +15,7 @@
 
 #include "MatchedRuleInfo.h"
 
-MatchedRuleInfo::MatchedRuleInfo(const std::string &ruleSetName, const std::string &name, 
+MatchedRuleInfo::MatchedRuleInfo(const std::string &ruleSetName, const std::string &name,
     const std::string &description, bool shouldSave, bool shouldAlert) :
     m_ruleSetName(ruleSetName),
     m_name(name),

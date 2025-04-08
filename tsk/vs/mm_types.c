@@ -91,7 +91,7 @@ tsk_vs_type_print(FILE * hFile)
 
 /**
  * \ingroup vslib
- * Return the supported volume system types. 
+ * Return the supported volume system types.
  * @returns The bit in the return value is 1 if the type is supported.
  */
 TSK_VS_TYPE_ENUM

@@ -84,7 +84,7 @@ namespace Rejistry {
         NKRecord(const NKRecord& );
 
         virtual ~NKRecord() {}
-    
+
         /**
          * Does the record have a class name?
          * @returns true if the NKRecord has a class name, false otherwise.
@@ -104,7 +104,7 @@ namespace Rejistry {
         uint64_t getTimestamp() const;
 
         /**
-         * @returns true if the NKRecord is a root record. 
+         * @returns true if the NKRecord is a root record.
          */
         bool isRootKey() const;
 
@@ -166,7 +166,7 @@ namespace Rejistry {
         // https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-element-size-limits
         // Microsoft docs state that max key name is 255 characters. This is true when testing
         // with regedit.exe and reg.exe. However, when using RegCreateKeyEx() API you can create
-        // keys with 256 characters. See CT-2984 for test data. 
+        // keys with 256 characters. See CT-2984 for test data.
         static const uint16_t MAX_NAME_LENGTH = 256; //# of characters
 
         NKRecord() {};

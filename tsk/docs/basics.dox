@@ -10,7 +10,11 @@ The lowest layer that TSK has is the <b>Base Layer</b>, which contains common pr
 
 The next layer up is the <b>Disk Image Layer</b>, which allows disk images in various formats to be opened and processed.  This layer hides the details associated with split, compressed, and encrypted image files from the other layers. All disk images must be first opened by the Disk Image Layer functions before they can be processed by other layers. 
 
-The next layer up is the <b>Volume System Layer</b>. This layer focuses on processing data as a volume system, such as DOS partition tables or BSD disk label structures.  If the disk image being analyzed has a volume system on it, then this set of functions will tell you starting and ending location of its partitions.  
+The next layer up is the <b>Volume System Layer</b>. This layer focuses on processing data as a volume system, such as DOS partition tables or BSD disk label structures.  If the disk image being analyzed has a volume system on it, then this set of functions will tell you starting and ending location of its partitions. These volumes/partitions have a consecutive set of sectors.  
+
+The next layer is the <b>Pool Layer</b>. This layer focuses on managing pools of blocks that can be organized into different volumes. This allows a volume to have a set of non-consecutive blocks.  Pools can exist accross an entire disk (i.e. there is no volume system) or within volumes/partitions. A pool itself will have 'pool volumes' that can contain file systems, etc. 
+
+NOTE: Most disk images do not have a pool layer. It was added to TSK for APFS support. 
 
 The next layer up is the <b>File System Layer</b>.  This layer focuses on processing data as a file system, such as FAT or NTFS. File systems can be located in a partition or can be the full disk image file.  These set of functions allow you to read arbitrary data from the file system, list files, and open files.  There are several sub-layers in the File System Layer and they are described in \ref fs_layers.  
 
@@ -29,19 +33,22 @@ A basic diagram of the relationship between these layers is shown here. Note tha
  |                       +================+                 |
  |                         /            \                   |
  |                        /              \                  |
- |              +==============+      +==================+  |
- |              |  Disk Image  |      |   Hash Database  |  |
- |              +==============+      +==================+  |
- |                 /       |                                |
- |                /        |                                |
- |   +===============+     |                                |
- |   | Volume System |     |                                |
- |   +===============+     |                                |
- |               \         |                                |
- |                \        |                                |
- |               +===============+                          |
- |               |  File System  |                          |
- |               +===============+                          |
+ |  +==========================+      +==================+  |
+ |  |        Disk Image        |      |   Hash Database  |  |
+ |  +==========================+      +==================+  |
+ |   |          |          |                                |
+ |   |          |          |                                |
+ |   |  +===============+  |                                |
+ |   |  | Volume System |  |                                |
+ |   |  +===============+  |                                |
+ |   |     |       |       |                                |
+ |  +==========+   |       |                                |
+ |  |   Pool   |   |       |                                |
+ |  +==========+   |       |                                |
+ |           |     |       |                                |
+ |        +========================+                        |
+ |        |      File System       |                        |
+ |        +========================+                        |
  |                                                          |
  |                                                          |
  |                        Automation                        |

@@ -62,7 +62,7 @@ public class HashUtility {
 		byte[] data = new byte[BUFFER_SIZE];
 		int totalChunks = (int) Math.ceil((double) content.getSize() / (double) BUFFER_SIZE);
 		int read;
-		for (int i = 0; i < totalChunks; i++) {
+		for (long i = 0; i < totalChunks; i++) {
 			try {
 				read = content.read(data, i * BUFFER_SIZE, BUFFER_SIZE);
 			} catch (TskCoreException ex) {

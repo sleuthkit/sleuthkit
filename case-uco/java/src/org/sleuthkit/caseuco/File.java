@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,5 +73,29 @@ class File extends Facet {
     File setSizeInBytes(long sizeInBytes) {
         this.sizeInBytes = sizeInBytes;
         return this;
+    }
+
+    String getAccessedTime() {
+        return accessedTime;
+    }
+
+    String getExtension() {
+        return extension;
+    }
+
+    String getFileName() {
+        return fileName;
+    }
+
+    String getFilePath() {
+        return filePath;
+    }
+
+    Boolean getIsDirectory() {
+        return isDirectory;
+    }
+
+    Long getSizeInBytes() {
+        return sizeInBytes;
     }
 }

@@ -31,13 +31,15 @@
  * SUCH DAMAGE.
  */
 
+#include "sha2.h"
+
+#ifndef HAVE_LIBCRYPTO
+
 #if 0
 #define UNROLL_LOOPS /* Enable loops unrolling */
 #endif
 
 #include <string.h>
-
-#include "sha2.h"
 
 #define SHFR(x, n)    (x >> n)
 #define ROTR(x, n)   ((x >> n) | (x << ((sizeof(x) << 3) - n)))
@@ -837,7 +839,7 @@ void test(const char *vector, unsigned char *digest,
     output[2 * digest_size] = '\0';
 
     for (i = 0; i < (int) digest_size ; i++) {
-       sprintf(output + 2 * i, "%02x", digest[i]);
+        snprintf(output + 2 * i, 3, "%02x", digest[i]);
     }
 
     printf("H: %s\n", output);
@@ -947,3 +949,4 @@ int main(void)
 
 #endif /* TEST_VECTORS */
 
+#endif

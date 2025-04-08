@@ -679,7 +679,7 @@ extern "C" {
 
     extern TSK_RETVAL_ENUM
         ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-        TSK_INUM_T a_addr);
+        TSK_INUM_T a_addr, int recursion_depth);
     extern uint8_t ext2fs_jentry_walk(TSK_FS_INFO *, int,
         TSK_FS_JENTRY_WALK_CB, void *);
     extern uint8_t ext2fs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T,

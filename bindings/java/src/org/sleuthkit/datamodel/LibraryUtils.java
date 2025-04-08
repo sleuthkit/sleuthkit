@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2013-2024 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +34,8 @@ import java.net.URL;
 public class LibraryUtils {
 
 	public static final String[] EXTS = new String[]{".so", ".dylib", ".dll", ".jnilib"}; //NON-NLS
+	private static final String TSK_TEMP_OVERRIDE = "tsk.tmpdir";
+	private static final String JAVA_TEMP = "java.io.tmpdir";
 
 	/**
 	 * The libraries the TSK Datamodel needs.
@@ -74,7 +77,8 @@ public class LibraryUtils {
 		if (!loaded) {
 			System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName()); //NON-NLS
 		} else {
-			System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName()); //NON-NLS
+			// We want minimal console output for command line use case
+			//System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName()); //NON-NLS
 		}
 		return loaded;
 	}
@@ -134,7 +138,6 @@ public class LibraryUtils {
 	 */
 	private static boolean loadNativeLibFromTskJar(Lib library) {
 		String libName = library.getLibName();
-		String userName = System.getProperty("user.name");
 		// find the library in the jar file
 		StringBuilder pathInJarBase = new StringBuilder();
 		pathInJarBase.append("/NATIVELIBS/"); //NON-NLS
@@ -156,17 +159,12 @@ public class LibraryUtils {
 			System.out.println("Library not found in jar (" + libName + ")"); //NON-NLS
 			return false;
 		}
-		StringBuilder pathToTempFile = new StringBuilder();
-		pathToTempFile.append(System.getProperty("java.io.tmpdir"));
-		pathToTempFile.append(java.io.File.separator);
-		pathToTempFile.append(libName);
-		pathToTempFile.append("_");
-		pathToTempFile.append(userName);
-		pathToTempFile.append(libExt);
+
 		// copy library to temp folder and load it
 		try {
-			java.io.File tempLibFile = new java.io.File(pathToTempFile.toString()); //NON-NLS
-			System.out.println("Temp Folder for Libraries: " + tempLibFile.getParent()); //NON-NLS
+			String userName = System.getProperty("user.name");
+			String tempDir = System.getProperty(TSK_TEMP_OVERRIDE, System.getProperty(JAVA_TEMP));
+			File tempLibFile = getTempFile(tempDir, libName, userName, libExt);
 
 			// cycle through the libraries and delete them. 
 			// we used to copy dlls into here. 
@@ -219,7 +217,38 @@ public class LibraryUtils {
 		return true;
 	}
 
-	private static String getExtByPlatform() {
+	/**
+	 * Returns the path to the temp file location for the library.
+	 *
+	 * @param tempDir  The temporary parent directory.
+	 * @param libName  The name of the library.
+	 * @param userName The user name that launched the JVM.
+	 * @param libExt   The library extension with the period included (i.e.
+	 *                 ".dll").
+	 *
+	 * @return The file location of the temp file.
+	 */
+	static File getTempFile(String tempDir, String libName, String userName, String libExt) {
+		StringBuilder pathToTempFile = new StringBuilder();
+		pathToTempFile.append(tempDir);
+		pathToTempFile.append(java.io.File.separator);
+		pathToTempFile.append(libName);
+		pathToTempFile.append("_");
+		pathToTempFile.append(userName);
+		pathToTempFile.append(libExt);
+		java.io.File tempLibFile = new java.io.File(pathToTempFile.toString()); //NON-NLS
+		// We want minimal console output for command line use case
+		//System.out.println("Temp Folder for Libraries: " + tempLibFile.getParent()); //NON-NLS
+		return tempLibFile;
+	}
+
+	/**
+	 * Returns the expected library extension determined by the operating
+	 * system.
+	 *
+	 * @return The expected library extension for the operating system.
+	 */
+	static String getExtByPlatform() {
 		if (isWindows()) {
 			return ".dll"; //NON-NLS
 		} else if (isMac()) {

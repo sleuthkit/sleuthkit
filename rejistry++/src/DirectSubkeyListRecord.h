@@ -45,9 +45,9 @@ namespace Rejistry {
         DirectSubkeyListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t itemSize) : SubkeyListRecord(buf, offset) {
             _itemSize = itemSize;
         }
-        
+
         virtual ~DirectSubkeyListRecord() {}
-    
+
         virtual std::vector<NKRecord *> getSubkeys() const;
 
     private:

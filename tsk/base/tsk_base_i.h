@@ -54,12 +54,18 @@ extern "C" {
     extern void *tsk_malloc(size_t);
     extern void *tsk_realloc(void *, size_t);
 
-// getopt for windows
+
 #ifdef TSK_WIN32
+    // getopt for windows
     extern int tsk_optind;
     extern TSK_TCHAR *tsk_optarg;
     extern int tsk_getopt(int argc, TSK_TCHAR * const argv[],
         const TSK_TCHAR * optstring);
+#else
+/* strnlen is a POSIX function and not part of the C stdlib */
+#ifndef HAVE_STRNLEN
+    extern size_t strnlen(const char* s, size_t maxlen);
+#endif
 #endif
 
 

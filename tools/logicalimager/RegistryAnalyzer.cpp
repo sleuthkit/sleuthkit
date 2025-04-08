@@ -12,7 +12,7 @@
 #include <sstream>
 #include <iostream>
 #include <codecvt>
-#include <iomanip> 
+#include <iomanip>
 #include <vector>
 #include <map>
 
@@ -43,8 +43,8 @@ RegistryAnalyzer::RegistryAnalyzer(const std::string &outputFilePath) :
     }
 
     fprintf(m_outputFile, "LOCAL USER ACCOUNTS ONLY\n\n");
-    char *headers[] = { "UserName", "FullName", "UserDomain", "HomeDir", "AccountType", "AdminPriv", 
-                        "DateCreated", "LastLoginDate", "LastFailedLoginDate", "LastPasswordResetDate", 
+    char *headers[] = { "UserName", "FullName", "UserDomain", "HomeDir", "AccountType", "AdminPriv",
+                        "DateCreated", "LastLoginDate", "LastFailedLoginDate", "LastPasswordResetDate",
                         "LoginCount", "AccountLocation", "isDisabled", "accountStatus" };
     int headerCount = sizeof(headers) / sizeof(char *);
     for (int i = 0; i < headerCount; ++i) {
@@ -75,7 +75,7 @@ std::string getTimeStr(time_t aTime, unsigned long aFractionSecs = 0) {
     if (0 == aTime)
         return retStr;
 
-    // convert time_t (UTC) to struct tm (UTC)                                                                       
+    // convert time_t (UTC) to struct tm (UTC)
     struct tm localTime;
     gmtime_s(&localTime, &aTime);
 
@@ -84,7 +84,7 @@ std::string getTimeStr(time_t aTime, unsigned long aFractionSecs = 0) {
 
     retStr = timeStr;
 
-    // append the fraction of seconds                                                                                
+    // append the fraction of seconds
     std::stringstream ss;
     ss << std::setfill('0') << std::setw(9) << aFractionSecs;
     std::string fractionStr = ss.str();
@@ -136,7 +136,7 @@ USER_ACCOUNT_TYPE::Enum samUserTypeToAccountType(uint32_t& acctType) {
         return USER_ACCOUNT_TYPE::REGULAR;
     case 0xB0:
     case 0xE8:
-        return USER_ACCOUNT_TYPE::LIMITED;  //Guest account                                                      
+        return USER_ACCOUNT_TYPE::LIMITED;  //Guest account
     default:
         return USER_ACCOUNT_TYPE::UNKNOWN;
     }
@@ -149,13 +149,13 @@ USER_ACCOUNT_TYPE::Enum samUserTypeToAccountType(uint32_t& acctType) {
 */
 USER_ADMIN_PRIV::Enum samUserTypeToAdminPriv(uint32_t& acctType) {
     switch (acctType & 0x000000FF) {
-    case 0xBC:                          // Prior to Windows 10                                                       
-    case 0xF4:                          // Windows 10                                                                
-        return USER_ADMIN_PRIV::YES;    // Member of Default Admin group                                         
-    case 0xD4:                          // Prior to Windows 10                                                       
-    case 0x0C:                          // Windows 10                                                                
-    case 0xB0:                          // Prior to Windows 10                                                       
-    case 0xE8:                          // Windows 10                                                                
+    case 0xBC:                          // Prior to Windows 10
+    case 0xF4:                          // Windows 10
+        return USER_ADMIN_PRIV::YES;    // Member of Default Admin group
+    case 0xD4:                          // Prior to Windows 10
+    case 0x0C:                          // Windows 10
+    case 0xB0:                          // Prior to Windows 10
+    case 0xE8:                          // Windows 10
         return USER_ADMIN_PRIV::NO;
     default:
         return USER_ADMIN_PRIV::UNKNOWN;
@@ -203,7 +203,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
     }
     RegParser &aRegParser = aRegFile->getRegParser();
 
-    // First collect the known user names and their account creation time.  
+    // First collect the known user names and their account creation time.
     // Account creation time corresponds with creation of a user name key
     std::wstring wsSAMUserNamesKeyName = L"SAM\\Domains\\Account\\Users\\Names";
     std::vector<std::wstring> wsUserNameSubkeys;
@@ -224,7 +224,7 @@ int RegistryAnalyzer::analyzeSAMUsers() const {
             }
         }
         else if (-2 == rc) {
-            std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUserNamesKeyName) + 
+            std::string errMsg = "analyzeSAMUsers: Error getting key  = " + TskHelper::toNarrow(wsSAMUserNamesKeyName) +
                 " Local user accounts may not be reported.\n";
             ReportUtil::consoleOutput(stderr, errMsg.c_str());
             rc = -1;
@@ -418,7 +418,7 @@ std::wstring utf16LEToWString(const unsigned char *buf, size_t len) {
 *
 * @returns 0 on success, -1 if error
 */
-int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring &userName, 
+int RegistryAnalyzer::parseSAMVRecord(const unsigned char *pVRec, size_t aVRecLen, std::wstring &userName,
     std::wstring &userFullName, std::wstring &comment, uint32_t &acctType) const {
 
     int rc = 0;
@@ -501,25 +501,25 @@ int RegistryAnalyzer::parseSAMFRecord(const unsigned char *pFRec, long aFRecLen,
         return -1;
     }
 
-    // get last login date                                                                                           
+    // get last login date
     tv = *(FILETIME *)&pFRec[8];
     if ((tv.dwLowDateTime != 0)) {
         lastLoginDate = tv;
     }
 
-    // get passwd last reset date                                                                                    
+    // get passwd last reset date
     tv = *(FILETIME *)&pFRec[24];
     if ((tv.dwLowDateTime != 0)) {
         lastPWResetDate = tv;
     }
 
-    // get acct expiry date                                                                                          
+    // get acct expiry date
     tv = *(FILETIME *)&pFRec[32];
     if ((tv.dwLowDateTime != 0)) {
         accountExpiryDate = tv;
     }
 
-    // get acct expiry date                                                                                          
+    // get acct expiry date
     tv = *(FILETIME *)&pFRec[40];
     if ((tv.dwLowDateTime != 0)) {
         lastFailedLoginDate = tv;

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit CASE JSON LD Support
  *
- * Copyright 2020 Basis Technology Corp.
+ * Copyright 2020-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,5 +40,13 @@ class BrowserBookmark extends Facet {
     BrowserBookmark setApplication(CyberItem application) {
         this.application = application.getId();
         return this;
+    }
+
+    String getUrlTargeted() {
+        return urlTargeted;
+    }
+
+    String getApplication() {
+        return application;
     }
 }
