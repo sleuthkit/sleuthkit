@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  * 
  * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -123,6 +123,7 @@ public class VolumeSystem extends AbstractContent {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void finalize() throws Throwable {
 		try {

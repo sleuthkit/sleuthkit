@@ -19,17 +19,22 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 
 /**
  * Static utilities for dealing with Collections. At some point this could be
  * replaced with apache commons or guava...
  */
-class CollectionUtils {
+final class CollectionUtils {
 
 	@SuppressWarnings("unchecked")
 	static <T> HashSet<T> hashSetOf(T... values) {
-		return new HashSet<T>(Arrays.asList(values));
+		return new HashSet<>(Arrays.asList(values));
+	}
+
+	static <T> boolean isNotEmpty(Collection<T> collection) {
+		return collection.isEmpty() == false;
 	}
 
 	private CollectionUtils() {

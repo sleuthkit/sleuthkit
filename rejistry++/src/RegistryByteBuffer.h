@@ -29,6 +29,7 @@
 #define _REJISTRY_REGISTRYBYTEBUFFER_H
 
 #include <cstdint>
+#include <string>
 
 // Local includes
 #include "ByteBuffer.h"

@@ -82,25 +82,14 @@ private:
 	    return "copying feature_recorder objects is not implemented.";
 	}
     };
-    xml(const xml &fr):
-#ifdef HAVE_PTHREAD
-	M(),
-#endif
-	outf(),out(),tags(),tag_stack(),tempfilename(),tempfile_template(),t0(),
-	make_dtd(),outfilename(){
-	throw new not_impl();
-    }
-    const xml &operator=(const xml &x){ throw new not_impl(); }
+    const xml &operator=([[maybe_unused]] const xml &x){ throw new not_impl(); }
     /****************************************************************/
 #ifdef HAVE_PTHREAD
     pthread_mutex_t M;			// mutext protecting out
 #endif
-    std::fstream outf;
-    std::ostream *out;				// where it is being written; defaults to stdout
+    std::ostream &out;				// where it is being written; defaults to stdout
     std::set<std::string> tags;			// XML tags
     std::stack<std::string>tag_stack;
-    std::string  tempfilename;
-    std::string  tempfile_template;
     struct timeval t0;
     bool  make_dtd;
     std::string outfilename;
@@ -111,8 +100,7 @@ private:
 public:
     std::stack<TSK_INUM_T> parent_stack;
 
-
-    static std::string make_command_line(int argc,char * const *argv){
+    static std::string make_command_line(int argc,const char * const *argv){
 	std::string command_line;
 	for(int i=0;i<argc;i++){
 	    if(i>0) command_line.push_back(' ');
@@ -121,19 +109,14 @@ public:
 	return command_line;
     }
 
-    xml();					 // defaults to stdout
-    xml(const std::string &outfilename,bool makeDTD); // write to a file, optionally making a DTD
+    xml(std::ostream &out,bool makeDTD); // write to a file, optionally making a DTD
     virtual ~xml(){};
-    void set_tempfile_template(const std::string &temp);
-
     static std::string xmlescape(const std::string &xml);
     static std::string xmlstrip(const std::string &xml);
 
-    void close();			// writes the output to the file
-
-    void tagout( const std::string &tag,const std::string &attribute);
-    void push(const std::string &tag,const std::string &attribute);
-    void push(const std::string &tag) {push(tag,"");}
+    void tagout( const std::string tag,const std::string attribute);
+    void push(const std::string tag,const std::string attribute);
+    void push(const std::string tag) {push(tag,"");}
 
     // writes a std::string as parsed data
     void puts(const std::string &pdata);
@@ -142,7 +125,7 @@ public:
 #ifdef __GNUC__
     void printf(const char *fmt,...) __attribute__((format(printf, 2, 3))); // "2" because this is "1"
 #else
-	void printf(const char *fmt,...);
+    void printf(const char *fmt,...);
 #endif
 
     void pop();	// close the tag
@@ -187,4 +170,3 @@ public:
 #endif
 
 #endif
-

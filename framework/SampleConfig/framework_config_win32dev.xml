@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Framework config that is used when running from the VS dev environment - gets copied into debug/release folder. - contains only relevant settings -->
-<!-- For more information please consult the TskSystemProperties::PredefinedProperty member enumeration documentation at http://www.sleuthkit.org/sleuthkit/docs/framework-docs/classTskSystemProperties.html -->
-<TSK_FRAMEWORK_CONFIG>
-  <CONFIG_DIR>#PROG_DIR#\..\SampleConfig</CONFIG_DIR>
-  <MODULE_DIR>#PROG_DIR#</MODULE_DIR>
-  <MODULE_CONFIG_DIR>#PROG_DIR#</MODULE_CONFIG_DIR>
-</TSK_FRAMEWORK_CONFIG>

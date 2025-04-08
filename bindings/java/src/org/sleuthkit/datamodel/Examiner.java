@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2020 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,46 +22,46 @@ package org.sleuthkit.datamodel;
  * Encapsulates the concept of an examiner associated with a case.
  */
 final public class Examiner {
+
 	private final long id;
-	private final String loginName;				
-	private final String displayName;	
-	
+	private final String loginName;
+	private final String displayName;
+
 	Examiner(long id, String loginName, String displayName) {
 		this.id = id;
 		this.loginName = loginName;
 		this.displayName = displayName;
 	}
-	
+
 	/**
 	 * Returns the id
-	 * 
+	 *
 	 * @return id
 	 */
 	public long getId() {
 		return id;
 	}
+
 	/**
 	 * Returns the login name of examiner
-	 * 
+	 *
 	 * @return login name
 	 */
-	public String getLoginName(){
+	public String getLoginName() {
 		return this.loginName;
 	}
-	
+
 	/**
 	 * Returns the display name of examiner
-	 * 
+	 *
 	 * @return display name, may be a blank string
 	 */
-	public String getDisplayName(){
-		if (displayName == null) { 
+	public String getDisplayName() {
+		if (displayName == null) {
 			return "";
 		}
-		
+
 		return this.displayName;
 	}
 
-	
 }
-

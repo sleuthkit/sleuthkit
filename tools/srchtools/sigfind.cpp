@@ -11,6 +11,8 @@
 
 #include "tsk/tsk_tools_i.h"
 
+#include <memory>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -46,7 +48,6 @@ main(int argc, char **argv)
     uint8_t block[1024];
 
     char **err = NULL;
-    TSK_IMG_INFO *img_info;
     TSK_OFF_T cur_offset;
     int sig_offset = 0, rel_offset = 0;
     int read_size, bs = 512;
@@ -271,9 +272,12 @@ main(int argc, char **argv)
         usage();
     }
 
-    if ((img_info =
-         tsk_img_open_utf8_sing(argv[optind],
-                      TSK_IMG_TYPE_DETECT, 0)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_info{
+        tsk_img_open_utf8_sing(argv[optind], TSK_IMG_TYPE_DETECT, 0),
+        tsk_img_close
+    };
+
+    if (!img_info) {
         tsk_error_print(stderr);
         exit(1);
     }
@@ -287,7 +291,7 @@ main(int argc, char **argv)
            sig_print);
 
     /* Loop through by blocks  - we will read in block sized chunks
-     * so that we can be used on raw devices 
+     * so that we can be used on raw devices
      */
     cur_offset = (sig_offset / 512) * 512;
     rel_offset = sig_offset % 512;
@@ -296,13 +300,13 @@ main(int argc, char **argv)
         ssize_t retval;
 
         /* Read the signature area */
-        retval = tsk_img_read(img_info, cur_offset,
+        retval = tsk_img_read(img_info.get(), cur_offset,
                                     (char *)block, read_size);
         if (retval == 0) {
             break;
         }
         else if (retval == -1) {
-            fprintf(stderr, "error reading bytes %" PRIuOFF "\n", i);
+            fprintf(stderr, "error reading bytes %" PRIdOFF "\n", i);
             exit(1);
         }
 
@@ -312,9 +316,9 @@ main(int argc, char **argv)
             ((sig_size < 3) || (block[rel_offset + 2] == sig[2])) &&
             ((sig_size < 4) || (block[rel_offset + 3] == sig[3]))) {
             if (prev_hit == -1)
-                printf("Block: %" PRIuOFF " (-)\n",  i);
+                printf("Block: %" PRIdOFF " (-)\n",  i);
             else
-                printf("Block: %" PRIuOFF " (+%" PRIuOFF ")\n", i,
+                printf("Block: %" PRIdOFF " (+%" PRIdOFF ")\n", i,
                        (i - prev_hit));
 
             prev_hit = i;
@@ -322,6 +326,5 @@ main(int argc, char **argv)
         cur_offset += bs;
     }
 
-    tsk_img_close(img_info);
     exit(0);
 }

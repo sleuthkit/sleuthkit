@@ -1,6 +1,6 @@
 /*! \page imgpage Disk Images
    
-This section describes the general disk image analysis concepts and corresponding APIs in TSK.  In addition to this documentation, there are sample programs in the <tt>samples</tt> directory in TSK that show these functions being used while processing a disk image. 
+This section describes the general disk image analysis concepts and corresponding APIs in TSK.  In addition to this documentation, there are sample programs in the <a href="https://github.com/sleuthkit/sleuthkit/tree/develop/samples">samples</a> directory in TSK that show these functions being used while processing a disk image. 
 
   \section img_open Opening the Disk Image 
 

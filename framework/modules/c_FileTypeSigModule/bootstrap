@@ -1,5 +1,0 @@
-#!/bin/sh
-aclocal \
-    && (libtoolize -c --force || glibtoolize -c --force) \
-    && automake --foreign --add-missing --copy \
-    && autoconf

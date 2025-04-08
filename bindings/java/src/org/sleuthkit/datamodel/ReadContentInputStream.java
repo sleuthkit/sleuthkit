@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -39,7 +39,7 @@ public final class ReadContentInputStream extends InputStream {
 	@Override
 	public int read() throws ReadContentInputStreamException {
 		byte[] buff = new byte[1];
-		return (read(buff) != -1) ? buff[0] : -1;
+		return (read(buff) != -1) ? buff[0] & 0xFF : -1;
 	}
 
 	@Override

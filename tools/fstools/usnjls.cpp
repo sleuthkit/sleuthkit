@@ -11,9 +11,10 @@
 **
 */
 
-
 #include <locale.h>
 #include "tsk/fs/tsk_fs_i.h"
+
+#include <memory>
 
 
 static TSK_TCHAR *progname;
@@ -26,7 +27,7 @@ usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size]"
+             ("usage: %" PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size]"
               " [-o imgoffset] [-lmvV] image [inode]\n"),
              progname);
     tsk_fprintf(stderr,
@@ -53,12 +54,9 @@ usage()
 int
 main(int argc, char **argv1)
 {
-    TSK_IMG_INFO *img = NULL;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
-    TSK_FS_INFO *fs = NULL;
     TSK_OFF_T imgaddr = 0;
-    TSK_FS_FILE *jrnl_file = NULL;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
 
     int ch;
@@ -84,18 +82,18 @@ main(int argc, char **argv1)
 
     while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:lmvV"))) > 0) {
         switch (ch) {
-        case _TSK_T('?'): {
-            default:
-                TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
-                         argv[OPTIND]);
-                usage();
-        }
+        case _TSK_T('?'):
+        default:
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
+                argv[OPTIND]);
+            usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                          _TSK_T("invalid argument: sector size "
-                                "must be positive: %s\n"),
+                                "must be positive: %" PRIttocTSK "\n"),
                          OPTARG);
                 usage();
             }
@@ -108,7 +106,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                         _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                         _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -119,7 +117,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                          OPTARG);
                 usage();
             }
@@ -151,38 +149,51 @@ main(int argc, char **argv1)
         usage();
     }
 
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        nullptr,
+        tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        nullptr,
+        tsk_fs_close
+    };
+
     /* open image - there is an optional inode address at the end of args.
      *
      * Check the final argument and see if it is a number
      */
     if (tsk_fs_parse_inum(argv[argc - 1], &inum, NULL, NULL, NULL, NULL)) {
-        img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize);
-        if (img == NULL) {
+        img.reset(tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             exit(1);
         }
 
-        if ((imgaddr * img->sector_size) >= img->size) {
+        if (imgaddr * img->sector_size >= img->size) {
             tsk_fprintf(stderr,
                         "Sector offset is larger than disk image (maximum: %"
                         PRIu64 ")\n", img->size / img->sector_size);
             exit(1);
         }
 
-        fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype);
-        if (fs == NULL) {
+        fs.reset(tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype));
+        if (!fs) {
             tsk_error_print(stderr);
 
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                 tsk_fs_type_print(stderr);
             }
 
-            img->close(img);
             exit(1);
         }
 
-        jrnl_file = tsk_fs_file_open(fs, NULL, usnjrnl_path);
-        if (jrnl_file == NULL) {
+        std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> jrnl_file{
+            tsk_fs_file_open(fs.get(), NULL, usnjrnl_path),
+            tsk_fs_file_close
+        };
+
+        if (!jrnl_file) {
             tsk_fprintf(
                 stderr,
                 "Unable to open Journal %s, is this a NTFS filesystem?\n",
@@ -192,30 +203,28 @@ main(int argc, char **argv1)
         }
 
         inum = jrnl_file->name->meta_addr;
-        tsk_fs_file_close(jrnl_file);
-    } else {
-        img = tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize);
-        if (img == NULL) {
+    }
+    else {
+        img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             exit(1);
         }
 
-        if ((imgaddr * img->sector_size) >= img->size) {
+        if (imgaddr * img->sector_size >= img->size) {
             tsk_fprintf(stderr,
                         "Sector offset is larger than disk image (maximum: %"
                         PRIu64 ")\n", img->size / img->sector_size);
             exit(1);
         }
 
-        fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype);
-        if (fs == NULL) {
+        fs.reset(tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype));
+        if (!fs) {
             tsk_error_print(stderr);
 
             if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                 tsk_fs_type_print(stderr);
             }
-
-            img->close(img);
             exit(1);
         }
     }
@@ -224,8 +233,6 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
                     "Inode value is too large for image (%" PRIuINUM ")\n",
                     fs->last_inum);
-        fs->close(fs);
-        img->close(img);
         exit(1);
     }
 
@@ -233,19 +240,13 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
                     "Inode value is too small for image (%" PRIuINUM ")\n",
                     fs->first_inum);
-        fs->close(fs);
-        img->close(img);
         exit(1);
     }
 
-    if (tsk_fs_usnjls(fs, inum, flag)) {
+    if (tsk_fs_usnjls(fs.get(), inum, flag)) {
         tsk_error_print(stderr);
-        fs->close(fs);
-        img->close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
     exit(0);
 }

@@ -769,6 +769,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
                     tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
                     tsk_error_set_errstr
                         ("dos_load_ext_table: Loop in partition table detected");
+                    free(sect_buf);
                     return 1;
                 }
                 part_info = part_info->next;
@@ -1087,7 +1088,7 @@ tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)
     vs->part_count = 0;
     vs->endian = 0;
     vs->block_size = img_info->sector_size;
-    
+
 
     /* Assign functions */
     vs->close = dos_close;

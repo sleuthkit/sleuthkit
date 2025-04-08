@@ -88,8 +88,8 @@ namespace Rejistry {
         };
 
 
-        Cell(RegistryByteBuffer * buf, const uint32_t offset) : BinaryBlock(*buf, offset) {} 
-        
+        Cell(RegistryByteBuffer * buf, const uint32_t offset) : BinaryBlock(*buf, offset) {}
+
         virtual ~Cell() {};
 
         /**

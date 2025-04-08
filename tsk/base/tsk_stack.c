@@ -1,5 +1,5 @@
 /*
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2007-2011 Brian Carrier.  All Rights reserved
@@ -43,7 +43,7 @@ tsk_stack_create()
  * Push a value to the top of TSK_STACK.
  * @param a_tsk_stack Pointer to stack to push onto
  * @param a_val Value to push on
- * @returns 1 on error 
+ * @returns 1 on error
  */
 uint8_t
 tsk_stack_push(TSK_STACK * a_tsk_stack, uint64_t a_val)
@@ -75,7 +75,7 @@ tsk_stack_pop(TSK_STACK * a_tsk_stack)
  * \ingroup baselib
  * Search a TSK_STACK for a given value
  * @param a_tsk_stack Stack to search
- * @param a_val Value to search for 
+ * @param a_val Value to search for
  * @returns 1 if found and 0 if not
  */
 uint8_t

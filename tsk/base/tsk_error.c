@@ -55,6 +55,8 @@ static const char *tsk_err_mm_str[TSK_ERR_VS_MAX] = {
     "Invalid buffer size",      // 5
     "Invalid sector address",
     "Invalid API argument",
+    "Encryption detected",
+    "Multiple volume system types detected",
 };
 
 static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
@@ -76,6 +78,10 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "General file system error",        // 15
     "File system is corrupt",
     "Attribute not found in file",
+    "Encryption detected",
+    "Possible encryption detected",
+    "Multiple file system types detected",   // 20
+    "BitLocker initialization failed",
 };
 
 static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {
@@ -98,6 +104,13 @@ static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
     "Corrupt file data",
     "Error converting Unicode",
     "Image not opened yet"
+};
+
+static const char *tsk_err_pool_str[TSK_ERR_POOL_MAX] = {
+    "Cannot determine pool container type",
+    "Unsupported pool container type",
+    "Invalid API argument",
+    "General pool error"
 };
 
 
@@ -244,6 +257,16 @@ tsk_error_get()
                 TSK_ERROR_STRING_MAX_LENGTH - pidx, "auto error: %" PRIu32,
                 TSK_ERR_MASK & t_errno);
     }
+    else if (t_errno & TSK_ERR_POOL) {
+        if ((TSK_ERR_MASK & t_errno) < TSK_ERR_POOL_MAX)
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "%s",
+                tsk_err_pool_str[t_errno & TSK_ERR_MASK]);
+        else
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "pool error: %" PRIu32,
+                TSK_ERR_MASK & t_errno);
+    }
     else {
         snprintf(&errstr_print[pidx], TSK_ERROR_STRING_MAX_LENGTH - pidx,
             "Unknown Error: %" PRIu32, t_errno);
@@ -289,9 +312,9 @@ tsk_error_set_errno(uint32_t t_errno)
 
 /**
  * \ingroup baselib
- * Retrieve the current, basic error string.  
- * Additional information is in errstr2.  
- * Use tsk_error_get() to get a fully formatted string. 
+ * Retrieve the current, basic error string.
+ * Additional information is in errstr2.
+ * Use tsk_error_get() to get a fully formatted string.
  * @returns the string. This is only valid until the next call to a tsk function.
  */
 char *
@@ -302,7 +325,7 @@ tsk_error_get_errstr()
 
 /**
  * \ingroup baselib
- * Set the error string #1. This should contain the basic message. 
+ * Set the error string #1. This should contain the basic message.
  * @param format the printf-style format string
  */
 void
@@ -343,7 +366,7 @@ tsk_error_get_errstr2()
 /**
  * \ingroup baselib
  * Set the error string #2. This is called by methods who encounter the error,
- * but did not set errno. 
+ * but did not set errno.
  * @param format the printf-style format string
  */
 void

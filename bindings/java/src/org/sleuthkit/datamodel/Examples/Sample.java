@@ -50,7 +50,6 @@ public class Sample {
 			} catch (TskDataException ex) {
 				Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
 			}
-			process.commit();
 
 			// print out all the images found, and their children
 			List<Image> images = sk.getImages();
