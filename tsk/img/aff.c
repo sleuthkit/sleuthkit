@@ -297,9 +297,9 @@ aff_open(int a_num_img, const TSK_TCHAR * const images[], unsigned int a_ssize)
 
     img_info = (TSK_IMG_INFO *) aff_info;
 
-    aff_info->img_info->read = aff_read;
-    aff_info->img_info->close = aff_close;
-    aff_info->img_info->imgstat = aff_imgstat;
+    aff_info->img_info.read = aff_read;
+    aff_info->img_info.close = aff_close;
+    aff_info->img_info.imgstat = aff_imgstat;
 
     // Save the image path in TSK_IMG_INFO - this is mostly for consistency
     // with the other image types and is not currently used

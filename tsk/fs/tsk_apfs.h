@@ -9,9 +9,9 @@
  */
 #pragma once
 
-#include "../base/tsk_base.h"
-#include "../img/tsk_img.h"
-#include "../pool/tsk_apfs.h"
+#include "tsk/base/tsk_base.h"
+#include "tsk/img/tsk_img.h"
+#include "tsk/pool/tsk_apfs.h"
 
 #ifdef __cplusplus
 extern "C" {

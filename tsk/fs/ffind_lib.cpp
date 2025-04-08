@@ -27,7 +27,7 @@
 #include "tsk_fs_i.h"
 #include "tsk_ntfs.h"         // NTFS has an optimized version of this function
 
-
+#include <memory>
 
 /** \internal
 * Structure to store data for callbacks.
@@ -107,10 +107,12 @@ tsk_fs_ffind(TSK_FS_INFO * fs, TSK_FS_FFIND_FLAG_ENUM lclflags,
          * it orphan
          */
         if (TSK_FS_TYPE_ISFAT(fs->ftype)) {
-            TSK_FS_FILE *fs_file =
-                tsk_fs_file_open_meta(fs, NULL, data.inode);
-            if ((fs_file != NULL) && (fs_file->meta != NULL)
-                && (fs_file->meta->name2 != NULL)) {
+            std::unique_ptr<TSK_FS_FILE, decltype(&tsk_fs_file_close)> fs_file{
+                tsk_fs_file_open_meta(fs, NULL, data.inode),
+                tsk_fs_file_close
+            };
+
+            if (fs_file && fs_file->meta && fs_file->meta->name2) {
                 if (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)
                     tsk_printf("* ");
 
@@ -120,8 +122,6 @@ tsk_fs_ffind(TSK_FS_INFO * fs, TSK_FS_FFIND_FLAG_ENUM lclflags,
                   return 1;
                 tsk_printf("\n");
             }
-            if (fs_file)
-                tsk_fs_file_close(fs_file);
         }
         else {
             tsk_printf("File name not found for inode\n");

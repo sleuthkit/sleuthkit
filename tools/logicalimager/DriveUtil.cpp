@@ -14,8 +14,10 @@
 */
 
 #include <iostream>
-#include <string>
 #include <list>
+#include <memory>
+#include <string>
+
 #include <Wbemidl.h>
 #include <comutil.h>
 
@@ -58,14 +60,17 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
     const TSK_TCHAR *image = (TSK_TCHAR *)imageStr.c_str();
     bool result = false;
 
-    TSK_IMG_INFO *img = TskHelper::addFSFromImage(image);
-    if (img == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        TskHelper::addFSFromImage(image),
+        tsk_img_close
+    };
+
+    if (!img) {
         return result;
     }
 
     const std::list<TSK_FS_INFO *> fsList = TskHelper::getInstance().getFSInfoList();
-    for (std::list<TSK_FS_INFO *>::const_iterator fsListIter = fsList.begin(); fsListIter != fsList.end(); ++fsListIter) {
-        TSK_FS_INFO *fsInfo = *fsListIter;
+    for (const TSK_FS_INFO* fsInfo : fsList) {
         TSK_FS_TYPE_ENUM fileSystemType = fsInfo->ftype;
         if (fileSystemType == TSK_FS_TYPE_FAT12 ||
             fileSystemType == TSK_FS_TYPE_FAT16 ||
@@ -75,11 +80,9 @@ bool DriveUtil::driveIsFAT(wchar_t *drive) {
             break;
         }
     }
-    tsk_img_close(img);
     TskHelper::getInstance().reset();
     return result;
 }
-
 
 /**
 * checkDriveForBitlocker: checks if the given drive has BitLocker encrypted

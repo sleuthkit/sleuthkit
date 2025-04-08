@@ -1,7 +1,7 @@
 #ifndef _LEGACY_CACHE_H
 #define _LEGACY_CACHE_H
 
-#include "../base/tsk_base_i.h"
+#include "tsk/base/tsk_base_i.h"
 
 #define TSK_IMG_INFO_CACHE_NUM  32
 #define TSK_IMG_INFO_CACHE_LEN  65536

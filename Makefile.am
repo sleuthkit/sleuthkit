@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CPPFLAGS = -I$(srcdir)/tsk $(SQLITE3_CPPFLAGS) $(CRYPTO_CPPFLAGS) $(AFFLIB_CPPFLAGS) $(AFF4_CPPFLAGS) $(EWF_CPPFLAGS) $(QCOW_CPPFLAGS) $(VHDI_CPPFLAGS) $(VMDK_CPPFLAGS) $(VSLVM_CPPFLAGS) $(BFIO_CPPFLAGS) $(ZLIB_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/tsk $(SQLITE3_CPPFLAGS) $(CRYPTO_CPPFLAGS) $(AFFLIB_CPPFLAGS) $(AFF4_CPPFLAGS) $(EWF_CPPFLAGS) $(QCOW_CPPFLAGS) $(VHDI_CPPFLAGS) $(VMDK_CPPFLAGS) $(VSLVM_CPPFLAGS) $(BFIO_CPPFLAGS) $(ZLIB_CPPFLAGS)
 AM_CFLAGS = -Wall -Wextra $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS) $(CRYPTO_CFLAGS) $(AFFLIB_CFLAGS) $(AFF4_CFLAGS) $(EWF_CFLAGS) $(QCOW_CFLAGS) $(VHDI_CFLAGS) $(VMDK_CFLAGS) $(VSLVM_CFLAGS) $(BFIO_CFLAGS) $(ZLIB_CFLAGS)
 AM_CXXFLAGS = -Wall -Wextra -Woverloaded-virtual $(PTHREAD_CXXFLAGS) $(CRYPTO_CXXFLAGS) $(SQLITE3_CXXFLAGS) $(AFFLIB_CXXFLAGS) $(AFF4_CXXFLAGS) $(EWF_CXXFLAGS) $(QCOW_CXXFLAGS) $(VHDI_CXXFLAGS) $(VMDK_CXXFLAGS) $(VSLVM_CXXFLAGS) $(BFIO_CXXFLAGS) $(ZLIB_CXXFLAGS)
 AM_LDFLAGS = $(SQLITE3_LDFLAGS) $(AFFLIB_LDFLAGS) $(CRYPTO_LDFLAGS) $(AFF4_LDFLAGS) $(EWF_LDFLAGS) $(QCOW_LDFLAGS) $(VHDI_LDFLAGS) $(VMDK_LDFLAGS) $(VSLVM_LDFLAGS) $(BFIO_LDFLAGS) $(ZLIB_LDFLAGS)
@@ -99,6 +99,7 @@ nobase_include_HEADERS = \
 	tsk/pool/pool_compat.hpp \
 	tsk/pool/tsk_apfs.h \
 	tsk/pool/tsk_apfs.hpp \
+	tsk/pool/tsk_lvm.hpp \
 	tsk/pool/tsk_pool.h \
 	tsk/pool/tsk_pool.hpp \
 	tsk/tsk_incs.h \
@@ -191,7 +192,7 @@ tsk_auto_libtskauto_la_SOURCES = \
 
 # Compile the bundled sqlite3 if there isn't an existing lib to use
 if !HAVE_LIBSQLITE3
-AM_CPPFLAGS += -Ivendors
+AM_CPPFLAGS += -I$(top_srcdir)/vendors
 tsk_auto_libtskauto_la_SOURCES += vendors/sqlite3.c vendors/sqlite3.h
 endif
 
@@ -229,7 +230,7 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/dls_lib.cpp \
 	tsk/fs/dstat_lib.cpp \
 	tsk/fs/encryptionHelper.cpp \
-	tsk/fs/exfatfs.c \
+	tsk/fs/exfatfs.cpp \
 	tsk/fs/exfatfs_dent.cpp \
 	tsk/fs/exfatfs_meta.cpp \
 	tsk/fs/ext2fs.cpp \
@@ -239,10 +240,10 @@ tsk_fs_libtskfs_la_SOURCES = \
 	tsk/fs/fatfs_dent.cpp \
 	tsk/fs/fatfs_meta.cpp \
 	tsk/fs/fatfs_utils.c \
-	tsk/fs/fatxxfs.c \
+	tsk/fs/fatxxfs.cpp \
 	tsk/fs/fatxxfs_dent.c \
 	tsk/fs/fatxxfs_meta.cpp \
-	tsk/fs/ffind_lib.c \
+	tsk/fs/ffind_lib.cpp \
 	tsk/fs/ffs.cpp \
 	tsk/fs/ffs_dent.cpp \
 	tsk/fs/fls_lib.cpp \
@@ -601,18 +602,20 @@ EXTRA_DIST += \
 	tools/timeline/mactime.base \
 	tools/timeline/.perltidyrc
 
-tools/timeline/mactime: tools/timeline/mactime.base Makefile
+tools/timeline/mactime: $(top_srcdir)/tools/timeline/mactime.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$VER=\"$(VERSION)\";" >>$@
-	@cat $(srcdir)/tools/timeline/mactime.base >>$@
+	@cat $(top_srcdir)/tools/timeline/mactime.base >>$@
 	@chmod +x $@
 
-tools/sorter/sorter: tools/sorter/sorter.base Makefile
+tools/sorter/sorter: $(top_srcdir)/tools/sorter/sorter.base Makefile
+	@mkdir -p $(dir $@)
 	@echo "#!$(PERL) -w" >$@
 	@echo "my \$$BIN_DIR=\"$(bindir)\";" >>$@
 	@echo "my \$$DATA_DIR=\"$(datadir)\";" >>$@
 	@echo "my \$$VER=\"$(VERSION)\";" >>$@
-	@cat $(srcdir)/tools/sorter/sorter.base >>$@
+	@cat $(top_srcdir)/tools/sorter/sorter.base >>$@
 	@chmod +x $@
 
 #indent:
@@ -621,7 +624,8 @@ tools/sorter/sorter: tools/sorter/sorter.base Makefile
 
 EXTRA_DIST += test/legacy/runtests.sh
 
-check_SCRIPTS = \
+## Check system
+check_script_files = \
 	test/check_static.sh \
 	test/test_libraries.sh \
 	test/test_static_tools.sh \
@@ -630,9 +634,13 @@ check_SCRIPTS = \
 	test/img_dump/test_imgs_E01.sh \
 	test/legacy/runtests.sh \
 	test/tools/tool_differ.sh \
+	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh \
 	test/tools/vstools/test_mmls_E01.sh
+
+check_SCRIPTS = $(check_script_files)
+EXTRA_DIST += $(check_script_files)
 
 TESTS =	\
 	test/runner \
@@ -640,6 +648,7 @@ TESTS =	\
 	test/fiwalk/fiwalk_test \
 	test/img_dump/test_imgs.sh \
 	test/legacy/runtests.sh \
+	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
 	test/tools/vstools/test_mmls.sh
 
@@ -672,7 +681,7 @@ check_PROGRAMS = \
 	test/legacy/fs_thread_test \
 	test/legacy/read_apis
 
-test_runner_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_runner_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/vendors $(CATCH2_CPPFLAGS)
 test_runner_LDADD = $(TSK_LIBS)
 test_runner_SOURCES = \
 	test/tsk/base/test_tsk_error.cpp \
@@ -687,22 +696,14 @@ test_runner_SOURCES = \
 	test/tsk/img/test_vmdk.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
-	test/runner.cpp
+	test/runner.cpp \
+	vendors/catch.hpp
 
-EXTRA_test_runner_DEPENDENCIES = test/get_images/test_images.txt
-
-test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -Ivendors $(CATCH2_CPPFLAGS)
+test_fiwalk_fiwalk_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/vendors $(CATCH2_CPPFLAGS)
 test_fiwalk_fiwalk_test_LDADD = $(TSK_LIBS)
 test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
 	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
-
-EXTRA_test_fiwalk_fiwalk_test_DEPENDENCIES = test/get_images/test_images.txt
-
-test/get_images/test_images.txt: test/get_images/test_images.yaml test/get_images/get_test_images.bash test/get_images/get_test_images.py
-	test/get_images/get_test_images.bash
-
-CLEANFILES += test/get_images/test_images.txt
 
 test_img_dump_img_dump_LDADD = $(TSK_LIBS)
 test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
