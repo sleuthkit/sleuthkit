@@ -26,7 +26,7 @@ typedef std::pair<TSK_OFF_T, std::string> Path2InumCacheKey;
 class Path2InumCacheData {
 public:
     Path2InumCacheData(TSK_INUM_T a_inum, TSK_FS_DIR *a_tsk_fs_dir);
-    
+
     void setFSNameFlag(TSK_FS_NAME_FLAG_ENUM a_flag) {m_fs_name_flags = a_flag;};
 
     TSK_INUM_T getInum() const { return m_inum; }
@@ -62,7 +62,7 @@ private:
 class TskHelper {
 public:
     static TskHelper& getInstance() {
-        static TskHelper instance; 
+        static TskHelper instance;
         return instance;
     }
 
@@ -72,7 +72,7 @@ public:
     TSK_FS_INFO *getFSInfo(TSK_OFF_T offset);
     const std::list<TSK_FS_INFO *> getFSInfoList();
 
-    void setImgInfo(TSK_IMG_INFO *a_img_info) { m_img_info = a_img_info; }; 
+    void setImgInfo(TSK_IMG_INFO *a_img_info) { m_img_info = a_img_info; };
     void enumerateFileAndVolumeSystems(TSK_IMG_INFO *img);
     void openFs(TSK_IMG_INFO *img, TSK_OFF_T byteOffset);
     int path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension, TSKFileNameInfo &a_result, TSK_FS_NAME *a_fs_name, TSK_FS_FILE **a_fs_file);
@@ -98,9 +98,9 @@ private:
     bool addPathToInumCache(const TSK_FS_INFO *a_fs, const std::string &a_path, const Path2InumCacheData *a_cacheData);
     int releasePath2InumCache();
 
-    TskHelper();  
+    TskHelper();
     ~TskHelper();
-    TskHelper(TskHelper const&);             
+    TskHelper(TskHelper const&);
 
     TSK_IMG_INFO *m_img_info;
 

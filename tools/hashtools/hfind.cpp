@@ -83,14 +83,14 @@ main(int argc, char ** argv1)
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if( argv == NULL) {
         tsk_fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
     argv = (TSK_TCHAR **)argv1;
 #endif
-    
+
     progname = argv[0];
     setlocale(LC_ALL, "");
 
@@ -128,7 +128,7 @@ main(int argc, char ** argv1)
             usage();
         }
     }
-    
+
     if ((addHash) && ((idx_type != NULL) || (create))) {
         tsk_fprintf(stderr, "-a cannot be specified with -c or -i\n");
         usage();
@@ -148,8 +148,8 @@ main(int argc, char ** argv1)
             tsk_fprintf(stderr, "-c and -i cannot be specified at same time\n");
             usage();
         }
-        
-        TSK_TCHAR *ext = TSTRRCHR(db_file, _TSK_T('.'));    
+
+        TSK_TCHAR *ext = TSTRRCHR(db_file, _TSK_T('.'));
         if ((NULL != ext) && (TSTRLEN(ext) >= 4) && (TSTRCMP(ext, _TSK_T(".kdb")) == 0)) {
             if (0 == tsk_hdb_create(db_file)) {
                 tsk_fprintf(stdout, "New database %" PRIttocTSK" created\n", db_file);
@@ -158,20 +158,20 @@ main(int argc, char ** argv1)
             else {
                 tsk_fprintf(stderr, "Failed to create new database %" PRIttocTSK"\n", db_file);
                 return 1;
-            }        
+            }
         }
         else {
             tsk_fprintf(stderr, "New database path must end in .kdb extension\n");
             return 1;
         }
     }
-        
-    // Opening an existing database.    
+
+    // Opening an existing database.
     if ((hdb_info = tsk_hdb_open(db_file, TSK_HDB_OPEN_NONE)) == NULL) {
         tsk_error_print(stderr);
         return 1;
     }
-    
+
     // Now that the database is open and its type is known, if running in add hashes mode (-a option)
     // see if it takes updates.
     if (addHash && !tsk_hdb_accepts_updates(hdb_info)) {
@@ -209,14 +209,14 @@ main(int argc, char ** argv1)
             tsk_hdb_close(hdb_info);
             return 1;
         }
-        
+
         tsk_fprintf(stdout, "Index created\n");
         tsk_hdb_close(hdb_info);
         return 0;
     }
 
     /* Either lookup hash values or add them to DB.
-     * Check if the values were passed on the command line or via a file 
+     * Check if the values were passed on the command line or via a file
      */
     if (OPTIND < argc) {
 
@@ -265,7 +265,7 @@ main(int argc, char ** argv1)
             }
             else {
                 /* Perform lookup */
-                retval = tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
+                retval = tsk_hdb_lookup_str(hdb_info, (const char *)htmp,
                          (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
                 if (retval == -1) {
                     tsk_error_print(stderr);
@@ -338,7 +338,7 @@ main(int argc, char ** argv1)
                     break;
                 }
             }
-            
+
             if (done)
                 break;
 #else
@@ -351,7 +351,7 @@ main(int argc, char ** argv1)
             buf[strlen(buf) - 1] = '\0';
 
             retval =
-                tsk_hdb_lookup_str(hdb_info, (const char *)buf, 
+                tsk_hdb_lookup_str(hdb_info, (const char *)buf,
                         (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
             if (retval == -1) {
                 tsk_error_print(stderr);
@@ -365,7 +365,7 @@ main(int argc, char ** argv1)
                 print_notfound(buf);
             }
         }
-        
+
 #ifdef TSK_WIN32
         if (lookup_file != NULL)
             CloseHandle(handle);
@@ -373,7 +373,7 @@ main(int argc, char ** argv1)
         if (lookup_file != NULL)
             fclose(handle);
 #endif
-        
+
     }
 
     tsk_hdb_close(hdb_info);

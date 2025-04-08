@@ -50,7 +50,7 @@
 #   and this notice are preserved.  This file is offered as-is, without any
 #   warranty.
 
-#serial 3
+#serial 4
 
 AC_DEFUN([AX_PKG_CHECK_MODULES],[
     m4_define([ax_package_requires],
@@ -58,8 +58,8 @@ AC_DEFUN([AX_PKG_CHECK_MODULES],[
     m4_define([ax_package_requires_private],
               [m4_default_quoted([$7],[AX_PACKAGE_REQUIRES_PRIVATE])])
 
-    ax_package_requires="$[]ax_package_requires $2"
-    ax_package_requires_private="$[]ax_package_requires_private $3"
+    ax_package_requires="$[]ax_package_requires m4_normalize($2)"
+    ax_package_requires_private="$[]ax_package_requires_private m4_normalize($3)"
 
     PKG_CHECK_MODULES([$1],[$2 $3],[$4],[$5])
 

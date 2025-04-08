@@ -28,13 +28,7 @@
 #include <sys/time.h>
 #endif
 
-#ifdef _MSC_VER
-  #include "regex.h"  //use regex in src tree
-#else
-  extern "C" {
-    #include <regex.h>
-  }
-#endif
+#include <regex>
 
 #include "arff.h"
 
@@ -64,34 +58,28 @@ bool arff::is_weka_date(const string &s)
        isdigit(s[5]) && isdigit(s[6]) && s[7]=='-' &&
        isdigit(s[8]) && isdigit(s[9])  &&
        s[10]==' ' &&
-       isdigit(s[11]) && isdigit(s[12]) && s[13]==':' &&       
-       isdigit(s[14]) && isdigit(s[15]) && s[16]==':' &&       
+       isdigit(s[11]) && isdigit(s[12]) && s[13]==':' &&
+       isdigit(s[14]) && isdigit(s[15]) && s[16]==':' &&
        isdigit(s[17]) && isdigit(s[18]) && s.size()==19) return true;
     return false;
 }
 
 /* microsoft metadata date format: YYYY-MM-DDTHH:MM:SSZ */
-bool arff::is_msword_date(const string &s) 
+bool arff::is_msword_date(const string &s)
 {
-  //regex_t objects hold the regular expressions
-  static regex_t msdoc_date;
+  static const std::regex msdoc_date("[0-9]{4}-[01]{1}[0-9]{1}-[0123]{1}[0-9]{1}T[012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}Z", std::regex::extended | std::regex::icase);
 
-  regcomp(&msdoc_date, "[0-9]{4}-[01]{1}[0-9]{1}-[0123]{1}[0-9]{1}T[012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}Z", REG_EXTENDED|REG_ICASE);
-  
-  return regexec(&msdoc_date, s.c_str(), 0, NULL, 0)==REGEX_MATCH;
-
+  std::smatch m;
+  return std::regex_match(s, m, msdoc_date);
 }
 
 /* exif metadate date format: YYYY:MM:DD HH:MM:SS */
-bool arff::is_exif_date(const string &s) 
+bool arff::is_exif_date(const string &s)
 {
-  //regex_t objects hold the regular expressions
-  static regex_t exif_date;
+  static const std::regex exif_date("[0-9]{4}:[01]{1}[0-9]{1}:[0123]{1}[0-9]{1} [012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}", std::regex::extended | std::regex::icase);
 
-  regcomp(&exif_date, "[0-9]{4}:[01]{1}[0-9]{1}:[0123]{1}[0-9]{1} [012]{1}[0-9]{1}:[0-5]{1}[0-9]{1}:[0-5]{1}[0-9]{1}", REG_EXTENDED|REG_ICASE);
-
-  return regexec(&exif_date, s.c_str(), 0, NULL, 0)==REGEX_MATCH;
-
+  std::smatch m;
+  return std::regex_match(s, m, exif_date);
 }
 
 /* checks to see if input string is a recognized date format-- one of
@@ -120,13 +108,13 @@ string arff::make_weka_date(const string &s)
   if(s=="?") return "?";
 
   string wekadate = "";
-  
+
   wekadate = s;
-  if (is_msword_date(s)) { 
-    /* convert to weka date format by replacing the T with a space 
+  if (is_msword_date(s)) {
+    /* convert to weka date format by replacing the T with a space
        and removing the trailing Z */
     wekadate.replace(10,1," "); //replace 1 char starting at index 10 with a space
-    wekadate.erase(19); //remove trailing Z. 
+    wekadate.erase(19); //remove trailing Z.
   }
   else if (is_exif_date(s)) {
     /* convert to weka date format by replacing the colons with hyphens in the date */
@@ -213,7 +201,7 @@ void arff::add_value(string name,const string &value)
  */
 void arff::add_valuet(string name,time_t t)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (defined(__MINGW32__) && !defined(_UCRT))
 #define TM_FORMAT "%Y-%m-%d %H:%M:%S"
 #else
 #define TM_FORMAT "%F %T"
@@ -251,7 +239,7 @@ void arff::add_value(string name,int64_t value)
 	strftime(buf,sizeof(buf),TM_FORMAT,gmtime((time_t *)&valuet));
 	break;
     default:
-	sprintf(buf,"%" PRIu64,value);
+	snprintf(buf,sizeof(buf), "%" PRIu64,value);
 	break;
     }
     (*values.back())[code] = buf;
@@ -314,17 +302,17 @@ void arff::write_row(FILE *out,const valueMapT &row)
     for(unsigned int i=0;i<attributeNames.size();i++){
 	valueMapT::const_iterator k = row.find(i); // find the row we are looking for
 	string val("?");		// default value - no value
-	
+
 	if(k!=row.end()){	// if we have data
 	    val = (*k).second;
-	    
+
 	    /* if this attribute is type DATE and the val is not in weak date format,
 	     * turn it into weka date format
 	     */
-	    if(attributeTypes[i]==DATE && is_weka_date(val)==false){		  
+	    if(attributeTypes[i]==DATE && is_weka_date(val)==false){
 		val = make_weka_date(val);
 	    }
-	    
+
 	    /* Change any quotes to spaces */
 	    for(unsigned int j=0;j<val.size();j++){
 		if(val[j]=='"') val[j]=' ';
@@ -358,7 +346,7 @@ void arff::write()
 	if(attributeTypes[i]==STRING && attributeAlwaysNumeric(attributeNames[i])){
 	    attributeTypes[i]=NUMERIC;
 	}
-	if(attributeTypes[i]==STRING && attributeAlwaysDate(attributeNames[i])){	 
+	if(attributeTypes[i]==STRING && attributeAlwaysDate(attributeNames[i])){
 	  attributeTypes[i]=DATE;
 	}
     }
@@ -371,7 +359,7 @@ void arff::write()
     fprintf(outfile,"\n");
     fprintf(outfile,"@RELATION %s\n",relation.c_str());
     fprintf(outfile,"\n");
-    
+
     /* Write out the attributes */
     for(unsigned int i=0;i<attributeNames.size();i++){
 	string name = attributeNames[i];
@@ -404,4 +392,3 @@ void arff::write()
     }
     fflush(outfile);
 }
-

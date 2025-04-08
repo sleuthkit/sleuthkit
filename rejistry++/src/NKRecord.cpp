@@ -44,7 +44,7 @@ namespace Rejistry {
         }
     }
 
-    NKRecord::NKRecord(const NKRecord& sourceRecord) : Record(sourceRecord._buf, sourceRecord._offset) {        
+    NKRecord::NKRecord(const NKRecord& sourceRecord) : Record(sourceRecord._buf, sourceRecord._offset) {
     }
 
     bool NKRecord::hasClassname() const {
@@ -60,7 +60,7 @@ namespace Rejistry {
         uint16_t length = getWord(CLASSNAME_LENGTH_OFFSET);
 
         // Not sure why we are performing this check. I haven't found any documentation on
-        // a max length for class name or its purpose. 
+        // a max length for class name or its purpose.
         if (length > MAX_NAME_LENGTH) {
             throw RegistryParseException("Class name exceeds maximum length.");
         }

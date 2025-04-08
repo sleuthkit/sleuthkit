@@ -11,7 +11,7 @@
 /**
 * \file tsk_vs.h
 * External header file for media management (volume system) support.
-* Note that this file is not meant to be directly included.  
+* Note that this file is not meant to be directly included.
 * It is included by both libtsk.h and tsk_vs_i.h.
 */
 
@@ -30,21 +30,21 @@ extern "C" {
     typedef struct TSK_VS_INFO TSK_VS_INFO;
     typedef struct TSK_VS_PART_INFO TSK_VS_PART_INFO;
 
-    /** 
+    /**
     * Definition for callback function that vs_part_walk() calls for
-    * each partition that it walks.  
+    * each partition that it walks.
     *
     * @param a_vs Pointer to volume system being analyzed
     * @param a_vs_part Pointer to current partition in the walk
     * @param a_ptr Pointer that was passed to vs_part_walk by caller
-    * @return Status on whether the vs_part_walk() function should 
-    * continue, stop, or error. 
+    * @return Status on whether the vs_part_walk() function should
+    * continue, stop, or error.
     */
     typedef TSK_WALK_RET_ENUM(*TSK_VS_PART_WALK_CB) (TSK_VS_INFO *
         a_vs, const TSK_VS_PART_INFO * a_vs_part, void *a_ptr);
 
     /**
-    * Flags for the partition type.  
+    * Flags for the partition type.
     */
     typedef enum {
         TSK_VS_TYPE_DETECT = 0x0000,    ///< Use autodetection methods
@@ -53,7 +53,7 @@ extern "C" {
         TSK_VS_TYPE_SUN = 0x0004,       ///< Sun VTOC
         TSK_VS_TYPE_MAC = 0x0008,       ///< Mac partition table
         TSK_VS_TYPE_GPT = 0x0010,       ///< GPT partition table
-        TSK_VS_TYPE_APFS =  0x0020,     ///< APFS 
+        TSK_VS_TYPE_APFS =  0x0020,     ///< APFS
         TSK_VS_TYPE_LVM =  0x0030,     ///< LVM
         TSK_VS_TYPE_DBFILLER = 0x00F0,  ///< fake partition table type for loaddb (for images that do not have a volume system)
         TSK_VS_TYPE_UNSUPP = 0xffff,    ///< Unsupported
@@ -75,7 +75,7 @@ extern "C" {
 
         TSK_VS_PART_INFO *part_list;    ///< Linked list of partitions
 
-        TSK_PNUM_T part_count;  ///< number of partitions 
+        TSK_PNUM_T part_count;  ///< number of partitions
 
         void (*close) (TSK_VS_INFO *);  ///< \internal Progs should call tsk_vs_close().
     };
@@ -87,19 +87,19 @@ extern "C" {
     * Generic structures  for partitions / slices
     */
 
-    /** 
+    /**
     * Flag values that describe the partitions in the VS.  Refer
-    * to \ref vs_open2 for more details. 
+    * to \ref vs_open2 for more details.
     */
     typedef enum {
         TSK_VS_PART_FLAG_ALLOC = 0x01,  ///< Sectors are allocated to a volume in the volume system
-        TSK_VS_PART_FLAG_UNALLOC = 0x02,        ///< Sectors are not allocated to a volume 
+        TSK_VS_PART_FLAG_UNALLOC = 0x02,        ///< Sectors are not allocated to a volume
         TSK_VS_PART_FLAG_META = 0x04,   ///< Sectors contain volume system metadata and could also be ALLOC or UNALLOC
-        TSK_VS_PART_FLAG_ALL = 0x07,    ///< Show all sectors in the walk. 
+        TSK_VS_PART_FLAG_ALL = 0x07,    ///< Show all sectors in the walk.
     } TSK_VS_PART_FLAG_ENUM;
 
     /**
-    * Linked list entry that describes a volume in a generic way. 
+    * Linked list entry that describes a volume in a generic way.
     */
     struct TSK_VS_PART_INFO {
         int tag;
@@ -111,7 +111,7 @@ extern "C" {
         TSK_DADDR_T len;        ///< Number of sectors in partition
         char *desc;             ///< UTF-8 description of partition (volume system type-specific)
         int8_t table_num;       ///< Table address that describes this partition
-        int8_t slot_num;        ///< Entry in the table that describes this partition
+        int16_t slot_num;        ///< Entry in the table that describes this partition
         TSK_PNUM_T addr;        ///< Address of this partition
         TSK_VS_PART_FLAG_ENUM flags;    ///< Flags for partition
     };
@@ -155,15 +155,15 @@ extern "C" {
 class TskVsInfo;
 class TskVsPartInfo;
 
-/** 
+/**
 * Definition for callback function that vs_part_walk() calls for
-* each partition that it walks.  
+* each partition that it walks.
 *
 * @param a_vs Pointer to volume system being analyzed
 * @param a_vs_part Pointer to current partition in the walk
 * @param a_ptr Pointer that was passed to vs_part_walk by caller
-* @return Status on whether the vs_part_walk() function should 
-* continue, stop, or error. 
+* @return Status on whether the vs_part_walk() function should
+* continue, stop, or error.
 */
 typedef TSK_WALK_RET_ENUM(*TSK_VS_PART_WALK_CPP_CB) (TskVsInfo *
     a_vs, const TskVsPartInfo * a_vs_part, void *a_ptr);
@@ -181,10 +181,10 @@ typedef struct {
 extern TSK_WALK_RET_ENUM tsk_vs_part_walk_cpp_c_cb(TSK_VS_INFO * a_vs,
     const TSK_VS_PART_INFO * a_vs_part, void *a_ptr);
 
-/** 
+/**
  * \ingroup vslib_cpp
 * Stores information about a volume / partition inside of an open volume
-* system. 
+* system.
 */
 class TskVsPartInfo {
     friend class TskFsInfo;
@@ -211,7 +211,7 @@ class TskVsPartInfo {
     * @param a_off Byte offset to read from, relative to start of VOLUME in volume system.
     * @param a_buf Buffer to store data in
     * @param a_len Amount of data to read (in bytes)
-    * @return Number of bytes read or -1 on error 
+    * @return Number of bytes read or -1 on error
     */
     ssize_t read(TSK_OFF_T a_off, char *a_buf, size_t a_len) {
         if (m_vsPartInfo != NULL)
@@ -226,7 +226,7 @@ class TskVsPartInfo {
     * @param a_addr Block address to start reading from, relative to start of VOLUME in volume system.
     * @param a_buf Buffer to store data in
     * @param a_len Amount of data to read (in bytes - must be a multiple of block_size)
-    * @return Number of bytes read or -1 on error 
+    * @return Number of bytes read or -1 on error
     */
     ssize_t readBlock(TSK_DADDR_T a_addr, char *a_buf, size_t a_len) {
         if (m_vsPartInfo != NULL)
@@ -284,7 +284,7 @@ class TskVsPartInfo {
     * Return entry in the table that describes this partition
     * @return entry in the table that describes this partition
     */
-    int8_t getSlotNum() const {
+    int16_t getSlotNum() const {
         if (m_vsPartInfo != NULL)
             return m_vsPartInfo->slot_num;
         else
@@ -317,7 +317,7 @@ class TskVsPartInfo {
 
 /**
  * \ingroup vslib_cpp
-* Stores information about an open volume system. 
+* Stores information about an open volume system.
 * To use this object, open() should be called first.
 */
 class TskVsInfo {
@@ -342,8 +342,8 @@ class TskVsInfo {
         close();
     };
 
-    /** 
-    * Walk a range of partitions and pass the data to a callback function. 
+    /**
+    * Walk a range of partitions and pass the data to a callback function.
     * See tsk_vs_part_walk() for details.
     * @param a_start Address of first partition to walk from.
     * @param a_last Address of last partition to walk to.
@@ -370,7 +370,7 @@ class TskVsInfo {
     * @param a_offset Byte offset in the disk image to start analyzing from.
     * @param a_type Type of volume system (including auto detect)
     *
-    * @return 1 on error and 0 on success. 
+    * @return 1 on error and 0 on success.
     */
     uint8_t open(TskImgInfo * a_imgInfo, TSK_DADDR_T a_offset,
         TSK_VS_TYPE_ENUM a_type) {
@@ -391,7 +391,7 @@ class TskVsInfo {
     * @param a_addr Sector address to read from, relative to start of VOLUME SYSTEM.
     * @param a_buf Buffer to store data in
     * @param a_len Amount of data to read (in bytes - must be a multiple of block_size)
-    * @return Number of bytes read or -1 on error 
+    * @return Number of bytes read or -1 on error
     */
     ssize_t readBlock(TSK_DADDR_T a_addr, char *a_buf, size_t a_len) {
         if (m_vsInfo != NULL)
@@ -455,7 +455,7 @@ class TskVsInfo {
     };
 
     /**
-    * Get a reference to the parent image object. 
+    * Get a reference to the parent image object.
     * @return Pointer to object or NULL on error.  Caller is responsible for freeing object.
     */
     const TskImgInfo *getImgInfo() const {
@@ -494,7 +494,7 @@ class TskVsInfo {
     };
 
     /**
-     * Return the supported volume system types. 
+     * Return the supported volume system types.
      * See tsk_vs_type_supported() for details.
      * @return The bit in the return value is 1 if the type is supported.
      */

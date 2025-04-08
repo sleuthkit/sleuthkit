@@ -78,7 +78,7 @@ namespace Rejistry {
         HBIN::HBINPtrList getHBINs() const;
 
         /**
-         * Get a pointer to the first HBIN record. The caller is 
+         * Get a pointer to the first HBIN record. The caller is
          * responsible for freeing the record.
          * @returns A pointer to the first HBIN record.
          */

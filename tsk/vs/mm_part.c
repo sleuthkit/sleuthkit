@@ -14,8 +14,8 @@
 #include "tsk_vs_i.h"
 
 
-/** 
- * Add a partition to a sorted list 
+/**
+ * Add a partition to a sorted list
  * @param a_vs Volume system that partition belongs to
  * @param a_start Starting sector address of volume (relative to start of volume)
  * @param len Length of volume in sectors
@@ -28,7 +28,7 @@
  */
 TSK_VS_PART_INFO *
 tsk_vs_part_add(TSK_VS_INFO * a_vs, TSK_DADDR_T a_start, TSK_DADDR_T len,
-    TSK_VS_PART_FLAG_ENUM type, char *desc, int8_t table, int8_t slot)
+    TSK_VS_PART_FLAG_ENUM type, char *desc, int8_t table, int16_t slot)
 {
     TSK_VS_PART_INFO *part;
     TSK_VS_PART_INFO *cur_part;
@@ -169,8 +169,8 @@ tsk_vs_part_unused(TSK_VS_INFO * a_vs)
     return 0;
 }
 
-/* 
- * free the buffer with the description 
+/*
+ * free the buffer with the description
  */
 void
 tsk_vs_part_free(TSK_VS_INFO * a_vs)
@@ -190,7 +190,7 @@ tsk_vs_part_free(TSK_VS_INFO * a_vs)
 
 /**
  * \ingroup vslib
- * Return handle to a volume in the volume system. 
+ * Return handle to a volume in the volume system.
  *
  * @param a_vs Open volume system
  * @param a_idx Index for volume to return (0-based)
@@ -225,10 +225,10 @@ tsk_vs_part_get(const TSK_VS_INFO * a_vs, TSK_PNUM_T a_idx)
 }
 
 
-/** 
+/**
  * \ingroup vslib
- * Walk a range of partitions and pass the data to a callback function. 
- * 
+ * Walk a range of partitions and pass the data to a callback function.
+ *
  * @param a_vs Pointer to open volume system
  * @param a_start Address of first partition to walk from.
  * @param a_last Address of last partition to walk to.

@@ -27,5 +27,5 @@ Doxyfile                text
 *.sln               text eol=crlf
 *.bat			text eol=crlf
 
-.gitignore          text 
+.gitignore          text
 

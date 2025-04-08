@@ -11,7 +11,7 @@
 /*
  * This code makes use of research presented in the following paper:
  * "Reverse Engineering the exFAT File System" by Robert Shullich
- * Retrieved May 2013 from: 
+ * Retrieved May 2013 from:
  * http://www.sans.org/reading_room/whitepapers/forensics/reverse-engineering-microsoft-exfat-file-system_33274
  *
  * Some additional details concerning TexFAT were obtained in May 2013
@@ -21,7 +21,7 @@
 
 /**
  * \file tsk_exfatfs.h
- * Contains declarations of structures and functions specific to TSK exFAT 
+ * Contains declarations of structures and functions specific to TSK exFAT
  * file system support.
  */
 
@@ -41,7 +41,7 @@
  * \internal
  * An exFAT volume label should have 11 UTF-16 characters, but in practice
  * the name can extend into the reserved bytes and have a length up to 15
- * characters. 
+ * characters.
  */
 #define EXFATFS_MAX_VOLUME_LABEL_LEN_CHAR 15
 #define EXFATFS_MAX_VOLUME_LABEL_LEN_BYTE 30
@@ -52,7 +52,7 @@
  * file stream directory entry and at least one file name directory entry.
  * The file stream and file name entries are the secondary entries.
  */
-#define EXFATFS_MIN_FILE_SECONDARY_DENTRIES_COUNT 2 
+#define EXFATFS_MIN_FILE_SECONDARY_DENTRIES_COUNT 2
 
 /**
  * \internal
@@ -78,52 +78,52 @@
 
 /**
  * \internal
- * In an exFAT file stream directory entry, the second bit of the general 
+ * In an exFAT file stream directory entry, the second bit of the general
  * secondary flags byte is set if there is no FAT chain for a file, i.e., the
  * file is not fragmented.
  */
 #define EXFATFS_INVALID_FAT_CHAIN_MASK 0x02
 
 /**
- * Name for an exFAT volume label directory entry that has an empty label, with 
+ * Name for an exFAT volume label directory entry that has an empty label, with
  * the "$" prefix that is used to indicate "special file" directory entries and
  * non-file directory entries.
  */
-#define EXFATFS_EMPTY_VOLUME_LABEL_DENTRY_NAME "$EMPTY_VOLUME_LABEL"   
+#define EXFATFS_EMPTY_VOLUME_LABEL_DENTRY_NAME "$EMPTY_VOLUME_LABEL"
 
 /**
  * Name for an exFAT volume GUID directory entry, with the "$" prefix that is
- * used to indicate "special file" directory entries and non-file directory 
+ * used to indicate "special file" directory entries and non-file directory
  * entries.
  */
-#define EXFATFS_VOLUME_GUID_DENTRY_NAME "$VOLUME_GUID"   
+#define EXFATFS_VOLUME_GUID_DENTRY_NAME "$VOLUME_GUID"
 
 /**
- * Name for an exFAT allocation bitmap directory entry, with the "$" prefix 
- * that is used to indicate "special file" directory entries and non-file 
+ * Name for an exFAT allocation bitmap directory entry, with the "$" prefix
+ * that is used to indicate "special file" directory entries and non-file
  * directory entries.
  */
-#define EXFATFS_ALLOC_BITMAP_DENTRY_NAME "$ALLOC_BITMAP"   
+#define EXFATFS_ALLOC_BITMAP_DENTRY_NAME "$ALLOC_BITMAP"
 
 /**
- * Name for an exFAT upcase table directory entry, with the "$" prefix that is 
- * used to indicate "special file" directory entries and non-file directory 
+ * Name for an exFAT upcase table directory entry, with the "$" prefix that is
+ * used to indicate "special file" directory entries and non-file directory
  * entries.
  */
-#define EXFATFS_UPCASE_TABLE_DENTRY_NAME "$UPCASE_TABLE"   
+#define EXFATFS_UPCASE_TABLE_DENTRY_NAME "$UPCASE_TABLE"
 
 /**
- * Name for an exFAT TexFAT directory entry, with the "$" prefix that is used 
+ * Name for an exFAT TexFAT directory entry, with the "$" prefix that is used
  * to indicate "special file" directory entries and non-file directory entries.
  */
-#define EXFATFS_TEX_FAT_DENTRY_NAME "$TEX_FAT"   
+#define EXFATFS_TEX_FAT_DENTRY_NAME "$TEX_FAT"
 
 /**
  * Name for an exFAT access control table directory entry, with the "$" prefix
- * that is used to indicate "special file" directory entries and non-file 
+ * that is used to indicate "special file" directory entries and non-file
  * directory entries.
  */
-#define EXFATFS_ACT_DENTRY_NAME "$ACCESS_CONTROL_TABLE"   
+#define EXFATFS_ACT_DENTRY_NAME "$ACCESS_CONTROL_TABLE"
 
 #ifdef __cplusplus
 extern "C" {
@@ -132,13 +132,13 @@ extern "C" {
     /**
      * \internal
      * Master boot record (MBR) structure for exFAT file systems. The MBR will
-     * be at least 512 bytes in length, but may be padded for larger sector 
-     * sizes. It is part of a larger structure called the volume boot record 
-     * (VBR) that includes OEM parameters, reserved space, and a hash value. 
-     * There  should be both a primary and a backup VBR, so there is a primary 
+     * be at least 512 bytes in length, but may be padded for larger sector
+     * sizes. It is part of a larger structure called the volume boot record
+     * (VBR) that includes OEM parameters, reserved space, and a hash value.
+     * There  should be both a primary and a backup VBR, so there is a primary
      * MBR and a backup MBR.
      */
-    typedef struct { 
+    typedef struct {
         uint8_t jump_to_boot_code[3]; ///< 0xEB7690
         uint8_t fs_name[8];           ///< "EXFAT "
         uint8_t must_be_zeros[53];    ///< @brief Must be 0x00
@@ -187,7 +187,7 @@ extern "C" {
     typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;
 
     /**
-     * Volume label directory entry structure for exFAT file systems. This 
+     * Volume label directory entry structure for exFAT file systems. This
      * type of entry should be found only in the root directory.
      */
     typedef struct {
@@ -211,9 +211,9 @@ extern "C" {
 
     /**
      * Allocation bitmap directory entry structure for exFAT file systems.
-     * There will be one allocation bitmap for exFAT and two for TexFAT 
+     * There will be one allocation bitmap for exFAT and two for TexFAT
      * (transactional exFAT). Bit zero of the flags byte is 0 in the directory
-     * entry for the first bitmap and 1 in the directory entry for the second 
+     * entry for the first bitmap and 1 in the directory entry for the second
      * bitmap. This type of entry should be found only in the root directory.
      */
     typedef struct {
@@ -239,7 +239,7 @@ extern "C" {
     } EXFATFS_UPCASE_TABLE_DIR_ENTRY;
 
     /**
-     * TexFAT (transactional exFAT) directory entry structure for exFAT file 
+     * TexFAT (transactional exFAT) directory entry structure for exFAT file
      * systems. This type of entry should be found only in the root directory.
      */
     typedef struct {
@@ -286,8 +286,8 @@ extern "C" {
     /**
      * Stream extension directory entry structure for exFAT file systems.
      * It will be preceded by a file directory entry and followed by 1-17
-     * file name directory entries. The stream and file name entries are 
-     * secondary entries. A file entry and its stream and file name entries 
+     * file name directory entries. The stream and file name entries are
+     * secondary entries. A file entry and its stream and file name entries
      * constitute a file directory entry set.
      */
     typedef struct {
@@ -306,8 +306,8 @@ extern "C" {
     /**
      * File name directory entry structure for exFAT file systems.
      * It will be preceded by 0-16 file name entries, a stream entry, and
-     * a file entry. A file entry and its stream and file name entries 
-     * constitute a file directory entry set. Note that file names are not 
+     * a file entry. A file entry and its stream and file name entries
+     * constitute a file directory entry set. Note that file names are not
      * null-terminated. The length of a file name is stored in the file stream
      * entry of the file directory entry set.
      */
@@ -317,42 +317,42 @@ extern "C" {
         uint8_t utf16_name_chars[30];  ///< UTF16 part of file name, max 15 characters
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
-    extern uint8_t 
+    extern uint8_t
     exfatfs_open(FATFS_INFO *a_fatfs);
 
-    extern int8_t 
+    extern int8_t
     exfatfs_is_cluster_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
 
     extern uint8_t
     exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile);
 
-    extern uint8_t 
-    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, 
+    extern uint8_t
+    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,
+        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc,
         uint8_t a_do_basic_tests_only);
 
     extern uint8_t
-    exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, 
+    exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry,
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc);
 
     extern uint8_t
-    exfatfs_is_vol_guid_dentry(FATFS_DENTRY *a_dentry, 
+    exfatfs_is_vol_guid_dentry(FATFS_DENTRY *a_dentry,
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status);
 
     extern uint8_t
-    exfatfs_is_alloc_bitmap_dentry(FATFS_DENTRY *a_dentry, 
+    exfatfs_is_alloc_bitmap_dentry(FATFS_DENTRY *a_dentry,
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status, FATFS_INFO *a_fatfs);
 
     extern uint8_t
-    exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry, 
+    exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry,
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status, FATFS_INFO *a_fatfs);
 
     extern uint8_t
-    exfatfs_is_texfat_dentry(FATFS_DENTRY *a_dentry, 
+    exfatfs_is_texfat_dentry(FATFS_DENTRY *a_dentry,
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status);
 
     extern uint8_t
-    exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, 
+    exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry,
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status);
 
     extern uint8_t
@@ -369,8 +369,8 @@ extern "C" {
         uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster);
 
     extern uint8_t
-    exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
-        TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,  
+    exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum,
+        TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,
         EXFATFS_DIR_ENTRY_TYPE a_file_dentry_type,
         FATFS_DENTRY *a_stream_dentry);
 
@@ -378,7 +378,7 @@ extern "C" {
     exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry);
 
     extern TSK_RETVAL_ENUM
-    exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         FATFS_DENTRY *a_dentry, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file);
 
     extern uint8_t
@@ -389,14 +389,14 @@ extern "C" {
     exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile);
 
     extern uint8_t
-    exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
-        FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
+    exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
+        FATFS_DENTRY *a_dentry, unsigned int a_selection_flags,
         int a_cluster_is_alloc);
 
-    extern uint8_t 
+    extern uint8_t
     exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
 
-    extern EXFATFS_DIR_ENTRY_TYPE_ENUM 
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
 
     extern TSK_RETVAL_ENUM

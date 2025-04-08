@@ -106,6 +106,7 @@ public:
         mbedtls_aes_init(&m_aesFvekDecryptionContext);
         mbedtls_aes_init(&m_aesTweakEncryptionContext);
         mbedtls_aes_xts_init(&m_aesXtsDecryptionContext);
+        tsk_init_lock(&m_decrypt_sector_lock);
     };
 
     BITLOCKER_STATUS initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset, const char* a_password);
@@ -138,6 +139,7 @@ public:
             free(m_diffuserTempBuffer);
             m_diffuserTempBuffer = nullptr;
         }
+        tsk_deinit_lock(&m_decrypt_sector_lock);
     }
 
 private:
@@ -209,6 +211,7 @@ private:
     uint64_t m_volumeOffset; // All offsets are relative to the start of the volume
     uint16_t m_sectorSize = 0;
     uint64_t m_encryptedVolumeSize = 0;
+    tsk_lock_t m_decrypt_sector_lock;
     bool m_haveRecoveryKeyId = false;
     uint8_t m_bitlockerRecoveryKeyId[16];
 
@@ -220,7 +223,7 @@ private:
 
     // Offset and size of the original volume header
     uint64_t m_volumeHeaderOffset = 0;
-    uint64_t m_volumeHeaderSize = 0;    
+    uint64_t m_volumeHeaderSize = 0;
 };
 
 #endif

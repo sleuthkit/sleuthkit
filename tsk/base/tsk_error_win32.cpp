@@ -26,7 +26,7 @@ namespace tsk {
 		~GetTlsIndex() {
 			TlsFree(tlsIndex);
 		}
-    
+
 		DWORD GetIndex() {
 			return tlsIndex;
 		}

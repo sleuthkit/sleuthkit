@@ -24,6 +24,7 @@
 #define _TSK_BASE_H
 
 // standard C header files
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -39,11 +40,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x041201ff
+#define TSK_VERSION_NUM 0x041300ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.12.1"
+#define TSK_VERSION_STR "4.13.0"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -466,8 +467,8 @@ documentation and/or software.
     } TSK_MD5_CTX;
 
     void TSK_MD5_Init(TSK_MD5_CTX *);
-    void TSK_MD5_Update(TSK_MD5_CTX *, unsigned char *, unsigned int);
-    void TSK_MD5_Final(unsigned char[16], TSK_MD5_CTX *);
+    void TSK_MD5_Update(TSK_MD5_CTX *, const unsigned char *, unsigned int);
+    void TSK_MD5_Final(TSK_MD5_CTX *, unsigned char[16]);
 
 
 
@@ -485,8 +486,8 @@ documentation and/or software.
 /* Message digest functions */
 
     void TSK_SHA_Init(TSK_SHA_CTX *);
-    void TSK_SHA_Update(TSK_SHA_CTX *, BYTE * buffer, int count);
-    void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
+    void TSK_SHA_Update(TSK_SHA_CTX *, const BYTE * buffer, unsigned int count);
+    void TSK_SHA_Final(TSK_SHA_CTX *, BYTE * output);
 
 /* Flags for which type of hash(es) to run */
 	typedef enum{

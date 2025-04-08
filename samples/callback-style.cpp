@@ -1,17 +1,17 @@
-/* 
+/*
 *
-* This is a sample file that shows how to use some of the basic 
+* This is a sample file that shows how to use some of the basic
 * POSIX-style library functions in The Sleuth Kit (www.sleuthkit.org).
 * There are also callback-style functions that can be used to read
 * the data and partitions.
 *
 * Copyright (c) 2008-2011  Brian Carrier <carrier <at> sleuthkit <dot> org>
 * All rights reserved.
-* 
+*
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions
 * are met:
-* 
+*
 * - Redistributions of source code must retain the above copyright notice,
 *   this list of conditions and the following disclaimer.
 * - Redistributions in binary form must reproduce the above copyright
@@ -46,8 +46,8 @@ static TSK_HDB_INFO *hdb_info;
 #define DO_HASHLOOKUP 0
 
 
-/** 
- * dent_walk callback function 
+/**
+ * dent_walk callback function
  */
 static TSK_WALK_RET_ENUM
 file_act(TSK_FS_FILE * /*fs_file*/, TSK_OFF_T /*a_off*/, TSK_DADDR_T /*addr*/,
@@ -66,7 +66,7 @@ file_act(TSK_FS_FILE * /*fs_file*/, TSK_OFF_T /*a_off*/, TSK_DADDR_T /*addr*/,
 /**
  * Process the contents of a file.
  *
- * @return 1 on error and 0 on success 
+ * @return 1 on error and 0 on success
  */
 static uint8_t
 proc_file(TSK_FS_FILE * fs_file, const char *path)
@@ -88,7 +88,7 @@ proc_file(TSK_FS_FILE * fs_file, const char *path)
     /* Note that we could also cycle through all of the attributes in the
      * file by using one of the tsk_fs_attr_get() functions and walking it
      * with tsk_fs_attr_walk(). See the File Systems section of the Library
-     * User's Guide for more details: 
+     * User's Guide for more details:
      * http://www.sleuthkit.org/sleuthkit/docs/api-docs/ */
     if (tsk_fs_file_walk
         (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act,
@@ -105,7 +105,7 @@ proc_file(TSK_FS_FILE * fs_file, const char *path)
     else {
         unsigned char hash[16];
 
-        TSK_MD5_Final(hash, &md);
+        TSK_MD5_Final(&md, hash);
 #if 0
         {
             int i;
@@ -136,7 +136,7 @@ proc_file(TSK_FS_FILE * fs_file, const char *path)
 }
 
 /**
- * file name walk callback.  Walk the contents of each file 
+ * file name walk callback.  Walk the contents of each file
  * that is found.
  */
 static TSK_WALK_RET_ENUM
@@ -161,8 +161,8 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void * /*ptr*/)
 
 
 
-/** 
- * Analyze the volume starting at byte offset 'start' 
+/**
+ * Analyze the volume starting at byte offset 'start'
  * and walk each file that can be found.
  *
  * @param img Disk image to be analyzed.
@@ -203,14 +203,14 @@ proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 }
 
 /**
- * Volume system walk callback function that will analyze 
+ * Volume system walk callback function that will analyze
  * each volume to find a file system.
  */
 static TSK_WALK_RET_ENUM
 vs_act(TSK_VS_INFO * vs_info, const TSK_VS_PART_INFO * vs_part, void * /*ptr*/)
 {
     if (proc_fs(vs_info->img_info, vs_part->start * vs_info->block_size)) {
-        // if we return ERROR here, then the walk will stop.  But, the 
+        // if we return ERROR here, then the walk will stop.  But, the
         // error could just be because we looked into an unallocated volume.
         // do any special error handling / reporting here.
         tsk_error_reset();
@@ -223,11 +223,11 @@ vs_act(TSK_VS_INFO * vs_info, const TSK_VS_PART_INFO * vs_part, void * /*ptr*/)
 
 /**
  * Process the data as a volume system to find the partitions
- * and volumes.  
+ * and volumes.
  * File system analysis will be performed on each partition.
  *
  * @param img Image file information structure for data to analyze
- * @param start Byte offset to start analyzing from. 
+ * @param start Byte offset to start analyzing from.
  *
  * @return 1 on error and 0 on success
  */
@@ -236,7 +236,7 @@ proc_vs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 {
     TSK_VS_INFO *vs_info;
 
-    // USE mm_walk to get the volumes 
+    // USE mm_walk to get the volumes
     if ((vs_info =
             tsk_vs_open(img_info, start, TSK_VS_TYPE_DETECT)) == NULL) {
         if (tsk_verbose)

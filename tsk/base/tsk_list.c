@@ -1,5 +1,5 @@
 /*
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2007-2011 Brian Carrier.  All Rights reserved
@@ -12,7 +12,7 @@
  * tsk_lists are a linked list of buckets that store a key in REVERSE sorted order.
  * They are used to keep track of data as we walk along and prevent loops
  * from data corruption.   Note that the len value is actually negative.  An entry
- * with a key of 6 and a length of 2 covers the range of 5 to 6. 
+ * with a key of 6 and a length of 2 covers the range of 5 to 6.
  */
 
 /*
@@ -38,7 +38,7 @@ tsk_list_create(uint64_t a_key)
 /**
  * \ingroup baselib
  * Add an entry to a TSK_LIST (and create one if one does not exist)
- * @param a_tsk_list_head Pointer to pointer for head of list (can point to NULL if no list exists).  
+ * @param a_tsk_list_head Pointer to pointer for head of list (can point to NULL if no list exists).
  * @param a_key Value to add to list
  * @returns 1 on error
  */
@@ -89,7 +89,7 @@ tsk_list_add(TSK_LIST ** a_tsk_list_head, uint64_t a_key)
         return 0;
     }
 
-    /* At the start of this loop each time, we know that the key to add 
+    /* At the start of this loop each time, we know that the key to add
      * is smaller than the entry being considered (tmp) */
     tmp = *a_tsk_list_head;
     while (tmp != NULL) {

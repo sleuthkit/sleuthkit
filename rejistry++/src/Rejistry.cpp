@@ -51,7 +51,7 @@ namespace Rejistry {
         uint32_t lineIndex = 0;
 
         std::cout << "0x";
-        std::cout << std::hex << std::setw(8) << std::setfill('0') << offset; 
+        std::cout << std::hex << std::setw(8) << std::setfill('0') << offset;
 
         for (uint32_t i = offset; i < offset + length; ++i) {
             if (lineIndex == 16) {
@@ -70,7 +70,7 @@ namespace Rejistry {
                 for (uint16_t k = 0; k < linePadding; ++k) {
                     std::cout << " ";
                 }
-                std::cout << "0x" << std::hex << std::uppercase << std::setw(8) << i; 
+                std::cout << "0x" << std::hex << std::uppercase << std::setw(8) << i;
                 lineIndex = 0;
             }
 
@@ -130,7 +130,7 @@ namespace Rejistry {
         case ValueData::VALTYPE_MULTI_SZ:
             {
                 std::vector<std::wstring> stringList = data->getAsStringList();
-                
+
                 for (uint32_t i = 0; i < stringList.size(); ++i) {
                     if (i != 0) {
                         std::wcout << prefix << "               ";
@@ -219,7 +219,7 @@ namespace Rejistry {
             }
 
             printNKRecord(header->getRootNKRecord(), L"root ");
-            
+
             NKRecord::AutoNKRecordPtrList nkRecordList((header->getRootNKRecord()->getSubkeyList()->getSubkeys()));
             NKRecord::NKRecordPtrList::iterator keyIter = nkRecordList.begin();
             for (; keyIter != nkRecordList.end(); ++keyIter) {

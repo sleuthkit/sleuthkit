@@ -1,17 +1,17 @@
 /*
- * 
- * This is a sample file that shows how to use some of the basic 
+ *
+ * This is a sample file that shows how to use some of the basic
  * POSIX-style library functions in The Sleuth Kit (www.sleuthkit.org).
  * There are also callback-style functions that can be used to read
  * the data and partitions.
  *
  * Copyright (c) 2008-2011, Brian Carrier <carrier <at> sleuthkit <dot> org>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * - Redistributions of source code must retain the above copyright notice,
  *   this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright
@@ -89,7 +89,7 @@ proc_dir(TSK_FS_INFO * fs_info, TSK_STACK * stack,
         // get the entry
         if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
             fprintf(stderr,
-                "Error getting directory entry %" PRIuSIZE
+                "Error getting directory entry %zu"
                 " in directory %" PRIuINUM "\n", i, dir_inum);
             tsk_error_print(stderr);
 
@@ -114,9 +114,9 @@ proc_dir(TSK_FS_INFO * fs_info, TSK_STACK * stack,
             /* Note that we could also cycle through all of the attributes in the
              * file by using one of the tsk_fs_attr_get() functions and reading it
              * with tsk_fs_attr_read().  See the File Systems section of the Library
-             * User's Guide for more details: 
+             * User's Guide for more details:
              * http://www.sleuthkit.org/sleuthkit/docs/api-docs/ */
-            
+
             // read file contents
             if (fs_file->meta->type == TSK_FS_META_TYPE_REG) {
                 int myflags = 0;
@@ -143,8 +143,8 @@ proc_dir(TSK_FS_INFO * fs_info, TSK_STACK * stack,
                     }
                     else if (cnt != (ssize_t) len) {
                         fprintf(stderr,
-                            "Warning: %" PRIuSIZE " of %" PRIuSIZE
-                            " bytes read from %s file %s\n", cnt, len,
+                            "Warning: %zd of %zu bytes read from %s file %s\n",
+                            cnt, len,
                             ((fs_file->name->
                                     flags & TSK_FS_NAME_FLAG_UNALLOC)
                                 || (fs_file->meta->
@@ -196,9 +196,9 @@ proc_dir(TSK_FS_INFO * fs_info, TSK_STACK * stack,
 
 
 
-/** 
+/**
 * Analyze the volume starting at byte offset 'start' and look
-* for a file system.  When found, the files will be analyzed. 
+* for a file system.  When found, the files will be analyzed.
 *
 * @param img Disk image to be analyzed.
 * @param start Byte offset of volume starting location.
@@ -249,11 +249,11 @@ proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 
 /**
 * Process the data as a volume system to find the partitions
- * and volumes.  
+ * and volumes.
  * File system analysis will be performed on each partition.
  *
  * @param img Image file information structure for data to analyze
- * @param start Byte offset to start analyzing from. 
+ * @param start Byte offset to start analyzing from.
  *
  * @return 1 on error and 0 on success
  */
@@ -298,7 +298,7 @@ proc_vs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
             else {
                 if (proc_fs(img_info,
                         vs_part->start * vs_info->block_size)) {
-                    // We could do more fancy error checking here to see the cause 
+                    // We could do more fancy error checking here to see the cause
                     // of the error or consider the allocation status of the volume...
                     tsk_error_reset();
                 }

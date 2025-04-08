@@ -14,7 +14,9 @@
 
 #include "tsk/img/pool.hpp"
 #include "tsk/img/tsk_img_i.h"
+#include "tsk/img/legacy_cache.h"
 
+#include <memory>
 #include <stdexcept>
 
 /**
@@ -123,8 +125,6 @@ lvm_logical_volume_img_close(TSK_IMG_INFO * img_info)
     if (img_info != NULL) {
         IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
         libvslvm_logical_volume_free((libvslvm_logical_volume_t **) &( pool_img_info->impl ), NULL);
-
-        tsk_deinit_lock(&(img_info->cache_lock));
         tsk_img_free(img_info);
     }
 }
@@ -165,53 +165,61 @@ lvm_logical_volume_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf
 
 TSK_IMG_INFO * LVMPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {
 
-    libvslvm_logical_volume_t *lvm_logical_volume = NULL;
+    libvslvm_logical_volume_t *lvm_logical_volume = nullptr;
 
     // pvol_block contians the logical volume index + 1
-    if (libvslvm_volume_group_get_logical_volume(_lvm_volume_group, pvol_block - 1, &lvm_logical_volume, NULL) != 1 ) {
-        return NULL;
+    if (libvslvm_volume_group_get_logical_volume(_lvm_volume_group, pvol_block - 1, &lvm_logical_volume, nullptr) != 1 ) {
+        return nullptr;
     }
     uint64_t logical_volume_size = 0;
 
-    if (libvslvm_logical_volume_get_size(lvm_logical_volume, &logical_volume_size, NULL) != 1 ) {
-        return NULL;
+    if (libvslvm_logical_volume_get_size(lvm_logical_volume, &logical_volume_size, nullptr) != 1 ) {
+        return nullptr;
     }
-    IMG_POOL_INFO *img_pool_info = (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO));
 
-    if (img_pool_info == NULL) {
-        return NULL;
+    const auto deleter = [](IMG_POOL_INFO* img_pool_info) {
+        tsk_img_free(img_pool_info);
+    };
+
+    std::unique_ptr<IMG_POOL_INFO, decltype(deleter)> img_pool_info{
+        (IMG_POOL_INFO *) tsk_img_malloc(sizeof(IMG_POOL_INFO)),
+        deleter
+    };
+
+    if (!img_pool_info) {
+        return nullptr;
     }
+
+    TSK_IMG_INFO *img_info = (TSK_IMG_INFO *) img_pool_info.get();
+
+    img_info->tag = TSK_IMG_INFO_TAG;
+    img_info->itype = TSK_IMG_TYPE_POOL;
+
     img_pool_info->pool_info = pool_info;
     img_pool_info->pvol_block = pvol_block;
 
     img_pool_info->img_info.read = lvm_logical_volume_img_read;
     img_pool_info->img_info.close = lvm_logical_volume_img_close;
     img_pool_info->img_info.imgstat = lvm_logical_volume_img_imgstat;
+    img_pool_info->img_info.cache = new LegacyCache();
 
     img_pool_info->impl = (void *) lvm_logical_volume;
 
-    TSK_IMG_INFO *img_info = (TSK_IMG_INFO *)img_pool_info;
-
-    img_info->tag = TSK_IMG_INFO_TAG;
-    img_info->itype = TSK_IMG_TYPE_POOL;
-
     // Copy original info from the first TSK_IMG_INFO. There was a check in the
     // LVMPool that _members has only one entry.
-    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
-    const auto pool = static_cast<LVMPoolCompat*>(pool_img_info->pool_info->impl);
+    const auto pool = static_cast<LVMPoolCompat*>(img_pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->_members[0].first;
 
     img_info->size = logical_volume_size;
-    img_info->num_img = origInfo->num_img;
     img_info->sector_size = origInfo->sector_size;
     img_info->page_size = origInfo->page_size;
     img_info->spare_size = origInfo->spare_size;
-    img_info->images = origInfo->images;
 
-    tsk_init_lock(&(img_info->cache_lock));
+    if (!tsk_img_copy_image_names(img_info, origInfo->images, origInfo->num_img)) {
+        return nullptr;
+    }
 
-    return img_info;
-
+    return (TSK_IMG_INFO*) img_pool_info.release();
 }
 catch (const std::exception &e) {
     tsk_error_reset();
@@ -221,4 +229,3 @@ catch (const std::exception &e) {
 }
 
 #endif /* HAVE_LIBVSLVM */
-

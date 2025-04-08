@@ -1,14 +1,17 @@
 /*
  * imgstat
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
  */
 #include "tsk/tsk_tools_i.h"
+#include "tsk/img/tsk_img_i.h"
+
+#include <memory>
 
 static TSK_TCHAR *progname;
 
@@ -34,7 +37,6 @@ usage()
 int
 main(int argc, char **argv1)
 {
-    TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     int ch;
     uint8_t type = 0;
@@ -62,6 +64,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -105,9 +108,12 @@ main(int argc, char **argv1)
         usage();
     }
 
-    if ((img =
-            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
-                ssize)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
@@ -117,9 +123,8 @@ main(int argc, char **argv1)
         tsk_printf("%s\n", str);
     }
     else {
-        img->imgstat(img, stdout);
+        reinterpret_cast<IMG_INFO*>(img.get())->imgstat(img.get(), stdout);
     }
 
-    tsk_img_close(img);
     exit(0);
 }

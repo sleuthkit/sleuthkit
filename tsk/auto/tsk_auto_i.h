@@ -1,5 +1,5 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
@@ -25,7 +25,7 @@
 #include "tsk/vs/tsk_vs_i.h"
 #include "tsk/fs/tsk_fs_i.h"
 
-// Include the external file 
+// Include the external file
 #include "tsk_auto.h"
 
 #endif

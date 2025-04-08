@@ -70,8 +70,8 @@ sun_get_desc(uint16_t fstype)
 }
 
 
-/* 
- * Load an Intel disk label, this is called by sun_load_table 
+/*
+ * Load an Intel disk label, this is called by sun_load_table
  */
 
 static uint8_t
@@ -208,8 +208,8 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
 }
 
 
-/* 
- * Process the partition table at the sector address 
+/*
+ * Process the partition table at the sector address
  *
  * This method just finds out if it is sparc or Intel and then
  * calls the appropriate method
@@ -262,7 +262,7 @@ sun_load_table(TSK_VS_INFO * vs)
     }
 
 
-    /* Check the magic value 
+    /* Check the magic value
      * Both intel and sparc have the magic value in the same location
      *
      * We try both in case someone specifies the exact location of the
@@ -288,7 +288,7 @@ sun_load_table(TSK_VS_INFO * vs)
     }
 
 
-    /* Now try the next sector, which is where the intel 
+    /* Now try the next sector, which is where the intel
      * could be stored */
 
     taddr = vs->offset / vs->block_size / SUN_I386_PART_SOFFSET;

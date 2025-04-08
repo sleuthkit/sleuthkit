@@ -24,6 +24,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import static org.sleuthkit.datamodel.SleuthkitCase.IMAGE_PASSWORD_KEY;
 
 /**
  * Represents a file system object stored in tsk_fs_info table FileSystem has a
@@ -143,7 +144,7 @@ public class FileSystem extends AbstractContent {
 
 		try {
 			Map<String, Object> settingsMap = (new Gson()).fromJson(settingsStr, Map.class);
-			return (String)settingsMap.getOrDefault("imagePassword", "");
+			return (String)settingsMap.getOrDefault(IMAGE_PASSWORD_KEY, "");
 		} catch (JsonSyntaxException ex) {
 			// There's no guarantee that acquisition settings will contain a valid JSON string
 			return "";

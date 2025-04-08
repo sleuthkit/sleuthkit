@@ -20,19 +20,23 @@
 **
 */
 #include "tsk/tsk_tools_i.h"
+#include "tsk/base/tsk_os_cpp.h"
 #include "tsk/fs/apfs_fs.h"
+#include "tools/util.h"
+
 #include <locale.h>
 #include <time.h>
 
-static TSK_TCHAR *progname;
+#include <memory>
+#include <optional>
+#include <string>
+#include <variant>
 
 void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: fls [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n");
     tsk_fprintf(stderr,
         "\tIf [inode] is not given, the root directory is used\n");
     tsk_fprintf(stderr, "\t-a: Display \".\" and \"..\" entries\n");
@@ -68,54 +72,29 @@ usage()
     tsk_fprintf(stderr,
         "\t-s seconds: Time skew of original machine (in seconds) (only useful with -l & -m)\n");
     tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
-
-    exit(1);
 }
 
-int
-main(int argc, char **argv1)
-{
-    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
-    TSK_IMG_INFO *img_parent = NULL;
-    const TSK_POOL_INFO *pool = NULL;
-
-    TSK_OFF_T imgaddr = 0;
-    TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
-    const char *password = "";
-
-
-    TSK_INUM_T inode;
+struct Options {
+    int fls_flags = TSK_FS_FLS_DIR | TSK_FS_FLS_FILE;;
     int name_flags = TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC;
-    int ch;
-    extern int OPTIND;
-    int fls_flags;
-    int32_t sec_skew = 0;
-    static TSK_TCHAR *macpre = NULL;
-    TSK_TCHAR **argv;
     unsigned int ssize = 0;
-    TSK_TCHAR *cp;
-
+    TSK_OFF_T imgaddr = 0;
+    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_OFF_T pvol_block = 0;
     TSK_OFF_T snap_id = 0;
+    int32_t sec_skew = 0;
+    const char* password = "";
+    std::optional<TSK_TSTRING> macpre;
+    unsigned int verbose = 0;
+};
 
-#ifdef TSK_WIN32
-    // On Windows, get the wide arguments (mingw doesn't support wmain)
-    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == NULL) {
-        fprintf(stderr, "Error getting wide arguments\n");
-        exit(1);
-    }
-#else
-    argv = (TSK_TCHAR **) argv1;
-#endif
+std::variant<Options, int> parse_args(int argc, TSK_TCHAR** argv, char** argv1) {
+    Options opts;
 
-    progname = argv[0];
-    setlocale(LC_ALL, "");
-
-    fls_flags = TSK_FS_FLS_DIR | TSK_FS_FLS_FILE;
+    TSK_TCHAR *cp;
+    int ch;
 
     while ((ch =
             GETOPT(argc, argv, _TSK_T("ab:dDf:Fi:m:hlo:prs:uvVz:P:B:k:S:"))) > 0) {
@@ -125,129 +104,133 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            return 1;
         case _TSK_T('a'):
-            fls_flags |= TSK_FS_FLS_DOT;
+            opts.fls_flags |= TSK_FS_FLS_DOT;
             break;
         case _TSK_T('b'):
-            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || ssize < 1) {
+            opts.ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || opts.ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
                     ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
+                return 1;
             }
             break;
         case _TSK_T('d'):
-            name_flags &= ~TSK_FS_DIR_WALK_FLAG_ALLOC;
+            opts.name_flags &= ~TSK_FS_DIR_WALK_FLAG_ALLOC;
             break;
         case _TSK_T('D'):
-            fls_flags &= ~TSK_FS_FLS_FILE;
-            fls_flags |= TSK_FS_FLS_DIR;
+            opts.fls_flags &= ~TSK_FS_FLS_FILE;
+            opts.fls_flags |= TSK_FS_FLS_DIR;
             break;
         case _TSK_T('f'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_fs_type_print(stderr);
-                exit(1);
+                return 1;
             }
-            fstype = tsk_fs_type_toid(OPTARG);
-            if (fstype == TSK_FS_TYPE_UNSUPP) {
+            opts.fstype = tsk_fs_type_toid(OPTARG);
+            if (opts.fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
                     _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
+                return 1;
             }
             break;
         case _TSK_T('F'):
-            fls_flags &= ~TSK_FS_FLS_DIR;
-            fls_flags |= TSK_FS_FLS_FILE;
+            opts.fls_flags &= ~TSK_FS_FLS_DIR;
+            opts.fls_flags |= TSK_FS_FLS_FILE;
             break;
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_img_type_print(stderr);
-                exit(1);
+                return 1;
             }
-            imgtype = tsk_img_type_toid(OPTARG);
-            if (imgtype == TSK_IMG_TYPE_UNSUPP) {
+            opts.imgtype = tsk_img_type_toid(OPTARG);
+            if (opts.imgtype == TSK_IMG_TYPE_UNSUPP) {
                 TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
+                return 1;
             }
             break;
         case _TSK_T('l'):
-            fls_flags |= TSK_FS_FLS_LONG;
+            opts.fls_flags |= TSK_FS_FLS_LONG;
             break;
         case _TSK_T('m'):
-            fls_flags |= TSK_FS_FLS_MAC;
-            macpre = OPTARG;
+            opts.fls_flags |= TSK_FS_FLS_MAC;
+            opts.macpre = OPTARG;
             break;
         case _TSK_T('h'):
-            fls_flags |= TSK_FS_FLS_HASH;
+            opts.fls_flags |= TSK_FS_FLS_HASH;
             break;
         case _TSK_T('o'):
-            if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
+            if ((opts.imgaddr = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
-                exit(1);
+                return 1;
             }
             break;
         case _TSK_T('P'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_pool_type_print(stderr);
-                exit(1);
+                return 1;
             }
-            pooltype = tsk_pool_type_toid(OPTARG);
-            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+            opts.pooltype = tsk_pool_type_toid(OPTARG);
+            if (opts.pooltype == TSK_POOL_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
                     _TSK_T("Unsupported pool container type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
+                return 1;
             }
             break;
         case _TSK_T('B'):
-            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
+            if ((opts.pvol_block = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
-                exit(1);
+                return 1;
             }
             break;
         case _TSK_T('S'):
-            if ((snap_id = tsk_parse_offset(OPTARG)) == -1) {
+            if ((opts.snap_id = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
-                exit(1);
+                return 1;
             }
             break;
         case _TSK_T('p'):
-            fls_flags |= TSK_FS_FLS_FULL;
+            opts.fls_flags |= TSK_FS_FLS_FULL;
             break;
         case _TSK_T('k'):
-            password = argv1[OPTIND - 1];
+            opts.password = argv1[OPTIND - 1];
             break;
         case _TSK_T('r'):
-            name_flags |= TSK_FS_DIR_WALK_FLAG_RECURSE;
+            opts.name_flags |= TSK_FS_DIR_WALK_FLAG_RECURSE;
             break;
         case _TSK_T('s'):
-            sec_skew = TATOI(OPTARG);
+            opts.sec_skew = TATOI(OPTARG);
             break;
         case _TSK_T('u'):
-            name_flags &= ~TSK_FS_DIR_WALK_FLAG_UNALLOC;
+            opts.name_flags &= ~TSK_FS_DIR_WALK_FLAG_UNALLOC;
             break;
         case _TSK_T('v'):
-            tsk_verbose++;
+            opts.verbose++;
             break;
         case _TSK_T('V'):
             tsk_version_print(stdout);
-            exit(0);
+            return 0;
         case 'z':
             {
                 TSK_TCHAR envstr[32];
                 TSNPRINTF(envstr, 32, _TSK_T("TZ=%s"), OPTARG);
                 if (0 != TPUTENV(envstr)) {
                     tsk_fprintf(stderr, "error setting environment");
-                    exit(1);
+                    return 1;
                 }
 
                 /* we should be checking this somehow */
                 TZSET();
             }
             break;
-
         }
     }
 
@@ -255,37 +238,80 @@ main(int argc, char **argv1)
     if (OPTIND == argc) {
         tsk_fprintf(stderr, "Missing image name\n");
         usage();
+        return 1;
     }
 
     /* Set the full flag to print the full path name if recursion is
      ** set and we are only displaying files or deleted files
      */
-    if ((name_flags & TSK_FS_DIR_WALK_FLAG_RECURSE)
-        && (((name_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC)
-                && (!(name_flags & TSK_FS_DIR_WALK_FLAG_ALLOC)))
-            || ((fls_flags & TSK_FS_FLS_FILE)
-                && (!(fls_flags & TSK_FS_FLS_DIR))))) {
+    if ((opts.name_flags & TSK_FS_DIR_WALK_FLAG_RECURSE)
+        && (((opts.name_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC)
+                && !(opts.name_flags & TSK_FS_DIR_WALK_FLAG_ALLOC))
+            || ((opts.fls_flags & TSK_FS_FLS_FILE)
+                && !(opts.fls_flags & TSK_FS_FLS_DIR)))) {
 
-        fls_flags |= TSK_FS_FLS_FULL;
+        opts.fls_flags |= TSK_FS_FLS_FULL;
     }
 
     /* set flag to save full path for mactimes style printing */
-    if (fls_flags & TSK_FS_FLS_MAC) {
-        fls_flags |= TSK_FS_FLS_FULL;
+    if (opts.fls_flags & TSK_FS_FLS_MAC) {
+        opts.fls_flags |= TSK_FS_FLS_FULL;
     }
 
     /* we need to append a / to the end of the directory if
      * one does not already exist
      */
-    if (macpre) {
-        size_t len = TSTRLEN(macpre);
-        if (macpre[len - 1] != '/') {
-            TSK_TCHAR *tmp = macpre;
-            macpre = (TSK_TCHAR *) malloc(len + 2 * sizeof(TSK_TCHAR));
-            TSTRNCPY(macpre, tmp, len + 1);
-            TSTRNCAT(macpre, _TSK_T("/"), len + 2);
-        }
+    if (opts.macpre && opts.macpre->back() != _TSK_T('/')) {
+        *opts.macpre += _TSK_T("/");
     }
+
+    return opts;
+}
+
+struct Holder {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_parent;
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool;
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img;
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs;
+    TSK_INUM_T inode;
+};
+
+std::variant<Holder, int>
+open_handles(const Options& opts, const TSK_TCHAR* const* argv, size_t argc) {
+    auto [
+      fls_flags,
+      name_flags,
+      ssize,
+      imgaddr,
+      imgtype,
+      pooltype,
+      fstype,
+      pvol_block,
+      _snap_id,
+      _sec_skew,
+      password,
+      _macpre,
+      _verbose
+    ] = opts;
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img_parent{
+      nullptr, tsk_img_close
+    };
+
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+      nullptr, tsk_pool_close
+    };
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+      nullptr, tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+      nullptr, tsk_fs_close
+    };
+
+    bool had_inum_arg = false;
+    TSK_INUM_T inode;
 
     /* open image - there is an optional inode address at the end of args
      *
@@ -293,147 +319,127 @@ main(int argc, char **argv1)
      */
     if (tsk_fs_parse_inum(argv[argc - 1], &inode, NULL, NULL, NULL, NULL)) {
         /* Not an inode at the end */
-        if ((img =
-                tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
-            tsk_error_print(stderr);
-            exit(1);
-        }
-        if ((imgaddr * img->sector_size) >= img->size) {
-            tsk_fprintf(stderr,
-                "Sector offset supplied is larger than disk image (maximum: %"
-                PRIu64 ")\n", img->size / img->sector_size);
-            tsk_img_close(img);
-            exit(1);
-        }
-
-        if (pvol_block == 0) {
-            if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                    tsk_fs_type_print(stderr);
-                tsk_img_close(img);
-                exit(1);
-            }
-        } else {
-            // Pool block was specified, so open pool
-            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-            if (pool == NULL) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                    tsk_pool_type_print(stderr);
-                tsk_img_close(img);
-                exit(1);
-            }
-            img_parent = img;
-
-            TSK_OFF_T offset = imgaddr * img->sector_size;
-#if HAVE_LIBVSLVM
-            if (pool->ctype == TSK_POOL_TYPE_LVM){
-                offset = 0;
-            }
-#endif /* HAVE_LIBVSLVM */
-            img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-            if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                    tsk_fs_type_print(stderr);
-                tsk_img_close(img);
-                tsk_pool_close(pool);
-                tsk_img_close(img_parent);
-                exit(1);
-            }
-        }
-
-        inode = fs->root_inum;
+        img.reset(tsk_img_open(argc, argv, imgtype, ssize));
     }
     else {
         // check that we have enough arguments
-        if (OPTIND + 1 == argc) {
+        if (argc == 1) {
             tsk_fprintf(stderr, "Missing image name or inode\n");
             usage();
+            return 1;
         }
 
-        if ((img =
-                tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
+        img.reset(tsk_img_open(argc - 1, argv, imgtype, ssize));
+        had_inum_arg = true;
+    }
+
+    if (!img) {
+        tsk_error_print(stderr);
+        return 1;
+    }
+
+    if (imgaddr * img->sector_size >= img->size) {
+        tsk_fprintf(stderr,
+            "Sector offset supplied is larger than disk image (maximum: %"
+             PRIu64 ")\n", img->size / img->sector_size);
+        return 1;
+    }
+
+    if (pvol_block == 0) {
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+        if (!fs) {
             tsk_error_print(stderr);
-            exit(1);
-        }
-        if ((imgaddr * img->sector_size) >= img->size) {
-            tsk_fprintf(stderr,
-                "Sector offset supplied is larger than disk image (maximum: %"
-                PRIu64 ")\n", img->size / img->sector_size);
-            tsk_img_close(img);
-            exit(1);
-        }
-
-        if (pvol_block == 0) {
-            if ((fs = tsk_fs_open_img_decrypt(img, imgaddr * img->sector_size, fstype, password)) == NULL) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                    tsk_fs_type_print(stderr);
-                tsk_img_close(img);
-                exit(1);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
+                tsk_fs_type_print(stderr);
             }
-        } else {
-            // Pool block was specified, so open pool
-            pool = tsk_pool_open_img_sing(img, imgaddr * img->sector_size, pooltype);
-
-            if (pool == NULL) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                    tsk_pool_type_print(stderr);
-                tsk_img_close(img);
-                exit(1);
+            return 1;
+        }
+    }
+    else {
+        // Pool block was specified, so open pool
+        pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+        if (!pool) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
+                tsk_pool_type_print(stderr);
             }
-            img_parent = img;
+            return 1;
+        }
 
-            TSK_OFF_T offset = imgaddr * img->sector_size;
+        img_parent = std::move(img);
+
+        TSK_OFF_T offset = imgaddr * img->sector_size;
 #if HAVE_LIBVSLVM
-            if (pool->ctype == TSK_POOL_TYPE_LVM){
-                offset = 0;
-            }
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
 #endif /* HAVE_LIBVSLVM */
-            img = pool->get_img_info(pool, (TSK_DADDR_T)pvol_block);
-            if ((fs = tsk_fs_open_img_decrypt(img, offset, fstype, password)) == NULL) {
-                tsk_error_print(stderr);
-                if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                    tsk_fs_type_print(stderr);
-                tsk_img_close(img);
-                tsk_pool_close(pool);
-                tsk_img_close(img_parent);
-                exit(1);
+        img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), offset, fstype, password));
+        if (!fs) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
+                tsk_fs_type_print(stderr);
             }
+            return 1;
         }
     }
 
+    if (!had_inum_arg) {
+      inode = fs->root_inum;
+    }
+
+    return Holder{
+        std::move(img_parent),
+        std::move(pool),
+        std::move(img),
+        std::move(fs),
+        inode
+    };
+}
+
+int do_it(TSK_FS_INFO* fs, uint64_t snap_id, int fls_flags, TSK_INUM_T inode, int name_flags, const TSK_TCHAR* macpre, int32_t sec_skew) {
     if (snap_id > 0) {
-        tsk_apfs_set_snapshot(fs, (uint64_t)snap_id);
+        tsk_apfs_set_snapshot(fs, snap_id);
     }
 
     if (tsk_fs_fls(fs, (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
             (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre, sec_skew)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
-        if (pool != NULL) {
-          tsk_pool_close(pool);
-        }
-        if (img_parent != NULL) {
-          tsk_img_close(img_parent);
-        }
-        exit(1);
+        return 1;
     }
 
-    tsk_fs_close(fs);
-    tsk_img_close(img);
+    return 0;
+}
 
-    if (pool != NULL) {
-      tsk_pool_close(pool);
+int
+main(int argc1, char **argv1)
+{
+    auto [argv, argc] = argv_to_tsk_tchar(argc1, argv1);
+
+    setlocale(LC_ALL, "");
+
+    const auto p = parse_args(argc, argv.get(), argv1);
+    if (const int* ret = std::get_if<int>(&p)) {
+      return *ret;
     }
-    if (img_parent != NULL) {
-      tsk_img_close(img_parent);
+    const auto& opts = std::get<Options>(p);
+
+    tsk_verbose = opts.verbose;
+
+    auto r = open_handles(opts, &argv[OPTIND], argc - OPTIND);
+    if (const int* ret = std::get_if<int>(&r)) {
+      return *ret;
     }
-    exit(0);
+    auto& h = std::get<Holder>(r);
+
+    return do_it(
+        h.fs.get(),
+        opts.snap_id,
+        opts.fls_flags,
+        h.inode,
+        opts.name_flags,
+        opts.macpre ? opts.macpre->c_str() : nullptr,
+        opts.sec_skew
+    );
 }

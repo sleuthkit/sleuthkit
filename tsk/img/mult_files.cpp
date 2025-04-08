@@ -14,7 +14,7 @@ int endsWith(const TSK_TCHAR * str, const TSK_TCHAR * suffix) {
 
 }
 
-std::function<TSK_STRING(size_t, TSK_OSTRINGSTREAM&)> getSegmentPattern(const TSK_TCHAR* first) {
+std::function<TSK_TSTRING(size_t, TSK_TOSTRINGSTREAM&)> getSegmentPattern(const TSK_TCHAR* first) {
   const size_t flen = TSTRLEN(first);
 
   // zero-padded numeric counter, zero- or one-based:
@@ -27,12 +27,12 @@ std::function<TSK_STRING(size_t, TSK_OSTRINGSTREAM&)> getSegmentPattern(const TS
     for (i = flen - 2; i >= 0 && first[i] == '0'; --i) ;
 
     if (first[i] == '.' || first[i] == '_') {
-      const TSK_STRING base(first, first + i + 1);
+      const TSK_TSTRING base(first, first + i + 1);
       const size_t width = flen - (i + 1);
 
       // NB: digit overflow is ok; FTK apparently adds a fourth digit
       // when there are > 999 segments.
-      return [base, width, zero_based](size_t i, TSK_OSTRINGSTREAM& os) {
+      return [base, width, zero_based](size_t i, TSK_TOSTRINGSTREAM& os) {
         os << base << std::setfill(_TSK_T('0')) << std::setw(width)
            << (i+1-zero_based);
         return os.str();
@@ -47,15 +47,15 @@ std::function<TSK_STRING(size_t, TSK_OSTRINGSTREAM&)> getSegmentPattern(const TS
     for (i = flen - 2; i >= 0 && first[i] == 'a'; --i) ;
 
     if (first[i] == '.' || first[i] == '_' || first[i] == 'x') {
-      const TSK_STRING base(first);
+      const TSK_TSTRING base(first);
       const size_t limit = i;
 
-      return [base, limit](size_t i, TSK_OSTRINGSTREAM&) {
-        TSK_STRING seg(base);
+      return [base, limit](size_t i, TSK_TOSTRINGSTREAM&) {
+        TSK_TSTRING seg(base);
         for (size_t d = seg.size() - 1; i; i /= 26, --d) {
           if (d == limit) {
             // we've exhausted the counter width
-            return TSK_STRING();
+            return TSK_TSTRING();
           }
           seg[d] = i % 26 + 'a';
         }
@@ -65,9 +65,9 @@ std::function<TSK_STRING(size_t, TSK_OSTRINGSTREAM&)> getSegmentPattern(const TS
   }
   // .dmg: .dmg, .002.dmgpart, .003.dmgpart, ...
   else if (endsWith(first, _TSK_T(".dmg"))) {
-    const TSK_STRING base(first, first + flen - 3);
+    const TSK_TSTRING base(first, first + flen - 3);
 
-    return [base](size_t i, TSK_OSTRINGSTREAM& os) {
+    return [base](size_t i, TSK_TOSTRINGSTREAM& os) {
       os << base << std::setfill(_TSK_T('0')) << std::setw(3) << (i+1)
          << ".dmgpart";
       return os.str();
@@ -75,9 +75,9 @@ std::function<TSK_STRING(size_t, TSK_OSTRINGSTREAM&)> getSegmentPattern(const TS
   }
   // .bin: .bin, (2).bin, (3).bin, ...
   else if (endsWith(first, _TSK_T(".bin"))) {
-    const TSK_STRING base(first, first + flen - 4);
+    const TSK_TSTRING base(first, first + flen - 4);
 
-    return [base](size_t i, TSK_OSTRINGSTREAM& os) {
+    return [base](size_t i, TSK_TOSTRINGSTREAM& os) {
       os << base << '(' << (i+1) << ").bin";
       return os.str();
     };
@@ -97,7 +97,7 @@ void free_array(T** a, size_t len) {
   free(a);
 }
 
-TSK_TCHAR** str_vec_to_array(const std::vector<TSK_STRING>& vec) {
+TSK_TCHAR** str_vec_to_array(const std::vector<TSK_TSTRING>& vec) {
   const size_t count = vec.size();
 
   TSK_TCHAR** arr = (TSK_TCHAR**) tsk_malloc(count * sizeof(TSK_TCHAR*));
@@ -118,7 +118,7 @@ TSK_TCHAR** str_vec_to_array(const std::vector<TSK_STRING>& vec) {
   return arr;
 }
 
-bool add_if_exists(const TSK_STRING& name, std::vector<TSK_STRING>& names) {
+bool add_if_exists(const TSK_TSTRING& name, std::vector<TSK_TSTRING>& names) {
   struct STAT_STR stat_buf;
 
   // does the file exist?
@@ -145,7 +145,7 @@ TSK_TCHAR **
 tsk_img_findFiles(const TSK_TCHAR * a_startingName, int *a_numFound)
 {
   TSK_TCHAR** nlist = nullptr;
-  std::vector<TSK_STRING> names;
+  std::vector<TSK_TSTRING> names;
   *a_numFound = 0;
 
   // get the first segment
@@ -154,7 +154,7 @@ tsk_img_findFiles(const TSK_TCHAR * a_startingName, int *a_numFound)
     const auto pfunc = getSegmentPattern(a_startingName);
     if (pfunc) {
       // found a pattern, look for subsequent segments
-      TSK_OSTRINGSTREAM os;
+      TSK_TOSTRINGSTREAM os;
       for (size_t i = 1; add_if_exists(pfunc(i, os), names); ++i, os.str(_TSK_T("")));
     }
 

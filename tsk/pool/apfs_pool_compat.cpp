@@ -9,11 +9,14 @@
  */
 #include "apfs_pool_compat.hpp"
 
-#include "../fs/apfs_fs.hpp"
-#include "../fs/tsk_apfs.hpp"
-#include "../fs/tsk_fs_i.h"
-#include "../img/pool.hpp"
+#include "tsk/fs/apfs_fs.hpp"
+#include "tsk/fs/tsk_apfs.hpp"
+#include "tsk/fs/tsk_fs_i.h"
+#include "tsk/img/legacy_cache.h"
+#include "tsk/img/pool.hpp"
+#include "tsk/img/tsk_img_i.h"
 
+#include <memory>
 #include <stdexcept>
 
 APFSPoolCompat::~APFSPoolCompat() {
@@ -276,8 +279,6 @@ apfs_img_close(TSK_IMG_INFO * img_info)
         return;
     }
 
-    // Close the pool image
-    tsk_deinit_lock(&(img_info->cache_lock));
     tsk_img_free(img_info);
 }
 
@@ -287,7 +288,8 @@ apfs_img_imgstat(TSK_IMG_INFO * img_info, FILE *file)
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
-    origInfo->imgstat(origInfo, file);
+    IMG_INFO *iif = reinterpret_cast<IMG_INFO*>(origInfo);
+    iif->imgstat(origInfo, file);
 }
 
 static ssize_t
@@ -296,21 +298,26 @@ apfs_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
     const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->getTSKImgInfo(0);
-
-    return origInfo->read(origInfo, offset, buf, len);
+    IMG_INFO *iif = reinterpret_cast<IMG_INFO*>(origInfo);
+    return iif->read(origInfo, offset, buf, len);
 }
 
 TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_DADDR_T pvol_block) noexcept try {
 
-    IMG_POOL_INFO *img_pool_info;
-    TSK_IMG_INFO *img_info;
+    const auto deleter = [](IMG_POOL_INFO* img_pool_info) {
+        tsk_img_free(img_pool_info);
+    };
 
-    if ((img_pool_info =
-        (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO))) == NULL) {
-        return NULL;
+    std::unique_ptr<IMG_POOL_INFO, decltype(deleter)> img_pool_info{
+        (IMG_POOL_INFO *) tsk_img_malloc(sizeof(IMG_POOL_INFO)),
+        deleter
+    };
+
+    if (!img_pool_info) {
+        return nullptr;
     }
 
-    img_info = (TSK_IMG_INFO *)img_pool_info;
+    TSK_IMG_INFO *img_info = (TSK_IMG_INFO *) img_pool_info.get();
 
     img_info->tag = TSK_IMG_INFO_TAG;
     img_info->itype = TSK_IMG_TYPE_POOL;
@@ -321,24 +328,23 @@ TSK_IMG_INFO * APFSPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_
     img_pool_info->img_info.read = apfs_img_read;
     img_pool_info->img_info.close = apfs_img_close;
     img_pool_info->img_info.imgstat = apfs_img_imgstat;
+    img_pool_info->img_info.cache = new LegacyCache();
 
     // Copy original info from the first TSK_IMG_INFO. There was a check in the
     // APFSPool that _members has only one entry.
-    IMG_POOL_INFO *pool_img_info = (IMG_POOL_INFO *)img_info;
-    const auto pool = static_cast<APFSPoolCompat*>(pool_img_info->pool_info->impl);
+    const auto pool = static_cast<APFSPoolCompat*>(pool_info->impl);
     TSK_IMG_INFO *origInfo = pool->_members[0].first;
 
     img_info->size = origInfo->size;
-    img_info->num_img = origInfo->num_img;
     img_info->sector_size = origInfo->sector_size;
     img_info->page_size = origInfo->page_size;
     img_info->spare_size = origInfo->spare_size;
-    img_info->images = origInfo->images;
 
-    tsk_init_lock(&(img_info->cache_lock));
+    if (!tsk_img_copy_image_names(img_info, origInfo->images, origInfo->num_img)) {
+        return nullptr;
+    }
 
-    return img_info;
-
+    return (TSK_IMG_INFO*) img_pool_info.release();
 }
 catch (const std::exception &e) {
     tsk_error_reset();
@@ -346,4 +352,3 @@ catch (const std::exception &e) {
     tsk_error_set_errstr("%s", e.what());
     return NULL;
 }
-

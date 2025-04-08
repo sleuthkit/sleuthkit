@@ -10,7 +10,7 @@
 
 /**
  * \file tsk_fatfs.h
- * Contains the structures and function APIs for TSK FAT (FAT12, FAT16, FAT32, 
+ * Contains the structures and function APIs for TSK FAT (FAT12, FAT16, FAT32,
  * exFAT) file system support.
  */
 
@@ -23,7 +23,7 @@
  * \internal
  *
  * Per TSK convention, FAT file system functions return integer 0 on success
- * and integer 1 on failure. 
+ * and integer 1 on failure.
  */
 #define FATFS_OK 0
 
@@ -31,7 +31,7 @@
  * \internal
  *
  * Per TSK convention, FAT file system functions return integer 0 on success
- * and integer 1 on failure. 
+ * and integer 1 on failure.
  */
 #define FATFS_FAIL 1
 
@@ -58,7 +58,7 @@
 
 #define FATFS_MASTER_BOOT_RECORD_SIZE 512
 
-/** 
+/**
  * Directory entries for all FAT file systems are currently 32 bytes long.
  */
 #define FATFS_DENTRY_SIZE 32
@@ -108,7 +108,7 @@
 #define FATFS_EOFE		0x0fffffff
 
 /* macro to identify if the FAT value is End of File
- * returns 1 if it is and 0 if it is not 
+ * returns 1 if it is and 0 if it is not
  */
 #define FATFS_ISEOF(val, mask)	\
 	((val >= (FATFS_EOFS & mask)) && (val <= (FATFS_EOFE)))
@@ -165,7 +165,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    typedef struct FATFS_INFO FATFS_INFO; 
+    typedef struct FATFS_INFO FATFS_INFO;
 
     enum FATFS_DATA_UNIT_ALLOC_STATUS_ENUM {
         FATFS_DATA_UNIT_ALLOC_STATUS_UNALLOC = 0,
@@ -185,15 +185,15 @@ extern "C" {
         uint8_t magic[2];
     } FATFS_MASTER_BOOT_RECORD;
 
-	/** 
+	/**
      * Generic directory entry structure for FAT file systems.
      */
     typedef struct {
         uint8_t data[FATFS_DENTRY_SIZE];
     } FATFS_DENTRY;
 
-    /* 
-     * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.  
+    /*
+     * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.
      */
     struct FATFS_INFO {
         TSK_FS_INFO fs_info;    /* super class */
@@ -209,7 +209,7 @@ extern "C" {
         TSK_DADDR_T firstfatsect;
 
         /* First sector after FAT  - For TSK_FS_INFO_TYPE_FAT_12 and TSK_FS_INFO_TYPE_FAT_16, this is where the
-         * root directory entries are.  For TSK_FS_INFO_TYPE_FAT_32, this is the the first 
+         * root directory entries are.  For TSK_FS_INFO_TYPE_FAT_32, this is the the first
          * cluster */
         TSK_DADDR_T firstdatasect;
 
@@ -251,24 +251,24 @@ extern "C" {
 
         int8_t (*is_cluster_alloc)(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
-        uint8_t (*is_dentry)(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-            FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, 
+        uint8_t (*is_dentry)(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,
+            FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc,
             uint8_t a_do_basic_tests_only);
 
         uint8_t (*inode_lookup)(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
             TSK_INUM_T a_inum);
 
-        uint8_t (*inode_walk_should_skip_dentry)(FATFS_INFO *a_fatfs, 
-            TSK_INUM_T a_inum, FATFS_DENTRY *a_dentry, 
+        uint8_t (*inode_walk_should_skip_dentry)(FATFS_INFO *a_fatfs,
+            TSK_INUM_T a_inum, FATFS_DENTRY *a_dentry,
             unsigned int a_selection_flags, int a_cluster_is_alloc);
 
         uint8_t (*istat_attr_flags) (FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile);
 
-        TSK_RETVAL_ENUM (*dent_parse_buf)(FATFS_INFO *a_fatfs, 
-            TSK_FS_DIR *a_fs_dir, char *a_buf, TSK_OFF_T a_buf_len, 
+        TSK_RETVAL_ENUM (*dent_parse_buf)(FATFS_INFO *a_fatfs,
+            TSK_FS_DIR *a_fs_dir, char *a_buf, TSK_OFF_T a_buf_len,
             TSK_DADDR_T *a_sector_addrs, int recursion_depth);
 
-        TSK_RETVAL_ENUM (*dinode_copy)(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+        TSK_RETVAL_ENUM (*dinode_copy)(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
             FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_FS_FILE *a_fs_file);
 
         struct {
@@ -296,7 +296,7 @@ extern "C" {
 
     extern void fatfs_cleanup_ascii(char *);
 
-	extern TSK_FS_INFO 
+	extern TSK_FS_INFO
     *fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, const char* a_pass, uint8_t a_test);
 
     extern uint8_t
@@ -320,8 +320,8 @@ extern "C" {
     extern uint8_t fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust,
         TSK_DADDR_T * value);
 
-    extern uint8_t 
-    fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
+    extern uint8_t
+    fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
 
     extern uint8_t
     fatfs_dir_buf_get(FATFS_INFO * fatfs, TSK_INUM_T dir_inum,
@@ -342,7 +342,7 @@ extern "C" {
     extern uint8_t fatfs_inode_lookup(TSK_FS_INFO *a_fs,
         TSK_FS_FILE *a_fs_file, TSK_INUM_T a_inum);
 
-    extern uint8_t fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+    extern uint8_t fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,
         TSK_INUM_T a_inum);
 
     extern TSK_RETVAL_ENUM

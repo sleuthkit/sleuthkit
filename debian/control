@@ -29,8 +29,8 @@ Description: tools for forensics analysis on volume and filesystem data
  tools, you can identify where partitions are located and extract them so that
  they can be analyzed with filesystem analysis tools.
  .
- Currently, TSK supports several filesystems, as NTFS, FAT, exFAT, HFS+, Ext3,
- Ext4, UFS and YAFFS2.
+ Stable File System Support: FAT, exFAT, ISO9660, HFS+, APFS, YAFFS2, APFS, UFS1, UFS2, Ext3, Ext4
+ Experimental File System Support: XFS, Btrfs
  .
  This package contains the set of command line tools in The Sleuth Kit.
 

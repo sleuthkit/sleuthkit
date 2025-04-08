@@ -1,6 +1,6 @@
 /*
 ** jcat
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
@@ -15,6 +15,8 @@
 #ifdef TSK_WIN32
 #include <fcntl.h>
 #endif
+
+#include <memory>
 
 static TSK_TCHAR *progname;
 
@@ -47,11 +49,9 @@ int
 main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
 
     TSK_INUM_T inum;
     int ch;
@@ -81,6 +81,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -142,54 +143,57 @@ main(int argc, char **argv1)
         exit(1);
     }
 
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        nullptr,
+        tsk_img_close
+    };
+
     /* Do we have an inode as well? */
-    if (tsk_fs_parse_inum(argv[argc - 2], &inum, NULL, NULL, NULL, NULL)) {
+    const bool have_inum = !tsk_fs_parse_inum(argv[argc - 2], &inum, NULL, NULL, NULL, NULL);
+
+    if (!have_inum) {
         /* Not a number therefore an image */
-        if ((img =
-                tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
+        img.reset(tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             exit(1);
         }
-        if ((imgaddr * img->sector_size) >= img->size) {
+
+        if (imgaddr * img->sector_size >= img->size) {
             tsk_fprintf(stderr,
                 "Sector offset supplied is larger than disk image (maximum: %"
                 PRIu64 ")\n", img->size / img->sector_size);
             exit(1);
         }
-
-        if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
-            tsk_img_close(img);
-            exit(1);
-        }
-        inum = fs->journ_inum;
     }
     else {
-        if ((img =
-                tsk_img_open(argc - OPTIND - 2, &argv[OPTIND],
-                    imgtype, ssize)) == NULL) {
+        img.reset(tsk_img_open(argc - OPTIND - 2, &argv[OPTIND], imgtype, ssize));
+        if (!img) {
             tsk_error_print(stderr);
             exit(1);
         }
+    }
 
-        if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-            tsk_error_print(stderr);
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-                tsk_fs_type_print(stderr);
-            tsk_img_close(img);
-            exit(1);
-        }
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        tsk_fs_open_img(img.get(), imgaddr * img->sector_size, fstype),
+        tsk_fs_close
+    };
+
+    if (!fs) {
+        tsk_error_print(stderr);
+        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+            tsk_fs_type_print(stderr);
+        exit(1);
+    }
+
+    if (!have_inum) {
+        inum = fs->journ_inum;
     }
 
     if (inum > fs->last_inum) {
         tsk_fprintf(stderr,
             "Inode value is too large for image (%" PRIuINUM ")\n",
             fs->last_inum);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
@@ -197,16 +201,12 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr,
             "Inode value is too small for image (%" PRIuINUM ")\n",
             fs->first_inum);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
     if (fs->jopen == NULL) {
         tsk_fprintf(stderr,
             "Journal support does not exist for this file system\n");
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
@@ -214,26 +214,18 @@ main(int argc, char **argv1)
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
         fprintf(stderr,
             "jcat: error setting stdout to binary: %s", strerror(errno));
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 #endif
 
-    if (fs->jopen(fs, inum)) {
+    if (fs->jopen(fs.get(), inum)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
-    if (fs->jblk_walk(fs, blk, blk, 0, 0, NULL)) {
+    if (fs->jblk_walk(fs.get(), blk, blk, 0, 0, NULL)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
 
-    tsk_fs_close(fs);
-    tsk_img_close(img);
     exit(0);
 }

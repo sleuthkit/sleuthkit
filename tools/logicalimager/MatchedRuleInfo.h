@@ -24,7 +24,7 @@
 class MatchedRuleInfo
 {
 public:
-    MatchedRuleInfo(const std::string &ruleSetName, const std::string &name, 
+    MatchedRuleInfo(const std::string &ruleSetName, const std::string &name,
         const std::string &description, bool shouldSave = true, bool shouldAlert = false);
     ~MatchedRuleInfo() {}
 

@@ -1,4 +1,8 @@
-The docs that used to live in this directory now exist on the wiki:
+Docs are being revised.
 
-http://wiki.sleuthkit.org/
+Legacy wiki: https://wiki.sleuthkit.org/
 
+Other docs: https://sleuthkit.org/
+
+
+Release process: [Release_Process](../release/Release_Process.md)

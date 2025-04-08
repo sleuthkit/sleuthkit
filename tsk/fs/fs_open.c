@@ -28,7 +28,6 @@
 #include "tsk/util/detect_encryption.h"
 #include "encryptionHelper.h"
 #include "tsk/img/unsupported_types.h"
-#include "tsk/img/logical_img.h"
 
 /**
  * \file fs_open.c
@@ -88,7 +87,7 @@ tsk_fs_open_vol_decrypt(const TSK_VS_PART_INFO * a_part_info,
     offset =
         a_part_info->start * a_part_info->vs->block_size +
         a_part_info->vs->offset;
-    return tsk_fs_open_img_decrypt(a_part_info->vs->img_info, offset, 
+    return tsk_fs_open_img_decrypt(a_part_info->vs->img_info, offset,
         a_ftype, a_pass);
 }
 
@@ -128,7 +127,6 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     TSK_FS_TYPE_ENUM a_ftype, const char * a_pass)
 {
     TSK_FS_INFO *fs_info;
-
     const struct {
         char* name;
         TSK_FS_INFO* (*open)(TSK_IMG_INFO*, TSK_OFF_T,
@@ -142,11 +140,13 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "EXT2/3/4", ext2fs_open,  TSK_FS_TYPE_EXT_DETECT     },
         { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
         { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
+        { "XFS",      xfs_open,     TSK_FS_TYPE_XFS_DETECT     },
 #if TSK_USE_HFS
         { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
-        { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }
+        { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT },
+        { "BTRFS",    btrfs_open,   TSK_FS_TYPE_BTRFS_DETECT },
     };
     if (a_img_info == NULL) {
         tsk_error_reset();
@@ -210,7 +210,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             }
             else {
                 // fs does not open as type i
-                
+
                 // TSK_ERR_FS_BITLOCKER_ERROR is used when we get pretty far into the BitLocker processing but
                 // need something different from the user or find something we can't currently parse. We need
                 // to keep trying file systems (we might have a FAT system so we don't want to return after
@@ -302,9 +302,15 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (TSK_FS_TYPE_ISYAFFS2(a_ftype)) {
         return yaffs2_open(a_img_info, a_offset, a_ftype, a_pass, 0);
-    } 
+    }
+    else if (TSK_FS_TYPE_ISBTRFS(a_ftype)) {
+        return btrfs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
     else if (TSK_FS_TYPE_ISAPFS(a_ftype)) {
         return apfs_open(a_img_info, a_offset, a_ftype, a_pass);
+    }
+    else if (TSK_FS_TYPE_ISXFS(a_ftype)) {
+        return xfs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
@@ -323,12 +329,12 @@ tsk_fs_close(TSK_FS_INFO * a_fs)
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG))
         return;
 
-    // each file system is supposed to call tsk_fs_free() 
+    // each file system is supposed to call tsk_fs_free()
 
     a_fs->close(a_fs);
 }
 
-/* tsk_fs_malloc - init lock after tsk_malloc 
+/* tsk_fs_malloc - init lock after tsk_malloc
  * This is for fs module and all it's inheritances
  */
 TSK_FS_INFO *
@@ -345,7 +351,7 @@ tsk_fs_malloc(size_t a_len)
     return fs_info;
 }
 
-/* tsk_fs_free - deinit lock before free memory 
+/* tsk_fs_free - deinit lock before free memory
  * This is for fs module and all it's inheritances
  */
 void
@@ -359,9 +365,9 @@ tsk_fs_free(TSK_FS_INFO * a_fs_info)
     /* Free any encryption structures */
     freeEncryptionData(a_fs_info);
 
-    /* we should probably get the lock, but we're 
+    /* we should probably get the lock, but we're
      * about to kill the entire object so there are
-     * bigger problems if another thread is still 
+     * bigger problems if another thread is still
      * using the fs */
     if (a_fs_info->orphan_dir) {
         tsk_fs_dir_close(a_fs_info->orphan_dir);

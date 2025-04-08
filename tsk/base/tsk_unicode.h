@@ -22,7 +22,7 @@
 
 
 /** \file tsk_unicode.h
- * Contains the definitions for Unicode-based conversion methods. 
+ * Contains the definitions for Unicode-based conversion methods.
  */
 #ifndef _TSK_UNICODE_H
 #define _TSK_UNICODE_H

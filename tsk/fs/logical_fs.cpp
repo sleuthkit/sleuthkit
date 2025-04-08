@@ -13,20 +13,23 @@
 * Contains the internal TSK logical file system functions.
 */
 
-#include <vector>
-#include <map>
 #include <algorithm>
-#include <string>
+#include <map>
+#include <memory>
 #include <set>
+#include <string>
+#include <vector>
+
 #include <string.h>
 
 #include "tsk_fs_i.h"
 #include "tsk_fs.h"
 #include "tsk_logical_fs.h"
+#include "tsk/img/legacy_cache.h"
 #include "tsk/img/logical_img.h"
 
 #ifdef TSK_WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 using std::vector;
@@ -34,9 +37,13 @@ using std::string;
 using std::wstring;
 
 static uint8_t
-logicalfs_inode_walk(TSK_FS_INFO *fs, TSK_INUM_T start_inum,
-	TSK_INUM_T end_inum, TSK_FS_META_FLAG_ENUM flags,
-	TSK_FS_META_WALK_CB a_action, void *a_ptr)
+logicalfs_inode_walk(
+  [[maybe_unused]] TSK_FS_INFO *fs,
+  [[maybe_unused]] TSK_INUM_T start_inum,
+  [[maybe_unused]] TSK_INUM_T end_inum,
+  [[maybe_unused]] TSK_FS_META_FLAG_ENUM flags,
+  [[maybe_unused]] TSK_FS_META_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -45,9 +52,13 @@ logicalfs_inode_walk(TSK_FS_INFO *fs, TSK_INUM_T start_inum,
 }
 
 static uint8_t
-logicalfs_block_walk(TSK_FS_INFO *a_fs, TSK_DADDR_T a_start_blk,
-	TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
-	TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr)
+logicalfs_block_walk(
+  [[maybe_unused]] TSK_FS_INFO *a_fs,
+  [[maybe_unused]] TSK_DADDR_T a_start_blk,
+  [[maybe_unused]] TSK_DADDR_T a_end_blk,
+  [[maybe_unused]] TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
+  [[maybe_unused]] TSK_FS_BLOCK_WALK_CB a_action,
+  [[maybe_unused]] void *a_ptr)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -56,13 +67,15 @@ logicalfs_block_walk(TSK_FS_INFO *a_fs, TSK_DADDR_T a_start_blk,
 }
 
 static TSK_FS_BLOCK_FLAG_ENUM
-logicalfs_block_getflags(TSK_FS_INFO *fs, TSK_DADDR_T a_addr)
+logicalfs_block_getflags(
+  [[maybe_unused]] TSK_FS_INFO *fs,
+  [[maybe_unused]] TSK_DADDR_T a_addr)
 {
 	return TSK_FS_BLOCK_FLAG_UNUSED;
 }
 
 static TSK_FS_ATTR_TYPE_ENUM
-logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
+logicalfs_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 {
 	return TSK_FS_ATTR_TYPE_DEFAULT;
 }
@@ -74,16 +87,18 @@ logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
  *
  * @return The converted timet
  */
+/*
 #ifdef TSK_WIN32
-static time_t 
-filetime_to_timet(FILETIME const& ft) 
-{ 
-	ULARGE_INTEGER ull;    
-	ull.LowPart = ft.dwLowDateTime;    
-	ull.HighPart = ft.dwHighDateTime;    
-	return ull.QuadPart / 10000000ULL - 11644473600ULL; 
+static time_t
+filetime_to_timet(FILETIME const& ft)
+{
+	ULARGE_INTEGER ull;
+	ull.LowPart = ft.dwLowDateTime;
+	ull.HighPart = ft.dwHighDateTime;
+	return ull.QuadPart / 10000000ULL - 11644473600ULL;
 }
 #endif
+*/
 
 /*
  * Create a LOGICALFS_SEARCH_HELPER that will run a search for
@@ -167,9 +182,9 @@ free_search_helper(LOGICALFS_SEARCH_HELPER* helper) {
 
 /*
  * Convert a wide string to UTF8.
- * 
+ *
  * @param source The wide string to convert.
- * 
+ *
  * @return The converted string (must be freed by caller) or "INVALID FILE NAME" if conversion fails. NULL if memory allocation fails.
  */
 #ifdef TSK_WIN32
@@ -199,7 +214,7 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 		if (tsk_verbose)
 			tsk_fprintf(stderr,
 				"convert_wide_string_to_utf8: error converting logical file name to UTF-8\n");
-		strncpy(dest, invalidName, strlen(invalidName));
+		strcpy(dest, invalidName);
 	}
 	return dest;
 }
@@ -300,12 +315,12 @@ TSK_TCHAR * create_search_path(const TSK_TCHAR *base_path) {
 *
 * @return The search path with wildcard appended (must be freed by caller)
 */
-TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 #ifdef TSK_WIN32
+TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 
 	// First convert the base path to an absolute path
 	TCHAR absPath[LOGICAL_MAX_PATH_UNICODE];
-	int ret = GetFullPathNameW(base_path, LOGICAL_MAX_PATH_UNICODE, absPath, NULL);
+	GetFullPathNameW(base_path, LOGICAL_MAX_PATH_UNICODE, absPath, NULL);
 
 	size_t len = TSTRLEN(absPath);
 	TSK_TCHAR * searchPath;
@@ -319,11 +334,15 @@ TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 	TSTRNCAT(searchPath, absPath, len + 1);
 	TSTRNCAT(searchPath, L"\\*", 4);
 	return searchPath;
+}
 #else
+TSK_TCHAR * create_search_path_long_path(
+  [[maybe_unused]] const TSK_TCHAR *base_path)
+{
 	// Nothing to do here if it's not Windows
 	return NULL;
-#endif
 }
+#endif
 
 /*
  * Load the names of child files and/or directories into the given vectors.
@@ -360,7 +379,7 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 		}
 	}
 
-	// Look up all files and folders in the base directory 
+	// Look up all files and folders in the base directory
 	hFind = ::FindFirstFileW(search_path_wildcard, &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 		do {
@@ -393,6 +412,10 @@ load_dir_and_file_lists_win(const TSK_TCHAR *base_path, vector<wstring>& file_na
 }
 #endif
 
+void unlock(LegacyCache* cache) {
+  cache->unlock();
+};
+
 /*
  * Finds closest cache match for the given path.
  * If best_path is not NULL, caller must free.
@@ -408,13 +431,17 @@ static TSK_RETVAL_ENUM
 find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *target_path, TSK_TCHAR **best_path, TSK_INUM_T *best_inum) {
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
-	tsk_take_lock(&(img_info->cache_lock));
+
+  auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
 
 	*best_inum = LOGICAL_INVALID_INUM;
 	*best_path = NULL;
 	int best_match_index = -1;
 	size_t longest_match = 0;
 	size_t target_len = TSTRLEN(target_path);
+
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if (logical_img_info->inum_cache[i].path != NULL) {
 
@@ -424,19 +451,20 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 			// - The cache entry isn't longer than what we're looking for
 			size_t cache_path_len = TSTRLEN(logical_img_info->inum_cache[i].path);
 			if ((longest_match != target_len) && (cache_path_len > longest_match) && (cache_path_len <= target_len)) {
-				size_t matching_len;
+				size_t matching_len = 0;
 #ifdef TSK_WIN32
-				matching_len = 0;
 				if (0 == _wcsnicmp(target_path, logical_img_info->inum_cache[i].path, cache_path_len)) {
 					matching_len = cache_path_len;
 				}
 #endif
+
 				// Save this path if:
 				// - It is longer than our previous best match
 				// - It is either the full length of the path we're searching for or is a valid
 				//      substring of our path
 				if ((matching_len > longest_match) &&
-					((matching_len == target_len) || (((matching_len < target_len) && (target_path[matching_len] == L'/'))))) {
+					((matching_len == target_len) || ((matching_len < target_len) && 
+						((target_path[matching_len] == L'/') || (target_path[matching_len] == L'\\'))))) {
 
 					// We found the full path or a partial match
 					longest_match = matching_len;
@@ -467,20 +495,18 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 		*best_inum = logical_img_info->inum_cache[best_match_index].inum;
 		*best_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1));
 		if (*best_path == NULL) {
-			tsk_release_lock(&(img_info->cache_lock));
 			return TSK_ERR;
 		}
 		TSTRNCPY(*best_path, logical_img_info->inum_cache[best_match_index].path, TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1);
 	}
 
-	tsk_release_lock(&(img_info->cache_lock));
 	return TSK_OK;
 }
 
 /*
  * Look up the path corresponding to the given inum in the cache.
  * Returned path must be freed by caller.
- * 
+ *
  * @param logical_fs_info The logical file system
  * @param target_inum     The inum we're searching for
  *
@@ -490,20 +516,24 @@ static TSK_TCHAR*
 find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_inum) {
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
-	tsk_take_lock(&(img_info->cache_lock));
+
+  auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
+
 	TSK_TCHAR *target_path = NULL;
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
-		if ((target_path == NULL) && (logical_img_info->inum_cache[i].inum == target_inum)) {
+		if (target_path == NULL && logical_img_info->inum_cache[i].inum == target_inum) {
 			// The cache entry was useful so reset the age
 			logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
 
 			// Copy the path
-			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[i].path) + 1));
+      const size_t len = TSTRLEN(logical_img_info->inum_cache[i].path);
+			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 			if (target_path == NULL) {
-				tsk_release_lock(&(img_info->cache_lock));
 				return NULL;
 			}
-			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, TSTRLEN(logical_img_info->inum_cache[i].path) + 1);
+			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, len + 1);
 		}
 		else {
 			// The cache entry was not useful so decrease the age
@@ -513,7 +543,6 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 		}
 	}
 
-	tsk_release_lock(&(img_info->cache_lock));
 	return target_path;
 }
 
@@ -523,11 +552,12 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
  * @param logical_fs_info The logical file system
  * @param path            The directory path
  * @param inum            The inum corresponding to the path
+ * @param always_cache    If false, only cache the entry if we have empty space (and it will get a smaller age)
  *
  * @return TSK_OK if successful, TSK_ERR on error
  */
 static TSK_RETVAL_ENUM
-add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum) {
+add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, TSK_INUM_T inum, bool always_cache) {
 
 	// If the path is very long then don't cache it to make sure the cache stays reasonably small.
 	if (TSTRLEN(path) > LOGICAL_INUM_CACHE_MAX_PATH_LEN) {
@@ -536,7 +566,21 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
-	tsk_take_lock(&(img_info->cache_lock));
+
+  auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
+
+	// Check if this entry is already in the cache. 
+	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
+		if (logical_img_info->inum_cache[i].inum == inum) {
+			// If we found it and we're always caching then reset the age
+			if (always_cache && logical_img_info->inum_cache[i].cache_age < LOGICAL_INUM_CACHE_MAX_AGE) {
+				logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+			}
+			return TSK_OK;
+		}
+	}
 
 	// Find the next cache slot. If we find an unused slot, use that. Otherwise find the entry
 	// with the lowest age.
@@ -553,19 +597,28 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 			lowest_age = logical_img_info->inum_cache[i].cache_age;
 		}
 	}
+
+	// If the always_cache flag is not set, only continue if we've found an empty space
+	if (!always_cache && logical_img_info->inum_cache[next_slot].inum != LOGICAL_INVALID_INUM) {
+		return TSK_OK;
+	}
+
 	clear_inum_cache_entry(logical_img_info, next_slot);
 
 	// Copy the data
 	logical_img_info->inum_cache[next_slot].path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(path) + 1));
 	if (logical_img_info->inum_cache[next_slot].path == NULL) {
-		tsk_release_lock(&(img_info->cache_lock));
 		return TSK_ERR;
 	}
 	TSTRNCPY(logical_img_info->inum_cache[next_slot].path, path, TSTRLEN(path) + 1);
 	logical_img_info->inum_cache[next_slot].inum = inum;
-	logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+	if (always_cache) {
+		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
+	} else {
+		// We want to remove the random folders first when we run out of space
+		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE / 2;
+	}
 
-	tsk_release_lock(&(img_info->cache_lock));
 	return TSK_OK;
 }
 
@@ -594,8 +647,8 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 	// If we're searching for a file and this is the correct directory, load only the files in the folder and
 	// return the correct one.
 	if (search_helper->search_type == LOGICALFS_SEARCH_BY_INUM
-		&& (*last_inum_ptr == (search_helper->target_inum & 0xffff0000))
-		& ((search_helper->target_inum & 0xffff) != 0)) {
+		&& (*last_inum_ptr == (search_helper->target_inum & LOGICAL_INUM_DIR_MASK))
+		&& ((search_helper->target_inum & LOGICAL_INUM_FILE_MASK) != 0)) {
 
 #ifdef TSK_WIN32
 		if (TSK_OK != load_dir_and_file_lists_win(parent_path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
@@ -606,7 +659,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		sort(file_names.begin(), file_names.end());
 
 		// Look for the file corresponding to the given inum
-		size_t file_index = (search_helper->target_inum & 0xffff) - 1;
+		size_t file_index = (search_helper->target_inum & LOGICAL_INUM_FILE_MASK) - 1;
 		if (file_names.size() <= file_index) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
@@ -641,10 +694,11 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 	// The directoy name being added should generally be less than 270 characters, but if necessary we will
 	// make more space available.
 	size_t allocated_dir_name_len = 270;
-	TSK_TCHAR* current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(parent_path) + 2 + allocated_dir_name_len));
+  const size_t current_path_len = TSTRLEN(parent_path) + 1 + allocated_dir_name_len;
+	TSK_TCHAR* current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (current_path_len + 1));
 	if (current_path == NULL)
 		return TSK_ERR;
-	TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
+	TSTRNCPY(current_path, parent_path, current_path_len + 1);
 #ifdef TSK_WIN32
 	TSTRNCAT(current_path, L"\\", 2);
 #else
@@ -652,7 +706,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 #endif
 	size_t parent_path_len = TSTRLEN(current_path);
 
-	for (size_t i = 0; i < dir_names.size();i++) {
+	for (size_t i = 0; i < dir_names.size(); i++) {
 
 		// If we don't have space for this name, increase the size of the buffer
 		if (TSTRLEN(dir_names[i].c_str()) > allocated_dir_name_len) {
@@ -671,9 +725,47 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 
 		// Append the current directory name to the parent path
 		TSTRNCPY(current_path + parent_path_len, dir_names[i].c_str(), TSTRLEN(dir_names[i].c_str()) + 1);
+		if (*last_inum_ptr == LOGICAL_INUM_DIR_MAX) {
+			// We're run out of inums to assign. Return an error.
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+			tsk_error_set_errstr("search_directory_recusive: Too many directories in logical file set");
+			free(current_path);
+			return TSK_ERR;
+		}
 		TSK_INUM_T current_inum = *last_inum_ptr + LOGICAL_INUM_DIR_INC;
 		*last_inum_ptr = current_inum;
-		add_directory_to_cache(logical_fs_info, current_path, current_inum);
+
+		// There's no perfect way to do the caching. Caching everything here had the problem that if we have a miss then the 
+		// whole cache gets overwritten while we search. So we'll generally only cache directories that get us closer to 
+		// our target (so if we search for something in the same or similar folders it'll be a fast search) and directories 
+		// that are close to the root one (one or two folders deep).
+		size_t current_path_len = TSTRLEN(current_path);
+		size_t path_offset = TSTRLEN(logical_fs_info->base_path) + 1; // The +1 advances past the slash after the root dir
+		bool is_near_root_folder = false;
+		if (((search_helper->search_type == LOGICALFS_SEARCH_BY_PATH) || (search_helper->search_type == LOGICALFS_NO_SEARCH))
+			&& path_offset < current_path_len) {
+			int slash_count = 0;
+			for (size_t i = path_offset; i < current_path_len; i++) {
+				if (current_path[i] == '/' || current_path[i] == '\\') {
+					slash_count++;
+				}
+			}
+			is_near_root_folder = (slash_count < 2);
+		}
+		if (search_helper->search_type == LOGICALFS_SEARCH_BY_PATH) {
+			if (is_near_root_folder || TSTRNCMP(current_path, search_helper->target_path, current_path_len) == 0) {
+				add_directory_to_cache(logical_fs_info, current_path, current_inum, true);
+			}
+			else {
+				// This will only add to the cache if we have empty space
+				add_directory_to_cache(logical_fs_info, current_path, current_inum, false);
+			}
+		}
+		else if (search_helper->search_type == LOGICALFS_NO_SEARCH && is_near_root_folder) {
+			// Cache the base directories when opening the file system
+			add_directory_to_cache(logical_fs_info, current_path, current_inum, true);
+		}
 
 		// Check if we've found it
 		if ((search_helper->search_type == LOGICALFS_SEARCH_BY_PATH)
@@ -724,10 +816,11 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	TSK_TCHAR *path = NULL;
 	if (a_addr == logical_fs_info->fs_info.root_inum) {
 		// No need to do a search - it's just the root folder
-		path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_fs_info->base_path) + 1));
+		const size_t len = TSTRLEN(logical_fs_info->base_path);
+		path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 		if (path == NULL)
 			return NULL;
-		TSTRNCPY(path, logical_fs_info->base_path, TSTRLEN(logical_fs_info->base_path) + 1);
+		TSTRNCPY(path, logical_fs_info->base_path, len + 1);
 		return path;
 	}
 
@@ -736,7 +829,7 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	const TSK_TCHAR *starting_path = logical_fs_info->base_path;
 
 	// See if the directory is in the cache
-	TSK_INUM_T dir_addr = a_addr & 0xffff0000;
+	TSK_INUM_T dir_addr = a_addr & LOGICAL_INUM_DIR_MASK;
 	TSK_TCHAR *cache_path = find_path_for_inum_in_cache(logical_fs_info, dir_addr);
 	if (cache_path != NULL) {
 		if (dir_addr == a_addr) {
@@ -773,12 +866,13 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	// Copy the path
-	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(search_helper->found_path) + 1));
+	const size_t len = TSTRLEN(search_helper->found_path);
+	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
 	if (path == NULL) {
 		free_search_helper(search_helper);
 		return NULL;
 	}
-	TSTRNCPY(path, search_helper->found_path, TSTRLEN(search_helper->found_path) + 1);
+	TSTRNCPY(path, search_helper->found_path, len + 1);
 	free_search_helper(search_helper);
 	return path;
 }
@@ -820,16 +914,16 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 	HANDLE hFind;
 	if (TSTRLEN(path) < MAX_PATH) {
 		hFind = ::FindFirstFileW(path, &fd);
-	} 
+	}
 	else {
 		TCHAR absPath[LOGICAL_MAX_PATH_UNICODE + 4];
 		TSTRNCPY(absPath, L"\\\\?\\", 4);
 		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 		if (absPathLen <= 0) {
-			free(path);
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_file_add_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			free(path);
 			return TSK_ERR;
 		}
 		hFind = ::FindFirstFileW(absPath, &fd);
@@ -879,7 +973,7 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 		return LOGICAL_INVALID_INUM;
 	}
 
-	// The maximum inum will be the inum of the last file in that folder. We don't care which file it is, 
+	// The maximum inum will be the inum of the last file in that folder. We don't care which file it is,
 	// so just getting a count is sufficient. First we need the path on disk corresponding to the last
 	// directory inum.
 	TSK_TCHAR* path = load_path_from_inum(logical_fs_info, last_assigned_inum);
@@ -887,7 +981,7 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 		return LOGICAL_INVALID_INUM;
 	}
 
-	// Finally we need to get a count of files in that last folder. The max inum is the 
+	// Finally we need to get a count of files in that last folder. The max inum is the
 	// folder inum plus the number of files (if none, it'll just be the folder inum).
 #ifdef TSK_WIN32
 	vector<wstring> file_names;
@@ -988,8 +1082,11 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 }
 
 static TSK_RETVAL_ENUM
-logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
-	TSK_INUM_T a_addr, int recursion_depth)
+logicalfs_dir_open_meta(
+  TSK_FS_INFO *a_fs,
+  TSK_FS_DIR ** a_fs_dir,
+  TSK_INUM_T a_addr,
+  [[maybe_unused]] int recursion_depth)
 {
 	TSK_FS_DIR *fs_dir;
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
@@ -1000,7 +1097,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		tsk_error_set_errstr("logicalfs_dir_open_meta: NULL fs_dir argument given");
 		return TSK_ERR;
 	}
-	if ((a_addr & 0xffff) != 0) {
+	if ((a_addr & LOGICAL_INUM_FILE_MASK) != 0) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
 		tsk_error_set_errstr("logicalfs_dir_open_meta: Inode %" PRIuINUM " is not a directory", a_addr);
@@ -1040,10 +1137,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		TSTRNCPY(absPath, L"\\\\?\\", 4);
 		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 		if (absPathLen <= 0) {
-			free(path);
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_dir_open_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			free(path);
 			return TSK_ERR;
 		}
 		hFind = ::FindFirstFileW(absPath, &fd);
@@ -1060,7 +1157,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			return TSK_ERR;
 		}
 
-		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, fs_dir->fs_file); 
+		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, fs_dir->fs_file);
 		::FindClose(hFind);
 
 		if (result != TSK_OK) {
@@ -1132,10 +1229,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = dir_inum;
 #ifdef TSK_WIN32
-		strncpy(fs_name->name, utf8Name, name_len);
+		strncpy(fs_name->name, utf8Name, name_len + 1);
 		free(utf8Name);
 #else
-		strncpy(fs_name->name, it->c_str(), name_len);
+		strncpy(fs_name->name, it->c_str(), name_len + 1);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
@@ -1175,10 +1272,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = file_inum;
 #ifdef TSK_WIN32
-		strncpy(fs_name->name, utf8Name, name_len);
+		strncpy(fs_name->name, utf8Name, name_len + 1);
 		free(utf8Name);
 #else
-		strncpy(fs_name->name, it->c_str(), name_len);
+		strncpy(fs_name->name, it->c_str(), name_len + 1);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
@@ -1246,7 +1343,7 @@ logicalfs_load_attrs(TSK_FS_FILE *file)
 
 	if (tsk_fs_attr_set_run(file, attr, NULL, NULL,
 		TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-		meta->size, meta->size, 
+		meta->size, meta->size,
 		roundup(meta->size, file->fs_info->block_size),
 		(TSK_FS_ATTR_FLAG_ENUM)0, 0)) {
 
@@ -1280,7 +1377,7 @@ logicalfs_load_attrs(TSK_FS_FILE *file)
  *
  * @return Size of the block or -1 on error.
  */
-ssize_t 
+ssize_t
 logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_block_num, char *buf) {
 
 	if ((a_fs == NULL) || (a_fs_file == NULL) || (a_fs_file->meta == NULL)) {
@@ -1300,8 +1397,8 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	unsigned int block_size = a_fs->block_size;
 
 	// The caching used for logical file blocks is simpler than
-	// the version for images in img_io.c because we will always store complete 
-	// blocks - the block size for logical files is set to the same size as 
+	// the version for images in img_io.c because we will always store complete
+	// blocks - the block size for logical files is set to the same size as
 	// the image cache. So each block in the cache will correspond to a
 	// file inum and block number.
 
@@ -1309,9 +1406,11 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	// the shared variables in the img type specific INFO structs.
 	// Grab it now so that it is held before any reads.
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)a_fs->img_info;
-	TSK_IMG_INFO* img_info = a_fs->img_info;
 	LOGICALFS_INFO *logical_fs_info = (LOGICALFS_INFO*)a_fs;
-	tsk_take_lock(&(img_info->cache_lock));
+
+	auto cache = logical_img_info->cache;
+  cache->lock();
+  std::unique_ptr<LegacyCache, decltype(&unlock)> lock_guard(cache, unlock);
 
 	// Check if this block is in the cache
 	int cache_next = 0;         // index to lowest age cache (to use next)
@@ -1319,16 +1418,16 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	for (int cache_index = 0; cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
 
 		// Look into the in-use cache entries
-		if (img_info->cache_len[cache_index] > 0) {
+		if (cache->cache_len[cache_index] > 0) {
 			if ((logical_img_info->cache_inum[cache_index] == a_fs_file->meta->addr)
 				// check if non-negative and cast to uint to avoid signed/unsigned comparison warning
-				&& (img_info->cache_off[cache_index] >= 0 && (TSK_DADDR_T)img_info->cache_off[cache_index] == a_block_num)) {
+				&& (cache->cache_off[cache_index] >= 0 && (TSK_DADDR_T)cache->cache_off[cache_index] == a_block_num)) {
 				// We found it
-				memcpy(buf, img_info->cache[cache_index], block_size);
+				memcpy(buf, cache->cache[cache_index], block_size);
 				match_found = true;
 
 				// reset its "age" since it was useful
-				img_info->cache_age[cache_index] = LOGICAL_IMG_CACHE_AGE;
+				cache->cache_age[cache_index] = LOGICAL_IMG_CACHE_AGE;
 
 				// we don't break out of the loop so that we update all ages
 			}
@@ -1336,14 +1435,14 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 				// Decrease its "age" since it was not useful.
 				// We don't let used ones go below 1 so that they are not
 				// confused with entries that have never been used.
-				if (img_info->cache_age[cache_index] > 2) {
-					img_info->cache_age[cache_index]--;
+				if (cache->cache_age[cache_index] > 2) {
+					cache->cache_age[cache_index]--;
 				}
 
 				// See if this is the most eligible replacement
-				if ((img_info->cache_len[cache_next] > 0)
-					&& (img_info->cache_age[cache_index] <
-						img_info->cache_age[cache_next])) {
+				if ((cache->cache_len[cache_next] > 0)
+					&& (cache->cache_age[cache_index] <
+						cache->cache_age[cache_next])) {
 					cache_next = cache_index;
 				}
 			}
@@ -1352,7 +1451,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 
 	// If we found the block in the cache, we're done
 	if (match_found) {
-		tsk_release_lock(&(img_info->cache_lock));
 		return block_size;
 	}
 
@@ -1383,10 +1481,10 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 			TSTRNCPY(absPath, L"\\\\?\\", 4);
 			int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 			if (absPathLen <= 0) {
-				free(path);
 				tsk_error_reset();
 				tsk_error_set_errno(TSK_ERR_FS_GENFS);
 				tsk_error_set_errstr("logicalfs_read_block: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+				free(path);
 				return TSK_ERR;
 			}
 			fd = CreateFileW(absPath, FILE_READ_DATA,
@@ -1394,7 +1492,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 				NULL);
 		}
 		if (fd == INVALID_HANDLE_VALUE) {
-			tsk_release_lock(&(img_info->cache_lock));
 			int lastError = (int)GetLastError();
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1440,7 +1537,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
 			(GetLastError() != NO_ERROR)) {
 
-			tsk_release_lock(&(img_info->cache_lock));
 			int lastError = (int)GetLastError();
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_IMG_SEEK);
@@ -1468,12 +1564,11 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 #ifdef TSK_WIN32
 	DWORD nread;
 	if (FALSE == ReadFile(file_handle_entry->fd, buf, (DWORD)len_to_read, &nread, NULL)) {
-		tsk_release_lock(&(img_info->cache_lock));
 		int lastError = GetLastError();
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("logicalfs_read_block: file addr %" PRIuINUM
-			" offset: %" PRIu64 " read len: %" PRIuSIZE " - %d",
+			" offset: %" PRIu64 " read len: %u - %d",
 			a_fs_file->meta->addr, a_block_num, block_size,
 			lastError);
 		return -1;
@@ -1485,13 +1580,11 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 #endif
 
 	// Copy the block into the cache
-	memcpy(img_info->cache[cache_next], buf, block_size);
-	img_info->cache_len[cache_next] = block_size;
-	img_info->cache_age[cache_next] = LOGICAL_IMG_CACHE_AGE;
-	img_info->cache_off[cache_next] = a_block_num;
+	memcpy(cache->cache[cache_next], buf, block_size);
+	cache->cache_len[cache_next] = block_size;
+	cache->cache_age[cache_next] = LOGICAL_IMG_CACHE_AGE;
+	cache->cache_off[cache_next] = a_block_num;
 	logical_img_info->cache_inum[cache_next] = a_fs_file->meta->addr;
-
-	tsk_release_lock(&(img_info->cache_lock));
 
 	// If we didn't read the expected number of bytes, return an error
 #ifdef TSK_WIN32
@@ -1500,7 +1593,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("logicalfs_read_block: file addr %" PRIuINUM
-			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
+			" offset: %" PRIdOFF " read len: %u - %d",
 			a_fs_file->meta->addr, a_block_num, block_size,
 			lastError);
 		return -1;
@@ -1521,7 +1614,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 *
 * @return Number of bytes read or -1 on error.
 */
-ssize_t 
+ssize_t
 logicalfs_read(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, size_t a_len, char *a_buf) {
 
 	TSK_DADDR_T current_block_num = a_offset / a_fs->block_size;
@@ -1542,7 +1635,7 @@ logicalfs_read(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, 
 	if (a_offset >= (TSK_DADDR_T)a_fs_file->meta->size) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
-		tsk_error_set_errstr("logicalfs_read: Attempted to read offset beyond end of file (file addr: %" 
+		tsk_error_set_errstr("logicalfs_read: Attempted to read offset beyond end of file (file addr: %"
 			PRIuINUM ", file size: %" PRIdOFF ", offset: %" PRIuDADDR ")", a_fs_file->meta->addr, a_fs_file->meta->size, a_offset);
 		return -1;
 	}
@@ -1655,8 +1748,13 @@ logicalfs_fscheck(TSK_FS_INFO * /*fs*/, FILE * /*hFile*/)
 * @returns 1 on error and 0 on success
 */
 static uint8_t
-logicalfs_istat(TSK_FS_INFO *fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
-	TSK_DADDR_T numblock, int32_t sec_skew)
+logicalfs_istat(
+  [[maybe_unused]] TSK_FS_INFO *fs,
+  [[maybe_unused]] TSK_FS_ISTAT_FLAG_ENUM flags,
+  [[maybe_unused]] FILE * hFile,
+  [[maybe_unused]] TSK_INUM_T inum,
+  [[maybe_unused]] TSK_DADDR_T numblock,
+  [[maybe_unused]] int32_t sec_skew)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -1791,7 +1889,7 @@ logical_fs_open(TSK_IMG_INFO * img_info) {
 	// Calculate the last inum
 	fs->last_inum = find_max_inum(logical_fs_info);
 
-	// We don't really care about the last inum, but if traversing the 
+	// We don't really care about the last inum, but if traversing the
 	// folders to calculate it fails then we're going to encounter
 	// the same error when using the logical file system.
 	if (fs->last_inum == LOGICAL_INVALID_INUM) {

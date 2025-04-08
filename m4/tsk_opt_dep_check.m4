@@ -56,7 +56,7 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
     dnl If --with-lib or --without-lib is given
     [],
     dnl if nothing was specified, default to a test
-    [with_$1=yes]
+    [with_$1=maybe]
   )
 
   dnl check for lib if they did not specify no
@@ -64,26 +64,16 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
   AS_IF(
     [test "x[$]with_$1" != "xno"],
     [
-      dnl Save flags so we can reset them if the library isn't found
-      SAVED_CPPFLAGS="$CPPFLAGS"
-      SAVED_CFLAGS="$CFLAGS"
-      SAVED_CXXFLAGS="$CXXFLAGS"
-      SAVED_LDFLAGS="$LDFLAGS"
-      SAVED_LIBS="$LIBS"
-
-      AS_IF([test "x[$]with_$1" = "xyes"],
+      AS_IF([test "x[$]with_$1" = "xyes" -o "x[$]with_$1" = "xmaybe"],
         [
           dnl Check for lib using pkg-config, if we have it
-          m4_ifval([$2], [AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
+          m4_ifnblank([$3], [AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
             [
               SAVED_AX_PACKAGE_REQUIRES="$AX_PACKAGE_REQUIRES"
               SAVED_AX_PACKAGE_REQUIRES_PRIVATE="$AX_PACKAGE_REQUIRES_PRIVATE"
               TSK_PKG_CHECK_MODULES([$2], [], [$3],
               [
-                CPPFLAGS="$CPPFLAGS [$]$2[]_CFLAGS"
-                CFLAGS="$CFLAGS [$]$2[]_CFLAGS"
-                CXXFLAGS="$CXXFLAGS [$]$2[]_CFLAGS"
-                LIBS="$LIBS [$]$2[]_LIBS"
+                $2[]_CXXFLAGS="[$]$2[]_CFLAGS"
                 ax_$1=yes
               ],
               [
@@ -98,13 +88,27 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
           dnl A directory was given; check that it exists
           AS_IF([test -d "[$]with_$1/include"],
             [
-              CPPFLAGS="$CPPFLAGS -I[$]with_$1/include"
-              LDFLAGS="$LDFLAGS -L[$]with_$1/lib"
+              $2[]_CPPFLAGS="-I[$]with_$1/include"
+              $2[]_LIBS="-L[$]with_$1/lib -l$5"
             ],
             [AC_MSG_FAILURE([$1 directory not found at [$]with_$1])]
           )
         ]
       )
+
+      dnl Save the user variables
+      SAVED_CPPFLAGS="$CPPFLAGS"
+      SAVED_CFLAGS="$CFLAGS"
+      SAVED_CXXFLAGS="$CXXFLAGS"
+      SAVED_LDFLAGS="$LDFLAGS"
+      SAVED_LIBS="$LIBS"
+
+      dnl Use the discovered values for AC_CHECK_HEADERS, AC_CHECK_LIB
+      CPPFLAGS="$CPPFLAGS [$]$2[]_CPPFLAGS"
+      CFLAGS="$CFLAGS [$]$2[]_CFLAGS"
+      CXXFLAGS="$CXXFLAGS [$]$2[]_CXXFLAGS"
+      LDFLAGS="$LDFLAGS [$]$2[]_LDFLAGS"
+      LIBS="$LIBS [$]$2[]_LIBS"
 
       dnl Check if the library is usable
       AC_CHECK_HEADERS([$4], [AC_CHECK_LIB([$5], [$6])])
@@ -113,28 +117,43 @@ AC_DEFUN([TSK_OPT_DEP_CHECK], [
           dnl Library found and usable
           AS_IF([test "x[$]ax_$1" = "xyes"],
             [
-              dnl Library found with pkg-config; reset CPPFLAGS so as not
-              dnl to duplicate flags pkg-config puts into CFLAGS
-              CPPFLAGS="$SAVED_CPPFLAGS"
+              dnl Library found with pkg-config, nothing to do
             ],
             [
-              ax_$1=yes
               dnl Library found without pkg-config; ensure that it is added
               dnl to Libs.private in tsk.pc
               PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -l$5"
+
+              dnl Set $2_LIBS if not already set
+              AS_IF([test -z "[$]$2[]_LIBS"], [$2[]_LIBS="-l$5"])
+              ax_$1=yes
             ]
           )
         ],
         [
-          dnl Library not found or unusable; reset flags
-          CPPFLAGS="$SAVED_CPPFLAGS"
-          CFLAGS="$SAVED_CFLAGS"
-          CXXFLAGS="$SAVED_CXXFLAGS"
-          LDFLAGS="$SAVED_LDFLAGS"
-          LIBS="$SAVED_LIBS"
+          dnl Library not found or unusable
           ax_$1=no
         ]
       )
+
+      dnl Reset user variables
+      CPPFLAGS="$SAVED_CPPFLAGS"
+      CFLAGS="$SAVED_CFLAGS"
+      CXXFLAGS="$SAVED_CXXFLAGS"
+      LDFLAGS="$SAVED_LDFLAGS"
+      LIBS="$SAVED_LIBS"
+
+      dnl Export library flags
+      AC_SUBST([$2_CPPFLAGS])
+      AC_SUBST([$2_CFLAGS])
+      AC_SUBST([$2_CXXFLAGS])
+      AC_SUBST([$2_LDFLAGS])
+      AC_SUBST([$2_LIBS])
     ]
+  )
+
+  dnl Report an error if the library was requested but is not usable
+  AS_IF([test "x[$]ax_$1" = "xno" -a "x[$]with_$1" != "xno" -a "x[$]with_$1" != "xmaybe"],
+    [AC_MSG_FAILURE([$1 requested but not available])]
   )
 ])

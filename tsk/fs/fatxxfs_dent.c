@@ -38,8 +38,8 @@ typedef struct {
 
 /**
  * /internal
- * Parse a buffer containing the contents of a directory and add TSK_FS_NAME 
- * objects for each named file found to the TSK_FS_DIR representation of the 
+ * Parse a buffer containing the contents of a directory and add TSK_FS_NAME
+ * objects for each named file found to the TSK_FS_DIR representation of the
  * directory.
  *
  * @param fatfs File system information structure for file system that
@@ -59,8 +59,8 @@ TSK_RETVAL_ENUM
 fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
     TSK_OFF_T len, TSK_DADDR_T *addrs, int recursion_depth)
 {
-    char *func_name = "fatxxfs_dent_parse_buf";
-    unsigned int idx = 0; 
+    const char *func_name = "fatxxfs_dent_parse_buf";
+    unsigned int idx = 0;
     unsigned int sidx = 0;
     int a = 0;
     int b = 0;
@@ -79,7 +79,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
         fatfs_ptr_arg_is_null(a_fs_dir, "a_fs_dir", func_name) ||
         fatfs_ptr_arg_is_null(buf, "buf", func_name) ||
         fatfs_ptr_arg_is_null(addrs, "addrs", func_name)) {
-        return TSK_ERR; 
+        return TSK_ERR;
     }
 
     assert(len > 0);
@@ -87,7 +87,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("%s: invalid buffer length", func_name);
-        return TSK_ERR; 
+        return TSK_ERR;
     }
 
     dep = (FATXXFS_DENTRY*)buf;
@@ -99,7 +99,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
     memset(&lfninfo, 0, sizeof(FATXXFS_LFN));
     lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
 
-    /* Loop through the sectors in the buffer. */ 
+    /* Loop through the sectors in the buffer. */
     for (sidx = 0; sidx < (unsigned int) (len / fatfs->ssize); sidx++) {
 
         /* Get the base inode for the current sector */
@@ -138,7 +138,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
             entrySeenCount++;
 
             /* Is the current entry a valid entry? */
-            if (0 == fatxxfs_is_dentry(fatfs, (FATFS_DENTRY*)dep, 
+            if (0 == fatxxfs_is_dentry(fatfs, (FATFS_DENTRY*)dep,
                 (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)sectalloc,
                 ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
                     if (tsk_verbose)
@@ -147,7 +147,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                         idx);
                     entryInvalidCount++;
                     /* If we have seen four entries and all of them are corrupt,
-                    * then test every remaining entry in this folder -- 
+                    * then test every remaining entry in this folder --
                     * even if the sector is allocated. The scenario is one
                     * where we are processing a cluster that is allocated
                     * to a file and we happen to get some data that matches
@@ -169,11 +169,11 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
 
                 /* Store the name in dinfo until we get the 8.3 name
                  * Use the checksum to identify a new sequence. */
-                if (((dirl->seq & FATXXFS_LFN_SEQ_FIRST) && (dirl->seq != FATXXFS_SLOT_DELETED)) || 
+                if (((dirl->seq & FATXXFS_LFN_SEQ_FIRST) && (dirl->seq != FATXXFS_SLOT_DELETED)) ||
                     (dirl->chksum != lfninfo.chk)) {
                     // @@@ Do a partial output here
-                    
-                    /* This is the last long file name entry in a sequence. 
+
+                    /* This is the last long file name entry in a sequence.
                      * Reset the sequence number, check sum, and next char
                      * address. */
                     lfninfo.seq = dirl->seq & FATXXFS_LFN_SEQ_MASK;
@@ -293,7 +293,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                                 && (dir->name[0] == FATXXFS_SLOT_DELETED)) {
                                     name_ptr[a++] = '_';
                             }
-                            else if ((dir->lowercase & FATXXFS_CASE_LOWER_BASE)
+                            else if ((dir->ntbyte & FATXXFS_CASE_LOWER_BASE)
                                 && (dir->name[b] >= 'A')
                                 && (dir->name[b] <= 'Z')) {
                                     name_ptr[a++] = dir->name[b] + 32;
@@ -309,7 +309,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                         (dir->ext[b] != 0x20)) {
                             if (b == 0)
                                 name_ptr[a++] = '.';
-                            if ((dir->lowercase & FATXXFS_CASE_LOWER_EXT) &&
+                            if ((dir->ntbyte & FATXXFS_CASE_LOWER_EXT) &&
                                 (dir->ext[b] >= 'A') && (dir->ext[b] <= 'Z'))
                                 name_ptr[a++] = dir->ext[b] + 32;
                             else

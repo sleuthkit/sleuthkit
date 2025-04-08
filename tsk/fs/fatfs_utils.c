@@ -10,7 +10,7 @@
 
 /**
  * \file fatfs_utils.c
- * Contains utility functions for processing FAT file systems. 
+ * Contains utility functions for processing FAT file systems.
  */
 
 #include "tsk_fs_i.h"
@@ -26,7 +26,7 @@
  * @param a_ptr The pointer to test for NULL.
  * @param a_param_name The name of the parameter for which the pointer was
  * passed as an argument.
- * @param a_func_name The name of the function for which a_param is a 
+ * @param a_func_name The name of the function for which a_param is a
  * parameter.
  * @return Returns 1 if the pointer is NULL, 0 otherwise.
  */
@@ -41,7 +41,7 @@ fatfs_ptr_arg_is_null(void *a_ptr, const char *a_param_name, const char *a_func_
     if (a_ptr == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        if ((a_param_name != NULL) && (a_func_name != NULL)) { 
+        if ((a_param_name != NULL) && (a_func_name != NULL)) {
             tsk_error_set_errstr("%s: %s is NULL", a_param_name, a_func_name);
         }
         else {
@@ -60,14 +60,14 @@ fatfs_ptr_arg_is_null(void *a_ptr, const char *a_param_name, const char *a_func_
  * a given file system.
  *
  * @param a_fatfs Generic FAT file system info structure.
- * @param a_inum An inode address. 
+ * @param a_inum An inode address.
  * @return Returns 1 if the address is in range, 0 otherwise.
  */
 uint8_t
 fatfs_inum_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
 {
     const char *func_name = "fatfs_inum_is_in_range";
-    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs; 
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
 
     assert(a_fatfs != NULL);
 
@@ -90,8 +90,8 @@ fatfs_inum_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
  * address and a function name supplied by the caller.
  *
  * @param a_fatfs Generic FAT file system info structure.
- * @param a_inum An inode address. 
- * @param a_func_name The name of the function that received the inode address 
+ * @param a_inum An inode address.
+ * @param a_func_name The name of the function that received the inode address
  * as an argument.
  * @return Returns 1 if the address is in range, 0 otherwise.
  */
@@ -118,7 +118,7 @@ fatfs_inum_arg_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *a
         }
 
         return 0;
-    }              
+    }
     return 1;
 }
 
@@ -129,7 +129,7 @@ fatfs_inum_arg_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *a
  * is seconds since January 1, 1970 in UTC.
  *
  * @param date Date part of a DOS time stamp.
- * @param time Time part of a DOS time stamp. 
+ * @param time Time part of a DOS time stamp.
  * @param timetens Tenths of seconds part of a DOS time stamp, range is 0-199.
  * @return A UNIX time stamp.
  */
@@ -179,11 +179,8 @@ fatfs_dos_2_unix_time(uint16_t date, uint16_t time, uint8_t timetens)
      * it out */
     tm1.tm_isdst = -1;
 
-#if defined( _MSC_VER )
-    ret = _mkgmtime(&tm1);
-#else
-    ret = timegm(&tm1);
-#endif
+    ret = mktime(&tm1);
+
     if (ret < 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -216,7 +213,7 @@ fatfs_dos_2_nanosec(uint8_t timetens)
     return timetens * 10000000;
 }
 
-/** 
+/**
  * \internal
  * Cleans up a string so that it contains only ASCII characters. Useful when
  *
@@ -241,12 +238,12 @@ fatfs_cleanup_ascii(char *str)
 
 /**
  * \internal
- * Converts a UTF-16 string from an inode into a null-terminated UTF-8 string. If the 
- * conversion fails, sets a TSK_ERR_FS_UNICODE error with an error message 
+ * Converts a UTF-16 string from an inode into a null-terminated UTF-8 string. If the
+ * conversion fails, sets a TSK_ERR_FS_UNICODE error with an error message
  * that includes the inode address and a description of the UTF-16 string
  * supplied by the caller.
  *
- * Unlike tsk_UTF16toUTF8, a_src and a_dest will not be updated to point 
+ * Unlike tsk_UTF16toUTF8, a_src and a_dest will not be updated to point
  * to where the conversion stopped reading/writing.
  *
  * @param a_fatfs Generic FAT file system info structure.
@@ -256,7 +253,7 @@ fatfs_cleanup_ascii(char *str)
  * @param a_dest_len The number of bytes in a_dest.
  * @param a_inum The address of the source inode, used if an error message is
  * generated.
- * @param a_desc A description of the source string, used if an error message 
+ * @param a_desc A description of the source string, used if an error message
  * is generated.
  * @return TSKConversionResult.
  */
@@ -268,7 +265,7 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     TSKConversionResult conv_result = TSKconversionOK;
     UTF8* dest_start;
     UTF8* dest_end;
-    
+
     assert(a_fatfs != NULL);
     assert(a_src != NULL);
     assert(a_src_len > 0);
@@ -277,27 +274,27 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     assert(a_desc != NULL);
 
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
-        return TSKsourceIllegal; 
+        return TSKsourceIllegal;
     }
 
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_src", func_name)) {
-        return TSKsourceExhausted; 
+        return TSKsourceExhausted;
     }
 
     if (a_src_len <= 0) {
-        return TSKsourceExhausted; 
+        return TSKsourceExhausted;
     }
 
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_dest", func_name)) {
-        return TSKtargetExhausted; 
+        return TSKtargetExhausted;
     }
 
     if (a_dest_len <= 0) {
-        return TSKtargetExhausted; 
+        return TSKtargetExhausted;
     }
 
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_desc", func_name)) {
-        return TSKsourceIllegal; 
+        return TSKsourceIllegal;
     }
 
     /* Do the conversion. Note that a_dest and a_src will point to where the conversion
@@ -309,7 +306,7 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     if (conv_result != TSKconversionOK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-        tsk_error_set_errstr("%s: Error converting %s for inum %"PRIuINUM" from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
+        tsk_error_set_errstr("%s: Error converting %s for inum %" PRIuINUM " from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
         *a_dest = '\0';
         return conv_result;
     }

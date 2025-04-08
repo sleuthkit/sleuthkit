@@ -73,7 +73,7 @@ int getPositiveInt(const std::string &key, nlohmann::json ruleJson) {
 
 /*
 * Construct a rule
-* 
+*
 * @param ruleSetName The rule set name to which  this rule belongs
 * @param rule JSON of the rule to be constructed
 * @throws logic_error if the rule is invalid
@@ -227,7 +227,7 @@ void LogicalImagerRuleSet::constructRule(const std::string &ruleSetName, nlohman
     }
 }
 
-/* 
+/*
 * Construct a rule set
 *
 * @param ruleSetValue JSON of the rule set
@@ -308,7 +308,7 @@ bool LogicalImagerRuleSet::matches(TSK_FS_FILE *fs_file, const char *path, match
 
 /*
 * Get the full file path rule set
-* 
+*
 * @returns the full file paths rule set
 */
 const std::pair<const MatchedRuleInfo *, std::list<std::string>> LogicalImagerRuleSet::getFullFilePaths() const {

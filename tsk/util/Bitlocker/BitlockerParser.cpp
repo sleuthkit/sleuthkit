@@ -29,17 +29,17 @@
 * Initialize the BitLocker parser.
 * Starts with a quick check for the BitLocker signature then reads in and parses the metadata structures.
 * If successful the parser will be ready to decrypt the volume.
-* 
+*
 * @param a_img_info     The image info object for reading data
 * @param a_volumeOffset The offset of the current volume in the image
 * @param a_password     The password to use for decryption. Can be a normal password or a recovery password.
-* 
+*
 * @return SUCCESS if we complete initialization
 *         NOT_BITLOCKER if the BitLocker signature was not found
 *         GENERAL_ERROR if an unspecified error occurs (we may or may not actually have BitLocker encryption)
 *         WRONG_PASSWORD if the supplied password appears to be incorrect (we almost certainly have a BitLocker volume)
 *         NEEDS_PASSWORD if we need a password to decrypt the keys (we almost certainly have a BitLocker volume)
-*         UNSUPPORTED_KEY_PROTECTION_TYPE if the volume master key is protected by an unsupported method (we almost certainly have a BitLocker volume)    
+*         UNSUPPORTED_KEY_PROTECTION_TYPE if the volume master key is protected by an unsupported method (we almost certainly have a BitLocker volume)
 */
 BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset, const char* a_password) {
 
@@ -55,7 +55,7 @@ BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t 
     }
 
     // Otherwise process the password to use later (we won't know whether it's correct or not at this point)
-    if (BITLOCKER_STATUS::SUCCESS != handlePassword(a_password)) {
+    if (BITLOCKER_STATUS::SUCCESS != handlePassword(passwordStr)) {
         // Don't continue if we failed to hash the password
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -90,10 +90,10 @@ BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t 
 /**
 * Does a quick check for the BitLocker signature without doing any initialization.
 * The signature "-FVE-FS-" is expected to be found at offset 3 (relative to the start of the volume).
-* 
+*
 * @param a_img_info     The image info object for reading data
 * @param a_volumeOffset The offset of the current volume in the image
-* 
+*
 * @return true if the signature is found, false otherwise
 */
 bool BitlockerParser::hasBitlockerSignature(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset) {
@@ -119,7 +119,7 @@ bool BitlockerParser::hasBitlockerSignature(TSK_IMG_INFO* a_img_info, uint64_t a
 * - Find the volume master key entry and attempt to extract the key
 * - Find the full volume encryption key entry and attempt to use the previous key to decrypt it
 * - Find the offset to the original volume header
-* 
+*
 * There are some errors that we keep track of (like incorrect password). If we've failed to initialize after
 * trying all three offsets then we'll return a specific error so it can be displayed to the user. These errors
 * will only be returns after we've done enough parsing to be confident that this is a BitLocker-encrypted volume.
@@ -212,7 +212,7 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
 
         writeDebug("BitlockerParser::initializeInternal: Top-level metadata entries:");
         for (auto it = m_metadataEntries.begin(); it != m_metadataEntries.end(); ++it) {
-            writeDebug("BitlockerParser::initializeInternal:   " + convertMetadataEntryTypeToString((*it)->getEntryType()) + " - " 
+            writeDebug("BitlockerParser::initializeInternal:   " + convertMetadataEntryTypeToString((*it)->getEntryType()) + " - "
                 + convertMetadataValueTypeToString((*it)->getValueType()));
         }
 
@@ -273,10 +273,10 @@ BITLOCKER_STATUS BitlockerParser::initializeInternal(TSK_IMG_INFO* a_img_info, u
 /**
 * Parse the FVE Metadata Block Header.
 * At present this just checks the signature.
-* 
+*
 * @param currentOffset  The offset to the block header (relative to the start of the image). Will be updated to the offset of the next
 *                         byte after the header on success.
-* 
+*
 * @return SUCCESS if we read the header and the signature is correct, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::readFveMetadataBlockHeader(uint64_t& currentOffset) {
@@ -330,10 +330,10 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataBlockHeader(uint64_t& currentOf
 /**
 * Parse the FVE Metadata Header.
 * We're looking for the size of the metadata entries and the encryption type.
-* 
+*
 * @param currentOffset  The offset to the header (relative to the start of the image). Will be updated to the offset of the next
 *                         byte after the header on success.
-* 
+*
 * @return SUCCESS if we read the header and found a valid encryption type and reasonable metadata entry size, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize) {
@@ -392,7 +392,7 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataHeader(uint64_t& currentOffset,
 *
 * @param currentOffset        The starting offset for the entries
 * @param metadataEntriesSize  The total size of the metadata entries data
-* 
+*
 * @return SUCCESS if all entries were successfully parsed, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize) {
@@ -428,10 +428,10 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataEntries(uint64_t currentOffset,
 * Get the volume master key.
 * General idea is that we're trying to find and parse a volume master key (VMK) entry to get the key
 * we will use to decrypt the full volume encryption key. There are frequently more than one of these entries present.
-* For example, we might have a password protected entry and a recovery password protected entry. 
-* 
+* For example, we might have a password protected entry and a recovery password protected entry.
+*
 * On success, m_decryptedVmkEntry will contain the decrypted key to use in the next step.
-* 
+*
 * @return SUCCESS if we successfully decrypted the volume master key
 *         GENERAL_ERROR if an unspecified error occurs
 *         WRONG_PASSWORD if we found a password/recovery password protected VMK but the password we have was incorrect
@@ -508,10 +508,10 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
 
 /**
 * Attempt to decrypt a volume master key (VMK) entry.
-* 
+*
 * @param entry    The VMK entry
 * @param vmkEntry Will hold the decrypted VMK if successful
-* 
+*
 * @return SUCCESS if we successfully decrypted the volume master key
 *         GENERAL_ERROR if an unspecified error occurs
 *         WRONG_PASSWORD if the VMK is protected by a password/recovery password but the password we have was incorrect
@@ -536,7 +536,7 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
         writeError("BitlockerParser::parseVMKEntry: Volume Master Key value was null");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
-    
+
     MetadataValueVolumeMasterKey* vmkValue = dynamic_cast<MetadataValueVolumeMasterKey*>(value);
     if (vmkValue == nullptr) {
         writeError("BitlockerParser::parseVMKEntry: Error casting MetadataValueVolumeMasterKey");
@@ -569,10 +569,10 @@ BITLOCKER_STATUS BitlockerParser::parseVMKEntry(MetadataEntry* entry, MetadataEn
 
 /**
 * Attempt to decrypt a volume master key (VMK) entry protected with a password or recovery password.
-* 
+*
 * @param entry    The VMK entry
 * @param vmkEntry Will hold the decrypted VMK if successful
-* 
+*
 * @return SUCCESS if we successfully decrypted the volume master key
 *         GENERAL_ERROR if an unspecified error occurs
 *         WRONG_PASSWORD if the VMK is protected by a password/recovery password but the password we have was incorrect
@@ -749,7 +749,7 @@ BITLOCKER_STATUS BitlockerParser::parseClearKeyProtectedVMK(MetadataValueVolumeM
 /**
 * Use the decrypted volume master key (VMK) entry to get the full volume encryption key (FVEK).
 * We should have set m_decryptedVmkEntry prior to calling this method.
-* 
+*
 * @return SUCCESS on success, GENERAL_ERROR otherwise.
 */
 BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
@@ -762,7 +762,7 @@ BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
 
     // Find the FVEK entry
     list<MetadataEntry*> fvekEntries;
-    getMetadataEntries(m_metadataEntries, BITLOCKER_METADATA_ENTRY_TYPE::FULL_VOLUME_ENCRYPTION_KEY, 
+    getMetadataEntries(m_metadataEntries, BITLOCKER_METADATA_ENTRY_TYPE::FULL_VOLUME_ENCRYPTION_KEY,
         BITLOCKER_METADATA_VALUE_TYPE::AES_CCM_ENCRYPTED_KEY, fvekEntries);
     if (fvekEntries.empty()) {
         writeError("BitlockerParser::getFullVolumeEncryptionKey: Could not find FVEK metatdata entry");
@@ -811,11 +811,11 @@ BITLOCKER_STATUS BitlockerParser::getFullVolumeEncryptionKey() {
 
 /**
 * Set pointer to the key stored in a metadata entry with value of type KEY.
-* 
+*
 * @param entry      The metadata entry. Is expected to have value of type KEY.
 * @param keyDataPtr Will be set to the address of the key bytes. Caller should not free this since it's part of the metadata entry.
 * @param keyLen     Will be set to the length of the key
-* 
+*
 * @return SUCCESS on success, GENERAL_ERROR otherwise.
 */
 BITLOCKER_STATUS BitlockerParser::getKeyData(MetadataEntry* entry, uint8_t** keyDataPtr, size_t& keyLen) {
@@ -847,9 +847,9 @@ BITLOCKER_STATUS BitlockerParser::getKeyData(MetadataEntry* entry, uint8_t** key
 /**
 * Use the decrypted full volume encryption key (FVEK) to initialize the appropriate AES contexts.
 * Also allocate memory for the temp buffers used during decryption.
-* 
+*
 * @param fvekEntry The entry containing the decrypted FVEK
-* 
+*
 * @return SUCCESS on success, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
@@ -868,7 +868,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
     // Try to initialize the contexts using the encryption type we read from one of the BitLocker headers
     if (BITLOCKER_STATUS::SUCCESS != setKeys(fvek, m_encryptionType)) {
 
-        // If we failed and the encryption type in the FVEK entry is different than the one we got from the 
+        // If we failed and the encryption type in the FVEK entry is different than the one we got from the
         // header earlier, try again using the encryption type from the FVEK entry
         if ((fvek->getEncryptionType() != m_encryptionType)
             && (BITLOCKER_STATUS::SUCCESS == setKeys(fvek, fvek->getEncryptionType()))) {
@@ -898,7 +898,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataEntry* fvekEntry) {
 
 /**
 * Use the decrypted full volume encryption key (FVEK) to initialize the appropriate AES contexts.
-* The given encryption type determines the exact initialization required. 
+* The given encryption type determines the exact initialization required.
 *
 * @param fvekEntry The entry containing the decrypted FVEK
 * @param type      The encryption type
@@ -939,7 +939,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
             writeError("BitlockerParser::setKeys: Expected 512 bits for key and tweak key but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
-        
+
         ret = mbedtls_aes_setkey_enc(&m_aesFvekEncryptionContext, &(keyBytes[0]), 256);
         ret |= mbedtls_aes_setkey_dec(&m_aesFvekDecryptionContext, &(keyBytes[0]), 256);
         ret |= mbedtls_aes_setkey_enc(&m_aesTweakEncryptionContext, &(keyBytes[32]), 256);
@@ -972,7 +972,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
             writeError("BitlockerParser::setKeys: Expected 256 bits for key but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
-        
+
         ret = mbedtls_aes_setkey_enc(&m_aesFvekEncryptionContext, &(keyBytes[0]), 256);
         ret |= mbedtls_aes_setkey_dec(&m_aesFvekDecryptionContext, &(keyBytes[0]), 256);
 
@@ -988,7 +988,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
             writeError("BitlockerParser::setKeys: Expected 256 bits for key1 and key2 but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
-        
+
         ret = mbedtls_aes_xts_setkey_dec(&m_aesXtsDecryptionContext, &(keyBytes[0]), 256);
 
         if (ret != 0) {
@@ -1003,7 +1003,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
             writeError("BitlockerParser::setKeys: Expected 512 bits for key1 and key2 but have " + to_string(keyBits));
             return BITLOCKER_STATUS::GENERAL_ERROR;
         }
-        
+
         ret = mbedtls_aes_xts_setkey_dec(&m_aesXtsDecryptionContext, &(keyBytes[0]), 512);
 
         if (ret != 0) {
@@ -1021,7 +1021,7 @@ BITLOCKER_STATUS BitlockerParser::setKeys(MetadataValueKey* fvek, BITLOCKER_ENCR
 /**
 * Find and parse the volume header entry to get the offset that the original volume header
 * was moved to.
-* 
+*
 * @return SUCCESS on success, GENERAL_ERROR otherwise
 */
 BITLOCKER_STATUS BitlockerParser::parseVolumeHeader() {
@@ -1054,16 +1054,16 @@ BITLOCKER_STATUS BitlockerParser::parseVolumeHeader() {
 * Save the password hash and optional recovery password hash to use as a key later.
 * If the password matches the format of a recovery password we will also process it as a
 * recovery password.
-* 
+*
 * Password algorithm:
 * - Convert password to UTF16
 * - Hash twice with SHA-256
 * Recovery password algorithm:
 * - Divide each segment by 11 to get a 16-byte value
 * - Hash once with SHA-256
-* 
+*
 * @param password The password (should be UTF8)
-* 
+*
 * @return SUCCESS if the we successfully process the password as a normal password or a recovery key
 */
 BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
@@ -1150,11 +1150,11 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
 /**
 * Reads and decrypts one or more sectors starting at the given offset.
 * The offset is expected to be sector-aligned and the length should be a multiple of the sector size.
-* 
+*
 * @param offsetInVolume   Offset to start reading at (relative to the start of the volume)
 * @param len              Number of bytes to read
 * @param data             Will hold decrypted data
-* 
+*
 * @return Number of bytes read or -1 on error
 */
 ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_t len, uint8_t* data) {
@@ -1247,10 +1247,10 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
 
 /**
 * Decrypt the data that was read from the given offset.
-* 
+*
 * @volumeOffset Offset to the data relative to the start of the volume. Expected to be sector-aligned.
 * @data         Data to decrypt. Should have length m_sectorSize. Will hold the decrypted data.
-* 
+*
 * @return 0 on success, -1 on error.
 */
 int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
@@ -1270,21 +1270,25 @@ int BitlockerParser::decryptSector(TSK_DADDR_T volumeOffset, uint8_t* data) {
         return 0;
     }
 
+    tsk_take_lock(&m_decrypt_sector_lock);
+    int result = 0;
     if (isAESCBC(m_encryptionType)) {
         if (usesDiffuser(m_encryptionType)) {
-            return decryptSectorAESCBC_diffuser(volumeOffset, data);
+            result = decryptSectorAESCBC_diffuser(volumeOffset, data);
         }
         else {
-            return decryptSectorAESCBC_noDiffuser(volumeOffset, data);
+            result = decryptSectorAESCBC_noDiffuser(volumeOffset, data);
         }
     }
     else if (isAESXTS(m_encryptionType)) {
-        return decryptSectorAESXTS(volumeOffset, data);
+        result = decryptSectorAESXTS(volumeOffset, data);
     }
     else {
         writeError("BitlockerParser::decryptSector: Encryption method not currently supported - " + convertEncryptionTypeToString(m_encryptionType));
-        return -1;
+        result = -1;
     }
+    tsk_release_lock(&m_decrypt_sector_lock);
+    return result;
 }
 
 /**
@@ -1351,7 +1355,7 @@ void BitlockerParser::decryptDiffuserA(uint8_t* data, uint16_t dataLen, uint8_t*
 
             int indexMinusTwo = (index - 2 + result32len) % result32len;  // Add result32len to prevent negative result
             int indexMinusFive = (index - 5 + result32len) % result32len;
-            result32[index] = result32[index] + 
+            result32[index] = result32[index] +
                 (result32[indexMinusTwo] ^ BITLOCKER_DIFFUSER_ROTATE_LEFT(result32[indexMinusFive], shiftBits[index % 4]));
         }
     }
@@ -1359,7 +1363,7 @@ void BitlockerParser::decryptDiffuserA(uint8_t* data, uint16_t dataLen, uint8_t*
 
 /**
 * Decrypt data using diffuser B
-* 
+*
 * @param data     Data to decrypt
 * @param dataLen  Length of data (in bytes)
 * @param result   Result buffer
@@ -1484,9 +1488,9 @@ int BitlockerParser::decryptSectorAESXTS(uint64_t offset, uint8_t* data) {
 /**
 * Convert the given address to the actual address. This should only be different for sectors
 * at the start of the volume that were moved to make room for the Bitlocker volume header.
-* 
+*
 * @param origOffset  The offset in the original image
-* 
+*
 * @return The converted offset or the original offset on any kind of error.
 */
 TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
@@ -1517,7 +1521,7 @@ TSK_DADDR_T BitlockerParser::convertVolumeOffset(TSK_DADDR_T origOffset) {
 * Get a short description of the BitLocker encryption.
 * Will include the encryption method and the key protection method used to decrypt the VMK.
 * Intended to be used if BitLocker was initialized successfully.
-* 
+*
 * @return A user friendly description of the BitLocker settings
 */
 string BitlockerParser::getDescription() {
@@ -1540,9 +1544,9 @@ string BitlockerParser::getDescription() {
 * Returns a comma-separated list of the unsupported protection type found.
 * Used for writing a detailed error message for error type UNSUPPORTED_KEY_PROTECTION_TYPE.
 * Note that if the image is opened successfully this list may not be complete since we stop as soon
-* as we decrypt the VMK successfully, i.e., if we have clear key and TPM and the clear key entry 
+* as we decrypt the VMK successfully, i.e., if we have clear key and TPM and the clear key entry
 * shows up first, we won't record that we also had a TPM entry.
-* 
+*
 * @return comma-separated list of key protection types or "none" if empty
 */
 string BitlockerParser::getUnsupportedProtectionTypes() {

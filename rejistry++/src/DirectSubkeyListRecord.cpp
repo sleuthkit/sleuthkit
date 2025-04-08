@@ -32,7 +32,7 @@
 #include "RejistryException.h"
 
 namespace Rejistry {
-    
+
     std::vector<NKRecord *> DirectSubkeyListRecord::getSubkeys() const {
         std::vector<NKRecord *> subkeyList;
         uint16_t listLength = getListLength();
@@ -49,7 +49,7 @@ namespace Rejistry {
             subkeyList.push_back(c->getNKRecord());
         }
 
-        return subkeyList;        
+        return subkeyList;
     }
 
 };

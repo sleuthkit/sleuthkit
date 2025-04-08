@@ -23,7 +23,7 @@
 * Save the error and write to output if in verbose mode.
 * There is a good chance any error code saved here will be
 * overwritten during the file system open process.
-* 
+*
 * @param errMes  The error message
 */
 void writeError(string errMes) {
@@ -39,7 +39,7 @@ void writeError(string errMes) {
 /**
 * Record a warning message.
 * Current the same as recording a debug message - writes a message if we're in verbose mode.
-* 
+*
 * @param warningMes  The warning message
 */
 void writeWarning(string warningMes) {
@@ -63,10 +63,10 @@ void writeDebug(string debugMes) {
 /**
 * Convert a byte array into a string of hex digits.
 * Ex: "5502df1a"
-* 
+*
 * @param bytes   The byte array
 * @param len     Size of byte array (or number of bytes to print if less than the size)
-* 
+*
 * @return String containing hex values
 */
 string convertByteArrayToString(uint8_t* bytes, size_t len) {
@@ -80,9 +80,9 @@ string convertByteArrayToString(uint8_t* bytes, size_t len) {
 /**
 * Convert a uint32_t value into a hex string
 * Ex: "0x000056ab"
-* 
+*
 * @param val  32-bit value to convert to string
-* 
+*
 * @return val as a string
 */
 string convertUint32ToString(uint32_t val) {
@@ -94,9 +94,9 @@ string convertUint32ToString(uint32_t val) {
 /**
 * Convert a uint64_t value into a hex string
 * Ex: "0x00000000000056ab"
-* 
+*
 * @param val  64-bit value to convert to string
-* 
+*
 * @return val as a string
 */
 string convertUint64ToString(uint64_t val) {
@@ -108,9 +108,9 @@ string convertUint64ToString(uint64_t val) {
 
 /**
 * Convert the given bytes to the GUID string we would expect to see in the recovery key file.
-* 
+*
 * @param bytes  The GUID in bytes. Expected to have length 16.
-* 
+*
 * @return GUID string
 */
 string convertGuidToString(uint8_t* bytes) {

@@ -1,5 +1,5 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2011-2012 Brian Carrier.  All Rights reserved
@@ -11,7 +11,7 @@
 /**
  * \file tsk_db.h
  * Contains TSK interface to abstract database handling class. The intent of this class
- * is so that different databases can be seamlessly used by TSK. 
+ * is so that different databases can be seamlessly used by TSK.
  */
 
 #ifndef _TSK_DB_H
@@ -34,12 +34,12 @@ using std::string;
 #define TSK_SCHEMA_MINOR_VER 4
 
 /**
- * Values for the type column in the tsk_objects table. 
+ * Values for the type column in the tsk_objects table.
  */
 typedef enum {
     TSK_DB_OBJECT_TYPE_IMG = 0, ///< Object is a disk image
-    TSK_DB_OBJECT_TYPE_VS,      ///< Object is a volume system. 
-    TSK_DB_OBJECT_TYPE_VOL,     ///< Object is a volume 
+    TSK_DB_OBJECT_TYPE_VS,      ///< Object is a volume system.
+    TSK_DB_OBJECT_TYPE_VOL,     ///< Object is a volume
     TSK_DB_OBJECT_TYPE_FS,      ///< Object is a file system
     TSK_DB_OBJECT_TYPE_FILE,    ///< Object is a file (exact type can be determined in the tsk_files table via TSK_DB_FILES_TYPE_ENUM)
     TSK_DB_OBJECT_TYPE_ARTIFACT, ///< Autopsy placeholder
@@ -51,12 +51,12 @@ typedef enum {
  * Values for the files type column in the tsk_files table.
  */
 typedef enum {
-    TSK_DB_FILES_TYPE_FS = 0,   ///< File that can be found in file system tree. 
-    TSK_DB_FILES_TYPE_CARVED,   ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range. 
+    TSK_DB_FILES_TYPE_FS = 0,   ///< File that can be found in file system tree.
+    TSK_DB_FILES_TYPE_CARVED,   ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range.
     TSK_DB_FILES_TYPE_DERIVED,  ///< File derived from a parent file (i.e. from ZIP)
     TSK_DB_FILES_TYPE_LOCAL,    ///< Local file that was added (not from a disk image)
-    TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
-    TSK_DB_FILES_TYPE_UNUSED_BLOCKS, ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
+    TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout.
+    TSK_DB_FILES_TYPE_UNUSED_BLOCKS, ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout.
     TSK_DB_FILES_TYPE_VIRTUAL_DIR, ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
     TSK_DB_FILES_TYPE_SLACK   ///< Slack space for a single file
 } TSK_DB_FILES_TYPE_ENUM;
@@ -68,7 +68,7 @@ typedef enum {
 */
 typedef enum  {
     TSK_DB_FILES_KNOWN_UNKNOWN = 0,  ///< Not matched against an index
-    TSK_DB_FILES_KNOWN_KNOWN = 1,    ///< Match found in a "known" file index (such as NIST NSRL)and could be good or bad.  
+    TSK_DB_FILES_KNOWN_KNOWN = 1,    ///< Match found in a "known" file index (such as NIST NSRL)and could be good or bad.
     TSK_DB_FILES_KNOWN_KNOWN_BAD = 2,      ///< Match found in a "known bad" index
     TSK_DB_FILES_KNOWN_KNOWN_GOOD = 3,      ///< Match found in a "known good" index
 } TSK_DB_FILES_KNOWN_ENUM;
@@ -80,7 +80,7 @@ typedef enum  {
 typedef struct _TSK_DB_OBJECT {
     int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
     int64_t parObjId;
-    TSK_DB_OBJECT_TYPE_ENUM type;    
+    TSK_DB_OBJECT_TYPE_ENUM type;
 } TSK_DB_OBJECT;
 
 ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject);
@@ -95,7 +95,7 @@ typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
     //constructor for non-db object (before it becomes one)
     _TSK_DB_FILE_LAYOUT_RANGE(uint64_t byteStart, uint64_t byteLen, int sequence)
         : fileObjId(0),byteStart(byteStart),byteLen(byteLen),sequence(sequence) {}
- 
+
     int64_t fileObjId; ///< set to 0 if unknown (before it becomes a db object)
     uint64_t byteStart;
     uint64_t byteLen;
@@ -120,7 +120,7 @@ typedef struct _TSK_DB_FS_INFO {
     TSK_DADDR_T block_count;
     TSK_INUM_T root_inum;
     TSK_INUM_T first_inum;
-    TSK_INUM_T last_inum;   
+    TSK_INUM_T last_inum;
 } TSK_DB_FS_INFO;
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo);
@@ -133,7 +133,7 @@ typedef struct _TSK_DB_VS_INFO {
     int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
     TSK_VS_TYPE_ENUM vstype;
     TSK_DADDR_T offset;
-    unsigned int block_size;  
+    unsigned int block_size;
 } TSK_DB_VS_INFO;
 
 ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo);
@@ -148,13 +148,13 @@ typedef struct _TSK_DB_VS_PART_INFO {
     TSK_DADDR_T start;
     TSK_DADDR_T len;
     char desc[TSK_MAX_DB_VS_PART_INFO_DESC_LEN];
-    TSK_VS_PART_FLAG_ENUM flags;  
+    TSK_VS_PART_FLAG_ENUM flags;
 } TSK_DB_VS_PART_INFO;
 
 ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfos);
 
 /** \internal
- * C++ class that serves as interface to direct database handling classes. 
+ * C++ class that serves as interface to direct database handling classes.
  */
 class TskDb {
 
@@ -190,16 +190,16 @@ class TskDb {
 
     virtual TSK_RETVAL_ENUM addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId, int64_t dataSourceObjId) = 0;
     virtual TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId) = 0;
-    virtual TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    virtual TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) = 0;
-    virtual TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    virtual TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) = 0;
-    virtual TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    virtual TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) = 0;
-    
+
     virtual int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange) = 0;
     virtual int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence) = 0;
-    
+
     virtual bool isDbOpen() = 0;
     virtual int createSavepoint(const char *name) = 0;
     virtual int revertSavepoint(const char *name) = 0;

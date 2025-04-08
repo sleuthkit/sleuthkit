@@ -75,7 +75,7 @@ TSK_WALK_RET_ENUM
 * Assumes that you already have the lock
 */
 static std::map<TSK_INUM_T, TSK_INUM_T> * getParentMap(FATFS_INFO *fatfs) {
-    // allocate it if it hasn't already been 
+    // allocate it if it hasn't already been
     if (fatfs->inum2par == NULL) {
         fatfs->inum2par = new std::map<TSK_INUM_T, TSK_INUM_T>;
     }
@@ -107,7 +107,7 @@ uint8_t
 * @param fatfs File system
 * @param dir_inum Inode of sub-directory to look up
 * @param par_inum [out] Result of lookup
-* @returns 0 if found and 1 if not. 
+* @returns 0 if found and 1 if not.
 */
 uint8_t
     fatfs_dir_buf_get(FATFS_INFO * fatfs, TSK_INUM_T dir_inum,

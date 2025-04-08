@@ -43,7 +43,7 @@ namespace Rejistry {
         }
     }
 
-    VKRecord::VKRecord(const VKRecord& sourceRecord) : Record(sourceRecord._buf, sourceRecord._offset) {        
+    VKRecord::VKRecord(const VKRecord& sourceRecord) : Record(sourceRecord._buf, sourceRecord._offset) {
     }
 
     bool VKRecord::hasName() const {
@@ -171,6 +171,6 @@ namespace Rejistry {
             data = new RegistryByteBuffer(new ByteBuffer(0));
         }
 
-        return new ValueData(data, getValueType());                                                            
+        return new ValueData(data, getValueType());
     }
 };

@@ -188,6 +188,7 @@
   <Import Project="$(SolutionDir)\NugetPackages.props" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;$(ProjectDir)\..\..\tsk\hashdb;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;HAVE_LIBEWF;TSK_JNI_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -219,6 +220,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;HAVE_LIBEWF;TSK_JNI_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -248,6 +250,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;$(ProjectDir)\..\..\tsk\hashdb;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -281,6 +284,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;$(ProjectDir)\..\..\tsk\hashdb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -315,6 +319,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;$(ProjectDir)\..\..\tsk\hashdb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -349,10 +354,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;$(TskNugetIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;TSK_JNI_EXPORTS;HAVE_LIBEWF;HAVE_LIBOPENSSL;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;TSK_JNI_EXPORTS;HAVE_LIBEWF;HAVE_LIBCRYPTO;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -379,6 +385,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -410,6 +417,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XPNoLibs|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -441,6 +449,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|Win32'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;TSK_JNI_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -471,6 +480,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_NoLibs|x64'">
     <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(JDK_HOME)\include;$(JDK_HOME)\include\win32;$(ProjectDir)\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;TSK_JNI_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>

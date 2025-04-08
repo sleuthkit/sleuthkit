@@ -244,6 +244,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
         TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
         TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002,  //  Extents for Ext4 file system
+        TSK_FS_ATTR_TYPE_UNIX_XATTR = 0x1003,   //  Extended Attributes for Btrfs file system
 
         // Types for HFS+ File Attributes
         TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
@@ -438,7 +439,10 @@ extern "C" {
     typedef enum TSK_FS_META_CONTENT_TYPE_ENUM {
         TSK_FS_META_CONTENT_TYPE_DEFAULT = 0x0,
         TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1,     ///< Ext4 with extents instead of individual pointers
-        TSK_FS_META_CONTENT_TYPE_EXT4_INLINE = 0x02      ///< Ext4 with inline data
+        TSK_FS_META_CONTENT_TYPE_EXT4_INLINE = 0x02,      ///< Ext4 with inline data
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_SHORTFORM = 0x03,
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_EXTENTS = 0x04,
+        TSK_FS_META_CONTENT_TYPE_XFS_DATA_FORK_BTREE = 0x05
     } TSK_FS_META_CONTENT_TYPE_ENUM;
 
 
@@ -672,6 +676,7 @@ extern "C" {
         void *a_ptr);
     extern size_t tsk_fs_dir_getsize(const TSK_FS_DIR *);
     extern TSK_FS_FILE *tsk_fs_dir_get(const TSK_FS_DIR *, size_t);
+    extern TSK_FS_FILE *tsk_fs_dir_get2(const TSK_FS_DIR *, size_t, size_t load_attributes);
     extern const TSK_FS_NAME *tsk_fs_dir_get_name(const TSK_FS_DIR * a_fs_dir, size_t a_idx);
     extern void tsk_fs_dir_close(TSK_FS_DIR *);
 
@@ -782,12 +787,12 @@ extern "C" {
 
     /**
     * Values for the file system type.  Each bit corresponds to a file
-    * system. The "[fs]_DETECT" value (such as TSK_FS_TYPE_NTSF_DETECT) is 
-    * the OR of all of the subtypes that 
-    * it could detect.  If there is only one type of that file system, 
-    * the [fs]_DETECT value will be the same as the type. 
+    * system. The "[fs]_DETECT" value (such as TSK_FS_TYPE_NTSF_DETECT) is
+    * the OR of all of the subtypes that
+    * it could detect.  If there is only one type of that file system,
+    * the [fs]_DETECT value will be the same as the type.
     *
-    * The _DETECT values should not be stored in TSK_FS_INFO.  Once 
+    * The _DETECT values should not be stored in TSK_FS_INFO.  Once
     * tsk_fs_open() has detected the type, it should assign the specific
     * version in TSK_FS_INFO.
     *
@@ -822,7 +827,11 @@ extern "C" {
         TSK_FS_TYPE_HFS_LEGACY= 0x00008000,   ///< HFS file system
         TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
         TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
-		TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+        TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+        TSK_FS_TYPE_BTRFS = 0x00040000,        ///< Btrfs file system
+        TSK_FS_TYPE_BTRFS_DETECT = TSK_FS_TYPE_BTRFS, ///< Btrfs auto detection
+        TSK_FS_TYPE_XFS = 0x00080000,           ///< XFS file system
+        TSK_FS_TYPE_XFS_DETECT = 0x00080000,    ///< XFS auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
@@ -889,8 +898,18 @@ extern "C" {
     * \ingroup fslib
     * Macro that takes a file system type and returns 1 if the type
     * is for a YAFFS2 file system. */
+#define TSK_FS_TYPE_ISXFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_XFS_DETECT)?1:0)
+    
 #define TSK_FS_TYPE_ISAPFS(ftype) \
     (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
+
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
+    * is for a Btrfs file system. */
+#define TSK_FS_TYPE_ISBTRFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_BTRFS_DETECT)?1:0)
 
     /**
     * \ingroup fslib
@@ -1152,7 +1171,7 @@ extern "C" {
     typedef enum TSK_FS_FLS_FLAG_ENUM TSK_FS_FLS_FLAG_ENUM;
     extern uint8_t tsk_fs_fls(TSK_FS_INFO * fs,
         TSK_FS_FLS_FLAG_ENUM lclflags, TSK_INUM_T inode,
-        TSK_FS_DIR_WALK_FLAG_ENUM flags, TSK_TCHAR * pre, int32_t skew);
+        TSK_FS_DIR_WALK_FLAG_ENUM flags, const TSK_TCHAR * pre, int32_t skew);
 
     extern uint8_t tsk_fs_icat(TSK_FS_INFO * fs,
         TSK_INUM_T inum,

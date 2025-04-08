@@ -14,7 +14,7 @@
 
         <!-- NOTE: When SQLITE version is changed, also change the version number in
           debian/sleuthkit-java.install so that it gets packaged correctly on Linux -->
-		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.46.0.0"/>
+		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.47.1.0"/>
 
 		<dependency org="org.postgresql" name="postgresql" rev="42.7.3" >
 			<artifact name="postgresql" type="jar" />

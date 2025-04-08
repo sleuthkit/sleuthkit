@@ -1,9 +1,8 @@
-#include "tsk/tsk_tools_i.h"
-
-
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
+
+#include "tsk/tsk_tools_i.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -26,7 +25,6 @@
 #include <sys/time.h>
 #endif
 
-
 #include <ctype.h>
 #include <fcntl.h>
 
@@ -43,7 +41,7 @@
 
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
-#endif 
+#endif
 
 #ifdef HAVE_MAGIC_H
 #include <magic.h>
@@ -55,6 +53,8 @@
 
 #define MAX_SPARSE_SIZE 1024*1024*64
 
+
+namelist_t namelist;		// names of files that we want to find
 
 /****************************************************************
  ** Content Output
@@ -89,16 +89,16 @@ void content::set_filename(const string &filename)
 {
     this->evidence_filename = filename;
     this->do_plugin = plugin_match(this->evidence_filename);
-    if(do_plugin || opt_magic) open_tempfile();
-    if(opt_save)               open_savefile();
+    if (do_plugin || o.opt_magic) open_tempfile();
+    if (o.opt_save)                open_savefile();
 }
 
 
 bool content::name_filtered()
 {
-    if(namelist.size()>0 && evidence_filename.size()>0){
+    if (namelist.size()>0 && evidence_filename.size()>0){
 	for(vector<string>::const_iterator i = namelist.begin(); i!=namelist.end(); i++){
-	    if(strcasestr((char*)evidence_filename.c_str(), (char*)i->c_str())){
+	    if (strcasestr((char*)evidence_filename.c_str(), (char*)i->c_str())){
 		return false;		// no, name is not filtered
 	    }
 	}
@@ -115,18 +115,18 @@ bool content::name_filtered()
 
 #if _MSC_VER
 #define MAXPATHLEN _MAX_PATH //found in stdlib.h of VC++
-#endif 
+#endif
 static int open_filename_with_suffix(string &filename)
 {
     for(int i=0;i<10000;i++){
 	/* Make a format string that is filename.%d.ext if i>0 */
 	char fname[MAXPATHLEN];
-	if(i==0){
+	if (i==0){
 	    strcpy(fname,filename.c_str()); // just use the filename as is the first time
 	} else {			      // otherwise, try a numeric suffix
 	    string fmtstring = filename;
 	    int ext = fmtstring.rfind('.');
-	    if(ext==-1){
+	    if (ext==-1){
 		fmtstring += ".%03d";
 	    }
 	    else {
@@ -147,21 +147,21 @@ static int open_filename_with_suffix(string &filename)
  */
 void content::open_tempfile()
 {
-    if(fd_temp>0) return;		//  already opened
+    if (fd_temp>0) return;		//  already opened
 
     int added = 0;
     tempfile_path = tempdir + "/";
     for(string::const_iterator cc = evidence_filename.begin();
 	cc != evidence_filename.end();
 	cc++){
-	if(isalnum(*cc) || *cc=='.'){
+	if (isalnum(*cc) || *cc=='.'){
 	    tempfile_path.push_back(*cc);
 	    added++;
 	}
     }
-    if(added==0) tempfile_path += "tempfile";
+    if (added==0) tempfile_path += "tempfile";
     fd_temp = open_filename_with_suffix(tempfile_path);
-    if(fd_temp<0) errx(1,"cannot open temp file %s:",tempfile_path.c_str());
+    if (fd_temp<0) errx(1,"cannot open temp file %s:",tempfile_path.c_str());
 }
 
 
@@ -175,9 +175,9 @@ void content::open_tempfile()
 void content::open_savefile()
 {
   /* Figure out the pathname to save */
-  save_path = save_outdir + "/" + evidence_filename;
+  save_path = o.save_outdir + "/" + evidence_filename;
   fd_save = open_filename_with_suffix(save_path);
-  if(fd_save<0){
+  if (fd_save<0){
       warn("cannot open save file '%s'",save_path.c_str());
       fd_save = 0;
   }
@@ -189,7 +189,7 @@ void content::open_savefile()
  * -b = do not put the filename in the output.
  * -z = attempt to decompress compressed files.
  */
- 
+
 string content::filemagic()
 {
 #ifdef HAVE_LIBMAGIC
@@ -197,12 +197,12 @@ string content::filemagic()
     static bool magic_bad = false;
     static magic_t mt;
 
-    if(magic_bad) return string("");
+    if (magic_bad) return string("");
 
-    if(magic_init==false){
+    if (magic_init==false){
 	magic_init=true;
 	mt = magic_open(MAGIC_NONE);
-	if(magic_load(mt,NULL)==-1){
+	if (magic_load(mt,NULL)==-1){
 	    magic_bad = true;
 	    return string("");
 	}
@@ -216,7 +216,7 @@ string content::filemagic()
     snprintf(cmd,sizeof(cmd),"file -b -z '%s'",tempfile_path.c_str());
     FILE *f = _popen(cmd,"r");
     while(!feof(f)){
-	if(fgets(buf,sizeof(buf),f)) ret += buf;
+	if (fgets(buf,sizeof(buf),f)) ret += buf;
     }
     _pclose(f);
     /* Remove the newlines */
@@ -227,14 +227,14 @@ string content::filemagic()
     snprintf(cmd,sizeof(cmd),"file -b -z '%s'",tempfile_path.c_str());
     FILE *f = popen(cmd,"r");
     while(!feof(f)){
-	if(fgets(buf,sizeof(buf),f)) ret += buf;
+	if (fgets(buf,sizeof(buf),f)) ret += buf;
     }
     pclose(f);
     /* Remove the newlines */
 #endif
     /* Remove newlines and invalid characters */
     for(string::iterator cc = ret.begin(); cc!=ret.end(); cc++){
-	if(!isprint(*cc)){
+	if (!isprint(*cc)){
 	    *cc = ' ';
 	}
     }
@@ -247,63 +247,63 @@ string content::filemagic()
 
 void content::write_record()
 {
-    if(opt_magic) {
-	file_info("libmagic",validateOrEscapeUTF8(this->filemagic()));
+    if (o.opt_magic) {
+	o.file_info("libmagic",validateOrEscapeUTF8(this->filemagic()));
     }
-    if(this->segs.size()>0){
+    if (this->segs.size()>0){
 	string runs = "";
 	for(seglist::const_iterator i = this->segs.begin();i!=this->segs.end();i++){
 	    char buf[1024];
-	    if(i->flags & TSK_FS_BLOCK_FLAG_SPARSE){
-		sprintf(buf,"       <byte_run file_offset='%" PRIu64 "' fill='0' len='%" PRIu64 "'", i->file_offset,i->len);
+	    if (i->flags & TSK_FS_BLOCK_FLAG_SPARSE){
+		snprintf(buf,sizeof(buf),"       <byte_run file_offset='%" PRIu64 "' fill='0' len='%" PRIu64 "'", i->file_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RAW){
-		sprintf(buf,
+		snprintf(buf,sizeof(buf),
 			"       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' " "img_offset='%" PRIu64 "' len='%" PRIu64 "'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_COMP){
-		if(i->fs_offset){
-		    sprintf(buf,
+		if (i->fs_offset){
+		    snprintf(buf,sizeof(buf),
 			    "       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' "
 			    "img_offset='%" PRIu64 "' uncompressed_len='%" PRIu64 "'",
 			    i->file_offset,i->fs_offset,i->img_offset,i->len);
 		} else {
-		    sprintf(buf,
+		    snprintf(buf,sizeof(buf),
 			    "       <byte_run file_offset='%" PRIu64 "' uncompressed_len='%" PRIu64 "'", i->file_offset,i->len);
 		}
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RES){
-		sprintf(buf,
+		snprintf(buf,sizeof(buf),
 			"       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' "
                         "img_offset='%" PRIu64 "' len='%" PRIu64 "' type='resident'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else{
-		sprintf(buf,"       <byte_run file_offset='%" PRIu64 "' unknown_flags='%d'",i->file_offset,i->flags);
+		snprintf(buf,sizeof(buf),"       <byte_run file_offset='%" PRIu64 "' unknown_flags='%d'",i->file_offset,i->flags);
 	    }
 	    runs += buf;
 
-            if(i->md5.size()){
+            if (i->md5.size()){
                 runs += "><hashdigest type='MD5'>" + i->md5 + "</hashdigest></byte_run>\n";
             } else {
                 runs += "/>\n";
             }
 	}
-	file_info_xml2("byte_runs","facet='data'", runs);
-	if(!invalid){
-	    if(opt_md5  && h_md5.hashed_bytes>0)   file_info(h_md5.final());
-	    if(opt_sha1 && h_sha1.hashed_bytes>0)  file_info(h_sha1.final());
+	o.file_info_xml2("byte_runs","facet='data'", runs);
+	if (!invalid){
+	    if (o.opt_md5  && h_md5.hashed_bytes>0)   o.file_info(h_md5.finalize());
+	    if (o.opt_sha1 && h_sha1.hashed_bytes>0)  o.file_info(h_sha1.finalize());
 	}
     }
 
     /* This stuff is only if we are creating ARFF output */
-    if(a){
-	file_info("fragments",this->segs.size());
-	if(img_info->sector_size>0){
-	    if(this->segs.size()>=1){
+    if (o.a){
+	o.file_info("fragments",this->segs.size());
+	if (img_info->sector_size>0){
+	    if (this->segs.size()>=1){
 		int64_t frag1start = this->segs[0].img_offset / img_info->sector_size;
-		file_info("frag1startsector",frag1start);
+		o.file_info("frag1startsector",frag1start);
 	    }
-	    if(this->segs.size()>=2){
+	    if (this->segs.size()>=2){
 		int64_t frag2start = this->segs[1].img_offset / img_info->sector_size;
-		file_info("frag2startsector",frag2start);
+		o.file_info("frag2startsector",frag2start);
 	    }
 	}
     }
@@ -312,9 +312,9 @@ void content::write_record()
 /* Do we need full content? */
 bool content::need_file_walk()
 {
-  return opt_md5 || opt_sha1 || opt_save || do_plugin || opt_magic
-      || opt_get_fragments || opt_body_file
-      || opt_sector_hash;
+  return o.opt_md5 || o.opt_sha1 || o.opt_save || do_plugin || o.opt_magic
+      || o.opt_get_fragments || o.opt_body_file
+      || o.opt_sector_hash;
 }
 
 /** Called to create a new segment. */
@@ -339,19 +339,19 @@ void content::add_seg(int64_t img_offset,int64_t fs_offset,
  */
 void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 {
-    if(invalid==false){
-	if(opt_md5)   h_md5.update((unsigned char *)buf,size);
-	if(opt_sha1)  h_sha1.update((unsigned char *)buf,size);
+    if (invalid==false){
+	if (o.opt_md5)   h_md5.update((unsigned char *)buf,size);
+	if (o.opt_sha1)  h_sha1.update((unsigned char *)buf,size);
     }
-    if(fd_save){
-	if(lseek(fd_save,file_offset,SEEK_SET)<0){
+    if (fd_save){
+	if (lseek(fd_save,file_offset,SEEK_SET)<0){
 	    warn("lseek(fd_save) failed:");
 	    close(fd_save);
 	    fd_save=0;
 	}
-	if(fd_save){
+	if (fd_save){
 	    ssize_t res = write(fd_save,buf,size);
-	    if(res!=size){
+	    if (res!=size){
 		warn("write(%d,%p,%" PRId64 ")=%" PRId64,
 		     fd_save,buf,(int64_t)size,(int64_t)res);
 		close(fd_save);
@@ -359,15 +359,15 @@ void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 	    }
 	}
     }
-    if(fd_temp){
-	if(lseek(fd_temp,file_offset,SEEK_SET)<0){
+    if (fd_temp){
+	if (lseek(fd_temp,file_offset,SEEK_SET)<0){
 	    warn("lseek(fd_temp) failed:");
 	    close(fd_temp);
 	    fd_temp = 0;
 	}
-	if(fd_temp){
+	if (fd_temp){
 	    ssize_t res = write(fd_temp,buf,size);
-	    if(res!=size){
+	    if (res!=size){
 		warn("write(%d,%p,%" PRId64 ")=%" PRId64,
 		     fd_temp,buf,(int64_t)size,(int64_t)res);
 		close(fd_temp);
@@ -381,18 +381,18 @@ void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 
 content::~content()
 {
-    if(fd_save){			// close the save file if it exists
+    if (fd_save){			// close the save file if it exists
 	close(fd_save);
-	if(total_bytes==0){		// unlink the save file if it has no bytes
+	if (total_bytes==0){		// unlink the save file if it has no bytes
 	    ::unlink(save_path.c_str());
 	}
 	fd_save = 0;
     }
-    if(fd_temp){			// close temp file if it is open
+    if (fd_temp){			// close temp file if it is open
 	close(fd_temp);
 	fd_temp = 0;
     }
-    if(tempfile_path.size()>0){		// unlink temp file if one was created
+    if (tempfile_path.size()>0){		// unlink temp file if one was created
 	::unlink(tempfile_path.c_str());
     }
 }
@@ -401,18 +401,18 @@ TSK_WALK_RET_ENUM
 content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
 	 size_t size, TSK_FS_BLOCK_FLAG_ENUM flags)
 {
-    if(opt_debug>1){
+    if (o.opt_debug>1){
 	printf("file_act(fs_file=%p,addr=%" PRIuDADDR " buf=%p size=%d)\n",
 	       (void*)fs_file,addr,buf,(int)size);
-	if(opt_debug>1 && segs.size()==0){
-	    if(fwrite(buf,size,1,stdout)!=1) err(1,"fwrite");
+	if (o.opt_debug>1 && segs.size()==0){
+	    if (fwrite(buf,size,1,stdout)!=1) err(1,"fwrite");
 	    printf("\n");
 	}
     }
 
-    if(size==0)  return TSK_WALK_CONT;	// can't do much with this...
+    if (size==0)  return TSK_WALK_CONT;	// can't do much with this...
 
-    if(opt_no_data==false){
+    if (o.opt_no_data==false){
 	if (flags & TSK_FS_BLOCK_FLAG_SPARSE){
             if (size < MAX_SPARSE_SIZE && !invalid) {
                 /* Manufacture NULLs that correspond with a sparse file */
@@ -445,20 +445,20 @@ content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char
     */
 
     uint64_t  fs_offset = addr * fs_file->fs_info->block_size;
-    uint64_t img_offset = current_partition_start + fs_offset;
+    uint64_t img_offset = o.current_partition_start + fs_offset;
 
-    if(opt_sector_hash){
-        if(h_sectorhash==0){
+    if (o.opt_sector_hash){
+        if (h_sectorhash==0){
             h_sectorhash = new md5_generator();
             sectorhash_byte_counter   = 0;
             sectorhash_initial_offset = (int64_t)a_off;
         }
         h_sectorhash->update((const uint8_t *)buf,size);
         sectorhash_byte_counter += size;
-        if (sectorhash_byte_counter==sectorhash_size){
-            add_seg(0,0,sectorhash_initial_offset,sectorhash_byte_counter,flags,h_sectorhash->final().hexdigest());
+        if (sectorhash_byte_counter==o.sectorhash_size){
+            add_seg(0,0,sectorhash_initial_offset,sectorhash_byte_counter,flags,h_sectorhash->finalize().hexdigest());
         }
-        if (sectorhash_byte_counter>=sectorhash_size){
+        if (sectorhash_byte_counter>=o.sectorhash_size){
             delete h_sectorhash;
             h_sectorhash=0;
         }
@@ -466,12 +466,12 @@ content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char
     }
 
     /* We are not sector hashing; try to determine disk runs */
-    if(segs.size()>0){
+    if (segs.size()>0){
 	/* Does this next segment fit after the prevous segment logically? */
-	if(segs.back().next_file_offset()==(uint64_t)a_off){
+	if (segs.back().next_file_offset()==(uint64_t)a_off){
 
 	    /* if both the last and the current are sparse, this can be extended. */
-	    if((segs.back().flags & TSK_FS_BLOCK_FLAG_SPARSE) &&
+	    if ((segs.back().flags & TSK_FS_BLOCK_FLAG_SPARSE) &&
 	       (flags & TSK_FS_BLOCK_FLAG_SPARSE)){
 
 		segs.back().len += size;
@@ -479,7 +479,7 @@ content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char
 	    }
 
 	    /* If both are compressed, then this can be extended? */
-	    if((segs.back().flags & TSK_FS_BLOCK_FLAG_COMP) &&
+	    if ((segs.back().flags & TSK_FS_BLOCK_FLAG_COMP) &&
 	       (flags & TSK_FS_BLOCK_FLAG_COMP) &&
 	       (segs.back().img_offset + segs.back().len == img_offset)){
 		segs.back().len += size;
@@ -489,7 +489,7 @@ content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char
 	    /* See if we can extend the last segment in the segment list,
 	     * or if this is the start of a new fragment.
 	     */
-	    if((segs.back().flags & TSK_FS_BLOCK_FLAG_RAW) &&
+	    if ((segs.back().flags & TSK_FS_BLOCK_FLAG_RAW) &&
 	       (flags & TSK_FS_BLOCK_FLAG_RAW) &&
 	       (segs.back().img_offset + segs.back().len == img_offset)){
 		segs.back().len += size;

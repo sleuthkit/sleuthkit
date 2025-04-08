@@ -1,6 +1,6 @@
 /*
  ** tsk_loaddb
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
@@ -33,7 +33,7 @@ usage()
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     tsk_fprintf(stderr, "\t-z: Time zone of original machine (i.e. EST5EDT or GMT)\n");
-    
+
     exit(1);
 }
 
@@ -49,7 +49,7 @@ main(int argc, char **argv1)
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
     TSK_TCHAR *database = NULL;
-    
+
     bool blkMapFlag = true;   // true if we are going to write the block map
     bool createDbFlag = true; // true if we are going to create a new database
     bool calcHash = false;
@@ -75,6 +75,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
         case _TSK_T('a'):
             createDbFlag = false;
@@ -103,7 +104,7 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-                
+
         case _TSK_T('k'):
             blkMapFlag = false;
             break;
@@ -119,7 +120,7 @@ main(int argc, char **argv1)
         case _TSK_T('v'):
             tsk_verbose++;
             break;
-        
+
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
@@ -141,9 +142,9 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr, "Missing image names\n");
         usage();
     }
-    
+
     TSK_TCHAR buff[1024];
-    
+
     if (database == NULL) {
         if (createDbFlag == false) {
             fprintf(stderr, "Error: -a requires that database be specified with -d\n");
@@ -152,11 +153,11 @@ main(int argc, char **argv1)
         TSNPRINTF(buff, 1024, _TSK_T("%s.db"), argv[OPTIND]);
         database = buff;
     }
-    
+
     //tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
 
     TskCaseDb * tskCase;
-    
+
     if (createDbFlag) {
         tskCase = TskCaseDb::newDb(database);
     } else {
@@ -177,7 +178,7 @@ main(int argc, char **argv1)
         std::vector<TskAuto::error_record> errors = autoDb->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             fprintf(stderr, "Error: %s\n", TskAuto::errorRecordToString(errors[i]).c_str());
-        } 
+        }
     }
 
     if (autoDb->commitAddImage() == -1) {
@@ -189,6 +190,6 @@ main(int argc, char **argv1)
     autoDb->closeImage();
     delete tskCase;
     delete autoDb;
-    
+
     exit(0);
 }

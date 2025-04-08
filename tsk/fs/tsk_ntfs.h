@@ -477,7 +477,7 @@ extern "C" {
 
     typedef struct {
         // object ID / GUID of the file
-        uint8_t objid1[4];   // little endian 4-byte value 
+        uint8_t objid1[4];   // little endian 4-byte value
         uint8_t objid2[2];   // little endian 2-byte value
         uint8_t objid3[2];  // little endian 2-byte value
         uint8_t objid4[2];  // big endian 2-byte value
@@ -737,8 +737,8 @@ extern "C" {
 
         /* Number of allocated regular files. 0 until a directory is
          * opened.  Currently used by tools that are built on TSK. */
-        int alloc_file_count;      
-                                    
+        int alloc_file_count;
+
         NTFS_USNJINFO *usnjinfo;        // update sequence number journal
     } NTFS_INFO;
 

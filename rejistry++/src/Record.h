@@ -41,9 +41,9 @@ namespace Rejistry {
     class Record : public BinaryBlock {
     public:
         Record(RegistryByteBuffer * buf, uint32_t offset) : BinaryBlock(*buf, offset) { }
-        
+
         virtual ~Record() {}
-    
+
         /**
          * Get the magic bytes that determine the Record's type.
          * @returns A 2 character string that is the magic record header.

@@ -72,7 +72,7 @@ namespace Rejistry {
             finalNKRecordList.insert(finalNKRecordList.end(), nkRecordList.begin(), nkRecordList.end());
         }
 
-        return finalNKRecordList;        
+        return finalNKRecordList;
     }
 
 };
