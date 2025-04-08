@@ -38,7 +38,7 @@ extern "C" {
  * Stores AFF-specific data
  */
 typedef struct {
-    IMG_INFO img_info;
+    struct IMG_INFO img_info;
     AFFILE *af_file;
 
     tsk_lock_t read_lock;

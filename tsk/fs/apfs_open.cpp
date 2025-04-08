@@ -7,10 +7,10 @@
  *
  * This software is distributed under the Common Public License 1.0
  */
-#include "../libtsk.h"
+#include "tsk/libtsk.h"
 
 #include "apfs_compat.hpp"
-#include "../img/pool.hpp"
+#include "tsk/img/pool.hpp"
 #include "tsk_fs_i.h"
 
 TSK_FS_INFO* apfs_open_auto_detect(

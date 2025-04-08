@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <memory>
+
 #include "tsk/tsk_tools_i.h"
 #include "mem_img.h"
 
@@ -23,21 +25,26 @@
 #endif
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-  TSK_IMG_INFO *img;
   TSK_FS_INFO *fs;
 
-  img = mem_open(data, size);
-  if (img == nullptr)
+  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+    mem_open(data, size),
+    tsk_img_close
+  };
+
+  if (!img) {
     return 0;
-
-  fs = tsk_fs_open_img(img, 0, FSTYPE);
-  if (fs != nullptr) {
-    tsk_fs_fls(fs, TSK_FS_FLS_FULL, fs->root_inum, TSK_FS_DIR_WALK_FLAG_RECURSE,
-               nullptr, 0);
-
-    fs->close(fs);
   }
 
-  tsk_img_close(img);
+  std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+    tsk_fs_open_img(img.get(), 0, FSTYPE),
+    tsk_fs_close
+  };
+
+  if (fs) {
+    tsk_fs_fls(fs.get(), TSK_FS_FLS_FULL, fs->root_inum, TSK_FS_DIR_WALK_FLAG_RECURSE,
+               nullptr, 0);
+  }
+
   return 0;
 }

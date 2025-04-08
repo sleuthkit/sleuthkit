@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-#include "../auto/guid.h"
+#include "tsk/auto/guid.h"
 #include "tsk_pool.h"
 
 class TSKPool {

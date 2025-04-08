@@ -9,6 +9,8 @@
 */
 #include "tsk/tsk_tools_i.h"
 
+#include <memory>
+
 static void
 usage()
 {
@@ -29,16 +31,13 @@ usage()
     exit(1);
 }
 
-
 int
 main(int argc, char **argv)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
 
     int ch;
     TSK_TCHAR **argv;
@@ -124,33 +123,33 @@ main(int argc, char **argv)
         usage();
     }
 
-    img =
-        img_open(imgoff, argc - OPTIND,
-        (const char **) &argv[OPTIND], imgtype, ssize);
-    if (img == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        img_open(imgoff, argc - OPTIND, (const char **) &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
 
-    if (fs = fs_open(img, fstype)) {
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        fs_open(img.get(), fstype),
+        tsk_fs_close
+    };
+
+    if (!fs) {
         if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
             tsk_print_types(stderr);
 
         tsk_error_print(stderr);
-        tsk_img_close(img);
         exit(1);
-
     }
 
-    if (fs->fscheck(fs, stdout)) {
+    if (fs->fscheck(fs.get(), stdout)) {
         tsk_error_print(stderr);
-    	tsk_fs_close(fs);
-        tsk_img_close(img);
         exit(1);
     }
-
-    tsk_fs_close(fs);
-    tsk_img_close(img);
 
     exit(0);
 }

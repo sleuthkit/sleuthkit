@@ -3,7 +3,7 @@
 
                     Installation Instructions
 
-                     Last Modified: Oct 2022
+                     Last Modified: March 2025
 
 
 REQUIREMENTS
@@ -174,7 +174,15 @@ if it is installed.
 the libbfio installation (the directory should have 'lib' and 'include'
 directories in it).
 
+CONFIGURE TARGETS
 -----------------------------------------------------------------------------
+`make clean` -  Removes temporary files generated during compilation.
 
+`make distclean` - Removes all files that configure generates.
+
+`make maintainer-clean` - Removes everything that can be regenerated, including files normally distributed in tarballs
+
+
+-----------------------------------------------------------------------------
 Brian Carrier
 carrier <at> sleuthkit <dot> org
