@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+if [ ! -d ${SLEUTHKIT_TEST_DATA_DIR:=../sleuthkit_test_data} ]; then echo $SLEUTHKIT_TEST_DATA_DIR does not exist ; exit 1 ; fi
+
 if [ -n "$WINE" ]; then
   EXEEXT=.exe
 fi
