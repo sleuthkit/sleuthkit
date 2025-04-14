@@ -11,7 +11,6 @@ codecov:
 
 ignore:
   - "m4"
-  - "test"
   - "vendors"
 
 # Code for updating pull request comment on GitHub
