@@ -434,7 +434,7 @@ tsk_fs_dir_getsize(const TSK_FS_DIR * a_fs_dir)
 TSK_FS_FILE*
 tsk_fs_dir_get(const TSK_FS_DIR* a_fs_dir, size_t a_idx)
 {
-    return tsk_fs_dir_get2(a_fs_dir, a_idx, TRUE);
+    return tsk_fs_dir_get2(a_fs_dir, a_idx, true);
 }
 
 /** \ingroup fslib
@@ -445,7 +445,7 @@ tsk_fs_dir_get(const TSK_FS_DIR* a_fs_dir, size_t a_idx)
  * @returns NULL on error
  */
 TSK_FS_FILE *
-tsk_fs_dir_get2(const TSK_FS_DIR * a_fs_dir, size_t a_idx, size_t load_attributes)
+tsk_fs_dir_get2(const TSK_FS_DIR * a_fs_dir, size_t a_idx, bool load_attributes)
 {
     TSK_FS_NAME *fs_name;
     TSK_FS_FILE *fs_file;

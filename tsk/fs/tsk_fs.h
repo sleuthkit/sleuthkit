@@ -676,7 +676,7 @@ extern "C" {
         void *a_ptr);
     extern size_t tsk_fs_dir_getsize(const TSK_FS_DIR *);
     extern TSK_FS_FILE *tsk_fs_dir_get(const TSK_FS_DIR *, size_t);
-    extern TSK_FS_FILE *tsk_fs_dir_get2(const TSK_FS_DIR *, size_t, size_t load_attributes);
+    extern TSK_FS_FILE *tsk_fs_dir_get2(const TSK_FS_DIR *, size_t, bool load_attributes);
     extern const TSK_FS_NAME *tsk_fs_dir_get_name(const TSK_FS_DIR * a_fs_dir, size_t a_idx);
     extern void tsk_fs_dir_close(TSK_FS_DIR *);
 
@@ -900,7 +900,7 @@ extern "C" {
     * is for a YAFFS2 file system. */
 #define TSK_FS_TYPE_ISXFS(ftype) \
     (((ftype) & TSK_FS_TYPE_XFS_DETECT)?1:0)
-    
+
 #define TSK_FS_TYPE_ISAPFS(ftype) \
     (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
 
