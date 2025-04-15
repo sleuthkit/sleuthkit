@@ -202,7 +202,7 @@ jobs:
         run: |
           cd ..
           pwd
-          wget https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
+          wget  -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
           unzip sleuthkit_test_data.zip
           cd sleuthkit_test_data
           make unpack
@@ -288,8 +288,6 @@ jobs:
         if: ${{ matrix.codecov == 'yes' }}
         run: |
           make -j check V=0
-          make -j test/fiwalk/fiwalk_test V=0
-          make -j test/runner V=0
 
       - name: run gcov
         if: ${{ matrix.codecov == 'yes' }}
@@ -320,10 +318,10 @@ jobs:
             executables/*
           retention-days: 15
 
-#      - name: Run distcheck
-#        run: |
-#          ./configure
-#          make distcheck
+      - name: Run distcheck
+        run: |
+          ./configure
+          make distcheck
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher

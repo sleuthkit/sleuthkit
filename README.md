@@ -1,6 +1,8 @@
 [![codecov](https://codecov.io/github/sleuthkit/sleuthkit/branch/develop/graph/badge.svg?token=pfFlgpWdCt)](https://codecov.io/github/sleuthkit/sleuthkit)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/8f7ljj8s2lh5sqfv?svg=true)](https://ci.appveyor.com/project/bcarrier/sleuthkit)
+[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/8f7ljj8s2lh5sqfv?svg=true)](https://ci.appveyor.com/project/bcarrier/sleuthkit)
+
+[![Github Build Status](https://github.com/sleuthkit/sleuthkit/actions/workflows/build-unix.yml/badge.svg?branch=develop)]
 
 # [The Sleuth Kit](http://www.sleuthkit.org/sleuthkit)
 

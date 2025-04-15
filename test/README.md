@@ -13,14 +13,20 @@ Goals of unit testing
 
 Disk Images
 -----------
-* The disk images now reside in a [single Github repository](https://github.com/sleuthkit/sleuthkit_test_data) using [git's extensions for large objects](https://git-lfs.com/).
-* By default, this repo resides at [../sleuthkit_test_data](../sleuthkit_test_data). However, it can be installed elsewhere by setting the environment variable `SLEUTHKIT_TEST_DATA_DIR`.
+Disk images for testing reside on Amazon S3 here:
 
-Repo:
+    https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
 
-Images larger than 10MB should be stored as a compressed data type (e.g. .E01)
+Once you download, unpack and should set the environment variable SLEUTHKIT_TEST_DATA_DIR to the location from which you dwonloaded.
+
+Images larger than 10MB should be stored as a compressed data type (e.g. .E01), so you need libewf support installed.
 
 
+Currently, it's necessary to type `make unpack` to unpack the
+zipfiles. However, in the future, the contents of zipfile itself will
+be not be compressed.
+
+The master copy of the disk images reside in the [Github repository](https://github.com/sleuthkit/sleuthkit_test_data) using [git's extensions for large objects](https://git-lfs.com/). However, we hit GitHub bandwidth download limitations, so instead of downloading from GitHub, you should download from the S3 bucket.
 
 Test Program
 ------------

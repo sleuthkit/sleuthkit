@@ -3,10 +3,11 @@
 #if HAVE_LIBAFF4
 
 #include <aff4/libaff4-c.h>
-
 #include <memory>
+#include <string>
 
 #include "catch.hpp"
+#include "test/tsk/img/test_img.h"  // <-- your shared test utilities
 
 TEST_CASE("test_get_messages_zero") {
   CHECK(get_messages(nullptr) == "");
@@ -30,7 +31,9 @@ TEST_CASE("test_get_messages_many") {
 }
 
 TEST_CASE("aff4_open not a file") {
-  const TSK_TCHAR* const images[] = { _TSK_T("not_a_file") };
+  std::basic_string<TSK_TCHAR> path = prepend_test_data_dir(_TSK_T("not_a_file"));
+  const TSK_TCHAR* const images[] = { path.c_str() };
+
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     aff4_open(1, images, 1234),
     tsk_img_close
@@ -39,7 +42,9 @@ TEST_CASE("aff4_open not a file") {
 }
 
 TEST_CASE("aff4_open not an aff4") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
+  std::basic_string<TSK_TCHAR> path = prepend_test_data_dir(_TSK_T("image/image.dd"));
+  const TSK_TCHAR* const images[] = { path.c_str() };
+
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     aff4_open(1, images, 1234),
     tsk_img_close

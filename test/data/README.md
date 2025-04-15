@@ -1,1 +1,5 @@
-Small and legacy disk images are located here, but most should be installed in ../../../sleuthkit_test_data. This location can be changed by setting the environment variable `SLEUTHKIT_TEST_DATA_DIR`.
+Small and legacy disk images are located here to provide for minimal out-of-the-box testing.
+For comprehensive tests, please:
+
+    export SLEUTHKIT_TEST_DATA_DIR=<your test data dir location)
+    git clone https://github.com/sleuthkit/sleuthkit_test_data $SLEUTHKIT_TEST_DATA_DIR

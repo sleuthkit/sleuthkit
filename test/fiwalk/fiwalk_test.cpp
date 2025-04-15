@@ -1,9 +1,9 @@
 /*
  * fiwalk_test.cpp
  *
+ *  2025-03-30 - slg - modified to base paths from getenv("DEFAULT_SLEUTHKIT_TEST_DATA_DIR") or "../sleuthkit_test_data" if it is not defined.
  *  2024-09-29 - slg - modified to read from TEST_IMAGES the paths for the disk images
  *  2024-09-12 - slg - created
- *  2025-03-30 - slg - modified to base paths from getenv("DEFAULT_SLEUTHKIT_TEST_DATA_DIR") or "../sleuthkit_test_data" if it is not defined.
  *
  */
 
@@ -17,12 +17,12 @@
 #include "tools/fiwalk/src/fiwalk.h"
 
 #define SLEUTHKIT_TEST_DATA_DIR "SLEUTHKIT_TEST_DATA_DIR"
-#define DEFAULT_SLEUTHKIT_TEST_DATA_DIR "../sleuthkit_test_data"
 
 void check_image(std::string img_path, std::string dfxml2_path) {
     const char *data_dir = std::getenv(SLEUTHKIT_TEST_DATA_DIR);
     if (data_dir == nullptr){
-        data_dir = DEFAULT_SLEUTHKIT_TEST_DATA_DIR;
+        std::cerr << SLEUTHKIT_TEST_DATA_DIR << " not set.\n";
+        exit(77);                       // SKIP exit code
     }
 
     /* the output XML file should be the XML file with a 2 added.
@@ -36,6 +36,13 @@ void check_image(std::string img_path, std::string dfxml2_path) {
     }
 
     img_path = std::string(data_dir) + std::string("/") + img_path;
+
+    struct stat buffer;
+    if (::stat(img_path.c_str(), &buffer) != 0) {
+        INFO("Cannot open file: " << img_path);
+        return ;
+    }
+
 
     CAPTURE(img_path);
     INFO("test: fiwalk " << img_path)
