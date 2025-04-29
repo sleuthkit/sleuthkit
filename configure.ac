@@ -233,10 +233,6 @@ dnl status message and set X_JNI for use in Makefile
 AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
 AM_CONDITIONAL([X_JNI],[test "x$ax_java_support" = "xyes"])
 
-AS_IF([test "x$enable_java" != "xno" && "x$ax_java_support" = no],
-            [AC_MSG_ERROR([--enable_java selected but JNI_CPPFLAGS, ANT or JAVA not set. Check to make sure JAVA_HOME is set.])],
-            [])
-
 dnl Dependencies for OSS-Fuzz
 AM_CONDITIONAL(HAVE_LIB_FUZZING_ENGINE, [test "x${LIB_FUZZING_ENGINE}" != x])
 AC_SUBST([LIB_FUZZING_ENGINE], ["${LIB_FUZZING_ENGINE}"])

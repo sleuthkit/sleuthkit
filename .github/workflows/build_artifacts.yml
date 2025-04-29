@@ -1,0 +1,33 @@
+name: "Nightly Artifacts"
+
+# For docker container comparable to Linux build worker:
+#   docker run -it docker.io/library/ubuntu:22.04 bash
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
+
+jobs:
+  build:
+    timeout-minutes: 30
+    name: posix ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: "linux"
+            arch: "x86_64"
+            linkage: "shared"
+            compiler: "gcc"
+            runner: "ubuntu-24.04"
+            configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --enable-java"
+            make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
+            codecov: "no"
+            prefix:
+            address_sanitizer: "yes"
+            keep_artifacts: "yes"
+            suffix: "(with artifacts)"
+            enable_java: "yes"
+    steps:
+      - uses ./.github/actions/builder.yml
