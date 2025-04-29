@@ -60,12 +60,6 @@ steps:
       # cd file-5.44
       # ./configure -q ${{ matrix.configure_optsnj}} && make V=0 && sudo make install
 
-  - name: Checkout repo
-    uses: actions/checkout@v4
-    with:
-      submodules: recursive
-      fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
-
   - name: Run bootstrap
     run: |
       echo CPPFLAGS=$CPPFLAGS

@@ -32,4 +32,10 @@ jobs:
             suffix: "(with artifacts)"
             enable_java: "yes"
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
+
       - uses: ./.github/actions/builder.yml
