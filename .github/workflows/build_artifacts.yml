@@ -32,4 +32,4 @@ jobs:
             suffix: "(with artifacts)"
             enable_java: "yes"
     steps:
-      - uses ./.github/actions/builder.yml
+      - uses: ./.github/actions/builder.yml

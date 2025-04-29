@@ -122,4 +122,4 @@ jobs:
             keep_artifacts: "no"
 
     steps:
-      - uses ./.github/actions/builder.yml
+      - uses: ./.github/actions/builder.yml
