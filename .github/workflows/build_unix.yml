@@ -128,4 +128,4 @@ jobs:
           submodules: recursive
           fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
 
-      - uses: ./.github/actions/builder.yml
+      - uses: ./.github/actions/builder
