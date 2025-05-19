@@ -39,7 +39,7 @@ usage()
         "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
-    tsk_fprintf(stderr, "\t-v: Verbose output to stderr\n");
+    tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     tsk_fprintf(stderr, "\t-k password: Decryption password for encrypted volumes\n");
 

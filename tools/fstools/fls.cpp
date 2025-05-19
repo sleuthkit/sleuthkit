@@ -65,7 +65,7 @@ usage()
     tsk_fprintf(stderr, "\t-p: Display full path for each file\n");
     tsk_fprintf(stderr, "\t-r: Recurse on directory entries\n");
     tsk_fprintf(stderr, "\t-u: Display undeleted entries only\n");
-    tsk_fprintf(stderr, "\t-v: Verbose output to stderr\n");
+    tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     tsk_fprintf(stderr,
         "\t-z: Time zone of original machine (i.e. EST5EDT or GMT) (only useful with -l)\n");
