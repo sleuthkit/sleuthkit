@@ -22,7 +22,7 @@ Once you download, unpack and should set the environment variable SLEUTHKIT_TEST
 Images larger than 10MB should be stored as a compressed data type (e.g. .E01), so you need libewf support installed.
 
 
-Currently, it's necessary to type `make unpack` to unpack the
+Currently, it's necessary to type `make unpack` in the sleuthkit_test_data directory to unpack the
 zipfiles. However, in the future, the contents of zipfile itself will
 be not be compressed.
 

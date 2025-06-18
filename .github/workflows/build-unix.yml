@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     timeout-minutes: 30
-    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
+    name: posix ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -260,9 +260,8 @@ jobs:
           make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Clean up
-        if: ${{ matrix.os != 'mingw' }}
         run: |
-          make distclean
+          if [ -x Makefile ]; then make distclean ; fi
 
       - name: Run configure with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
@@ -275,31 +274,8 @@ jobs:
           make -j check VERBOSE=1
 
       - name: Clean up
-        if: ${{ matrix.os != 'mingw' }}
         run: |
-          make distclean
-
-      - name: Run configure for codecov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          ./configure ${{ matrix.configure_opts }} CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage'
-
-      - name: Run make for codecov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          make -j check V=0
-
-      - name: run gcov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          gcov $(find . -name '*.gcda')
-
-      - name: Upload codecov report
-        if: ${{ matrix.codecov == 'yes' }}
-        uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+          if [ -x Makefile ]; then make distclean ; fi
 
       - name: Create any artifacts that we need to keep
         if: ${{ matrix.keep_artifacts == 'yes' }}

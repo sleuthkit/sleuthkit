@@ -536,14 +536,13 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
             // correctly set for filling the database.
             TSK_FILTER_ENUM filterRetval = filterPoolVol(vol_info);
             if (filterRetval == TSK_FILTER_STOP || m_stopAllProcessing) {
-                tsk_pool_close(pool);
                 return TSK_STOP;
             }
 
             std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_vol_img{
                 pool->get_img_info(pool.get(), vol_info->block),
                 tsk_img_close
-            }
+            };
 
             if (!pool_vol_img) {
                 tsk_error_set_errstr2(
@@ -555,7 +554,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
  
             std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{                      tsk_fs_open_img(pool_vol_img.get(), 0, TSK_FS_TYPE_DETECT),
                 tsk_fs_close
-            }
+            };
 
             if (!fs_info) {
                 tsk_error_set_errstr2(
@@ -564,7 +563,7 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                 registerError();
                 return TSK_ERR;
             }
-            TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+            TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info.get(), fs_info->root_inum);
 
             if (retval == TSK_STOP) {
                 return TSK_STOP;

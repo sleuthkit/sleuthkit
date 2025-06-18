@@ -1,0 +1,74 @@
+name: Code Coverage
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Determine number of cores
+      run: |
+        CORES=$(nproc)
+        echo "cores=$CORES" >>$GITHUB_OUTPUT
+        echo "Using $CORES cores"
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y lcov build-essential autoconf automake libtool
+
+    - name: Unpack and List the test data
+      run: |
+        cd ..
+        pwd
+        wget  -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
+        unzip sleuthkit_test_data.zip
+        cd sleuthkit_test_data
+        make unpack
+        find . -ls | grep -v '[.]git'
+        echo "SLEUTHKIT_TEST_DATA_DIR=$(pwd)" >> $GITHUB_ENV
+
+    - name: Run bootstrap
+      run: |
+        ./bootstrap
+
+    - name: Configure with coverage flags
+      run: |
+        ./configure CFLAGS="--coverage -fprofile-update=atomic" CXXFLAGS="--coverage -fprofile-update=atomic" LDFLAGS="--coverage"
+
+    - name: Build project
+      run: make -j$(nproc)
+
+    - name: Run tests
+      run: make check V=0
+
+    - name: Generate coverage report
+      run: |
+        lcov --capture --directory . --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info
+        lcov --list coverage.info
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        files: coverage.info
+        flags: unittests
+        name: sleuthkit-codecov
+
+    - uses: ammaraskar/gcc-problem-matcher@0.2.0
+      name: GCC Problem Matcher

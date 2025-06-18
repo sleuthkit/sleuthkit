@@ -318,6 +318,7 @@ tsk_img_libtskimg_la_SOURCES = \
 	tsk/img/img_open.cpp \
 	tsk/img/img_open.h \
 	tsk/img/img_types.c \
+	tsk/img/img_types_i.h \
 	tsk/img/img_writer.cpp \
 	tsk/img/img_writer.h \
 	tsk/img/legacy_cache.cpp \
@@ -748,10 +749,13 @@ test_catch_runner_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/vendors $(CATCH2_CPP
 test_catch_runner_LDADD = $(TSK_LIBS)
 test_catch_runner_SOURCES = \
 	test/tsk/img/test_img.h \
+	test/tools/tsk_tempfile.h \
+	test/tools/tsk_tempfile.cpp \
 	test/tsk/base/test_tsk_error.cpp \
 	test/tsk/img/test_aff4.cpp \
 	test/tsk/img/test_ewf.cpp \
 	test/tsk/img/test_img_io.cpp \
+	test/tsk/img/test_img_types.cpp \
 	test/tsk/img/test_img_open.cpp \
 	test/tsk/img/test_mult_files.cpp \
 	test/tsk/img/test_qcow.cpp \

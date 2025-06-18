@@ -67,7 +67,7 @@ void check_image(std::string img_path, std::string dfxml2_path) {
     else {
         FAIL(img_path << " not found");
     }
-    /* XML files are checked by the python driver */
+    /* TODO: Compare the output of the XML files... */
 }
 
 #ifdef HAVE_LIBEWF
