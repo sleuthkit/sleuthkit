@@ -1,13 +1,14 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/img/img_open.h"
+#include "test/tsk/img/test_img.h"
+#include "catch.hpp"
+
 
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
-
-#include "catch.hpp"
 
 TEST_CASE("tsk_img_open 0 images") {
   const TSK_TCHAR* const images[] = {};
@@ -68,7 +69,8 @@ TEST_CASE("tsk_img_open_utf8 null images") {
 }
 
 TEST_CASE("tsk_img_open sector size") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
+  std::basic_string<TSK_TCHAR> path = prepend_test_data_dir(_TSK_T("image/image.dd"));
+  const TSK_TCHAR* const images[] = { path.c_str() };
 
   const std::pair<unsigned int, bool> tcase[] = {
     { 0, true },
@@ -78,13 +80,14 @@ TEST_CASE("tsk_img_open sector size") {
     { 1024, true }
   };
 
-  for (const auto& [ss, exp]: tcase) {
-//    DYNAMIC_SECTION("sector size " << ss);
-    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-      tsk_img_open(1, images, TSK_IMG_TYPE_RAW, ss),
-      tsk_img_close
-    };
-    CHECK(bool(img) == exp);
+  for (const auto& [ss, exp] : tcase) {
+    DYNAMIC_SECTION("sector size " << ss) {
+      std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(1, images, TSK_IMG_TYPE_RAW, ss),
+        tsk_img_close
+      };
+      CHECK(bool(img) == exp);
+    }
   }
 }
 
@@ -170,62 +173,67 @@ void check_image_open(
 }
 
 TEST_CASE("tsk_img_open") {
-  // image path : type arg : ok? : expected type : expected errno
-  const std::tuple<
+  using Case = std::tuple<
     const TSK_TCHAR*,
     TSK_IMG_TYPE_ENUM,
     bool,
     uint32_t
-  > tcase[] = {
+  >;
+
+  const Case raw_cases[] = {
 #ifdef HAVE_LIBEWF
-    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_EWF_EWF },
-    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_EWF_EWF, true, TSK_IMG_TYPE_EWF_EWF },
-    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_EWF_EWF, false, TSK_ERR_IMG_MAGIC },
+    { _TSK_T("image/image.E01"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_EWF_EWF },
+    { _TSK_T("image/image.E01"), TSK_IMG_TYPE_EWF_EWF, true, TSK_IMG_TYPE_EWF_EWF },
+    { _TSK_T("image/image.dd"), TSK_IMG_TYPE_EWF_EWF, false, TSK_ERR_IMG_MAGIC },
 #else
-    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
-    { _TSK_T("test/data/image.E01"), TSK_IMG_TYPE_EWF_EWF, false, TSK_ERR_IMG_UNSUPTYPE },
+    { _TSK_T("image/image.E01"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("image/image.E01"), TSK_IMG_TYPE_EWF_EWF, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
 #ifdef HAVE_LIBQCOW
-    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_QCOW_QCOW },
-    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_QCOW_QCOW, true, TSK_IMG_TYPE_QCOW_QCOW },
-    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_QCOW_QCOW, false, TSK_ERR_IMG_OPEN },
+    { _TSK_T("image/image.qcow"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_QCOW_QCOW },
+    { _TSK_T("image/image.qcow"), TSK_IMG_TYPE_QCOW_QCOW, true, TSK_IMG_TYPE_QCOW_QCOW },
+    { _TSK_T("image/image.dd"), TSK_IMG_TYPE_QCOW_QCOW, false, TSK_ERR_IMG_OPEN },
 #else
-    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
-    { _TSK_T("test/data/image.qcow"), TSK_IMG_TYPE_QCOW_QCOW, false, TSK_ERR_IMG_UNSUPTYPE },
+    { _TSK_T("image/image.qcow"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("image/image.qcow"), TSK_IMG_TYPE_QCOW_QCOW, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
 #ifdef HAVE_LIBVHDI
-    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_VHD_VHD },
-    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_VHD_VHD, true, TSK_IMG_TYPE_VHD_VHD },
-    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_VHD_VHD, false, TSK_ERR_IMG_OPEN },
+    { _TSK_T("image/image.vhd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_VHD_VHD },
+    { _TSK_T("image/image.vhd"), TSK_IMG_TYPE_VHD_VHD, true, TSK_IMG_TYPE_VHD_VHD },
+    { _TSK_T("image/image.dd"), TSK_IMG_TYPE_VHD_VHD, false, TSK_ERR_IMG_OPEN },
 #else
-    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
-    { _TSK_T("test/data/image.vhd"), TSK_IMG_TYPE_VHD_VHD, false, TSK_ERR_IMG_UNSUPTYPE },
+    { _TSK_T("image/image.vhd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("image/image.vhd"), TSK_IMG_TYPE_VHD_VHD, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
 #ifdef HAVE_LIBVMDK
-    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_VMDK_VMDK },
-    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_VMDK_VMDK, true, TSK_IMG_TYPE_VMDK_VMDK },
-    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_VMDK_VMDK, false, TSK_ERR_IMG_OPEN },
+    { _TSK_T("image/image.vmdk"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_VMDK_VMDK },
+    { _TSK_T("image/image.vmdk"), TSK_IMG_TYPE_VMDK_VMDK, true, TSK_IMG_TYPE_VMDK_VMDK },
+    { _TSK_T("image/image.dd"), TSK_IMG_TYPE_VMDK_VMDK, false, TSK_ERR_IMG_OPEN },
 #else
-    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
-    { _TSK_T("test/data/image.vmdk"), TSK_IMG_TYPE_VMDK_VMDK, false, TSK_ERR_IMG_UNSUPTYPE },
+    { _TSK_T("image/image.vmdk"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("image/image.vmdk"), TSK_IMG_TYPE_VMDK_VMDK, false, TSK_ERR_IMG_UNSUPTYPE },
 #endif
-    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
-    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_RAW, true, TSK_IMG_TYPE_RAW },
-    { _TSK_T("test/data/image.dd"), TSK_IMG_TYPE_UNSUPP, false, TSK_ERR_IMG_UNSUPTYPE }
+    { _TSK_T("image/image.dd"), TSK_IMG_TYPE_DETECT, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("image/image.dd"), TSK_IMG_TYPE_RAW, true, TSK_IMG_TYPE_RAW },
+    { _TSK_T("image/image.dd"), TSK_IMG_TYPE_UNSUPP, false, TSK_ERR_IMG_UNSUPTYPE }
   };
 
-  for (const auto& [image, type, ok, exp_type_or_err]: tcase) {
-    CAPTURE(image);
+  for (const auto& [rel_path, type, ok, exp_type_or_err] : raw_cases) {
+    // Construct full path and preserve its lifetime in this scope
+    std::basic_string<TSK_TCHAR> abs_path = prepend_test_data_dir(rel_path);
+    const TSK_TCHAR* image_path = abs_path.c_str();
+
+    CAPTURE(image_path);
     CAPTURE(type);
-//    DYNAMIC_SECTION(image << ' ' << type);
-    check_image_open(&image, type, ok, exp_type_or_err);
+    check_image_open(&image_path, type, ok, exp_type_or_err);
+
 #ifdef TSK_WIN32
-    // check same path, with backslashes
-    std::wstring img(image);
-    std::replace(img.begin(), img.end(), '/', '\\');
-    const auto* image_bs = img.c_str();
+    // Backslash variant
+    std::basic_string<TSK_TCHAR> path_bs = abs_path;
+    std::replace(path_bs.begin(), path_bs.end(), _TSK_T('/'), _TSK_T('\\'));
+    const TSK_TCHAR* image_bs = path_bs.c_str();
+
     CAPTURE(image_bs);
-//    DYNAMIC_SECTION(image_bs << ' ' << type);
     check_image_open(&image_bs, type, ok, exp_type_or_err);
 #endif
   }

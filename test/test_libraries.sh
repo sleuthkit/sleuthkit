@@ -1,19 +1,19 @@
 #!/bin/bash
 
-set -o pipefail
-echo "Testing libs"
-
-# Test script to run command line tools against disk images
+# Test script to run command line tools against disk images to make sure we can process E01, VHD and VMDK
 #
 # Currently, tests mmls on image files.  Will need to be refactored as we add more tests.
+
+set -o pipefail
+echo "Testing libs"
 
 EXIT_FAILURE=1
 EXIT_SKIP=77
 
-MMLS_CMD=$(realpath tools/vstools/mmls)
-TESTS=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
-
-IMGBASE="test/data/imageformat_mmls_1"
+MMLS_CMD=tools/vstools/mmls
+TEST_IMAGE_DIR=${srcdir}/test/data
+TEST_IMAGES=("imageformat_mmls_1.vhd" "imageformat_mmls_1.vmdk" "imageformat_mmls_1.E01")
+IMGBASE="${TEST_IMAGE_DIR}/imageformat_mmls_1"
 
 if [ -n "$WINEARCH" ]; then
   MMLS_CMD="wine ${MMLS_CMD}.exe"
@@ -30,19 +30,22 @@ _check_exit_status() {
 }
 
 # save list of supported images
-imgFormatList="$($MMLS_CMD -i list 2>&1 >/dev/null | sed '1d' | awk '{print $1}')"
-# mmls returns 1 on successful list. How neat
+# mmls returns 1 on successful list, which is kind of weird, but we won't change it.
+mmls_out="$($MMLS_CMD -i list 2>&1 >/dev/null)"
 err=$?
 if [ $err -ne 1 ]; then
-  echo "Failed to get image list with error $err"
+  echo "$MMLS_CMD Failed to get image list with error $err"
   $MMLS_CMD -i list
   exit $EXIT_FAILURE
 fi
 
+imgFormatList="$( echo $mmls_out | sed '1d' | awk '{print $1}')"
+echo imgFormatList=$imgFormatList
+
 # Use local test files instead of downloading from google drive
-for name in "${TESTS[@]}"; do
-  if [ ! -f "./test/data/${name}" ]; then
-    echo "Missing test $name"
+for name in "${TEST_IMAGES[@]}"; do
+  if [ ! -f "${TEST_IMAGE_DIR}/${name}" ]; then
+    echo "Missing test image for image filename=$name"
     exit $EXIT_FAILURE
   fi
 done

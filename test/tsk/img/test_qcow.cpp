@@ -4,11 +4,16 @@
 #if HAVE_LIBQCOW
 
 #include <memory>
+#include <string>
+#include <algorithm>
 
 #include "catch.hpp"
+#include "test/tsk/img/test_img.h"  // contains prepend_test_data_dir() and fix_slashes_for_windows()
 
 TEST_CASE("qcow_open not a file") {
-  const TSK_TCHAR* const images[] = { _TSK_T("not_a_file") };
+  std::basic_string<TSK_TCHAR> path = prepend_test_data_dir(_TSK_T("not_a_file"));
+  const TSK_TCHAR* const images[] = { path.c_str() };
+
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     qcow_open(1, images, 1234),
     tsk_img_close
@@ -17,7 +22,10 @@ TEST_CASE("qcow_open not a file") {
 }
 
 TEST_CASE("qcow_open 2 images") {
-  const TSK_TCHAR* const images[] = { _TSK_T("a"), _TSK_T("b") };
+  std::basic_string<TSK_TCHAR> path1 = prepend_test_data_dir(_TSK_T("a"));
+  std::basic_string<TSK_TCHAR> path2 = prepend_test_data_dir(_TSK_T("b"));
+  const TSK_TCHAR* const images[] = { path1.c_str(), path2.c_str() };
+
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     qcow_open(2, images, 1234),
     tsk_img_close
@@ -26,7 +34,9 @@ TEST_CASE("qcow_open 2 images") {
 }
 
 TEST_CASE("qcow_open not a QCOW") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.dd") };
+  std::basic_string<TSK_TCHAR> path = prepend_test_data_dir(_TSK_T("image/image.dd"));
+  const TSK_TCHAR* const images[] = { path.c_str() };
+
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     qcow_open(1, images, 1234),
     tsk_img_close
@@ -35,7 +45,9 @@ TEST_CASE("qcow_open not a QCOW") {
 }
 
 TEST_CASE("qcow_open ok") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test/data/image.qcow") };
+  std::basic_string<TSK_TCHAR> path = prepend_test_data_dir(_TSK_T("image/image.qcow"));
+  const TSK_TCHAR* const images[] = { path.c_str() };
+
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     qcow_open(1, images, 1234),
     tsk_img_close
@@ -45,7 +57,10 @@ TEST_CASE("qcow_open ok") {
 
 #ifdef TSK_WIN32
 TEST_CASE("qcow_open backslash path separator ok") {
-  const TSK_TCHAR* const images[] = { _TSK_T("test\\data\\image.qcow") };
+  std::basic_string<TSK_TCHAR> path = prepend_test_data_dir(_TSK_T("image/image.qcow"));
+  fix_slashes_for_windows(path);
+  const TSK_TCHAR* const images[] = { path.c_str() };
+
   std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
     qcow_open(1, images, 1234),
     tsk_img_close
@@ -54,4 +69,4 @@ TEST_CASE("qcow_open backslash path separator ok") {
 }
 #endif
 
-#endif
+#endif // HAVE_LIBQCOW

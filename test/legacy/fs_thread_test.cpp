@@ -35,6 +35,12 @@ proc_dir(TSK_FS_FILE* fs_file, const char* path, void* stuff)
 {
     FILE* log = (FILE*)stuff;
 
+    if (fs_file->meta == nullptr) {
+        fprintf(log, "%s%s: meta is null\n", path, fs_file->name->name);
+        return TSK_WALK_CONT;
+    }
+
+
     fprintf(log, "%s%s: flags: %d, addr: %d", path, fs_file->name->name,
             fs_file->meta->flags, (int)fs_file->meta->addr);
 
