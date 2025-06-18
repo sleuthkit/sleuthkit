@@ -925,7 +925,7 @@ space padding in the name and latin-only extensions.
 12/5/07: Bug Fix: fs_read_file_int had a bug that ignored the type passed
 for NTFS files.  Reported by Dave Collett.
 
-12/12/07: Update: Changed teh FAT dentry sanity checks to allow spaces
+12/12/07: Update: Changed the FAT dentry sanity checks to allow spaces
 in volume labels and do more checking on the attribute flag.
 
 

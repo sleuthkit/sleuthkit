@@ -1,5 +1,5 @@
 #!/bin/bash -e
 
-ID=test/img_dump/img_differ.sh
+ID=${srcdir}/test/img_dump/img_differ.sh
 
-$ID ../data/image.E01 dump/image.E01.json
+$ID '$DATA_DIR/image/image.E01' '$DATA_DIR/image/image.E01.json'
