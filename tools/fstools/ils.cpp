@@ -34,10 +34,8 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-emOpvV] [-aAlLzZ] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-s seconds] image [images] [inum[-end]]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: ils [-emOpvV] [-aAlLzZ] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-s seconds] image [images] [inum[-end]]\n");
     tsk_fprintf(stderr, "\t-e: Display all inodes\n");
     tsk_fprintf(stderr, "\t-m: Display output in the mactime format\n");
     tsk_fprintf(stderr,

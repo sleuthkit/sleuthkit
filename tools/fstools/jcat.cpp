@@ -24,10 +24,8 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [images] [inode] blk\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: jcat [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [images] [inode] blk\n");
     tsk_fprintf(stderr, "\tblk: The journal block to view\n");
     tsk_fprintf(stderr,
         "\tinode: The file system inode where the journal is located\n");

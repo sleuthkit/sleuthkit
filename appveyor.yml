@@ -1,5 +1,9 @@
 version: 4.6.0.{build}
 
+# Run on all pull requests to any branch
+# Skip branch builds when there are PRs to prevent duplicates
+skip_branch_with_pr: true
+
 environment:
   matrix:
   - job_name: Windows Build
@@ -82,12 +86,16 @@ for:
       - ./bootstrap
       - ./configure -q
       - V=0 make -j
+
+    get_test_data:
+      - pushd ..
+      - pwd
       - curl https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip -o sleuthkit_test_data.zip
       - unzip sleuthkit_test_data.zip
       - cd sleuthkit_test_data
       - make unpack
       - find . -ls | grep -v '[.]git'
-      - cd ..
+      - popd
 
     test_script:
-      - SLEUTHKIT_TEST_DATA=$(pwd)/sleuthkit_test_data V=0 make -j check VERBOSE=1
+      - SLEUTHKIT_TEST_DATA_DIR=$(pwd)/sleuthkit_test_data V=0 make -j check VERBOSE=1

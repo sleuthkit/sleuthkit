@@ -258,8 +258,8 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 			// Protect against trying to process very large directories
 			if (a_fs_dir->names_used >= MAX_DIR_SIZE_TO_PROCESS) {
 				tsk_error_reset();
-				tsk_error_set_errno(TSK_ERR_FS_GENFS);
-				tsk_error_set_errstr("tsk_fs_dir_add: Directory too large to process (addr: %" PRIuINUM ")", a_fs_dir->addr);
+				tsk_error_set_errno(TSK_ERR_FS_LARGE_DIR_ERROR);
+				tsk_error_set_errstr("tsk_fs_dir_add: Directory too large to process (addr: %" PRIuINUM", fs offset: %" PRIdOFF ")", a_fs_dir->addr, a_fs_dir->fs_info->offset);
 				return 1;
 			}
 

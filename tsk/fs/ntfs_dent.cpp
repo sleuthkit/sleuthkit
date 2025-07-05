@@ -773,7 +773,7 @@ ntfs_dir_open_meta(
     char *idxalloc;
     ntfs_idxentry *idxe;
     ntfs_idxroot *idxroot;
-    ntfs_idxelist *idxelist;
+    ntfs_idxelist *idxelist = NULL;
     ntfs_idxrec *idxrec_p, *idxrec;
     size_t idxalloc_len;
     TSK_FS_LOAD_FILE load_file;
@@ -849,38 +849,34 @@ ntfs_dir_open_meta(
     fs_attr_root =
         tsk_fs_attrlist_get(fs_dir->fs_file->meta->attr,
         TSK_FS_ATTR_TYPE_NTFS_IDXROOT);
-    if (!fs_attr_root) {
-        tsk_error_errstr2_concat(" - dent_walk: $IDX_ROOT not found");
-        return TSK_COR;
-    }
-
-    if (fs_attr_root->flags & TSK_FS_ATTR_NONRES) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr
+    // NOTE: We had one error reported on a system that did not have IDX_ROOT, but did have IDX_ALLOC
+    if (fs_attr_root) {
+        if (fs_attr_root->flags & TSK_FS_ATTR_NONRES) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
             ("dent_walk: $IDX_ROOT is not resident - it should be");
-        return TSK_COR;
-    }
-    idxroot = (ntfs_idxroot *) fs_attr_root->rd.buf;
+            return TSK_COR;
+        }
+        idxroot = (ntfs_idxroot *)fs_attr_root->rd.buf;
 
-    /* Verify that the attribute type is $FILE_NAME */
-    if (tsk_getu32(a_fs->endian, idxroot->type) == 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr
+        /* Verify that the attribute type is $FILE_NAME */
+        if (tsk_getu32(a_fs->endian, idxroot->type) == 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
             ("dent_walk: Attribute type in index root is 0");
-        return TSK_COR;
+            return TSK_COR;
+        }
+        else if (tsk_getu32(a_fs->endian, idxroot->type) != NTFS_ATYPE_FNAME) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr("ERROR: Directory index is sorted by type: %"
+                PRIu32 ".\nOnly $FNAME is currently supported",
+                tsk_getu32(a_fs->endian, idxroot->type));
+            return TSK_COR;
+        }
     }
-    else if (tsk_getu32(a_fs->endian, idxroot->type) != NTFS_ATYPE_FNAME) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr("ERROR: Directory index is sorted by type: %"
-            PRIu32 ".\nOnly $FNAME is currently supported",
-            tsk_getu32(a_fs->endian, idxroot->type));
-        return TSK_COR;
-    }
-
-
 
     /*
      * NTFS does not have "." and ".." entries in the index trees
@@ -950,49 +946,52 @@ ntfs_dir_open_meta(
 
 
     /* Now we return to processing the Index Root Attribute */
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "ntfs_dir_open_meta: Processing $IDX_ROOT of inum %" PRIuINUM
-            "\n", a_addr);
+    if (fs_attr_root) {
 
-    /* Get the header of the index entry list */
-    idxelist = &idxroot->list;
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_dir_open_meta: Processing $IDX_ROOT of inum %" PRIuINUM
+                "\n", a_addr);
 
-    /* Verify the offset pointers */
-    if ((tsk_getu32(a_fs->endian, idxelist->seqend_off) <
+        /* Get the header of the index entry list */
+        idxelist = &idxroot->list;
+
+        /* Verify the offset pointers */
+        if ((tsk_getu32(a_fs->endian, idxelist->seqend_off) <
             tsk_getu32(a_fs->endian, idxelist->begin_off)) ||
-        (tsk_getu32(a_fs->endian, idxelist->bufend_off) <
-            tsk_getu32(a_fs->endian, idxelist->seqend_off)) ||
-        (((uintptr_t) idxelist + tsk_getu32(a_fs->endian,
+            (tsk_getu32(a_fs->endian, idxelist->bufend_off) <
+                tsk_getu32(a_fs->endian, idxelist->seqend_off)) ||
+                (((uintptr_t)idxelist + tsk_getu32(a_fs->endian,
                     idxelist->bufend_off)) >
-            ((uintptr_t) fs_attr_root->rd.buf +
-                fs_attr_root->rd.buf_size))) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr
+                    ((uintptr_t)fs_attr_root->rd.buf +
+                        fs_attr_root->rd.buf_size))) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
             ("Error: Index list offsets are invalid on entry: %" PRIuINUM,
-            fs_dir->fs_file->meta->addr);
-        return TSK_COR;
-    }
+                fs_dir->fs_file->meta->addr);
+            return TSK_COR;
+        }
 
-    /* Get the offset to the start of the index entry list */
-    idxe = (ntfs_idxentry *) ((uintptr_t) idxelist +
-        tsk_getu32(a_fs->endian, idxelist->begin_off));
+        /* Get the offset to the start of the index entry list */
+        idxe = (ntfs_idxentry *)((uintptr_t)idxelist +
+            tsk_getu32(a_fs->endian, idxelist->begin_off));
 
-    retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-        (fs_dir->fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
-        idxe,
-        tsk_getu32(a_fs->endian, idxelist->bufend_off) -
-        tsk_getu32(a_fs->endian, idxelist->begin_off),
-        tsk_getu32(a_fs->endian, idxelist->seqend_off) -
-        tsk_getu32(a_fs->endian, idxelist->begin_off));
+        retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
+            (fs_dir->fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
+            idxe,
+            tsk_getu32(a_fs->endian, idxelist->bufend_off) -
+            tsk_getu32(a_fs->endian, idxelist->begin_off),
+            tsk_getu32(a_fs->endian, idxelist->seqend_off) -
+            tsk_getu32(a_fs->endian, idxelist->begin_off));
 
-    // stop if we get an error, continue if we got corruption
-    if (retval_tmp == TSK_ERR) {
-        return TSK_ERR;
-    }
-    else if (retval_tmp == TSK_COR) {
-        retval_final = TSK_COR;
+        // stop if we get an error, continue if we got corruption
+        if (retval_tmp == TSK_ERR) {
+            return TSK_ERR;
+        }
+        else if (retval_tmp == TSK_COR) {
+            retval_final = TSK_COR;
+        }
     }
 
     /*
@@ -1008,8 +1007,8 @@ ntfs_dir_open_meta(
      * all of the entries
      */
     if (!fs_attr_idx) {
-        if (tsk_getu32(a_fs->endian,
-                idxelist->flags) & NTFS_IDXELIST_CHILD) {
+        if ((idxelist) && (tsk_getu32(a_fs->endian,
+                idxelist->flags) & NTFS_IDXELIST_CHILD)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
             tsk_error_set_errstr
@@ -1031,9 +1030,9 @@ ntfs_dir_open_meta(
         // Taking 128 MiB as an arbitrary upper bound
         if (fs_attr_idx->nrd.allocsize > (128 * 1024 * 1024)) {
             tsk_error_reset();
-           tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-           tsk_error_set_errstr
-               ("fs_attr_idx->nrd.allocsize value out of bounds");
+            tsk_error_set_errno(TSK_ERR_FS_LARGE_DIR_ERROR);
+            tsk_error_set_errstr("ntfs_dir_open_meta: fs_attr_idx->nrd.allocsize value out of bounds (addr: %" PRIuINUM", fs offset: %" PRIdOFF ")", a_addr, a_fs->offset);
+            return TSK_COR;
            return TSK_COR;
         }
 

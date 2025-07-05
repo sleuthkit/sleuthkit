@@ -53,7 +53,7 @@ static void mem_close(TSK_IMG_INFO *img_info) {
 
 static void mem_imgstat(TSK_IMG_INFO *, FILE *) {}
 
-TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
+IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   IMG_MEM_INFO *inmemory_img =
       reinterpret_cast<IMG_MEM_INFO *>(malloc(sizeof(IMG_MEM_INFO)));
   TSK_IMG_INFO *img;
@@ -64,7 +64,7 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   inmemory_img->data = data;
   inmemory_img->size = size;
 
-  auto base = inmemory_img->img_info.img_info;
+  auto base = &(inmemory_img->img_info.img_info);
   base->itype = TSK_IMG_TYPE_RAW;
   base->size = size;
   base->sector_size = 512;
@@ -76,7 +76,7 @@ TSK_IMG_INFO *mem_open(const uint8_t *data, size_t size) {
   inmemory_img->img_info.cache = new LegacyCache();
   inmemory_img->img_info.cache_read = tsk_img_read_legacy;
 
-  return base;
+  return (IMG_INFO*)inmemory_img;
 }
 
 #endif // # MEM_IMG_H

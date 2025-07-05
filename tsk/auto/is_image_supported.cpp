@@ -215,8 +215,8 @@ std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
             if (!firstLine.empty()) { // The error really shouldn't be empty, but if this somehow happens default to the normal error handling code
 
                 // Remove any trailing newline
-                firstLine.erase(std::remove(firstLine.begin(), firstLine.end(), '\n'), firstLine.cend());
-                firstLine.erase(std::remove(firstLine.begin(), firstLine.end(), '\r'), firstLine.cend());
+                firstLine.erase(std::remove(firstLine.begin(), firstLine.end(), '\n'), firstLine.end());
+                firstLine.erase(std::remove(firstLine.begin(), firstLine.end(), '\r'), firstLine.end());
 
                 // To make the output look nicer make sure any open parens get closed (the close paren was likely on the last line of the original error message)
                 // For example we want to add a close paren to this line:

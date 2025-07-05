@@ -8,10 +8,12 @@ on:
     branches:
       - main
       - develop
+      - develop-4.14
   pull_request:
     branches:
       - main
       - develop
+      - develop-4.14
 
 jobs:
   build:
@@ -263,10 +265,10 @@ jobs:
         run: |
           if [ -x Makefile ]; then make distclean ; fi
 
-      - name: Run configure with address-sanitizer
+      - name: Run configure with address-sanitizer and undefined-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
-          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer --enable-undefined-sanitizer CFLAGS=-g CXXFLAGS=-g
 
       - name: Check with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}

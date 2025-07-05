@@ -122,9 +122,8 @@ main(int argc, char **argv1)
     }
 
     // Run findFilesInImage to process the image and detect data / encryption
+    // NOTE: findFilesInImg() result is ignored.
     imageProcessor.findFilesInImg();
-
     imageProcessor.printResults();
-
     exit(0);
 }
