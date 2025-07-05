@@ -1754,7 +1754,7 @@ TSK_WALK_RET_ENUM TskAutoDbJava::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_blo
 * @param dbFsInfo fs to process
 * @returns TSK_OK on success, TSK_ERR on error
 */
-TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo, const TSK_DB_FS_INFO & dbFsInfo) {
+TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc([[maybe_unused]] const TSK_IMG_INFO*  curImgInfo, const TSK_DB_FS_INFO & dbFsInfo) {
 
     // Unalloc space is handled separately for APFS
     if (dbFsInfo.fType == TSK_FS_TYPE_APFS) {
@@ -1762,7 +1762,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_IMG_INFO*  curImgInfo,
     }
 
     //open the fs we have from database
-    TSK_FS_INFO * fsInfo = tsk_fs_open_img_decrypt((TSK_IMG_INFO*)curImgInfo, dbFsInfo.imgOffset, dbFsInfo.fType, getFileSystemPassword().data());
+    TSK_FS_INFO* fsInfo = tsk_fs_open_img_decrypt(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType, getFileSystemPassword().data());
     if (fsInfo == NULL) {
         tsk_error_set_errstr2("TskAutoDbJava::addFsInfoUnalloc: error opening fs at offset %" PRIdOFF, dbFsInfo.imgOffset);
         tsk_error_set_errno(TSK_ERR_AUTO);

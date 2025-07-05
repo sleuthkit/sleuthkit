@@ -34,10 +34,8 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-hrRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inum[-typ[-id]]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: icat [-hrRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inum[-typ[-id]]\n");
     tsk_fprintf(stderr, "\t-h: Do not display holes in sparse files\n");
     tsk_fprintf(stderr, "\t-r: Recover deleted file\n");
     tsk_fprintf(stderr,

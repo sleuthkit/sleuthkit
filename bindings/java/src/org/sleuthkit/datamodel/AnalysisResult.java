@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2020-2021 Basis Technology Corp.
+ * Copyright 2020-2025 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,6 +61,42 @@ public class AnalysisResult extends BlackboardArtifact {
 		this.conclusion = (conclusion != null) ? conclusion : "";
 		this.configuration = (configuration != null) ? configuration : "";
 		this.justification = (justification != null) ? justification : "";
+	}
+	
+	/**
+	 * Constructs an analysis result.
+	 *
+	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
+	 *                         the artifact data.
+	 * @param artifactID       The unique id for this artifact.
+	 * @param sourceObjId      The unique id of the content with which this
+	 *                         artifact is associated.
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects.
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact
+	 *                         was found. May be null.
+	 * @param artifactTypeID   The type id of this artifact.
+	 * @param artifactTypeName The type name of this artifact.
+	 * @param displayName      The display name of this artifact.
+	 * @param reviewStatus     The review status of this artifact.
+	 * @param score            The score assigned by the analysis.
+	 * @param conclusion       Conclusion arrived at by the analysis. May be
+	 *                         null.
+	 * @param configuration    Configuration used for analysis. May be null.
+	 * @param justification	   Justification for the analysis. May be null.
+	 * @param ignoreResult	   Boolean flag whether the score of this analysis
+	 *                         result should be ignored.
+	 */
+	AnalysisResult(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId,
+			long artifactObjId, Long dataSourceObjId, int artifactTypeID, String artifactTypeName,
+			String displayName, ReviewStatus reviewStatus, Score score, String conclusion, 
+			String configuration, String justification, boolean ignoreResult) {
+		
+		super(sleuthkitCase, artifactID, sourceObjId, artifactObjId, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, reviewStatus);
+		this.score = score;
+		this.conclusion = (conclusion != null) ? conclusion : "";
+		this.configuration = (configuration != null) ? configuration : "";
+		this.justification = (justification != null) ? justification : "";
+		this.ignoreResult = ignoreResult;
 	}
 
 	/**

@@ -1,11 +1,11 @@
-Name:		sleuthkit	
-Version:	4.13.0
+Name:		sleuthkit
+Version:	4.15.0-develop
 Release:	1%{?dist}
-Summary:	The Sleuth Kit (TSK) is a library and collection of command line tools that allow you to investigate volume and file system data.	
+Summary:	The Sleuth Kit (TSK) is a library and collection of command line tools that allow you to investigate volume and file system data.
 
-Group:		Utilities	
+Group:		Utilities
 License:	IBM Public License / Common Public License / GPL 2
-URL:		http://www.sleuthkit.org	
+URL:		http://www.sleuthkit.org
 Packager:	Morgan Weetman <morganweetman[at]users[dot]sourceforge[dot]net>
 Source0:	%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -67,4 +67,3 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Tue Jun 03 2008 Morgan Weetman <morganweetman[at]users[dot]sourceforge[dot]net>
 - (3.0.0-1)      Initial packaging
-

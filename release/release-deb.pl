@@ -30,6 +30,7 @@ my $CHANGESFILE = "${TSKDIR}/../sleuthkit-java_${VER}-1_amd64.changes";
 my $DSCFILE = "${TSKDIR}/../sleuthkit-java_${VER}-1.dsc";
 my $DDEBFILE = "${TSKDIR}/../sleuthkit-java-dbgsym_${VER}-1_amd64.ddeb";
 
+die ("ERROR: Remove existing TSK install in /usr/lib/x86_64-linux-gnu/libtsk.a first") if (-e '/usr/lib/x86_64-linux-gnu/libtsk.a');
 die ("ERROR: ${TAR1FILE} file already exists") if (-e ${TAR1FILE});
 die ("ERROR: ${TAR2FILE} file already exists") if (-e ${TAR2FILE});
 die ("ERROR: ${DEBFILE} file already exists") if (-e ${DEBFILE});

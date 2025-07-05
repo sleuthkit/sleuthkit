@@ -31,10 +31,8 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-N num] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-z zone] [-s seconds] [-rvV] image inum\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: istat [-N num] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-z zone] [-s seconds] [-rvV] image inum\n");
     tsk_fprintf(stderr,
         "\t-N num: force the display of NUM address of block pointers\n");
     tsk_fprintf(stderr, "\t-r: display run list instead of list of block addresses\n");

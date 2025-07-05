@@ -32,10 +32,8 @@ static uint8_t localflags;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-alvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: ifind [-alvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n");
     tsk_fprintf(stderr, "\t-a: find all inodes\n");
     tsk_fprintf(stderr,
         "\t-d unit_addr: Find the meta data given the data unit\n");

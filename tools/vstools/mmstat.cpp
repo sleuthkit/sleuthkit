@@ -19,10 +19,8 @@ static TSK_TCHAR *progname;
 void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] [-t vstype] image [images]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: mmstat [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] [-t vstype] image [images]\n");
     tsk_fprintf(stderr,
         "\t-t vstype: The volume system type (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
