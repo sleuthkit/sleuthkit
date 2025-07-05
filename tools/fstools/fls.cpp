@@ -368,7 +368,7 @@ open_handles(const Options& opts, const TSK_TCHAR* const* argv, size_t argc) {
 
         img_parent = std::move(img);
 
-        TSK_OFF_T offset = imgaddr * img->sector_size;
+        TSK_OFF_T offset = imgaddr * img_parent->sector_size;
 #if HAVE_LIBVSLVM
         if (pool->ctype == TSK_POOL_TYPE_LVM){
             offset = 0;

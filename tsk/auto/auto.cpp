@@ -552,7 +552,8 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
                 return TSK_ERR;
             }
  
-            std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{                      tsk_fs_open_img(pool_vol_img.get(), 0, TSK_FS_TYPE_DETECT),
+            std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs_info{
+                tsk_fs_open_img(pool_vol_img.get(), 0, TSK_FS_TYPE_DETECT),
                 tsk_fs_close
             };
 

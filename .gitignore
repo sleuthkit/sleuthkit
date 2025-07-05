@@ -192,6 +192,8 @@ tools/*/*/*.exe
 # EMACS backup files
 *~
 
+.dirstamp
+
 # Mac Junk
 .DS_Store
 

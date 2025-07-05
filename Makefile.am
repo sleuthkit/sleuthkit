@@ -51,7 +51,9 @@ EXTRA_DIST = \
 	licenses/cpl1.0.txt \
 	licenses/bsd.txt \
 	licenses/mit.txt \
-	packages/sleuthkit.spec
+	packages/sleuthkit.spec \
+	test/tools/fstools/ils_output/1 \
+	test/tools/fstools/ils_output/2
 
 
 # Add the Java files to EXTRA_DIST.
@@ -568,7 +570,7 @@ tools_fstools_icat_SOURCES = tools/fstools/icat.cpp
 tools_fstools_ifind_LDADD = $(TSK_LIBS)
 tools_fstools_ifind_SOURCES = tools/fstools/ifind.cpp
 
-tools_fstools_ils_LDADD = $(TSK_LIBS)
+tools_fstools_ils_LDADD = $(TSK_LIBS) tools/libtsktools.la
 tools_fstools_ils_SOURCES = tools/fstools/ils.cpp
 
 tools_fstools_istat_LDADD = $(TSK_LIBS)
@@ -703,6 +705,7 @@ check_TESTS = \
 	test/test_libraries.sh \
 	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
+	test/tools/fstools/test_ils.sh \
 	test/tools/vstools/test_mmls.sh
 
 if BUILD_STATIC
@@ -762,8 +765,14 @@ test_catch_runner_SOURCES = \
 	test/tsk/img/test_raw.cpp \
 	test/tsk/img/test_vhd.cpp \
 	test/tsk/img/test_vmdk.cpp \
+	test/tsk/fs/test_fatfs.cpp \
+	test/tsk/fs/test_unix_misc.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
+	test/tsk/fs/test_fs_name.cpp \
+	test/tsk/fs/test_fs_types.cpp \
+	test/tsk/fs/test_ntfs.cpp \
+	test/tsk/fs/test_ffs.cpp \
 	test/catch_runner.cpp \
 	vendors/catch.hpp
 
@@ -811,7 +820,6 @@ ant_args=-Doffline=true
 if CUSTOM_DEFAULT_JAR_LOCATION
 ant_args+= -Ddefault-jar-location="@DEFAULT_JAR_LOCATION@"
 endif
-
 endif
 
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
@@ -876,8 +884,11 @@ endif
 
 clean_java = clean-tsk_jar clean-tsk_caseuco_jar
 
-.PHONY: clean-tsk_jar clean-tsk_caseuco_jar
-endif # End of X_JNI check
+check-java: $(tsk_jar)
+	cd bindings/java; $(ANT) test
+
+.PHONY: clean-tsk_jar clean-tsk_caseuco_jar check-java
+endif
 
 #
 # Docs

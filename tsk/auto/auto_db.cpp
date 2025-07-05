@@ -1454,7 +1454,6 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                     };
 
                     if (!fs_info) {
-                        tsk_pool_close(pool);
                         tsk_error_set_errstr2(
                             "findFilesInPool: Unable to open file system in LVM logical volume: %" PRIdOFF "",
                             curVsPartInfo.start);
@@ -1463,7 +1462,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
                         allFsProcessRet = TSK_ERR;
                     }
                     else {
-                        TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img, curFsDbInfo);
+                        TSK_RETVAL_ENUM retval = addFsInfoUnalloc(pool_vol_img.get(), curFsDbInfo);
                         if (retval == TSK_ERR){
                             tsk_error_set_errstr2(
                                     "TskAutoDb::addUnallocFsSpaceToDb: Error getting unallocated space");

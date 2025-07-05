@@ -8,15 +8,17 @@ on:
     branches:
       - main
       - develop
+      - develop-4.14
   pull_request:
     branches:
       - main
       - develop
+      - develop-4.14
 
 jobs:
   build:
     timeout-minutes: 30
-    name: posix ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
+    name: posix ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -29,8 +31,6 @@ jobs:
             runner: "macos-15"
             configure_opts: "--with-libewf --enable-java"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
-            codecov: "yes"
-            prefix: "CODECOV"
             address_sanitizer: "yes"
             keep_artifacts: "no"
             enable_java: "yes"
@@ -42,11 +42,8 @@ jobs:
             runner: "ubuntu-24.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --enable-java"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
-            codecov: "no"
-            prefix:
             address_sanitizer: "yes"
             keep_artifacts: "yes"
-            suffix: "(with artifacts)"
             enable_java: "yes"
 
           - os: "linux"
@@ -56,8 +53,6 @@ jobs:
             runner: "ubuntu-24.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --enable-java CC=clang CXX=clang++"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "yes"
             keep_artifacts: "no"
             enable_java: "yes"
@@ -71,8 +66,6 @@ jobs:
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine64'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -85,8 +78,6 @@ jobs:
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine64'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -100,8 +91,6 @@ jobs:
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine32'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -115,8 +104,6 @@ jobs:
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine32'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -165,8 +152,6 @@ jobs:
           sudo apt install -y ant autoconf automake g++ libssl-dev afflib-tools libewf-dev libqcow-dev libvhdi-dev libvmdk-dev libmagic-dev libtool make pkg-config zlib1g-dev wget
           echo ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer >> $GITHUB_ENV
           echo ASAN_OPTIONS="symbolize=1:abort_on_error=1" >> $GITHUB_ENV
-
-
 
       - name: Install Mingw packages and setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
@@ -263,10 +248,10 @@ jobs:
         run: |
           if [ -x Makefile ]; then make distclean ; fi
 
-      - name: Run configure with address-sanitizer
+      - name: Run configure with address-sanitizer and undefined-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
-          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer --enable-undefined-sanitizer CFLAGS=-g CXXFLAGS=-g
 
       - name: Check with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}

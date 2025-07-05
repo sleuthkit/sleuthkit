@@ -23,21 +23,18 @@
 #include "mem_img.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    mem_open(data, size);
-    tsk_img_close
-  };
-
+  IMG_INFO *img = mem_open(data, size);
   if (!img) {
     return 0;
   }
 
   std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
-    tsk_pool_open_img_sing(img.get(), 0, TSK_POOL_TYPE_APFS),
+    tsk_pool_open_img_sing((TSK_IMG_INFO *)img, 0, TSK_POOL_TYPE_APFS),
     tsk_pool_close
   };
 
   if (!pool) {
+    tsk_img_close((TSK_IMG_INFO*)img);
     return 0;
   }
 
@@ -48,6 +45,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   };
 
   if (!pool_img) {
+     tsk_img_close((TSK_IMG_INFO*)img);
     return 0;
   }
 
@@ -59,6 +57,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   if (fs) {
     tsk_fs_fls(fs.get(), TSK_FS_FLS_FULL, fs->root_inum, TSK_FS_DIR_WALK_FLAG_RECURSE, nullptr, 0);
   }
+
+  tsk_img_close((TSK_IMG_INFO*)img);
 
   return 0;
 }

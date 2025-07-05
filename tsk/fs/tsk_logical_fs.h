@@ -27,7 +27,7 @@ extern "C" {
 #define LOGICAL_BLOCK_SIZE TSK_IMG_INFO_CACHE_LEN
 #define LOGICAL_MAX_PATH_UNICODE 32767
 #define LOGICAL_INUM_DIR_MAX 0xffffffff00000000
-#define LOGICAL_MAX_ATTR_RUN 0x7fffffff // see fs_attr.c
+#define LOGICAL_MAX_ATTR_RUN 0x7fffffff // see fs_attr.c  - prevents a loop a corrupt disk image
 
 /*
 * Structure of an logcial file system handle.

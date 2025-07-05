@@ -25,11 +25,8 @@ static const char *usnjrnl_path = "$Extend/$UsnJrnl";
 static void
 usage()
 {
-    TFPRINTF(stderr,
-             _TSK_T
-             ("usage: %" PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size]"
-              " [-o imgoffset] [-lmvV] image [inode]\n"),
-             progname);
+    tsk_fprintf(stderr,
+        "usage: usnjls [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-lmvV] image [inode]\n");
     tsk_fprintf(stderr,
                 "\t-i imgtype: The format of the image file "
                 "(use '-i list' for supported types)\n");
