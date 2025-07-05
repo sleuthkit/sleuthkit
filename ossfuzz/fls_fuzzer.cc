@@ -25,19 +25,13 @@
 #endif
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-  TSK_FS_INFO *fs;
-
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    mem_open(data, size),
-    tsk_img_close
-  };
-
+  IMG_INFO *img = mem_open(data, size);
   if (!img) {
     return 0;
   }
 
   std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
-    tsk_fs_open_img(img.get(), 0, FSTYPE),
+    tsk_fs_open_img(reinterpret_cast<TSK_IMG_INFO *>(img), 0, FSTYPE),
     tsk_fs_close
   };
 
@@ -45,6 +39,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     tsk_fs_fls(fs.get(), TSK_FS_FLS_FULL, fs->root_inum, TSK_FS_DIR_WALK_FLAG_RECURSE,
                nullptr, 0);
   }
+
+  tsk_img_close((TSK_IMG_INFO*)img);
 
   return 0;
 }

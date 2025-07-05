@@ -37,19 +37,16 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-n start_inum] [-vV] image [image] comparison_directory\n"),
-        progname);
-
+    tsk_fprintf(stderr,
+        "usage: tsk_comparedir [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-n start_inum] [-vV] image [image] comparison_directory\n");
+    tsk_fprintf(stderr,
+        "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
-        "\t-f fstype: The file system type (use '-f list' for supported types)\n");
-    tsk_fprintf(stderr,
-        "\t-o sector_offset: sector offset for file system to compare\n");
+        "\t-o sector_offset: The offset of the file system in the image (in sectors)\n");
     tsk_fprintf(stderr,
         "\t-P pooltype: Pool container type (use '-P list' for supported types)\n");
     tsk_fprintf(stderr,

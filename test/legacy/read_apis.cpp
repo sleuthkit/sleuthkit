@@ -42,7 +42,7 @@ fw_action1(
     size_t tmp_len;
     TSK_FS_INFO *fs = a_fs_file->fs_info;
 
-    // verify teh offset passed is what we expected
+    // verify the offset passed is what we expected
     if (a_off != s_off) {
         fprintf(stderr,
             "offset passed in callback (%" PRIdOFF

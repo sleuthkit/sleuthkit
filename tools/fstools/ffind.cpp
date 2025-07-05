@@ -28,10 +28,8 @@ static TSK_TCHAR *progname;
 void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-aduvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images] inode\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: ffind [-aduvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images] inode\n");
     tsk_fprintf(stderr, "\t-a: Find all occurrences\n");
     tsk_fprintf(stderr, "\t-d: Find deleted entries ONLY\n");
     tsk_fprintf(stderr, "\t-u: Find undeleted entries ONLY\n");

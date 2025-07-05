@@ -35,10 +35,8 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-aAelvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images] [start-stop]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: blkls [-aAelvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] image [images] [start-stop]\n");
     tsk_fprintf(stderr, "\t-e: every block (including file system metadata blocks)\n");
     tsk_fprintf(stderr,
         "\t-l: print details in time machine list format\n");

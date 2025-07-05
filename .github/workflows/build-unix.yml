@@ -8,15 +8,17 @@ on:
     branches:
       - main
       - develop
+      - develop-4.14
   pull_request:
     branches:
       - main
       - develop
+      - develop-4.14
 
 jobs:
   build:
     timeout-minutes: 30
-    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
+    name: posix ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -202,7 +204,7 @@ jobs:
         run: |
           cd ..
           pwd
-          wget https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
+          wget  -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
           unzip sleuthkit_test_data.zip
           cd sleuthkit_test_data
           make unpack
@@ -260,14 +262,13 @@ jobs:
           make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Clean up
-        if: ${{ matrix.os != 'mingw' }}
         run: |
-          make distclean
+          if [ -x Makefile ]; then make distclean ; fi
 
-      - name: Run configure with address-sanitizer
+      - name: Run configure with address-sanitizer and undefined-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
-          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer --enable-undefined-sanitizer CFLAGS=-g CXXFLAGS=-g
 
       - name: Check with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
@@ -275,33 +276,8 @@ jobs:
           make -j check VERBOSE=1
 
       - name: Clean up
-        if: ${{ matrix.os != 'mingw' }}
         run: |
-          make distclean
-
-      - name: Run configure for codecov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          ./configure ${{ matrix.configure_opts }} CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage'
-
-      - name: Run make for codecov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          make -j check V=0
-          make -j test/fiwalk/fiwalk_test V=0
-          make -j test/runner V=0
-
-      - name: run gcov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          gcov $(find . -name '*.gcda')
-
-      - name: Upload codecov report
-        if: ${{ matrix.codecov == 'yes' }}
-        uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+          if [ -x Makefile ]; then make distclean ; fi
 
       - name: Create any artifacts that we need to keep
         if: ${{ matrix.keep_artifacts == 'yes' }}
@@ -320,10 +296,10 @@ jobs:
             executables/*
           retention-days: 15
 
-#      - name: Run distcheck
-#        run: |
-#          ./configure
-#          make distcheck
+      - name: Run distcheck
+        run: |
+          ./configure
+          make distcheck
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher
