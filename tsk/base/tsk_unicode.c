@@ -152,7 +152,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
     const UTF16 *source = *sourceStart;
     UTF8 *target = *targetStart;
 
-    while (source < sourceEnd) {
+    while ( (const char *)(source)+1 < (const char *)sourceEnd) { /* we need two bytes */
         UTF32 ch;
         unsigned short bytesToWrite = 0;
         const UTF32 byteMask = 0xBF;
@@ -166,7 +166,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
         /* If we have a surrogate pair, convert to UTF32 first. */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
-            if (source < sourceEnd) {
+            if (source+1 < sourceEnd) { /* we need two bytes */
                 // Need at least 2 bytes
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) source);
                 ++source;
@@ -271,7 +271,7 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
     TSKConversionResult result = TSKconversionOK;
     const UTF16 *source = *sourceStart;
     UTF8 *target = *targetStart;
-    while (source < sourceEnd) {
+    while ((const char *)(source)+1 < (const char *)sourceEnd) { /* we need two bytes */
         UTF32 ch;
         unsigned short bytesToWrite = 0;
         const UTF32 byteMask = 0xBF;
@@ -282,7 +282,7 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
         /* If we have a surrogate pair, convert to UTF32 first. */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
-            if (source < sourceEnd) {
+	  if ((const char *)(source)+3 < (const char *)sourceEnd) { /* we need 4 bytes */
                 UTF32 ch2 = *source;
                 source++;
                 /* If it's a low surrogate, convert to UTF32. */
@@ -374,7 +374,7 @@ tsk_UTF16WtoUTF8_lclorder(const wchar_t ** sourceStart,
     TSKConversionResult result = TSKconversionOK;
     const wchar_t *source = *sourceStart;
     UTF8 *target = *targetStart;
-    while (source < sourceEnd) {
+    while ((const char *)(source)+1 < (const char *)sourceEnd) { /* we need two bytes */
         UTF32 ch;
         unsigned short bytesToWrite = 0;
         const UTF32 byteMask = 0xBF;
@@ -385,7 +385,7 @@ tsk_UTF16WtoUTF8_lclorder(const wchar_t ** sourceStart,
         /* If we have a surrogate pair, convert to UTF32 first. */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
-            if (source < sourceEnd) {
+	  if ((const char *)(source)+3 < (const char *)sourceEnd) { /* we need 3 bytes */
                 UTF32 ch2 = *source;
                 source++;
                 /* If it's a low surrogate, convert to UTF32. */
@@ -737,4 +737,3 @@ tsk_UTF8toUTF16(const UTF8 ** sourceStart,
     *targetStart = target;
     return result;
 }
-
