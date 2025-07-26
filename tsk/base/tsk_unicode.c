@@ -166,7 +166,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
         /* If we have a surrogate pair, convert to UTF32 first. */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
-	  if ( ((const char *)(source))+1 < (const char *)(sourceEnd)) { /* we need two bytes */
+	  if ( ((const char *)(source))+3 < (const char *)(sourceEnd)) { /* we need four bytes for a surrogate pair */
                 // Need at least 2 bytes
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) source);
                 ++source;
