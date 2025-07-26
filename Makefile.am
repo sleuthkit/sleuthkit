@@ -51,7 +51,10 @@ EXTRA_DIST = \
 	licenses/cpl1.0.txt \
 	licenses/bsd.txt \
 	licenses/mit.txt \
-	packages/sleuthkit.spec
+	packages/sleuthkit.spec \
+	test/tools/cli_tests.txt \
+	test/tools/fstools/ils_output/1 \
+	test/tools/fstools/ils_output/2
 
 
 # Add the Java files to EXTRA_DIST.
@@ -568,7 +571,7 @@ tools_fstools_icat_SOURCES = tools/fstools/icat.cpp
 tools_fstools_ifind_LDADD = $(TSK_LIBS)
 tools_fstools_ifind_SOURCES = tools/fstools/ifind.cpp
 
-tools_fstools_ils_LDADD = $(TSK_LIBS)
+tools_fstools_ils_LDADD = $(TSK_LIBS) tools/libtsktools.la
 tools_fstools_ils_SOURCES = tools/fstools/ils.cpp
 
 tools_fstools_istat_LDADD = $(TSK_LIBS)
@@ -649,10 +652,12 @@ test_data = \
 	test/data/a_file.1/dummy \
 	test/data/bogus.E01 \
 	test/data/bogus.E02 \
+	test/data/gpt_130_partitions.E01 \
 	test/data/image \
 	test/data/image_exfat1.E01 \
 	test/data/image_ext2.dd \
 	test/data/image_ext2.xml \
+	test/data/image-mbr.dd \
 	test/data/image/image.dd \
 	test/data/image/image.dd.json \
 	test/data/image/image.E01 \
@@ -685,7 +690,9 @@ check_script_files = \
 	test/tools/vstools/mmls_output \
 	test/tools/vstools/mmls_output/1 \
 	test/tools/vstools/mmls_output/2 \
-	test/tools/vstools/mmls_output/3
+	test/tools/vstools/mmls_output/10 \
+	test/tools/vstools/mmls_output/11 \
+	test/tools/vstools/mmls_output/12
 
 
 # check_SCRIPTS are included in the DIST but not run
@@ -703,6 +710,7 @@ check_TESTS = \
 	test/test_libraries.sh \
 	test/tools/autotools/test_loaddb.sh \
 	test/tools/fstools/test_fls.sh \
+	test/tools/fstools/test_ils.sh \
 	test/tools/vstools/test_mmls.sh
 
 if BUILD_STATIC
@@ -723,7 +731,8 @@ EXTRA_DIST +=  $(test_data) $(check_script_files) $(check_SCRIPTS) $(check_TESTS
 
 TESTS =	$(check_TESTS) \
 	test/catch_runner \
-	test/fiwalk/fiwalk_test
+	test/fiwalk/fiwalk_test \
+	test/tools/tsk_cli_runner
 
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER =
@@ -739,6 +748,7 @@ endif
 check_PROGRAMS = \
 	test/catch_runner \
 	test/fiwalk/fiwalk_test \
+	test/tools/tsk_cli_runner \
 	test/img_dump/img_dump \
 	test/legacy/fs_attrlist_apis \
 	test/legacy/fs_fname_apis \
@@ -749,8 +759,6 @@ test_catch_runner_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/vendors $(CATCH2_CPP
 test_catch_runner_LDADD = $(TSK_LIBS)
 test_catch_runner_SOURCES = \
 	test/tsk/img/test_img.h \
-	test/tools/tsk_tempfile.h \
-	test/tools/tsk_tempfile.cpp \
 	test/tsk/base/test_tsk_error.cpp \
 	test/tsk/img/test_aff4.cpp \
 	test/tsk/img/test_ewf.cpp \
@@ -766,6 +774,18 @@ test_catch_runner_SOURCES = \
 	test/tsk/fs/test_unix_misc.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
+	test/tsk/fs/test_fs_name.cpp \
+	test/tsk/fs/test_fs_types.cpp \
+	test/tsk/fs/test_ntfs.cpp \
+	test/tsk/fs/test_ffs.cpp \
+	test/tsk/fs/test_nofs_misc.cpp \
+	test/tsk/fs/test_dcalc_lib.cpp \
+	test/tsk/fs/test_dcat_lib.cpp \
+	test/tsk/fs/test_dls_lib.cpp \
+	test/tools/test_cli_runner.cpp \
+	test/tools/test_utils.cpp \
+	test/tools/tsk_tempfile.h \
+	test/tools/tsk_tempfile.cpp \
 	test/catch_runner.cpp \
 	vendors/catch.hpp
 
@@ -774,6 +794,15 @@ test_fiwalk_fiwalk_test_LDADD = $(TSK_LIBS)
 test_fiwalk_fiwalk_test_SOURCES = \
 	test/fiwalk/fiwalk_test.cpp \
 	$(tools_fiwalk_src_libfiwalk_la_SOURCES)
+
+test_tools_tsk_cli_runner_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/vendors $(CATCH2_CPPFLAGS)
+test_tools_tsk_cli_runner_LDADD = $(TSK_LIBS)
+test_tools_tsk_cli_runner_SOURCES = \
+  test/tools/tsk_cli_runner.cpp \
+  test/tools/test_utils.cpp \
+  test/tools/test_utils.h \
+  test/tools/tsk_tempfile.cpp \
+  test/tools/tsk_tempfile.h
 
 test_img_dump_img_dump_LDADD = $(TSK_LIBS)
 test_img_dump_img_dump_SOURCES = test/img_dump/img_dump.cpp
@@ -813,7 +842,6 @@ ant_args=-Doffline=true
 if CUSTOM_DEFAULT_JAR_LOCATION
 ant_args+= -Ddefault-jar-location="@DEFAULT_JAR_LOCATION@"
 endif
-
 endif
 
 tsk_jar = $(top_builddir)/bindings/java/dist/sleuthkit-$(PACKAGE_VERSION).jar
@@ -878,8 +906,11 @@ endif
 
 clean_java = clean-tsk_jar clean-tsk_caseuco_jar
 
-.PHONY: clean-tsk_jar clean-tsk_caseuco_jar
-endif # End of X_JNI check
+check-java: $(tsk_jar)
+	cd bindings/java; $(ANT) test
+
+.PHONY: clean-tsk_jar clean-tsk_caseuco_jar check-java
+endif
 
 #
 # Docs

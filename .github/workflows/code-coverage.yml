@@ -51,6 +51,9 @@ jobs:
       run: |
         ./configure CFLAGS="--coverage -fprofile-update=atomic" CXXFLAGS="--coverage -fprofile-update=atomic" LDFLAGS="--coverage"
 
+    - name: Show config file
+      run: cat tsk/tsk_config.h
+
     - name: Build project
       run: make -j$(nproc)
 

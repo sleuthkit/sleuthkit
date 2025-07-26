@@ -311,7 +311,7 @@ proc_vs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 
 
 int
-main(int argc, char **argv1)
+main(int argc, [[maybe_unused]] char **argv1)
 {
     TSK_IMG_INFO *img_info;
     TSK_TCHAR **argv;

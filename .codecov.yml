@@ -11,8 +11,10 @@ codecov:
 
 ignore:
   - "m4"
-  - "test"
   - "vendors"
+
+# It turns out that we need to check to see if our tests are being called!
+#  - "test"
 
 # Code for updating pull request comment on GitHub
 # See https://docs.codecov.com/docs/pull-request-comments
