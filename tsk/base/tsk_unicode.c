@@ -152,7 +152,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
     const UTF16 *source = *sourceStart;
     UTF8 *target = *targetStart;
 
-    while ( (const char *)(source)+1 < (const char *)sourceEnd) { /* we need two bytes */
+    while ((const char *) (source) + 1 < (const char *) (sourceEnd)) { /* we need two bytes */
         UTF32 ch;
         unsigned short bytesToWrite = 0;
         const UTF32 byteMask = 0xBF;
