@@ -652,10 +652,12 @@ test_data = \
 	test/data/a_file.1/dummy \
 	test/data/bogus.E01 \
 	test/data/bogus.E02 \
+	test/data/gpt_130_partitions.E01 \
 	test/data/image \
 	test/data/image_exfat1.E01 \
 	test/data/image_ext2.dd \
 	test/data/image_ext2.xml \
+	test/data/image-mbr.dd \
 	test/data/image/image.dd \
 	test/data/image/image.dd.json \
 	test/data/image/image.E01 \
@@ -688,7 +690,9 @@ check_script_files = \
 	test/tools/vstools/mmls_output \
 	test/tools/vstools/mmls_output/1 \
 	test/tools/vstools/mmls_output/2 \
-	test/tools/vstools/mmls_output/3
+	test/tools/vstools/mmls_output/10 \
+	test/tools/vstools/mmls_output/11 \
+	test/tools/vstools/mmls_output/12
 
 
 # check_SCRIPTS are included in the DIST but not run
@@ -778,7 +782,7 @@ test_catch_runner_SOURCES = \
 	test/tsk/fs/test_dcalc_lib.cpp \
 	test/tsk/fs/test_dcat_lib.cpp \
 	test/tsk/fs/test_dls_lib.cpp \
-  	test/tools/test_cli_runner.cpp \
+	test/tools/test_cli_runner.cpp \
 	test/tools/test_utils.cpp \
 	test/tools/tsk_tempfile.h \
 	test/tools/tsk_tempfile.cpp \

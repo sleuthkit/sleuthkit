@@ -51288,7 +51288,8 @@ static int winFetch(sqlite3_file *fd, i64 iOff, int nAmt, void **pp){
 ** to inform the VFS layer that, according to POSIX, any existing mapping
 ** may now be invalid and should be unmapped.
 */
-static int winUnfetch(sqlite3_file *fd, i64 iOff, void *p){
+static int winUnfetch(sqlite3_file *fd,  i64 iOff, void *p){
+  (void)iOff;  // TSK - Silence unused parameter warning
 #if SQLITE_MAX_MMAP_SIZE>0
   winFile *pFd = (winFile*)fd;   /* The underlying database file */
 

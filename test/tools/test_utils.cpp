@@ -130,6 +130,16 @@ int run_test(const std::string& cmd,
     int expected_exit, 
     TestResult& result) 
 {
+    if (cmd.find("$SLEUTHKIT_TEST_DATA_DIR") != std::string::npos) {
+        const char* test_data_dir = std::getenv("SLEUTHKIT_TEST_DATA_DIR");
+        if (!test_data_dir || !*test_data_dir) {
+            std::cout << "[skip] Test \"" << result.id 
+                      << "\" references $SLEUTHKIT_TEST_DATA_DIR, but it is not set.\n";
+            result.skipped = true;
+            return 0;
+        }
+    }
+    
     std::string resolved_cmd = adjust_tool_path(cmd);
 
     // Use named tempfile for command output
@@ -228,18 +238,23 @@ void print_summary(const std::vector<TestResult>& results) {
         << "\n";
 
     for (const auto& r : results) {
-    std::cout << std::setw(12) << r.id
-            << std::setw(10) << r.actual_exit
-            << std::setw(10) << (r.stdout_match && r.stderr_match ? "yes" : "NO")
-            << "\n";
+        std::cout << std::setw(12) << r.id
+          << std::setw(10) << r.actual_exit
+          << std::setw(10) << (r.skipped ? "skipped" :
+                              (r.stdout_match && r.stderr_match ? "yes" : "NO"))
+          << "\n";
 
-    if (!r.stdout_match)
-    std::cout << "  stdout mismatch for test: " << r.id << "\n";
-    if (!r.stderr_match)
-    std::cout << "  stderr mismatch or unexpected stderr in: " << r.id << "\n";
-    }
-    if (results.empty()) {
-        std::cout << "[!] No tests were run or no results were recorded.\n";
+        if (!r.skipped) {
+            if (!r.stdout_match) {
+                std::cout << "  stdout mismatch for test: " << r.id << "\n";
+            }
+            if (!r.stderr_match) {
+                std::cout << "  stderr mismatch or unexpected stderr in: " << r.id << "\n";
+            }
+        }
+        if (results.empty()) {
+            std::cout << "[!] No tests were run or no results were recorded.\n";
+        }
     }
 }
 
@@ -291,7 +306,9 @@ int run_all_tests() {
             
             if (!result.error) {
                 run_test(cmd, expected_out, expected_err, expected_exit, result);
-                if (result.error) {
+                if (result.skipped) {
+                    tests_skipped++;
+                } else if (result.error) {
                     tests_failed++;
                 }
             } else {
@@ -308,6 +325,13 @@ int run_all_tests() {
     std::cout << "\nTests run: " << tests_run
         << ", Skipped: " << tests_skipped
         << ", Failed: " << tests_failed << "\n";
-
-    return (tests_failed == 0) ? 0 : 1;
+    if (tests_failed > 0) {
+        return 1;
+    }
+    else if (tests_skipped > 0) {
+        return 77;
+    }
+    else {
+        return 0;
+    }
 }
