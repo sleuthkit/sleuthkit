@@ -20,6 +20,8 @@
 char *progname = "unknown";
 int tsk_verbose = 0;
 
+/* Optional error listener */
+TSK_ERROR_LISTENER_CB error_listener = NULL;
 
 /* Error messages */
 static const char *tsk_err_aux_str[TSK_ERR_IMG_MAX] = {
@@ -55,6 +57,8 @@ static const char *tsk_err_mm_str[TSK_ERR_VS_MAX] = {
     "Invalid buffer size",      // 5
     "Invalid sector address",
     "Invalid API argument",
+    "Encryption detected",
+    "Multiple volume system types detected",
 };
 
 static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
@@ -76,6 +80,11 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "General file system error",        // 15
     "File system is corrupt",
     "Attribute not found in file",
+    "Encryption detected",
+    "Possible encryption detected",
+    "Multiple file system types detected",   // 20
+    "BitLocker initialization failed",
+    "Error loading large directory",
 };
 
 static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {
@@ -98,6 +107,13 @@ static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
     "Corrupt file data",
     "Error converting Unicode",
     "Image not opened yet"
+};
+
+static const char *tsk_err_pool_str[TSK_ERR_POOL_MAX] = {
+    "Cannot determine pool container type",
+    "Unsupported pool container type",
+    "Invalid API argument",
+    "General pool error"
 };
 
 
@@ -244,6 +260,16 @@ tsk_error_get()
                 TSK_ERROR_STRING_MAX_LENGTH - pidx, "auto error: %" PRIu32,
                 TSK_ERR_MASK & t_errno);
     }
+    else if (t_errno & TSK_ERR_POOL) {
+        if ((TSK_ERR_MASK & t_errno) < TSK_ERR_POOL_MAX)
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "%s",
+                tsk_err_pool_str[t_errno & TSK_ERR_MASK]);
+        else
+            snprintf(&errstr_print[pidx],
+                TSK_ERROR_STRING_MAX_LENGTH - pidx, "pool error: %" PRIu32,
+                TSK_ERR_MASK & t_errno);
+    }
     else {
         snprintf(&errstr_print[pidx], TSK_ERROR_STRING_MAX_LENGTH - pidx,
             "Unknown Error: %" PRIu32, t_errno);
@@ -289,9 +315,9 @@ tsk_error_set_errno(uint32_t t_errno)
 
 /**
  * \ingroup baselib
- * Retrieve the current, basic error string.  
- * Additional information is in errstr2.  
- * Use tsk_error_get() to get a fully formatted string. 
+ * Retrieve the current, basic error string.
+ * Additional information is in errstr2.
+ * Use tsk_error_get() to get a fully formatted string.
  * @returns the string. This is only valid until the next call to a tsk function.
  */
 char *
@@ -302,7 +328,7 @@ tsk_error_get_errstr()
 
 /**
  * \ingroup baselib
- * Set the error string #1. This should contain the basic message. 
+ * Set the error string #1. This should contain the basic message.
  * @param format the printf-style format string
  */
 void
@@ -313,6 +339,9 @@ tsk_error_set_errstr(const char *format, ...)
     vsnprintf(tsk_error_get_info()->errstr, TSK_ERROR_STRING_MAX_LENGTH,
         format, args);
     va_end(args);
+    if (error_listener != NULL) {
+        error_listener((uint32_t)tsk_error_get_info()->t_errno, tsk_error_get_info()->errstr);
+    }
 }
 
 /**
@@ -326,6 +355,9 @@ tsk_error_vset_errstr(const char *format, va_list args)
 {
     vsnprintf(tsk_error_get_info()->errstr, TSK_ERROR_STRING_MAX_LENGTH,
         format, args);
+    if (error_listener != NULL) {
+        error_listener((uint32_t)tsk_error_get_info()->t_errno, tsk_error_get_info()->errstr);
+    }
 }
 
 /**
@@ -343,7 +375,7 @@ tsk_error_get_errstr2()
 /**
  * \ingroup baselib
  * Set the error string #2. This is called by methods who encounter the error,
- * but did not set errno. 
+ * but did not set errno.
  * @param format the printf-style format string
  */
 void
@@ -377,16 +409,30 @@ tsk_error_vset_errstr2(const char *format, va_list args)
 void
 tsk_error_errstr2_concat(const char *format, ...)
 {
-    va_list args;
     char *errstr2 = tsk_error_get_info()->errstr2;
     int current_length = (int) (strlen(errstr2) + 1);   // +1 for a space
     if (current_length > 0) {
+        va_list args;
         int remaining = TSK_ERROR_STRING_MAX_LENGTH - current_length;
         errstr2[current_length - 1] = ' ';
         va_start(args, format);
         vsnprintf(&errstr2[current_length], remaining, format, args);
         va_end(args);
     }
+}
+
+/**
+* Add a method that will be sent most errors (in additional to the processing TSK already does).
+* 
+* This is a bit limited since adding an error is a multistep process. The listener is invoked when
+* tsk_error_set_errstr() is called. Our convention is that tsk_error_set_errno() is called first so
+* the errno should be accurate. We would miss anything set to errstr2 but this is not very common.
+* 
+* @param listener   Method that should take arguments (uint32_t, const char*)
+*/
+void
+tsk_error_set_error_listener(TSK_ERROR_LISTENER_CB listener) {
+    error_listener = listener;
 }
 
 /**

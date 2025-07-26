@@ -1,0 +1,10 @@
+sleuthkit for Debian
+-------------------
+
+These debian files are not for the official debian packaging and it does not meet all of the Debian rules because it depends on SQLITE JDBC jar file that is not available as a Debian package.
+
+We will be using this .deb file for our own distribution to support Autopsy. 
+
+
+ -- Rishwanth Senthilkumar <rishwanth@basistech.com>  Tue, 30 Jan 2018 15:34:02 -0500
+

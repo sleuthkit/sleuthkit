@@ -1,6 +1,6 @@
 /****************************************************************
  *** utils.h
- *** 
+ ***
  *** To use utils.c/utils.h, be sure this is in your configure.ac file:
  ***
 AC_CHECK_HEADERS([err.h err.h sys/mman.h unistd.h])

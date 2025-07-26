@@ -44,7 +44,7 @@ namespace Rejistry {
         typedef DBRecord * DBRecordPtr;
 
         DBRecord(RegistryByteBuffer * buf, uint32_t offset);
-        
+
         virtual ~DBRecord() {}
 
         /**

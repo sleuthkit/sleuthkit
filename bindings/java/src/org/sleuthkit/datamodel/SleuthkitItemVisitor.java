@@ -1,15 +1,15 @@
 /*
- * Autopsy Forensic Browser
- * 
- * Copyright 2011 Basis Technology Corp.
+ * Sleuth Kit Data Model
+ *
+ * Copyright 2011-2021 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,6 +87,15 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(VolumeSystem vs);
+	
+	/**
+	 * Act on (visit) a Pool content object
+	 *
+	 * @param pool the volume system to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(Pool pool);
 
 	/**
 	 * Act on (visit) a blackboard artifact object
@@ -150,7 +159,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(LocalFile lf);
-	
+
 	/**
 	 * Act on (visit) a SlackFile content object
 	 *
@@ -158,7 +167,43 @@ public interface SleuthkitItemVisitor<T> {
 	 *
 	 * @return result of the visit
 	 */
-	T visit(SlackFile sf);	
+	T visit(SlackFile sf);
+
+	/**
+	 * Act on (visit) a Report content object
+	 *
+	 * @param report report to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(Report report);
+	
+	/**
+	 * Act on (visit) a OsAccount content object
+	 *
+	 * @param account report to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(OsAccount account);
+	
+	/**
+	 * Act on (visit) an UnsupportedContent object
+	 *
+	 * @param unsupportedContent content to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(UnsupportedContent unsupportedContent);
+	
+	/**
+	 * Act on (visit) a LocalFilesDataSource content object
+	 *
+	 * @param localFilesDataSource report to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(LocalFilesDataSource localFilesDataSource);
 
 	/**
 	 * The default visitor - quickest method for implementing a custom visitor.
@@ -202,6 +247,11 @@ public interface SleuthkitItemVisitor<T> {
 		public T visit(VolumeSystem vs) {
 			return defaultVisit(vs);
 		}
+		
+		@Override
+		public T visit(Pool p) {
+			return defaultVisit(p);
+		}
 
 		@Override
 		public T visit(BlackboardArtifact ba) {
@@ -241,6 +291,26 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(SlackFile sf) {
 			return defaultVisit(sf);
+		}
+
+		@Override
+		public T visit(Report report) {
+			return defaultVisit(report);
+		}
+		
+		@Override
+		public T visit(OsAccount account) {
+			return defaultVisit(account);
+		}
+		
+		@Override
+		public T visit(UnsupportedContent unsupportedContent) {
+			return defaultVisit(unsupportedContent);
+		}
+		
+		@Override
+		public T visit(LocalFilesDataSource localFilesDataSource) {
+			return defaultVisit(localFilesDataSource);
 		}
 	}
 }

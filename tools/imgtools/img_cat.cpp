@@ -1,9 +1,9 @@
 /*
  * img_cat
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved 
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -14,17 +14,17 @@
 #include <fcntl.h>
 #endif
 
+#include <memory>
+
 static TSK_TCHAR *progname;
 
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %s [-vV] [-i imgtype] [-b dev_sector_size] [-s start_sector] [-e stop_sector] image\n"),
-        progname);
     tsk_fprintf(stderr,
-        "\t-i imgtype: The format of the image file (use 'i list' for supported types)\n");
+        "usage: img_cat [-vV] [-i imgtype] [-b dev_sector_size] [-s start_sector] [-e stop_sector] image\n");
+    tsk_fprintf(stderr,
+        "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
@@ -41,7 +41,6 @@ usage()
 int
 main(int argc, char **argv1)
 {
-    TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     int ch;
     TSK_OFF_T start_sector = 0;
@@ -68,15 +67,16 @@ main(int argc, char **argv1)
         switch (ch) {
         case _TSK_T('?'):
         default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -88,7 +88,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -99,7 +99,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || start_sector < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: start sector must be positive: %s\n"),
+                    ("invalid argument: start sector must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -110,7 +110,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || end_sector < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: end sector must be positive: %s\n"),
+                    ("invalid argument: end sector must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -133,9 +133,12 @@ main(int argc, char **argv1)
         usage();
     }
 
-    if ((img =
-            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
-                ssize)) == NULL) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
+
+    if (!img) {
         tsk_error_print(stderr);
         exit(1);
     }
@@ -170,29 +173,26 @@ main(int argc, char **argv1)
             len = sizeof(buf);
         }
 
-        cnt = tsk_img_read(img, done, buf, len);
+        cnt = tsk_img_read(img.get(), done, buf, len);
         if (cnt != (ssize_t) len) {
             if (cnt >= 0) {
                 tsk_fprintf(stderr,
                     "img_cat: Error reading image file at offset: %"
-                    PRIuOFF ", len: %" PRIuOFF ", return: %" PRIuOFF "\n",
+					PRIdOFF ", len: %" PRIu64 ", return: %" PRId64 "\n",
                     done, len, cnt);
             }
             else {
                 tsk_error_print(stderr);
             }
-            tsk_img_close(img);
             exit(1);
         }
 
         if (fwrite(buf, cnt, 1, stdout) != 1) {
             fprintf(stderr,
                 "img_cat: Error writing to stdout:  %s", strerror(errno));
-            tsk_img_close(img);
             exit(1);
         }
     }
 
-    tsk_img_close(img);
     exit(0);
 }

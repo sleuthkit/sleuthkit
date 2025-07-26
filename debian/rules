@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+
+#export DH_VERBOSE = 1
+
+# see ENVIRONMENT in dpkg-buildflags(1) for other variables
+
+# Enable all security hardening options:
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND = -lsqlite3 -lsupc++ -Wl,--as-needed
+
+
+%:
+	dh $@  --with autotools_dev
+
+
+
+# Ensure Java is enabled during configuration
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-java
+
+# Run the standard build process
+override_dh_auto_bill:
+	dh_auto_build
+
+# Install everything into the package directory:
+	dh_auto_install

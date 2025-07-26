@@ -743,12 +743,37 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
                 PRIu32 "  Type: %d\n", table, i, part_start, part_size,
                 part->ptype);
 
-        if (part_size == 0)
+        /* part_start == 0 would cause infinite recursion */
+        if (part_size == 0 || part_start == 0)
             continue;
 
         /* partitions are addressed differently
          * in extended partitions */
         if (dos_is_ext(part->ptype)) {
+
+            TSK_VS_PART_INFO *part_info;
+
+            /* Sanity check to prevent infinite recursion in dos_load_ext_table.
+             * If we already have a partition with this starting address then
+             * return an error. This will prevent any more partitions from being
+             * added but will leave any existing partitions alone. */
+            part_info = vs->part_list;
+            while (part_info != NULL) {
+                if (part_info->start == (TSK_DADDR_T)(sect_ext_base + part_start)) {
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "Starting sector %" PRIuDADDR
+                            " of extended partition has already been used\n",
+                            (TSK_DADDR_T)(sect_ext_base + part_start));
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+                    tsk_error_set_errstr
+                        ("dos_load_ext_table: Loop in partition table detected");
+                    free(sect_buf);
+                    return 1;
+                }
+                part_info = part_info->next;
+            }
 
             /* part start is added to the start of the
              * first extended partition (the primary
@@ -1041,6 +1066,13 @@ tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)
     // clean up any errors that are lying around
     tsk_error_reset();
 
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_VS_ARG);
+        tsk_error_set_errstr("tsk_vs_dos_open: sector size is 0");
+        return NULL;
+    }
+
     vs = (TSK_VS_INFO *) tsk_malloc(sizeof(*vs));
     if (vs == NULL)
         return NULL;
@@ -1056,6 +1088,7 @@ tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)
     vs->part_count = 0;
     vs->endian = 0;
     vs->block_size = img_info->sector_size;
+
 
     /* Assign functions */
     vs->close = dos_close;

@@ -1,0 +1,99 @@
+﻿{
+  "finalize-image-writer": false,
+  "rule-sets": [
+    {
+      "set-name": "rule-set-1",
+      "rules": [
+        {
+          "name": "full-path-search",
+          "description": "Full file path search",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "full-paths": [
+            "Documents and Settings/John/My Documents/Downloads",
+            "上交所与香港特许秘书公会签合作协议.doc",
+            "胡锦涛.htm",
+            "Documents and Settings/John/My Documents/Downloads/جهاد_files/layout.css",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/sunset.jpg",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/water lilies.jpg",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/blue hills.jpg",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/BLUE HILLS.JPG",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/winter.jpg",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample  Pictures/blue hills.jpg",
+            "Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/AdbeRdr950_en_US.exe",
+            "/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg",
+            "Documents and Settings/All Users/Application Data/Adobe/Reader/9.4/ARM/NoSuchFile.txt",
+            "No Such Folder/No such subfolder/no-such-file.txt",
+            "No Such Folder/No such subfolder/Winter.jpg",
+            "C:/Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/Blue hills.jpg",
+            "Documents and Settings/All Users/Documents/My Pictures/Sample Pictures/../Sample Pictures/Blue hills.jpg",
+            "Documents and Settings\\All Users\\Documents\\My Pictures\\Sample Pictures\\Blue hills.jpg"
+          ]
+        },
+        {
+          "name": "example-rule-1",
+          "description": "Find all pictures smaller than 3000 bytes, under the 'Google' folder",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "extensions": [
+            "jpg",
+            "jpeg",
+            "png",
+            "gif"
+          ],
+          "size-range": {
+            "max": 3000
+          },
+          "folder-names": [
+            "Google"
+          ]
+        },
+        {
+          "name": "example-rule-2",
+          "description": "Find all 'readme.txt' and 'autoexec.bat' files",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "file-names": [
+            "readme.txt",
+            "autoexec.bat"
+          ]
+        },
+        {
+          "name": "example-rule-3",
+          "description": "find files newer than 2012-03-22",
+          "shouldSave": false,
+          "shouldAlert": true,
+          "date-range": {
+            "min": "2012-03-22",
+            "max": "2012-12-31"
+          }
+        },
+        {
+          "name": "example-rule-4",
+          "description": "find all png files under the user folder",
+          "shouldSave": true,
+          "shouldAlert": true,
+          "extensions": [
+            "png"
+          ],
+          "folder-names": [
+            "[USER_FOLDER]/Documents/My Pictures/Sample Pictures",
+            "[USER_FOLDER]/My Documents/Downloads",
+            "[USER_FOLDER]/Local Settings/Application Data/Google/Chrome"
+          ]
+        },
+        {
+          "name": "example-rule-5",
+          "description": "find files 30 days or newer",
+          "shouldSave": false,
+          "shouldAlert": true,
+          "date-range": {
+            "min-days": 30
+          }
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,115 @@
+/*! \page mod_compage Communications 
+
+
+
+NOTE: This is a work in progress
+
+
+\section jni_com_overview Overview
+
+The Java code and database in Sleuth Kit contain special classes and tables to deal with communications between two parties. This page outlines what a developer should do when they are parsing communications data so that it can be properly displayed and used by other code (such as the Autopsy Communications UI). 
+
+\section jni_com_types Terminology
+
+First, let's cover the terminology that we use. 
+
+\subsection jni_com_types_account Accounts
+
+An <b>Account</b> is an entity with a type and an identifier that is unique to the type.  Common examples of types include:
+- Credit Card (and the unique identifier is the credit card number)
+- Email (and the unique identifier is the email address)
+- Phone (and the unique identifier is the phone number)
+- Twitter (with a unique identifier of the login)
+- ...
+
+Accounts are found in a digital investigation when parsing structured data (such as email messages) or keyword searching.
+
+\subsection jni_com_types_relationships Relationships 
+
+Two accounts have a <b>relationship</b> if they are believed to have communicated in some way.  Examples of interactions that cause a relationship are:
+- Being part of the same email message
+- Being in a call log
+- Being in an address book
+
+When there are multiple people involved with an email message, a relationship is made between each of them.  For example, if A sends a message to B and CC:s C, then there will be relationships between A <-> B, A <-> C, and B <-> C.  Relationships in The Sleuth Kit are not directional. 
+
+A <b>relationship source</b> is where we learned about the relationship.  This typically comes from Blackboard Artifacts, but may come from generic files in the future. 
+
+\subsection jni_com_types_devaccount Device Accounts
+
+In some situations, we may not know a specific account that a relationship exists with.  For example, when we find a contact book a thumb drive, we want to make a relationship between the accounts in the contact book and the accounts associated with the owner of that thumb drive.  But, we may not know which accounts are for that owner.  The contacts could be just a bunch of vCards and not tied to a specific email or phone number.
+
+In this situation, we make a <b>device account</b> that is associated with the data source or device being analyzed.  You should make an account of type Account.Type.DEVICE (instead of something like EMAIL) and the identifier is the device id of the data source where the other accounts were located.  
+
+
+
+\section jni_com_add Adding Communication Information to Database
+
+Now let's cover what you should do when you are parsing some communications data and want to store it in the TSK database.  Let's assume we are parsing a smart phone app that has messages. 
+
+\subsection jni_com_add_acct Adding Account Instances
+
+When you encounter a message, the first thing to do is store information about the accounts.  TSK wants to know about each <i>file</i> that had a reference of the account.   You should call org.sleuthkit.datamodel.CommunicationsManager.createAccountFileInstance() for each file that you encounter a given account.  
+
+
+To make a device account, you'd have logic similar to:
+\code
+AccountFileInstance deviceAccountInstance = tskCase.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE,
+                    abstractFile.getDataSource().getDeviceId(), "Module Name", abstractFile);
+\endcode
+
+Behind the scenes, createAccountFileInstance will make an entry in the accounts table for each unique account on a given device and will make a org.sleuthkit.datamodel.BlackboardArtifact for each unique account in a given file. 
+
+If you want to create a custom account type, call org.sleuthkit.datamodel.CommunicationsManager.addAccountType(). 
+
+\subsection jni_com_add_msg Adding The Message (Relationship Source)
+
+You also need to make sure that you store the org.sleuthkit.datamodel.BlackboardArtifact that used the accounts and had the relationship.  You can do this before or after calling createAccountFileInstance(). The order does not matter.
+
+For a messaging app, you would make org.sleuthkit.datamodel.BlackboardArtifact objects with a type of org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.  That artifact would store various name and value pairs using org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE values.   There is nothing communication-specific about this step. It is the same Blackboard artifacts and attributes that are used in many other places. 
+
+
+\subsection jni_com_add_relationship Adding the Relationship
+
+The final step is to store the relationships between the accounts.  You can do this via org.sleuthkit.datamodel.CommunicationsManager.addRelationships().  This method will require you to pass in the org.sleuthkit.datamodel.AccountInstance objects that you created and the org.sleuthkit.datamodel.BlackboardArtifact that you created for the message or other source.  
+
+The source of the relationship can be a device account (for things like call logs and contacts) if you are unsure about the specific account (such as phone number) associated with the device. 
+
+
+As an example, you can refer to some code in Autopsy, such as:
+- [Email Module addArtifact()] (https://github.com/sleuthkit/autopsy/blob/develop/thunderbirdparser/src/org/sleuthkit/autopsy/thunderbirdparser/ThunderbirdMboxFileIngestModule.java)
+
+
+\section jni_com_comm_artifacts_helper Communication Artifacts Helper
+An alternative to individually creating artifacts, accounts and relationships is to use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.  CommunicationArtifactsHelper provides APIs that create the artifact, create accounts, and create relationships between the accounts, all with a single API call.
+
+\subsection jni_com_comm_artifacts_helper_create_helper Creating a Communications Artifacts Helper
+To use the communication artifacts helper, you must first create a new instance of the helper for each source file from which you are extracting communications artifacts. To create a helper, use the constructor org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.CommunicationArtifactsHelper().
+ When creating the helper, you must specify the account type for the accounts that will be created by this instance of the helper. Addtionally, you may specify the "self" account identifier - i.e. the application specific account identifier for the owner of the device, if it is known.
+If the self account is not known, you may omit it, in which case the helper uses the Device account as proxy for the self account.    
+
+\subsection jni_com_comm_artifacts_helper_add_contact Adding Contacts
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addContact() method to add contacts.  
+The helper creates a TSK_CONTACT artifact. It also creates contact accounts for each of the specified contact method, and finally creates relationships between the contact accounts and the self account.
+
+\subsection jni_com_comm_artifacts_helper_add_calllog Adding Call logs
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addCalllog() method to add call log.
+The helper creates a TSK_CALLLOG artifact. It also creates accounts for the caller and each of the callees, if specified.  Finally it creates a relationship between the caller and each of the callees.
+
+\subsection jni_com_comm_artifacts_helper_add_message Adding Messages
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addMessage() method to add a message.
+The helper creates a TSK_MESSAGE artifact. It also creates accounts for the sender and each of the recipients, if specified.  Finally it creates a relationship between the sender and each of the recipients.
+
+\subsection jni_com_comm_artifacts_helper_add_attachments Adding Attachments to message
+Use the org.sleuthkit.datamodel.blackboardutils.CommunicationArtifactsHelper.addAttachments() method to add org.sleuthkit.datamodel.blackboardutils.attributes.MessageAttachments to a message.
+
+As an example, you can refer to some code in Autopsy, such as:
+- [Android Text Messages] (https://github.com/sleuthkit/autopsy/blob/develop/InternalPythonModules/android/textmessage.py)
+- [Facebook messenger Messages] (https://github.com/sleuthkit/autopsy/blob/develop/InternalPythonModules/android/fbmessenger.py)
+
+\section jni_com_schema Database Schema
+
+For details of how this is stored in the database, refer to the 
+<a href="http://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema#Communications_.2F_Accounts">wiki</a>.
+
+*/

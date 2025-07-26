@@ -26,6 +26,7 @@
  *
  */
 #include<algorithm>
+#include <memory>
 
 // Local includes
 #include "DBIndirectRecord.h"
@@ -39,25 +40,25 @@ namespace Rejistry {
         std::vector<uint8_t> data;
 
         uint32_t count = 0;
-        
+
         while (length > 0) {
             uint32_t size = std::min(DB_DATA_SIZE, length);
             uint32_t offset = getDWord(OFFSET_LIST_OFFSET + (count * 4));
             offset += REGFHeader::FIRST_HBIN_OFFSET;
-            std::auto_ptr< Cell > c(new Cell(_buf, offset));
+            std::unique_ptr< Cell > c(new Cell(_buf, offset));
 
             if (c.get() == NULL) {
                 throw RegistryParseException("Failed to create Cell.");
             }
 
             std::vector<uint8_t> cellData = c->getData();
-            
+
             data.insert(data.end(), cellData.begin(), cellData.begin() + size);
 
             length -= size;
             count += 1;
         }
-        
+
         return data;
     }
 

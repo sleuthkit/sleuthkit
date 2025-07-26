@@ -1,4 +1,4 @@
-/* 
+/*
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
@@ -8,7 +8,7 @@
  */
 
 /*
- * C header file with DOS and internal data structures. 
+ * C header file with DOS and internal data structures.
  */
 #ifndef _TSK_DOS_H
 #define _TSK_DOS_H

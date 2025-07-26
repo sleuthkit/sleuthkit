@@ -1,0 +1,33 @@
+/*! \page mod_dspage Data Sources, Hosts, and Persons
+  
+\section ds_overview Overview
+This page outlines some of the core concepts around data sources and how they are organized. 
+
+\section ds_ds Data Sources
+A org.sleuthkit.datamodel.DataSource represents a set of data that has been added to a case. Examples of data sources include:
+- A disk or phone image
+- A set of logical files
+- A report from another forensics tool
+
+The objects in the case database are generally organized in a tree structure. The data sources are often the set of top-most items in the tree. 
+You can call org.sleuthkit.datamodel.SleuthkitCase.getDataSources() to get all of data sources in a case. From there you can call getChildren() to go down the tree. For example, you can go from the disk image to volumes, then to file systems, and finally to files and subfolders. 
+
+You can add data sources by various SleuthkitCase methods, such as org.sleuthkit.datamodel.SleuthkitCase.makeAddImageProcess(). 
+
+
+\section ds_hosts Hosts
+All data sources must be associated with a org.sleuthkit.datamodel.Host. A host represents the device that the data source came from.  Some hosts will have only a single data source, for example when analyzing a computer with one hard drive. Other hosts may have multiple data sources, for example when analyzing a phone with an image of the handset and another image of a media card. 
+
+If you later learn that two data sources are from the same device, you can merge the hosts. 
+
+Hosts are managed from org.sleuthkit.datamodel.HostManager. 
+
+NOTE: Hosts are different from org.sleuthkit.datamodel.HostAddress. A Host is for devices that were seized and added to the case.  A HostAddress is for an address of any external host that was found during the analysis of a data source. For example, a HostAddress for "www.sleuthkit.org" could be created based on web history artifacts. 
+
+
+\section ds_person Persons
+You can optionally associate a host with a org.sleuthkit.datamodel.Person. This can allow you to more easily organize data in a large case. The concept is that you have multiple data sources representing different devices that are all owned or used by a given person. You can group that person's data sources together. 
+
+Persons are managed from org.sleuthkit.datamodel.PersonManager. 
+
+*/

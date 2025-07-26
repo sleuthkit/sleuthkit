@@ -3,7 +3,7 @@
 ** The Sleuth Kit
 **
 ** Given an image  and block number, identify which inode it is used by
-** 
+**
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
@@ -23,16 +23,17 @@
 #include <locale.h>
 #include <time.h>
 
+#include <memory>
+#include <new>
+
 static TSK_TCHAR *progname;
 static uint8_t localflags;
 
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %s [-alvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: ifind [-alvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-P pooltype] [-B pool_volume_block] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n");
     tsk_fprintf(stderr, "\t-a: find all inodes\n");
     tsk_fprintf(stderr,
         "\t-d unit_addr: Find the meta data given the data unit\n");
@@ -49,6 +50,10 @@ usage()
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
+    tsk_fprintf(stderr,
+        "\t-P pooltype: Pool container type (use '-p list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr, "\t-v: Verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     tsk_fprintf(stderr,
@@ -62,22 +67,24 @@ usage()
 #define IFIND_PARENT 0x04
 
 int
-main(int argc, char **argv1)
+main(int argc, [[maybe_unused]] char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-    TSK_IMG_INFO *img;
 
     TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
-    TSK_FS_INFO *fs;
     uint8_t type = 0;
+
+    TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
+    TSK_OFF_T pvol_block = 0;
+    const char * password = ""; // Not currently used
 
     int ch;
     TSK_TCHAR *cp;
     extern int OPTIND;
     TSK_DADDR_T block = 0;      /* the block to find */
     TSK_INUM_T parinode = 0;
-    TSK_TCHAR *path = NULL;
+    std::unique_ptr<TSK_TCHAR[]> path;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
 
@@ -97,7 +104,7 @@ main(int argc, char **argv1)
 
     localflags = 0;
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:d:f:i:ln:o:p:vVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:d:f:i:ln:o:p:P:vVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             localflags |= TSK_FS_IFIND_ALL;
@@ -107,7 +114,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: sector size must be positive: %s\n"),
+                    ("invalid argument: sector size must be positive: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -121,7 +128,7 @@ main(int argc, char **argv1)
             type = IFIND_DATA;
             block = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG) {
-                TFPRINTF(stderr, _TSK_T("Invalid block address: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid block address: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -134,7 +141,7 @@ main(int argc, char **argv1)
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                    _TSK_T("Unsupported file system type: %" PRIttocTSK "\n"), OPTARG);
                 usage();
             }
             break;
@@ -145,7 +152,7 @@ main(int argc, char **argv1)
             }
             imgtype = tsk_img_type_toid(OPTARG);
             if (imgtype == TSK_IMG_TYPE_UNSUPP) {
-                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -163,15 +170,34 @@ main(int argc, char **argv1)
                 }
                 type = IFIND_PATH;
                 len = (TSTRLEN(OPTARG) + 1) * sizeof(TSK_TCHAR);
-                if ((path = (TSK_TCHAR *) malloc(len)) == NULL) {
+                path.reset(new(std::nothrow) TSK_TCHAR[len]);
+                if (!path) {
                     tsk_fprintf(stderr, "error allocating memory\n");
                     exit(1);
                 }
-                TSTRNCPY(path, OPTARG, TSTRLEN(OPTARG) + 1);
+                TSTRNCPY(path.get(), OPTARG, TSTRLEN(OPTARG) + 1);
                 break;
             }
         case 'o':
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
+                exit(1);
+            }
+            break;
+        case _TSK_T('P'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_pool_type_print(stderr);
+                exit(1);
+            }
+            pooltype = tsk_pool_type_toid(OPTARG);
+            if (pooltype == TSK_POOL_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                    _TSK_T("Unsupported pool container type: %s\n"), OPTARG);
+                usage();
+            }
+            break;
+        case _TSK_T('B'):
+            if ((pvol_block = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -185,7 +211,7 @@ main(int argc, char **argv1)
             type = IFIND_PARENT;
             if (tsk_fs_parse_inum(OPTARG, &parinode, NULL, NULL, NULL,
                     NULL)) {
-                TFPRINTF(stderr, _TSK_T("Invalid inode address: %s\n"),
+                TFPRINTF(stderr, _TSK_T("Invalid inode address: %" PRIttocTSK "\n"),
                     OPTARG);
                 usage();
             }
@@ -219,8 +245,6 @@ main(int argc, char **argv1)
     /* We need at least one more argument */
     if (OPTIND >= argc) {
         tsk_fprintf(stderr, "Missing image name\n");
-        if (path)
-            free(path);
         usage();
     }
 
@@ -229,30 +253,71 @@ main(int argc, char **argv1)
         usage();
     }
 
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
+        tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize),
+        tsk_img_close
+    };
 
-    if ((img =
-            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
-                ssize)) == NULL) {
+    if (!img) {
         tsk_error_print(stderr);
-        if (path)
-            free(path);
         exit(1);
     }
-    if ((imgaddr * img->sector_size) >= img->size) {
+
+    if (imgaddr * img->sector_size >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / img->sector_size);
         exit(1);
     }
 
-    if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
-        tsk_error_print(stderr);
-        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
-            tsk_fs_type_print(stderr);
-        img->close(img);
-        if (path)
-            free(path);
-        exit(1);
+    std::unique_ptr<const TSK_POOL_INFO, decltype(&tsk_pool_close)> pool{
+        nullptr,
+        tsk_pool_close
+    };
+
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
+        nullptr,
+        tsk_img_close
+    };
+
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        nullptr,
+        tsk_fs_close
+    };
+
+    if (pvol_block == 0) {
+        fs.reset(tsk_fs_open_img_decrypt(img.get(), imgaddr * img->sector_size, fstype, password));
+        if (!fs) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            exit(1);
+        }
+    }
+    else {
+        pool.reset(tsk_pool_open_img_sing(img.get(), imgaddr * img->sector_size, pooltype));
+        if (!pool) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_pool_type_print(stderr);
+            exit(1);
+        }
+
+        TSK_OFF_T offset = imgaddr * img->sector_size;
+#if HAVE_LIBVSLVM
+        if (pool->ctype == TSK_POOL_TYPE_LVM){
+            offset = 0;
+        }
+#endif /* HAVE_LIBVSLVM */
+        pool_img.reset(pool->get_img_info(pool.get(), (TSK_DADDR_T)pvol_block));
+        // FIXME: Will crash if !pool_img
+        fs.reset(tsk_fs_open_img_decrypt(pool_img.get(), offset, fstype, password));
+        if (!fs) {
+            tsk_error_print(stderr);
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+                tsk_fs_type_print(stderr);
+            exit(1);
+        }
     }
 
     if (type == IFIND_DATA) {
@@ -261,24 +326,17 @@ main(int argc, char **argv1)
                 "Block %" PRIuDADDR
                 " is larger than last block in image (%" PRIuDADDR
                 ")\n", block, fs->last_block);
-            fs->close(fs);
-            img->close(img);
             exit(1);
         }
-        if (tsk_fs_ifind_data(fs, (TSK_FS_IFIND_FLAG_ENUM) localflags,
+        if (tsk_fs_ifind_data(fs.get(), (TSK_FS_IFIND_FLAG_ENUM) localflags,
                 block)) {
             tsk_error_print(stderr);
-            fs->close(fs);
-            img->close(img);
             exit(1);
         }
     }
-
     else if (type == IFIND_PARENT) {
         if (TSK_FS_TYPE_ISNTFS(fs->ftype) == 0) {
             tsk_fprintf(stderr, "-p works only with NTFS file systems\n");
-            fs->close(fs);
-            img->close(img);
             exit(1);
         }
         else if (parinode > fs->last_inum) {
@@ -286,38 +344,27 @@ main(int argc, char **argv1)
                 "Meta data %" PRIuINUM
                 " is larger than last MFT entry in image (%" PRIuINUM
                 ")\n", parinode, fs->last_inum);
-            fs->close(fs);
-            img->close(img);
             exit(1);
         }
-        if (tsk_fs_ifind_par(fs, (TSK_FS_IFIND_FLAG_ENUM) localflags,
+        if (tsk_fs_ifind_par(fs.get(), (TSK_FS_IFIND_FLAG_ENUM) localflags,
                 parinode)) {
             tsk_error_print(stderr);
-            fs->close(fs);
-            img->close(img);
             exit(1);
         }
     }
-
     else if (type == IFIND_PATH) {
         int retval;
         TSK_INUM_T inum;
 
-        if (-1 == (retval = tsk_fs_ifind_path(fs, path, &inum))) {
+        if (-1 == (retval = tsk_fs_ifind_path(fs.get(), path.get(), &inum))) {
             tsk_error_print(stderr);
-            fs->close(fs);
-            img->close(img);
-            free(path);
             exit(1);
         }
-        free(path);
         if (retval == 1)
             tsk_printf("File not found\n");
         else
             tsk_printf("%" PRIuINUM "\n", inum);
     }
-    fs->close(fs);
-    img->close(img);
 
     exit(0);
 }

@@ -476,8 +476,13 @@ extern "C" {
 */
 
     typedef struct {
-        uint8_t objid1[8];      /* object id of file or directory */
-        uint8_t objid2[8];
+        // object ID / GUID of the file
+        uint8_t objid1[4];   // little endian 4-byte value
+        uint8_t objid2[2];   // little endian 2-byte value
+        uint8_t objid3[2];  // little endian 2-byte value
+        uint8_t objid4[2];  // big endian 2-byte value
+        uint8_t objid5[2];  // big endian 2-byte value
+        uint8_t objid6[4];  // big endian 4-byte value
         uint8_t orig_volid1[8]; /* id of "birth" volume */
         uint8_t orig_volid2[8];
         uint8_t orig_objid1[8]; /* original object id */
@@ -765,8 +770,10 @@ extern "C" {
         NTFS_SXX_BUFFER sds_data;       // (r/w shared - lock)
 #endif
 
-        uint32_t alloc_file_count;      // number of allocated regular files, will be -1
-                                        // until a directory is opened.
+        /* Number of allocated regular files. 0 until a directory is
+         * opened.  Currently used by tools that are built on TSK. */
+        int alloc_file_count;
+
         NTFS_USNJINFO *usnjinfo;        // update sequence number journal
     } NTFS_INFO;
 
@@ -776,9 +783,9 @@ extern "C" {
     extern uint8_t ntfs_attrname_lookup(TSK_FS_INFO *, uint16_t, char *,
         int);
     extern TSK_RETVAL_ENUM ntfs_dinode_lookup(NTFS_INFO *, char *,
-        TSK_INUM_T);
+        TSK_INUM_T, TSK_OFF_T *);
     extern TSK_RETVAL_ENUM ntfs_dir_open_meta(TSK_FS_INFO * a_fs,
-        TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr);
+        TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr, int recursion_depth);
 
     extern void ntfs_orphan_map_free(NTFS_INFO * a_ntfs);
 

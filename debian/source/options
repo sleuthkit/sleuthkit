@@ -1,0 +1,4 @@
+tar-ignore = "test"
+tar-ignore = "tests"
+--include-removal
+--extend-diff-ignore='^(bindings/java/jni/.libs|samples/.*)$'

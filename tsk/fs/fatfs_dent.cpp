@@ -54,7 +54,7 @@
 * the walk and this function is used to stop that building process.
 */
 TSK_WALK_RET_ENUM
-    fatfs_find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
+    fatfs_find_parent_act(TSK_FS_FILE * fs_file, const char * /*a_path*/, void *ptr)
 {
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 
@@ -75,7 +75,7 @@ TSK_WALK_RET_ENUM
 * Assumes that you already have the lock
 */
 static std::map<TSK_INUM_T, TSK_INUM_T> * getParentMap(FATFS_INFO *fatfs) {
-    // allocate it if it hasn't already been 
+    // allocate it if it hasn't already been
     if (fatfs->inum2par == NULL) {
         fatfs->inum2par = new std::map<TSK_INUM_T, TSK_INUM_T>;
     }
@@ -107,7 +107,7 @@ uint8_t
 * @param fatfs File system
 * @param dir_inum Inode of sub-directory to look up
 * @param par_inum [out] Result of lookup
-* @returns 0 if found and 1 if not. 
+* @returns 0 if found and 1 if not.
 */
 uint8_t
     fatfs_dir_buf_get(FATFS_INFO * fatfs, TSK_INUM_T dir_inum,
@@ -172,8 +172,9 @@ typedef struct {
 * into a buffer
 */
 static TSK_WALK_RET_ENUM
-    fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+    fatfs_dent_action(TSK_FS_FILE * /*fs_file*/, TSK_OFF_T /*a_off*/,
+    TSK_DADDR_T addr, char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM /*flags*/,
+    void *ptr)
 {
     FATFS_LOAD_DIR *load = (FATFS_LOAD_DIR *) ptr;
 
@@ -218,12 +219,13 @@ static TSK_WALK_RET_ENUM
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
 * structure or a new structure.
 * @param a_addr Address of directory to process.
+* @param recursion_depth Recursion depth to limit the number of self-calls
 * @returns error, corruption, ok etc.
 */
 
 TSK_RETVAL_ENUM
     fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-    TSK_INUM_T a_addr)
+    TSK_INUM_T a_addr, int recursion_depth)
 {
     const char *func_name = "fatfs_dir_open_meta";
     TSK_OFF_T size, len;
@@ -279,10 +281,11 @@ TSK_RETVAL_ENUM
     size = fs_dir->fs_file->meta->size;
     len = roundup(size, fatfs->ssize);
 
-    if (tsk_verbose)
+    if (tsk_verbose) {
         tsk_fprintf(stderr,
         "%s: Processing directory %" PRIuINUM "\n",
         func_name, a_addr);
+    }
 
     if (size == 0) {
         if (tsk_verbose)
@@ -342,7 +345,7 @@ TSK_RETVAL_ENUM
         "%s: Parsing directory %" PRIuINUM "\n",
         func_name, a_addr);
 
-    retval = fatfs->dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf);
+    retval = fatfs->dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf, recursion_depth);
 
     free(dirbuf);
     free(addrbuf);
@@ -401,7 +404,7 @@ TSK_RETVAL_ENUM
 }
 
 int
-fatfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
+fatfs_name_cmp(TSK_FS_INFO * /*a_fs_info*/, const char *s1, const char *s2)
 {
     return strcasecmp(s1, s2);
 }

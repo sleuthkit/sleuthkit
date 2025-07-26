@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2013-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,8 +55,8 @@ public class TopDownTraversal extends ImgTraverser {
 	 * the folder specified by the build.xml
 	 *
 	 * @return A Collection of one-element Object arrays, where that one element
-	 * is a List<String> containing the image file paths (the type is weird
-	 * because that's what JUnit wants for parameters).
+	 *         is a List<String> containing the image file paths (the type is
+	 *         weird because that's what JUnit wants for parameters).
 	 */
 	@Parameters
 	public static Collection<Object[]> testImageData() {
@@ -86,9 +86,10 @@ public class TopDownTraversal extends ImgTraverser {
 	 * Traverses through an image and generates a top down representation the
 	 * image and generates the leaf files for BU Testing
 	 *
-	 * @param sk the sleuthkit case used for the traversal
-	 * @param path the location of the output file
+	 * @param sk                   the sleuthkit case used for the traversal
+	 * @param path                 the location of the output file
 	 * @param outputExceptionsPath the outputExceptionsPath to store exceptions
+	 *
 	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
@@ -124,11 +125,12 @@ public class TopDownTraversal extends ImgTraverser {
 	 * Traverses through an image and generates a TSK gettimes like
 	 * representation
 	 *
-	 * @param lc the list of content to be traversed
-	 * @param lp the list of a content's parents
-	 * @param resultOutput the filewriter to append output to
+	 * @param lc             the list of content to be traversed
+	 * @param lp             the list of a content's parents
+	 * @param resultOutput   the filewriter to append output to
 	 * @param leafListOutput the filewriter to append leaves to (trace of each
-	 * leaf to root dir)
+	 *                       leaf to root dir)
+	 *
 	 * @returns list of exceptions
 	 */
 	private List<Exception> topDownDF(List<Content> lc, List<Long> lp, Appendable resultOutput, Appendable leafListOutput) {
@@ -137,40 +139,43 @@ public class TopDownTraversal extends ImgTraverser {
 
 			// write data about this object to resultOutput
 			// string version of this object
-			try {
-				resultOutput.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
-			} catch (IOException ex) {
-				logg.log(Level.SEVERE, "Failed to Traverse", ex);
-			}
-
-			// calculate the hash value for the output -- writes the output to resultOutput
-			if (c instanceof File) {
-				DataModelTestSuite.hashContent(c, resultOutput, outputFilePath);
-			}
-			try {
-				resultOutput.append("\n");
-			} catch (IOException ex) {
-				logg.log(Level.SEVERE, "Failed to Traverse", ex);
-			}
-
-			// add this node to the bottom of the parent list
-			lp.add(0, c.getId());
-
-			try {
-				// if we are a leaf, write out the path to the node
-				if (c.getChildren().isEmpty()) {
-					leafListOutput.append(lp.toString() + "\n");
-				} // recurse into the children
-				else {
-					exceptionList.addAll(topDownDF(c.getChildren(), new ArrayList<Long>(lp), resultOutput, leafListOutput));
+			if (c instanceof AbstractContent) {
+				try {
+					resultOutput.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
+				} catch (IOException ex) {
+					logg.log(Level.SEVERE, "Failed to Traverse", ex);
 				}
-			} catch (IOException ex) {
-				logg.log(Level.SEVERE, "Failed to Traverse", ex);
-			} catch (TskCoreException ex) {
-				exceptionList.add(ex);
+
+				// calculate the hash value for the output -- writes the output to resultOutput
+				if (c instanceof File) {
+					DataModelTestSuite.hashContent(c, resultOutput, outputFilePath);
+				}
+				try {
+					resultOutput.append("\n");
+				} catch (IOException ex) {
+					logg.log(Level.SEVERE, "Failed to Traverse", ex);
+				}
+
+				// add this node to the bottom of the parent list
+				lp.add(0, c.getId());
+
+				try {
+					// if we are a leaf, write out the path to the node
+					List<Content> children = c.getChildren();
+					if (children.isEmpty()) {
+						leafListOutput.append(lp.toString() + "\n");
+					} // recurse into the children
+					else {
+						exceptionList.addAll(topDownDF(children, new ArrayList<Long>(lp), resultOutput, leafListOutput));
+					}
+				} catch (IOException ex) {
+					logg.log(Level.SEVERE, "Failed to Traverse", ex);
+				} catch (TskCoreException ex) {
+					exceptionList.add(ex);
+				}
+				// pop it off the list
+				lp.remove(0);
 			}
-			// pop it off the list
-			lp.remove(0);
 		}
 		return exceptionList;
 	}

@@ -70,7 +70,10 @@ namespace Rejistry {
 
     const char * RejistryException::what() const throw()
     {
-        return name();
+        std::string whatMsg = name();
+        if (m_msg.length())
+            whatMsg += ": " + m_msg;
+        return whatMsg.c_str();
     }
 
     REJISTRY_IMPLEMENT_EXCEPTION(RegistryParseException, RejistryException, "Error parsing registry")

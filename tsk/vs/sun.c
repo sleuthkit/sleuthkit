@@ -70,24 +70,28 @@ sun_get_desc(uint16_t fstype)
 }
 
 
-/* 
- * Load an Intel disk label, this is called by sun_load_table 
+/*
+ * Load an Intel disk label, this is called by sun_load_table
  */
 
 static uint8_t
 sun_load_table_i386(TSK_VS_INFO * vs, sun_dlabel_i386 * dlabel_x86)
 {
     uint32_t idx = 0;
+    uint16_t num_parts;
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "load_table_i386: Number of partitions: %d\n",
             tsk_getu16(vs->endian, dlabel_x86->num_parts));
 
-    /* Cycle through the partitions, there are either 8 or 16 */
-    for (idx = 0; idx < tsk_getu16(vs->endian, dlabel_x86->num_parts);
-        idx++) {
+    num_parts = tsk_getu16(vs->endian, dlabel_x86->num_parts);
+    if (num_parts > 16) {
+        num_parts = 16;
+    }
 
+    /* Cycle through the partitions, there are 16 for i386 */
+    for (idx = 0; idx < num_parts; idx++) {
         TSK_VS_PART_FLAG_ENUM ptype = TSK_VS_PART_FLAG_ALLOC;
 
         if (tsk_verbose)
@@ -142,19 +146,24 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
 {
     uint32_t idx = 0;
     uint32_t cyl_conv;
+    uint16_t num_parts;
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
 
     /* The value to convert cylinders to sectors */
-    cyl_conv = tsk_getu16(vs->endian, dlabel_sp->sec_per_tr) *
+    cyl_conv = (uint32_t) tsk_getu16(vs->endian, dlabel_sp->sec_per_tr) *
         tsk_getu16(vs->endian, dlabel_sp->num_head);
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "load_table_sparc: Number of partitions: %d\n",
             tsk_getu16(vs->endian, dlabel_sp->num_parts));
 
-    /* Cycle through the partitions, there are either 8 or 16 */
-    for (idx = 0; idx < tsk_getu16(vs->endian, dlabel_sp->num_parts);
-        idx++) {
+    num_parts = tsk_getu16(vs->endian, dlabel_sp->num_parts);
+    if (num_parts > 8) {
+        num_parts = 8;
+    }
+
+    /* Cycle through the partitions, there are 8 for sparc */
+    for (idx = 0; idx < num_parts; idx++) {
         TSK_VS_PART_FLAG_ENUM ptype = TSK_VS_PART_FLAG_ALLOC;
         uint32_t part_start = cyl_conv * tsk_getu32(vs->endian,
             dlabel_sp->part_layout[idx].start_cyl);
@@ -199,8 +208,8 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
 }
 
 
-/* 
- * Process the partition table at the sector address 
+/*
+ * Process the partition table at the sector address
  *
  * This method just finds out if it is sparc or Intel and then
  * calls the appropriate method
@@ -253,7 +262,7 @@ sun_load_table(TSK_VS_INFO * vs)
     }
 
 
-    /* Check the magic value 
+    /* Check the magic value
      * Both intel and sparc have the magic value in the same location
      *
      * We try both in case someone specifies the exact location of the
@@ -279,7 +288,7 @@ sun_load_table(TSK_VS_INFO * vs)
     }
 
 
-    /* Now try the next sector, which is where the intel 
+    /* Now try the next sector, which is where the intel
      * could be stored */
 
     taddr = vs->offset / vs->block_size / SUN_I386_PART_SOFFSET;
@@ -326,9 +335,7 @@ sun_load_table(TSK_VS_INFO * vs)
     return result;
 
 on_error:
-    if( buf != NULL ) {
-        free( buf );
-    }
+    free(buf);
     return 1;
 }
 
@@ -348,6 +355,13 @@ tsk_vs_sun_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     // clean up any errors that are lying around
     tsk_error_reset();
+
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_VS_ARG);
+        tsk_error_set_errstr("tsk_vs_sun_open: sector size is 0");
+        return NULL;
+    }
 
     vs = (TSK_VS_INFO *) tsk_malloc(sizeof(*vs));
     if (vs == NULL)

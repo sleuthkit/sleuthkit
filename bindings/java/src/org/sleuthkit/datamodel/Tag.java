@@ -25,18 +25,25 @@ package org.sleuthkit.datamodel;
 public abstract class Tag {
 
 	static long ID_NOT_SET = -1;
-	private long id = ID_NOT_SET;
+	private long tagID = ID_NOT_SET;
 	private final TagName name;
 	private final String comment;
+	private final String userName;
 
-	Tag(long id, TagName name, String comment) {
-		this.id = id;
+	Tag(long tagID, TagName name, String comment, String userName) {
+		this.tagID = tagID;
 		this.name = name;
 		this.comment = comment;
+		this.userName = userName;
 	}
 
+	/**
+	 * Get Tag ID (unique amongst tags)
+	 * 
+	 * @return 
+	 */
 	public long getId() {
-		return id;
+		return tagID;
 	}
 
 	public TagName getName() {
@@ -45,5 +52,9 @@ public abstract class Tag {
 
 	public String getComment() {
 		return comment;
+	}
+	
+	public String getUserName() {
+		return userName == null ? "" : userName;
 	}
 }

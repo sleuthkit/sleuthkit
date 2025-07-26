@@ -38,7 +38,8 @@ PROJECT_NAME           = "Sleuth Kit Java Bindings (JNI)"
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 4.4.1 
+# NOTE: This is updated by the release-unix.pl script
+PROJECT_NUMBER = 4.14.0
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -415,7 +416,7 @@ EXTRACT_ALL            = YES
 # be included in the documentation.
 # The default value is: NO.
 
-EXTRACT_PRIVATE        = YES
+EXTRACT_PRIVATE        = NO
 
 # If the EXTRACT_PACKAGE tag is set to YES, all members with package or internal
 # scope will be included in the documentation.
@@ -760,9 +761,18 @@ WARN_LOGFILE           =
 
 INPUT                  = main.dox \
                          query_database.dox \
-			 blackboard.dox \
+                         blackboard.dox \
+                         artifact_catalog.dox \
                          insert_and_update_database.dox \
-						 ../src
+                         communications.dox \
+                         datasources.dox \
+                         os_accounts.dox \
+                         schema/schema_list.dox \
+                         schema/db_schema_8_6.dox \
+                         schema/db_schema_9_0.dox \
+                         schema/db_schema_9_1.dox \
+                         schema/db_schema_9_4.dox \
+                         ../src
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -850,7 +860,7 @@ EXAMPLE_RECURSIVE      = NO
 # that contain images that are to be included in the documentation (see the
 # \image command).
 
-IMAGE_PATH             =
+IMAGE_PATH             = images/
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -1046,7 +1056,8 @@ GENERATE_HTML          = YES
 # The default directory is: html.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_OUTPUT            = jni-docs/4.4.1/
+# NOTE: This is updated by the release-unix.pl script
+HTML_OUTPUT = jni-docs/4.15.0-develop/
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).
@@ -2138,7 +2149,7 @@ DOT_NUM_THREADS        = 0
 # The default value is: Helvetica.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_FONTNAME           = 
+DOT_FONTNAME           =
 
 # The DOT_FONTSIZE tag can be used to set the size (in points) of the font of
 # dot graphs.

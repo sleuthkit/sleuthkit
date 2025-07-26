@@ -15,10 +15,10 @@
 #include "tsk_mac.h"
 
 
-/* 
- * Process the partition table at the sector address 
- * 
- * It is loaded into the internal sorted list 
+/*
+ * Process the partition table at the sector address
+ *
+ * It is loaded into the internal sorted list
  *
  * Return 1 on error and 0 on success
  */
@@ -36,7 +36,7 @@ mac_load_table(TSK_VS_INFO * vs)
         tsk_fprintf(stderr, "mac_load_table: Sector: %" PRIuDADDR "\n",
             taddr);
 
-    /* The table can be variable length, so we loop on it 
+    /* The table can be variable length, so we loop on it
      * The idx variable shows which round it is
      * Each structure is a block size
      */
@@ -144,6 +144,7 @@ mac_load_table(TSK_VS_INFO * vs)
         }
 
         strncpy(str, (char *) part->type, sizeof(part->name));
+        str[sizeof(part->name) - 1] = 0;
 
         if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                 (TSK_DADDR_T) part_size, (TSK_VS_PART_FLAG_ENUM)flag, str, -1,
@@ -183,7 +184,7 @@ mac_close(TSK_VS_INFO * vs)
     free(vs);
 }
 
-/* 
+/*
  * Process img_info as a Mac disk.  Initialize TSK_VS_INFO or return
  * NULL on error
  * */
@@ -194,6 +195,13 @@ tsk_vs_mac_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     // clean up any errors that are lying around
     tsk_error_reset();
+
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_VS_ARG);
+        tsk_error_set_errstr("tsk_vs_mac_open: sector size is 0");
+        return NULL;
+    }
 
     vs = (TSK_VS_INFO *) tsk_malloc(sizeof(*vs));
     if (vs == NULL)

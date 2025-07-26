@@ -10,7 +10,7 @@
 *	input by default) and computes the md5 checksum for each file.
 *
 *	The output format is one line per file with the checksum and
-*	corresponding file name separated by whitespace (no file name 
+*	corresponding file name separated by whitespace (no file name
 *	is emitted when reading from standard input).
 *
 *	This program has a somewhat easier to parse output format
@@ -19,7 +19,7 @@
 *	Wietse Venema
 *	This program is part of SATAN.
 *
-*	The MD5 implementation used by this program is placed in the 
+*	The MD5 implementation used by this program is placed in the
 *	public domain for free general use by RSA Data Security.
 *--*/
 
@@ -35,13 +35,13 @@ main(argc, argv)
 {
     char *myname = argv[0];
     char *crunch();
-    FILE *fp;
 
     if (argc < 2) {
         printf("%s\n", crunch(stdin));
     }
     else {
         while (--argc && *++argv) {
+            FILE *fp;
             if ((fp = fopen(*argv, "r")) == 0) {
                 fprintf(stderr, "%s: ", myname);
                 perror(*argv);

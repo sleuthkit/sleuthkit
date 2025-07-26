@@ -44,9 +44,9 @@ namespace Rejistry {
         typedef LIRecord * LIRecordPtr;
 
         LIRecord(RegistryByteBuffer * buf, uint32_t offset);
-        
+
         virtual ~LIRecord() {}
-    
+
     private:
         LIRecord() {};
         LIRecord(const LIRecord &);
