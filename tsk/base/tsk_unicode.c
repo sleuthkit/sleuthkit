@@ -385,7 +385,7 @@ tsk_UTF16WtoUTF8_lclorder(const wchar_t ** sourceStart,
         /* If we have a surrogate pair, convert to UTF32 first. */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
             /* If the 16 bits following the high surrogate are in the source buffer... */
-	  if ((const char *)(source)+3 < (const char *)sourceEnd) { /* we need 3 bytes */
+	  if ((const char *)(source)+7 < (const char *)sourceEnd) { /* we need 8 bytes */
                 UTF32 ch2 = *source;
                 source++;
                 /* If it's a low surrogate, convert to UTF32. */
