@@ -135,7 +135,7 @@ static const UTF8 firstByteMark[7] =
 /**
  * \ingroup baselib
  * Convert a UTF-16 string to UTF-8.
- * @param endian Endian ordering flag of UTF-16 text
+ * @param endian Byte ordering of UTF-16 text
  * @param sourceStart Pointer to pointer to start of UTF-16 string.  Will be updated to last char processed.
  * @param sourceEnd Pointer to one entry past end of UTF-16 string
  * @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to.
@@ -250,6 +250,42 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
     *sourceStart = source;
     *targetStart = target;
     return result;
+}
+
+/**
+ * \ingroup baselib
+ * Wrapper around tsk_UTF16toUTF8 to ensure read of source remains in bounds.
+ * @param endian Byte ordering of UTF-16 text
+ * @param source Pointer to start of the buffer that contains the UTF-16 string.
+ * @param source_len Number of bytes in buffer that contains the UTF-16 string (source).
+ * @param number_of_characters Number of characters in the UTF-16 string to convert.
+ * @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to.
+ * @param targetEnd Pointer to end of UTF-8 buffer
+ * @param flags Flags used during conversion
+ * @returns error code
+ */
+TSKConversionResult
+tsk_safeUTF16toUTF8(TSK_ENDIAN_ENUM endian, const uint8_t * source,
+    size_t source_len, size_t number_of_characters, UTF8 ** targetStart,
+    UTF8 * targetEnd, TSKConversionFlags flags)
+{
+	int retVal = TSKconversionOK;
+
+	if (source_len > 0 && source_len % 2 != 0) {
+		// source_len must be even, since UTF-16 uses 2 bytes per character
+		source_len -= 1;
+	}
+	source_len /= 2;
+
+	if (source_len < number_of_characters) {
+		number_of_characters = source_len;
+	}
+	const UTF16 *utf16_source = (const UTF16 *) source;
+
+	retVal = tsk_UTF16toUTF8(endian, &utf16_source,
+		utf16_source + number_of_characters, targetStart, targetEnd, flags);
+
+	return retVal;
 }
 
 
