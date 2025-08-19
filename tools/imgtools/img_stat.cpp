@@ -18,10 +18,8 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-tvV] [-i imgtype] [-b dev_sector_size] image\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: img_stat [-tvV] [-i imgtype] [-b dev_sector_size] image\n");
     tsk_fprintf(stderr, "\t-t: display type only\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for list of supported types)\n");

@@ -1,0 +1,7 @@
+DOS Partition Table
+Offset Sector: 0
+Units are in 512-byte sectors
+
+      Slot      Start        End          Length       Description
+002:  000:000   0000000063   0000096389   0000096327   NTFS / exFAT (0x07)
+003:  000:001   0000096390   0000192779   0000096390   NTFS / exFAT (0x07)

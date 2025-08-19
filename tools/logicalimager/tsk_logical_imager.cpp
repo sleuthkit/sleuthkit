@@ -396,10 +396,8 @@ static void reportUsers(const std::string &sessionDir, const std::string &driveN
 
 
 static void usage() {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-c configPath]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: tsk_logical_imager [-c configPath]\n");
     tsk_fprintf(stderr, "\t-c configPath: The configuration file. Default is logical-imager-config.json\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");

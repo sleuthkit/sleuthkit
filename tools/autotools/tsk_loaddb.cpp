@@ -18,10 +18,8 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-ahkvV] [-i imgtype] [-b dev_sector_size] [-d database] [-z ZONE] image [image]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: tsk_loaddb [-ahkvV] [-i imgtype] [-b dev_sector_size] [-d database] [-z ZONE] image [image]\n");
     tsk_fprintf(stderr, "\t-a: Add image to existing database, instead of creating a new one (requires -d to specify database)\n");
     tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
     tsk_fprintf(stderr, "\t-h: Calculate hash values for the files\n");
@@ -40,7 +38,7 @@ usage()
 
 
 int
-main(int argc, char **argv1)
+main(int argc, [[maybe_unused]] char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 

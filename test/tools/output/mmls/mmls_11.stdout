@@ -1,0 +1,7 @@
+DOS Partition Table
+Offset Sector: 0
+Units are in 512-byte sectors
+
+      Slot      Start        End          Length       Description
+001:  -------   0000000000   0000000062   0000000063   Unallocated
+004:  -------   0000192780   0000192783   0000000004   Unallocated
