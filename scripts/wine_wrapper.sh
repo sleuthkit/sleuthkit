@@ -7,7 +7,9 @@ fi
 
 case $1 in
 *.exe)
-  wine $1 -d yes
+  #SLG removed -d yes. Not sure what it was doing
+  #wine $1 -d yes
+  wine $1
   ;;
 *)
   $1

@@ -730,6 +730,37 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
+	 * Performs a select statement query with the given case prepared statement.
+	 *
+	 * NOTE: Run optimize only runs for SQLite, and is not applicable to
+	 * postgres. Optimize seems to work on a connection by connection basis.
+	 * Given the connection pool, it must be assumed that any new connection has
+	 * not necessarily been optimized. Optimize should be ran in situations
+	 * where statistics in the database would change the query plan thus
+	 * improving query speed. In most instances, running optimize is a no-op.
+	 * See https://sqlite.org/pragma.html#pragma_optimize for more information.
+	 *
+	 * @param preparedStatement The case prepared statement.
+	 * @param runOptimize       Runs optimization before executing the query.
+	 *                          See note above.
+	 * @param queryCallback     The callback to handle the result set.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void select(CaseDbPreparedStatement preparedStatement, boolean runOptimize, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
+		if (runOptimize && this.tskDB.getDatabaseType() == DbType.SQLITE) {
+			try (Statement optimizeStmt = preparedStatement.connection.createStatement()) {
+				optimizeStmt.execute("PRAGMA optimize");
+			} catch (SQLException ex) {
+				throw new TskCoreException("An error occurred while attempting to optimize the call", ex);
+			}
+		}
+		
+		select(preparedStatement, queryCallback);
+	}
+	
+	/**
 	 * Creates a prepared statement object for the purposes of running an insert
 	 * statement. The given SQL should not include the starting "INSERT INTO" 
 	 * or the name of the table.

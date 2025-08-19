@@ -1,5 +1,9 @@
 version: 4.6.0.{build}
 
+# Run on all pull requests to any branch
+# Skip branch builds when there are PRs to prevent duplicates
+skip_branch_with_pr: true
+
 environment:
   matrix:
   - job_name: Windows Build
@@ -10,7 +14,6 @@ environment:
     appveyor_build_worker_image: macos-sonoma
 
 matrix:
-
   fast_finish: true
 
 
@@ -79,18 +82,17 @@ for:
         - job_name: macOS Build
 
     build_script:
+      - export TZ=UTC
       - ./bootstrap
-      - ./configure
-      - make -j
-
-    get_test_data:
-      - cd ..
-      - pwd
+      - ./configure -q
+      - V=0 make -j
       - curl https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip -o sleuthkit_test_data.zip
       - unzip sleuthkit_test_data.zip
       - cd sleuthkit_test_data
       - make unpack
-      - find . -ls | grpe -v '[.]git'
+      - find . -ls | grep -v '[.]git'
+      - cd ..
 
     test_script:
-      - make -j check VERBOSE=1
+      - export TZ=UTC
+      - SLEUTHKIT_TEST_DATA_DIR=$(pwd)/sleuthkit_test_data V=0 make -j check VERBOSE=1

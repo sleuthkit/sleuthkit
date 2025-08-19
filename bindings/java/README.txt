@@ -15,9 +15,10 @@ from the C/C++ code.
 
 
 Requirements:
-* Java JDK
+* Java JDK 17+ (OpenJDK)
 * Ant
 * Jar files as listed in ivy.xml (which will get downloaded automatically)
+* JAVA_HOME environment variable configured 
 
 The following jar files must be on the classpath for building and
 running.  Version details can be found in ivy.xml.  They will be 
@@ -36,7 +37,7 @@ JDK_HOME environment variable set to the root directory of JDK.
 
 On non-windows environments, it should just build as part of running
 ./configure and make.   If the needed Java components are not found,
-it will not be built. 
+it will not be built. Detection relies on the setting of JAVA_HOME.
 
 This library will depend on libewf, zlib, and other libraries that
 TSK was built to depend on. In Windows, the core of TSK (libtsk)

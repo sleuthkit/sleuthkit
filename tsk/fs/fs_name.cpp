@@ -27,9 +27,10 @@
 
 #include <time.h>
 
-#ifndef TZNAME
-#define TZNAME __tzname
-#endif
+// 2025-07-01 - commented out; do not use an internal structure
+// #ifndef TZNAME
+// #define TZNAME __tzname
+// #endif
 
 char tsk_fs_name_type_str[TSK_FS_NAME_TYPE_STR_MAX][2] =
     { "-", "p", "c", "d", "b", "r",

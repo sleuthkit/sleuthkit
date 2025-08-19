@@ -20,16 +20,14 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [inode]\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: jls [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [inode]\n");
+    tsk_fprintf(stderr,
+        "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
-    tsk_fprintf(stderr,
-        "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -39,7 +37,7 @@ usage()
 
 
 int
-main(int argc, char **argv1)
+main(int argc, [[maybe_unused]] char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 

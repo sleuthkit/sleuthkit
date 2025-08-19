@@ -11,7 +11,7 @@
 	<import file="build-${os.family}.xml"/>
 
     <!-- Careful changing this because release-windows.pl updates it by pattern -->
-<property name="VERSION" value="4.13.0"/>
+<property name="VERSION" value="4.14.0"/>
 
 	<!-- set global properties for this build -->
 	<property name="default-jar-location" location="/usr/share/java"/>
@@ -97,10 +97,10 @@
 	<property name="ivy.home" value="${user.home}/.ant"/>
 	<property name="ivy.jar.dir" value="${ivy.home}/lib"/>
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
-    
+
     <target name="download-ivy" unless="offline">
         <mkdir dir="${ivy.jar.dir}"/>
-        <get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" 
+        <get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
              dest="${ivy.jar.file}" usetimestamp="true"/>
     </target>
 
@@ -135,12 +135,12 @@
 		<copy todir="${build-datamodel}">
 			<fileset dir="${src}" includes="**/*.properties"/>
 		</copy>
-		
+
 		<!-- Verify sample compiles -->
 		<javac encoding="iso-8859-1" debug="on" srcdir="${sample}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
 		</javac>
-		
+
 		<!--Copy .properties to .properties-MERGED -->
 		<antcall target="copy-bundle" />
 	</target>

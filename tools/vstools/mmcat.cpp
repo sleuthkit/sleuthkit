@@ -22,10 +22,8 @@ static TSK_TCHAR *progname;
 void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] [-t vstype] image [images] part_num\n"),
-        progname);
+    tsk_fprintf(stderr,
+        "usage: mmcat [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] [-t vstype] image [images] part_num\n");
     tsk_fprintf(stderr,
         "\t-t vstype: The type of partition system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,

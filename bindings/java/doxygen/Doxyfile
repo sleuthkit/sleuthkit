@@ -39,7 +39,7 @@ PROJECT_NAME           = "Sleuth Kit Java Bindings (JNI)"
 # control system is used.
 
 # NOTE: This is updated by the release-unix.pl script
-PROJECT_NUMBER = 4.13.0
+PROJECT_NUMBER = 4.14.0
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -1057,7 +1057,7 @@ GENERATE_HTML          = YES
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
 # NOTE: This is updated by the release-unix.pl script
-HTML_OUTPUT = jni-docs/4.13.0/
+HTML_OUTPUT = jni-docs/4.15.0-develop/
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).
@@ -2149,7 +2149,7 @@ DOT_NUM_THREADS        = 0
 # The default value is: Helvetica.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_FONTNAME           = 
+DOT_FONTNAME           =
 
 # The DOT_FONTSIZE tag can be used to set the size (in points) of the font of
 # dot graphs.
