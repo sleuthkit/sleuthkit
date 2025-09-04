@@ -3314,7 +3314,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
 
     if ((run_off < 48) ||
         (run_off >= attr_len) ||
-        ((uintptr_t) data_attr + run_off) > ((uintptr_t) mft + (uintptr_t) ntfs->mft_rsize_b)) {
+        ((uintptr_t) data_attr + run_off) >= ((uintptr_t) mft + (uintptr_t) ntfs->mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr("Invalid run_off of Bitmap Data Attribute - value out of bounds");
