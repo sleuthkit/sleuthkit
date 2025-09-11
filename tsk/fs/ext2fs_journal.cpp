@@ -31,6 +31,11 @@
 	(((uint8_t *)x)[0] << 24) )
 
 
+#define big_tsk_getu16(x)	\
+	(uint16_t)((((uint8_t *)x)[1] <<  0) + \
+	(((uint8_t *)x)[0] <<  8) )
+
+
 /*
  *
  */
@@ -74,6 +79,8 @@ load_sb_action(
     jinfo->last_block = big_tsk_getu32(sb->num_blk) - 1;
     jinfo->start_blk = big_tsk_getu32(sb->start_blk);
     jinfo->start_seq = big_tsk_getu32(sb->start_seq);
+    jinfo->feature_compat = big_tsk_getu32(sb->feature_compat);
+    jinfo->feature_incompat = big_tsk_getu32(sb->feature_incompat);
 
     return TSK_WALK_STOP;
 }
@@ -128,6 +135,30 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
             inum, jinfo->bsize, jinfo->first_block, jinfo->last_block);
 
     return 0;
+}
+
+
+/* Copy of journal_tag_bytes from fs/jbd2/journal.c
+ *
+ * journal descriptor block entry size
+ * */
+static size_t
+journ_dentry_bytes(EXT2FS_JINFO *jinfo)
+{
+    size_t sz;
+
+    if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_CSUM_V3)
+        return sizeof(ext2fs_journ_dentry_tag3);
+
+    sz = sizeof(ext2fs_journ_dentry_tag);
+
+    if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_CSUM_V2)
+        sz += sizeof(uint16_t);
+
+    if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_64BIT)
+        return sz;
+
+    return sz - sizeof(uint32_t);
 }
 
 
@@ -461,20 +492,20 @@ ext2fs_jentry_walk(
                     big_tsk_getu32(dentry->fs_blk));
 
                 /* Increment to the next */
-                if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_LAST)
+                if (big_tsk_getu16(dentry->flag) & EXT2_J_DENTRY_LAST)
                     break;
 
                 /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
-                else if (big_tsk_getu32(dentry->flag) &
+                else if (big_tsk_getu16(dentry->flag) &
                     EXT2_J_DENTRY_SAMEID)
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry));
+                        journ_dentry_bytes(jinfo));
 
                 else
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry) + 16);
+                        journ_dentry_bytes(jinfo) + 16);
             }
         }
     }
@@ -615,7 +646,7 @@ ext2fs_jblk_walk(
                     sizeof(ext2fs_journ_head))) {
 
                 if (--diff == 0) {
-                    if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_ESC) {
+                    if (big_tsk_getu16(dentry->flag) & EXT2_J_DENTRY_ESC) {
                         journ[end * jinfo->bsize] = 0xC0;
                         journ[end * jinfo->bsize + 1] = 0x3B;
                         journ[end * jinfo->bsize + 2] = 0x39;
@@ -625,14 +656,14 @@ ext2fs_jblk_walk(
                 }
 
                 /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
-                if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_SAMEID)
+                if (big_tsk_getu16(dentry->flag) & EXT2_J_DENTRY_SAMEID)
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry));
+                        journ_dentry_bytes(jinfo));
                 else
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry) + 16);
+                        journ_dentry_bytes(jinfo) + 16);
 
             }
             break;

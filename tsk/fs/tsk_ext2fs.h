@@ -551,6 +551,8 @@ extern "C" {
 #define JBD2_FEATURE_INCOMPAT_REVOKE        0x00000001
 #define JBD2_FEATURE_INCOMPAT_64BIT         0x00000002
 #define JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT  0x00000004
+#define JBD2_FEATURE_INCOMPAT_CSUM_V2       0x00000008
+#define JBD2_FEATURE_INCOMPAT_CSUM_V3       0x00000010
 
     typedef struct {
         uint8_t magic[4];
@@ -624,9 +626,25 @@ extern "C" {
 /* Entry in the descriptor table */
     typedef struct {
         uint8_t fs_blk[4];
-        uint8_t flag[4];
+        uint8_t checksum[2];
+        uint8_t flag[2];
     } ext2fs_journ_dentry;
 
+/* struct journal_block_tag3_s from include/linux/jbd2.h */
+    typedef struct {
+        uint8_t fs_blk[4];
+        uint8_t flag[4];
+        uint8_t fs_blk_hi[4];
+        uint8_t checksum[4];
+    } ext2fs_journ_dentry_tag3;
+
+/* struct journal_block_tag_s from include/linux/jbd2.h */
+    typedef struct {
+        uint8_t fs_blk[4];
+        uint8_t checksum[2];
+        uint8_t flag[2];
+        uint8_t fs_blk_hi[4];
+    } ext2fs_journ_dentry_tag;
 
 /* Journal Info */
     typedef struct {
@@ -641,6 +659,8 @@ extern "C" {
         uint32_t start_seq;
         TSK_DADDR_T start_blk;
 
+        uint32_t feature_compat;
+        uint32_t feature_incompat;
     } EXT2FS_JINFO;
 
 
