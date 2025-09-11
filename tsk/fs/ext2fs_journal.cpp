@@ -24,11 +24,27 @@
 
 
 /* Everything in the journal is in big endian */
+#define big_tsk_getu16(x)	\
+	(uint16_t)((((uint8_t *)x)[1] <<  0) + \
+	(((uint8_t *)x)[0] <<  8) )
+
 #define big_tsk_getu32(x)	\
 	(uint32_t)((((uint8_t *)x)[3] <<  0) + \
 	(((uint8_t *)x)[2] <<  8) + \
 	(((uint8_t *)x)[1] << 16) + \
 	(((uint8_t *)x)[0] << 24) )
+
+#define big_tsk_getu64(x, y)	\
+    ((uint64_t) \
+    ((uint64_t)((uint8_t *)(y))[3] <<  0) + \
+    ((uint64_t)((uint8_t *)(y))[2] <<  8) + \
+    ((uint64_t)((uint8_t *)(y))[1] << 16) + \
+    ((uint64_t)((uint8_t *)(y))[0] << 24) + \
+    ((uint64_t)((uint8_t *)(x))[3] << 32) + \
+    ((uint64_t)((uint8_t *)(x))[2] << 40) + \
+    ((uint64_t)((uint8_t *)(x))[1] << 48) + \
+    ((uint64_t)((uint8_t *)(x))[0] << 56))\
+
 
 
 /*
@@ -74,6 +90,8 @@ load_sb_action(
     jinfo->last_block = big_tsk_getu32(sb->num_blk) - 1;
     jinfo->start_blk = big_tsk_getu32(sb->start_blk);
     jinfo->start_seq = big_tsk_getu32(sb->start_seq);
+    jinfo->feature_compat = big_tsk_getu32(sb->feature_compat);
+    jinfo->feature_incompat = big_tsk_getu32(sb->feature_incompat);
 
     return TSK_WALK_STOP;
 }
@@ -128,6 +146,30 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
             inum, jinfo->bsize, jinfo->first_block, jinfo->last_block);
 
     return 0;
+}
+
+
+/* Copy of journal_tag_bytes from fs/jbd2/journal.c
+ *
+ * journal descriptor block entry size
+ * */
+static size_t
+journ_dentry_bytes(EXT2FS_JINFO *jinfo)
+{
+    size_t sz;
+
+    if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_CSUM_V3)
+        return sizeof(ext2fs_journ_dentry3);
+
+    sz = sizeof(ext2fs_journ_dentry);
+
+    if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_CSUM_V2)
+        sz += sizeof(uint16_t);
+
+    if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_64BIT)
+        return sz;
+
+    return sz - sizeof(uint32_t);
 }
 
 
@@ -279,6 +321,7 @@ ext2fs_jentry_walk(
                 while ((uintptr_t) dentry <=
                     ((uintptr_t) head2 + jinfo->bsize -
                         sizeof(ext2fs_journ_head))) {
+                    uint64_t block;
 
 
                     /* Only start to look after the index in the desc has looped */
@@ -294,10 +337,15 @@ ext2fs_jentry_walk(
                             break;
                         }
 
+                        if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_64BIT)
+                            block = big_tsk_getu64(dentry->fs_blk_hi, dentry->fs_blk);
+                        else
+                            block = big_tsk_getu32(dentry->fs_blk);
+
                         /* If it doesn't have the magic, then it is a
                          * journal entry and we print the FS info */
-                        tsk_printf("%" PRIuDADDR ":\tFS Block %" PRIu32
-                            "\n", i, big_tsk_getu32(dentry->fs_blk));
+                        tsk_printf("%" PRIuDADDR ":\tFS Block %" PRIu64
+                            "\n", i, block);
 
                         /* Our counter is over the end of the journ */
                         if (++i > jinfo->last_block)
@@ -306,20 +354,20 @@ ext2fs_jentry_walk(
                     }
 
                     /* Increment to the next */
-                    if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_LAST)
+                    if (big_tsk_getu16(dentry->flag) & EXT2_J_DENTRY_LAST)
                         break;
 
                     /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
-                    else if (big_tsk_getu32(dentry->flag) &
+                    else if (big_tsk_getu16(dentry->flag) &
                         EXT2_J_DENTRY_SAMEID)
                         dentry =
                             (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                            sizeof(ext2fs_journ_dentry));
+                            journ_dentry_bytes(jinfo));
 
                     else
                         dentry =
                             (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                            sizeof(ext2fs_journ_dentry)
+                            journ_dentry_bytes(jinfo)
                             + 16);
 
                 }
@@ -357,6 +405,12 @@ ext2fs_jentry_walk(
             if (big_tsk_getu32(journ_sb->
                     feature_incompat) & JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)
                 tsk_printf("\tJOURNAL_ASYNC_COMMIT\n");
+            if (big_tsk_getu32(journ_sb->
+                    feature_incompat) & JBD2_FEATURE_INCOMPAT_CSUM_V2)
+                tsk_printf("\tJOURNAL_CSUM_V2\n");
+            if (big_tsk_getu32(journ_sb->
+                    feature_incompat) & JBD2_FEATURE_INCOMPAT_CSUM_V3)
+                tsk_printf("\tJOURNAL_CSUM_V3\n");
             tsk_printf("sb feature_ro_incompat flags 0x%08X\n",
                 big_tsk_getu32(journ_sb->feature_ro_incompat));
         }
@@ -438,6 +492,7 @@ ext2fs_jentry_walk(
                 ((uintptr_t) head + jinfo->bsize -
                     sizeof(ext2fs_journ_head))) {
                 ext2fs_journ_head *head2;
+                uint64_t block;
 
 
                 /* Our counter is over the end of the journ */
@@ -454,27 +509,32 @@ ext2fs_jentry_walk(
                     break;
                 }
 
+                if (jinfo->feature_incompat & JBD2_FEATURE_INCOMPAT_64BIT)
+                    block = big_tsk_getu64(dentry->fs_blk_hi, dentry->fs_blk);
+                else
+                    block = big_tsk_getu32(dentry->fs_blk);
+
                 /* If it doesn't have the magic, then it is a
                  * journal entry and we print the FS info */
-                tsk_printf("%" PRIuDADDR ":\t%sFS Block %" PRIu32 "\n", i,
+                tsk_printf("%" PRIuDADDR ":\t%sFS Block %" PRIu64 "\n", i,
                     (unalloc) ? "Unallocated " : "Allocated ",
-                    big_tsk_getu32(dentry->fs_blk));
+                    block);
 
                 /* Increment to the next */
-                if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_LAST)
+                if (big_tsk_getu16(dentry->flag) & EXT2_J_DENTRY_LAST)
                     break;
 
                 /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
-                else if (big_tsk_getu32(dentry->flag) &
+                else if (big_tsk_getu16(dentry->flag) &
                     EXT2_J_DENTRY_SAMEID)
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry));
+                        journ_dentry_bytes(jinfo));
 
                 else
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry) + 16);
+                        journ_dentry_bytes(jinfo) + 16);
             }
         }
     }
@@ -615,7 +675,7 @@ ext2fs_jblk_walk(
                     sizeof(ext2fs_journ_head))) {
 
                 if (--diff == 0) {
-                    if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_ESC) {
+                    if (big_tsk_getu16(dentry->flag) & EXT2_J_DENTRY_ESC) {
                         journ[end * jinfo->bsize] = 0xC0;
                         journ[end * jinfo->bsize + 1] = 0x3B;
                         journ[end * jinfo->bsize + 2] = 0x39;
@@ -625,14 +685,14 @@ ext2fs_jblk_walk(
                 }
 
                 /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
-                if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_SAMEID)
+                if (big_tsk_getu16(dentry->flag) & EXT2_J_DENTRY_SAMEID)
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry));
+                        journ_dentry_bytes(jinfo));
                 else
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
-                        sizeof(ext2fs_journ_dentry) + 16);
+                        journ_dentry_bytes(jinfo) + 16);
 
             }
             break;
