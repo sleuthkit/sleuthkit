@@ -190,6 +190,12 @@ void fiwalk::file_info(const sha256_t &h)
     if(x) x->xmlout("hashdigest",h.hexdigest(),"type='sha256'",false);
 }
 
+void fiwalk::file_info(const sha512_t &h)
+{
+    if(a) a->add_value("sha512",h.hexdigest());
+    if(t && !opt_body_file) fputs(cstr("sha512: " + h.hexdigest() + "\n"),t);
+    if(x) x->xmlout("hashdigest",h.hexdigest(),"type='sha512'",false);
+}
 
 /* Process a numeric value */
 void fiwalk::file_info(const string name, int64_t value)
@@ -323,7 +329,8 @@ int fiwalk::run()
 {
     gettimeofday(&tv0,0);
     std::ofstream xout;
-    if (opt_no_data && (opt_md5 || opt_sha1 || opt_save || opt_magic)) {
+    if (opt_no_data && (opt_md5 || opt_sha1 || opt_sha256 || opt_sha512
+						|| opt_save || opt_magic)) {
         errx(1, "-g conflicts with options requiring data access (-z may be needed)");
     }
 
@@ -413,6 +420,8 @@ int fiwalk::run()
         a->add_attribute("filename",arff::STRING);
         if (opt_md5) a->add_attribute("md5",arff::STRING);
         if (opt_sha1) a->add_attribute("sha1",arff::STRING);
+        if (opt_sha256) a->add_attribute("sha256",arff::STRING);
+        if (opt_sha512) a->add_attribute("sha512",arff::STRING);
     }
 
     /* output per-run metadata for XML output */

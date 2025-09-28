@@ -120,6 +120,8 @@ struct fiwalk {
     bool opt_save;			// should we save content?
     bool opt_sector_hash;
     bool opt_sha1;			// do we need sha1s?
+    bool opt_sha256;
+    bool opt_sha512;
     bool opt_x;
     bool opt_variable;
     bool opt_zap;
@@ -163,6 +165,7 @@ struct fiwalk {
     void file_info(const md5_t &t);
     void file_info(const sha1_t &t);
     void file_info(const sha256_t &t);
+    void file_info(const sha512_t &t);
     void file_info_xml(const string &name,const string &value);
     void file_info_xml2(const string &name,const string &attrib,const string &value);
     void file_info(const string name, int64_t value);
@@ -188,6 +191,8 @@ struct fiwalk {
              opt_save(false),
              opt_sector_hash(false),
              opt_sha1(true),
+             opt_sha256(false),
+             opt_sha512(false),
              opt_x(false),
              opt_variable(true),
              opt_zap(false),

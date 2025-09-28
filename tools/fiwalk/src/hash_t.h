@@ -132,6 +132,7 @@ using sha1_hasher = legacy_hasher<
 #ifdef HAVE_LIBCRYPTO
 template<const EVP_MD*(*md_src)(), class H>
 class libcrypto_hasher {
+public:
   using hash_t = H;
 
   libcrypto_hasher(): ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free) {}
@@ -223,8 +224,9 @@ public:
   }
 
   std::string hexdigest() const {
-    std::string buf('\0', this->SIZE*2);
+    std::string buf(this->SIZE * 2 + 1, '\0');
     hexdigest(&buf[0], buf.size());
+    buf.resize(this->SIZE * 2);
     return buf;
   }
 
