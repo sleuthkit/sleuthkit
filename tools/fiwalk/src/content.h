@@ -49,6 +49,8 @@ public:
 
     md5_generator	h_md5;
     sha1_generator	h_sha1;
+    sha256_generator	h_sha256;
+    sha512_generator	h_sha512;
     md5_generator	*h_sectorhash;
     uint64_t            sectorhash_byte_counter; // number of bytes that have been hashed
     uint64_t            sectorhash_initial_offset;
@@ -66,6 +68,8 @@ public:
         tempfile_path(""),
         h_md5(),
         h_sha1(),
+        h_sha256(),
+        h_sha512(),
         h_sectorhash(0),
 	sectorhash_byte_counter(0),
 	sectorhash_initial_offset(0),

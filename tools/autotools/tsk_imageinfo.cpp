@@ -36,7 +36,7 @@ usage()
 }
 
 int
-main(int argc, char **argv1)
+main(int argc, [[maybe_unused]] char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     int ch;
@@ -122,9 +122,8 @@ main(int argc, char **argv1)
     }
 
     // Run findFilesInImage to process the image and detect data / encryption
+    // NOTE: findFilesInImg() result is ignored.
     imageProcessor.findFilesInImg();
-
     imageProcessor.printResults();
-
     exit(0);
 }

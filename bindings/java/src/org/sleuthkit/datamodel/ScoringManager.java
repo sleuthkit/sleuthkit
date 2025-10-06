@@ -301,6 +301,10 @@ public class ScoringManager {
 		List<AnalysisResult> analysisResults = db.getBlackboard().getAnalysisResults(objId, connection);
 		Score newScore = Score.SCORE_UNKNOWN;
 		for (AnalysisResult iter : analysisResults) {
+			if (iter.ignoreResult()) {
+				continue;
+			}
+			
 			Score iterScore = iter.getScore();
 			if (Score.getScoreComparator().compare(iterScore, newScore) > 0) {
 				newScore = iterScore;

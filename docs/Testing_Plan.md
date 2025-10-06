@@ -39,3 +39,58 @@ The fix commits should cause the failing test to pass.
 
 A PR containing new functionality should contain unit tests for new functions and acceptance tests for new user-facing functionality, 
 in addition to updating any existing tests to match the changes.
+
+## CLI Test Runner Specification
+
+### Overview
+
+This section describes a new C++-based CLI test runner being introduced to improve the automation and consistency of testing command-line tools in Sleuth Kit (TSK). The runner reads a structured test definition file, executes the specified commands, and compares their outputs against expected results (both stdout and stderr), validating correctness and exit codes.
+
+### Test Definition Format
+
+Test definitions are stored in a plain text file (e.g., `cli_tests.txt`), with each line defining a single test case using the following pipe-delimited format: `TestID|CLICommand|ExpectedOutputFilePath|ExpectedExitCode`
+
+- Lines beginning with `#` are treated as comments.
+- A corresponding file `<TestID>.stderr` may optionally be provided in the same directory and will be automatically loaded if present.
+- If no `.stderr` file exists, stderr is expected to be empty.
+
+Example: `hello_1|echo "Hello World"|test/tools/output/hello.stdout|0`
+
+### Execution Strategy
+
+The test runner performs the following steps for each test:
+
+1. Parse each line from the test definition file, skipping comments.
+2. Extract: TestID, CLICommand, ExpectedOutputFilePath, and ExpectedExitCode.
+3. Redirect command output to temporary files:
+   - stdout → temporary file
+   - stderr → temporary file
+4. Validate:
+   - Exit code matches ExpectedExitCode
+   - stdout matches contents of expected file
+   - stderr matches corresponding stderr output, if present
+     - If not present, stderr must be empty
+5. Report mismatches using diff if available
+6. Record results and increment counters:
+   - Total run
+   - Skipped (if command is empty or fails to execute)
+   - Failed (output mismatch or incorrect exit)
+7. Summarize in a formatted result table
+
+### Summary Output
+
+After running, the tool prints a table like:
+Test Summary:
+Test ID Exit Match
+hello_1 0 yes 
+
+Tests run: 1, Skipped: 0, Failed: 0
+
+### Temporary Output Handling
+
+To maintain cross-platform compatibility:
+
+- Temporary files are created using the `tsk_make_tempfile()` utility.
+
+### Implementation Status
+The basic framework of the CLI test runner is near-complete, including parsing of the test definition file, execution of the specified CLI commands, redirection of output streams to temporary files, and comparison against expected outputs. Currently work is being completed to fit the elements of the new test runner together. 

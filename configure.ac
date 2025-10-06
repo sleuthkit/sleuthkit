@@ -3,12 +3,12 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
 
-AC_INIT([sleuthkit], [4.13.1])
+AC_INIT([sleuthkit], [4.15.0-develop])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
-AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
+AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar parallel-tests])
 LT_INIT
 AM_MAINTAINER_MODE
 
@@ -61,8 +61,9 @@ AC_FUNC_SELECT_ARGTYPES
 dnl AC_FUNC_STAT
 AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
+dnl these are the ones we removed:
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
-AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
+AC_CHECK_FUNCS([ishexnumber err errx getrusage setenv unsetenv vasprintf warn warnx])
 AC_CHECK_FUNCS([strlcpy strlcat strnlen])
 
 AX_PTHREAD([
@@ -177,7 +178,7 @@ TSK_OPT_DEP_CHECK([libvslvm], [VSLVM], [libvslvm], [libvslvm.h], [vslvm], [libvs
 
 dnl check for user online input
 AC_ARG_ENABLE([offline],
-    [ AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
+    [AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
     [case "${enableval}" in
 	yes) offline=true ;;
 	no) offline=false ;;
