@@ -63,9 +63,11 @@ std::string read_file(FILE* file) {
 bool compare_files(FILE* expected, FILE* actual) {
     std::string expected_content = read_file(expected);
     std::string actual_content = read_file(actual);
-
-    std::cout << "Expected File: " << expected_content << '\n';
-    std::cout << "Output: " << actual_content << '\n';
+    
+    if (expected_content != actual_content) {
+        std::cout << "Expected File: " << expected_content << '\n';
+        std::cout << "Output: " << actual_content << '\n';
+    }
 
     return expected_content == actual_content;
 }
@@ -159,11 +161,9 @@ int run_test(const std::string& cmd,
 
     if (expected_stderr) {
         full_cmd = resolved_cmd + " > \"" + stdout_path + "\" 2> \"" + stderr_path + "\"";
-        std::cout << "[exec] " << full_cmd << '\n';
 
     } else {
         full_cmd = resolved_cmd + " > \"" + stdout_path + "\"";
-        std::cout << "[exec] " << full_cmd << '\n';
     }
 
     int exit_code = std::system(full_cmd.c_str());

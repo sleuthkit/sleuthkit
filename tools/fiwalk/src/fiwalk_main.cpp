@@ -10,7 +10,7 @@
  * 1 - Find all of the partitions on the disk.
  * 2 - For each partition, walk the files.
  * 3 - For each file, print the requested information.
- * 4 - For each partition, walk the indoes
+ * 4 - For each partition, walk the inodes
  * 5 - For each inode, print the requested information.
  *
  * @author Simson Garfinkel
@@ -35,6 +35,8 @@
 #include "tsk/tsk_tools_i.h"
 
 #include <stdio.h>
+#include <sstream>
+
 #include "fiwalk.h"
 
 void print_version()
@@ -77,6 +79,19 @@ static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 }
 #endif
 
+static vector<string> split_comma_separated_args(const string &s) {
+    vector<string> result;
+    stringstream stream(s);
+    string item;
+    while (getline(stream, item, ',')) {
+        if (!item.empty()) {
+            transform(item.begin(), item.end(), item.begin(), ::tolower);
+            result.push_back(item);
+        }
+    }
+    return result;
+}
+
 void usage(fiwalk &o)
 {
     printf("usage: fiwalk [options] iso-name\n");
@@ -106,6 +121,7 @@ void usage(fiwalk &o)
     printf("Ways to make this program run slower:\n");
     printf("    -M = Report MD5 for each file (default on)\n");
     printf("    -1 = Report SHA1 for each file (default on)\n");
+    printf("    -H alg[,alg...] = Choose one or more hashing algorithms (md5,sha1,sha256,sha512)\n");
     printf("    -S nnnn = Perform sector hashes every nnnn bytes\n");
 #ifdef HAVE_LIBMAGIC
     printf("    -f = Enable LIBMAGIC (disabled by default)");
@@ -156,16 +172,41 @@ extern "C" int main(int argc, char * const *argv1) {
     argv = (TSK_TCHAR * const*) argv1;
 #endif
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:S:T:VZn:c:b:xOYzh?"))) > 0 ) { // s: removed
-	switch (ch) {
-	case _TSK_T('1'): o.opt_sha1 = true;break;
-	case _TSK_T('m'):
-	    o.opt_body_file = 1;
-	    o.opt_sha1 = 0;
-	    o.opt_md5  = 1;
-	    o.t = stdout;
-	    break;
-	case _TSK_T('A'):
+    while ((ch = GETOPT(argc, argv,
+            _TSK_T("A:a:C:dfG:gmv125IMX:S:T:VZn:c:b:xOYzh?H:"))) > 0) {
+        switch (ch) {
+        case _TSK_T('1'): o.opt_sha1 = true; break;
+        case _TSK_T('H'): {
+#ifdef TSK_WIN32
+            convert(OPTARG, &opt_arg);
+            string arg(opt_arg);
+#else
+            string arg(OPTARG);
+#endif
+            auto parsed = split_comma_separated_args(arg);
+            for (const auto &h : parsed) {
+                if (h == "md5")       o.opt_md5 = true;
+                else if (h == "sha1") o.opt_sha1 = true;
+                else if (h == "sha256") o.opt_sha256 = true;
+                else if (h == "sha512") o.opt_sha512 = true;
+                else {
+                    fprintf(stderr, "Unknown hash algorithm: %s\n", h.c_str());
+                    usage(o);
+                }
+            }
+            break;
+        }
+
+        case _TSK_T('m'):
+            o.opt_body_file = 1;
+            o.opt_sha1 = 0;
+            o.opt_sha256 = 0;
+            o.opt_sha512 = 0;
+            o.opt_md5  = 1;
+            o.t = stdout;
+            break;
+
+        case _TSK_T('A'):
 #ifdef TSK_WIN32
             convert(OPTARG, &opt_arg);
             o.arff_fn = opt_arg;
@@ -203,9 +244,9 @@ extern "C" int main(int argc, char * const *argv1) {
             o.xml_fn = string(OPTARG);
 #endif
             break;
-	case _TSK_T('Y'): o.opt_variable = false;break;
-	case _TSK_T('x'): o.opt_x = true;break;
-	case _TSK_T('Z'): o.opt_zap = true;break;
+	case _TSK_T('Y'): o.opt_variable = false; break;
+	case _TSK_T('x'): o.opt_x = true; break;
+	case _TSK_T('Z'): o.opt_zap = true; break;
 	case _TSK_T('a'):
 #ifdef TSK_WIN32
             convert(OPTARG, &opt_arg);
@@ -233,7 +274,12 @@ extern "C" int main(int argc, char * const *argv1) {
             break;
 	    //case 's': save_outdir = optarg; opt_save = true; break;
 	case _TSK_T('v'): tsk_verbose++; break; 			// sleuthkit option
-	case _TSK_T('z'): o.opt_sha1=false; o.opt_md5=false; break;
+	case _TSK_T('z'):
+            o.opt_sha1=false;
+            o.opt_sha256=false;
+            o.opt_sha512=false;
+            o.opt_md5=false;
+            break;
 	case _TSK_T('?'): usage(o);break;
 	default:
 	    fprintf(stderr, "Invalid argument: %" PRIttocTSK "\n", argv[OPTIND]);
