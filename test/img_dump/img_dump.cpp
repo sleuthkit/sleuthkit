@@ -1,3 +1,10 @@
+/*
+ * img_dump.cpp:
+ * A test program that dumps the contents of the image using sleuthkit to JSON.
+ * 2025-04-11 - slg - modified JSON output to strip directory from disk image
+                    - so tests can run portably in any directory.
+ */
+
 #include "tsk/libtsk.h"
 
 #include <algorithm>
@@ -7,6 +14,8 @@
 #include <memory>
 #include <stack>
 #include <string>
+#include <unistd.h>
+#include <filesystem>
 
 #ifdef TSK_WIN32
 #include <cwchar>
@@ -56,6 +65,9 @@ std::string extractString(const char* buf, size_t len) {
   return buf ? std::string(buf, std::min(std::strlen(buf), len)) : "";
 }
 
+/**
+ * class to build a json output.
+ */
 class JSON {
 public:
   JSON(std::ostream& out): out(out), state() {}
@@ -203,9 +215,12 @@ public:
     json.obj();
     json.k("files");
 
+    // array of the files that make up the disk image.
+    // 2024-04-11 - modified to only include the file names, not the directories.
     json.arr();
     for (auto i = 0; i < img->num_img; ++i) {
-      json.v(img->images[i]);
+        std::filesystem::path path(img->images[i]);
+        json.v(path.filename());
     }
     json.end();
 
@@ -457,9 +472,14 @@ private:
 };
 
 int main(int argc, char** argv) {
-  // Usage: img_dump IMAGE_PATH
   if (argc < 2) {
-    return 1;
+      fprintf(stderr,"usage: img_dump IMAGE_PATH\n");
+      return 1;
+  }
+
+  if (access(argv[1],R_OK)) {
+      perror(argv[1]);
+      return 77;
   }
 
   std::unique_ptr<TSK_IMG_INFO, void(*)(TSK_IMG_INFO*)> img{
@@ -468,7 +488,8 @@ int main(int argc, char** argv) {
   };
 
   if (!img) {
-    return 1;
+      perror("tsk_img_open");
+      return 1;
   }
 
   Walker walker(std::cout);

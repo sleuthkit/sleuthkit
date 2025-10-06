@@ -1,3 +1,15 @@
+---------------- VERSION 4.14.0 --------------
+- This release reverts many changes from 4.13.0. It is more close to 4.12.1 than it is to 4.13.0.
+- It was created from the Dec 3, 2024 ct-3.13.0 tag (28a838d) and has changes from the Sleuth Kit Labs team.
+  - Added BitLocker support (Windows only)
+  - Updated LibVMDK and LibVHDI
+  - Updated to Visual Studio 2019
+  - Updated logical folder caching
+  - Java changes listed below
+- Use of the optimize pragma was added to the Java SQLite code.
+- It does NOT have the experimental btrfs or bfs, and other changes that went into 4.13.0. Those will go into a future release (perhaps as a v5 so that there can be parallel releases).
+
+
 ---------------- VERSION 4.13.0 --------------
 C/C++:
 - Added BitLocker support (Windows only)
@@ -13,8 +25,6 @@ Java:
 - Changed how child map was loaded at start up
 - Updated handling of OS Accounts in Java DB, espcially for Linux
 - Updated PostgreSQL SSL configuration
-
-
 
 ---------------- VERSION 4.12.1 --------------
 C/C++:
@@ -925,7 +935,7 @@ space padding in the name and latin-only extensions.
 12/5/07: Bug Fix: fs_read_file_int had a bug that ignored the type passed
 for NTFS files.  Reported by Dave Collett.
 
-12/12/07: Update: Changed teh FAT dentry sanity checks to allow spaces
+12/12/07: Update: Changed the FAT dentry sanity checks to allow spaces
 in volume labels and do more checking on the attribute flag.
 
 
