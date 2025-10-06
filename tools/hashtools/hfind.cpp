@@ -22,27 +22,25 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-             _TSK_T
-             ("usage: %" PRIttocTSK " [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
-             progname);
     tsk_fprintf(stderr,
-                "\t-e: Extended mode - where values other than just the name are printed\n");
+        "usage: hfind [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n");
     tsk_fprintf(stderr,
-                "\t-q: Quick mode - where a 1 is printed if it is found, else 0\n");
+        "\t-e: Extended mode - where values other than just the name are printed\n");
+    tsk_fprintf(stderr,
+        "\t-q: Quick mode - where a 1 is printed if it is found, else 0\n");
     tsk_fprintf(stderr, "\t-V: Print version to STDOUT\n");
     tsk_fprintf(stderr, "\t-c db_name: Create new database with the given name.\n");
     tsk_fprintf(stderr, "\t-a: Add given hashes to the database.\n");
     tsk_fprintf(stderr,
-                "\t-f lookup_file: File with one hash per line to lookup\n");
+        "\t-f lookup_file: File with one hash per line to lookup\n");
     tsk_fprintf(stderr,
-                "\t-i db_type: Create index file for a given hash database type\n");
+        "\t-i db_type: Create index file for a given hash database type\n");
     tsk_fprintf(stderr,
-                "\tdb_file: The path of the hash database, must have .kdb extension for -c option\n");
+        "\tdb_file: The path of the hash database, must have .kdb extension for -c option\n");
     tsk_fprintf(stderr,
-                "\t[hashes]: hashes to lookup (STDIN is used otherwise)\n");
+        "\t[hashes]: hashes to lookup (STDIN is used otherwise)\n");
     tsk_fprintf(stderr, "\n\tSupported index types: %s\n",
-                TSK_HDB_DBTYPE_SUPPORT_STR);
+        TSK_HDB_DBTYPE_SUPPORT_STR);
     exit(1);
 }
 

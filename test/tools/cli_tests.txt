@@ -1,0 +1,21 @@
+# Test Definition File:
+# Format: TestID|CLICommand|ExpectedOutputFilePath|Expected exit code
+# lines beginning with a # are ignored.
+# If a second file test/CLI/fls_test1.stderr is present, it is automatically assumed to be the stderr output of the file.
+# It doesn’t have to be present in the test list.
+fls_0|tools/fstools/fls$EXEEXT|test/tools/output/fls/fls_0.stdout|1|test/tools/output/fls/fls_0.stderr
+mmls_0|tools/vstools/mmls$EXEEXT|test/tools/output/mmls/mmls_0.stdout|1|test/tools/output/mmls/mmls_0.stderr
+mmls_1|tools/vstools/mmls$EXEEXT $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_1.stdout|0
+mmls_2|tools/vstools/mmls$EXEEXT -B $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_2.stdout|0
+mmls_3|tools/vstools/mmls$EXEEXT -c $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_3.stdout|0
+mmls_4|tools/vstools/mmls$EXEEXT -a $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_4.stdout|0
+mmls_5|tools/vstools/mmls$EXEEXT -A $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_5.stdout|0
+mmls_6|tools/vstools/mmls$EXEEXT -m $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_6.stdout|0
+mmls_7|tools/vstools/mmls$EXEEXT -M $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_7.stdout|0
+mmls_8|tools/vstools/mmls$EXEEXT -B -c $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_8.stdout|0
+mmls_9|tools/vstools/mmls$EXEEXT -r $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_9.stdout|0
+mmls_10|tools/vstools/mmls$EXEEXT -a -M $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_10.stdout|0
+mmls_11|tools/vstools/mmls$EXEEXT -A -M $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_11.stdout|0
+mmls_12|tools/vstools/mmls$EXEEXT -a -A $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_12.stdout|0
+mmls_13|tools/vstools/mmls$EXEEXT -a -A -M $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_13.stdout|0
+mmls_14|tools/vstools/mmls$EXEEXT -t dos $SLEUTHKIT_TEST_DATA_DIR/from_brian/10-ntfs-autodetect/10-ntfs-disk.dd|test/tools/output/mmls/mmls_14.stdout|0

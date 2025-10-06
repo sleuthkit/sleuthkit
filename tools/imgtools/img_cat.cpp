@@ -21,12 +21,10 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr,
-        _TSK_T
-        ("usage: %" PRIttocTSK " [-vV] [-i imgtype] [-b dev_sector_size] [-s start_sector] [-e stop_sector] image\n"),
-        progname);
     tsk_fprintf(stderr,
-        "\t-i imgtype: The format of the image file (use 'i list' for supported types)\n");
+        "usage: img_cat [-vV] [-i imgtype] [-b dev_sector_size] [-s start_sector] [-e stop_sector] image\n");
+    tsk_fprintf(stderr,
+        "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,

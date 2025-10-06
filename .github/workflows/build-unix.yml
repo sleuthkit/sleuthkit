@@ -8,15 +8,17 @@ on:
     branches:
       - main
       - develop
+      - develop-4.14
   pull_request:
     branches:
       - main
       - develop
+      - develop-4.14
 
 jobs:
   build:
     timeout-minutes: 30
-    name: ${{matrix.prefix}} ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }} ${{ matrix.suffix }}
+    name: posix ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.linkage }} ${{ matrix.compiler }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -29,8 +31,6 @@ jobs:
             runner: "macos-15"
             configure_opts: "--with-libewf --enable-java"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
-            codecov: "yes"
-            prefix: "CODECOV"
             address_sanitizer: "yes"
             keep_artifacts: "no"
             enable_java: "yes"
@@ -42,12 +42,10 @@ jobs:
             runner: "ubuntu-24.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --enable-java"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
-            codecov: "no"
-            prefix:
             address_sanitizer: "yes"
             keep_artifacts: "yes"
-            suffix: "(with artifacts)"
             enable_java: "yes"
+            run_distcheck: "yes"
 
           - os: "linux"
             arch: "x86_64"
@@ -56,11 +54,17 @@ jobs:
             runner: "ubuntu-24.04"
             configure_opts: "--with-libewf --with-libqcow --with-libvhdi --with-libvmdk --enable-java CC=clang CXX=clang++"
             make_flags: "CFLAGS=-Werror CXXFLAGS=-Werror"
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "yes"
             keep_artifacts: "no"
             enable_java: "yes"
+
+          - os: "linux"
+            arch: "x86_64"
+            linkage: "static"
+            runner: "ubuntu-22.04"
+            configure_opts: "--enable-static --disable-shared --disable-java --without-afflib --without-libcrypto --without-libewf --without-libvhdi --without-libvmdk"
+            # remove after testing: configure_opts: "--enable-static --disable-shared --disable-java"
+            codecov: "no"
 
           - os: "mingw"
             arch: "x86_64"
@@ -71,8 +75,6 @@ jobs:
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine64'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -85,8 +87,6 @@ jobs:
             winearch: 'win64'
             winepath: 'Z:\usr\lib\gcc\x86_64-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine64'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -100,8 +100,6 @@ jobs:
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine32'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -115,8 +113,6 @@ jobs:
             winearch: 'win32'
             winepath: 'Z:\usr\lib\gcc\i686-w64-mingw32\13-posix'
             wineprefix: '/home/runner/.wine32'
-            codecov: "no"
-            prefix: ""
             address_sanitizer: "no"
             keep_artifacts: "no"
 
@@ -166,8 +162,6 @@ jobs:
           echo ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer >> $GITHUB_ENV
           echo ASAN_OPTIONS="symbolize=1:abort_on_error=1" >> $GITHUB_ENV
 
-
-
       - name: Install Mingw packages and setup for cross-compiling
         if: ${{ matrix.os == 'mingw' }}
         run: |
@@ -198,11 +192,14 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }}
 
+      - name: Show config file
+        run: cat tsk/tsk_config.h
+
       - name: Unpack and List the test data
         run: |
           cd ..
           pwd
-          wget https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
+          wget  -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
           unzip sleuthkit_test_data.zip
           cd sleuthkit_test_data
           make unpack
@@ -256,18 +253,18 @@ jobs:
           WINEARCH: ${{ matrix.winearch }}
           WINEPATH: ${{ matrix.winepath }}
           WINEPREFIX: ${{ matrix.wineprefix }}
+          TZ: UTC
         run: |
           make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Clean up
-        if: ${{ matrix.os != 'mingw' }}
         run: |
-          make distclean
+          if [ -x Makefile ]; then make distclean ; fi
 
-      - name: Run configure with address-sanitizer
+      - name: Run configure with address-sanitizer and undefined-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
-          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer CFLAGS=-g CXXFLAGS=-g
+          ./configure ${{ matrix.configure_opts }} --enable-address-sanitizer --enable-undefined-sanitizer CFLAGS=-g CXXFLAGS=-g
 
       - name: Check with address-sanitizer
         if: ${{ matrix.address_sanitizer == 'yes' }}
@@ -275,33 +272,8 @@ jobs:
           make -j check VERBOSE=1
 
       - name: Clean up
-        if: ${{ matrix.os != 'mingw' }}
         run: |
-          make distclean
-
-      - name: Run configure for codecov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          ./configure ${{ matrix.configure_opts }} CFLAGS='-g -O0 -fprofile-arcs -ftest-coverage' CXXFLAGS='-g -O0 -fprofile-arcs -ftest-coverage'
-
-      - name: Run make for codecov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          make -j check V=0
-          make -j test/fiwalk/fiwalk_test V=0
-          make -j test/runner V=0
-
-      - name: run gcov
-        if: ${{ matrix.codecov == 'yes' }}
-        run: |
-          gcov $(find . -name '*.gcda')
-
-      - name: Upload codecov report
-        if: ${{ matrix.codecov == 'yes' }}
-        uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+          if [ -x Makefile ]; then make distclean ; fi
 
       - name: Create any artifacts that we need to keep
         if: ${{ matrix.keep_artifacts == 'yes' }}
@@ -320,10 +292,11 @@ jobs:
             executables/*
           retention-days: 15
 
-#      - name: Run distcheck
-#        run: |
-#          ./configure
-#          make distcheck
+      - name: Run distcheck
+        if: ${{ matrix.run_distcheck == 'yes' }}
+        run: |
+          ./configure
+          make distcheck
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher

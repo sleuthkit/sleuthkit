@@ -30,24 +30,20 @@ static TSK_WALK_RET_ENUM part_act(TSK_VS_INFO *vs, const TSK_VS_PART_INFO *part,
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> img{
-    mem_open(data, size);
-    tsk_img_close
-  };
-
+  TSK_VS_INFO *img = (TSK_VS_INFO*)mem_open(data, size);
   if (!img) {
     return 0;
   }
 
   std::unique_ptr<TSK_VS_INFO, decltype(&tsk_vs_close)> vs{
-    tsk_vs_open(img.get(), 0, VSTYPE);
+    tsk_vs_open((TSK_IMG_INFO *)img, 0, VSTYPE),
     tsk_vs_close
   };
 
   if (vs) {
-    tsk_vs_part_walk(vs, 0, vs->part_count - 1, TSK_VS_PART_FLAG_ALL, part_act,
+    tsk_vs_part_walk(vs.get(), 0, vs->part_count - 1, TSK_VS_PART_FLAG_ALL, part_act,
                      nullptr);
   }
-
+  tsk_img_close((TSK_IMG_INFO*)img);
   return 0;
 }
