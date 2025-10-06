@@ -761,6 +761,41 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
+	 * Runs the ANALYZE SQL command to refresh query-planner statistics.
+	 *
+	 * This is primarily useful for SQLite after large data changes (bulk
+	 * inserts, updates, deletes) or index/schema changes, or when query plans
+	 * appear suboptimal. For PostgreSQL, statistics are refreshed automatically, 
+	 * so manually running ANALYZE is usually unnecessary.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public void runAnalyze() throws TskCoreException {
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+
+		try {
+			CaseDbConnection connection = localTrans.getConnection();
+
+			try (Statement statement = connection.createStatement()) {
+				statement.executeUpdate("ANALYZE");
+			} catch (SQLException ex) {
+				throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
+			}
+			localTrans.commit();
+			localTrans = null;
+		} finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
+			}
+		}
+	}
+	
+	/**
 	 * Creates a prepared statement object for the purposes of running an insert
 	 * statement. The given SQL should not include the starting "INSERT INTO" 
 	 * or the name of the table.

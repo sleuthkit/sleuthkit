@@ -288,8 +288,10 @@ void content::write_record()
 	}
 	o.file_info_xml2("byte_runs","facet='data'", runs);
 	if (!invalid){
-	    if (o.opt_md5  && h_md5.hashed_bytes>0)   o.file_info(h_md5.finalize());
-	    if (o.opt_sha1 && h_sha1.hashed_bytes>0)  o.file_info(h_sha1.finalize());
+	    if (o.opt_md5  && h_md5.hashed_bytes>0)       o.file_info(h_md5.finalize());
+	    if (o.opt_sha1 && h_sha1.hashed_bytes>0)      o.file_info(h_sha1.finalize());
+	    if (o.opt_sha256 && h_sha256.hashed_bytes>0)  o.file_info(h_sha256.finalize());
+	    if (o.opt_sha512 && h_sha512.hashed_bytes>0)  o.file_info(h_sha512.finalize());
 	}
     }
 
@@ -312,7 +314,8 @@ void content::write_record()
 /* Do we need full content? */
 bool content::need_file_walk()
 {
-  return o.opt_md5 || o.opt_sha1 || o.opt_save || do_plugin || o.opt_magic
+  return o.opt_md5 || o.opt_sha1 || o.opt_sha256 || o.opt_sha512
+	  || o.opt_save || do_plugin || o.opt_magic
       || o.opt_get_fragments || o.opt_body_file
       || o.opt_sector_hash;
 }
@@ -340,8 +343,10 @@ void content::add_seg(int64_t img_offset,int64_t fs_offset,
 void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 {
     if (invalid==false){
-	if (o.opt_md5)   h_md5.update((unsigned char *)buf,size);
-	if (o.opt_sha1)  h_sha1.update((unsigned char *)buf,size);
+	if (o.opt_md5)    h_md5.update((unsigned char *)buf,size);
+	if (o.opt_sha1)   h_sha1.update((unsigned char *)buf,size);
+	if (o.opt_sha256) h_sha256.update((unsigned char *)buf,size);
+	if (o.opt_sha512) h_sha512.update((unsigned char *)buf,size);
     }
     if (fd_save){
 	if (lseek(fd_save,file_offset,SEEK_SET)<0){

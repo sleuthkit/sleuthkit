@@ -59,6 +59,8 @@ void check_image(std::string img_path, std::string dfxml2_path) {
         o.opt_zap = true;
         o.opt_md5 = true;               // compute the MD5 of every file (for testing file extraction)
         o.opt_sha1 = true;              // compute SHA1
+        o.opt_sha256 = true;            // compute SHA256
+        o.opt_sha512 = true;            // compute SHA512
         o.xml_fn = dfxml2_path;
         o.run();
         CHECK(o.file_count > 0);
