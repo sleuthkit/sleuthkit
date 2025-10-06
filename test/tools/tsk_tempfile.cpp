@@ -1,18 +1,14 @@
-/* 
-Creates a temporary file path for use in testing. It is primarily used on MinGW systems, 
-where std::tmpfile() is unreliable 
-
-See test/tsk/img/test_img_types.cpp for example usage. 
+/* 	
+* Author: Taha Ebrahim @Taha-Ebrahim
+* Creates named and unnamed temporary filesfor use in testing. It is primarily used on MinGW systems, 	
+* where std::tmpfile() is unreliable 	
 */
-
 #include "tsk_tempfile.h"
 
-#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <cstring>
 #include <string>
-#include <stdio.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -39,5 +35,35 @@ FILE* tsk_make_tempfile() {
 #else
     // Use standard std::tmpfile for non-MinGW systems
     return std::tmpfile();
+#endif
+}
+
+FILE* tsk_make_named_tempfile(std::string* out_path) {
+    if (!out_path) return nullptr;
+
+#if defined(_WIN32) && defined(__MINGW32__)
+    char temp_path[MAX_PATH];
+    char temp_file[MAX_PATH];
+
+    // Get temp directory (usually C:\Users\<user>\AppData\Local\Temp)
+    DWORD path_len = GetTempPathA(MAX_PATH, temp_path);
+    if (path_len == 0 || path_len > MAX_PATH) return nullptr;
+
+    // Create a unique temporary file name
+    if (GetTempFileNameA(temp_path, "tsk", 0, temp_file) == 0) return nullptr;
+
+    FILE* file = std::fopen(temp_file, "w+");
+    if (file) *out_path = temp_file;
+    return file;
+
+#else
+    char tmpl[] = "/tmp/tsk_tempfile_XXXXXX";
+    int fd = mkstemp(tmpl);
+    if (fd == -1) return nullptr;
+
+    FILE* file = fdopen(fd, "w+");
+    if (file) *out_path = tmpl;
+    else close(fd); // avoid leaking fd on failure
+    return file;
 #endif
 }

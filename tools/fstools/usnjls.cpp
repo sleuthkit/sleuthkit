@@ -49,7 +49,7 @@ usage()
 
 
 int
-main(int argc, char **argv1)
+main(int argc, [[maybe_unused]] char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
