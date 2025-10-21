@@ -33,6 +33,7 @@ for:
     install:
       - ps: choco install nuget.commandline
       - ps: choco install ant --ignore-dependencies
+      - ps: choco install jq -y        # ← ADD THIS LINE
       - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
       - set PATH=C:\Python36-x64\';%PATH%
     environment:
@@ -65,7 +66,7 @@ for:
 
     install:
       - sudo apt update --allow-releaseinfo-change
-      - sudo apt install -y autoconf python3-venv
+      - sudo apt install -y autoconf python3-venv jq
 
     build_script:
       - cat /etc/os-release
