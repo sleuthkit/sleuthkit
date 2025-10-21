@@ -5,8 +5,6 @@
 #include <memory>
 #include <cstdio>
 
-#define DISK_IMAGE "test/data/image/image.dd"
-#define DISK_IMAGE2 "test/data/image/image.iso"
 
 // Helper to open FFS image and return TSK_FS_INFO*
 class FfsTestFS {
@@ -34,9 +32,9 @@ private:
 
 // Test get block flags for the first block
 TEST_CASE("ffs_block_getflags_basic", "[ffs]") {
-    FfsTestFS testfs(_TSK_T(DISK_IMAGE));
+    FfsTestFS testfs(_TSK_T("test/data/image/image.dd"));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image '" DISK_IMAGE "' . Skipping test.");
+        WARN("Could not open FFS image 'test/data/image/image.dd' . Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
@@ -50,9 +48,9 @@ TEST_CASE("ffs_block_getflags_basic", "[ffs]") {
 
 // Test journal entry walk returns appropriate error for UFS fs
 TEST_CASE("ffs_jentry_walk_unsupported", "[ffs]") {
-    FfsTestFS testfs(_TSK_T( DISK_IMAGE ));
+    FfsTestFS testfs(_TSK_T( "test/data/image/image.dd" ));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image " DISK_IMAGE ". Skipping test.");
+        WARN("Could not open FFS image test/data/image/image.dd. Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
@@ -65,9 +63,9 @@ TEST_CASE("ffs_jentry_walk_unsupported", "[ffs]") {
 
 // Test jblk walk for UFS fs
 TEST_CASE("ffs_jblk_walk_unsupported", "[ffs]") {
-    FfsTestFS testfs(_TSK_T(DISK_IMAGE2));
+    FfsTestFS testfs(_TSK_T("test/data/image/image.iso"));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image " DISK_IMAGE2 ". Skipping test.");
+        WARN("Could not open FFS image test/data/image/image.iso. Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
@@ -80,9 +78,9 @@ TEST_CASE("ffs_jblk_walk_unsupported", "[ffs]") {
 
 // Test that journal open for UFS
 TEST_CASE("ffs_jopen_unsupported", "[ffs]") {
-    FfsTestFS testfs(_TSK_T(DISK_IMAGE2));
+    FfsTestFS testfs(_TSK_T("test/data/image/image.iso"));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image " DISK_IMAGE2 ". Skipping test.");
+        WARN("Could not open FFS image test/data/image/image.iso. Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
