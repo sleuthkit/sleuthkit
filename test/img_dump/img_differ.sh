@@ -6,6 +6,9 @@
 #    - $SLEUTHKIT_TEST_DATA_DIR being replaced with $SLEUTHKIT_TEST_DATA_DIR
 # $2 - expected output
 
+# set the default timezone
+export TZ=America/New_York
+
 
 if [[ -z "$2" ]]; then
     echo usage: img_differ.sh image image.json
@@ -36,5 +39,10 @@ if [ ! -e $IMG ]; then
    exit 77
 fi
 
-diff -b "$EXPECTED" <(TZ=America/New_York $WINE $IMG_DUMP "$IMG") \
-    && echo "SUCCESS: img_dump $IMG" || { echo "FAILED: img_dump $IMG" ; exit 1 ; }
+if [ -n "$OVERWRITE" ]; then
+    echo "OVERWRITE is set. Overwriting $EXPECTED"
+    $WINE $IMG_DUMP "$IMG" | jq -S .> "$EXPECTED"
+fi
+
+diff -b "$EXPECTED" <($WINE $IMG_DUMP "$IMG" | jq -S .) \
+    && echo "SUCCESS: img_dump $IMG" || { echo "FAILED: img_dump $IMG" EXPECTED=$EXPECTED ; exit 1 ; }

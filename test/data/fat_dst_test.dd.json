@@ -1,379 +1,48 @@
 {
   "desc": "Single or split raw file (dd)",
   "files": [
-    "image.iso"
+    "fat_dst_test.dd"
   ],
   "filesystem": {
-    "block_count": 179,
-    "block_size": 2048,
+    "block_count": 192,
+    "block_size": 512,
     "dev_bsize": 512,
-    "duname": "Block",
-    "endian": 2,
+    "duname": "Sector",
+    "endian": 1,
     "files": [
       {
         "meta": {
-          "addr": 0,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 23,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 2048,
-              "type": 1
-            }
-          ],
-          "crtime": 1393163686,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 0,
-          "meta_seq": 0,
-          "name": ".",
-          "par_addr": 0,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 0,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 23,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 2048,
-              "type": 1
-            }
-          ],
-          "crtime": 1393163686,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 0,
-          "meta_seq": 0,
-          "name": "..",
-          "par_addr": 0,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 1,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 25,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 2048,
-              "type": 1
-            }
-          ],
-          "crtime": 1337983163,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 1,
-          "meta_seq": 0,
-          "name": "A_DIRECT",
-          "par_addr": 0,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 1,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 25,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 2048,
-              "type": 1
-            }
-          ],
-          "crtime": 1337983163,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 1,
-          "meta_seq": 0,
-          "name": ".",
-          "par_addr": 1,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 0,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 23,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 2048,
-              "type": 1
-            }
-          ],
-          "crtime": 1393163686,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 0,
-          "meta_seq": 0,
-          "name": "..",
-          "par_addr": 1,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 4,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 22,
-              "nrd_runs": [
-                {
-                  "addr": 27,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 22,
-              "type": 1
-            }
-          ],
-          "crtime": 1337983163,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 22,
-          "type": 1,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 4,
-          "meta_seq": 0,
-          "name": "ANOTHER_",
-          "par_addr": 1,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 5
-        }
-      },
-      {
-        "meta": {
           "addr": 5,
-          "atime": 0,
+          "atime": 1730260800,
           "atime_nano": 0,
           "attrs": [
             {
               "flags": 3,
               "id": 0,
               "name": "",
-              "nrd_allocsize": 2048,
+              "nrd_allocsize": 0,
               "nrd_compsize": 0,
-              "nrd_initsize": 53,
-              "nrd_runs": [
-                {
-                  "addr": 28,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
+              "nrd_initsize": 0,
+              "nrd_runs": [],
               "nrd_skiplen": 0,
               "rd_buf_size": 0,
-              "size": 53,
+              "size": 0,
               "type": 1
             }
           ],
-          "crtime": 1337983154,
-          "crtime_nano": 0,
+          "crtime": 1730312309,
+          "crtime_nano": 700000000,
           "ctime": 0,
           "ctime_nano": 0,
           "default_attr": 0,
           "flags": 5,
           "gid": 0,
-          "mode": 0,
-          "mtime": 0,
+          "mode": 511,
+          "mtime": 1143975598,
           "mtime_nano": 0,
           "nlink": 1,
           "seq": 0,
-          "size": 53,
+          "size": 0,
           "type": 1,
           "uid": 0
         },
@@ -381,240 +50,529 @@
           "flags": 1,
           "meta_addr": 5,
           "meta_seq": 0,
-          "name": "A_FILE",
-          "par_addr": 1,
+          "name": "2006_end_of_EST",
+          "par_addr": 2,
           "par_seq": 0,
-          "shrt_name": "",
+          "shrt_name": "2006_E~1",
           "type": 5
         }
       },
       {
         "meta": {
-          "addr": 2,
-          "atime": 0,
+          "addr": 8,
+          "atime": 1730260800,
           "atime_nano": 0,
           "attrs": [
             {
               "flags": 3,
               "id": 0,
               "name": "",
-              "nrd_allocsize": 2048,
+              "nrd_allocsize": 0,
               "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 24,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
+              "nrd_initsize": 0,
+              "nrd_runs": [],
               "nrd_skiplen": 0,
               "rd_buf_size": 0,
-              "size": 2048,
+              "size": 0,
               "type": 1
             }
           ],
-          "crtime": 1337982950,
-          "crtime_nano": 0,
+          "crtime": 1730312309,
+          "crtime_nano": 740000000,
           "ctime": 0,
           "ctime_nano": 0,
           "default_attr": 0,
           "flags": 5,
           "gid": 0,
-          "mode": 0,
-          "mtime": 0,
+          "mode": 511,
+          "mtime": 1143975600,
           "mtime_nano": 0,
           "nlink": 1,
           "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 2,
-          "meta_seq": 0,
-          "name": "LOST_FOU",
-          "par_addr": 0,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 2,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 24,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 2048,
-              "type": 1
-            }
-          ],
-          "crtime": 1337982950,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 2,
-          "meta_seq": 0,
-          "name": ".",
-          "par_addr": 2,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 0,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 2048,
-              "nrd_runs": [
-                {
-                  "addr": 23,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 2048,
-              "type": 1
-            }
-          ],
-          "crtime": 1393163686,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 2048,
-          "type": 2,
-          "uid": 0
-        },
-        "name": {
-          "flags": 1,
-          "meta_addr": 0,
-          "meta_seq": 0,
-          "name": "..",
-          "par_addr": 2,
-          "par_seq": 0,
-          "shrt_name": "",
-          "type": 3
-        }
-      },
-      {
-        "meta": {
-          "addr": 3,
-          "atime": 0,
-          "atime_nano": 0,
-          "attrs": [
-            {
-              "flags": 3,
-              "id": 0,
-              "name": "",
-              "nrd_allocsize": 2048,
-              "nrd_compsize": 0,
-              "nrd_initsize": 116,
-              "nrd_runs": [
-                {
-                  "addr": 26,
-                  "flags": 0,
-                  "len": 1,
-                  "offset": 0
-                }
-              ],
-              "nrd_skiplen": 0,
-              "rd_buf_size": 0,
-              "size": 116,
-              "type": 1
-            }
-          ],
-          "crtime": 1337983253,
-          "crtime_nano": 0,
-          "ctime": 0,
-          "ctime_nano": 0,
-          "default_attr": 0,
-          "flags": 5,
-          "gid": 0,
-          "mode": 0,
-          "mtime": 0,
-          "mtime_nano": 0,
-          "nlink": 1,
-          "seq": 0,
-          "size": 116,
+          "size": 0,
           "type": 1,
           "uid": 0
         },
         "name": {
           "flags": 1,
-          "meta_addr": 3,
+          "meta_addr": 8,
           "meta_seq": 0,
-          "name": "PASSWORD.TXT",
-          "par_addr": 0,
+          "name": "2006_start_of_EDT",
+          "par_addr": 2,
           "par_seq": 0,
-          "shrt_name": "",
+          "shrt_name": "2006_S~1",
           "type": 5
         }
       },
       {
         "meta": {
-          "addr": 6,
+          "addr": 11,
+          "atime": 1730260800,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 0,
+              "nrd_compsize": 0,
+              "nrd_initsize": 0,
+              "nrd_runs": [],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 0,
+              "type": 1
+            }
+          ],
+          "crtime": 1730312309,
+          "crtime_nano": 770000000,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 511,
+          "mtime": 1162119598,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 0,
+          "type": 1,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 11,
+          "meta_seq": 0,
+          "name": "2006_end_of_EDT",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "2006_E~2",
+          "type": 5
+        }
+      },
+      {
+        "meta": {
+          "addr": 14,
+          "atime": 1730260800,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 0,
+              "nrd_compsize": 0,
+              "nrd_initsize": 0,
+              "nrd_runs": [],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 0,
+              "type": 1
+            }
+          ],
+          "crtime": 1730312309,
+          "crtime_nano": 800000000,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 511,
+          "mtime": 1162119600,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 0,
+          "type": 1,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 14,
+          "meta_seq": 0,
+          "name": "2006_start_of_EST",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "2006_S~2",
+          "type": 5
+        }
+      },
+      {
+        "meta": {
+          "addr": 17,
+          "atime": 1730260800,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 0,
+              "nrd_compsize": 0,
+              "nrd_initsize": 0,
+              "nrd_runs": [],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 0,
+              "type": 1
+            }
+          ],
+          "crtime": 1730312309,
+          "crtime_nano": 830000000,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 511,
+          "mtime": 1173610798,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 0,
+          "type": 1,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 17,
+          "meta_seq": 0,
+          "name": "2007_end_of_EST",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "2007_E~1",
+          "type": 5
+        }
+      },
+      {
+        "meta": {
+          "addr": 20,
+          "atime": 1730260800,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 0,
+              "nrd_compsize": 0,
+              "nrd_initsize": 0,
+              "nrd_runs": [],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 0,
+              "type": 1
+            }
+          ],
+          "crtime": 1730312309,
+          "crtime_nano": 860000000,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 511,
+          "mtime": 1173610800,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 0,
+          "type": 1,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 20,
+          "meta_seq": 0,
+          "name": "2007_start_of_EDT",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "2007_S~1",
+          "type": 5
+        }
+      },
+      {
+        "meta": {
+          "addr": 23,
+          "atime": 1730260800,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 0,
+              "nrd_compsize": 0,
+              "nrd_initsize": 0,
+              "nrd_runs": [],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 0,
+              "type": 1
+            }
+          ],
+          "crtime": 1730312309,
+          "crtime_nano": 880000000,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 511,
+          "mtime": 1194173998,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 0,
+          "type": 1,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 23,
+          "meta_seq": 0,
+          "name": "2007_end_of_EDT",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "2007_E~2",
+          "type": 5
+        }
+      },
+      {
+        "meta": {
+          "addr": 26,
+          "atime": 1730260800,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 0,
+              "nrd_compsize": 0,
+              "nrd_initsize": 0,
+              "nrd_runs": [],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 0,
+              "type": 1
+            }
+          ],
+          "crtime": 1730312309,
+          "crtime_nano": 900000000,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 511,
+          "mtime": 1194174000,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 0,
+          "type": 1,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 26,
+          "meta_seq": 0,
+          "name": "2007_start_of_EST",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "2007_S~2",
+          "type": 5
+        }
+      },
+      {
+        "meta": {
+          "addr": 3027,
           "atime": 0,
           "atime_nano": 0,
-          "attrs": [],
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 512,
+              "nrd_compsize": 0,
+              "nrd_initsize": 512,
+              "nrd_runs": [
+                {
+                  "addr": 0,
+                  "flags": 0,
+                  "len": 1,
+                  "offset": 0
+                }
+              ],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 512,
+              "type": 1
+            }
+          ],
           "crtime": 0,
           "crtime_nano": 0,
           "ctime": 0,
           "ctime_nano": 0,
-          "default_attr": -1,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 0,
+          "mtime": 0,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 512,
+          "type": 10,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 3027,
+          "meta_seq": 0,
+          "name": "$MBR",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "",
+          "type": 10
+        }
+      },
+      {
+        "meta": {
+          "addr": 3028,
+          "atime": 0,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 512,
+              "nrd_compsize": 0,
+              "nrd_initsize": 512,
+              "nrd_runs": [
+                {
+                  "addr": 1,
+                  "flags": 0,
+                  "len": 1,
+                  "offset": 0
+                }
+              ],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 512,
+              "type": 1
+            }
+          ],
+          "crtime": 0,
+          "crtime_nano": 0,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 0,
+          "mtime": 0,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 512,
+          "type": 10,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 3028,
+          "meta_seq": 0,
+          "name": "$FAT1",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "",
+          "type": 10
+        }
+      },
+      {
+        "meta": {
+          "addr": 3029,
+          "atime": 0,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 512,
+              "nrd_compsize": 0,
+              "nrd_initsize": 512,
+              "nrd_runs": [
+                {
+                  "addr": 2,
+                  "flags": 0,
+                  "len": 1,
+                  "offset": 0
+                }
+              ],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 512,
+              "type": 1
+            }
+          ],
+          "crtime": 0,
+          "crtime_nano": 0,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
+          "flags": 5,
+          "gid": 0,
+          "mode": 0,
+          "mtime": 0,
+          "mtime_nano": 0,
+          "nlink": 1,
+          "seq": 0,
+          "size": 512,
+          "type": 10,
+          "uid": 0
+        },
+        "name": {
+          "flags": 1,
+          "meta_addr": 3029,
+          "meta_seq": 0,
+          "name": "$FAT2",
+          "par_addr": 2,
+          "par_seq": 0,
+          "shrt_name": "",
+          "type": 10
+        }
+      },
+      {
+        "meta": {
+          "addr": 3030,
+          "atime": 0,
+          "atime_nano": 0,
+          "attrs": [
+            {
+              "flags": 3,
+              "id": 0,
+              "name": "",
+              "nrd_allocsize": 0,
+              "nrd_compsize": 0,
+              "nrd_initsize": 0,
+              "nrd_runs": [],
+              "nrd_skiplen": 0,
+              "rd_buf_size": 0,
+              "size": 0,
+              "type": 1
+            }
+          ],
+          "crtime": 0,
+          "crtime_nano": 0,
+          "ctime": 0,
+          "ctime_nano": 0,
+          "default_attr": 0,
           "flags": 5,
           "gid": 0,
           "mode": 0,
@@ -628,10 +586,10 @@
         },
         "name": {
           "flags": 1,
-          "meta_addr": 6,
+          "meta_addr": 3030,
           "meta_seq": 0,
           "name": "$OrphanFiles",
-          "par_addr": 0,
+          "par_addr": 2,
           "par_seq": 0,
           "shrt_name": "",
           "type": 11
@@ -639,19 +597,19 @@
       }
     ],
     "first_block": 0,
-    "first_inum": 0,
+    "first_inum": 2,
     "flags": 0,
-    "fs_id": "4344524f4d202020202020202020202020202020202020202020202020202020",
-    "ftype": "iso9660",
-    "inum_count": 7,
+    "fs_id": "24eb5903",
+    "ftype": "fat12",
+    "inum_count": 3029,
     "journ_inum": 0,
-    "last_block": 178,
-    "last_block_act": 178,
-    "last_inum": 6,
+    "last_block": 191,
+    "last_block_act": 191,
+    "last_inum": 3030,
     "offset": 0,
-    "root_inum": 0
+    "root_inum": 2
   },
   "itype": "raw",
   "sector_size": 512,
-  "size": 366592
+  "size": 102400
 }
