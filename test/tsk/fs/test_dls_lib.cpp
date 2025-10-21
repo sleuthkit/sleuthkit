@@ -9,9 +9,9 @@
 
 // Helper to check if the ext2 image exists
 static bool ext2_image_exists() {
-    FILE *f = fopen(EXT2_TEST_IMAGE, "rb");
+    FILE *f = fopen("test/data/image_ext2.dd", "rb");
     if (f) { fclose(f); return true; }
-    WARN("File not found: " EXT2_TEST_IMAGE);
+    WARN("File not found: test/data/image_ext2.dd");
     return false;
 }
 
@@ -21,7 +21,7 @@ static bool setup_ext2_image(TSK_IMG_INFO **img, TSK_FS_INFO **fs) {
         WARN("Ext2 test image not found, skipping filesystem tests");
         return false;
     }
-    *img = tsk_img_open_sing(_TSK_T(EXT2_TEST_IMAGE), TSK_IMG_TYPE_RAW, 0);
+    *img = tsk_img_open_sing(_TSK_T("test/data/image_ext2.dd"), TSK_IMG_TYPE_RAW, 0);
     if (!*img) {
         WARN("Could not open ext2 test image");
         return false;
