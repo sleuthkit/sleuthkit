@@ -176,13 +176,15 @@ main(int argc, [[maybe_unused]] char **argv1)
                     exit(1);
                 }
                 // Allocate exactly enough space for OPTARG + NUL
-                const size_t len = TSTRLEN(OPTARG);
-                path.reset(new TSK_TCHAR[len + 1]);
+                {
+                    const size_t len2 = TSTRLEN(OPTARG);
+                    path.reset(new TSK_TCHAR[len2 + 1]);
 
-                // Copy safely: use destination size, not source length
-                TSTRNCPY(path.get(), OPTARG, len);
-                path.get()[len] = _TSK_T('\0');  // Ensure null termination
-                break;
+                    // Copy safely: use destination size, not source length
+                    TSTRNCPY(path.get(), OPTARG, len2);
+                    path.get()[len] = _TSK_T('\0');  // Ensure null termination
+                    break;
+                }
             }
         case 'o':
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
