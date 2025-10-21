@@ -5,6 +5,9 @@
 #include <memory>
 #include <cstdio>
 
+#define DISK_IMAGE "test/data/image/image.dd"
+#define DISK_IMAGE2 "test/data/image/image.iso"
+
 // Helper to open FFS image and return TSK_FS_INFO*
 class FfsTestFS {
 public:
@@ -28,32 +31,32 @@ private:
     TSK_IMG_INFO* img = nullptr;
     TSK_FS_INFO* fs = nullptr;
 };
- 
+
 // Test get block flags for the first block
 TEST_CASE("ffs_block_getflags_basic", "[ffs]") {
-    FfsTestFS testfs(_TSK_T("test/data/image/image.dd"));
+    FfsTestFS testfs(_TSK_T(DISK_IMAGE));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image. Skipping test.");
+        WARN("Could not open FFS image '" DISK_IMAGE "' . Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
-    
+
     REQUIRE(fs != nullptr);
-    REQUIRE(fs->last_block >= fs->first_block); 
-    
+    REQUIRE(fs->last_block >= fs->first_block);
+
     TSK_FS_BLOCK_FLAG_ENUM flags = ffs_block_getflags(fs, fs->first_block);
     REQUIRE((flags & (TSK_FS_BLOCK_FLAG_ALLOC | TSK_FS_BLOCK_FLAG_UNALLOC)) != 0);
 }
 
 // Test journal entry walk returns appropriate error for UFS fs
 TEST_CASE("ffs_jentry_walk_unsupported", "[ffs]") {
-    FfsTestFS testfs(_TSK_T("test/data/image/image.dd"));
+    FfsTestFS testfs(_TSK_T( DISK_IMAGE ));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image. Skipping test.");
+        WARN("Could not open FFS image " DISK_IMAGE ". Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
-    
+
     uint8_t result = ffs_jentry_walk(fs, 0, nullptr, nullptr);
     REQUIRE(result == 1);
     REQUIRE(tsk_error_get_errno() == TSK_ERR_FS_UNSUPFUNC);
@@ -62,30 +65,30 @@ TEST_CASE("ffs_jentry_walk_unsupported", "[ffs]") {
 
 // Test jblk walk for UFS fs
 TEST_CASE("ffs_jblk_walk_unsupported", "[ffs]") {
-    FfsTestFS testfs(_TSK_T("test/data/image/image.iso"));
+    FfsTestFS testfs(_TSK_T(DISK_IMAGE2));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image. Skipping test.");
+        WARN("Could not open FFS image " DISK_IMAGE2 ". Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
-    
+
     uint8_t result = ffs_jblk_walk(fs, 0, 1, 0, nullptr, nullptr);
-    REQUIRE(result == 1); 
+    REQUIRE(result == 1);
     REQUIRE(tsk_error_get_errno() == TSK_ERR_FS_UNSUPFUNC);
     REQUIRE(strcmp(tsk_error_get_errstr(), "UFS does not have a journal") == 0);
 }
 
-// Test that journal open for UFS 
+// Test that journal open for UFS
 TEST_CASE("ffs_jopen_unsupported", "[ffs]") {
-    FfsTestFS testfs(_TSK_T("test/data/image/image.iso"));
+    FfsTestFS testfs(_TSK_T(DISK_IMAGE2));
     if (!testfs.valid()) {
-        WARN("Could not open FFS image. Skipping test.");
+        WARN("Could not open FFS image " DISK_IMAGE2 ". Skipping test.");
         return;
     }
     TSK_FS_INFO* fs = testfs.get();
-    
+
     uint8_t result = ffs_jopen(fs, 0);
     REQUIRE(result == 1);
     REQUIRE(tsk_error_get_errno() == TSK_ERR_FS_UNSUPFUNC);
     REQUIRE(strcmp(tsk_error_get_errstr(), "UFS does not have a journal") == 0);
-} 
+}
