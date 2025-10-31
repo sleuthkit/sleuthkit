@@ -556,7 +556,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         in_node = NULL;
                         break;
                     }
-                    if (b_offs >= ISO9660_SSIZE_B - sizeof(iso9660_dentry)) {
+                    if (b_offs >= ISO9660_SSIZE_B - (int)sizeof(iso9660_dentry)) {
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
                                         "iso9660_load_inodes_dir: b_offs out of bounds, bailing\n");
@@ -2325,7 +2325,6 @@ iso9660_get_default_attr_type(const TSK_FS_FILE * a_file)
 static int
 load_vol_desc(TSK_FS_INFO * fs)
 {
-    int count = 0;
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_OFF_T offs;
     char *myname = "iso_load_vol_desc";
@@ -2435,7 +2434,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     ptmp->next = p;
                     p->next = NULL;
-                    count++;
                 }
             }
 
@@ -2443,7 +2441,6 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->pvd = p;
                 p->next = NULL;
-                count++;
             }
 
             break;
@@ -2468,7 +2465,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     stmp->next = s;
                     s->next = NULL;
-                    count++;
                 }
             }
 
@@ -2476,7 +2472,6 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->svd = s;
                 s->next = NULL;
-                count++;
             }
 
             break;
@@ -2527,7 +2522,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 p->next = NULL;
                 free(p);
                 p = NULL;
-                count--;
                 break;
             }
         }

@@ -1150,7 +1150,7 @@ int8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
         tsk_error_set_errstr(
-            "%s: Error: Index line length is zero",
+            "%s: Error: Index line length is zero - %d - %zu",
             func_name, hdb_binsrch_info->hash_len, strlen(hash));
         return -1;
     }
