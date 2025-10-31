@@ -169,7 +169,11 @@ fatxxfs_is_dentry(
     if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
         FATXXFS_DENTRY_LFN *de_lfn = (FATXXFS_DENTRY_LFN*) dentry;
 
-        if ((de_lfn->seq > (FATXXFS_LFN_SEQ_FIRST | FATXXFS_LFN_SEQ_MASK))
+        /* FAT LFN entries can hold 13 characters each. With a 255 character
+         * maximum filename, we need at most 20 LFN entries (ceil(255/13)).
+         * Sequence numbers range from 1-20 (0x01-0x14), with bit 0x40 set
+         * for the last entry in the sequence. */
+        if ((de_lfn->seq > (FATXXFS_LFN_SEQ_FIRST | 0x14))
             && (de_lfn->seq != FATXXFS_SLOT_DELETED)) {
             if (tsk_verbose)
                 fprintf(stderr, "%s: LFN seq\n", func_name);
