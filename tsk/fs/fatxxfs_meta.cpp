@@ -169,7 +169,7 @@ fatxxfs_is_dentry(
     if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
         FATXXFS_DENTRY_LFN *de_lfn = (FATXXFS_DENTRY_LFN*) dentry;
 
-        if ((de_lfn->seq > (FATXXFS_LFN_SEQ_FIRST | 0x0f))
+        if ((de_lfn->seq > (FATXXFS_LFN_SEQ_FIRST | FATXXFS_LFN_SEQ_MASK))
             && (de_lfn->seq != FATXXFS_SLOT_DELETED)) {
             if (tsk_verbose)
                 fprintf(stderr, "%s: LFN seq\n", func_name);
