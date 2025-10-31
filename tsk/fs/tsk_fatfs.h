@@ -80,7 +80,7 @@
 #define FATFS_ATTR_DIRECTORY	0x10    /* entry is a directory name */
 #define FATFS_ATTR_ARCHIVE	0x20    /* file is new or modified */
 #define FATFS_ATTR_LFN		0x0f    /* A long file name entry */
-#define FATFS_ATTR_ALL		0x3f    /* all flags set */
+#define FATFS_ATTR_ALL		0xff    /* all flags set (including reserved bits 6-7) */
 
 #define FATFS_CLUST_2_SECT(fatfs, c)	\
 	(TSK_DADDR_T)(fatfs->firstclustsect + ((((c) & fatfs->mask) - 2) * fatfs->csize))
