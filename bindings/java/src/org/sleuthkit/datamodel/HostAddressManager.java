@@ -220,7 +220,17 @@ public class HostAddressManager {
 
 			long objId = db.addObject(parentObjId, objTypeId, connection);
 
-			String hostAddressInsertSQL = "INSERT INTO tsk_host_addresses(id, address_type, address) VALUES (?, ?, ?)"; // NON-NLS
+			/*
+			 * A conflict clause is used improve performance related to 
+			 * exception handling in the database.  
+			 */
+			String hostAddressInsertSQL;
+			if (db.getDatabaseType() == TskData.DbType.POSTGRESQL) {
+				hostAddressInsertSQL = "INSERT INTO tsk_host_addresses(id, address_type, address) VALUES (?, ?, ?) ON CONFLICT DO NOTHING"; //NON-NLS
+			} else {
+				hostAddressInsertSQL = "INSERT OR IGNORE INTO tsk_host_addresses(id, address_type, address) VALUES (?, ?, ?)"; //NON-NLS
+			}
+			
 			PreparedStatement preparedStatement = connection.getPreparedStatement(hostAddressInsertSQL, Statement.RETURN_GENERATED_KEYS);
 
 			preparedStatement.clearParameters();
