@@ -3080,8 +3080,32 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public CaseDbTransaction beginTransaction() throws TskCoreException {
-		return new CaseDbTransaction(this);
+		return new CaseDbTransaction(this, false);
 	}
+
+	/**
+	 * <p>Create a new transaction on the case database. The transaction object
+	 * that is returned can be passed to methods that take a CaseDbTransaction.
+	 * The caller is responsible for calling either commit() or rollback() on
+	 * the transaction object.</p>
+	 *
+	 * <p>Note that this beginning the transaction also acquires the single user
+	 * case read lock, which will be automatically released when the 
+	 * transaction is closed.</p>
+	 * 
+	 * <p><strong>WARNING:</strong> This API should only be used if the transaction is
+	 * guaranteed to only ever perform reads and no updates to the database.
+	 * Undefined behavior can occur if this API is used with database updates.</p>
+	 *
+	 * @return A CaseDbTransaction object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbTransaction beginReadOnlyTransaction() throws TskCoreException {
+		return new CaseDbTransaction(this, true);
+	}
+	
 
 	/**
 	 * Gets the case database name.
@@ -14458,6 +14482,7 @@ public class SleuthkitCase {
 	public static final class CaseDbTransaction {
 
 		private final CaseDbConnection connection;
+		private final boolean readOnlyTransaction;
 		private SleuthkitCase sleuthkitCase;
 
         /* This class can store information about what was 
@@ -14474,15 +14499,32 @@ public class SleuthkitCase {
 
 		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
 		private List<Long> deletedResultObjectIds = new ArrayList<>();
+		
 
     // Keep track of which threads have connections to debug deadlocks
     private static Set<Long> threadsWithOpenTransaction = new HashSet<>();
     private static final Object threadsWithOpenTransactionLock = new Object();
 
-		private CaseDbTransaction(SleuthkitCase sleuthkitCase) throws TskCoreException {
+		/**
+		 * Constructor for a case database transaction.
+		 *
+		 * @param sleuthkitCase       The TSK case.
+		 * @param readOnlyTransaction True if the transaction will not make any
+		 *                            writes to the database and therefore does
+		 *                            not need the write lock.
+		 *
+		 * @throws TskCoreException
+		 */
+		private CaseDbTransaction(SleuthkitCase sleuthkitCase, boolean readOnlyTransaction) throws TskCoreException {
 			this.sleuthkitCase = sleuthkitCase;
+			this.readOnlyTransaction = readOnlyTransaction;
 
-			sleuthkitCase.acquireSingleUserCaseWriteLock();
+			if (readOnlyTransaction) {
+				sleuthkitCase.acquireSingleUserCaseReadLock();
+			} else {
+				sleuthkitCase.acquireSingleUserCaseWriteLock();	
+			}
+			
 			this.connection = sleuthkitCase.getConnection();
 			try {
 				synchronized (threadsWithOpenTransactionLock) {
@@ -14490,7 +14532,11 @@ public class SleuthkitCase {
 					threadsWithOpenTransaction.add(Thread.currentThread().getId());
 				}
 			} catch (SQLException ex) {
-				sleuthkitCase.releaseSingleUserCaseWriteLock();
+				if (readOnlyTransaction) {
+					sleuthkitCase.releaseSingleUserCaseReadLock();
+				} else {
+					sleuthkitCase.releaseSingleUserCaseWriteLock();	
+				}
 				throw new TskCoreException("Failed to create transaction on case database", ex);
 			}
 
@@ -14671,7 +14717,11 @@ public class SleuthkitCase {
 		 */
 		void close() {
 			this.connection.close();
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
+			if (readOnlyTransaction) {
+				sleuthkitCase.releaseSingleUserCaseReadLock();
+			} else {
+				sleuthkitCase.releaseSingleUserCaseWriteLock();	
+			}
 			synchronized (threadsWithOpenTransactionLock) {
 				threadsWithOpenTransaction.remove(Thread.currentThread().getId());
 			}
