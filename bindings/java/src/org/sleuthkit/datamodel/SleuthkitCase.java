@@ -3080,30 +3080,30 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public CaseDbTransaction beginTransaction() throws TskCoreException {
-		return beginTransaction(false);
+		return new CaseDbTransaction(this, false);
 	}
 
 	/**
-	 * Create a new transaction on the case database. The transaction object
+	 * <p>Create a new transaction on the case database. The transaction object
 	 * that is returned can be passed to methods that take a CaseDbTransaction.
 	 * The caller is responsible for calling either commit() or rollback() on
-	 * the transaction object.
+	 * the transaction object.</p>
 	 *
-	 * Note that this beginning the transaction also acquires the single user
-	 * case write lock if {@code readonly} is {@code false} or the read lock if
-	 * {@code readonly} is {@code true}, which will be automatically released
-	 * when the transaction is closed.
-	 *
-	 * @param readonly True if the transaction does not perform any writes to
-	 *                 the database.
+	 * <p>Note that this beginning the transaction also acquires the single user
+	 * case read lock, which will be automatically released when the 
+	 * transaction is closed.</p>
+	 * 
+	 * <p><strong>WARNING:</strong> This API should only be used if the transaction is
+	 * guaranteed to only ever perform reads and no updates to the database.
+	 * Undefined behavior can occur if this API is used with database updates.</p>
 	 *
 	 * @return A CaseDbTransaction object.
 	 *
 	 * @throws TskCoreException
 	 */
 	@Beta
-	public CaseDbTransaction beginTransaction(boolean readonly) throws TskCoreException {
-		return new CaseDbTransaction(this, readonly);
+	public CaseDbTransaction beginReadOnlyTransaction() throws TskCoreException {
+		return new CaseDbTransaction(this, true);
 	}
 	
 
