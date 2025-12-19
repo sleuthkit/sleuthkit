@@ -117,7 +117,7 @@ jobs:
             keep_artifacts: "no"
 
     steps:
-      - name: Determine number of cores
+      - name: Determine number of cores and amount of free space
         id: cores
         run: |
           if [ ${{ startsWith(matrix.runner, 'macos') }} = true ]; then
@@ -130,6 +130,7 @@ jobs:
           fi
           echo "cores=$CORES" >>$GITHUB_OUTPUT
           echo "Using $CORES cores"
+          df -h
 
       - name: Install MacOS packages
         env:

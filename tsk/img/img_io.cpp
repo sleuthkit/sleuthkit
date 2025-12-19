@@ -36,7 +36,7 @@ private:
   std::chrono::high_resolution_clock::time_point start_time, stop_time;
 };
 
-// This function assumes that we hold the cache_lock even though we're not modyfying
+// This function assumes that we hold the cache_lock even though we're not modifying
 // the cache.  This is because the lower-level read callbacks make the same assumption.
 static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     char *a_buf, size_t a_len)
@@ -47,7 +47,7 @@ static ssize_t img_read_no_cache(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     /* Some of the lower-level methods like block-sized reads.
         * So if the len is not that multiple, then make it. */
-    if (a_img_info->sector_size > 0 && a_len % a_img_info->sector_size) {
+    if ((a_img_info->sector_size > 0) && (a_len % a_img_info->sector_size)) {
         size_t len_tmp;
         len_tmp = roundup(a_len, a_img_info->sector_size);
 

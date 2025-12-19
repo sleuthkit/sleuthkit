@@ -61,7 +61,6 @@ public class HashDbTest extends ImgTraverser {
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
-			break;
 		}
 		return data;
 	}

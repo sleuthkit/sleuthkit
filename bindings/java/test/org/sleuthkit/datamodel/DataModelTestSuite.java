@@ -207,7 +207,7 @@ public class DataModelTestSuite {
 		FileFilter imageResFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
-				return f.getName().contains(filt) & !f.getName().contains(BTTMUP) & !f.getName().contains("SRT");
+				return f.getName().contains(filt) && !f.getName().contains(BTTMUP) && !f.getName().contains("SRT");
 			}
 		};
 		java.io.File pth = new java.io.File(path);

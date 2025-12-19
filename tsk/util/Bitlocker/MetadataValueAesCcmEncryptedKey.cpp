@@ -64,7 +64,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
     // Decrypt the key entry
     BITLOCKER_STATUS ret = decryptKey(key, keyLen, m_encryptedData, m_encryptedDataLen, decryptedData);
     if (ret != BITLOCKER_STATUS::SUCCESS) {
-        memset(decryptedData, 0, m_encryptedDataLen);
+        std::fill_n<volatile uint8_t*>(decryptedData, m_encryptedDataLen, 0);
         free(decryptedData);
         decryptedData = nullptr;
         return ret; // Propagate the return value in case it indicates an incorrect password
@@ -72,7 +72,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
 
     // Try to create the key entry
     *keyEntry = MetadataEntry::createMetadataEntry(&(decryptedData[BITLOCKER_KEY_MAC_LEN]), m_encryptedDataLen);
-    memset(decryptedData, 0, m_encryptedDataLen);
+    std::fill_n<volatile uint8_t*>(decryptedData, m_encryptedDataLen, 0);
     free(decryptedData);
     decryptedData = nullptr;
 

@@ -55,7 +55,7 @@ usage()
     tsk_fprintf(stderr,
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr,
-        "\t-s: print slack space only (other flags are ignored\n");
+        "\t-s: print slack space only (other flags are ignored)\n");
     tsk_fprintf(stderr, "\t-v: verbose to stderr\n");
     tsk_fprintf(stderr, "\t-V: print version\n");
 

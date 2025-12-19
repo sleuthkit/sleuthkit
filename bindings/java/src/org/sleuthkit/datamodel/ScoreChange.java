@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Optional;
-
 /**
  * This class encapsulates a score change.
  */

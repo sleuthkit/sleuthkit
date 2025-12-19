@@ -1184,31 +1184,19 @@ public class SleuthkitCase {
 		if (dbPath.isEmpty()) {
 			throw new IOException("Copying case database files is not supported for this type of case database"); //NON-NLS
 		}
-		InputStream in = null;
-		OutputStream out = null;
+
 		acquireSingleUserCaseWriteLock();
-		try {
-			InputStream inFile = new FileInputStream(dbPath);
-			in = new BufferedInputStream(inFile);
+		try(InputStream inFile = new FileInputStream(dbPath);
+			InputStream in = new BufferedInputStream(inFile);
 			OutputStream outFile = new FileOutputStream(newDBPath);
-			out = new BufferedOutputStream(outFile);
+			OutputStream out = new BufferedOutputStream(outFile);) {
+			
 			int bytesRead = in.read();
 			while (bytesRead != -1) {
 				out.write(bytesRead);
 				bytesRead = in.read();
 			}
 		} finally {
-			try {
-				if (in != null) {
-					in.close();
-				}
-				if (out != null) {
-					out.flush();
-					out.close();
-				}
-			} catch (IOException e) {
-				logger.log(Level.WARNING, "Could not close streams after db copy", e); //NON-NLS
-			}
 			releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -13994,7 +13982,7 @@ public class SleuthkitCase {
 		 * supported.
 		 *
 		 * NOTE: We run into deadlock risks when we start to lock multiple
-		 * tables. If that need arrises, consider changing to opportunistic
+		 * tables. If that need arises, consider changing to opportunistic
 		 * locking and single-step transactions.
 		 */
 		private class AggregateScoreTablePostgreSQLWriteLock implements DbCommand {
@@ -14007,9 +13995,10 @@ public class SleuthkitCase {
 
 			@Override
 			public void execute() throws SQLException {
-				PreparedStatement preparedStatement = connection.prepareStatement("LOCK TABLE ONLY tsk_aggregate_score in SHARE ROW EXCLUSIVE MODE");
-				preparedStatement.execute();
-
+				try (PreparedStatement preparedStatement = 
+						connection.prepareStatement("LOCK TABLE ONLY tsk_aggregate_score in SHARE ROW EXCLUSIVE MODE")) {
+					preparedStatement.execute();
+				}
 			}
 		}
 

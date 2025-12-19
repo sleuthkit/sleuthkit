@@ -774,6 +774,13 @@ test_catch_runner_SOURCES = \
 	test/tsk/fs/test_unix_misc.cpp \
 	test/tsk/util/test_crypto.cpp \
 	test/tsk/hashdb/test_binsrch_index.cpp \
+	test/tsk/hashdb/test_hdb_base.cpp \
+	test/tsk/hashdb/test_idxonly.cpp \
+	test/tsk/hashdb/test_incase.cpp \
+	test/tsk/hashdb/test_hashkeeper.cpp \
+	test/tsk/hashdb/test_md5sum.cpp \
+	test/tsk/hashdb/test_sqlite_hdb.cpp \
+	test/tsk/hashdb/test_tsk_hashdb.cpp \
 	test/tsk/fs/test_fs_name.cpp \
 	test/tsk/fs/test_fs_types.cpp \
 	test/tsk/fs/test_ntfs.cpp \
@@ -787,6 +794,7 @@ test_catch_runner_SOURCES = \
 	test/tsk/fs/test_fs_load.cpp \
 	test/tsk/fs/test_fs_dir.cpp \
 	test/tsk/fs/test_fs_file.cpp \
+	test/tsk/fs/test_fs_io.cpp \
 	test/tools/test_cli_runner.cpp \
 	test/tools/test_utils.cpp \
 	test/tools/tsk_tempfile.h \

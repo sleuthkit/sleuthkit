@@ -196,16 +196,16 @@ public class LibraryUtils {
 			}
 
 			// copy it
-			InputStream in = urlInJar.openStream();
-			OutputStream out = new FileOutputStream(tempLibFile);
+			try (
+				InputStream in = urlInJar.openStream();
+				OutputStream out = new FileOutputStream(tempLibFile);) {
 
-			byte[] buffer = new byte[1024];
-			int length;
-			while ((length = in.read(buffer)) > 0) {
-				out.write(buffer, 0, length);
+				byte[] buffer = new byte[1024];
+				int length;
+				while ((length = in.read(buffer)) > 0) {
+					out.write(buffer, 0, length);
+				}
 			}
-			in.close();
-			out.close();
 
 			// load it
 			System.load(tempLibFile.getAbsolutePath());

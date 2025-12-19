@@ -577,7 +577,7 @@ std::string ewf_get_details(IMG_EWF_INFO *ewf_info) {
 
     char* result = (char*)tsk_malloc(buffer_size);
     if (result == NULL) {
-        return NULL;
+        return "";
     }
 
     std::string collectionDetails = "";

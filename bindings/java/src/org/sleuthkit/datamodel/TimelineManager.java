@@ -882,7 +882,7 @@ public final class TimelineManager {
 		Long dataSourceObjectID = artifact.getDataSourceObjectID();
 		
 		if(dataSourceObjectID == null) {
-			logger.log(Level.SEVERE, String.format("Failed to create timeline event for artifact (%d), artifact data source was null"), artifact.getId());
+			logger.log(Level.SEVERE, String.format("Failed to create timeline event for artifact (%d), artifact data source was null", artifact.getId()));
 			return Optional.empty();
 		}
 

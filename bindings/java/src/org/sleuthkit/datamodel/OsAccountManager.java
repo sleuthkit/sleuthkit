@@ -1386,6 +1386,7 @@ public final class OsAccountManager {
 		}
 	}	
 	
+	private final Object osAccountLockObj = new Object();
 	/**
 	 * Adds a rows to the tsk_os_account_attributes table for the given set of
 	 * attribute.
@@ -1397,7 +1398,7 @@ public final class OsAccountManager {
 	 */
 	public void addExtendedOsAccountAttributes(OsAccount account, List<OsAccountAttribute> accountAttributes) throws TskCoreException {
 
-		synchronized (account) {  // synchronized to prevent multiple threads trying to add osAccount attributes concurrently to the same osAccount.
+		synchronized (osAccountLockObj) {  // synchronized to prevent multiple threads trying to add osAccount attributes concurrently to the same osAccount.
 			db.acquireSingleUserCaseWriteLock();
 
 			try (CaseDbConnection connection = db.getConnection()) {

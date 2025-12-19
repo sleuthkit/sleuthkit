@@ -255,6 +255,7 @@ public final class OsAccount extends AbstractContent {
 	 * @return Account
 	 * id.
 	 */
+	@Override
 	public long getId() {
 		return osAccountObjId;
 	}

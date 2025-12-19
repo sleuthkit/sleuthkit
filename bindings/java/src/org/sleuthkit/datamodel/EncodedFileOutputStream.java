@@ -71,13 +71,13 @@ public class EncodedFileOutputStream extends BufferedOutputStream {
 	}
 
 	@Override
-	public void write(int b) throws IOException {
+	public synchronized void write(int b) throws IOException {
 		super.write((int) EncodedFileUtil.encodeByte((byte) b, type));
 		encodedDataLength++;
 	}
 
 	@Override
-	public void write(byte[] b,
+	public synchronized void write(byte[] b,
 			int off,
 			int len)
 			throws IOException {
