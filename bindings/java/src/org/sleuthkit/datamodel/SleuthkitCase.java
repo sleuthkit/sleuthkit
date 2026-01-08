@@ -614,7 +614,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public synchronized CaseDbAccessManager getCaseDbAccessManager() throws TskCoreException {
+	public CaseDbAccessManager getCaseDbAccessManager() throws TskCoreException {
 		return dbAccessManager;
 	}
 
@@ -623,7 +623,7 @@ public class SleuthkitCase {
 	 *
 	 * @return The per case TaggingManager object.
 	 */
-	public synchronized TaggingManager getTaggingManager() {
+	public TaggingManager getTaggingManager() {
 		return taggingMgr;
 	}
 
@@ -11194,7 +11194,7 @@ public class SleuthkitCase {
 	/**
 	 * Call to free resources when done with instance.
 	 */
-	public synchronized void close() {
+	public void close() {
 		acquireSingleUserCaseWriteLock();
 
 		try {
