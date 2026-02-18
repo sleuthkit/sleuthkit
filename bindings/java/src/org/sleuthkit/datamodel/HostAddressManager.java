@@ -212,6 +212,11 @@ public class HostAddressManager {
 		}
 		
 		String normalizedAddress = getNormalizedAddress(address);
+		// This prevents orphaned objects and ensures we return the existing valid object.
+		Optional<HostAddress> existingAddr = getHostAddress(addressType, normalizedAddress, connection);
+		if (existingAddr.isPresent()) {
+			return existingAddr.get();
+		}
 		try {
 
 			// TODO: need to get the correct parent obj id.  
@@ -220,7 +225,8 @@ public class HostAddressManager {
 
 			long objId = db.addObject(parentObjId, objTypeId, connection);
 
-			String hostAddressInsertSQL = "INSERT INTO tsk_host_addresses(id, address_type, address) VALUES (?, ?, ?)"; // NON-NLS
+			String hostAddressInsertSQL = "INSERT INTO tsk_host_addresses(id, address_type, address) VALUES (?, ?, ?) "; //NON-NLS
+				
 			PreparedStatement preparedStatement = connection.getPreparedStatement(hostAddressInsertSQL, Statement.RETURN_GENERATED_KEYS);
 
 			preparedStatement.clearParameters();
