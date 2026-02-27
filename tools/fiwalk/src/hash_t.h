@@ -173,9 +173,9 @@ class hash_generator__:T { 			/* generates the hash */
     unsigned int ret;
 	void *mdctx;
 	unsigned char *md;
-	int (*md_init)(void *);
-	int (*md_update)(void *, const void *, uint32_t);
-	int (*md_final)(unsigned char *, void *);
+	void (*md_init)(void *);
+	void (*md_update)(void *, const void *, uint32_t);
+	void (*md_final)(unsigned char *, void *);
     bool initialized;	       /* has the context been initialized? */
     bool finalized;
     /* Static function to determine if something is zero */
@@ -194,32 +194,32 @@ public:
 		memset(mdctx,0,sizeof(TSK_MD5_CTX));
 		md=(unsigned char *)malloc(TSK_MD5_DIGEST_LENGTH);
 		memset(md,0,TSK_MD5_DIGEST_LENGTH);
-		md_init	 	= (int(*)(void *))&TSK_MD5_Init;
-    	md_update	= (int (*)(void *, const void *, uint32_t))&TSK_MD5_Update;
-		md_final	= (int (*)(unsigned char*, void *))&TSK_MD5_Final;
+		md_init	 	= (void (*)(void *))&TSK_MD5_Init;
+                md_update	= (void (*)(void *, const void *, uint32_t))&TSK_MD5_Update;
+		md_final	= (void (*)(unsigned char*, void *))&TSK_MD5_Final;
 		break;
 	case 20:
 		mdctx = malloc(sizeof(TSK_SHA_CTX));
 		memset(mdctx,0,sizeof(TSK_SHA_CTX));
 		md=(unsigned char *)malloc(TSK_SHA_DIGEST_LENGTH);
 		memset(md,0,TSK_SHA_DIGEST_LENGTH);
-		md_init		= (int(*)(void *))&TSK_SHA_Init;
-		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&TSK_SHA_Update;
-		md_final	= (int (*)(unsigned char*, void*))&TSK_SHA_Final;
+		md_init		= (void(*)(void *))&TSK_SHA_Init;
+		md_update	= (void (*)(void *, const void *, uint32_t))(void (*)())&TSK_SHA_Update;
+		md_final	= (void (*)(unsigned char*, void*))&TSK_SHA_Final;
 		break;
 	case 32:
 		mdctx = malloc(sizeof(SHA256_CTX));
 		md=(unsigned char *)malloc(SHA256_DIGEST_LENGTH);
-		md_init		= (int(*)(void *))&SHA256_Init;
-		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&SHA256_Update;
-		md_final	= (int (*)(unsigned char*, void*))&SHA256_Final;
+		md_init		= (void(*)(void *))&SHA256_Init;
+		md_update	= (void (*)(void *, const void *, uint32_t))(void (*)())&SHA256_Update;
+		md_final	= (void (*)(unsigned char*, void*))&SHA256_Final;
 		break;
 	case 64:
 		mdctx = malloc(sizeof(SHA512_CTX));
 		md=(unsigned char *)malloc(SHA512_DIGEST_LENGTH);
-		md_init		= (int(*)(void *))&SHA512_Init;
-		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&SHA512_Update;
-		md_final	= (int (*)(unsigned char*, void*))&SHA512_Final;
+		md_init		= (void(*)(void *))&SHA512_Init;
+		md_update	= (void (*)(void *, const void *, uint32_t))(void (*)())&SHA512_Update;
+		md_final	= (void (*)(unsigned char*, void*))&SHA512_Final;
 		break;
 	default:
 	    assert(0);
