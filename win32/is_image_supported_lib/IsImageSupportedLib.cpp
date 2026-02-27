@@ -30,6 +30,10 @@
           If return value is non-null it must be freed by the caller
 */
 char* isImageSupported(const char* path, const char* password) {
+    if (path == nullptr) {
+        return nullptr;
+    }
+
     TskIsImageSupported tskIsImage;
     if (password != NULL) {
         std::string passwordStr(password);
