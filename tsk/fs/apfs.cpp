@@ -51,22 +51,24 @@ static __forceinline int lsbset(long x) {
 #endif  // _MSC_VER
 
 class wrapped_key_parser {
-  // TODO(JTS): This code assume a well-formed input. It needs some sanity
-  // checking!
-
   using tag = uint8_t;
   using view = span<const uint8_t>;
 
   const uint8_t* _data;
+  const uint8_t* _end;  // one-past-the-end of the buffer
 
-  size_t get_length(const uint8_t** pos) const noexcept {
+  // Returns true and leaves *pos unchanged on any bounds violation.
+  bool is_eob(const uint8_t** pos, size_t* out_len) const noexcept {
     auto data = *pos;
 
+    if (data >= _end) return true;
     size_t len = *data++;
 
     if (len & 0x80) {
+      size_t enc_len = len & 0x7F;
       len = 0;
-      auto enc_len = len & 0x7F;
+      if (enc_len == 0 || static_cast<size_t>(_end - data) < enc_len)
+        return true;
       while (enc_len--) {
         len <<= 8;
         len |= *data++;
@@ -74,15 +76,23 @@ class wrapped_key_parser {
     }
 
     *pos = data;
-    return len;
+    *out_len = len;
+    return false;
   }
 
+  // Returns an invalid (empty) view if the tag is not found or a bounds
+  // violation is detected.
   const view get_tag(tag t) const noexcept {
     auto data = _data;
 
-    while (true) {
+    while (data < _end) {
       const auto tag = *data++;
-      const auto len = get_length(&data);
+
+      size_t len = 0;
+      if (is_eob(&data, &len)) break;
+
+      // Ensure the value bytes are within the buffer.
+      if (static_cast<size_t>(_end - data) < len) break;
 
       if (tag == t) {
         return {data, len};
@@ -90,6 +100,9 @@ class wrapped_key_parser {
 
       data += len;
     }
+
+    // Tag not found or buffer overrun — return an invalid view.
+    return {};
   }
 
   // Needed for the recursive variadic to compile, but should never be
@@ -99,7 +112,9 @@ class wrapped_key_parser {
   }
 
  public:
-  wrapped_key_parser(const void* data) noexcept : _data{(const uint8_t*)data} {}
+  wrapped_key_parser(const void* data, size_t size) noexcept
+      : _data{static_cast<const uint8_t*>(data)},
+        _end{static_cast<const uint8_t*>(data) + size} {}
 
   template <typename... Args>
   const view get_data(tag t, Args... args) const noexcept {
@@ -109,7 +124,8 @@ class wrapped_key_parser {
       return data;
     }
 
-    return wrapped_key_parser{data.data()}.get_data(args...);
+    // Recurse into the nested TLV value; its buffer is exactly `data`.
+    return wrapped_key_parser{data.data(), data.count()}.get_data(args...);
   }
 
   template <typename... Args>
@@ -345,10 +361,10 @@ APFSFileSystem::APFSFileSystem(const APFSPool& pool,
 }
 
 APFSFileSystem::wrapped_kek::wrapped_kek(TSKGuid&& id,
-                                         const std::unique_ptr<uint8_t[]>& kp)
+                                         const APFS_sized_key_data& kp)
     : uuid{std::forward<TSKGuid>(id)} {
   // Parse KEK
-  wrapped_key_parser wp{kp.get()};
+  wrapped_key_parser wp{kp.get(), kp.size};
 
   // Get flags
   flags = wp.get_number(0x30, 0xA3, 0x82);
@@ -397,12 +413,12 @@ void APFSFileSystem::init_crypto_info() {
         const auto container_kb = _pool.nx()->keybag();
 
         auto data = container_kb.get_key(uuid(), APFS_KB_TYPE_VOLUME_KEY);
-        if (data == nullptr) {
+        if (!data) {
             throw std::runtime_error(
                 "APFSFileSystem: can not find volume encryption key");
         }
 
-        wrapped_key_parser wp{ data.get() };
+        wrapped_key_parser wp{ data.get(), data.size };
 
         // Get Wrapped VEK
         auto kek_data = wp.get_data(0x30, 0xA3, 0x83);
@@ -423,7 +439,7 @@ void APFSFileSystem::init_crypto_info() {
         std::memcpy(_crypto.vek_uuid, kek_data.data(), sizeof(_crypto.vek_uuid));
 
         data = container_kb.get_key(uuid(), APFS_KB_TYPE_UNLOCK_RECORDS);
-        if (data == nullptr) {
+        if (!data) {
             throw std::runtime_error(
                 "APFSFileSystem: can not find volume recovery key");
         }
@@ -442,7 +458,7 @@ void APFSFileSystem::init_crypto_info() {
 
         data = recs.get_key(uuid(), APFS_KB_TYPE_PASSPHRASE_HINT);
 
-        if (data != nullptr) {
+        if (data) {
             _crypto.password_hint = std::string((const char*)data.get());
         }
 
@@ -999,10 +1015,10 @@ APFSKeybag::APFSKeybag(const APFSPool& pool, const apfs_block_num block_num,
   }
 }
 
-std::unique_ptr<uint8_t[]> APFSKeybag::get_key(const TSKGuid& uuid,
-                                               uint16_t type) const {
+APFS_sized_key_data APFSKeybag::get_key(const TSKGuid& uuid,
+                                   uint16_t type) const {
   if (kb()->num_entries == 0) {
-    return nullptr;
+    return {};
   }
 
   // First key is immediately after the header
@@ -1011,20 +1027,17 @@ std::unique_ptr<uint8_t[]> APFSKeybag::get_key(const TSKGuid& uuid,
   for (auto i = 0U; i < kb()->num_entries; i++) {
     if (next_key->type == type &&
         std::memcmp(next_key->uuid, uuid.bytes().data(), 16) == 0) {
-      // We've found a matching key.  Copy it's data to a pointer and return it.
+      // We've found a matching key. Copy its data to a pointer and return it.
       const auto data = reinterpret_cast<const uint8_t*>(next_key + 1);
 
-      // We're padding the data with an extra byte so we can null-terminate
-      // any data strings.  There might be a better way.
+      // +1 byte for null-terminator guard on string values
       auto dp = std::make_unique<uint8_t[]>(next_key->length + 1);
-
       std::memcpy(dp.get(), data, next_key->length);
 
-      return dp;
+      return {std::move(dp), next_key->length};
     }
 
     // Calculate address of next key (ensuring alignment)
-
     const auto nk_addr =
         (uintptr_t)next_key +
         ((sizeof(*next_key) + next_key->length + 0x0F) & ~0x0FULL);
@@ -1033,7 +1046,7 @@ std::unique_ptr<uint8_t[]> APFSKeybag::get_key(const TSKGuid& uuid,
   }
 
   // Not Found
-  return nullptr;
+  return {};
 }
 
 std::vector<APFSKeybag::key> APFSKeybag::get_keys() const {
@@ -1045,13 +1058,13 @@ std::vector<APFSKeybag::key> APFSKeybag::get_keys() const {
   for (auto i = 0U; i < kb()->num_entries; i++) {
     const auto data = reinterpret_cast<const uint8_t*>(next_key + 1);
 
-    // We're padding the data with an extra byte so we can null-terminate
-    // any data strings.  There might be a better way.
+    // +1 byte for null-terminator guard on string values
     auto dp = std::make_unique<uint8_t[]>(next_key->length + 1);
-
     std::memcpy(dp.get(), data, next_key->length);
 
-    keys.emplace_back(key{{next_key->uuid}, std::move(dp), next_key->type});
+    keys.emplace_back(key{{next_key->uuid},
+                          APFS_sized_key_data{std::move(dp), next_key->length},
+                          next_key->type});
 
     // Calculate address of next key (ensuring alignment)
     const auto nk_addr =
