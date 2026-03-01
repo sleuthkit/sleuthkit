@@ -386,7 +386,7 @@ TskAutoDb::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %lld", (long long int)pool_info->img_offset);
+            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %" PRIdOFF, pool_info->img_offset);
             return TSK_ERR;
         }
         int64_t curPoolVs = m_poolOffsetToVsId[pool_info->img_offset];

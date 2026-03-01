@@ -557,7 +557,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         in_node = NULL;
                         break;
                     }
-                    if (b_offs >= ISO9660_SSIZE_B - sizeof(iso9660_dentry)) {
+                    if (b_offs >= ISO9660_SSIZE_B - (int)sizeof(iso9660_dentry)) {
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
                                         "iso9660_load_inodes_dir: b_offs out of bounds, bailing\n");
@@ -1723,7 +1723,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (p->pvd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", p->pvd.pub_id);
 
@@ -1739,7 +1739,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (p->pvd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", p->pvd.prep_id);
 
@@ -1754,7 +1754,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (p->pvd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", p->pvd.app_id);
         cp = &str[127];
@@ -1768,7 +1768,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (p->pvd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 37, "%s", p->pvd.copy_id);
         cp = &str[36];
@@ -1834,7 +1834,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (s->svd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", s->svd.pub_id);
 
@@ -1850,7 +1850,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (s->svd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", s->svd.prep_id);
 
@@ -1865,7 +1865,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (s->svd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", s->svd.app_id);
         cp = &str[127];
@@ -1879,7 +1879,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (s->svd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 37, "%s", s->svd.copy_id);
         cp = &str[36];
@@ -2343,7 +2343,6 @@ iso9660_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 static int
 load_vol_desc(TSK_FS_INFO * fs)
 {
-    //int count = 0;  // set but never used
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_OFF_T offs;
     const char *myname = "iso_load_vol_desc";
@@ -2453,7 +2452,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     ptmp->next = p;
                     p->next = NULL;
-                    // count++; // set but never used
                 }
             }
 
@@ -2461,7 +2459,6 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->pvd = p;
                 p->next = NULL;
-                // count++; // set but never used
             }
 
             break;
@@ -2486,7 +2483,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     stmp->next = s;
                     s->next = NULL;
-                    // count++;  // set but never used
                 }
             }
 
@@ -2494,7 +2490,6 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->svd = s;
                 s->next = NULL;
-                // count++;   // set but never used
             }
 
             break;
@@ -2545,7 +2540,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 p->next = NULL;
                 free(p);
                 p = NULL;
-                // count--;   // set but never used
                 break;
             }
         }

@@ -488,7 +488,6 @@ documentation and/or software.
     } TSK_SHA_CTX;
 
 /* Message digest functions */
-
     void TSK_SHA_Init(TSK_SHA_CTX *);
     void TSK_SHA_Update(TSK_SHA_CTX *, const BYTE * buffer, unsigned int count);
     void TSK_SHA_Final(TSK_SHA_CTX *, BYTE * output);

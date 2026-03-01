@@ -45,6 +45,22 @@
 #include "tsk_base_i.h"
 #include <wchar.h>
 
+
+#if defined(__GNUC__) && __GNUC__ >= 7
+    #define FALLTHROUGH __attribute__((fallthrough))
+#elif defined(__clang__) && defined(__has_attribute)
+    #if __has_attribute(fallthrough)
+        #define FALLTHROUGH __attribute__((fallthrough))
+    #else
+        #define FALLTHROUGH
+    #endif
+#elif __STDC_VERSION__ >= 202000L
+    #define FALLTHROUGH [[fallthrough]]
+#else
+    #define FALLTHROUGH /* fall through */
+#endif
+
+
 /* Some fundamental constants */
 typedef unsigned long UTF32;    /* at least 32 bits */
 #define TSK_UNI_REPLACEMENT_CHAR (UTF32)0x0000FFFD

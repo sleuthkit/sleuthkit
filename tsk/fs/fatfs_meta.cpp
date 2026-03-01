@@ -553,7 +553,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_tmp = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
-        // TSK_OFF_T full_len_s = 0;         // set but not used
         uint8_t canRecover = 1; // set to 0 if recovery is not possible
 
         if (tsk_verbose)
@@ -676,7 +675,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 data_run->addr = sbase;
             }
             data_run->len += fatfs->csize;
-            // full_len_s += fatfs->csize;    // set but not used
 
             size_remain -= (fatfs->csize << fatfs->ssize_sh);
             clust++;
@@ -735,7 +733,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         TSK_LIST *list_seen = NULL;
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
-        // TSK_OFF_T full_len_s = 0;   // set but not used
         TSK_DADDR_T sbase;
         /* Do normal cluster chain walking for a file or directory, including
          * FAT32 and exFAT root directories. */
@@ -799,7 +796,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
             }
 
             data_run->len += fatfs->csize;
-            // full_len_s += fatfs->csize;  // set but not used
             size_remain -= (fatfs->csize * fs->block_size);
 
             if ((int64_t) size_remain > 0) {
