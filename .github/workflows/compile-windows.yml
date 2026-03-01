@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         targetplatform: [x86, x64]
-    runs-on: windows-2019
+    runs-on: windows-2025
 
     env:
       TSK_HOME: "${{ github.workspace }}"
@@ -41,6 +41,11 @@ jobs:
           iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           choco install nuget.commandline
           choco install ant --ignore-dependencies
+
+      - name: Size of drives
+        run: |
+          Get-CimInstance -Class Win32_LogicalDisk | Select-Object DeviceID, @{Name="Size(GB)";Expression={[Math]::Round($_.Size / 1GB, 2)}}, @{Name="FreeSpace(GB)";Expression={[Math]::Round($_.FreeSpace / 1GB, 2)}}, @{Name="FreeSpace(%)";Expression={[Math]::Round(($_.FreeSpace / $_.Size) * 100, 2)}} | Format-Table -AutoSize
+
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
