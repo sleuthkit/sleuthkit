@@ -227,19 +227,19 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
                 char buf2[258];
                 fprintf(hFile, "ER Entry\n");
                 // NOTE: len_id, len_des, and Len_src are all uint8, which is less than 256. So no checks were added
-                if ((uintptr_t)(er->ext_id + er->len_id) < (uintptr_t)end) {
+                if (((char *)er->ext_id + er->len_id) <= end+1) {
                     memcpy(buf2, er->ext_id, er->len_id);
                     buf2[er->len_id] = '\0';
                     fprintf(hFile, "* Extension ID: %s\n", buf2);
                 }
                 
-                if ((uintptr_t)(er->ext_id + er->len_id + er->len_des) < (uintptr_t)end) {
+                if (((char *) er->ext_id + er->len_id + er->len_des) <= end+1) {
                     memcpy(buf2, er->ext_id + er->len_id, er->len_des);
                     buf2[er->len_des] = '\0';
                     fprintf(hFile, "* Extension Descriptor: %s\n", buf2);
                 }
 
-                if ((uintptr_t)(er->ext_id + er->len_id + er->len_des + er->len_src) < (uintptr_t)end) {
+                if (((char *) er->ext_id + er->len_id + er->len_des + er->len_src) <= end+1) {
                     memcpy(buf2, er->ext_id + er->len_id + er->len_des,
                         er->len_src);
                     buf2[er->len_src] = '\0';
