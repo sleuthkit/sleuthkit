@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         targetplatform: [x86, x64]
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     env:
       TSK_HOME: "${{ github.workspace }}"
@@ -41,6 +41,11 @@ jobs:
           iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           choco install nuget.commandline
           choco install ant --ignore-dependencies
+
+      - name: Install VS 2019 Build Tools
+        run: |
+          choco install visualstudio2019buildtools --version 16.11.0
+          choco install visualstudio2019-workload-vctools
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
