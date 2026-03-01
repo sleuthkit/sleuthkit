@@ -12,6 +12,31 @@ AC_DEFUN([TSK_CHECK_PROG_PKGCONFIG], [
     AS_IF([test "x$enable_shared" != "xyes"], [PKG_CONFIG="$PKG_CONFIG --static"])
   ])
 
+  dnl Detect Homebrew prefix on macOS and add to search paths
+  AC_MSG_CHECKING([for Homebrew prefix])
+  HOMEBREW_PREFIX=""
+  AS_IF([test -d "/opt/homebrew"],
+    [HOMEBREW_PREFIX="/opt/homebrew"],
+    [AS_IF([test -d "/usr/local/Cellar"],
+      [HOMEBREW_PREFIX="/usr/local"]
+    )]
+  )
+  AS_IF([test -n "$HOMEBREW_PREFIX"],
+    [
+      AC_MSG_RESULT([$HOMEBREW_PREFIX])
+      dnl Add Homebrew include/lib paths if not already present
+      AS_CASE([$CPPFLAGS], [*-I$HOMEBREW_PREFIX/include*], [],
+        [CPPFLAGS="$CPPFLAGS -I$HOMEBREW_PREFIX/include"])
+      AS_CASE([$LDFLAGS], [*-L$HOMEBREW_PREFIX/lib*], [],
+        [LDFLAGS="$LDFLAGS -L$HOMEBREW_PREFIX/lib"])
+      dnl Ensure pkg-config finds Homebrew's .pc files
+      AS_CASE([$PKG_CONFIG_PATH], [*$HOMEBREW_PREFIX/lib/pkgconfig*], [],
+        [PKG_CONFIG_PATH="$HOMEBREW_PREFIX/lib/pkgconfig:$HOMEBREW_PREFIX/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"])
+      export PKG_CONFIG_PATH
+    ],
+    [AC_MSG_RESULT([not found])]
+  )
+
   PACKAGE_LIBS_PRIVATE=
   AC_SUBST([PACKAGE_LIBS_PRIVATE])
 ])
