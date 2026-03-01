@@ -864,7 +864,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     &node[nodesize - (rec + 1) * 2]);
 
                 // Need at least 2 bytes for key_len
-                if (rec_off >= nodesize - 2) {
+                if (rec_off >= (size_t)nodesize - 2) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in index node %d too large (%d vs %"
@@ -987,7 +987,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     &node[nodesize - (rec + 1) * 2]);
 
                 // Need at least 2 bytes for key_len
-                if (rec_off >= nodesize - 2) {
+                if (rec_off >= (size_t)nodesize - 2) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%d vs %"
@@ -4144,7 +4144,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
 
-            if ((attrFile.nodeSize < 2) || (recIndx > ((attrFile.nodeSize - 2) / 2))) {
+            if ((attrFile.nodeSize < 2) || (recIndx > (unsigned int)((attrFile.nodeSize - 2) / 2))) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (recIndx exceeds attrFile.nodeSize)");
                 goto on_error;
@@ -4241,7 +4241,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Check the attribute fits in the node
                 //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
-                if ((attributeLength > attrFile.nodeSize - 2 - 16 - keyLength) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength - attributeLength)) {
+                if ((attributeLength > (uint32_t)attrFile.nodeSize - 2 - 16 - keyLength) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength - attributeLength)) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;

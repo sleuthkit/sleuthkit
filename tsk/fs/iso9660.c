@@ -1891,9 +1891,9 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (s->svd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 9, "In file\n");
+            snprintf(str, 128, "In file\n");
         else
-            snprintf(str, 37, "%s\n", s->svd.copy_id);
+            snprintf(str, 128, "%s\n", s->svd.copy_id);
         cp = &str[36];
         while ((!isprint(*cp) || isspace(*cp)) && (cp != str))
             cp--;
