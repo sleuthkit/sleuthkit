@@ -47,6 +47,14 @@ jobs:
           choco install visualstudio2019buildtools --version 16.11.0
           choco install visualstudio2019-workload-vctools
 
+          # 2. Locate the newly installed MSBuild
+          # Choco usually installs to Program Files (x86) for 2019
+          $msBuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+
+          # 3. Persist it for all FOLLOWING steps in the workflow
+          echo "MS_BUILD=$msBuildPath" >> $env:GITHUB_ENV
+          Write-Host "MS_BUILD has been set to: $msBuildPath"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:

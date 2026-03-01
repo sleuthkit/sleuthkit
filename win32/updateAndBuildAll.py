@@ -113,6 +113,8 @@ def buildTSK(wPlatform, target):
     vs.append("/t:build")
     vs.append("/m")
 
+    print("Running command: " + vs + "\n")
+
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
     ret = subprocess.call(vs, stdout=sys.stdout)
