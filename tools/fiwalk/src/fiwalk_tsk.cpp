@@ -296,8 +296,9 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void * /*ptr*/)
     /* Ignore NTFS System files */
     if (opt_ignore_ntfs_system_files
 	&& (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype) || TSK_FS_TYPE_ISFAT(fs_file->fs_info->ftype))
-        && (fs_file->name->name[0] == '$'))
+        && (fs_file->name->name[0] == '$')) {
         return TSK_WALK_CONT;
+    }
 
     /* If the name has corresponding metadata, then walk it */
    	process_tsk_file(fs_file, path);
