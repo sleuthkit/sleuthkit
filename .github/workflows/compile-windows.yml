@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         targetplatform: [x86, x64]
-    runs-on: windows-2022
+    runs-on: windows-2025
 
     env:
       TSK_HOME: "${{ github.workspace }}"
@@ -42,18 +42,10 @@ jobs:
           choco install nuget.commandline
           choco install ant --ignore-dependencies
 
-      - name: Install VS 2019 Build Tools
+      - name: Size of drives
         run: |
-          choco install visualstudio2019buildtools --version 16.11.0
-          choco install visualstudio2019-workload-vctools
+          Get-CimInstance -Class Win32_LogicalDisk | Select-Object DeviceID, @{Name="Size(GB)";Expression={[Math]::Round($_.Size / 1GB, 2)}}, @{Name="FreeSpace(GB)";Expression={[Math]::Round($_.FreeSpace / 1GB, 2)}}, @{Name="FreeSpace(%)";Expression={[Math]::Round(($_.FreeSpace / $_.Size) * 100, 2)}} | Format-Table -AutoSize
 
-          # 2. Locate the newly installed MSBuild
-          # Choco usually installs to Program Files (x86) for 2019
-          $msBuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
-
-          # 3. Persist it for all FOLLOWING steps in the workflow
-          echo "MS_BUILD=$msBuildPath" >> $env:GITHUB_ENV
-          Write-Host "MS_BUILD has been set to: $msBuildPath"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3

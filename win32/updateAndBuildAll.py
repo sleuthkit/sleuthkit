@@ -113,7 +113,7 @@ def buildTSK(wPlatform, target):
     vs.append("/t:build")
     vs.append("/m")
 
-    print("Running command: " + vs + "\n")
+    print("Running command: " + str(vs) + "\n")
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
