@@ -226,21 +226,20 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
             if (hFile) {
                 char buf2[258];
                 fprintf(hFile, "ER Entry\n");
-
-                if ((er->len_id < 256) && (er->ext_id + er->len_id < (uintptr_t)end)) {
+                // NOTE: len_id, len_des, and Len_src are all uint8, which is less than 256. So no checks were added
+                if ((uintptr_t)(er->ext_id + er->len_id) < (uintptr_t)end) {
                     memcpy(buf2, er->ext_id, er->len_id);
                     buf2[er->len_id] = '\0';
                     fprintf(hFile, "* Extension ID: %s\n", buf2);
                 }
-
                 
-                if ((er->len_des < 256) && (er->ext_id + er->len_id + er->len_des < (uintptr_t)end)) {
+                if ((uintptr_t)(er->ext_id + er->len_id + er->len_des) < (uintptr_t)end) {
                     memcpy(buf2, er->ext_id + er->len_id, er->len_des);
                     buf2[er->len_des] = '\0';
                     fprintf(hFile, "* Extension Descriptor: %s\n", buf2);
                 }
 
-                if ((er->len_src < 256) && (er->ext_id + er->len_id + er->len_des + er->len_src < (uintptr_t)end)) {
+                if ((uintptr_t)(er->ext_id + er->len_id + er->len_des + er->len_src) < (uintptr_t)end) {
                     memcpy(buf2, er->ext_id + er->len_id + er->len_des,
                         er->len_src);
                     buf2[er->len_src] = '\0';
@@ -742,7 +741,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
             /* add inode to the list */
             if (iso->in_list) {
-                iso9660_inode_node *tmp, *prev_tmp;
+                iso9660_inode_node *tmp, *prev_tmp = NULL;
 
                 for (tmp = iso->in_list; tmp; tmp = tmp->next) {
                     /* When processing the "first" volume descriptor, all entries get added to the list.
@@ -782,7 +781,10 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
                 // add it to the end (if we didn't get rid of it above)
                 if (in_node) {
-                    prev_tmp->next = in_node;
+                    if (prev_tmp == NULL)
+                        prev_tmp = in_node;
+                    else
+                        prev_tmp->next = in_node;
                     in_node->next = NULL;
                 }
             }
@@ -793,8 +795,12 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
             // skip two entries if this was the root directory (the . and ..).
             if ((i == 0) && (b_offs == 0) && (count == 1)) {
-                b_offs += dentry->entry_len;
-                dentry = (iso9660_dentry *) & buf[b_offs];
+                // skip ahead if we're staying in the buffer. We'll skip the
+                // second entry at the bottom of the loop
+                if (b_offs + dentry->entry_len < ISO9660_SSIZE_B) {
+                    b_offs += dentry->entry_len;
+                    dentry = (iso9660_dentry *) & buf[b_offs];
+                }
             }
             b_offs += dentry->entry_len;
         }
@@ -879,7 +885,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
             for (i = 0; i < cnt; i += 2) {
                 char t = utf16_buf[i];
                 utf16_buf[i] = utf16_buf[i + 1];
-                utf16_buf[i] = t;
+                utf16_buf[i + 1] = t;
             }
         }
 
