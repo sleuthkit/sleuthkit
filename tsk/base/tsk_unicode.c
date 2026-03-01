@@ -541,6 +541,7 @@ isLegalUTF8(const UTF8 * source, int length)
             if (a < 0x80)
                 return false;
         }
+        FALLTHROUGH;
 
     case 1:
         if (*source >= 0x80 && *source < 0xC2)

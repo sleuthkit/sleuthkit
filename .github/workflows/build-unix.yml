@@ -175,7 +175,7 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt update
-          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64 wget libpcre3-dev
+          sudo apt install autoconf automake libtool make pkg-config mingw-w64 mingw-w64-tools libz-mingw-w64-dev wine32 wine64 wget libpcre3-dev libgnurx-mingw-w64-dev
           sudo update-alternatives --set ${{ matrix.arch }}-w64-mingw32-g++ /usr/bin/${{ matrix.arch }}-w64-mingw32-g++-posix
           # This is not working; also requires mingw-w64-x86_64-libgnurx
           # echo === installing libmagic for mingw ===
