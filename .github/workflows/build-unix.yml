@@ -123,6 +123,8 @@ jobs:
             keep_artifacts: "no"
 
     steps:
+      - name: Find regex package - TMP
+        run: apt-cache search mingw | grep -i regex
       - name: Determine number of cores
         id: cores
         run: |
