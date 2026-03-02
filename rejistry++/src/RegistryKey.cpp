@@ -37,6 +37,7 @@ namespace Rejistry {
 
     RegistryKey& RegistryKey::operator=(const RegistryKey & rk) {
         if (this != &rk) {
+            delete _nk;
             _nk = new NKRecord(*(rk._nk));
         }
         return *this;

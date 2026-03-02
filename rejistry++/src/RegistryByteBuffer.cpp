@@ -177,7 +177,7 @@ namespace Rejistry {
         uint32_t i = 0;
         uint32_t pos = 0;
 
-        while (i < data.size()) {
+        while (i < data.size() - 1) {
             if (data[i] == '\0' && data[++i] == '\0') {
                 stringList.push_back(std::wstring((wchar_t*)&data[pos]));
                 pos = i;

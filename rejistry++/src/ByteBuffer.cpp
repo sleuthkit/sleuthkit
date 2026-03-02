@@ -73,19 +73,18 @@ namespace Rejistry {
         }
 
         /**
-         * Throws exception if offset or length are too large. */
+         * Throws exception if offset or length are too large. 
+         * @param offset Offset within this buffer to read from
+         * @param length Length to copy
+         */
         void ByteBuffer::get(ByteArray& dst, const uint32_t offset, const uint32_t length) {
             if (length == 0) {
                 // No data requested.
                 return;
             }
 
-            if (offset > dst.size()) {
-                throw RegistryParseException("Offset is greater than destination buffer size.");
-            }
-
-            if ((dst.size() - offset) > length) {
-                throw RegistryParseException("Length is greater than available space in destination buffer.");
+            if (length > dst.size()) {
+                throw RegistryParseException("Length is greater than destination buffer size.");
             }
 
             if ((_position + offset) > _limit) {
@@ -97,7 +96,7 @@ namespace Rejistry {
             }
 
             memcpy(&dst[0], &_buffer[_position + offset], length);
-            _position += offset;
+            _position += length;
         }
 
         /**
