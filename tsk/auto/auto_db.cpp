@@ -249,6 +249,12 @@ TskAutoDb::addImageDetails(const char* deviceId)
 
     for (int i = 0; i < m_img_info->num_img; i++) {
         char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
+        if (img2 == NULL) {
+            for (int j = 0; j < i; j++)
+                free(img_ptrs[j]);
+            free(img_ptrs);
+            return 1;
+        }
         UTF8 *ptr8;
         UTF16 *ptr16;
 
@@ -263,6 +269,10 @@ TskAutoDb::addImageDetails(const char* deviceId)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
             tsk_error_set_errstr("Error converting image to UTF-8\n");
+            free(img2);
+            for (int j = 0; j < i; j++)
+                free(img_ptrs[j]);
+            free(img_ptrs);
             return 1;
         }
         img_ptrs[i] = img2;
@@ -277,6 +287,11 @@ TskAutoDb::addImageDetails(const char* deviceId)
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
+#ifdef TSK_WIN32
+            for (int j = 0; j < m_img_info->num_img; ++j)
+                free(img_ptrs[j]);
+            free(img_ptrs);
+#endif
             return 1;
         }
     }
@@ -598,9 +613,12 @@ uint8_t
     }
 
     if (m_imageWriterEnabled) {
-        tsk_img_writer_create(m_img_info, m_imageWriterPath);
+        if (tsk_img_writer_create(m_img_info, m_imageWriterPath)) {
+            registerError();
+            return 1;
+        }
     }
-    
+
     if (m_addFileSystems) {
         return addFilesInImgToDb();
     } else {
@@ -731,7 +749,10 @@ uint8_t
         return 1;
     }
     if (m_imageWriterEnabled) {
-        tsk_img_writer_create(m_img_info, m_imageWriterPath);
+        if (tsk_img_writer_create(m_img_info, m_imageWriterPath)) {
+            registerError();
+            return 1;
+        }
     }
 
     if (m_addFileSystems) {
@@ -1044,10 +1065,11 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     }
 
     // this block is not contiguous with the previous one or we've hit the maximum size; create and add a range object
-    const uint64_t rangeStartOffset = unallocBlockWlkTrack->curRangeStart * unallocBlockWlkTrack->fsInfo.block_size 
-        + unallocBlockWlkTrack->fsInfo.offset;
-    const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
-        * unallocBlockWlkTrack->fsInfo.block_size;
+    const uint64_t blkSize = unallocBlockWlkTrack->fsInfo.block_size;
+    const uint64_t rangeStartOffset = (unallocBlockWlkTrack->curRangeStart <= UINT64_MAX / blkSize)
+        ? unallocBlockWlkTrack->curRangeStart * blkSize + unallocBlockWlkTrack->fsInfo.offset
+        : unallocBlockWlkTrack->fsInfo.offset;
+    const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) * blkSize;
     unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, unallocBlockWlkTrack->nextSequenceNo++));
 
     // Return (instead of adding this run) if we are going to:
@@ -1137,23 +1159,28 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         return TSK_OK;
     }
 
-    // handle creation of the last range
-    // make range inclusive from curBlockStart to prevBlock
-    const uint64_t byteStart = unallocBlockWlkTrack.curRangeStart * fsInfo->block_size + fsInfo->offset;
-    const uint64_t byteLen = (1 + unallocBlockWlkTrack.prevBlock - unallocBlockWlkTrack.curRangeStart) * fsInfo->block_size;
-    unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, unallocBlockWlkTrack.nextSequenceNo++));
-    int64_t fileObjId = 0;
+    // handle creation of the last range only if we actually walked some blocks
+    if (!unallocBlockWlkTrack.isStart) {
+        // make range inclusive from curBlockStart to prevBlock
+        const uint64_t blkSize = (uint64_t)fsInfo->block_size;
+        const uint64_t byteStart = (unallocBlockWlkTrack.curRangeStart <= UINT64_MAX / blkSize)
+            ? unallocBlockWlkTrack.curRangeStart * blkSize + fsInfo->offset
+            : (uint64_t)fsInfo->offset;
+        const uint64_t byteLen = (1 + unallocBlockWlkTrack.prevBlock - unallocBlockWlkTrack.curRangeStart) * blkSize;
+        unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, unallocBlockWlkTrack.nextSequenceNo++));
+        int64_t fileObjId = 0;
 
-    if (m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
-        registerError();
-        tsk_fs_close(fsInfo);
-        return TSK_ERR;
+        if (m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
+            registerError();
+            tsk_fs_close(fsInfo);
+            return TSK_ERR;
+        }
     }
-    
-    //cleanup 
+
+    //cleanup
     tsk_fs_close(fsInfo);
 
-    return TSK_OK; 
+    return TSK_OK;
 }
 
 /**
