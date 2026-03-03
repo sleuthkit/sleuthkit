@@ -102,14 +102,20 @@ uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
 
     tsk_fprintf(hFile, "\n");
 
-    const auto total_space = _info.num_blocks * _info.block_size;
+    const uint64_t block_size = _info.block_size;
+    const uint64_t total_space = (block_size > 0 && _info.num_blocks > UINT64_MAX / block_size)
+        ? UINT64_MAX
+        : _info.num_blocks * block_size;
 
     tsk_fprintf(hFile, "Capacity Ceiling (Size): %llu B\n", total_space);
 
     if (has_cdb) {
-      const auto free_space = nxsb->num_free_blocks() * _info.block_size;
-      tsk_fprintf(hFile, "Capacity In Use:         %llu B\n",
-                  total_space - free_space);
+      const uint64_t num_free = nxsb->num_free_blocks();
+      const uint64_t free_space = (block_size > 0 && num_free > UINT64_MAX / block_size)
+          ? UINT64_MAX
+          : num_free * block_size;
+      const uint64_t used_space = (free_space <= total_space) ? (total_space - free_space) : 0;
+      tsk_fprintf(hFile, "Capacity In Use:         %llu B\n", used_space);
       tsk_fprintf(hFile, "Capacity Available:      %llu B\n", free_space);
     }
 
