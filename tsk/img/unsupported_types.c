@@ -140,35 +140,35 @@ char* detectUnsupportedImageType(TSK_IMG_INFO * img_info) {
     result[0] = '\0';
 
     if (detectImageSignature("ADSEGMENTEDFILE", 15, buf, len)) {
-        strcpy(result, "Custom Content Image (AD1)");
+        snprintf(result, 256, "%s", "Custom Content Image (AD1)");
     }
     else if (detectImageSignature("EVF2\r\n\x81\x00", 8, buf, len)) {
-        strcpy(result, "EWF Version 2 (Ex01)");
+        snprintf(result, 256, "%s", "EWF Version 2 (Ex01)");
     }
     else if (detectImageSignature("Rar!\x1a\x07", 6, buf, len)) {
-        strcpy(result, "RAR Archive");
+        snprintf(result, 256, "%s", "RAR Archive");
     }
     else if (detectImageSignature("7z\xbc\xaf\x27\x1c", 6, buf, len)) {
-        strcpy(result, "7-Zip Archive");
+        snprintf(result, 256, "%s", "7-Zip Archive");
     }
     else if (detectImageSignature("[Dumps]", 7, buf, len)) {
-        strcpy(result, "Cellebrite (UFD)");
+        snprintf(result, 256, "%s", "Cellebrite (UFD)");
     }
     else if (detectImageSignatureWithOffset("ustar", 5, 257, buf, len)) {
-        strcpy(result, "Tar Archive");
+        snprintf(result, 256, "%s", "Tar Archive");
     }
     else if (detectImageSignature("PK\x03\x04", 4, buf, len) || detectImageSignature("PK\x05\x06", 4, buf, len)
         || (detectImageSignature("PK\x07\x08", 4, buf, len))) {
-        strcpy(result, "Zip Archive");
+        snprintf(result, 256, "%s", "Zip Archive");
     }
     else if (detectImageSignature("BZh", 3, buf, len)) {
-        strcpy(result, "Bzip Archive");
+        snprintf(result, 256, "%s", "Bzip Archive");
     }
     else if (detectImageSignature("\x1f\x8b", 2, buf, len)) {
-        strcpy(result, "Gzip Archive");
-    } 
+        snprintf(result, 256, "%s", "Gzip Archive");
+    }
     else if (verifyTarChecksum(buf, len)) {
-        strcpy(result, "Tar Archive");
+        snprintf(result, 256, "%s", "Tar Archive");
     }
 
     free(buf);

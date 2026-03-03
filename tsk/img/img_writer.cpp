@@ -116,6 +116,10 @@ static void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
     }
 
     unsigned char * sectBitmap = writer->blockToSectorBitmap[blockNum];
+    if (sectBitmap == NULL) {
+        /* Block bitmap already freed (block marked finished) */
+        return;
+    }
     for (unsigned int i = 0; i < nSectors; i++) {
         if (false == getBit(sectBitmap, i)) {
             /* At least one sector has not been written */
