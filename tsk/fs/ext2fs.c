@@ -647,6 +647,10 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
             // Prepare to load the next entry.
             // The entry size is the size of the struct plus the length of the name, minus one
             // because the struct contains the first character of the name.
+            // nlen==0 would underflow the - 1; advance by at least sizeof the struct.
+            if (ea_entry->nlen == 0) {
+                break;
+            }
             index += sizeof(ext2fs_ea_entry) + ea_entry->nlen - 1;
 
             // Make sure there's room for the next entry plus the 'data' name we're looking for.
