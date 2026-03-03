@@ -47,7 +47,7 @@ import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import static org.sleuthkit.datamodel.CollectionUtils.isNotEmpty;
-import static org.sleuthkit.datamodel.CommManagerSqlStringUtils.buildCSVString;
+import static org.sleuthkit.datamodel.CommManagerSqlStringUtils.buildLongCSVString;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
@@ -158,7 +158,7 @@ public final class TimelineManager {
 		if (eventIDs.isEmpty()) {
 			return null;
 		}
-		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM tsk_events WHERE event_id IN (" + buildCSVString(eventIDs) + ")"; //NON-NLS
+		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM tsk_events WHERE event_id IN (" + buildLongCSVString(eventIDs) + ")"; //NON-NLS
 		caseDB.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = caseDB.getConnection();
 				Statement stmt = con.createStatement();
@@ -1103,7 +1103,7 @@ public final class TimelineManager {
 			return;
 		}
 
-		String sql = "UPDATE tsk_event_descriptions SET tagged = " + flagValue + " WHERE event_description_id IN (" + buildCSVString(eventDescriptionIDs) + ")"; //NON-NLS
+		String sql = "UPDATE tsk_event_descriptions SET tagged = " + flagValue + " WHERE event_description_id IN (" + buildLongCSVString(eventDescriptionIDs) + ")"; //NON-NLS
 		try (Statement updateStatement = conn.createStatement()) {
 			updateStatement.executeUpdate(sql);
 		} catch (SQLException ex) {
@@ -1130,7 +1130,7 @@ public final class TimelineManager {
 		try (CaseDbConnection con = caseDB.getConnection(); Statement updateStatement = con.createStatement();) {
 			Map<Long, Long> eventIDs = getEventAndDescriptionIDs(con, content.getId(), true);
 			if (!eventIDs.isEmpty()) {
-				String sql = "UPDATE tsk_event_descriptions SET hash_hit = 1" + " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"; //NON-NLS
+				String sql = "UPDATE tsk_event_descriptions SET hash_hit = 1" + " WHERE event_description_id IN (" + buildLongCSVString(eventIDs.values()) + ")"; //NON-NLS
 				try {
 					updateStatement.executeUpdate(sql); //NON-NLS
 					return eventIDs.keySet();

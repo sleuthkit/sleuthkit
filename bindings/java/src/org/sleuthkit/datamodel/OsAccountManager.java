@@ -1147,7 +1147,19 @@ public final class OsAccountManager {
 	 *
 	 * @return The query.
 	 */
+	private static final java.util.Set<String> ALLOWED_OS_ACCOUNT_UPDATE_TABLES = java.util.Collections.unmodifiableSet(
+		new java.util.HashSet<>(java.util.Arrays.asList(
+			"tsk_os_account_attributes",
+			"tsk_os_account_instances",
+			"tsk_files",
+			"tsk_data_artifacts"
+		))
+	);
+
 	private String makeOsAccountUpdateQuery(String tableName, OsAccount sourceAccount, OsAccount destAccount) {
+		if (!ALLOWED_OS_ACCOUNT_UPDATE_TABLES.contains(tableName)) {
+			throw new IllegalArgumentException("Invalid table name for OS account update: " + tableName);
+		}
 		return "UPDATE " + tableName + " SET os_account_obj_id = " + destAccount.getId() + " WHERE os_account_obj_id = " + sourceAccount.getId();
 	}
 
