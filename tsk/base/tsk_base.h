@@ -65,7 +65,7 @@ extern "C" {
 #endif
 
 #define TSK_ERROR_STRING_MAX_LENGTH 1024
-typedef void(*TSK_ERROR_LISTENER_CB) (unsigned int errno, const char* errmsg);
+typedef void(*TSK_ERROR_LISTENER_CB) (unsigned int err_code, const char* errmsg);
 
     typedef struct {
         uint32_t t_errno;
