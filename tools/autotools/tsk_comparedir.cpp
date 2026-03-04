@@ -88,11 +88,12 @@ uint8_t
     char file8[TSK_CD_BUFSIZE];
 
     //create the full path (utf16)
-    wcsncpy(fullpath, (wchar_t *) m_lclDir, TSK_CD_BUFSIZE);
+    wcsncpy(fullpath, (wchar_t *) m_lclDir, TSK_CD_BUFSIZE - 1);
+    fullpath[TSK_CD_BUFSIZE - 1] = L'\0';
     if (wcslen((wchar_t *) a_dir) > 0)
-        wcsncat(fullpath, a_dir, TSK_CD_BUFSIZE);
+        wcsncat(fullpath, a_dir, TSK_CD_BUFSIZE - wcslen(fullpath) - 1);
 
-    wcsncat(fullpath, L"\\*", TSK_CD_BUFSIZE);
+    wcsncat(fullpath, L"\\*", TSK_CD_BUFSIZE - wcslen(fullpath) - 1);
 
 
     //start the directory walk
@@ -111,9 +112,10 @@ uint8_t
 
     do {
         wchar_t file[TSK_CD_BUFSIZE];
-        wcsncpy(file, a_dir, TSK_CD_BUFSIZE);
-        wcsncat(file, L"\\", TSK_CD_BUFSIZE);
-        wcsncat(file, ffd.cFileName, TSK_CD_BUFSIZE);
+        wcsncpy(file, a_dir, TSK_CD_BUFSIZE - 1);
+        file[TSK_CD_BUFSIZE - 1] = L'\0';
+        wcsncat(file, L"\\", TSK_CD_BUFSIZE - wcslen(file) - 1);
+        wcsncat(file, ffd.cFileName, TSK_CD_BUFSIZE - wcslen(file) - 1);
         //if the file is a directory make recursive call
         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             // skip the '.' and '..' entries
@@ -165,19 +167,14 @@ uint8_t
     char fullPath[TSK_CD_BUFSIZE];
     struct stat status;
 
-    strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
-    strncat(fullPath, a_dir, TSK_CD_BUFSIZE-strlen(fullPath)-1);
+    snprintf(fullPath, TSK_CD_BUFSIZE, "%s%s", m_lclDir, a_dir);
     if ((dp = opendir(fullPath)) == NULL) {
         fprintf(stderr, "Error opening directory");
         return 1;
     }
     while ((dirp = readdir(dp)) != NULL) {
-        strncpy(file, a_dir, TSK_CD_BUFSIZE);
-        strncat(file, "/", TSK_CD_BUFSIZE-strlen(file)-1);
-        strncat(file, dirp->d_name, TSK_CD_BUFSIZE-strlen(file)-1);
-
-        strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
-        strncat(fullPath, file, TSK_CD_BUFSIZE-strlen(fullPath)-1);
+        snprintf(file, TSK_CD_BUFSIZE, "%s/%s", a_dir, dirp->d_name);
+        snprintf(fullPath, TSK_CD_BUFSIZE, "%s%s", m_lclDir, file);
 
         stat(fullPath, &status);
         if (S_ISDIR(status.st_mode)) {
@@ -374,6 +371,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);

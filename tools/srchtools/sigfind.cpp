@@ -173,7 +173,7 @@ main(int argc, char **argv)
         }
         /* Get the hex value */
         sig_size = 0;
-        for (i = 0; i < 9; i++) {
+        for (i = 0; i < 8; i++) {
             uint8_t tmp;
             tmp = argv[optind][i];
 
@@ -214,7 +214,7 @@ main(int argc, char **argv)
         optind++;
 
         /* Check the signature length */
-        if (i == 9) {
+        if (i == 8) {
             fprintf(stderr,
                     "Error: Maximum supported signature size is 4 bytes\n");
             exit(1);

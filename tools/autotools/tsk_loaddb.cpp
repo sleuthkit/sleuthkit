@@ -75,6 +75,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
         case _TSK_T('a'):
             createDbFlag = false;
@@ -169,6 +170,10 @@ main(int argc, char **argv1)
     }
 
     TskAutoDb *autoDb = tskCase->initAddImage();
+    if (autoDb == NULL) {
+        tsk_error_print(stderr);
+        exit(1);
+    }
     autoDb->createBlockMap(blkMapFlag);
     autoDb->hashFiles(calcHash);
     autoDb->setAddUnallocSpace(true);
