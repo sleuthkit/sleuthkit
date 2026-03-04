@@ -58,7 +58,7 @@ namespace Rejistry {
             try {
                 _buffer.resize(length);
             } 
-            catch (std::bad_alloc &e)
+            catch (std::bad_alloc &)
             {
                 throw RegistryParseException("Cannot allocate memory for registry byte buffer.");
             }
