@@ -65,7 +65,10 @@ namespace Rejistry {
             throw RegistryParseException("Class name exceeds maximum length.");
         }
 
-        uint32_t classnameOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
+        if (offset < 0) {
+            throw RegistryParseException("Invalid class name offset.");
+        }
+        uint32_t classnameOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
         std::unique_ptr< Cell > c(new Cell(_buf, classnameOffset));
         if (c.get() == NULL) {
             throw RegistryParseException("Failed to create cell for class name.");
@@ -122,7 +125,10 @@ namespace Rejistry {
 
     NKRecord::NKRecordPtr NKRecord::getParentRecord() const {
         int32_t offset = (int32_t)getDWord(PARENT_RECORD_OFFSET_OFFSET);
-        uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
+        if (offset < 0) {
+            throw RegistryParseException("Invalid parent record offset.");
+        }
+        uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
         std::unique_ptr< Cell > c(new Cell(_buf, parentOffset));
 
         if (c.get() == NULL) {

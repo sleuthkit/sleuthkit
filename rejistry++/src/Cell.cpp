@@ -36,7 +36,11 @@
 namespace Rejistry {
 
     uint32_t Cell::getLength() const {
-        return std::abs((int)getDWord(LENGTH_OFFSET));
+        int32_t raw = (int32_t)getDWord(LENGTH_OFFSET);
+        if (raw == (int32_t)0x80000000) {
+            throw RegistryParseException("Invalid cell length.");
+        }
+        return (uint32_t)(raw < 0 ? -raw : raw);
     }
 
     bool Cell::isActive() const {
@@ -44,7 +48,11 @@ namespace Rejistry {
     }
 
     std::vector<uint8_t> Cell::getData() const {
-        return _buf->getData(getAbsoluteOffset(DATA_OFFSET), getLength() - DATA_OFFSET);
+        uint32_t len = getLength();
+        if (len < DATA_OFFSET) {
+            throw RegistryParseException("Cell length too small.");
+        }
+        return _buf->getData(getAbsoluteOffset(DATA_OFFSET), len - DATA_OFFSET);
     }
 
     std::string Cell::getDataSignature() const {

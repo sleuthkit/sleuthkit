@@ -76,18 +76,7 @@ namespace Rejistry {
 
         void initializeBuffer(const uint8_t * buf, const uint32_t length);
 
-        /// read at current offset
-        template <typename T> T read() const {
-            // the below method does bounds checking and
-            // returns NULL on error
-            T bytes = read<T>(_position);
-            if (bytes != NULL) {
-                _position += sizeof(T);
-            }
-            return bytes;
-        }
-
-        /// read at specified offset 
+        /// read at specified offset
         template <typename T> T read(uint32_t offset) const {
             if (offset + sizeof(T) <= _limit) {
                 return *((T*)&_buffer[offset]);

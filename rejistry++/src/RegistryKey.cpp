@@ -87,11 +87,14 @@ namespace Rejistry {
 
 
     size_t RegistryKey::getSubkeyListSize() const {
-        std::vector<RegistryKey *> subkeys;
         SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
         NKRecord::NKRecordPtrList nkRecordList = subkeyListRecordPtr->getSubkeys();
+        size_t sz = nkRecordList.size();
+        for (NKRecord::NKRecordPtrList::iterator it = nkRecordList.begin(); it != nkRecordList.end(); ++it) {
+            delete *it;
+        }
         delete subkeyListRecordPtr;
-        return nkRecordList.size();
+        return sz;
     }
 
 
@@ -110,11 +113,12 @@ namespace Rejistry {
      */
     RegistryValue::RegistryValuePtrList RegistryKey::getValueList() const {
         RegistryValue::RegistryValuePtrList values;
-        VKRecord::VKRecordPtrList vkRecordList = _nk->getValueList()->getValues();
-        VKRecord::VKRecordPtrList::iterator it;
-        for (it = vkRecordList.begin(); it != vkRecordList.end(); ++it) {
+        ValueListRecord *valueListRecord = _nk->getValueList();
+        VKRecord::VKRecordPtrList vkRecordList = valueListRecord->getValues();
+        for (VKRecord::VKRecordPtrList::iterator it = vkRecordList.begin(); it != vkRecordList.end(); ++it) {
             values.push_back(new RegistryValue(*it));
         }
+        delete valueListRecord;
         return values;
     }
 

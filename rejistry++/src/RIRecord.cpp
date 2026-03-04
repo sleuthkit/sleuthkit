@@ -70,6 +70,7 @@ namespace Rejistry {
         for (it = subkeyList.begin(); it != subkeyList.end(); ++it) {
             NKRecord::NKRecordPtrList nkRecordList = (*it)->getSubkeys();
             finalNKRecordList.insert(finalNKRecordList.end(), nkRecordList.begin(), nkRecordList.end());
+            delete *it;
         }
 
         return finalNKRecordList;        
