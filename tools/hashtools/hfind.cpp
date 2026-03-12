@@ -348,7 +348,8 @@ main(int argc, char ** argv1)
 #endif
 
             /* Remove the newline */
-            buf[strlen(buf) - 1] = '\0';
+            if (strlen(buf) > 0)
+                buf[strlen(buf) - 1] = '\0';
 
             retval =
                 tsk_hdb_lookup_str(hdb_info, (const char *)buf, 
