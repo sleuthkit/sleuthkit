@@ -74,13 +74,13 @@ tsk_fs_dir_realloc(TSK_FS_DIR * a_fs_dir, size_t a_cnt)
 
     a_fs_dir->names_alloc = a_cnt;
 
-    if ((a_fs_dir->names =
-        (TSK_FS_NAME *)tsk_realloc((void *)a_fs_dir->names,
-            sizeof(TSK_FS_NAME) * a_fs_dir->names_alloc)) == NULL) {
+    TSK_FS_NAME *tmp = (TSK_FS_NAME *)tsk_realloc((void *)a_fs_dir->names, sizeof(TSK_FS_NAME) * a_fs_dir->names_alloc);
+    if (tmp == NULL) {
         a_fs_dir->names_alloc = 0;
         a_fs_dir->names_used = 0;
         return 1;
     }
+    a_fs_dir->names = tmp;
 
     memset(&a_fs_dir->names[prev_cnt], 0,
         (a_cnt - prev_cnt) * sizeof(TSK_FS_NAME));

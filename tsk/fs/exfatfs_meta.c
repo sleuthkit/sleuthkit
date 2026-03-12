@@ -1388,11 +1388,13 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     /* Allocate space for saving the cluster address of the first cluster 
      * of file inodes, including allocation bitmaps and upcase tables. */
     if (fs_meta->content_len < FATFS_FILE_CONTENT_LEN) {
-        if ((fs_meta =
-                tsk_fs_meta_realloc(fs_meta,
-                    FATFS_FILE_CONTENT_LEN)) == NULL) {
+        TSK_FS_META *tmp = tsk_fs_meta_realloc(fs_meta, FATFS_FILE_CONTENT_LEN);
+        if (tmp == NULL) {
+            free(fs_meta->name2);
+            fs_meta->name2 = NULL;
             return 1;
         }
+        fs_meta = tmp;
     }
 
     /* Mark the generic attribute list as not in use (in the generic file model
