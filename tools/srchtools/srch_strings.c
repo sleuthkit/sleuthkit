@@ -287,6 +287,7 @@ main(int argc, char **argv)
                         string_min = integer_arg(optarg);
                         if (string_min < 1) {
                                 fprintf(stderr, "invalid number %s\n", optarg);
+                                exit(1);
                         }
                         break;
 

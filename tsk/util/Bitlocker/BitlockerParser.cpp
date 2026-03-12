@@ -48,7 +48,10 @@ BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t 
         return BITLOCKER_STATUS::NOT_BITLOCKER;
     }
 
-    // Proceed with initialization if password is empty
+    // Proceed with initialization if password is null or empty
+    if (a_password == nullptr) {
+        return initialize(a_img_info, a_volumeOffset);
+    }
     string passwordStr(a_password);
     if (passwordStr.empty()) {
         return initialize(a_img_info, a_volumeOffset);
@@ -1071,7 +1074,6 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
     // Create the password hash first
     BITLOCKER_STATUS ret;
     try {
-        writeDebug("BitlockerParser::handlePassword: Password: " + password);
         writeDebug("BitlockerParser::handlePassword: Processing as a normal password");
 
         // Convert to UTF16
@@ -1079,8 +1081,6 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(string password) {
         wstring utf16password(L"");
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
         utf16password = converter.from_bytes(utf8password);
-
-        writeDebug("BitlockerParser::handlePassword: Bytes to hash: " + convertByteArrayToString((uint8_t*)utf16password.c_str(), utf16password.length() * 2));
 
         // Hash twice
         uint8_t hashOutput[SHA256_DIGEST_LENGTH];
@@ -1173,7 +1173,7 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
         return -1;
     }
 
-    if ((uint32_t)len % m_sectorSize != 0) {
+    if (len % m_sectorSize != 0) {
         writeError("BitlockerParser::readAndDecryptSectors: Length of bytes to read is not a multiple of the sector size (length: " + convertUint32ToString(len) + ")");
         return -1;
     }
@@ -1202,6 +1202,7 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
     }
     if (nRelocatedBytesToRead > INT_MAX) {
         writeError("BitlockerParser::readAndDecryptSectors: Attempting to read too many relocated header bytes " + convertUint64ToString(nRelocatedBytesToRead));
+        return -1;
     }
     size_t relocatedBytesToReadUint32 = (size_t)nRelocatedBytesToRead;
 

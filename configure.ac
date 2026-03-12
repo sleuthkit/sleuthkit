@@ -299,10 +299,14 @@ case "$host" in
   ;;
 esac
 
+
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
-AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
+AC_SEARCH_LIBS(regexec, [regex], [ax_regex=yes], [ax_regex=no])
+AM_CONDITIONAL([HAVE_REGEX], [test "x$ax_regex" = "xyes"])
 
+AS_IF([test "x$ax_regex" = "xno"],
+    [AC_MSG_WARN([missing regex -- fiwalk will not be built])])
 
 dnl OpenSSL support for encryption - currently disabled due to automatic test failures
 dnl AX_CHECK_OPENSSL(
@@ -365,6 +369,7 @@ Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
    zlib support:                          $ax_zlib
+   fiwalk support:                        $ax_regex
 
    libbfio support:                       $ax_libbfio
    libvhdi support:                       $ax_libvhdi

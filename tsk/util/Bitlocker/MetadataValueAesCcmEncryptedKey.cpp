@@ -76,7 +76,7 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
     free(decryptedData);
     decryptedData = nullptr;
 
-    if (keyEntry == nullptr) {
+    if (*keyEntry == nullptr) {
         writeError("MetadataValueAesCcmEncryptedKey::decrypt: Failed to create MetadataEntry from decrypted data");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -198,7 +198,7 @@ int MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode(mbedtls_aes
 
     // We should have already checked this
     if (nonceLen > 14) {
-        writeError("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode: Invalid nonce length " + nonceLen);
+        writeError("MetadataValueAesCcmEncryptedKey::createMessageAuthenticationCode: Invalid nonce length " + to_string(nonceLen));
         return -1;
     }
 

@@ -51,7 +51,7 @@ int img_bfio_handle_initialize(
 	     (int (*)(intptr_t *, libbfio_error_t **)) img_bfio_handle_exists,
 	     (int (*)(intptr_t *, libbfio_error_t **)) img_bfio_handle_is_open,
 	     (int (*)(intptr_t *, size64_t *, libbfio_error_t **)) img_bfio_handle_get_size,
-	     LIBBFIO_FLAG_IO_HANDLE_MANAGED | LIBBFIO_FLAG_IO_HANDLE_CLONE_BY_FUNCTION,
+	     LIBBFIO_FLAG_IO_HANDLE_MANAGED,
 	     error ) != 1 )
 	{
 		free(
@@ -147,14 +147,23 @@ ssize_t img_bfio_handle_read(
          libbfio_error_t **error )
 {
 	ssize_t read_count = 0;
+	TSK_OFF_T read_offset;
 
 	if( img_bfio_handle == NULL )
 	{
 		return( -1 );
 	}
+	/* Guard against signed overflow when combining base and logical offsets */
+	if( img_bfio_handle->logical_offset > 0 &&
+	    img_bfio_handle->base_offset > INT64_MAX - img_bfio_handle->logical_offset )
+	{
+		return( -1 );
+	}
+	read_offset = img_bfio_handle->base_offset + img_bfio_handle->logical_offset;
+
 	read_count = tsk_img_read(
 	              img_bfio_handle->image,
-	              img_bfio_handle->base_offset + img_bfio_handle->logical_offset,
+	              read_offset,
 	              (char *) buffer,
 	              size );
 
@@ -162,6 +171,8 @@ ssize_t img_bfio_handle_read(
 	{
 		return( -1 );
 	}
+	img_bfio_handle->logical_offset += (TSK_OFF_T) read_count;
+
 	return( read_count );
 }
 

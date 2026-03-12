@@ -33,7 +33,7 @@ dos_get_desc(uint8_t ptype)
 #define DESC_LEN 64
     char *str = tsk_malloc(DESC_LEN);
     if (str == NULL)
-        return "";
+        return NULL;
 
     switch (ptype) {
     case 0x00:
@@ -683,6 +683,14 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
             ", Primary Base Sector: %" PRIuDADDR "\n", sect_cur,
             sect_ext_base);
 
+    if (table > 128) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+        tsk_error_set_errstr
+            ("dos_load_ext_table: Extended partition chain too deep");
+        return 1;
+    }
+
     if ((sect_buf = tsk_malloc(vs->block_size)) == NULL)
         return 1;
     sect = (dos_sect *) sect_buf;
@@ -779,12 +787,20 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
              * first extended partition (the primary
              * extended partition) */
 
-            if (NULL == tsk_vs_part_add(vs,
-                    (TSK_DADDR_T) (sect_ext_base + part_start),
-                    (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
-                    dos_get_desc(part->ptype), table, i)) {
-                free(sect_buf);
-                return 1;
+            {
+                char *desc = dos_get_desc(part->ptype);
+                if (desc == NULL) {
+                    free(sect_buf);
+                    return 1;
+                }
+                if (NULL == tsk_vs_part_add(vs,
+                        (TSK_DADDR_T) (sect_ext_base + part_start),
+                        (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
+                        desc, table, i)) {
+                    free(desc);
+                    free(sect_buf);
+                    return 1;
+                }
             }
 
             if (sect_ext_base + part_start > max_addr) {
@@ -809,12 +825,20 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
 
             // we ignore the max_addr checks on extended partitions...
 
-            if (NULL == tsk_vs_part_add(vs,
-                    (TSK_DADDR_T) (sect_cur + part_start),
-                    (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                    dos_get_desc(part->ptype), table, i)) {
-                free(sect_buf);
-                return 1;
+            {
+                char *desc = dos_get_desc(part->ptype);
+                if (desc == NULL) {
+                    free(sect_buf);
+                    return 1;
+                }
+                if (NULL == tsk_vs_part_add(vs,
+                        (TSK_DADDR_T) (sect_cur + part_start),
+                        (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
+                        desc, table, i)) {
+                    free(desc);
+                    free(sect_buf);
+                    return 1;
+                }
             }
         }
     }
@@ -998,11 +1022,19 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         /* Add the partition to the internal structure
          * If it is an extended partition, process it now */
         if (dos_is_ext(part->ptype)) {
-            if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
-                    (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
-                    dos_get_desc(part->ptype), 0, i)) {
-                free(sect_buf);
-                return 1;
+            {
+                char *desc = dos_get_desc(part->ptype);
+                if (desc == NULL) {
+                    free(sect_buf);
+                    return 1;
+                }
+                if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
+                        (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
+                        desc, 0, i)) {
+                    free(desc);
+                    free(sect_buf);
+                    return 1;
+                }
             }
 
             if (dos_load_ext_table(vs, part_start, part_start, 1)) {
@@ -1015,11 +1047,19 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             }
         }
         else {
-            if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
-                    (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                    dos_get_desc(part->ptype), 0, i)) {
-                free(sect_buf);
-                return 1;
+            {
+                char *desc = dos_get_desc(part->ptype);
+                if (desc == NULL) {
+                    free(sect_buf);
+                    return 1;
+                }
+                if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
+                        (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
+                        desc, 0, i)) {
+                    free(desc);
+                    free(sect_buf);
+                    return 1;
+                }
             }
         }
     }

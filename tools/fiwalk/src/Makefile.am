@@ -1,5 +1,5 @@
 bin_PROGRAMS = fiwalk 
-AM_CPPFLAGS = -I../../..
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir)
 AM_CXXFLAGS += -Wno-unused-command-line-argument
 LDADD = ../../../tsk/libtsk.la
 
