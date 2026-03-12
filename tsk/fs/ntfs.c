@@ -1472,7 +1472,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         if (has_init_size && (off < fs_attr->nrd.initsize)) {
                             const int64_t prev_remanining_init_size = fs_attr->nrd.initsize - off;
                             if (prev_remanining_init_size < (int64_t)comp.buf_size_b) {
-                                memset(&comp.uncomp_buf[prev_remanining_init_size], 0, comp.buf_size_b - prev_remanining_init_size);
+                                memset(&comp.uncomp_buf[prev_remanining_init_size], 0, comp.buf_size_b - (size_t)prev_remanining_init_size);
                                 init_size_reached = 1;
                             }
                         }
@@ -1739,7 +1739,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                         if (has_init_size) {
                             const int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx - a_offset;
                             if (remanining_init_size < (int64_t)comp.buf_size_b) {
-                                memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
+                                memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - (size_t)remanining_init_size);
                                 init_size_reached = 1;
                             }
                         }

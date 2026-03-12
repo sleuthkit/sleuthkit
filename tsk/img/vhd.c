@@ -118,7 +118,6 @@ static void
         tsk_error_set_errstr("vhdi_image_close: unable to close handle - %s", errmsg);
     }
 
-    libvhdi_file_free(&(vhdi_info->handle), NULL);
     if( libvhdi_file_free(&(vhdi_info->handle), &vhdi_error ) != 1 )
     {
         tsk_error_reset();

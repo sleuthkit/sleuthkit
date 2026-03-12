@@ -116,6 +116,10 @@ static void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
     }
 
     unsigned char * sectBitmap = writer->blockToSectorBitmap[blockNum];
+    if (sectBitmap == NULL) {
+        /* Block bitmap already freed (block marked finished) */
+        return;
+    }
     for (unsigned int i = 0; i < nSectors; i++) {
         if (false == getBit(sectBitmap, i)) {
             /* At least one sector has not been written */
@@ -550,7 +554,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
         /* The buffer spans two blocks */
         TSK_OFF_T firstPartLength = writer->blockSize - (addr % writer->blockSize);
         TSK_RETVAL_ENUM result;
-        addBlock(writer, addr, buffer, firstPartLength);
+        addBlock(writer, addr, buffer, (size_t)firstPartLength);
         if (addr + firstPartLength < writer->imageSize) {
             result = addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
             if (result != TSK_OK) {

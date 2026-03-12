@@ -128,7 +128,7 @@ public:
         // We rewrite the log on every iteration to prevent truly huge
         // logs files.
         char logname[256];
-        sprintf(logname, "thread-%d.log", m_id);
+        snprintf(logname, sizeof(logname), "thread-%d.log", m_id);
         for (size_t i = 0; i < m_niters; ++i) {
             FILE* log = fopen(logname, "w");
             if (log == 0) {

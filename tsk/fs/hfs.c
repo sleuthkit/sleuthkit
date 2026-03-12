@@ -864,7 +864,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     &node[nodesize - (rec + 1) * 2]);
 
                 // Need at least 2 bytes for key_len
-                if (rec_off >= nodesize - 2) {
+                if (rec_off >= (size_t)nodesize - 2) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in index node %d too large (%d vs %"
@@ -987,7 +987,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     &node[nodesize - (rec + 1) * 2]);
 
                 // Need at least 2 bytes for key_len
-                if (rec_off >= nodesize - 2) {
+                if (rec_off >= (size_t)nodesize - 2) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%d vs %"
@@ -2698,6 +2698,14 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
+    // Need at least 8 bytes: one 4-byte entry plus the 4-byte end-of-data marker.
+    // Values < 4 would underflow the tableSize calculation below.
+    if (tableDataSize < 8) {
+        error_returned
+            (" %s: offset table data size %u is too small", __func__, tableDataSize);
+        return 0;
+    }
+
     offsetTableData = tsk_malloc(tableDataSize);
     if (offsetTableData == NULL) {
         error_returned
@@ -4144,7 +4152,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
 
-            if ((attrFile.nodeSize < 2) || (recIndx > ((attrFile.nodeSize - 2) / 2))) {
+            if ((attrFile.nodeSize < 2) || (recIndx > (unsigned int)((attrFile.nodeSize - 2) / 2))) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (recIndx exceeds attrFile.nodeSize)");
                 goto on_error;
@@ -4241,7 +4249,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Check the attribute fits in the node
                 //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
-                if ((attributeLength > attrFile.nodeSize - 2 - 16 - keyLength) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength - attributeLength)) {
+                if ((attributeLength > (uint32_t)attrFile.nodeSize - 2 - 16 - keyLength) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength - attributeLength)) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;
@@ -4657,9 +4665,28 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
             nameOffset = tsk_gets16(fs_info->endian, item->resNameOffset);
             nameBuffer = NULL;
 
+            // BC: nameOffset of -1 seems to mean there is no name
             if (hasNameList && nameOffset != -1) {
+                uint32_t nameListSize = mapLength - nameListOffset;
+
+                // do more bounds checking on nameOffset
+                if (nameOffset < 0 || (uint32_t)nameOffset >= nameListSize) {
+                    error_returned
+                        ("hfs_parse_resource_fork: name offset out of bounds");
+                    free_res_descriptor(result);
+                    return NULL;
+                }
+
                 char *name = nameListBegin + nameOffset;
                 uint8_t nameLen = (uint8_t) name[0];
+
+                // sanity check nameLen
+                if ((uint32_t)nameOffset + 1 + nameLen > nameListSize) {
+                    error_returned
+                        ("hfs_parse_resource_fork: name extends past end of name list");
+                    free_res_descriptor(result);
+                    return NULL;
+                }
                 nameBuffer = tsk_malloc(nameLen + 1);
                 if (nameBuffer == NULL) {
                     error_returned

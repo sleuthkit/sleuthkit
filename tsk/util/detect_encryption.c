@@ -16,7 +16,7 @@ int
 detectSignature(const char * signature, size_t signatureLen, size_t startingOffset, size_t endingOffset, const char * buf, size_t bufLen) {
 
     for (size_t offset = startingOffset; offset <= endingOffset; offset++) {
-        if (offset + signatureLen >= bufLen) {
+        if (offset + signatureLen > bufLen) {
             return 0;
         }
 
@@ -114,7 +114,10 @@ calculateEntropy(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
 
     // Read in blocks of 65536 bytes, skipping the first one that is more likely to contain header data.
     size_t bufLen = 65536;
-    char buf[65536];
+    char* buf = (char*)tsk_malloc(bufLen);
+    if (buf == NULL) {
+        return 0.0;
+    }
     size_t bytesRead = 0;
     for (uint64_t i = 1; i < 100; i++) {
         if ((i + 1) * bufLen > (uint64_t)img_info->size - offset) {
@@ -131,6 +134,8 @@ calculateEntropy(TSK_IMG_INFO * img_info, TSK_DADDR_T offset) {
         }
         bytesRead += bufLen;
     }
+
+    free(buf);
 
     // Calculate entropy
     double entropy = 0.0;

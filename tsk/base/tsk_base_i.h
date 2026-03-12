@@ -201,7 +201,7 @@ extern "C" {
 
 
 #define TSK_IS_CNTRL(x) \
-(((x) < 0x20) && ((x) >= 0x00))
+((((x) >= 0x00) && ((x) < 0x20)) || ((x) == 0x7F))
 
 
 #ifdef __cplusplus

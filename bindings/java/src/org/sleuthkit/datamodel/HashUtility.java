@@ -226,7 +226,7 @@ public class HashUtility {
 			List<HashResult> results = calculateHashes(content, Arrays.asList(HashType.MD5));
 			return results.stream()
 				.filter(result -> result.getType().equals(HashType.MD5))
-				.findFirst().get().getValue();
+				.findFirst().orElseThrow(() -> new TskCoreException("MD5 hash result not found")).getValue();
 			
 		} catch (TskCoreException ex) {
 			// Wrap in an IOException to retain the current method signature

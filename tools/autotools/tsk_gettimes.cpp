@@ -103,7 +103,7 @@ TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
     TSK_TCHAR poolVolName[33];
     if (m_curPoolVol > -1) {
         TSNPRINTF(poolVolName, 32, _TSK_T("poolVol%d/"), m_curPoolVol);
-        TSTRNCAT(volName, poolVolName, 32);
+        TSTRNCAT(volName, poolVolName, 64 - TSTRLEN(volName));
     }
 
     TSK_FS_FLS_FLAG_ENUM fls_flags = (TSK_FS_FLS_FLAG_ENUM)(TSK_FS_FLS_MAC | TSK_FS_FLS_DIR | TSK_FS_FLS_FILE | TSK_FS_FLS_FULL);
@@ -176,8 +176,8 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
 
-            
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {

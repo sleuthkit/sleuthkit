@@ -65,6 +65,9 @@ aes_xts_decryptor::aes_xts_decryptor(AES_MODE mode, const uint8_t *key1,
   _ctx = new EVP_CIPHER_CTX();
 #else
   _ctx = EVP_CIPHER_CTX_new();
+  if (_ctx == nullptr) {
+    return;
+  }
 #endif
 
   EVP_CIPHER_CTX_init(_ctx);
@@ -114,6 +117,9 @@ int aes_xts_decryptor::decrypt_buffer(void *buffer, size_t length,
   while (length > 0) {
     const auto read = decrypt_block(buf, std::min(length, _block_size),
                                     position / _block_size);
+    if (read <= 0) {
+      break;
+    }
     total_len += read;
     position += read;
     buf += read;
@@ -164,10 +170,14 @@ std::unique_ptr<uint8_t[]> rfc3394_key_unwrap(const uint8_t *key,
                                               size_t key_len, const void *input,
                                               size_t input_len,
                                               const void *iv) noexcept {
+  if (input_len < 8) {
+    return nullptr;
+  }
+
   AES_KEY aes_key;
   AES_set_decrypt_key(key, key_len * 8, &aes_key);
 
-  const int output_len = input_len - 8;
+  const int output_len = (int)(input_len - 8);
 
   auto out = std::make_unique<uint8_t[]>(output_len);
 

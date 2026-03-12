@@ -515,8 +515,8 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
             tsk_getu16(fs->endian, ext2fs->fs->s_desc_size));
 #endif
         /* Test for possible overflow */
-        if (ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo) 
-                >= LLONG_MAX / fs->block_size) {
+        if (ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo)
+                >= (uint64_t)(LLONG_MAX / fs->block_size)) {
             tsk_release_lock(&ext2fs->lock);
 
             tsk_error_reset();
@@ -647,6 +647,10 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
             // Prepare to load the next entry.
             // The entry size is the size of the struct plus the length of the name, minus one
             // because the struct contains the first character of the name.
+            // nlen==0 would underflow the - 1; advance by at least sizeof the struct.
+            if (ea_entry->nlen == 0) {
+                break;
+            }
             index += sizeof(ext2fs_ea_entry) + ea_entry->nlen - 1;
 
             // Make sure there's room for the next entry plus the 'data' name we're looking for.
@@ -665,20 +669,20 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
     // Combine the two parts of the inline data for the resident attribute. For now, make a
     // buffer for the full file size - this may be different than the length of the data 
     // from the inode if we have sparse data.
-    uint8_t *resident_data = (uint8_t*)tsk_malloc(fs_meta->size);
+    uint8_t *resident_data = (uint8_t*)tsk_malloc((size_t)fs_meta->size);
     if (resident_data == NULL) {
         return 1;
     }
-    memset(resident_data, 0, fs_meta->size);
+    memset(resident_data, 0, (size_t)fs_meta->size);
 
     // Copy the data from the inode.
-    size_t inode_data_len = (fs_meta->size < EXT2_INLINE_MAX_DATA_LEN) ? fs_meta->size : EXT2_INLINE_MAX_DATA_LEN;
+    size_t inode_data_len = (fs_meta->size < EXT2_INLINE_MAX_DATA_LEN) ? (size_t)fs_meta->size : EXT2_INLINE_MAX_DATA_LEN;
     memcpy(resident_data, fs_meta->content_ptr, inode_data_len);
 
     // If we need more data and found an extended attribute, append that data
     if ((fs_meta->size > EXT2_INLINE_MAX_DATA_LEN) && (ea_inline_data_len > 0)) {
         // Don't go beyond the size of the file
-        size_t ea_data_len = (ea_inline_data_len < (uint64_t)fs_meta->size - inode_data_len) ? ea_inline_data_len : fs_meta->size - inode_data_len;
+        size_t ea_data_len = (ea_inline_data_len < (uint64_t)fs_meta->size - inode_data_len) ? ea_inline_data_len : (size_t)(fs_meta->size - inode_data_len);
         memcpy(resident_data + inode_data_len, ea_inline_data, ea_data_len);
     }
 
@@ -696,7 +700,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
     if (tsk_fs_attr_set_str(fs_file, fs_attr, "DATA",
         TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
         (void*)resident_data,
-        fs_meta->size)) {
+        (size_t)fs_meta->size)) {
         free(resident_data);
         fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
         return 1;

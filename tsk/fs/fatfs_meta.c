@@ -1216,7 +1216,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             return 0;
         }
     }
-    size_t bitmap_len = (a_fs->block_count + 7) / 8;
+    size_t bitmap_len = (size_t)((a_fs->block_count + 7) / 8);
 
     // Taking 128 MiB as an arbitrary upper bound
     if ((bitmap_len == 0) || (bitmap_len > (128 * 1024 * 1024))) {

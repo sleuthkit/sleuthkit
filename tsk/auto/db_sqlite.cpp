@@ -32,7 +32,8 @@ using std::for_each;
 TskDbSqlite::TskDbSqlite(const char* a_dbFilePathUtf8, bool a_blkMapFlag)
     : TskDb(a_dbFilePathUtf8, a_blkMapFlag)
 {
-    strncpy(m_dbFilePathUtf8, a_dbFilePathUtf8, 1024);
+    strncpy(m_dbFilePathUtf8, a_dbFilePathUtf8, 1023);
+    m_dbFilePathUtf8[1023] = '\0';
     m_utf8 = true;
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
@@ -1382,12 +1383,13 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 	//   - The data is not compressed
     if((fs_attr != NULL)
            && ((strlen(name) > 0 ) && (! TSK_FS_ISDOT(name)))
+		&& (fs_file->meta != NULL)
 		&& (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
 		&& (fs_attr->flags & TSK_FS_ATTR_NONRES)
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
-		strncat(name, "-slack", 6);
+		strncat(name, "-slack", nlen - strlen(name) - 1);
 		if (strlen(extension) > 0) {
-			strncat(extension, "-slack", 6);
+			strncat(extension, "-slack", sizeof(extension) - strlen(extension) - 1);
 		}
 		TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
@@ -1742,11 +1744,10 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
         return TSK_ERR;
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, "
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, "
         "attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
-        "NULL, NULL,"
         "NULL,"
         "%lld,"
         "%lld,"

@@ -1160,7 +1160,7 @@ static int decmpfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t
     }
 
     char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
-    *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
+    *dstSize = lzvn_decode_buffer(uncBuf, (size_t)uncSize, rawBuf, rawSize);
     *dstBuf = uncBuf;
     *dstBufFree = TRUE;
 
@@ -1223,7 +1223,12 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
     uint64_t dstSize;
     int dstBufFree = FALSE;
 
-    if (!decompress_attr(buffer + 16, attributeLength - 16, uncSize,
+    if (attributeLength - 16 > (TSK_OFF_T)UINT32_MAX) {
+        error_detected(TSK_ERR_FS_READ,
+            " %s: compressed attribute too large for rawSize field", __func__);
+        return 0;
+    }
+    if (!decompress_attr(buffer + 16, (uint32_t)(attributeLength - 16), uncSize,
                          &dstBuf, &dstSize, &dstBufFree)) {
         return 0;
     }
@@ -1247,7 +1252,7 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                             TSK_FS_ATTR_TYPE_HFS_DATA, 
                             TSK_FS_ATTR_ID_DEFAULT, 
                             dstBuf,
-                            dstSize))
+                            (size_t)dstSize))
     {
         error_returned(" - %s", __func__);
         goto on_error;

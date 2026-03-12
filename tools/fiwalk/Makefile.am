@@ -1,6 +1,7 @@
+if HAVE_REGEX
 SUBDIRS = src plugins
-
-AM_CFLAGS = -Wall
-AM_CXXFLAGS = -Wall
+else
+SUBDIRS = 
+endif
 
 ACLOCAL_AMFLAGS = -I m4
