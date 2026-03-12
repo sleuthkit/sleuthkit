@@ -133,7 +133,7 @@ final public class CommunicationsFilter {
 				relationShipTypeIds.add(relType.getTypeID());
 			}
 			return " relationships.relationship_type IN ( "
-					+ CommManagerSqlStringUtils.buildCSVString(relationShipTypeIds) + " )";
+					+ CommManagerSqlStringUtils.buildIntCSVString(relationShipTypeIds) + " )";
 		}
 	}
 
@@ -259,7 +259,7 @@ final public class CommunicationsFilter {
 			for (Account.Type accountType : accountTypes) {
 				type_ids.add(commsManager.getAccountTypeId(accountType));
 			}
-			String account_type_ids_list = CommManagerSqlStringUtils.buildCSVString(type_ids);
+			String account_type_ids_list = CommManagerSqlStringUtils.buildIntCSVString(type_ids);
 			return " account_types.account_type_id IN ( " + account_type_ids_list + " )";
 		}
 	}
@@ -317,7 +317,7 @@ final public class CommunicationsFilter {
 					Logger.getLogger(DeviceFilter.class.getName()).log(Level.WARNING, "failed to get datasource object ids for deviceId", ex);
 				}
 			}
-			String datasource_obj_ids_list = CommManagerSqlStringUtils.buildCSVString(ds_ids);
+			String datasource_obj_ids_list = CommManagerSqlStringUtils.buildLongCSVString(ds_ids);
 			if (!datasource_obj_ids_list.isEmpty()) {
 				sql = " relationships.data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
 			}

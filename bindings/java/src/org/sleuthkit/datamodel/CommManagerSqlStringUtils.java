@@ -19,7 +19,6 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Collection of string utility methods for use by CVT, CommunicationsManager
@@ -31,38 +30,54 @@ final class CommManagerSqlStringUtils {
 	}
 
 	/**
-	 * Utility method to convert a list to an CSV string.
-	 * 
-	 * Null entries in the values collection will be removed before
-	 * the string is created.
+	 * Builds a comma-separated string of Long values safe for use in a SQL
+	 * IN-clause. Each value is serialized as its numeric decimal representation.
+	 * Null elements are skipped.
 	 *
-	 * @param values - collection of objects .
+	 * @param values Collection of Long values.
 	 *
-	 * @return a CSV string.
+	 * @return A comma-separated numeric string, or empty string if no values.
 	 */
-	static <T> String buildCSVString(Collection<T> values) {
-		return joinAsStrings(values, ",");
-	}
-
-	/**
-	 * Utility method to join a collection into a string using a supplied
-	 * separator. Null entries in the values collection will be removed before
-	 * the string is created.
-	 *
-	 * @param <T>       The type of the values in the collection to be joined
-	 * @param values    The collection to be joined
-	 * @param separator The separator to insert between each value in the result
-	 *                  string
-	 *
-	 * @return a string with the elements of values separated by separator
-	 */
-	static <T> String joinAsStrings(Collection<T> values, String separator) {
+	static String buildLongCSVString(Collection<Long> values) {
 		if (values == null || values.isEmpty()) {
 			return "";
 		}
-		
-		values.removeAll(Collections.singleton(null));
-		
-		return org.apache.commons.lang3.StringUtils.join(values, separator);
+		StringBuilder sb = new StringBuilder();
+		for (Long val : values) {
+			if (val == null) {
+				continue;
+			}
+			if (sb.length() > 0) {
+				sb.append(",");
+			}
+			sb.append(val.longValue());
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Builds a comma-separated string of Integer values safe for use in a SQL
+	 * IN-clause. Each value is serialized as its numeric decimal representation.
+	 * Null elements are skipped.
+	 *
+	 * @param values Collection of Integer values.
+	 *
+	 * @return A comma-separated numeric string, or empty string if no values.
+	 */
+	static String buildIntCSVString(Collection<Integer> values) {
+		if (values == null || values.isEmpty()) {
+			return "";
+		}
+		StringBuilder sb = new StringBuilder();
+		for (Integer val : values) {
+			if (val == null) {
+				continue;
+			}
+			if (sb.length() > 0) {
+				sb.append(",");
+			}
+			sb.append(val.intValue());
+		}
+		return sb.toString();
 	}
 }
