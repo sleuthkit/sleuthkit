@@ -1369,6 +1369,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         }
 
         if (iso9660_dinode_copy(iso, fs_file->meta, inum, dinode)) {
+            tsk_fs_file_close(fs_file);
             free(dinode);
             return 1;
         }
