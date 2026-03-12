@@ -77,12 +77,12 @@ tsk_fs_meta_realloc(TSK_FS_META * a_fs_meta, size_t a_buf_len)
     }
 
     if (a_fs_meta->content_len != a_buf_len) {
-        a_fs_meta->content_len = a_buf_len;
-        a_fs_meta->content_ptr =
-            tsk_realloc((char *) a_fs_meta->content_ptr, a_buf_len);
-        if (a_fs_meta->content_ptr == NULL) {
+        char *tmp = tsk_realloc((char *) a_fs_meta->content_ptr, a_buf_len);
+        if (tmp == NULL) {
             return NULL;
         }
+        a_fs_meta->content_ptr = tmp;
+        a_fs_meta->content_len = a_buf_len;
     }
     return a_fs_meta;
 }

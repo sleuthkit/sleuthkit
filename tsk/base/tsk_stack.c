@@ -50,11 +50,12 @@ tsk_stack_push(TSK_STACK * a_tsk_stack, uint64_t a_val)
 {
     if (a_tsk_stack->top == a_tsk_stack->len) {
         a_tsk_stack->len += 64;
-        if ((a_tsk_stack->vals =
-                (uint64_t *) tsk_realloc((char *) a_tsk_stack->vals,
-                    a_tsk_stack->len * sizeof(uint64_t))) == NULL) {
+        uint64_t *tmp = (uint64_t *) tsk_realloc((char *) a_tsk_stack->vals,
+                    a_tsk_stack->len * sizeof(uint64_t));
+        if (tmp == NULL) {
             return 1;
         }
+        a_tsk_stack->vals = tmp;
     }
     a_tsk_stack->vals[a_tsk_stack->top++] = a_val;
     return 0;
