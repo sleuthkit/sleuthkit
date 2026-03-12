@@ -49,12 +49,16 @@ uint8_t
 tsk_stack_push(TSK_STACK * a_tsk_stack, uint64_t a_val)
 {
     if (a_tsk_stack->top == a_tsk_stack->len) {
+        uint64_t *new_vals;
         a_tsk_stack->len += 64;
-        if ((a_tsk_stack->vals =
-                (uint64_t *) tsk_realloc((char *) a_tsk_stack->vals,
-                    a_tsk_stack->len * sizeof(uint64_t))) == NULL) {
+        new_vals = (uint64_t *) tsk_realloc((char *) a_tsk_stack->vals,
+                    a_tsk_stack->len * sizeof(uint64_t));
+        if (new_vals == NULL) {
+            /* revert length increase; old vals pointer is still valid */
+            a_tsk_stack->len -= 64;
             return 1;
         }
+        a_tsk_stack->vals = new_vals;
     }
     a_tsk_stack->vals[a_tsk_stack->top++] = a_val;
     return 0;
@@ -68,7 +72,8 @@ tsk_stack_push(TSK_STACK * a_tsk_stack, uint64_t a_val)
 void
 tsk_stack_pop(TSK_STACK * a_tsk_stack)
 {
-    a_tsk_stack->top--;
+    if (a_tsk_stack->top > 0)
+        a_tsk_stack->top--;
 }
 
 /**

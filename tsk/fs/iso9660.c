@@ -682,7 +682,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 break;
             }
             in_node->offset =
-                tsk_getu32(fs->endian, dentry->ext_loc_m) * fs->block_size;
+                (TSK_OFF_T)tsk_getu32(fs->endian, dentry->ext_loc_m) * fs->block_size;
             
             if (tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset > (TSK_OFF_T)(fs->block_count * fs->block_size)) {
                 if (tsk_verbose)

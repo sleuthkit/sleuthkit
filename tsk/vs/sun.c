@@ -25,7 +25,7 @@ sun_get_desc(uint16_t fstype)
 {
     char *str = tsk_malloc(64);
     if (str == NULL)
-        return "";
+        return NULL;
     switch (fstype) {
 
     case 0:
@@ -123,14 +123,20 @@ sun_load_table_i386(TSK_VS_INFO * vs, sun_dlabel_i386 * dlabel_x86)
             ptype = TSK_VS_PART_FLAG_META;
 
         /* Add the partition to the internal sorted list */
-        if (NULL == tsk_vs_part_add(vs,
-                (TSK_DADDR_T) tsk_getu32(vs->endian,
-                    dlabel_x86->part[idx].start_sec),
-                (TSK_DADDR_T) tsk_getu32(vs->endian,
-                    dlabel_x86->part[idx].size_sec), ptype,
-                sun_get_desc(tsk_getu16(vs->endian,
-                        dlabel_x86->part[idx].type)), -1, idx)) {
-            return 1;
+        {
+            char *desc = sun_get_desc(tsk_getu16(vs->endian,
+                    dlabel_x86->part[idx].type));
+            if (desc == NULL)
+                return 1;
+            if (NULL == tsk_vs_part_add(vs,
+                    (TSK_DADDR_T) tsk_getu32(vs->endian,
+                        dlabel_x86->part[idx].start_sec),
+                    (TSK_DADDR_T) tsk_getu32(vs->endian,
+                        dlabel_x86->part[idx].size_sec), ptype,
+                    desc, -1, idx)) {
+                free(desc);
+                return 1;
+            }
         }
     }
 
@@ -165,7 +171,7 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
     /* Cycle through the partitions, there are 8 for sparc */
     for (idx = 0; idx < num_parts; idx++) {
         TSK_VS_PART_FLAG_ENUM ptype = TSK_VS_PART_FLAG_ALLOC;
-        uint32_t part_start = cyl_conv * tsk_getu32(vs->endian,
+        TSK_DADDR_T part_start = (TSK_DADDR_T)cyl_conv * tsk_getu32(vs->endian,
             dlabel_sp->part_layout[idx].start_cyl);
 
         uint32_t part_size = tsk_getu32(vs->endian,
@@ -196,11 +202,17 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
             ptype = TSK_VS_PART_FLAG_META;
 
         /* Add the partition to the internal sorted list */
-        if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
-                (TSK_DADDR_T) part_size, ptype,
-                sun_get_desc(tsk_getu16(vs->endian,
-                        dlabel_sp->part_meta[idx].type)), -1, idx))
-            return 1;
+        {
+            char *desc = sun_get_desc(tsk_getu16(vs->endian,
+                    dlabel_sp->part_meta[idx].type));
+            if (desc == NULL)
+                return 1;
+            if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
+                    (TSK_DADDR_T) part_size, ptype, desc, -1, idx)) {
+                free(desc);
+                return 1;
+            }
+        }
 
     }
 
@@ -291,7 +303,7 @@ sun_load_table(TSK_VS_INFO * vs)
     /* Now try the next sector, which is where the intel 
      * could be stored */
 
-    taddr = vs->offset / vs->block_size / SUN_I386_PART_SOFFSET;
+    taddr = vs->offset / vs->block_size + SUN_I386_PART_SOFFSET;
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "sun_load_table: Trying sector: %" PRIuDADDR "\n", taddr + 1);

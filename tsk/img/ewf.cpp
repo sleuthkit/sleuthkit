@@ -592,8 +592,8 @@ static int is_blank(const char* str) {
 static char* read_libewf_header_value(libewf_handle_t *handle, char* result_buffer, const size_t buffer_size, const uint8_t *identifier,  const char* key) {
     result_buffer[0] = '\0';
     size_t identifier_length = strlen((char *)identifier);
-    strcpy(result_buffer, key);
-    size_t key_len = strlen(key);
+    snprintf(result_buffer, buffer_size, "%s", key);
+    size_t key_len = strlen(result_buffer);
 
     //buffer_size - key_len - 1 for the new line at the end
     int result = libewf_handle_get_utf8_header_value(handle, identifier, identifier_length, (uint8_t *)(result_buffer + key_len), buffer_size - key_len - 1, NULL);

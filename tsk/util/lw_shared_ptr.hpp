@@ -338,7 +338,11 @@ lw_shared_ptr<T> lw_static_pointer_cast(const lw_shared_ptr<U>& r) {
 
 template <typename T, typename U>
 lw_shared_ptr<T> lw_dynamic_pointer_cast(const lw_shared_ptr<U>& r) {
-  return lw_shared_ptr<T>{r, dynamic_cast<T*>(r.get())};
+  T* p = dynamic_cast<T*>(r.get());
+  if (p == nullptr) {
+    return lw_shared_ptr<T>{};
+  }
+  return lw_shared_ptr<T>{r, p};
 }
 
 template <typename T, typename U>

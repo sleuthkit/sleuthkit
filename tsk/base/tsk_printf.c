@@ -140,17 +140,22 @@ int
 tsk_print_sanitized(FILE * fd, const char *str)
 {
     size_t index = 0;
+    size_t len;
     char *buf = NULL;
 
-    buf = tsk_malloc(strlen(str) + 1);
+    if (str == NULL)
+        return 1;
+
+    len = strlen(str);
+    buf = tsk_malloc(len + 1);
     if (buf == NULL)
-      return 1;
+        return 1;
 
     strcpy(buf, str);
 
-    for (index = 0; index < strlen(buf); index++)
-      if (TSK_IS_CNTRL(buf[index]))
-        buf[index] = '^';
+    for (index = 0; index < len; index++)
+        if (TSK_IS_CNTRL(buf[index]))
+            buf[index] = '^';
 
     tsk_fprintf(fd, "%s", buf);
 

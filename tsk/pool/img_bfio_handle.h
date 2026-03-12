@@ -41,11 +41,6 @@ int img_bfio_handle_free(
      img_bfio_handle_t **img_bfio_handle,
      libbfio_error_t **error );
 
-int img_bfio_handle_clone(
-     img_bfio_handle_t **destination_img_bfio_handle,
-     img_bfio_handle_t *source_img_bfio_handle,
-     libbfio_error_t **error );
-
 int img_bfio_handle_open(
      img_bfio_handle_t *img_bfio_handle,
      int access_flags,

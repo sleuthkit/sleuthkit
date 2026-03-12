@@ -24,7 +24,7 @@ bsd_get_desc(uint8_t fstype)
 {
     char *str = tsk_malloc(64);
     if (str == NULL)
-        return "";
+        return NULL;
 
     switch (fstype) {
 
@@ -92,6 +92,7 @@ bsd_load_table(TSK_VS_INFO * a_vs)
     char *sect_buf;
     bsd_disklabel *dlabel;
     uint32_t idx = 0;
+    uint16_t num_parts;
     ssize_t cnt;
     char *table_str;
     TSK_DADDR_T laddr = a_vs->offset / a_vs->block_size + BSD_PART_SOFFSET;     // used for printing only
@@ -155,7 +156,10 @@ bsd_load_table(TSK_VS_INFO * a_vs)
     }
 
     /* Cycle through the partitions, there are either 8 or 16 */
-    for (idx = 0; idx < tsk_getu16(a_vs->endian, dlabel->num_parts); idx++) {
+    num_parts = tsk_getu16(a_vs->endian, dlabel->num_parts);
+    if (num_parts > 16)
+        num_parts = 16;
+    for (idx = 0; idx < num_parts; idx++) {
 
         uint32_t part_start;
         uint32_t part_size;
@@ -184,11 +188,19 @@ bsd_load_table(TSK_VS_INFO * a_vs)
 
 
         /* Add the partition to the internal sorted list */
-        if (NULL == tsk_vs_part_add(a_vs, (TSK_DADDR_T) part_start,
-                (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                bsd_get_desc(dlabel->part[idx].fstype), -1, idx)) {
-            free(sect_buf);
-            return 1;
+        {
+            char *desc = bsd_get_desc(dlabel->part[idx].fstype);
+            if (desc == NULL) {
+                free(sect_buf);
+                return 1;
+            }
+            if (NULL == tsk_vs_part_add(a_vs, (TSK_DADDR_T) part_start,
+                    (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
+                    desc, -1, idx)) {
+                free(desc);
+                free(sect_buf);
+                return 1;
+            }
         }
     }
 

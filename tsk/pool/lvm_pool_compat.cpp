@@ -111,7 +111,7 @@ lvm_logical_volume_img_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf
     ssize_t read_count = libvslvm_logical_volume_read_buffer_at_offset((libvslvm_logical_volume_t *) pool_img_info->impl, buf, len, offset, &vslvm_error);
 
     if (read_count == -1) {
-        char error_string[521];
+        char error_string[512];
         getError(vslvm_error, error_string);
         tsk_fprintf(stderr, "lvm_logical_volume_img_read: %s\n", error_string);
     }
@@ -122,18 +122,23 @@ TSK_IMG_INFO * LVMPoolCompat::getImageInfo(const TSK_POOL_INFO *pool_info, TSK_D
 
     libvslvm_logical_volume_t *lvm_logical_volume = NULL;
 
-    // pvol_block contians the logical volume index + 1
+    // pvol_block contains the logical volume index + 1; zero is invalid
+    if (pvol_block == 0) {
+        return NULL;
+    }
     if (libvslvm_volume_group_get_logical_volume(_lvm_volume_group, pvol_block - 1, &lvm_logical_volume, NULL) != 1 ) {
         return NULL;
     }
     uint64_t logical_volume_size = 0;
 
     if (libvslvm_logical_volume_get_size(lvm_logical_volume, &logical_volume_size, NULL) != 1 ) {
+        libvslvm_logical_volume_free(&lvm_logical_volume, NULL);
         return NULL;
     }
     IMG_POOL_INFO *img_pool_info = (IMG_POOL_INFO *)tsk_img_malloc(sizeof(IMG_POOL_INFO));
 
     if (img_pool_info == NULL) {
+        libvslvm_logical_volume_free(&lvm_logical_volume, NULL);
         return NULL;
     }
     img_pool_info->pool_info = pool_info;

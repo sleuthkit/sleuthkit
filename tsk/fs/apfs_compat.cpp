@@ -696,8 +696,8 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
           attr->name != NULL &&
           strcmp(attr->name, APFS_XATTR_NAME_SYMLINK) == 0) {
         // We've found our symlink attribute
-        fs_file->meta->link = (char*)tsk_malloc(attr->size + 1);
-        tsk_fs_attr_read(attr, (TSK_OFF_T)0, fs_file->meta->link, attr->size,
+        fs_file->meta->link = (char*)tsk_malloc((size_t)(attr->size + 1));
+        tsk_fs_attr_read(attr, (TSK_OFF_T)0, fs_file->meta->link, (size_t)attr->size,
                          TSK_FS_FILE_READ_FLAG_NONE);
         if (fs_file->meta->link != NULL) {
             fs_file->meta->link[attr->size] = 0;
@@ -962,7 +962,7 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
       return 1;
     }
 
-    auto buffer = std::make_unique<char[]>(decmpfs_attr->size);
+    auto buffer = std::make_unique<char[]>((size_t)decmpfs_attr->size);
 
     const auto ret = tsk_fs_attr_read(decmpfs_attr, (TSK_OFF_T)0, buffer.get(),
                                       (size_t)decmpfs_attr->size,
