@@ -191,10 +191,9 @@ fs_attr_put_name(TSK_FS_ATTR * fs_attr, const char *name)
     }
 
     if (fs_attr->name_size < (strlen(name) + 1)) {
-        char *tmp = (char*) tsk_realloc(fs_attr->name, strlen(name) + 1);
-        if (tmp == NULL)
+        fs_attr->name = (char*) tsk_realloc(fs_attr->name, strlen(name) + 1);
+        if (fs_attr->name == NULL)
             return 1;
-        fs_attr->name = tmp;
         fs_attr->name_size = strlen(name) + 1;
     }
     strncpy(fs_attr->name, name, fs_attr->name_size);
@@ -237,10 +236,10 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     }
 
     if (a_fs_attr->rd.buf_size < len) {
-        uint8_t *tmp = (uint8_t *) tsk_realloc((char *) a_fs_attr->rd.buf, len);
-        if (tmp == NULL)
+        a_fs_attr->rd.buf =
+            (uint8_t *) tsk_realloc((char *) a_fs_attr->rd.buf, len);
+        if (a_fs_attr->rd.buf == NULL)
             return 1;
-        a_fs_attr->rd.buf = tmp;
         a_fs_attr->rd.buf_size = len;
     }
 
