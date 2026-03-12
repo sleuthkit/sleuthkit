@@ -505,7 +505,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     size_t keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
                             key->key_len), &(hfs->extents_header));
-                    if (nodesize < 4 || keylen + 4 > nodesize || rec_off >= nodesize - 4 - keylen) {
+                    if ((nodesize < 4) || (keylen > nodesize - 4) || (rec_off >= (size_t)(nodesize - 4 - keylen))) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
                             ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%" PRIuSIZE " vs %"
@@ -583,7 +583,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 if (sizeof(hfs_btree_key_ext) > nodesize - rec_off) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                    ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %" PRIuSIZE " bytes)", rec, cur_node, nodesize - (int)rec_off,
+                    ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %zu bytes)",
+                        rec, cur_node, nodesize - (int)rec_off,
                         sizeof(hfs_btree_key_ext));
                     return 1;
                 }
@@ -856,11 +857,11 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
 
                 // Want a key of at least 6 bytes, the size of the first 2 members of hfs_btree_key_cat
-                if ((keylen < 6) || (keylen > nodesize - rec_off)) {
+                if ((keylen < 6) || ((size_t)keylen > nodesize - rec_off)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %" PRIuSIZE " < %"
-                        PRIuSIZE ")", rec, cur_node, keylen, nodesize - rec_off);
+                        ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %zu < %zu)",
+                        rec, cur_node, keylen, (nodesize - rec_off));
                     return 1;
                 }
 
@@ -891,7 +892,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     size_t keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
                             key->key_len), &(hfs->catalog_header));
-                    if (keylen > nodesize - rec_off) {
+                    if ((size_t)keylen > nodesize - rec_off) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
                             ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%" PRIuSIZE " vs %"
@@ -973,7 +974,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
 
                 // Want a key of at least 6 bytes, the size of the first 2 members of hfs_btree_key_cat
-                if ((keylen < 6) || (keylen > nodesize - rec_off)) {
+                if ((keylen < 6) || ((size_t)keylen > nodesize - rec_off)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: length of key %d in leaf node %d out of bounds (6 < %" PRIuSIZE " < %"
@@ -2544,6 +2545,7 @@ typedef struct {
 } CMP_OFFSET_ENTRY;
 
 
+#if 0 // unused
 /**
  * \internal
  * Reads the ZLIB compression block table from the attribute.
@@ -2713,6 +2715,7 @@ hfs_read_lzvn_block_table(
     return offsetTable;
 }
 
+
 /**
  * \internal
  * "Decompress" a block which was stored uncompressed.
@@ -2812,6 +2815,8 @@ static int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, u
         return hfs_decompress_noncompressed_block(rawBuf, len, uncBuf, uncLen);
     }
 }
+
+
 
 /**
  * \internal
@@ -3086,6 +3091,7 @@ hfs_attr_walk_compressed_rsrc(
 }
 
 
+
 #ifdef HAVE_LIBZ
 /**
  * \internal
@@ -3131,6 +3137,7 @@ hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
       hfs_decompress_lzvn_block
     );
 }
+
 
 
 /**
@@ -3337,6 +3344,8 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 }
 
 
+
+
 #ifdef HAVE_LIBZ
 /**
  * \internal
@@ -3503,6 +3512,7 @@ static int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t unc
 }
 
 
+
 /**
  * \internal
  * Decompress an LZVN compressed attr
@@ -3631,6 +3641,7 @@ on_error:
 }
 
 
+
 /**
  * \internal
  * Read a ZLIB compressed attr
@@ -3677,6 +3688,8 @@ static int hfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
         hfs_decompress_lzvn_attr
     );
 }
+
+#endif
 
 
 typedef struct {

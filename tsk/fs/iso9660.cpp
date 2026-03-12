@@ -119,7 +119,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
     while ((uintptr_t)buf + sizeof(iso9660_susp_head) <= (uintptr_t)end) {
         iso9660_susp_head *head = (iso9660_susp_head *) buf;
 
-        if (buf + head->len - 1 > end)
+        if ((buf + head->len - 1 > end) || (head->len == 0))
             break;
 
         /* Identify the entry type -- listed in the order
@@ -225,21 +225,27 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
         else if ((head->sig[0] == 'E') && (head->sig[1] == 'R')) {
             iso9660_susp_er *er = (iso9660_susp_er *) buf;
             if (hFile) {
-                char buf[258];
+                char buf2[258];
                 fprintf(hFile, "ER Entry\n");
+                // NOTE: len_id, len_des, and Len_src are all uint8, which is less than 256. So no checks were added
+                if (((char *)er->ext_id + er->len_id) <= end+1) {
+                    memcpy(buf2, er->ext_id, er->len_id);
+                    buf2[er->len_id] = '\0';
+                    fprintf(hFile, "* Extension ID: %s\n", buf2);
+                }
+                
+                if (((char *) er->ext_id + er->len_id + er->len_des) <= end+1) {
+                    memcpy(buf2, er->ext_id + er->len_id, er->len_des);
+                    buf2[er->len_des] = '\0';
+                    fprintf(hFile, "* Extension Descriptor: %s\n", buf2);
+                }
 
-                memcpy(buf, er->ext_id, er->len_id);
-                buf[er->len_id] = '\0';
-                fprintf(hFile, "* Extension ID: %s\n", buf);
-
-                memcpy(buf, er->ext_id + er->len_id, er->len_des);
-                buf[er->len_des] = '\0';
-                fprintf(hFile, "* Extension Descriptor: %s\n", buf);
-
-                memcpy(buf, er->ext_id + er->len_id + er->len_des,
-                    er->len_src);
-                buf[er->len_src] = '\0';
-                fprintf(hFile, "* Extension Spec Source: %s\n", buf);
+                if (((char *) er->ext_id + er->len_id + er->len_des + er->len_src) <= end+1) {
+                    memcpy(buf2, er->ext_id + er->len_id + er->len_des,
+                        er->len_src);
+                    buf2[er->len_src] = '\0';
+                    fprintf(hFile, "* Extension Spec Source: %s\n", buf2);
+                }
             }
             buf += head->len;
         }
@@ -557,7 +563,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         in_node = NULL;
                         break;
                     }
-                    if (b_offs >= ISO9660_SSIZE_B - sizeof(iso9660_dentry)) {
+                    if (b_offs >= ISO9660_SSIZE_B - (int)sizeof(iso9660_dentry)) {
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
                                         "iso9660_load_inodes_dir: b_offs out of bounds, bailing\n");
@@ -736,7 +742,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
             /* add inode to the list */
             if (iso->in_list) {
-                iso9660_inode_node *tmp, *prev_tmp;
+                iso9660_inode_node *tmp, *prev_tmp = NULL;
 
                 for (tmp = iso->in_list; tmp; tmp = tmp->next) {
                     /* When processing the "first" volume descriptor, all entries get added to the list.
@@ -776,7 +782,10 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
                 // add it to the end (if we didn't get rid of it above)
                 if (in_node) {
-                    prev_tmp->next = in_node;
+                    if (prev_tmp == NULL)
+                        prev_tmp = in_node;
+                    else
+                        prev_tmp->next = in_node;
                     in_node->next = NULL;
                 }
             }
@@ -787,8 +796,12 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
             // skip two entries if this was the root directory (the . and ..).
             if ((i == 0) && (b_offs == 0) && (count == 1)) {
-                b_offs += dentry->entry_len;
-                dentry = (iso9660_dentry *) & buf[b_offs];
+                // skip ahead if we're staying in the buffer. We'll skip the
+                // second entry at the bottom of the loop
+                if (b_offs + dentry->entry_len < ISO9660_SSIZE_B) {
+                    b_offs += dentry->entry_len;
+                    dentry = (iso9660_dentry *) & buf[b_offs];
+                }
             }
             b_offs += dentry->entry_len;
         }
@@ -873,7 +886,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
             for (i = 0; i < cnt; i += 2) {
                 char t = utf16_buf[i];
                 utf16_buf[i] = utf16_buf[i + 1];
-                utf16_buf[i] = t;
+                utf16_buf[i + 1] = t;
             }
         }
 
@@ -1723,7 +1736,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (p->pvd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", p->pvd.pub_id);
 
@@ -1739,7 +1752,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (p->pvd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", p->pvd.prep_id);
 
@@ -1754,7 +1767,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (p->pvd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", p->pvd.app_id);
         cp = &str[127];
@@ -1768,7 +1781,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (p->pvd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 37, "%s", p->pvd.copy_id);
         cp = &str[36];
@@ -1834,7 +1847,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print publisher */
         if (s->svd.pub_id[0] == 0x5f)
             /* publisher is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", s->svd.pub_id);
 
@@ -1850,7 +1863,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print data preparer */
         if (s->svd.prep_id[0] == 0x5f)
             /* preparer is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", s->svd.prep_id);
 
@@ -1865,7 +1878,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print recording application */
         if (s->svd.app_id[0] == 0x5f)
             /* application is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 128, "%s", s->svd.app_id);
         cp = &str[127];
@@ -1879,7 +1892,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* print copyright */
         if (s->svd.copy_id[0] == 0x5f)
             /* copyright is in a file.  TODO: handle this properly */
-            snprintf(str, 8, "In file");
+            snprintf(str, 9, "In file\n");
         else
             snprintf(str, 37, "%s", s->svd.copy_id);
         cp = &str[36];
@@ -2343,7 +2356,6 @@ iso9660_get_default_attr_type([[maybe_unused]] const TSK_FS_FILE * a_file)
 static int
 load_vol_desc(TSK_FS_INFO * fs)
 {
-    //int count = 0;  // set but never used
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_OFF_T offs;
     const char *myname = "iso_load_vol_desc";
@@ -2453,7 +2465,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     ptmp->next = p;
                     p->next = NULL;
-                    // count++; // set but never used
                 }
             }
 
@@ -2461,7 +2472,6 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->pvd = p;
                 p->next = NULL;
-                // count++; // set but never used
             }
 
             break;
@@ -2486,7 +2496,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 else {
                     stmp->next = s;
                     s->next = NULL;
-                    // count++;  // set but never used
                 }
             }
 
@@ -2494,7 +2503,6 @@ load_vol_desc(TSK_FS_INFO * fs)
             else {
                 iso->svd = s;
                 s->next = NULL;
-                // count++;   // set but never used
             }
 
             break;
@@ -2545,7 +2553,6 @@ load_vol_desc(TSK_FS_INFO * fs)
                 p->next = NULL;
                 free(p);
                 p = NULL;
-                // count--;   // set but never used
                 break;
             }
         }

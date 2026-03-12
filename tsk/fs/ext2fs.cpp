@@ -562,7 +562,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
     // Check if we have an extended attribute in the inode
     if (ext2fs->inode_size > EXT2_EA_INODE_OFFSET) {
         // The extended attribute data immediatly follows the standard inode data
-        *ea_buf = (uint8_t*)dino_buf + EXT2_EA_INODE_OFFSET;
+        *ea_buf = (uint8_t *)dino_buf + EXT2_EA_INODE_OFFSET;
         *ea_buf_len = ext2fs->inode_size - EXT2_EA_INODE_OFFSET;
     }
     else {
@@ -642,7 +642,7 @@ ext4_load_attrs_inline(TSK_FS_FILE *fs_file, const uint8_t * ea_buf, size_t ea_b
                 uint16_t offset = tsk_getu16(fs_file->fs_info->endian, ea_entry->val_off);
                 uint32_t size = tsk_getu32(fs_file->fs_info->endian, ea_entry->val_size);
                 if ((ea_buf_len >= 4) && (offset < ea_buf_len - 4) && (size <= ea_buf_len - 4 - offset)) {
-                    ea_inline_data = (const char*) &(ea_buf[4 + offset]);
+                    ea_inline_data = (const char *)(&(ea_buf[4 + offset]));
                     ea_inline_data_len = size;
                     break;
                 }

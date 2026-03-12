@@ -37,6 +37,22 @@ constexpr T bitfield_value(T bitfield, int bits, int shift) noexcept {
 
 class APFSPool;
 
+// An owning buffer that also carries its own length, so callers never need to
+// track the size separately. Drop-in replacement for unique_ptr<uint8_t[]>
+// at call sites — supports operator bool() and .get() for compatibility.
+struct APFS_sized_key_data {
+  std::unique_ptr<uint8_t[]> ptr;
+  size_t                     size{0};
+
+  // Allows `if (data)` / `if (!data)` checks to keep working.
+  explicit operator bool() const noexcept { return ptr != nullptr; }
+
+  // Mimic unique_ptr's .get() so existing call sites need minimal changes.
+  const uint8_t* get() const noexcept { return ptr.get(); }
+};
+
+
+
 class APFSObject : public APFSBlock {
  protected:
   inline const apfs_obj_header *obj() const noexcept {
@@ -856,7 +872,7 @@ class APFSKeybag : public APFSObject {
 
   using key = struct {
     TSKGuid uuid;
-    std::unique_ptr<uint8_t[]> data;
+    APFS_sized_key_data data;
     uint16_t type;
   };
 
@@ -864,7 +880,7 @@ class APFSKeybag : public APFSObject {
   APFSKeybag(const APFSPool &pool, const apfs_block_num block_num,
              const uint8_t *key, const uint8_t *key2 = nullptr);
 
-  std::unique_ptr<uint8_t[]> get_key(const TSKGuid &uuid, uint16_t type) const;
+  APFS_sized_key_data get_key(const TSKGuid &uuid, uint16_t type) const;
 
   std::vector<key> get_keys() const;
 };
@@ -993,7 +1009,7 @@ class APFSFileSystem : public APFSObject {
     uint64_t iterations;
     uint64_t flags;
     uint8_t salt[0x10];
-    wrapped_kek(TSKGuid &&uuid, const std::unique_ptr<uint8_t[]> &);
+    wrapped_kek(TSKGuid &&uuid, const APFS_sized_key_data &);
 
     inline bool hw_crypt() const noexcept {
       // If this bit is set, some sort of hardware encryption is used.

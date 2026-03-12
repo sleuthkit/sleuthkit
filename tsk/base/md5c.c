@@ -318,7 +318,7 @@ Decode(UINT4 *output,  const unsigned char *input,   unsigned int len)
  */
 
 static void
-MD5_memcpy(POINTER output,   POINTER input,   unsigned int len)
+MD5_memcpy(POINTER output, POINTER input, unsigned int len)
 {
     unsigned int i;
 
@@ -329,7 +329,7 @@ MD5_memcpy(POINTER output,   POINTER input,   unsigned int len)
 /* Note: Replace "for loop" with standard memset if possible.
  */
 static void
-MD5_memset(POINTER output,   int value,   unsigned int len)
+MD5_memset(POINTER output, int value, unsigned int len)
 {
     unsigned int i;
 
