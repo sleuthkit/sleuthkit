@@ -77,7 +77,7 @@ tsk_fs_meta_realloc(TSK_FS_META * a_fs_meta, size_t a_buf_len)
     }
 
     if (a_fs_meta->content_len != a_buf_len) {
-        void *tmp = tsk_realloc((char *) a_fs_meta->content_ptr, a_buf_len);
+        char *tmp = tsk_realloc((char *) a_fs_meta->content_ptr, a_buf_len);
         if (tmp == NULL) {
             return NULL;
         }
