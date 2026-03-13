@@ -170,8 +170,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define OPTIND tsk_optind
 #define OPTARG tsk_optarg
 
-
-#define strtok_r(a,b,c) strtok_s(a,b,c)
+#define strtok_r(a,b,c) strtok(a,b)
 
 // Non-Win32
 #else
