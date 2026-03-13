@@ -24,6 +24,7 @@
 #include <memory>
 
 #include "encryptionHelper.h"
+#include "tsk/base/tsk_unicode.h"
 
 /**
  * \file ntfs.c
@@ -2440,6 +2441,13 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 }
                 fs_name->next = NULL;
             }
+	    /* This check does not make sense
+	     * fname->nlen is number of UTF16 characters, 2 bytest per character
+	     * and attr_len is in bytes.
+	     *
+	     * Keeping it for review but recommend removing this in favor of
+	     * the checks doene inside tsk_safeUTF16toUTF8.
+	     *
             if (fname->nlen > attr_len - 66) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -2447,16 +2455,17 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     ("proc_attrseq: invalid name value size out of bounds!");
                 return TSK_COR;
             }
-            UTF16 *name16 = (UTF16 *) & fname->name;
+	     */
             UTF8 *name8 = (UTF8 *) fs_name->name;
 
-            retVal =
-                tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
-                (UTF16 *) ((uintptr_t) name16 +
-                    fname->nlen * 2),
+            retVal = tsk_safeUTF16toUTF8(
+                fs->endian,
+                & fname->name,
+                attr_len - attr_off - 66,
+                fname->nlen,
                 &name8,
-                (UTF8 *) ((uintptr_t) name8 +
-                    sizeof(fs_name->name)), TSKlenientConversion);
+                (UTF8 *) ((uintptr_t) name8 + sizeof(fs_name->name)),
+                TSKlenientConversion);
             if (retVal != TSKconversionOK) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
