@@ -133,49 +133,49 @@ namespace Rejistry {
 
         /**
          * Interprets the cell data as an VKRecord and returns it.
-         * @returns Pointer to an VKRecord object.
+         * @returns Pointer to an VKRecord object. (Caller must free using delete)
          * @throws RegistryParseException
          */
         VKRecord::VKRecordPtr getVKRecord() const;
 
         /**
          * Interprets the cell data as an LFRecord and returns it.
-         * @returns Pointer to an LFRecord object.
+         * @returns Unique pointer to an LFRecord object.
          * @throws RegistryParseException
          */
         SubkeyListRecord::SubkeyListRecordPtr getLFRecord() const;
 
         /**
          * Interprets the cell data as an LHRecord and returns it.
-         * @returns Pointer to an LHRecord object.
+         * @returns Unique pointer to an LHRecord object.
          * @throws RegistryParseException
          */
         SubkeyListRecord::SubkeyListRecordPtr getLHRecord() const;
 
         /**
          * Interprets the cell data as an RIRecord and returns it.
-         * @returns Pointer to an RIRecord object.
+         * @returns Unique pointer to an RIRecord object.
          * @throws RegistryParseException
          */
         SubkeyListRecord::SubkeyListRecordPtr getRIRecord() const;
 
         /**
          * Interprets the cell data as an LIRecord and returns it.
-         * @returns Pointer to an LIRecord object.
+         * @returns Unique pointer to an LIRecord object.
          * @throws RegistryParseException
          */
         SubkeyListRecord::SubkeyListRecordPtr getLIRecord() const;
 
         /**
          * Interprets the cell data as an DBRecord and returns it.
-         * @returns Pointer to an DBRecord object.
+         * @returns Unique pointer to an DBRecord object.
          * @throws RegistryParseException
          */
         DBRecord::DBRecordPtr getDBRecord() const;
 
         /**
          * Interprets the cell data as an DBIndirectRecord and returns it.
-         * @returns Pointer to an DBIndirectRecord object.
+         * @returns Unique pointer to an DBIndirectRecord object.
          * @throws RegistryParseException
          */
         DBIndirectRecord::DBIndirectRecordPtr getDBIndirectRecord() const;

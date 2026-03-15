@@ -124,7 +124,7 @@ namespace Rejistry {
 
         /**
          * Get the parent record for this key.
-         * @returns The parent record.
+         * @returns The parent record. (Caller is responsible for freeing)
          * @throws RegistryParseException.
          */
         NKRecordPtr getParentRecord() const;
