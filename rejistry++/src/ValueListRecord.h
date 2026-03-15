@@ -70,7 +70,7 @@ namespace Rejistry {
     private:
         static const uint16_t VALUE_LIST_OFFSET = 0x00;
 
-        uint32_t _numValues;
+        uint32_t _numValues = 0;
 
     protected:
         ValueListRecord() {};
