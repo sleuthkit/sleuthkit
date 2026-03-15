@@ -164,7 +164,7 @@ namespace Rejistry {
          * @returns Pointer to an LIRecord object.
          * @throws RegistryParseException
          */
-        LIRecord::LIRecordPtr getLIRecord() const;
+        SubkeyListRecord::SubkeyListRecordPtr getLIRecord() const;
 
         /**
          * Interprets the cell data as an DBRecord and returns it.
@@ -184,15 +184,14 @@ namespace Rejistry {
          * Interprets the cell data as an ValueListRecord and returns it.
          * @param numValues The number of values the value list should attempt
          * to parse.
-         * @returns Pointer to an ValueListRecord object. The caller is responsible
-         * for freeing the returned record.
+         * @returns Unique pointer to a ValueListRecord object.
          * @throws RegistryParseException
          */
         ValueListRecord::ValueListRecordPtr getValueListRecord(const uint32_t numValues) const;
 
         /**
          * Interprets the cell data as a SubkeyList and returns it.
-         * @returns Pointer to an SubkeyList object.
+         * @returns Unique pointer to an SubkeyList object (do not need to free)
          * @throws RegistryParseException
          */
         SubkeyListRecord::SubkeyListRecordPtr getSubkeyList() const;

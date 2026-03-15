@@ -29,6 +29,7 @@
 #define _REJISTRY_DBRECORD_H
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 // Local includes
@@ -41,7 +42,7 @@ namespace Rejistry {
      */
     class DBRecord : public Record {
     public:
-        typedef DBRecord * DBRecordPtr;
+        typedef std::unique_ptr<DBRecord> DBRecordPtr;
 
         DBRecord(RegistryByteBuffer * buf, uint32_t offset);
         

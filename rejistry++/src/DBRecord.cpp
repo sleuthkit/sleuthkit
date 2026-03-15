@@ -51,7 +51,7 @@ namespace Rejistry {
             throw RegistryParseException("Failed to create Cell for DBRecord.");
         }
 
-        std::unique_ptr< DBIndirectRecord > dbi(c->getDBIndirectRecord());
+        auto dbi = c->getDBIndirectRecord();
         return dbi->getData(length);
     }
 

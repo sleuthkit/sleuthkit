@@ -155,7 +155,7 @@ namespace Rejistry {
 
     SubkeyListRecord::SubkeyListRecordPtr NKRecord::getSubkeyList() const {
         if (getSubkeyCount() == 0) {
-            return new EmptySubkeyList(_buf, 0);
+            return std::make_unique<EmptySubkeyList>(_buf, 0);
         }
 
         uint32_t offset = (uint32_t)getDWord(SUBKEY_LIST_OFFSET_OFFSET);
@@ -172,7 +172,7 @@ namespace Rejistry {
 
     ValueListRecord::ValueListRecordPtr NKRecord::getValueList() const {
         if (getNumberOfValues() == 0) {
-            return new ValueListRecord(_buf, 0, 0);
+            return std::make_unique<ValueListRecord>(_buf, 0, 0);
         }
 
         uint32_t offset = (uint32_t)getDWord(VALUE_LIST_OFFSET_OFFSET);

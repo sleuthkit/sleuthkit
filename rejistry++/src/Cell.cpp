@@ -26,6 +26,7 @@
  *
  */
 #include <cstdlib>
+#include <memory>
 
 // Local includes
 #include "Cell.h"
@@ -72,31 +73,31 @@ namespace Rejistry {
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getLFRecord() const {
-        return new LFRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<LFRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getLHRecord() const {
-        return new LHRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<LHRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getRIRecord() const {
-        return new RIRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<RIRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
-    LIRecord::LIRecordPtr Cell::getLIRecord() const {
-        return new LIRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+    SubkeyListRecord::SubkeyListRecordPtr Cell::getLIRecord() const {
+        return std::make_unique<LIRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     DBRecord::DBRecordPtr Cell::getDBRecord() const {
-        return new DBRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<DBRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     DBIndirectRecord::DBIndirectRecordPtr Cell::getDBIndirectRecord() const {
-        return new DBIndirectRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<DBIndirectRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     ValueListRecord::ValueListRecordPtr Cell::getValueListRecord(const uint32_t numValues) const {
-        return new ValueListRecord(_buf, getAbsoluteOffset(DATA_OFFSET), numValues);
+        return std::make_unique<ValueListRecord>(_buf, getAbsoluteOffset(DATA_OFFSET), numValues);
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getSubkeyList() const {
@@ -118,5 +119,4 @@ namespace Rejistry {
             throw RegistryParseException("Unexpected subkey list type: " + magic);
         }
     }
-
 };

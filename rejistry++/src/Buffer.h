@@ -51,9 +51,9 @@ namespace Rejistry {
 
         virtual ~Buffer();
 
-        uint32_t _capacity;
-        uint32_t _limit;
-        uint32_t _position;
+        uint32_t _capacity = 0;
+        uint32_t _limit = 0;
+        uint32_t _position = 0;
     };
 };
 
