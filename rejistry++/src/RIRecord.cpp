@@ -26,7 +26,6 @@
  *
  */
 #include <memory>
-#include <utility>
 
 // Local includes
 #include "RIRecord.h"
@@ -54,7 +53,7 @@ namespace Rejistry {
                 throw RegistryParseException("Failed to create Cell for key record.");
             }
 
-            subkeyList.push_back(std::move(c->getSubkeyList()));
+            subkeyList.push_back(c->getSubkeyList());
         }
 
         return subkeyList;
