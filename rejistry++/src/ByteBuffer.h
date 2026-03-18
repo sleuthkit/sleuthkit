@@ -53,11 +53,11 @@ namespace Rejistry {
 
         /**
          * Copy 'length' bytes from this buffer into the given destination,
-         * starting at offset in the current buffer.
-         * The position of this buffer is incremented
-         * by length.
+         * starting at the current position in this buffer and at the given
+         * offset in the destination. The position of this buffer is incremented
+         * 
          * @param dst The destination into which to copy bytes.
-         * @param offset The offset within the current buffer to read from
+         * @param offset The offset within the destination buffer to start copying data
          * @param length The number of bytes to copy from this buffer.
          * @throws RegistryParseException
          */
