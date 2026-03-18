@@ -190,6 +190,20 @@ namespace Rejistry {
             }
         }
 
+        // Handle unterminated trailing string data.
+        if (pos < data.size()) {
+            uint32_t remaining = (uint32_t)(data.size() - pos);
+            // Ensure we have an even number of bytes for wchar_t alignment
+            if (remaining % 2 != 0) {
+                data.push_back('\0');
+                remaining++;
+            }
+            // Append a null wchar_t terminator
+            data.push_back('\0');
+            data.push_back('\0');
+            stringList.push_back(std::wstring((wchar_t*)&data[pos]));
+        }
+
         return stringList;
     }
 };
