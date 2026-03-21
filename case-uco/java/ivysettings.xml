@@ -3,7 +3,6 @@
     <resolvers>
         <chain name="default">
             <ibiblio name="central" root="https://repo1.maven.org/maven2" m2compatible="true"/>
-            <ibiblio name="ibiblio" m2compatible="true"/>
         </chain>
     </resolvers>
 </ivysettings>
