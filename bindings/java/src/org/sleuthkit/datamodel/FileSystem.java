@@ -136,6 +136,7 @@ public class FileSystem extends AbstractContent {
 	 * 
 	 * @return the password if found, empty string otherwise
 	 */
+	@SuppressWarnings("unchecked")
 	private String getImagePasswordFromSettings(String settingsStr) {
 		
 		if(StringUtils.isBlank(settingsStr)){

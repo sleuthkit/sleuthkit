@@ -67,7 +67,8 @@ public final class OsAccount extends AbstractContent {
 		UNKNOWN(0, bundle.getString("OsAccountStatus.Unknown.text")),
 		ACTIVE(1, bundle.getString("OsAccountStatus.Active.text")),
 		DISABLED(2, bundle.getString("OsAccountStatus.Disabled.text")),
-		@Deprecated /** Use NON_EXISTENT **/
+		/** Use NON_EXISTENT **/
+		@Deprecated
 		DELETED(3, bundle.getString("OsAccountStatus.Deleted.text")),
 		NON_EXISTENT(4, bundle.getString("OsAccountStatus.NonExistent.text"));
 

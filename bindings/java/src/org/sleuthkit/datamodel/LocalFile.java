@@ -80,6 +80,7 @@ public class LocalFile extends AbstractFile {
 	 *                           system, can be null.
 	 * @param osAccountObjId	 Obj id of the owner OS account, may be null.
 	 */
+	@SuppressWarnings("this-escape")
 	LocalFile(SleuthkitCase db,
 			long objId,
 			String name,
@@ -206,7 +207,7 @@ public class LocalFile extends AbstractFile {
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({"deprecation", "this-escape"})
 	protected LocalFile(SleuthkitCase db,
 			long objId,
 			String name,
