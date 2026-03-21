@@ -15,7 +15,7 @@ from the C/C++ code.
 
 
 Requirements:
-* Java JDK 17+ (OpenJDK)
+* Java JDK 17+ (works on JDK 25 as of Mar '26)
 * Ant
 * Jar files as listed in ivy.xml (which will get downloaded automatically)
 * JAVA_HOME environment variable configured 
