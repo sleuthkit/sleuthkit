@@ -15,7 +15,7 @@ from the C/C++ code.
 
 
 Requirements:
-* Java JDK 17+ (OpenJDK)
+* Java JDK 17+ (works on JDK 21 as of Mar '26 - 25 doesn't work with Autopsy)
 * Ant
 * Jar files as listed in ivy.xml (which will get downloaded automatically)
 * JAVA_HOME environment variable configured 

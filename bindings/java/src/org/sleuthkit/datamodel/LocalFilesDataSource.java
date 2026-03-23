@@ -282,7 +282,7 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	/**
 	 * Gets the added date field from the case database.
 	 *
-	 * @return The date time when the image was added in epoch seconds.
+	 * @return The date time when the data source was added, in milliseconds since the Java epoch (Jan 1, 1970 UTC).
 	 *
 	 * @throws TskCoreException Thrown if the data can not be read
 	 */
