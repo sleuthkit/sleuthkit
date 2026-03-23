@@ -29,6 +29,7 @@
 #define _REJISTRY_SUBKEYLISTRECORD_H
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <list>
 
@@ -45,7 +46,7 @@ namespace Rejistry {
      */
     class SubkeyListRecord : public Record {
     public:
-        typedef SubkeyListRecord * SubkeyListRecordPtr;
+        typedef std::unique_ptr<SubkeyListRecord> SubkeyListRecordPtr;
         typedef std::vector<SubkeyListRecordPtr> SubkeyListRecordPtrList;
 
         SubkeyListRecord(RegistryByteBuffer * buf, uint32_t offset) : Record(buf, offset) {}

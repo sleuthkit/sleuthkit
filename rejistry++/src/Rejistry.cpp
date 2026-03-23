@@ -113,24 +113,26 @@ namespace Rejistry {
 
 
     void printVKRecord(const VKRecord::VKRecordPtr vkRecord, const std::wstring& prefix) {
-        std::wcout << prefix << "vkrecord has name: " << getBooleanString(vkRecord->hasName()) << std::endl;
-        std::wcout << prefix << "vkrecord has ascii name: " << getBooleanString(vkRecord->hasAsciiName()) << std::endl;
-        std::wcout << prefix << "vkrecord name: " << vkRecord->getName() << std::endl;
-        std::wcout << prefix << "vkrecord value type: " << ValueData::getValueType(vkRecord->getValueType()) << std::endl;
-        std::wcout << prefix << "vkrecord data length: " << std::dec << vkRecord->getDataLength() << std::endl;
+        try {
 
-        ValueData::ValueDataPtr data = vkRecord->getValue();
-        std::wcout << prefix << "vkrecord data: ";
+            std::wcout << prefix << "vkrecord has name: " << getBooleanString(vkRecord->hasName()) << std::endl;
+            std::wcout << prefix << "vkrecord has ascii name: " << getBooleanString(vkRecord->hasAsciiName()) << std::endl;
+            std::wcout << prefix << "vkrecord name: " << vkRecord->getName() << std::endl;
+            std::wcout << prefix << "vkrecord value type: " << ValueData::getValueType(vkRecord->getValueType()) << std::endl;
+            std::wcout << prefix << "vkrecord data length: " << std::dec << vkRecord->getDataLength() << std::endl;
 
-        switch (data->getValueType()) {
-        case ValueData::VALTYPE_SZ:
-        case ValueData::VALTYPE_EXPAND_SZ:
-            std::wcout << data->getAsString() << std::endl;
-            break;
-        case ValueData::VALTYPE_MULTI_SZ:
+            ValueData::ValueDataPtr data = vkRecord->getValue();
+            std::wcout << prefix << "vkrecord data: ";
+
+            switch (data->getValueType()) {
+            case ValueData::VALTYPE_SZ:
+            case ValueData::VALTYPE_EXPAND_SZ:
+                std::wcout << data->getAsString() << std::endl;
+                break;
+            case ValueData::VALTYPE_MULTI_SZ:
             {
                 std::vector<std::wstring> stringList = data->getAsStringList();
-                
+
                 for (uint32_t i = 0; i < stringList.size(); ++i) {
                     if (i != 0) {
                         std::wcout << prefix << "               ";
@@ -139,38 +141,46 @@ namespace Rejistry {
                 }
             }
             break;
-        case ValueData::VALTYPE_DWORD:
-        case ValueData::VALTYPE_QWORD:
-        case ValueData::VALTYPE_BIG_ENDIAN:
-        case ValueData::VALTYPE_FILETIME:
-            std::wcout << std::hex << "0x" << data->getAsNumber() << std::endl;
-            break;
-        default:
+            case ValueData::VALTYPE_DWORD:
+            case ValueData::VALTYPE_QWORD:
+            case ValueData::VALTYPE_BIG_ENDIAN:
+            case ValueData::VALTYPE_FILETIME:
+                std::wcout << std::hex << "0x" << data->getAsNumber() << std::endl;
+                break;
+            default:
             {
                 std::wcout << std::endl << prefix << "               ";
                 std::vector<uint8_t> rawData = data->getAsRawData();
                 dumpHexString(rawData, 0, rawData.size(), prefix.size() + 15);
                 std::wcout << std::endl;
             }
+            }
         }
-
+        catch (std::exception& ex) {
+            std::wcout << "printVKRecord exception: " << ex.what() << std::endl;
+        }
     }
 
     void printNKRecord(const NKRecord::NKRecordPtr nkRecord, const std::wstring& prefix) {
-        std::wcout << prefix << "nkrecord has classname: " << getBooleanString(nkRecord->hasClassname()) << std::endl;
-        std::wcout << prefix << "nkrecord classname: " << nkRecord->getClassName() << std::endl;
-        std::wcout << prefix << "nkrecord timestamp: "; printDatetimeString(nkRecord->getTimestamp()); std::wcout << std::endl;
-        std::wcout << prefix << "nkrecord is root: " << getBooleanString(nkRecord->isRootKey()) << std::endl;
-        std::wcout << prefix << "nkrecord name: " << nkRecord->getName() << std::endl;
-        std::wcout << prefix << "nkrecord has parent: " << getBooleanString(nkRecord->hasParentRecord()) << std::endl;
-        std::wcout << prefix << "nkrecord number of values: " << nkRecord->getNumberOfValues() << std::endl;
-        std::wcout << prefix << "nkrecord number of subkeys: " << nkRecord->getSubkeyCount() << std::endl;
+        try {
+            std::wcout << prefix << "nkrecord has classname: " << getBooleanString(nkRecord->hasClassname()) << std::endl;
+            std::wcout << prefix << "nkrecord classname: " << nkRecord->getClassName() << std::endl;
+            std::wcout << prefix << "nkrecord timestamp: "; printDatetimeString(nkRecord->getTimestamp()); std::wcout << std::endl;
+            std::wcout << prefix << "nkrecord is root: " << getBooleanString(nkRecord->isRootKey()) << std::endl;
+            std::wcout << prefix << "nkrecord name: " << nkRecord->getName() << std::endl;
+            std::wcout << prefix << "nkrecord has parent: " << getBooleanString(nkRecord->hasParentRecord()) << std::endl;
+            std::wcout << prefix << "nkrecord number of values: " << nkRecord->getNumberOfValues() << std::endl;
+            std::wcout << prefix << "nkrecord number of subkeys: " << nkRecord->getSubkeyCount() << std::endl;
 
-        VKRecord::AutoVKRecordPtrList vkList(nkRecord->getValueList()->getValues());
-        VKRecord::VKRecordPtrList::iterator vkIter;
-        for (vkIter = vkList.begin(); vkIter != vkList.end(); ++vkIter) {
-            std::wcout << prefix << "  value: " << (*vkIter)->getName() << std::endl;
-            printVKRecord((*vkIter), L"    " + prefix);
+            VKRecord::AutoVKRecordPtrList vkList(nkRecord->getValueList()->getValues());
+            VKRecord::VKRecordPtrList::iterator vkIter;
+            for (vkIter = vkList.begin(); vkIter != vkList.end(); ++vkIter) {
+                std::wcout << prefix << "  value: " << (*vkIter)->getName() << std::endl;
+                printVKRecord((*vkIter), L"    " + prefix);
+            }
+        }
+        catch (std::exception& ex) {
+            std::wcout << "printNKRecord exception: " << ex.what() << std::endl;
         }
     }
 
@@ -194,6 +204,7 @@ namespace Rejistry {
             std::wcout << "hive name: " << header->getHiveName() << std::endl;
             std::wcout << "major version: " << header->getMajorVersion() << std::endl;
             std::wcout << "minor version: " << header->getMinorVersion() << std::endl;
+            std::wcout << "hive sync: " << (header->isSynchronized() == true ? "Yes" : "No") << std::endl;
 
             HBIN::AutoHBINPtrList hbinList (header->getHBINs());
             std::wcout << "number of hbins: " << hbinList.size() << std::endl;
@@ -230,7 +241,7 @@ namespace Rejistry {
             recurseNKRecord(header->getRootNKRecord(), L"");
         }
         catch (std::exception& ex) {
-            std::wcout << ex.what() << std::endl;
+            std::wcout << "processRegistryFile exception: " << ex.what() << std::endl;
         }
     }
 }

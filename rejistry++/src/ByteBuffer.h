@@ -55,19 +55,19 @@ namespace Rejistry {
          * Copy 'length' bytes from this buffer into the given destination,
          * starting at the current position in this buffer and at the given
          * offset in the destination. The position of this buffer is incremented
-         * by length.
+         * 
          * @param dst The destination into which to copy bytes.
-         * @param offset The offset within the destination buffer to copy bytes to.
+         * @param offset The offset within the destination buffer to start copying data
          * @param length The number of bytes to copy from this buffer.
          * @throws RegistryParseException
          */
         void get(ByteArray& dst, const uint32_t offset, const uint32_t length);
 
-        /// Get two bytes from the current position in the buffer.
+        /// Get two bytes from an offset in the buffer
         uint16_t getShort(uint32_t offset) const;
-        /// Get four bytes from the current position in the buffer.
+        /// Get four bytes from an offset in the buffer
         uint32_t getInt(uint32_t offset) const;
-        /// Get eight bytes from the current position in the buffer.
+        /// Get eight bytes from an offset in the buffer
         uint64_t getLong(uint32_t offset) const;
 
     private:
@@ -76,14 +76,7 @@ namespace Rejistry {
 
         void initializeBuffer(const uint8_t * buf, const uint32_t length);
 
-        template <typename T> T read() const {
-            T bytes = read<T>(_position);
-            if (bytes != NULL) {
-                _position += sizeof(T);
-            }
-            return bytes;
-        }
-
+        /// read at specified offset
         template <typename T> T read(uint32_t offset) const {
             if (offset + sizeof(T) <= _limit) {
                 return *((T*)&_buffer[offset]);

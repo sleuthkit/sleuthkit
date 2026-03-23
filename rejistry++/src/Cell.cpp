@@ -26,6 +26,7 @@
  *
  */
 #include <cstdlib>
+#include <memory>
 
 // Local includes
 #include "Cell.h"
@@ -36,7 +37,11 @@
 namespace Rejistry {
 
     uint32_t Cell::getLength() const {
-        return std::abs((int)getDWord(LENGTH_OFFSET));
+        int32_t raw = (int32_t)getDWord(LENGTH_OFFSET);
+        if (raw == (int32_t)0x80000000) {
+            throw RegistryParseException("Invalid cell length.");
+        }
+        return (uint32_t)(raw < 0 ? -raw : raw);
     }
 
     bool Cell::isActive() const {
@@ -44,7 +49,11 @@ namespace Rejistry {
     }
 
     std::vector<uint8_t> Cell::getData() const {
-        return _buf->getData(getAbsoluteOffset(DATA_OFFSET), getLength() - DATA_OFFSET);
+        uint32_t len = getLength();
+        if (len < DATA_OFFSET) {
+            throw RegistryParseException("Cell length too small.");
+        }
+        return _buf->getData(getAbsoluteOffset(DATA_OFFSET), len - DATA_OFFSET);
     }
 
     std::string Cell::getDataSignature() const {
@@ -64,31 +73,31 @@ namespace Rejistry {
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getLFRecord() const {
-        return new LFRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<LFRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getLHRecord() const {
-        return new LHRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<LHRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getRIRecord() const {
-        return new RIRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<RIRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
-    LIRecord::LIRecordPtr Cell::getLIRecord() const {
-        return new LIRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+    SubkeyListRecord::SubkeyListRecordPtr Cell::getLIRecord() const {
+        return std::make_unique<LIRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     DBRecord::DBRecordPtr Cell::getDBRecord() const {
-        return new DBRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<DBRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     DBIndirectRecord::DBIndirectRecordPtr Cell::getDBIndirectRecord() const {
-        return new DBIndirectRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+        return std::make_unique<DBIndirectRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     ValueListRecord::ValueListRecordPtr Cell::getValueListRecord(const uint32_t numValues) const {
-        return new ValueListRecord(_buf, getAbsoluteOffset(DATA_OFFSET), numValues);
+        return std::make_unique<ValueListRecord>(_buf, getAbsoluteOffset(DATA_OFFSET), numValues);
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getSubkeyList() const {
@@ -110,5 +119,4 @@ namespace Rejistry {
             throw RegistryParseException("Unexpected subkey list type: " + magic);
         }
     }
-
 };

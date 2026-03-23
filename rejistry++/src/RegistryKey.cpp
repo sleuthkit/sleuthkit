@@ -37,6 +37,7 @@ namespace Rejistry {
 
     RegistryKey& RegistryKey::operator=(const RegistryKey & rk) {
         if (this != &rk) {
+            delete _nk;
             _nk = new NKRecord(*(rk._nk));
         }
         return *this;
@@ -80,17 +81,18 @@ namespace Rejistry {
         for (it = nkRecordList.begin(); it != nkRecordList.end(); ++it) {
             subkeys.push_back(new RegistryKey(*it));
         }
-        delete subkeyListRecordPtr;
         return subkeys;
     }
 
 
     size_t RegistryKey::getSubkeyListSize() const {
-        std::vector<RegistryKey *> subkeys;
         SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
         NKRecord::NKRecordPtrList nkRecordList = subkeyListRecordPtr->getSubkeys();
-        delete subkeyListRecordPtr;
-        return nkRecordList.size();
+        size_t sz = nkRecordList.size();
+        for (NKRecord::NKRecordPtrList::iterator it = nkRecordList.begin(); it != nkRecordList.end(); ++it) {
+            delete *it;
+        }
+        return sz;
     }
 
 
@@ -100,7 +102,6 @@ namespace Rejistry {
     RegistryKey::RegistryKeyPtr RegistryKey::getSubkey(const std::wstring& name) const {
         SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
         Rejistry::NKRecord *nkRecord = subkeyListRecordPtr->getSubkey(name);
-        delete subkeyListRecordPtr;
         return new RegistryKey(nkRecord);
     }
 
@@ -109,9 +110,9 @@ namespace Rejistry {
      */
     RegistryValue::RegistryValuePtrList RegistryKey::getValueList() const {
         RegistryValue::RegistryValuePtrList values;
-        VKRecord::VKRecordPtrList vkRecordList = _nk->getValueList()->getValues();
-        VKRecord::VKRecordPtrList::iterator it;
-        for (it = vkRecordList.begin(); it != vkRecordList.end(); ++it) {
+        auto valueListRecord = _nk->getValueList();
+        VKRecord::VKRecordPtrList vkRecordList = valueListRecord->getValues();
+        for (VKRecord::VKRecordPtrList::iterator it = vkRecordList.begin(); it != vkRecordList.end(); ++it) {
             values.push_back(new RegistryValue(*it));
         }
         return values;
@@ -119,19 +120,16 @@ namespace Rejistry {
 
 
     size_t RegistryKey::getValueListSize() const {
-        Rejistry::ValueListRecord *valueListRecord = _nk->getValueList();
-        size_t size = valueListRecord->getValuesSize();
-        delete valueListRecord;
-        return size;
+        auto valueListRecord = _nk->getValueList();
+        return valueListRecord->getValuesSize();
     }
 
     /**
      * Caller is responsible for freeing returned value
      */
     RegistryValue::RegistryValuePtr RegistryKey::getValue(const std::wstring& name) const {
-        Rejistry::ValueListRecord *valueListRecord = _nk->getValueList();
+        auto valueListRecord = _nk->getValueList();
         Rejistry::VKRecord *vkRecord = valueListRecord->getValue(name);
-        delete valueListRecord;
         return new RegistryValue(vkRecord);
     }
 };

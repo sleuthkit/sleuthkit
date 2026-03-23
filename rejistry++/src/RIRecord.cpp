@@ -45,7 +45,6 @@ namespace Rejistry {
         SubkeyListRecord::SubkeyListRecordPtrList subkeyList;
 
         uint16_t listLength = getListLength();
-
         for (uint16_t index = 0; index < listLength; ++index) {
             uint32_t offset = getDWord(LIST_START_OFFSET + (index * LIST_ENTRY_SIZE));
             uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
@@ -62,17 +61,14 @@ namespace Rejistry {
 
     NKRecord::NKRecordPtrList RIRecord::getSubkeys() const {
         NKRecord::NKRecordPtrList finalNKRecordList;
-        SubkeyListRecord::SubkeyListRecordPtrList subkeyList = getSubkeyLists();
-
-        SubkeyListRecord::SubkeyListRecordPtrList::iterator it;
+        SubkeyListRecord::SubkeyListRecordPtrList subkeyLists = getSubkeyLists();
 
         // Iterate over each of the subkey lists getting their subkeys.
-        for (it = subkeyList.begin(); it != subkeyList.end(); ++it) {
-            NKRecord::NKRecordPtrList nkRecordList = (*it)->getSubkeys();
+        for (const auto& subkeyList : subkeyLists) {
+            NKRecord::NKRecordPtrList nkRecordList = subkeyList->getSubkeys();
             finalNKRecordList.insert(finalNKRecordList.end(), nkRecordList.begin(), nkRecordList.end());
         }
 
         return finalNKRecordList;        
     }
-
 };

@@ -41,8 +41,6 @@ namespace Rejistry {
     public:
         static const std::string MAGIC;
 
-        typedef LIRecord * LIRecordPtr;
-
         LIRecord(RegistryByteBuffer * buf, uint32_t offset);
         
         virtual ~LIRecord() {}

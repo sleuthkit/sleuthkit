@@ -52,7 +52,9 @@ namespace Rejistry {
             }
 
             std::vector<uint8_t> cellData = c->getData();
-            
+            if (cellData.size() < size) {
+                throw RegistryParseException("DB indirect cell too small for requested data.");
+            }
             data.insert(data.end(), cellData.begin(), cellData.begin() + size);
 
             length -= size;

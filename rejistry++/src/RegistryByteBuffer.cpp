@@ -99,7 +99,7 @@ namespace Rejistry {
             return "";
         }
 
-        ByteBuffer::ByteArray &data = getData(offset, length);
+        ByteBuffer::ByteArray data = getData(offset, length);
 
         return std::string(data.begin(), data.end());
     }
@@ -120,8 +120,8 @@ namespace Rejistry {
 			return L"";
 		}
 
-		ByteBuffer::ByteArray &data = getData(offset, length);
-		// There are cases where an odd number of bytes are returned which 
+		ByteBuffer::ByteArray data = getData(offset, length);
+		// There are cases where an odd number of bytes are returned which
 		// leads to errors during conversion. See CT-2917 test12 for more details. 
 		if (data.size() % 2 != 0) {
 			data.push_back('\0');
@@ -177,7 +177,7 @@ namespace Rejistry {
         uint32_t i = 0;
         uint32_t pos = 0;
 
-        while (i < data.size()) {
+        while (i + 1 < data.size()) {
             if (data[i] == '\0' && data[++i] == '\0') {
                 stringList.push_back(std::wstring((wchar_t*)&data[pos]));
                 pos = i;
@@ -188,6 +188,20 @@ namespace Rejistry {
             else {
                 i++;
             }
+        }
+
+        // Handle unterminated trailing string data.
+        if (pos < data.size()) {
+            uint32_t remaining = (uint32_t)(data.size() - pos);
+            // Ensure we have an even number of bytes for wchar_t alignment
+            if (remaining % 2 != 0) {
+                data.push_back('\0');
+                remaining++;
+            }
+            // Append a null wchar_t terminator
+            data.push_back('\0');
+            data.push_back('\0');
+            stringList.push_back(std::wstring((wchar_t*)&data[pos]));
         }
 
         return stringList;

@@ -35,7 +35,8 @@ namespace Rejistry {
 
 
     REGFHeader::REGFHeader(RegistryByteBuffer& buf, const uint32_t offset) : BinaryBlock(buf, offset) {
-        uint64_t magic = getDWord(offset);
+        // offset is applied within getDWord by BinaryBlock
+        uint64_t magic = getDWord(0x0);
 
         if (magic != 0x66676572) {
             throw RegistryParseException("REGF magic value not found");
@@ -73,8 +74,12 @@ namespace Rejistry {
             }
 
             HBIN * nextHBIN = new HBIN(this, _buf, getAbsoluteOffset(nextHBINOffset));
+            uint32_t relNext = nextHBIN->getRelativeOffsetNextHBIN();
             hbinList.push_back(nextHBIN);
-            nextHBINOffset += nextHBIN->getRelativeOffsetNextHBIN();
+            if (relNext == 0 || nextHBINOffset + relNext < nextHBINOffset) {
+                break;
+            }
+            nextHBINOffset += relNext;
         }
         while (nextHBINOffset <= getLastHbinOffset());
 
