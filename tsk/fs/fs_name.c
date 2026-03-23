@@ -88,12 +88,14 @@ tsk_fs_name_realloc(TSK_FS_NAME * fs_name, size_t namelen)
     if (fs_name->name_size >= namelen)
         return 0;
 
-    fs_name->name = (char *) tsk_realloc(fs_name->name, namelen + 1);
-    if (fs_name->name == NULL) {
+
+    char *tmp = (char *) tsk_realloc(fs_name->name, namelen + 1);
+    if (tmp == NULL) {
         fs_name->name_size = 0;
         return 1;
     }
 
+    fs_name->name = tmp;
     fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
     fs_name->name_size = namelen;
 
@@ -186,11 +188,11 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
             a_fs_name_to->shrt_name_size) {
             a_fs_name_to->shrt_name_size =
                 strlen(a_fs_name_from->shrt_name) + 16;
-            a_fs_name_to->shrt_name =
-                (char *) tsk_realloc(a_fs_name_to->shrt_name,
+            char *tmp = (char *) tsk_realloc(a_fs_name_to->shrt_name,
                 a_fs_name_to->shrt_name_size);
-            if (a_fs_name_to->shrt_name == NULL)
+            if (tmp == NULL)
                 return 1;
+            a_fs_name_to->shrt_name = tmp;
         }
         strncpy(a_fs_name_to->shrt_name, a_fs_name_from->shrt_name,
             a_fs_name_to->shrt_name_size);

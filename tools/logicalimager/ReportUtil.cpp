@@ -99,7 +99,7 @@ void ReportUtil::printDebug(char *msg, const char *fmt, ...) {
     if (tsk_verbose) {
         std::string prefix("tsk_logical_imager: ");
         std::string message = prefix + msg + "\n";
-        tsk_fprintf(stderr, message.c_str(), fmt);
+        tsk_fprintf(stderr, "%s", message.c_str());
     }
 }
 

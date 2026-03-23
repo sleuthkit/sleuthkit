@@ -29,6 +29,8 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
     dos_sect *dos_part;
     unsigned int i, a;
     uint32_t ent_size;
+    uint32_t tab_num_ent;
+    TSK_DADDR_T tab_start_lba;
     char *safe_str, *head_str, *tab_str, *ent_buf;
     ssize_t cnt;
     char *sect_buf;
@@ -169,18 +171,31 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
         return 1;
     }
 
+    tab_start_lba = tsk_getu64(vs->endian, &head->tab_start_lba);
+    tab_num_ent = tsk_getu32(vs->endian, &head->tab_num_ent);
+
+    if (tab_start_lba > max_addr) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+        tsk_error_set_errstr
+            ("gpt_load_table: Partition table start LBA too large for image");
+        free(sect_buf);
+        return 1;
+    }
+
+    if (tab_num_ent > 8192)
+        tab_num_ent = 8192;
+
     if ((tab_str = tsk_malloc(20)) == NULL) {
         free(sect_buf);
         return 1;
     }
 
     snprintf(tab_str, 20, "Partition Table");
-    if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) tsk_getu64(vs->endian,
-                &head->tab_start_lba),
-            (TSK_DADDR_T) ((ent_size * tsk_getu32(vs->endian,
-                        &head->tab_num_ent) + (vs->block_size -
-                        1)) / vs->block_size), TSK_VS_PART_FLAG_META,
-            tab_str, -1, -1)) {
+    if (NULL == tsk_vs_part_add(vs, tab_start_lba,
+            (TSK_DADDR_T) (((uint64_t)ent_size * tab_num_ent +
+                        (vs->block_size - 1)) / vs->block_size),
+            TSK_VS_PART_FLAG_META, tab_str, -1, -1)) {
         free(sect_buf);
         return 1;
     }
@@ -193,12 +208,12 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
     }
 
     i = 0;
-    for (a = 0; i < tsk_getu32(vs->endian, &head->tab_num_ent); a++) {
+    for (a = 0; i < tab_num_ent; a++) {
         char *name;
 
         /* Read a sector */
         cnt = tsk_vs_read_block(vs,
-            tsk_getu64(vs->endian, &head->tab_start_lba) + a,
+            tab_start_lba + a,
             ent_buf, vs->block_size);
         if (cnt != vs->block_size) {
             if (cnt >= 0) {
@@ -207,7 +222,7 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
             }
             tsk_error_set_errstr2
                 ("Error reading GPT partition table sector : %" PRIuDADDR,
-                tsk_getu64(vs->endian, &head->tab_start_lba) + a);
+                tab_start_lba + a);
             free(ent_buf);
             free(sect_buf);
             return 1;
@@ -216,7 +231,7 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
         /* Process the sector */
         ent = (gpt_entry *) ent_buf;
         for (; (uintptr_t) ent < (uintptr_t) ent_buf + vs->block_size &&
-            i < tsk_getu32(vs->endian, &head->tab_num_ent); i++) {
+            i < tab_num_ent; i++) {
 
             UTF16 *name16;
             UTF8 *name8;

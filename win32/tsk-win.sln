@@ -161,6 +161,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pstat", "pstat\pstat.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_imageinfo", "tsk_imageinfo\tsk_imageinfo.vcxproj", "{09E82DEB-4BC3-44B5-A9F6-4D65F885F88C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "is_image_supported_lib", "is_image_supported_lib\is_image_supported_lib.vcxproj", "{6666E9A0-2A86-426C-A17E-A6FB9352009D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76EFC06C-1F64-4478-ABE8-79832716B393} = {76EFC06C-1F64-4478-ABE8-79832716B393}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_NoLibs|Win32 = Debug_NoLibs|Win32
@@ -853,6 +858,20 @@ Global
 		{09E82DEB-4BC3-44B5-A9F6-4D65F885F88C}.Release|Win32.Build.0 = Release|Win32
 		{09E82DEB-4BC3-44B5-A9F6-4D65F885F88C}.Release|x64.ActiveCfg = Release|x64
 		{09E82DEB-4BC3-44B5-A9F6-4D65F885F88C}.Release|x64.Build.0 = Release|x64
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Debug_NoLibs|Win32.ActiveCfg = Debug|Win32
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Debug_NoLibs|x64.ActiveCfg = Debug|x64
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Debug|Win32.Build.0 = Debug|Win32
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Debug|x64.ActiveCfg = Debug|x64
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Debug|x64.Build.0 = Debug|x64
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release_NoLibs|Win32.ActiveCfg = Release|Win32
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release_NoLibs|x64.ActiveCfg = Release|x64
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release_XPNoLibs|Win32.ActiveCfg = Release|Win32
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release_XPNoLibs|x64.ActiveCfg = Release|x64
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release|Win32.ActiveCfg = Release|Win32
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release|Win32.Build.0 = Release|Win32
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release|x64.ActiveCfg = Release|x64
+		{6666E9A0-2A86-426C-A17E-A6FB9352009D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

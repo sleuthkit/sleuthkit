@@ -65,7 +65,7 @@ extern "C" {
 #endif
 
 #define TSK_ERROR_STRING_MAX_LENGTH 1024
-typedef void(*TSK_ERROR_LISTENER_CB) (unsigned int errno, const char* errmsg);
+typedef void(*TSK_ERROR_LISTENER_CB) (unsigned int err_code, const char* errmsg);
 
     typedef struct {
         uint32_t t_errno;
@@ -340,7 +340,7 @@ typedef void(*TSK_ERROR_LISTENER_CB) (unsigned int errno, const char* errmsg);
 #define TSK_ERR_VS_MAX		10
 
 #define TSK_ERR_POOL_UNKTYPE    (TSK_ERR_POOL | 0)
-#define TSK_ERR_POOL_UNSUPTYPE  (TSK_ERR_IMG | 1)
+#define TSK_ERR_POOL_UNSUPTYPE  (TSK_ERR_POOL | 1)
 #define TSK_ERR_POOL_ARG        (TSK_ERR_POOL | 2)
 #define TSK_ERR_POOL_GENPOOL    (TSK_ERR_POOL | 3)
 #define TSK_ERR_POOL_MAX        4
@@ -382,7 +382,7 @@ typedef void(*TSK_ERROR_LISTENER_CB) (unsigned int errno, const char* errmsg);
 #define TSK_ERR_HDB_PROC        (TSK_ERR_HDB | 9)
 #define TSK_ERR_HDB_OPEN        (TSK_ERR_HDB | 10)
 #define TSK_ERR_HDB_CORRUPT     (TSK_ERR_HDB | 11)
-#define TSK_ERR_HDB_UNSUPFUNC     (TSK_ERR_HDB | 11)
+#define TSK_ERR_HDB_UNSUPFUNC   (TSK_ERR_HDB | 12)
 #define TSK_ERR_HDB_MAX		13
 
 #define TSK_ERR_AUTO_DB (TSK_ERR_AUTO | 0)

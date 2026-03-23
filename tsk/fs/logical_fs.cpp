@@ -1836,8 +1836,8 @@ logicalfs_read(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, 
 
 	// Only attempt to read to the end of the file at most
 	if (a_offset + a_len > (TSK_DADDR_T)a_fs_file->meta->size) {
-		bytes_left = a_fs_file->meta->size - a_offset;
-		filler_len = a_offset + a_len - a_fs_file->meta->size;
+		bytes_left = (size_t)(a_fs_file->meta->size - a_offset);
+		filler_len = (size_t)(a_offset + a_len - a_fs_file->meta->size);
 
 		// Fill in the end of the buffer
 		if (filler_len > 0) {

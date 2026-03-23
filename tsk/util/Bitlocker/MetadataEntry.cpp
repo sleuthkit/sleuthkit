@@ -28,7 +28,7 @@ MetadataEntry* MetadataEntry::createMetadataEntry(uint8_t* buf, size_t bufLen) {
     }
 
     // Read the header
-    uint16_t size = tsk_getu32(TSK_LIT_ENDIAN, &(buf[0]));
+    uint16_t size = tsk_getu16(TSK_LIT_ENDIAN, &(buf[0]));
     BITLOCKER_METADATA_ENTRY_TYPE entryType = getMetadataEntryTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[2])));
     BITLOCKER_METADATA_VALUE_TYPE valueType = getMetadataValueTypeEnum(tsk_getu16(TSK_LIT_ENDIAN, &(buf[4])));
 

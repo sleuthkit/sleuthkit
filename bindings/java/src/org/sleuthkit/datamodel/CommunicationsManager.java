@@ -62,7 +62,7 @@ public final class CommunicationsManager {
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID(),
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
 	));
-	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR = CommManagerSqlStringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
+	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR = CommManagerSqlStringUtils.buildIntCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 
 	/**
 	 * Construct a CommunicationsManager for the given SleuthkitCase.
@@ -139,13 +139,15 @@ public final class CommunicationsManager {
 			connection = db.getConnection();
 			statement = connection.createStatement();
 
-			// If the account_types table is already populated, say when opening a case,  then load it
-			resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM account_types"); //NON-NLS
-			resultSet.next();
-			if (resultSet.getLong("count") > 0) {
+			// If the account_types table is already populated, say when opening a case, then load it
+			long existingCount;
+			try (ResultSet countRs = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM account_types")) { //NON-NLS
+				countRs.next();
+				existingCount = countRs.getLong("count");
+			}
 
-				resultSet.close();
-				resultSet = connection.executeQuery(statement, "SELECT * FROM account_types");
+			if (existingCount > 0) {
+				resultSet = connection.executeQuery(statement, "SELECT * FROM account_types"); //NON-NLS
 				while (resultSet.next()) {
 					Account.Type accountType = new Account.Type(resultSet.getString("type_name"), resultSet.getString("display_name"));
 					this.accountTypeToTypeIdMap.put(accountType, resultSet.getInt("account_type_id"));
@@ -197,43 +199,46 @@ public final class CommunicationsManager {
 		}
 
 		CaseDbTransaction trans = db.beginTransaction();
-		Statement s = null;
-		ResultSet rs = null;
 		try {
-			s = trans.getConnection().createStatement();
-			rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
-			if (!rs.next()) {
-				rs.close();
+			CaseDbConnection conn = trans.getConnection();
 
-				s.execute("INSERT INTO account_types (type_name, display_name) VALUES ( '" + accountTypeName + "', '" + displayName + "')"); //NON-NLS
+			// Cached on the connection — do not close.
+			PreparedStatement selectStmt = conn.getPreparedStatement(
+					"SELECT account_type_id, type_name, display_name FROM account_types WHERE type_name = ?", //NON-NLS
+					Statement.NO_GENERATED_KEYS);
+			selectStmt.setString(1, accountTypeName);
+			try (ResultSet rs = conn.executeQuery(selectStmt)) {
+				if (!rs.next()) {
+					// Not found — insert. Cached on the connection — do not close.
+					PreparedStatement insertStmt = conn.getPreparedStatement(
+							"INSERT INTO account_types (type_name, display_name) VALUES (?, ?)", //NON-NLS
+							Statement.RETURN_GENERATED_KEYS);
+					insertStmt.setString(1, accountTypeName);
+					insertStmt.setString(2, displayName);
+					conn.executeUpdate(insertStmt);
 
-				// Read back the typeID
-				rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
-				rs.next();
+					// Read back the typeID — reuse the same cached select statement.
+					selectStmt.setString(1, accountTypeName);
+					try (ResultSet rs2 = conn.executeQuery(selectStmt)) {
+						rs2.next();
+						int typeID = rs2.getInt("account_type_id");
+						accountType = new Account.Type(rs2.getString("type_name"), rs2.getString("display_name"));
+						this.accountTypeToTypeIdMap.put(accountType, typeID);
+						this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
+					}
 
-				int typeID = rs.getInt("account_type_id");
-				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-
-				this.accountTypeToTypeIdMap.put(accountType, typeID);
-				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
-
-				trans.commit();
-
-				return accountType;
-			} else {
-				int typeID = rs.getInt("account_type_id");
-
-				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-				this.accountTypeToTypeIdMap.put(accountType, typeID);
-
-				return accountType;
+					trans.commit();
+					return accountType;
+				} else {
+					int typeID = rs.getInt("account_type_id");
+					accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
+					this.accountTypeToTypeIdMap.put(accountType, typeID);
+					return accountType;
+				}
 			}
 		} catch (SQLException ex) {
 			trans.rollback();
 			throw new TskCoreException("Error adding account type", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
 		}
 	}
 
@@ -768,20 +773,21 @@ public final class CommunicationsManager {
 	public Map<AccountPair, Long> getRelationshipCountsPairwise(Set<AccountDeviceInstance> accounts, CommunicationsFilter filter) throws TskCoreException {
 
 		Set<Long> accountIDs = new HashSet<Long>();
-		Set<String> accountDeviceIDs = new HashSet<String>();
+		List<String> deviceIdList = new ArrayList<>();
 		for (AccountDeviceInstance adi : accounts) {
 			accountIDs.add(adi.getAccount().getAccountID());
-			accountDeviceIDs.add("'" + adi.getDeviceId() + "'");
+			deviceIdList.add(adi.getDeviceId());
 		}
-		//set up applicable filters 
+		//set up applicable filters
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
 				CommunicationsFilter.DateRangeFilter.class.getName(),
 				CommunicationsFilter.DeviceFilter.class.getName(),
 				CommunicationsFilter.RelationshipTypeFilter.class.getName()
 		));
 
-		String accountIDsCSL = CommManagerSqlStringUtils.buildCSVString(accountIDs);
-		String accountDeviceIDsCSL = CommManagerSqlStringUtils.buildCSVString(accountDeviceIDs);
+		String accountIDsCSL = CommManagerSqlStringUtils.buildLongCSVString(accountIDs);
+		// Build one ? placeholder per device ID; values set on the PreparedStatement below.
+		String deviceIdPlaceholders = String.join(",", Collections.nCopies(deviceIdList.size(), "?"));
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 		final String queryString
@@ -812,7 +818,7 @@ public final class CommunicationsManager {
 				+ "		ON accounts2.account_type_id = account_types2.account_type_id"
 				+ " WHERE (( relationships.account1_id IN (" + accountIDsCSL + ")) "
 				+ "		AND ( relationships.account2_id IN ( " + accountIDsCSL + " ))"
-				+ "		AND ( data_source_info.device_id IN (" + accountDeviceIDsCSL + "))) "
+				+ "		AND ( data_source_info.device_id IN (" + deviceIdPlaceholders + "))) "
 				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
 				+ "  GROUP BY data_source_info.device_id, "
 				+ "		accounts1.account_id, "
@@ -825,32 +831,39 @@ public final class CommunicationsManager {
 		Map<AccountPair, Long> results = new HashMap<AccountPair, Long>();
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString);) { //NON-NLS
-
-			while (rs.next()) {
-				//make account 1
-				Account.Type type1 = new Account.Type(rs.getString("type_name1"), rs.getString("display_name1"));
-				AccountDeviceInstance adi1 = new AccountDeviceInstance(new Account(rs.getLong("account1_id"), type1,
-						rs.getString("account1_unique_identifier")),
-						rs.getString("device_id"));
-
-				//make account 2
-				Account.Type type2 = new Account.Type(rs.getString("type_name2"), rs.getString("display_name2"));
-				AccountDeviceInstance adi2 = new AccountDeviceInstance(new Account(rs.getLong("account2_id"), type2,
-						rs.getString("account2_unique_identifier")),
-						rs.getString("device_id"));
-
-				AccountPair relationshipKey = new AccountPair(adi1, adi2);
-				long count = rs.getLong("count");
-
-				//merge counts for relationships that have the accounts flipped.
-				Long oldCount = results.get(relationshipKey);
-				if (oldCount != null) {
-					count += oldCount;
+		try (CaseDbConnection connection = db.getConnection()) {
+			PreparedStatement s = connection.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
+			try {
+				for (int i = 0; i < deviceIdList.size(); i++) {
+					s.setString(i + 1, deviceIdList.get(i));
 				}
-				results.put(relationshipKey, count);
+				try (ResultSet rs = connection.executeQuery(s)) { //NON-NLS
+					while (rs.next()) {
+						//make account 1
+						Account.Type type1 = new Account.Type(rs.getString("type_name1"), rs.getString("display_name1"));
+						AccountDeviceInstance adi1 = new AccountDeviceInstance(new Account(rs.getLong("account1_id"), type1,
+								rs.getString("account1_unique_identifier")),
+								rs.getString("device_id"));
+
+						//make account 2
+						Account.Type type2 = new Account.Type(rs.getString("type_name2"), rs.getString("display_name2"));
+						AccountDeviceInstance adi2 = new AccountDeviceInstance(new Account(rs.getLong("account2_id"), type2,
+								rs.getString("account2_unique_identifier")),
+								rs.getString("device_id"));
+
+						AccountPair relationshipKey = new AccountPair(adi1, adi2);
+						long count = rs.getLong("count");
+
+						//merge counts for relationships that have the accounts flipped.
+						Long oldCount = results.get(relationshipKey);
+						if (oldCount != null) {
+							count += oldCount;
+						}
+						results.put(relationshipKey, count);
+					}
+				}
+			} finally {
+				closeStatement(s);
 			}
 			return results;
 		} catch (SQLException ex) {
@@ -880,7 +893,7 @@ public final class CommunicationsManager {
 		long account_id = accountDeviceInstance.getAccount().getAccountID();
 
 		// Get the list of Data source objects IDs correpsonding to this DeviceID.
-		String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildCSVString(
+		String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildLongCSVString(
 				db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
 
 		// set up applicable filters
@@ -959,7 +972,7 @@ public final class CommunicationsManager {
 		List<String> adiSQLClauses = new ArrayList<>();
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
 			final Long accountID = entry.getKey();
-			String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildCSVString(entry.getValue());
+			String datasourceObjIdsCSV = CommManagerSqlStringUtils.buildLongCSVString(entry.getValue());
 			
 			adiSQLClauses.add(
 					"( "
@@ -968,7 +981,7 @@ public final class CommunicationsManager {
 					+ " OR relationships.account2_id = " + accountID + " ) )"
 			);
 		}
-		String adiSQLClause = CommManagerSqlStringUtils.joinAsStrings(adiSQLClauses, " OR ");
+		String adiSQLClause = String.join(" OR ", adiSQLClauses);
 		
 		if(adiSQLClause.isEmpty()) {
 			LOGGER.log(Level.SEVERE, "There set of AccountDeviceInstances had no valid data source ids.");
@@ -1058,7 +1071,7 @@ public final class CommunicationsManager {
 				+ "		  data_source_obj_id"
 				+ " FROM account_relationships as relationships"
 				+ " WHERE %2$1s = " + accountDeviceInstance.getAccount().getAccountID() + ""
-				+ " AND data_source_obj_id IN (" + CommManagerSqlStringUtils.buildCSVString(dataSourceObjIds) + ")"
+				+ " AND data_source_obj_id IN (" + CommManagerSqlStringUtils.buildLongCSVString(dataSourceObjIds) + ")"
 				+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
 
 		String innerQuery1 = String.format(innerQueryTemplate, "account1_id", "account2_id");

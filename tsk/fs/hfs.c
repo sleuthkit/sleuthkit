@@ -2698,6 +2698,14 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
+    // Need at least 8 bytes: one 4-byte entry plus the 4-byte end-of-data marker.
+    // Values < 4 would underflow the tableSize calculation below.
+    if (tableDataSize < 8) {
+        error_returned
+            (" %s: offset table data size %u is too small", __func__, tableDataSize);
+        return 0;
+    }
+
     offsetTableData = tsk_malloc(tableDataSize);
     if (offsetTableData == NULL) {
         error_returned
@@ -4657,9 +4665,28 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
             nameOffset = tsk_gets16(fs_info->endian, item->resNameOffset);
             nameBuffer = NULL;
 
+            // BC: nameOffset of -1 seems to mean there is no name
             if (hasNameList && nameOffset != -1) {
+                uint32_t nameListSize = mapLength - nameListOffset;
+
+                // do more bounds checking on nameOffset
+                if (nameOffset < 0 || (uint32_t)nameOffset >= nameListSize) {
+                    error_returned
+                        ("hfs_parse_resource_fork: name offset out of bounds");
+                    free_res_descriptor(result);
+                    return NULL;
+                }
+
                 char *name = nameListBegin + nameOffset;
                 uint8_t nameLen = (uint8_t) name[0];
+
+                // sanity check nameLen
+                if ((uint32_t)nameOffset + 1 + nameLen > nameListSize) {
+                    error_returned
+                        ("hfs_parse_resource_fork: name extends past end of name list");
+                    free_res_descriptor(result);
+                    return NULL;
+                }
                 nameBuffer = tsk_malloc(nameLen + 1);
                 if (nameBuffer == NULL) {
                     error_returned

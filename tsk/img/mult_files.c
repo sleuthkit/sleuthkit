@@ -194,6 +194,7 @@ tsk_img_findFiles(const TSK_TCHAR * a_startingName, int *a_numFound)
                 (TSK_TCHAR **) tsk_realloc(retNames,
                 fileCount * sizeof(TSK_TCHAR *));
         if (tmpNames == NULL) {
+            free(nextName);
             if (retNames != NULL)
                 free(retNames);
             return NULL;

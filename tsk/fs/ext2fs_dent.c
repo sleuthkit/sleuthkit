@@ -334,7 +334,7 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_OFF_T offset = 0;
 
     while (size > 0) {
-        ssize_t len = (a_fs->block_size < size) ? a_fs->block_size : size;
+        ssize_t len = (a_fs->block_size < size) ? (ssize_t)a_fs->block_size : (ssize_t)size;
         ssize_t cnt = tsk_fs_file_read(fs_dir->fs_file, offset, dirbuf, len, (TSK_FS_FILE_READ_FLAG_ENUM)0);
         if (cnt != len) {
             tsk_error_reset();

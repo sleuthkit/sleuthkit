@@ -118,7 +118,6 @@ static void
         tsk_error_set_errstr("vmdk_image_close: unable to close handle - %s", errmsg);
     }
 
-    libvmdk_handle_free(&(vmdk_info->handle), NULL);
     if( libvmdk_handle_free(&(vmdk_info->handle), &vmdk_error ) != 1 )
     {
         tsk_error_reset();

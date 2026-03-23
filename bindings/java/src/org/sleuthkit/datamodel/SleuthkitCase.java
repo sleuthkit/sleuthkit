@@ -1671,8 +1671,12 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				long objID = resultSet.getLong("obj_id");
 				String name = resultSet.getString("name");
-				updstatement.executeUpdate("UPDATE tsk_files SET extension = '" + escapeSingleQuotes(extractExtension(name)) + "' "
-						+ "WHERE obj_id = " + objID);
+				if (name != null) {
+					updstatement.executeUpdate("UPDATE tsk_files SET extension = '" + escapeSingleQuotes(extractExtension(name)) + "' "
+							+ "WHERE obj_id = " + objID);
+				} else {
+					updstatement.executeUpdate("UPDATE tsk_files SET extension = NULL WHERE obj_id = " + objID);
+				}
 			}
 
 			statement.execute("CREATE INDEX file_extension ON tsk_files ( extension )");

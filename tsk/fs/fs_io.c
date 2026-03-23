@@ -147,13 +147,13 @@ tsk_fs_read_decrypt(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_l
         TSK_OFF_T len = end - start;
 
         // Decrypt the blocks to a temp buffer
-        char * temp_buffer = tsk_malloc(len);
+        char * temp_buffer = tsk_malloc((size_t)len);
         if (temp_buffer == NULL) {
             return -1;
         }
 
         if (tsk_fs_read_block_decrypt(a_fs, start / a_fs->block_size, temp_buffer,
-                              len, crypto_id) != len) {
+                              (size_t)len, crypto_id) != len) {
             free(temp_buffer);
             return -1;
         }
