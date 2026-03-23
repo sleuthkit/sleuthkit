@@ -10610,18 +10610,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates file object from a SQL query result set of rows from the
-	 * tsk_files table. Assumes that the query was of the form "SELECT * FROM
-	 * tsk_files WHERE XYZ".
-	 *
-	 * @param rs ResultSet to get content from. Caller is responsible for
-	 *           closing it.
-	 *
-	 * @return list of file objects from tsk_files table containing the files
-	 *
-	 * @throws SQLException if the query fails
-	 */
-	/**
 	 * Creates AbstractFile objects for the result set of a tsk_files table
 	 * query of the form "SELECT * FROM tsk_files WHERE XYZ".
 	 *
