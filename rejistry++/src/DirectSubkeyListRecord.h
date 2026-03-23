@@ -53,7 +53,7 @@ namespace Rejistry {
     private:
         static const uint16_t LIST_START_OFFSET = 0x04;
 
-        uint32_t _itemSize;
+        uint32_t _itemSize = 0;
 
     protected:
         DirectSubkeyListRecord() {};

@@ -80,7 +80,10 @@ namespace Rejistry {
     }
 
     RegistryKey * RegistryHiveFile::getRoot() const {
-        return new RegistryKey(getHeader()->getRootNKRecord());
+        REGFHeader *header = getHeader();
+        NKRecord *nkRecord = header->getRootNKRecord();
+        delete header;
+        return new RegistryKey(nkRecord);
     }
 
     REGFHeader * RegistryHiveFile::getHeader() const {

@@ -126,7 +126,7 @@ namespace Rejistry {
         HBIN(const HBIN &);
         HBIN& operator=(const HBIN &);
 
-        const REGFHeader * _header;
+        const REGFHeader * _header = NULL;
     };
 };
 

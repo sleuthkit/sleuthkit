@@ -58,7 +58,7 @@ namespace Rejistry {
             try {
                 _buffer.resize(length);
             } 
-            catch (std::bad_alloc &e)
+            catch (std::bad_alloc &)
             {
                 throw RegistryParseException("Cannot allocate memory for registry byte buffer.");
             }
@@ -73,6 +73,10 @@ namespace Rejistry {
         }
 
         /**
+         *  This method is based off of https://docs.oracle.com/javase/8/docs/api/java/nio/ByteBuffer.html#get-byte:A-int-int-
+         * * @param dst: destination byte array to write data to
+         * * @param offset: Offset within the destination byte array to start writting data to
+         * * @param length: the number of bytes to write to the destination byte array
          * Throws exception if offset or length are too large. */
         void ByteBuffer::get(ByteArray& dst, const uint32_t offset, const uint32_t length) {
             if (length == 0) {
@@ -80,24 +84,20 @@ namespace Rejistry {
                 return;
             }
 
-            if (offset > dst.size()) {
+            if (offset >= dst.size()) {
                 throw RegistryParseException("Offset is greater than destination buffer size.");
             }
 
-            if ((dst.size() - offset) > length) {
+            if ((dst.size() - offset) < length) {
                 throw RegistryParseException("Length is greater than available space in destination buffer.");
             }
 
-            if ((_position + offset) > _limit) {
-                throw RegistryParseException("Starting position is beyond end of buffer.");
-            }
-
-            if ((_position + offset + length) > _limit) {
+            if ((_position + length) > _limit) {
                 throw RegistryParseException("Number of requested bytes exceeds buffer size.");
             }
 
-            memcpy(&dst[0], &_buffer[_position + offset], length);
-            _position += offset;
+            memcpy(&dst[offset], &_buffer[_position], length);
+            _position += length;
         }
 
         /**

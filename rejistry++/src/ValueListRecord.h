@@ -29,6 +29,7 @@
 #define _REJISTRY_VALUELISTRECORD_H
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 // Local includes
@@ -41,7 +42,7 @@ namespace Rejistry {
      */
     class ValueListRecord : public Record {
     public:
-        typedef ValueListRecord * ValueListRecordPtr;
+        typedef std::unique_ptr<ValueListRecord> ValueListRecordPtr;
 
         ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues);
         
@@ -69,7 +70,7 @@ namespace Rejistry {
     private:
         static const uint16_t VALUE_LIST_OFFSET = 0x00;
 
-        uint32_t _numValues;
+        uint32_t _numValues = 0;
 
     protected:
         ValueListRecord() {};

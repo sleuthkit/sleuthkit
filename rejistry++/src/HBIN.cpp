@@ -34,6 +34,7 @@ namespace Rejistry {
     HBIN::HBIN(const REGFHeader * header, RegistryByteBuffer * buf, uint32_t offset) : BinaryBlock(*buf, offset) {
         _header = header;
 
+        // offset is applied within getDWord by BinaryBlock
         if (getDWord(0x0) != 0x6E696268) {
             throw RegistryParseException("Invalid HBIN magic header.");
         }
@@ -51,13 +52,19 @@ namespace Rejistry {
     Cell::CellPtrList HBIN::getCells() const {
         uint32_t nextCellOffset = FIRST_CELL_OFFSET;
         Cell::CellPtrList cellList;
+        uint32_t hbinSize = getRelativeOffsetNextHBIN();
 
         do {
             Cell::CellPtr nextCell = new Cell(_buf, getAbsoluteOffset(nextCellOffset));
+            uint32_t cellLen = nextCell->getLength();
+            if (cellLen == 0 || nextCellOffset + cellLen < nextCellOffset) {
+                delete nextCell;
+                throw RegistryParseException("Invalid cell length.");
+            }
             cellList.push_back(nextCell);
-            nextCellOffset += nextCell->getLength();
+            nextCellOffset += cellLen;
         }
-        while (nextCellOffset < getRelativeOffsetNextHBIN());
+        while (nextCellOffset < hbinSize);
 
         return cellList;
     }

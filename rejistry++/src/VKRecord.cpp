@@ -132,7 +132,7 @@ namespace Rejistry {
                     throw RegistryParseException("Failed to create Cell for Value data.");
                 }
                 try {
-                    std::unique_ptr< DBRecord > db(c->getDBRecord());
+                    auto db = c->getDBRecord();
                     if (db.get() == NULL) {
                         throw RegistryParseException("Failed to create Cell for DBRecord.");
                     }

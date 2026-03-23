@@ -50,8 +50,8 @@ namespace Rejistry {
     protected:
         BinaryBlock() {};
 
-        RegistryByteBuffer * _buf;
-        uint32_t _offset;
+        RegistryByteBuffer * _buf = 0;
+        uint32_t _offset = 0;
 
         uint16_t getWord(uint32_t offset) const;
 
