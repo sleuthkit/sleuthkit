@@ -32,22 +32,17 @@
 
 namespace Rejistry {
     RegistryKey::RegistryKey(const RegistryKey& rk) {
-        _nk = new NKRecord(*(rk._nk));
+        _nk = std::make_unique<NKRecord>(*(rk._nk));
     }
 
     RegistryKey& RegistryKey::operator=(const RegistryKey & rk) {
         if (this != &rk) {
-            delete _nk;
-            _nk = new NKRecord(*(rk._nk));
+            _nk = std::make_unique<NKRecord>(*(rk._nk));
         }
         return *this;
     }
 
     RegistryKey::~RegistryKey() {
-        if (_nk != NULL) {
-            delete _nk;
-            _nk = NULL;
-        }
     }
 
     uint64_t RegistryKey::getTimestamp() const {
@@ -59,15 +54,12 @@ namespace Rejistry {
         return _nk->getName();
     }
 
-    /**
-     * Caller is responsible for freeing the key
-     */
-    RegistryKey::RegistryKeyPtr RegistryKey::getParent() const {
+    std::unique_ptr<RegistryKey> RegistryKey::getParent() const {
         if (!_nk->hasParentRecord()) {
             throw NoSuchElementException("Registry Key has no parent.");
         }
 
-        return new RegistryKey(_nk->getParentRecord());
+        return std::make_unique<RegistryKey>(_nk->getParentRecord());
     }
 
     /**
@@ -79,7 +71,7 @@ namespace Rejistry {
         NKRecord::NKRecordPtrList nkRecordList = subkeyListRecordPtr->getSubkeys();
         NKRecord::NKRecordPtrList::iterator it;
         for (it = nkRecordList.begin(); it != nkRecordList.end(); ++it) {
-            subkeys.push_back(new RegistryKey(*it));
+            subkeys.push_back(new RegistryKey(std::unique_ptr<NKRecord>(*it)));
         }
         return subkeys;
     }
@@ -100,9 +92,7 @@ namespace Rejistry {
      * Caller is responsible for freeing returned key
      */
     RegistryKey::RegistryKeyPtr RegistryKey::getSubkey(const std::wstring& name) const {
-        SubkeyListRecord::SubkeyListRecordPtr subkeyListRecordPtr = _nk->getSubkeyList();
-        Rejistry::NKRecord *nkRecord = subkeyListRecordPtr->getSubkey(name);
-        return new RegistryKey(nkRecord);
+        return new RegistryKey(std::unique_ptr<NKRecord>(_nk->getSubkeyList()->getSubkey(name)));
     }
 
     /**
@@ -110,11 +100,11 @@ namespace Rejistry {
      */
     RegistryValue::RegistryValuePtrList RegistryKey::getValueList() const {
         RegistryValue::RegistryValuePtrList values;
-        auto valueListRecord = _nk->getValueList();
-        VKRecord::VKRecordPtrList vkRecordList = valueListRecord->getValues();
-        for (VKRecord::VKRecordPtrList::iterator it = vkRecordList.begin(); it != vkRecordList.end(); ++it) {
-            values.push_back(new RegistryValue(*it));
+
+        for (auto& valueRecord : _nk->getValueList()->getValues()) { 
+            values.push_back(new RegistryValue(std::move(valueRecord)));
         }
+
         return values;
     }
 
@@ -130,6 +120,6 @@ namespace Rejistry {
     RegistryValue::RegistryValuePtr RegistryKey::getValue(const std::wstring& name) const {
         auto valueListRecord = _nk->getValueList();
         Rejistry::VKRecord *vkRecord = valueListRecord->getValue(name);
-        return new RegistryValue(vkRecord);
+        return new RegistryValue(std::unique_ptr<VKRecord>(vkRecord));
     }
 };

@@ -25,6 +25,7 @@
 #include <codecvt>
 
 #include "RegistryHiveFile.h"
+#include "RegistryHiveBuffer.h"
 #include "Record.h"
 
 namespace Rejistry {
@@ -172,11 +173,9 @@ namespace Rejistry {
             std::wcout << prefix << "nkrecord number of values: " << nkRecord->getNumberOfValues() << std::endl;
             std::wcout << prefix << "nkrecord number of subkeys: " << nkRecord->getSubkeyCount() << std::endl;
 
-            VKRecord::AutoVKRecordPtrList vkList(nkRecord->getValueList()->getValues());
-            VKRecord::VKRecordPtrList::iterator vkIter;
-            for (vkIter = vkList.begin(); vkIter != vkList.end(); ++vkIter) {
-                std::wcout << prefix << "  value: " << (*vkIter)->getName() << std::endl;
-                printVKRecord((*vkIter), L"    " + prefix);
+            for (auto& vkRecord : nkRecord->getValueList()->getValues()) {
+                std::wcout << prefix << "  value: " << vkRecord->getName() << std::endl;
+                printVKRecord(vkRecord.release(), L"    " + prefix);
             }
         }
         catch (std::exception& ex) {
@@ -197,40 +196,34 @@ namespace Rejistry {
 
     }
 
-    void processRegistryFile(wchar_t * regFilePath) {
+    void processRegistryHive(RegistryHive& hive) {
         try {
-            RegistryHiveFile registryFile(regFilePath);
-            REGFHeader * header = registryFile.getHeader();
+            auto header = hive.getHeader();
             std::wcout << "hive name: " << header->getHiveName() << std::endl;
             std::wcout << "major version: " << header->getMajorVersion() << std::endl;
             std::wcout << "minor version: " << header->getMinorVersion() << std::endl;
-            std::wcout << "hive sync: " << (header->isSynchronized() == true ? "Yes" : "No") << std::endl;
+            std::wcout << "hive sync: " << (header->isSynchronized() ? "Yes" : "No") << std::endl;
 
-            HBIN::AutoHBINPtrList hbinList (header->getHBINs());
+            auto hbinList(header->getHBINs());
             std::wcout << "number of hbins: " << hbinList.size() << std::endl;
-
             std::wcout << "last hbin offset: " << header->getLastHbinOffset() << std::endl;
 
-            HBIN::HBINPtrList::iterator it;
             int i = 0;
-            for (it = hbinList.begin(); it != hbinList.end(); ++it) {
-                std::wcout << "hbin " << i << ", relative offset first hbin: " << (*it)->getRelativeOffsetFirstHBIN() << std::endl;
-                std::wcout << "hbin " << i << ", relative offset next hbin: " << (*it)->getRelativeOffsetNextHBIN() << std::endl;
+            for (auto& hbin : hbinList) {
+                std::wcout << "hbin " << i << ", relative offset first hbin: " << hbin->getRelativeOffsetFirstHBIN() << std::endl;
+                std::wcout << "hbin " << i << ", relative offset next hbin: " << hbin->getRelativeOffsetNextHBIN() << std::endl;
 
-                Cell::AutoCellPtrList cellList((*it)->getCells());
-                Cell::CellPtrList::iterator cellIter;
                 int j = 0;
-                for (cellIter = cellList.begin(); cellIter != cellList.end(); ++cellIter) {
-                    std::wcout << "hbin " << i << ", cell " << j << ", is allocated: " << ((*cellIter)->isActive() ? "yes" : "no") << std::endl;
-                    std::wcout << "hbin " << i << ", cell " << j << ", length: " << (*cellIter)->getLength() << std::endl;
+                for (auto& cell : hbin->getCells()) {
+                    std::wcout << "hbin " << i << ", cell " << j << ", is allocated: " << (cell->isActive() ? "yes" : "no") << std::endl;
+                    std::wcout << "hbin " << i << ", cell " << j << ", length: " << cell->getLength() << std::endl;
                     j++;
                 }
-
                 i++;
             }
 
-            printNKRecord(header->getRootNKRecord(), L"root ");
-            
+            printNKRecord(header->getRootNKRecord().release(), L"root ");
+
             NKRecord::AutoNKRecordPtrList nkRecordList((header->getRootNKRecord()->getSubkeyList()->getSubkeys()));
             NKRecord::NKRecordPtrList::iterator keyIter = nkRecordList.begin();
             for (; keyIter != nkRecordList.end(); ++keyIter) {
@@ -238,7 +231,45 @@ namespace Rejistry {
                 printNKRecord((*keyIter), L"    ");
             }
 
-            recurseNKRecord(header->getRootNKRecord(), L"");
+            recurseNKRecord(header->getRootNKRecord().release(), L"");
+        }
+        catch (std::exception& ex) {
+            std::wcout << "processRegistryHive exception: " << ex.what() << std::endl;
+        }
+    }
+
+    void processRegistryBuffer(wchar_t * regFilePath) {
+        // Read entire file into memory
+        std::ifstream file(regFilePath, std::ios::binary | std::ios::ate);
+        if (!file.is_open()) {
+            std::wcout << "processRegistryBuffer: failed to open file" << std::endl;
+            return;
+        }
+
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::vector<uint8_t> buffer(static_cast<size_t>(size));
+        if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+            std::wcout << "processRegistryBuffer: failed to read file" << std::endl;
+            return;
+        }
+
+        try {
+            std::wcout << L"=== RegistryHiveBuffer ===" << std::endl;
+            RegistryHiveBuffer hiveBuffer(buffer.data(), static_cast<uint32_t>(size));
+            processRegistryHive(hiveBuffer);
+        }
+        catch (std::exception& ex) {
+            std::wcout << "processRegistryBuffer exception: " << ex.what() << std::endl;
+        }
+    }
+
+    void processRegistryFile(wchar_t * regFilePath) {
+        try {
+            std::wcout << L"=== RegistryHiveFile ===" << std::endl;
+            RegistryHiveFile registryFile(regFilePath);
+            processRegistryHive(registryFile);
         }
         catch (std::exception& ex) {
             std::wcout << "processRegistryFile exception: " << ex.what() << std::endl;
@@ -254,5 +285,7 @@ int wmain(int argc, wchar_t *argv[], wchar_t *envp[])
     }
 
     std::wcout.imbue(std::locale(std::wcout.getloc(), new std::codecvt_utf8_utf16<wchar_t>()));
+
     Rejistry::processRegistryFile(argv[1]);
+    Rejistry::processRegistryBuffer(argv[1]);
 }

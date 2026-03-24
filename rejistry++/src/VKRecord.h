@@ -47,6 +47,7 @@ namespace Rejistry {
 
         typedef VKRecord * VKRecordPtr;
         typedef std::vector< VKRecordPtr > VKRecordPtrList;
+        typedef std::vector< std::unique_ptr<VKRecord> > VKRecordUniqPtrList;
 
         /**
             The AutoNKRecordPtrList class should be used by clients to hold lists of

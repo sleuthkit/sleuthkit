@@ -45,6 +45,8 @@ namespace Rejistry {
             _offset = offset;
         }
 
+        virtual ~BinaryBlock() {}
+
     private:
 
     protected:

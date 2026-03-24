@@ -110,6 +110,4 @@ namespace Rejistry {
             return L"Unrecognized type";
         }
     }
-
-
 };

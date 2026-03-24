@@ -65,7 +65,7 @@ namespace Rejistry {
             throw RegistryParseException(getErrorMessage().c_str());
         }
 
-        _buffer = new RegistryByteBuffer(new ByteBuffer((const uint8_t*)mappedFile, (const uint32_t)fileSize.LowPart));
+        _buffer = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>((const uint8_t*)mappedFile, (const uint32_t)fileSize.LowPart));
 
         UnmapViewOfFile(mappedFile);
         CloseHandle(fileMappingHandle);
@@ -73,31 +73,28 @@ namespace Rejistry {
     }
 
     RegistryHiveFile::~RegistryHiveFile() {
-        if (_buffer != NULL) {
-            delete _buffer;
-            _buffer = NULL;
-        }
     }
 
     RegistryKey * RegistryHiveFile::getRoot() const {
-        REGFHeader *header = getHeader();
-        NKRecord *nkRecord = header->getRootNKRecord();
-        delete header;
-        return new RegistryKey(nkRecord);
+        return new RegistryKey(getHeader()->getRootNKRecord());
     }
 
-    REGFHeader * RegistryHiveFile::getHeader() const {
-        return new REGFHeader(*_buffer, 0x0);
+    std::unique_ptr<REGFHeader> RegistryHiveFile::getHeader() const {
+        return std::make_unique<REGFHeader>(*_buffer, 0x0);
     }
 
     std::string RegistryHiveFile::getErrorMessage() const {
         DWORD errCode = GetLastError();
-        LPVOID lpMsgBuf;
+        LPVOID lpMsgBuf = NULL;
 
-        FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        DWORD result = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
             FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
             NULL, errCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             (LPSTR) &lpMsgBuf, 0, NULL);
+
+        if (lpMsgBuf == nullptr) {
+            return "Unknown error code: " + std::to_string(errCode);
+        }
 
         std::string errMsg((LPSTR)lpMsgBuf);
         LocalFree(lpMsgBuf);

@@ -36,24 +36,18 @@ namespace Rejistry {
     * @throws RegistryParseException if memory can't be allocated
     */
     RegistryHiveBuffer::RegistryHiveBuffer(const uint8_t * buffer, const uint32_t size) {
-        _buffer = new RegistryByteBuffer(new ByteBuffer(buffer, size));
+        _buffer = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(buffer, size));
     }
 
     RegistryHiveBuffer::~RegistryHiveBuffer() {
-        if (_buffer != NULL) {
-            delete _buffer;
-            _buffer = NULL;
-        }
     }
 
     RegistryKey * RegistryHiveBuffer::getRoot() const {
-        REGFHeader *header = getHeader();
-        Rejistry::NKRecord *nkRecord = header->getRootNKRecord();
-        delete header;
-        return new RegistryKey(nkRecord);
+        auto header = getHeader();
+        return new RegistryKey(header->getRootNKRecord());
     }
 
-    REGFHeader * RegistryHiveBuffer::getHeader() const {
-        return new REGFHeader(*_buffer, 0x0);
+    std::unique_ptr<REGFHeader> RegistryHiveBuffer::getHeader() const {
+        return std::make_unique< REGFHeader >(*_buffer, 0x0);
     }
 };

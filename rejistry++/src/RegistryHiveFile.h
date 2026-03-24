@@ -44,7 +44,7 @@ namespace Rejistry {
         virtual ~RegistryHiveFile();
 
         virtual RegistryKey * getRoot() const;
-        virtual REGFHeader * getHeader() const;
+        virtual std::unique_ptr<REGFHeader> getHeader() const;
 
     private:
         RegistryHiveFile();
@@ -52,7 +52,7 @@ namespace Rejistry {
         RegistryHiveFile& operator=(const RegistryHiveFile &);
 
 
-        RegistryByteBuffer * _buffer;
+        std::unique_ptr<RegistryByteBuffer> _buffer;
 
         std::string getErrorMessage() const;
     };

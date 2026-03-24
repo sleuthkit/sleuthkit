@@ -41,12 +41,12 @@ namespace Rejistry {
             uint32_t relativeOffset = LIST_START_OFFSET + (index * _itemSize);
             uint32_t offset = getDWord(relativeOffset);
             uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
-            std::unique_ptr< Cell > c(new Cell(_buf, parentOffset));
+            auto c = std::make_unique< Cell >(_buf, parentOffset);
             if (c.get() == NULL) {
                 throw RegistryParseException("Failed to create Cell for key record.");
             }
 
-            subkeyList.push_back(c->getNKRecord());
+            subkeyList.push_back(c->getNKRecord().release());
         }
 
         return subkeyList;        

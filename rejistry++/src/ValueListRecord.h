@@ -52,7 +52,7 @@ namespace Rejistry {
          * @returns The list of value records. The caller is responsible
          * for freeing these records.
          */
-        virtual VKRecord::VKRecordPtrList getValues() const;
+        virtual VKRecord::VKRecordUniqPtrList getValues() const;
 
         /**
          * Fetch the value with the given name from the value list.

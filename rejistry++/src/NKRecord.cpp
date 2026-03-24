@@ -69,7 +69,7 @@ namespace Rejistry {
             throw RegistryParseException("Invalid class name offset.");
         }
         uint32_t classnameOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
-        std::unique_ptr< Cell > c(new Cell(_buf, classnameOffset));
+        auto c = std::make_unique< Cell >(_buf, classnameOffset);
         if (c.get() == NULL) {
             throw RegistryParseException("Failed to create cell for class name.");
         }
@@ -123,13 +123,13 @@ namespace Rejistry {
         }
     }
 
-    NKRecord::NKRecordPtr NKRecord::getParentRecord() const {
+    std::unique_ptr<NKRecord> NKRecord::getParentRecord() const {
         int32_t offset = (int32_t)getDWord(PARENT_RECORD_OFFSET_OFFSET);
         if (offset < 0) {
             throw RegistryParseException("Invalid parent record offset.");
         }
         uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
-        std::unique_ptr< Cell > c(new Cell(_buf, parentOffset));
+        auto c = std::make_unique< Cell >(_buf, parentOffset);
 
         if (c.get() == NULL) {
             throw RegistryParseException("Failed to create Cell for parent.");
@@ -161,7 +161,7 @@ namespace Rejistry {
         uint32_t offset = (uint32_t)getDWord(SUBKEY_LIST_OFFSET_OFFSET);
         offset += REGFHeader::FIRST_HBIN_OFFSET;
 
-        std::unique_ptr< Cell > c(new Cell(_buf, offset));
+        auto c = std::make_unique< Cell >(_buf, offset);
 
         if (c.get() == NULL) {
             throw RegistryParseException("Failed to create Cell for value list record.");
@@ -178,7 +178,7 @@ namespace Rejistry {
         uint32_t offset = (uint32_t)getDWord(VALUE_LIST_OFFSET_OFFSET);
         offset += REGFHeader::FIRST_HBIN_OFFSET;
 
-        std::unique_ptr< Cell > c(new Cell(_buf, offset));
+        auto c = std::make_unique< Cell >(_buf, offset);
 
         if (c.get() == NULL) {
             throw RegistryParseException("Failed to create Cell for value list record.");

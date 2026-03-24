@@ -46,7 +46,7 @@ namespace Rejistry {
         typedef RegistryValue * RegistryValuePtr;
         typedef std::vector<RegistryValuePtr> RegistryValuePtrList;
 
-        RegistryValue(VKRecord* vk) { _vk = vk; }
+        RegistryValue(std::unique_ptr<VKRecord> vk) { _vk = std::move(vk); }
         RegistryValue(const RegistryValue& );
 
         virtual ~RegistryValue();
@@ -80,7 +80,7 @@ namespace Rejistry {
         RegistryValue();
         RegistryValue& operator=(const RegistryValue &);
 
-        VKRecord * _vk;
+        std::unique_ptr<VKRecord> _vk;
     };
 };
 

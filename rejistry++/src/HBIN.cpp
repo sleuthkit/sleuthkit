@@ -40,7 +40,6 @@ namespace Rejistry {
         }
     }
         
-
     uint32_t HBIN::getRelativeOffsetNextHBIN() const {
         return getDWord(NEXT_HBIN_OFFSET_OFFSET);
     }
@@ -49,19 +48,18 @@ namespace Rejistry {
         return getDWord(FIRST_HBIN_OFFSET_OFFSET);
     }
 
-    Cell::CellPtrList HBIN::getCells() const {
+    Cell::CellUniqPtrList HBIN::getCells() const {
         uint32_t nextCellOffset = FIRST_CELL_OFFSET;
-        Cell::CellPtrList cellList;
         uint32_t hbinSize = getRelativeOffsetNextHBIN();
 
+        std::vector <Cell::CellUniqPtr> cellList;
         do {
-            Cell::CellPtr nextCell = new Cell(_buf, getAbsoluteOffset(nextCellOffset));
+            auto nextCell =  std::make_unique<Cell>(_buf, getAbsoluteOffset(nextCellOffset));
             uint32_t cellLen = nextCell->getLength();
             if (cellLen == 0 || nextCellOffset + cellLen < nextCellOffset) {
-                delete nextCell;
                 throw RegistryParseException("Invalid cell length.");
             }
-            cellList.push_back(nextCell);
+            cellList.push_back(std::move(nextCell));
             nextCellOffset += cellLen;
         }
         while (nextCellOffset < hbinSize);
@@ -69,7 +67,7 @@ namespace Rejistry {
         return cellList;
     }
 
-    Cell::CellPtr HBIN::getCellAtOffset(uint32_t offset) const {
-        return new Cell(_buf, getAbsoluteOffset(offset));
+    Cell::CellUniqPtr HBIN::getCellAtOffset(uint32_t offset) const {
+        return std::make_unique<Cell>(_buf, getAbsoluteOffset(offset));
     }
 };

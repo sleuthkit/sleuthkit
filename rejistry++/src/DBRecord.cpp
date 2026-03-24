@@ -46,7 +46,7 @@ namespace Rejistry {
         uint32_t offset = getDWord(INDIRECT_BLOCK_OFFSET_OFFSET);
         offset += REGFHeader::FIRST_HBIN_OFFSET;
 
-        std::unique_ptr< Cell > c(new Cell(_buf, offset));
+        auto c = std::make_unique< Cell >(_buf, offset);
         if (c.get() == NULL) {
             throw RegistryParseException("Failed to create Cell for DBRecord.");
         }

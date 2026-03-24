@@ -46,7 +46,7 @@ namespace Rejistry {
         /**
          * Get the header for this hive.
          */
-        virtual REGFHeader * getHeader() const = 0;
+        virtual std::unique_ptr<REGFHeader> getHeader() const = 0;
 
         /**
          * Virtual destructor to prevent memory leak

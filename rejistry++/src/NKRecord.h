@@ -124,10 +124,10 @@ namespace Rejistry {
 
         /**
          * Get the parent record for this key.
-         * @returns The parent record. (Caller is responsible for freeing)
+         * @returns The parent record.
          * @throws RegistryParseException.
          */
-        NKRecordPtr getParentRecord() const;
+        std::unique_ptr<NKRecord> getParentRecord() const;
 
         /**
          * @returns The number of values for this key.
