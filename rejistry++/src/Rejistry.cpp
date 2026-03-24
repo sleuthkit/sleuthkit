@@ -197,6 +197,13 @@ namespace Rejistry {
     }
 
     void processRegistryHive(RegistryHive& hive) {
+        // Save and restore stream flags so repeated calls don't inherit
+        // hex/fill state left behind by printVKRecord/dumpHexString.
+        std::ios_base::fmtflags savedFlags = std::wcout.flags();
+        std::streamsize savedWidth = std::wcout.width(0);
+        wchar_t savedFill = std::wcout.fill(L' ');
+        std::wcout << std::dec;
+
         try {
             auto header = hive.getHeader();
             std::wcout << "hive name: " << header->getHiveName() << std::endl;
@@ -236,6 +243,10 @@ namespace Rejistry {
         catch (std::exception& ex) {
             std::wcout << "processRegistryHive exception: " << ex.what() << std::endl;
         }
+
+        std::wcout.flags(savedFlags);
+        std::wcout.width(savedWidth);
+        std::wcout.fill(savedFill);
     }
 
     void processRegistryBuffer(wchar_t * regFilePath) {

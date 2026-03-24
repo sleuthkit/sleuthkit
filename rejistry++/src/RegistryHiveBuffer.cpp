@@ -43,8 +43,7 @@ namespace Rejistry {
     }
 
     RegistryKey * RegistryHiveBuffer::getRoot() const {
-        auto header = getHeader();
-        return new RegistryKey(header->getRootNKRecord());
+        return new RegistryKey(getHeader()->getRootNKRecord());
     }
 
     std::unique_ptr<REGFHeader> RegistryHiveBuffer::getHeader() const {
