@@ -2440,7 +2440,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 }
                 fs_name->next = NULL;
             }
-            if (fname->nlen > attr_len - 66) {
+            if ((uint32_t)fname->nlen * 2 > attr_len - attr_off - 66) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
