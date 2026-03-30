@@ -3,12 +3,18 @@ name: TSK Tests on Windows
 on:
   push:
     branches:
-      - '**' # This will trigger the action for all branches
+      - '**'
   pull_request:
-    branches:  # Specify the branches for which pull_request events should trigger the action
-      - main
-      - develop
-      - develop-4.14
+    branches:
+      - '**'
+
+# Cancel any in-progress run for the same branch when a new one starts.
+# This means a push to a branch that already has an open PR will cancel
+# the push-triggered run in favour of the pull_request-triggered run,
+# so only one run completes rather than two.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build:
