@@ -91,7 +91,9 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef DONE_STYLE
 
 typedef unsigned long   ulong;
+#if !defined(__cplusplus) && !defined(bool)
 typedef unsigned        bool;
+#endif
 typedef unsigned char * p_ubyte_;
 
 #ifndef TRUE

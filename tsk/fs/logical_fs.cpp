@@ -75,9 +75,9 @@ logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
  *
  * @return The converted timet
  */
+/* Commented out - used by the commented-out time fields below (search for
+ * filetime_to_timet).  Uncomment together with those call sites when needed.
 #ifdef TSK_WIN32
-static time_t
-filetime_to_timet(FILETIME const& ft) __attribute__((unused));
 static time_t
 filetime_to_timet(FILETIME const& ft)
 {
@@ -87,6 +87,7 @@ filetime_to_timet(FILETIME const& ft)
 	return ull.QuadPart / 10000000ULL - 11644473600ULL;
 }
 #endif
+*/
 
 /**
 * Check if the given path contains the folder separator
