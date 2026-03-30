@@ -148,7 +148,8 @@ uint8_t TskIsImageSupported::handleError()
         uint32_t errCode = lastError->t_errno;
 
         if (errCode == TSK_ERR_FS_ENCRYPTED || errCode == TSK_ERR_VS_ENCRYPTED) {
-            snprintf(m_encryptionDesc, sizeof(m_encryptionDesc), "%s", lastError->errstr);
+            strncpy(m_encryptionDesc, lastError->errstr, sizeof(m_encryptionDesc) - 1);
+            m_encryptionDesc[sizeof(m_encryptionDesc) - 1] = '\0';
             m_wasEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
@@ -158,24 +159,32 @@ uint8_t TskIsImageSupported::handleError()
             snprintf(m_encryptionDesc, sizeof(m_encryptionDesc), "BitLocker");
             m_wasEncryptionFound = true;
             m_bitlockerError = true;
-            snprintf(m_bitlockerDesc, sizeof(m_bitlockerDesc), "BitLocker status - %s", lastError->errstr);
+            // %.*s limits the errstr field width so prefix + errstr fits in the buffer.
+            snprintf(m_bitlockerDesc, sizeof(m_bitlockerDesc), "BitLocker status - %.*s",
+                (int)(sizeof(m_bitlockerDesc) - sizeof("BitLocker status - ")), lastError->errstr);
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
-            snprintf(m_possibleEncryptionDesc, sizeof(m_possibleEncryptionDesc), "%s", lastError->errstr);
+            strncpy(m_possibleEncryptionDesc, lastError->errstr, sizeof(m_possibleEncryptionDesc) - 1);
+            m_possibleEncryptionDesc[sizeof(m_possibleEncryptionDesc) - 1] = '\0';
             m_wasPossibleEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_IMG_UNSUPTYPE) {
-            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "%s", lastError->errstr);
+            strncpy(m_unsupportedDesc, lastError->errstr, sizeof(m_unsupportedDesc) - 1);
+            m_unsupportedDesc[sizeof(m_unsupportedDesc) - 1] = '\0';
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_VS_MULTTYPE) {
-            // errstr only contains the "MAC or DOS" part, so add more context
-            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple volume system types found - %s", lastError->errstr);
+            // errstr only contains the "MAC or DOS" part, so add more context.
+            // %.*s limits the errstr field width so prefix + errstr fits in the buffer.
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple volume system types found - %.*s",
+                (int)(sizeof(m_unsupportedDesc) - sizeof("Multiple volume system types found - ")), lastError->errstr);
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_FS_MULTTYPE) {
-            // errstr only contains the "UFS or NTFS" part, so add more context
-            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple file system types found - %s", lastError->errstr);
+            // errstr only contains the "UFS or NTFS" part, so add more context.
+            // %.*s limits the errstr field width so prefix + errstr fits in the buffer.
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple file system types found - %.*s",
+                (int)(sizeof(m_unsupportedDesc) - sizeof("Multiple file system types found - ")), lastError->errstr);
             m_wasUnsupported = true;
         }
 

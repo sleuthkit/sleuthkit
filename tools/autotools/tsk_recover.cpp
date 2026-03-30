@@ -221,7 +221,8 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
     //do name mangling
     char name8[FILENAME_MAX];
-    strncpy(name8, a_fs_file->name->name, FILENAME_MAX);
+    strncpy(name8, a_fs_file->name->name, FILENAME_MAX - 1);
+    name8[FILENAME_MAX - 1] = '\0';
     for (int i = 0; name8[i] != '\0'; i++) {
         //make sure there is no slash, which could lead to path traversal
         if (TSK_IS_CNTRL(name8[i]) || TSK_IS_SPL_FILE_CHAR(name8[i])) {

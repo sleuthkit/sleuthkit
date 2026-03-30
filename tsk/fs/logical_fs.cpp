@@ -77,6 +77,8 @@ logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
  */
 #ifdef TSK_WIN32
 static time_t
+filetime_to_timet(FILETIME const& ft) __attribute__((unused));
+static time_t
 filetime_to_timet(FILETIME const& ft)
 {
 	ULARGE_INTEGER ull;
@@ -285,7 +287,7 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 		if (tsk_verbose)
 			tsk_fprintf(stderr,
 				"convert_wide_string_to_utf8: error converting logical file name to UTF-8\n");
-		strncpy(dest, invalidName, strlen(invalidName));
+		strncpy(dest, invalidName, strlen(invalidName) + 1);
 	}
 	return dest;
 }
@@ -391,7 +393,7 @@ TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 
 	// First convert the base path to an absolute path
 	TCHAR absPath[LOGICAL_MAX_PATH_UNICODE];
-	int ret = GetFullPathNameW(base_path, LOGICAL_MAX_PATH_UNICODE, absPath, NULL);
+	(void)GetFullPathNameW(base_path, LOGICAL_MAX_PATH_UNICODE, absPath, NULL);
 
 	size_t len = TSTRLEN(absPath);
 	TSK_TCHAR * searchPath;
@@ -1038,10 +1040,11 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	if ((result != TSK_OK) || (!search_helper->target_found)) {
+		TSK_INUM_T target_inum = search_helper->target_inum;
 		free_search_helper(search_helper);
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-		tsk_error_set_errstr("load_path_from_inum - failed to find path corresponding to inum %" PRIuINUM, search_helper->target_inum);
+		tsk_error_set_errstr("load_path_from_inum - failed to find path corresponding to inum %" PRIuINUM, target_inum);
 		return NULL;
 	}
 
@@ -1100,10 +1103,10 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 		TSTRNCPY(absPath, L"\\\\?\\", 4);
 		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 		if (absPathLen <= 0) {
-			free(path);
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_file_add_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			free(path);
 			return TSK_ERR;
 		}
 		hFind = ::FindFirstFileW(absPath, &fd);
@@ -1338,10 +1341,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		TSTRNCPY(absPath, L"\\\\?\\", 4);
 		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 		if (absPathLen <= 0) {
-			free(path);
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_dir_open_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			free(path);
 			return TSK_ERR;
 		}
 		hFind = ::FindFirstFileW(absPath, &fd);
@@ -1430,10 +1433,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = dir_inum;
 #ifdef TSK_WIN32
-		strncpy(fs_name->name, utf8Name, name_len);
+		strncpy(fs_name->name, utf8Name, name_len + 1);
 		free(utf8Name);
 #else
-		strncpy(fs_name->name, it->c_str(), name_len);
+		strncpy(fs_name->name, it->c_str(), name_len + 1);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
@@ -1473,10 +1476,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = file_inum;
 #ifdef TSK_WIN32
-		strncpy(fs_name->name, utf8Name, name_len);
+		strncpy(fs_name->name, utf8Name, name_len + 1);
 		free(utf8Name);
 #else
-		strncpy(fs_name->name, it->c_str(), name_len);
+		strncpy(fs_name->name, it->c_str(), name_len + 1);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
@@ -1681,10 +1684,10 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 			TSTRNCPY(absPath, L"\\\\?\\", 4);
 			int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 			if (absPathLen <= 0) {
-				free(path);
 				tsk_error_reset();
 				tsk_error_set_errno(TSK_ERR_FS_GENFS);
 				tsk_error_set_errstr("logicalfs_read_block: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+				free(path);
 				return TSK_ERR;
 			}
 			fd = CreateFileW(absPath, FILE_READ_DATA,
