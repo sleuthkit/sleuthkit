@@ -148,37 +148,34 @@ uint8_t TskIsImageSupported::handleError()
         uint32_t errCode = lastError->t_errno;
 
         if (errCode == TSK_ERR_FS_ENCRYPTED || errCode == TSK_ERR_VS_ENCRYPTED) {
-            strncpy(m_encryptionDesc, lastError->errstr, 1024);
+            snprintf(m_encryptionDesc, sizeof(m_encryptionDesc), "%s", lastError->errstr);
             m_wasEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
             // This is the case where we're confident we have BitLocker encryption but
             // failed to initialize it. The most common cause would be a missing
             // or incorrect password.
-            strncpy(m_encryptionDesc, "BitLocker", 1024);
+            snprintf(m_encryptionDesc, sizeof(m_encryptionDesc), "BitLocker");
             m_wasEncryptionFound = true;
             m_bitlockerError = true;
-            strncpy(m_bitlockerDesc, "BitLocker status - ", 1024);
-            strncat(m_bitlockerDesc, lastError->errstr, 950);
+            snprintf(m_bitlockerDesc, sizeof(m_bitlockerDesc), "BitLocker status - %s", lastError->errstr);
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
-            strncpy(m_possibleEncryptionDesc, lastError->errstr, 1024);
+            snprintf(m_possibleEncryptionDesc, sizeof(m_possibleEncryptionDesc), "%s", lastError->errstr);
             m_wasPossibleEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_IMG_UNSUPTYPE) {
-            strncpy(m_unsupportedDesc, lastError->errstr, 1024);
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "%s", lastError->errstr);
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_VS_MULTTYPE) {
             // errstr only contains the "MAC or DOS" part, so add more context
-            strncpy(m_unsupportedDesc, "Multiple volume system types found - ", 1024);
-            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple volume system types found - %s", lastError->errstr);
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_FS_MULTTYPE) {
             // errstr only contains the "UFS or NTFS" part, so add more context
-            strncpy(m_unsupportedDesc, "Multiple file system types found - ", 1024);
-            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple file system types found - %s", lastError->errstr);
             m_wasUnsupported = true;
         }
 

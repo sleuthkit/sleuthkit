@@ -522,7 +522,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('G'): opt_maxgig = TATOI(OPTARG);break;
 	case _TSK_T('h'): usage(); break;
 	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
-	case _TSK_T('M'): opt_md5 = true;
+	case _TSK_T('M'): opt_md5 = true; break;
 	case _TSK_T('O'): opt_allocated_only=true; break;
 	case _TSK_T('S'):
             opt_sector_hash = true;

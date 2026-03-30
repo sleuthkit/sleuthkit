@@ -738,11 +738,12 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO *img_info, const TSK_TCHAR *o
     writer->close = tsk_img_writer_close;
     writer->finish_image = tsk_img_writer_finish_image;
 
-    if ((writer->fileName = (TSK_TCHAR*)tsk_malloc((TSTRLEN(outputFileName) + 1) * sizeof(TCHAR))) == NULL) {
+    size_t fname_len = TSTRLEN(outputFileName) + 1;
+    if ((writer->fileName = (TSK_TCHAR*)tsk_malloc(fname_len * sizeof(TCHAR))) == NULL) {
         free(raw_info->img_writer);
         return TSK_ERR;
     }
-    TSTRNCPY(writer->fileName, outputFileName, TSTRLEN(outputFileName) + 1);
+    TSTRNCPY(writer->fileName, outputFileName, fname_len);
 
     /* Calculation time */
     writer->imageSize = raw_info->img_info.size;

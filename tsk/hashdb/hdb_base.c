@@ -86,7 +86,7 @@ uint8_t
     if (!hdb_info->db_fname) {
         return 1;
     }
-    TSTRNCPY(hdb_info->db_fname, db_path, path_len);
+    TSTRNCPY(hdb_info->db_fname, db_path, path_len + 1);
 
     // set the name based on path
     hdb_base_db_name_from_path(hdb_info);

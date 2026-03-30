@@ -289,14 +289,13 @@ ewf_open(int a_num_img,
             return NULL;
         }
         for (i = 0; i < a_num_img; i++) {
+            size_t img_len = TSTRLEN(a_images[i]) + 1;
             if ((ewf_info->img_info.images[i] =
-                    (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
-                            1) * sizeof(TSK_TCHAR))) == NULL) {
+                    (TSK_TCHAR *) tsk_malloc(img_len * sizeof(TSK_TCHAR))) == NULL) {
                 tsk_img_free(ewf_info);
                 return NULL;
             }
-            TSTRNCPY(ewf_info->img_info.images[i], a_images[i],
-                TSTRLEN(a_images[i]) + 1);
+            TSTRNCPY(ewf_info->img_info.images[i], a_images[i], img_len);
         }
     }
 
