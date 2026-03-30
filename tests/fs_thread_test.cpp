@@ -81,7 +81,7 @@ proc_dir(TSK_FS_FILE* fs_file, const char* path, void* stuff)
                 if (tsk_verbose) {
                     fprintf(stderr,
                             "Warning: %" PRIuSIZE " of %" PRIuSIZE
-                            " bytes read from %s file %s\n", cnt, len,
+                            " bytes read from %s file %s\n", (size_t)cnt, len,
                             ((fs_file->name->
                               flags & TSK_FS_NAME_FLAG_UNALLOC)
                              || (fs_file->meta->

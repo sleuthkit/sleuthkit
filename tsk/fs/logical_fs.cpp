@@ -1776,7 +1776,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("logicalfs_read_block: file addr %" PRIuINUM
 			" offset: %" PRIu64 " read len: %" PRIuSIZE " - %d",
-			a_fs_file->meta->addr, a_block_num, block_size,
+			a_fs_file->meta->addr, a_block_num, (size_t)block_size,
 			lastError);
 		return -1;
 	}
@@ -1803,7 +1803,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("logicalfs_read_block: file addr %" PRIuINUM
 			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
-			a_fs_file->meta->addr, a_block_num, block_size,
+			a_fs_file->meta->addr, a_block_num, (size_t)block_size,
 			lastError);
 		return -1;
 	}
