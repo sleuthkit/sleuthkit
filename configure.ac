@@ -97,10 +97,6 @@ AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno
 case "$host" in
 *-*-mingw*)
   dnl Adding the native /usr/local is wrong for cross-compiling
-  dnl Enable POSIX-compatible printf in MinGW so that %zu (size_t) is
-  dnl accepted by both GCC's format-attribute checker and the runtime.
-  CFLAGS="$CFLAGS -D__USE_MINGW_ANSI_STDIO=1"
-  CXXFLAGS="$CXXFLAGS -D__USE_MINGW_ANSI_STDIO=1"
   ;;
 *)
   dnl Not all compilers include /usr/local in the include and link path

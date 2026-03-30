@@ -165,11 +165,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 
 #define PRIcTSK _TSK_T("hs")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
 #define PRIttocTSK  "ls"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
-#if defined(_MSC_VER)
-#define PRIuSIZE "Iu"           ///< printf macro to print a size_t value (MSVC uses %Iu)
-#else
-#define PRIuSIZE "zu"           ///< printf macro to print a size_t value (MinGW uses POSIX %zu)
-#endif
+#define PRIuSIZE "Iu"           ///< printf macro to print a size_t value (both MSVC and MinGW use MS printf rules: %Iu)
 
 #define unlink _unlink
 
