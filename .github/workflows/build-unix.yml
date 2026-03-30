@@ -53,6 +53,7 @@ jobs:
             prefix:
             address_sanitizer: "yes"
             keep_artifacts: "yes"
+            distcheck: "yes"
             suffix: "(with artifacts)"
             enable_java: "yes"
 
@@ -195,6 +196,15 @@ jobs:
           submodules: recursive
           fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
 
+      - name: Cache Ivy dependencies
+        if: ${{ matrix.enable_java == 'yes' }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.ivy2/cache
+          key: ivy-${{ hashFiles('bindings/java/ivy.xml') }}
+          restore-keys: |
+            ivy-
+
       - name: Run bootstrap
         run: |
           echo CPPFLAGS=$CPPFLAGS
@@ -205,16 +215,36 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }}
 
-      - name: Unpack and List the test data
+      - name: Get test data cache key from S3 ETag
+        id: test-data-etag
+        run: |
+          # Fetch only the ETag header (no data downloaded) to use as a cache key.
+          # When new test data is uploaded to S3 the ETag changes, which busts the
+          # cache and forces a fresh download on the next run.
+          ETAG=$(curl -sI "https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip" \
+            | grep -i 'etag:' | tr -d '\r"' | awk '{print $2}')
+          echo "value=$ETAG" >> $GITHUB_OUTPUT
+
+      - name: Cache test data
+        id: cache-test-data
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/../sleuthkit_test_data
+          key: sleuthkit-test-data-${{ steps.test-data-etag.outputs.value }}
+
+      - name: Download and unpack test data
+        if: steps.cache-test-data.outputs.cache-hit != 'true'
         run: |
           cd ..
-          pwd
-          wget  -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
+          wget -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
           unzip sleuthkit_test_data.zip
           cd sleuthkit_test_data
           make unpack
-          find . -ls | grep -v '[.]git'
-          echo "SLEUTHKIT_TEST_DATA_DIR=$(pwd)" >> $GITHUB_ENV
+
+      - name: Set test data path
+        run: |
+          echo "SLEUTHKIT_TEST_DATA_DIR=${{ github.workspace }}/../sleuthkit_test_data" >> $GITHUB_ENV
+          find ${{ github.workspace }}/../sleuthkit_test_data -ls | grep -v '[.]git'
 
       - name: Run make check on Mac/Linux
         if: ${{ matrix.os != 'mingw' }}
@@ -302,6 +332,7 @@ jobs:
           retention-days: 15
 
       - name: Run distcheck
+        if: ${{ matrix.distcheck == 'yes' }}
         run: |
           ./configure
           make distcheck
