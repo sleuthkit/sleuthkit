@@ -2378,8 +2378,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     ("proc_attrseq: resident data offset of File Name Attribute is out of bounds!");
                 return TSK_COR;
             }
-            // A File Name Attribute should be at least 66 bytes in size
-            if ((attr_len < 66) || (attr_off > attr_len - 66)) {
+            // A File Name Attribute must be large enough to hold the fixed fields.
+            if (attr_off + (uint32_t)offsetof(ntfs_attr_fname, name) > attr_len) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
@@ -2440,7 +2440,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 }
                 fs_name->next = NULL;
             }
-            if ((uint32_t)fname->nlen * 2 > attr_len - attr_off - 66) {
+			if (attr_off + (uint32_t)offsetof(ntfs_attr_fname, name) + (uint32_t)fname->nlen * 2 > attr_len) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
