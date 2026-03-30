@@ -148,8 +148,7 @@ uint8_t TskIsImageSupported::handleError()
         uint32_t errCode = lastError->t_errno;
 
         if (errCode == TSK_ERR_FS_ENCRYPTED || errCode == TSK_ERR_VS_ENCRYPTED) {
-            strncpy(m_encryptionDesc, lastError->errstr, sizeof(m_encryptionDesc) - 1);
-            m_encryptionDesc[sizeof(m_encryptionDesc) - 1] = '\0';
+            snprintf(m_encryptionDesc, sizeof(m_encryptionDesc), "%s", lastError->errstr);
             m_wasEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
@@ -164,13 +163,11 @@ uint8_t TskIsImageSupported::handleError()
                 (int)(sizeof(m_bitlockerDesc) - sizeof("BitLocker status - ")), lastError->errstr);
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
-            strncpy(m_possibleEncryptionDesc, lastError->errstr, sizeof(m_possibleEncryptionDesc) - 1);
-            m_possibleEncryptionDesc[sizeof(m_possibleEncryptionDesc) - 1] = '\0';
+            snprintf(m_possibleEncryptionDesc, sizeof(m_possibleEncryptionDesc), "%s", lastError->errstr);
             m_wasPossibleEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_IMG_UNSUPTYPE) {
-            strncpy(m_unsupportedDesc, lastError->errstr, sizeof(m_unsupportedDesc) - 1);
-            m_unsupportedDesc[sizeof(m_unsupportedDesc) - 1] = '\0';
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "%s", lastError->errstr);
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_VS_MULTTYPE) {

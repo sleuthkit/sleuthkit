@@ -321,8 +321,7 @@ uint8_t
             idx_cnt++;
 
             /* Set the previous hash value */
-            strncpy(phash, hash, TSK_HDB_HTYPE_MD5_LEN);
-            phash[TSK_HDB_HTYPE_MD5_LEN] = '\0';
+            snprintf(phash, TSK_HDB_HTYPE_MD5_LEN + 1, "%s", hash);
     }
 
     if (idx_cnt > 0) {
@@ -457,8 +456,7 @@ uint8_t
             }
 
             found = 1;
-            strncpy(pname, name, TSK_HDB_MAXLEN - 1);
-            pname[TSK_HDB_MAXLEN - 1] = '\0';
+            snprintf(pname, TSK_HDB_MAXLEN, "%s", name);
         }
 
         /* Advance to the next row */

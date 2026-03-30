@@ -249,8 +249,7 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
 
 #else
     // nothing to convert.  Keep it as UTF8
-    strncpy((char *)&buffer[0], str8, size - 1);
-    ((char *)buffer)[size - 1] = '\0';
+    snprintf((char *)&buffer[0], size, "%s", str8);
 #endif
 
     env->ReleaseStringUTFChars(strJ, str8);

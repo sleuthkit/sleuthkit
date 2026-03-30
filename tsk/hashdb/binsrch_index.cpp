@@ -1175,8 +1175,7 @@ int8_t
         // This will give the offset into the index file for the set of hashes
         // that contains the sought hash.
         char digits[4];
-        strncpy(digits, ucHash, 3);
-        digits[3] = '\0';
+        snprintf(digits, sizeof(digits), "%.3s", ucHash);
         long int idx_idx_off = strtol(digits, NULL, 16);
         if ((idx_idx_off < 0) || (idx_idx_off > (long int)IDX_IDX_ENTRY_COUNT)) {
             tsk_release_lock(&hdb_binsrch_info->base.lock);

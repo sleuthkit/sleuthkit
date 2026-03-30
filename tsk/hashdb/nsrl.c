@@ -621,8 +621,7 @@ uint8_t
                 return 1;
 
             found = 1;
-            strncpy(pname, name, TSK_HDB_MAXLEN - 1);
-            pname[TSK_HDB_MAXLEN - 1] = '\0';
+            snprintf(pname, TSK_HDB_MAXLEN, "%s", name);
         }
 
         /* Advance to the next row */

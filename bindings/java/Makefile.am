@@ -19,6 +19,7 @@ all-local:
 	    -Djni.build.dir=$(abs_builddir)/jni \
 	    -Dbuild=$(abs_builddir)/build \
 	    -Ddist=$(abs_builddir)/dist \
+	    -Dlib=$(abs_builddir)/lib \
 	    dist $(ant_args)
 
 CLEANFILES = $(tsk_jar)
@@ -28,4 +29,5 @@ clean-local:
 	    -Djni.build.dir=$(abs_builddir)/jni \
 	    -Dbuild=$(abs_builddir)/build \
 	    -Ddist=$(abs_builddir)/dist \
+	    -Dlib=$(abs_builddir)/lib \
 	    clean || echo ant not installed

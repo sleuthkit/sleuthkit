@@ -115,7 +115,7 @@
 	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" unless="offline">
 		<ivy:settings file="ivysettings.xml"/>
 		<ivy:resolve/>
-		<ivy:retrieve sync="true" pattern="lib/[artifact]-[revision](-[classifier]).[ext]"/>
+		<ivy:retrieve sync="true" pattern="${lib}/[artifact]-[revision](-[classifier]).[ext]"/>
 	</target>
 
 	<target name="compile-test" depends="compile" description="compile the tests">
