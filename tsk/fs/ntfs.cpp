@@ -20,6 +20,7 @@
 #include "tsk_ntfs.h"
 
 #include <ctype.h>
+#include <stddef.h>
 
 #include <memory>
 
