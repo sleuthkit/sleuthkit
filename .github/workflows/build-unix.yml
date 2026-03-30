@@ -314,6 +314,10 @@ jobs:
         run: |
           make -j check VERBOSE=1
 
+      - name: Print test log on failure
+        if: failure()
+        run: cat tests/test-suite.log
+
       - name: Clean up
         run: |
           if [ -x Makefile ]; then make distclean ; fi
