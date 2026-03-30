@@ -15,9 +15,9 @@ endif
 $(tsk_jar):
 
 all-local:
-	ant dist $(ant_args)
+	ant -f $(srcdir)/build.xml dist $(ant_args)
 
 CLEANFILES = $(tsk_jar)
 
 clean-local:
-	ant clean || echo ant not installed
+	ant -f $(srcdir)/build.xml clean || echo ant not installed
