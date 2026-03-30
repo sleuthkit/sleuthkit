@@ -636,7 +636,7 @@ prioritizeDirNames(TSK_FS_NAME * names, size_t count, int * indexToOrderedIndex)
     for (currentScore = HIGH; currentScore <= LAST; currentScore++) {
         for (i = 0; i < count; i++) {
             if (scores[i] == currentScore) {
-                indexToOrderedIndex[orderedIndex] = i;
+                indexToOrderedIndex[orderedIndex] = (int)i;
                 orderedIndex++;
             }
         }

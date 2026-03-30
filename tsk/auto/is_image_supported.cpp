@@ -232,8 +232,8 @@ std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
                 // To make the output look nicer make sure any open parens get closed (the close paren was likely on the last line of the original error message)
                 // For example we want to add a close paren to this line:
                 //   vmdk_open file: r:\work\images\renamedVM.vmdke: Error opening (libcfile_file_open_wide_with_error_code: no such file: \\?\R:\work\images\renamedVM.vmdke.
-                int nOpenParens = std::count(firstLine.begin(), firstLine.end(), '(');
-                int nCloseParens = std::count(firstLine.begin(), firstLine.end(), ')');
+                int nOpenParens = (int)std::count(firstLine.begin(), firstLine.end(), '(');
+                int nCloseParens = (int)std::count(firstLine.begin(), firstLine.end(), ')');
                 for (int i = nCloseParens; i < nOpenParens; i++) {
                     firstLine += ")";
                 }

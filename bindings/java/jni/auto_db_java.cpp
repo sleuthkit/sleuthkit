@@ -497,7 +497,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, jstring & newJS
      * UTF16 buffer (target is advanced in the call to the conversion routine
      * above).
      */
-    newJString = m_jniEnv->NewString(utf16_input, (target - utf16_input) - 1);
+    newJString = m_jniEnv->NewString(utf16_input, (jsize)((target - utf16_input) - 1));
 
     free(utf16_input);
     return TSK_OK;

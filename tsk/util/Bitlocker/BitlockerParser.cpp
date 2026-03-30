@@ -1174,7 +1174,7 @@ ssize_t BitlockerParser::readAndDecryptSectors(TSK_DADDR_T offsetInVolume, size_
     }
 
     if (len % m_sectorSize != 0) {
-        writeError("BitlockerParser::readAndDecryptSectors: Length of bytes to read is not a multiple of the sector size (length: " + convertUint32ToString(len) + ")");
+        writeError("BitlockerParser::readAndDecryptSectors: Length of bytes to read is not a multiple of the sector size (length: " + convertUint32ToString((uint32_t)len) + ")");
         return -1;
     }
 

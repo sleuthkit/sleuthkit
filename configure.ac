@@ -97,6 +97,12 @@ AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno
 case "$host" in
 *-*-mingw*)
   dnl Adding the native /usr/local is wrong for cross-compiling
+  dnl GCC's format checker does not model the MS-printf %I length modifier
+  dnl (e.g. %Iu for size_t), so it emits false-positive -Wformat warnings
+  dnl for format strings that MSVC itself accepts without complaint.
+  dnl Suppress those warnings for MinGW cross-compile builds only.
+  CFLAGS="$CFLAGS -Wno-format"
+  CXXFLAGS="$CXXFLAGS -Wno-format"
   ;;
 *)
   dnl Not all compilers include /usr/local in the include and link path
