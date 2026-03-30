@@ -358,7 +358,7 @@ ext2fs_bmap_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     cnt = tsk_fs_read(fs, addr * fs->block_size, 
         (char *) ext2fs->bmap_buf, ext2fs->fs_info.block_size);
 
-    if (cnt != ext2fs->fs_info.block_size) {
+    if (cnt != (ssize_t) ext2fs->fs_info.block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -433,7 +433,7 @@ static uint8_t
     cnt = tsk_fs_read(fs, addr * fs->block_size, 
         (char *) ext2fs->imap_buf, ext2fs->fs_info.block_size);
 
-    if (cnt != ext2fs->fs_info.block_size) {
+    if (cnt != (ssize_t) ext2fs->fs_info.block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -935,7 +935,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_FILE * fs_file,
                     cnt = tsk_fs_read_block(fs,
                         addr_ptr[i], data_buf, fs->block_size);
 
-                    if (cnt != fs->block_size) {
+                    if (cnt != (ssize_t) fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -3067,7 +3067,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                 dino_buf->i_file_acl) * fs->block_size,
             buf, fs->block_size);
 
-        if (cnt != fs->block_size) {
+        if (cnt != (ssize_t) fs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -3524,7 +3524,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     cnt = tsk_fs_read(fs, EXT2FS_SBOFF, (char *) ext2fs->fs, len);
-    if (cnt != len) {
+    if (cnt != (ssize_t) len) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);

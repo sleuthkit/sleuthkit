@@ -61,7 +61,7 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
         cnt = tsk_vs_read_block
             (vs, dos_sect_relative_addr, sect_buf, vs->block_size);
         /* if -1, then tsk_errno is already set */
-        if (cnt != vs->block_size) {
+        if (cnt != (ssize_t) vs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_VS_READ);
@@ -99,7 +99,7 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
     head = (gpt_head *) sect_buf;
     cnt = tsk_vs_read_block
         (vs, gpt_relative_addr, sect_buf, vs->block_size);
-    if (cnt != vs->block_size) {
+    if (cnt != (ssize_t) vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
@@ -215,7 +215,7 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
         cnt = tsk_vs_read_block(vs,
             tab_start_lba + a,
             ent_buf, vs->block_size);
-        if (cnt != vs->block_size) {
+        if (cnt != (ssize_t) vs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_VS_READ);

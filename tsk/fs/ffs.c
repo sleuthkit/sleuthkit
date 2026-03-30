@@ -72,7 +72,7 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
         ffs_cgd *cg;
         ssize_t cnt;
         cnt = tsk_fs_read_block(fs, addr, ffs->grp_buf, ffs->ffsbsize_b);
-        if (cnt != ffs->ffsbsize_b) {
+        if (cnt != (ssize_t) ffs->ffsbsize_b) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -179,7 +179,7 @@ ffs_dinode_load(FFS_INFO * ffs, TSK_INUM_T inum, ffs_inode * dino_buf)
                 ssize_t cnt;
                 cnt = tsk_fs_read_block
                     (fs, addr, ffs->itbl_buf, ffs->ffsbsize_b);
-                if (cnt != ffs->ffsbsize_b) {
+                if (cnt != (ssize_t) ffs->ffsbsize_b) {
                     tsk_release_lock(&ffs->lock);
                     if (cnt >= 0) {
                         tsk_error_reset();
@@ -211,7 +211,7 @@ ffs_dinode_load(FFS_INFO * ffs, TSK_INUM_T inum, ffs_inode * dino_buf)
             cnt =
                 tsk_fs_read_block(fs, addr, ffs->itbl_buf,
                 ffs->ffsbsize_b);
-            if (cnt != ffs->ffsbsize_b) {
+            if (cnt != (ssize_t) ffs->ffsbsize_b) {
                 tsk_release_lock(&ffs->lock);
                 if (cnt >= 0) {
                     tsk_error_reset();
@@ -445,7 +445,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
                     cnt =
                         tsk_fs_read_block(fs, addr_ptr[i],
                         buf, fs->block_size);
-                    if (cnt != fs->block_size) {
+                    if (cnt != (ssize_t) fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -577,7 +577,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
                     cnt =
                         tsk_fs_read_block(fs, addr_ptr[i],
                         buf, fs->block_size);
-                    if (cnt != fs->block_size) {
+                    if (cnt != (ssize_t) fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -707,7 +707,7 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta,
 
                     cnt = tsk_fs_read_block(fs,
                         addr_ptr[i], buf, fs->block_size);
-                    if (cnt != fs->block_size) {
+                    if (cnt != (ssize_t) fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1234,7 +1234,7 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                 cnt =
                     tsk_fs_read_block(fs, addr, cache_blk_buf,
                     fs->block_size * frags);
-                if (cnt != fs->block_size * frags) {
+                if (cnt != (ssize_t)(fs->block_size * frags)) {
                     if (cnt >= 0) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1452,7 +1452,7 @@ ffs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                     sb1->cg_saddr), (char *) csum1, tsk_getu32(fs->endian,
                     sb1->cg_ssize_b));
 
-            if (cnt != tsk_getu32(fs->endian, sb1->cg_ssize_b)) {
+            if (cnt != (ssize_t) tsk_getu32(fs->endian, sb1->cg_ssize_b)) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1468,7 +1468,7 @@ ffs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                 (fs, (TSK_DADDR_T) tsk_getu64(fs->endian,
                     sb2->cg_saddr), (char *) csum1, tsk_getu32(fs->endian,
                     sb2->cg_ssize_b));
-            if (cnt != tsk_getu32(fs->endian, sb2->cg_ssize_b)) {
+            if (cnt != (ssize_t) tsk_getu32(fs->endian, sb2->cg_ssize_b)) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1797,7 +1797,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 cnt =
                     tsk_fs_read_block(fs, tsk_getu64(fs->endian,
                         in->di_extb[0]), blk_buf, ffs->ffsbsize_b);
-                if (cnt != ffs->ffsbsize_b) {
+                if (cnt != (ssize_t) ffs->ffsbsize_b) {
                     if (cnt >= 0) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1840,7 +1840,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 cnt =
                     tsk_fs_read_block(fs, tsk_getu64(fs->endian,
                         in->di_extb[1]), blk_buf, ffs->ffsbsize_b);
-                if (cnt != ffs->ffsbsize_b) {
+                if (cnt != (ssize_t) ffs->ffsbsize_b) {
                     if (cnt >= 0) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -2096,7 +2096,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, cons
 
             cnt = tsk_fs_read
                 (fs, (TSK_OFF_T) UFS1_SBOFF, (char *) ffs->fs.sb1, len);
-            if (cnt != len) {
+            if (cnt != (ssize_t) len) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);

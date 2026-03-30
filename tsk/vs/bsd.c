@@ -109,7 +109,7 @@ bsd_load_table(TSK_VS_INFO * a_vs)
     /* read the block */
     cnt = tsk_vs_read_block
         (a_vs, BSD_PART_SOFFSET, sect_buf, a_vs->block_size);
-    if (cnt != a_vs->block_size) {
+    if (cnt != (ssize_t) a_vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);

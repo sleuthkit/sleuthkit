@@ -337,7 +337,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
         cnt =
             tsk_fs_read(&a_ntfs->fs_info, mftaddr_b, a_buf,
             a_ntfs->mft_rsize_b);
-        if (cnt != a_ntfs->mft_rsize_b) {
+        if (cnt != (ssize_t) a_ntfs->mft_rsize_b) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -550,7 +550,7 @@ is_clustalloc(NTFS_INFO * ntfs, TSK_DADDR_T addr)
         cnt = tsk_fs_read_block
             (&ntfs->fs_info, fsaddr, ntfs->bmap_buf,
             ntfs->fs_info.block_size);
-        if (cnt != ntfs->fs_info.block_size) {
+        if (cnt != (ssize_t) ntfs->fs_info.block_size) {
             tsk_release_lock(&ntfs->lock);
             if (cnt >= 0) {
                 tsk_error_reset();
@@ -1226,7 +1226,7 @@ ntfs_proc_compunit(NTFS_INFO * ntfs, NTFS_COMP_INFO * comp,
             cnt =
                 tsk_fs_read_block(fs, comp_unit[a],
                 &comp->comp_buf[comp->comp_len], fs->block_size);
-            if (cnt != fs->block_size) {
+            if (cnt != (ssize_t) fs->block_size) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1265,7 +1265,7 @@ ntfs_proc_compunit(NTFS_INFO * ntfs, NTFS_COMP_INFO * comp,
             cnt =
                 tsk_fs_read_block(fs, comp_unit[a],
                 &comp->uncomp_buf[comp->uncomp_idx], fs->block_size);
-            if (cnt != fs->block_size) {
+            if (cnt != (ssize_t) fs->block_size) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -3350,7 +3350,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     cnt =
         tsk_fs_read_block(fs,
         ntfs->bmap->addr, ntfs->bmap_buf, fs->block_size);
-    if (cnt != fs->block_size) {
+    if (cnt != (ssize_t) fs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -5284,7 +5284,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     cnt = tsk_fs_read(fs, (TSK_OFF_T) 0, (char *) ntfs->fs, len);
-    if (cnt != len) {
+    if (cnt != (ssize_t) len) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);

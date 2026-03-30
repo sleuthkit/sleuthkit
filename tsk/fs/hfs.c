@@ -593,7 +593,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 if (sizeof(hfs_btree_key_ext) > nodesize - rec_off) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                    ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %zu bytes)",
+                    ("hfs_ext_find_extent_record_attr: record %d in leaf node %d truncated (have %d vs %" PRIuSIZE " bytes)",
                         rec, cur_node, nodesize - (int)rec_off,
                         sizeof(hfs_btree_key_ext));
                     free(node);
@@ -881,7 +881,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 if ((keylen < 6) || ((size_t)keylen > nodesize - rec_off)) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %d < %zu)",
+                        ("hfs_cat_traverse: length of key %d in index node %d out of bounds (6 < %d < %" PRIuSIZE ")",
                         rec, cur_node, keylen, (nodesize - rec_off));
                     free(node);
                     return 1;

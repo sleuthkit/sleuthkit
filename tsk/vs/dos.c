@@ -697,7 +697,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
 
     /* Read the partition table sector */
     cnt = tsk_vs_read_block(vs, sect_cur, sect_buf, vs->block_size);
-    if (cnt != vs->block_size) {
+    if (cnt != (ssize_t) vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
@@ -882,7 +882,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
     cnt = tsk_vs_read_block
         (vs, DOS_PART_SOFFSET, sect_buf, vs->block_size);
 
-    if (cnt != vs->block_size) {
+    if (cnt != (ssize_t) vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);

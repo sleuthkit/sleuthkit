@@ -933,7 +933,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
 						cnt = tsk_fs_read_block_decrypt
 						(fs, addr + len_idx, buf, fs->block_size, fs_attr_run->crypto_id + len_idx);
 					}
-                    if (cnt != fs->block_size) {
+                    if (cnt != (ssize_t) fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_READ);
