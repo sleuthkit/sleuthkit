@@ -49,6 +49,11 @@ Release targets.
 
 
 -------------------------------------------------------------------
+Environment Variables
+
+If you want to compile Autopsy or use the win32\updateAndBuildAll.py script, then you must set TSK_HOME to the root of The Sleuth Kit source code. 
+
+-------------------------------------------------------------------
 carrier <at> sleuthkit <dot> org 
 Brian Carrier
 
