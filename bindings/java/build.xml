@@ -22,9 +22,12 @@
 	<property name="dist" location="dist"/>
 	<property name="lib" location="lib"/>
 	<property name="test" location="test"/>
-	<property name="test-standards" location="test/output/gold"/>
-	<property name="test-results" location="test/output/results"/>
-	<property name="test-input" location="test/input"/>
+	<!-- test-runtime is the root for writable test I/O dirs (input, gold, results).
+	     Override with -Dtest-runtime=... when the source tree is read-only (e.g. distcheck). -->
+	<property name="test-runtime" location="test"/>
+	<property name="test-standards" location="${test-runtime}/output/gold"/>
+	<property name="test-results" location="${test-runtime}/output/results"/>
+	<property name="test-input" location="${test-runtime}/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
 	<property name="native-libs" location="${build}/NATIVELIBS"/>
 	<property name="amd64" location="${build}/NATIVELIBS/amd64"/>

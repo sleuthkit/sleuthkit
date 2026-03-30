@@ -20,6 +20,7 @@ all-local:
 	    -Dbuild=$(abs_builddir)/build \
 	    -Ddist=$(abs_builddir)/dist \
 	    -Dlib=$(abs_builddir)/lib \
+	    -Dtest-runtime=$(abs_builddir)/test-runtime \
 	    dist $(ant_args)
 
 CLEANFILES = $(tsk_jar)
@@ -30,4 +31,5 @@ clean-local:
 	    -Dbuild=$(abs_builddir)/build \
 	    -Ddist=$(abs_builddir)/dist \
 	    -Dlib=$(abs_builddir)/lib \
+	    -Dtest-runtime=$(abs_builddir)/test-runtime \
 	    clean || echo ant not installed
