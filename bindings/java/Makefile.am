@@ -15,9 +15,17 @@ endif
 $(tsk_jar):
 
 all-local:
-	ant -f $(srcdir)/build.xml -Djni.build.dir=$(abs_builddir)/jni dist $(ant_args)
+	ant -f $(srcdir)/build.xml \
+	    -Djni.build.dir=$(abs_builddir)/jni \
+	    -Dbuild=$(abs_builddir)/build \
+	    -Ddist=$(abs_builddir)/dist \
+	    dist $(ant_args)
 
 CLEANFILES = $(tsk_jar)
 
 clean-local:
-	ant -f $(srcdir)/build.xml -Djni.build.dir=$(abs_builddir)/jni clean || echo ant not installed
+	ant -f $(srcdir)/build.xml \
+	    -Djni.build.dir=$(abs_builddir)/jni \
+	    -Dbuild=$(abs_builddir)/build \
+	    -Ddist=$(abs_builddir)/dist \
+	    clean || echo ant not installed
