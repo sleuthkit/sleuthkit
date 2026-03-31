@@ -1107,7 +1107,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 	TSK_INUM_T stream_inum;
 	TSK_INUM_T name_inum;
 	TSK_INUM_T prev_inum;
-    uint8_t name_bytes_written;
+    uint16_t name_bytes_written;
 	int name_index;
 	uint8_t bytes_to_copy;
 	FATFS_DENTRY temp_dentry;

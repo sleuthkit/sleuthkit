@@ -616,8 +616,10 @@ TskAutoDbJava::addFile(TSK_FS_FILE* fs_file,
 
     jstring extj;
     if (createJString(extension, extj) != TSK_OK) {
-        free(name);
-        return TSK_ERR;
+        // free(name);
+        // return TSK_ERR;
+        // workaround for https://github.com/sleuthkit/sleuthkit/issues/2723
+        extj = m_jniEnv->NewStringUTF(extension);
     }
 
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the

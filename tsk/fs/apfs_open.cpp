@@ -19,6 +19,41 @@ TSK_FS_INFO* apfs_open_auto_detect(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     return apfs_open(img_info, offset, fstype, a_pass);
 }
 
+/*
+ * Get APFS password from environment variable.
+ */
+char* getEnvPassword(TSK_IMG_INFO * m_img_info) {
+	// get the image name from path
+	TSK_TCHAR * name = TSTRRCHR(m_img_info->images[0], '\\');
+	if (name == NULL) {
+		name = TSTRRCHR(m_img_info->images[0], '/');
+	}
+	if (name == NULL) {
+		name = m_img_info->images[0];
+	}
+	else {
+		name += 1;
+	}
+	
+	char passkey[1024];
+	memset(passkey, '\0', sizeof(char) * 1024);
+
+#ifdef TSK_WIN32
+	wcstombs(passkey, name, 1024 - 10);
+#else
+	strncpy(passkey, name, 1024 - 10);
+#endif
+
+	strcat(passkey, "_PASSWORD");
+
+	char* password = getenv(passkey);
+	if (password == NULL) {
+		password = "";
+	}
+
+	return password;
+}
+
 TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                        TSK_FS_TYPE_ENUM fstype, const char* pass) {
   tsk_error_reset();
@@ -43,6 +78,10 @@ TSK_FS_INFO* apfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     tsk_error_set_errno(TSK_ERR_FS_ARG);
     tsk_error_set_errstr("tsk_apfs_open: invalid fstype");
     return nullptr;
+  }
+
+  if (pass == NULL || strlen(pass) == 0) {
+	  pass = getEnvPassword(img_info);
   }
 
   try {
