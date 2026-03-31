@@ -76,6 +76,7 @@
 #include "decmpfs.h"
 
 #include <stdarg.h>
+#include <stddef.h>
 #ifdef TSK_WIN32
 #include <string.h>
 #else
@@ -4047,7 +4048,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             //uint8_t * nextRecOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+2)];
 
             // make sure the record and first fields are in the buffer
-            if ((attrFile.nodeSize < 14) || (recOffset >= attrFile.nodeSize - 14)) {
+            if ((attrFile.nodeSize < offsetof(hfs_btree_key_attr, attr_name)) || (recOffset >= attrFile.nodeSize - offsetof(hfs_btree_key_attr, attr_name))) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (offset too big)");
                 goto on_error;
@@ -4166,7 +4167,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             uint32_t keyFileID;
 
             // make sure the record and first fields are in the buffer
-            if (recOffset >= attrFile.nodeSize - 14) {
+            if (recOffset >= attrFile.nodeSize - offsetof(hfs_btree_key_attr, attr_name)) {
                 error_detected(TSK_ERR_FS_READ,
                     "hfs_load_extended_attrs: Unable to process attribute (offset too big)");
                 goto on_error;
@@ -4218,8 +4219,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 keyLength = tsk_getu16(endian, keyB->key_len);
                 // make sure the fields we care about are still in the buffer
                 // +2 because key_len doesn't include its own length
-                // +16 for the amount of data we'll read from data
-                if ((attrFile.nodeSize < 2 + 16) || (keyLength > attrFile.nodeSize - 2 - 16) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength)) {
+                // +offsetof(hfs_attr_data, attr_data) for the amount of data we'll read from data
+                if ((attrFile.nodeSize < 2 + offsetof(hfs_attr_data, attr_data)) || (keyLength > attrFile.nodeSize - 2 - offsetof(hfs_attr_data, attr_data)) || (recOffset >= attrFile.nodeSize - 2 - offsetof(hfs_attr_data, attr_data) - keyLength)) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;
@@ -4249,7 +4250,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Check the attribute fits in the node
                 //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
-                if ((attributeLength > (uint32_t)attrFile.nodeSize - 2 - 16 - keyLength) || (recOffset >= attrFile.nodeSize - 2 - 16 - keyLength - attributeLength)) {
+                if ((attributeLength > (uint32_t)attrFile.nodeSize - 2 - offsetof(hfs_attr_data, attr_data) - keyLength) || (recOffset >= attrFile.nodeSize - 2 - offsetof(hfs_attr_data, attr_data) - keyLength - attributeLength)) {
                     error_detected(TSK_ERR_FS_READ,
                         "hfs_load_extended_attrs: Unable to process attribute");
                     goto on_error;

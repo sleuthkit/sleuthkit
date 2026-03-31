@@ -8,6 +8,7 @@
 #include "../libtsk.h"
 #include "tsk_fs_i.h"
 #include "decmpfs.h"
+#include <stddef.h>
 
 #ifdef HAVE_LIBZ
 #include <zlib.h>
@@ -1223,12 +1224,12 @@ decmpfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
     uint64_t dstSize;
     int dstBufFree = FALSE;
 
-    if (attributeLength - 16 > (TSK_OFF_T)UINT32_MAX) {
+    if (attributeLength - sizeof(DECMPFS_DISK_HEADER) > (TSK_OFF_T)UINT32_MAX) {
         error_detected(TSK_ERR_FS_READ,
             " %s: compressed attribute too large for rawSize field", __func__);
         return 0;
     }
-    if (!decompress_attr(buffer + 16, (uint32_t)(attributeLength - 16), uncSize,
+    if (!decompress_attr(buffer + sizeof(DECMPFS_DISK_HEADER), (uint32_t)(attributeLength - sizeof(DECMPFS_DISK_HEADER)), uncSize,
                          &dstBuf, &dstSize, &dstBufFree)) {
         return 0;
     }
