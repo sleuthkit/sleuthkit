@@ -44,6 +44,7 @@
 #define _UNICODE
 #endif
 
+#include <winsock2.h>   // must precede windows.h to avoid winsock2 redefinition errors
 #include <windows.h>
 #include <wchar.h>
 
@@ -164,7 +165,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 
 #define PRIcTSK _TSK_T("hs")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
 #define PRIttocTSK  "ls"         ///< printf macro to print a TSK_TCHAR string to stderr or other char device
-#define PRIuSIZE "Iu"           ///< printf macro to print a size_t value in Windows printf codes
+#define PRIuSIZE "Iu"           ///< printf macro to print a size_t value (both MSVC and MinGW use MS printf rules: %Iu)
 
 #define unlink _unlink
 
@@ -172,7 +173,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define OPTIND tsk_optind
 #define OPTARG tsk_optarg
 
-#define strtok_r(a,b,c) strtok(a,b)
+#define strtok_r(a,b,c) strtok_s(a,b,c)
 
 // Non-Win32
 #else

@@ -48,8 +48,8 @@ private:
     bool m_wasFileSystemFound;
     bool m_wasUnsupported;
     bool m_bitlockerError;
-    char m_encryptionDesc[1024];
-    char m_possibleEncryptionDesc[1024];
-    char m_unsupportedDesc[1024];
-    char m_bitlockerDesc[1024];
+    char m_encryptionDesc[TSK_ERROR_STRING_MAX_LENGTH + 1];
+    char m_possibleEncryptionDesc[TSK_ERROR_STRING_MAX_LENGTH + 1];
+    char m_unsupportedDesc[TSK_ERROR_STRING_MAX_LENGTH + 1];
+    char m_bitlockerDesc[TSK_ERROR_STRING_MAX_LENGTH + 1];
 };

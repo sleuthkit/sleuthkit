@@ -497,7 +497,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::createJString(const char * input, jstring & newJS
      * UTF16 buffer (target is advanced in the call to the conversion routine
      * above).
      */
-    newJString = m_jniEnv->NewString(utf16_input, (target - utf16_input) - 1);
+    newJString = m_jniEnv->NewString(utf16_input, (jsize)((target - utf16_input) - 1));
 
     free(utf16_input);
     return TSK_OK;
@@ -1214,7 +1214,7 @@ TskAutoDbJava::addUnallocatedPoolBlocksToDb(size_t & numPool) {
         if (m_poolOffsetToVsId.find(pool_info->img_offset) == m_poolOffsetToVsId.end()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %lld", pool_info->img_offset);
+            tsk_error_set_errstr("Error addUnallocatedPoolBlocksToDb() - could not find volume system object ID for pool at offset %" PRIdOFF, pool_info->img_offset);
             return TSK_ERR;
         }
         int64_t curPoolVs = m_poolOffsetToVsId[pool_info->img_offset];

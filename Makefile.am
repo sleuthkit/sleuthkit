@@ -2,35 +2,17 @@
 EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-CHANGES.txt \
     licenses/README.md licenses/GNUv2-COPYING licenses/GNUv3-COPYING licenses/IBM-LICENSE \
     licenses/Apache-LICENSE-2.0.txt licenses/cpl1.0.txt licenses/bsd.txt licenses/mit.txt \
-    m4/*.m4 \
     docs/README.txt \
     packages/sleuthkit.spec \
-    win32/BUILDING.txt \
-    win32/*/*.vcxproj \
-    win32/tsk-win.sln \
-    win32/NugetPackages.props \
-    win32/docs/* \
-    bindings/java/README.txt \
-    bindings/java/*.xml \
-    bindings/java/doxygen/Doxyfile \
-    bindings/java/doxygen/*.dox \
-    bindings/java/doxygen/*.html \
-    bindings/java/nbproject/project.xml \
-    bindings/java/src/org/sleuthkit/datamodel/*.java \
-    bindings/java/src/org/sleuthkit/datamodel/*.html \
-    bindings/java/src/org/sleuthkit/datamodel/*.properties \
-    bindings/java/src/org/sleuthkit/datamodel/blackboardutils/*.java \
-    bindings/java/src/org/sleuthkit/datamodel/blackboardutils/attributes/*.java \
-    bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
-    bindings/java/src/*.html \
-    case-uco/java/*.xml \
-    case-uco/java/*.md \
-    case-uco/java/nbproject/*.xml \
-    case-uco/java/nbproject/*.properties \
-    case-uco/java/src/org/sleuthkit/caseuco/*.java \
-    case-uco/java/test/org/sleuthkit/caseuco/*.java
+    win32 \
+    bindings/java \
+    case-uco/java
 
 ACLOCAL_AMFLAGS = -I m4
+
+# Skip Java submodules during distcheck: they require ivy (network) and a
+# pre-built bindings jar, neither of which is in the distribution tarball.
+AM_DISTCHECK_CONFIGURE_FLAGS = --disable-java
 
 # directories to compile
 if CPPUNIT

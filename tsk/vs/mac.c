@@ -59,7 +59,7 @@ mac_load_table(TSK_VS_INFO * vs)
             (vs, MAC_PART_SOFFSET + idx, part_buf, vs->block_size);
 
         /* If -1, then tsk_errno is already set */
-        if (cnt != vs->block_size) {
+        if (cnt != (ssize_t) vs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_VS_READ);

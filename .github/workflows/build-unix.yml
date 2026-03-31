@@ -15,6 +15,15 @@ on:
       - develop
       - develop-4.14
 
+# Cancel any in-progress run for the same branch when a new one starts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  # Opt into Node.js 24 for all actions now, ahead of the June 2026 forced migration.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     timeout-minutes: 30
@@ -48,6 +57,7 @@ jobs:
             prefix:
             address_sanitizer: "yes"
             keep_artifacts: "yes"
+            distcheck: "yes"
             suffix: "(with artifacts)"
             enable_java: "yes"
 
@@ -148,9 +158,9 @@ jobs:
           brew install libtool autoconf automake libtool libewf libmagic afflib wget
           echo MATRIX_ENABLE_JAVA=$MATRIX_ENABLE_JAVA
           if [ ${MATRIX_ENABLE_JAVA}x == "yesx" ]; then
-             echo Installing JAVA
-             brew install openjdk@17
-             echo JAVA_HOME="$(brew --prefix openjdk)" >> $GITHUB_ENV
+             echo Using pre-installed JDK
+             JAVA_HOME="$(/usr/libexec/java_home)"
+             echo JAVA_HOME="$JAVA_HOME" >> $GITHUB_ENV
              echo PATH="$JAVA_HOME/bin:$PATH" >> $GITHUB_ENV
              echo JNI_CPPFLAGS="-I$JAVA_HOME/include -I$JAVA_HOME/include/darwin" >> $GITHUB_ENV
              export CPPFLAGS="-I$JAVA_HOME/include $CPPFLAGS"
@@ -190,6 +200,15 @@ jobs:
           submodules: recursive
           fetch-depth: ${{ matrix.os == 'mingw' && 1 || 0 }}
 
+      - name: Cache Ivy dependencies
+        if: ${{ matrix.enable_java == 'yes' }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.ivy2/cache
+          key: ivy-${{ hashFiles('bindings/java/ivy.xml') }}
+          restore-keys: |
+            ivy-
+
       - name: Run bootstrap
         run: |
           echo CPPFLAGS=$CPPFLAGS
@@ -200,16 +219,36 @@ jobs:
         run: |
           ./configure ${{ matrix.configure_opts }}
 
-      - name: Unpack and List the test data
+      - name: Get test data cache key from S3 ETag
+        id: test-data-etag
+        run: |
+          # Fetch only the ETag header (no data downloaded) to use as a cache key.
+          # When new test data is uploaded to S3 the ETag changes, which busts the
+          # cache and forces a fresh download on the next run.
+          ETAG=$(curl -sI "https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip" \
+            | grep -i 'etag:' | tr -d '\r"' | awk '{print $2}')
+          echo "value=$ETAG" >> $GITHUB_OUTPUT
+
+      - name: Cache test data
+        id: cache-test-data
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/../sleuthkit_test_data
+          key: sleuthkit-test-data-${{ steps.test-data-etag.outputs.value }}
+
+      - name: Download and unpack test data
+        if: steps.cache-test-data.outputs.cache-hit != 'true'
         run: |
           cd ..
-          pwd
-          wget  -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
+          wget -q https://digitalcorpora.s3.amazonaws.com/corpora/drives/tsk-2024/sleuthkit_test_data.zip
           unzip sleuthkit_test_data.zip
           cd sleuthkit_test_data
           make unpack
-          find . -ls | grep -v '[.]git'
-          echo "SLEUTHKIT_TEST_DATA_DIR=$(pwd)" >> $GITHUB_ENV
+
+      - name: Set test data path
+        run: |
+          echo "SLEUTHKIT_TEST_DATA_DIR=${{ github.workspace }}/../sleuthkit_test_data" >> $GITHUB_ENV
+          find ${{ github.workspace }}/../sleuthkit_test_data -ls | grep -v '[.]git'
 
       - name: Run make check on Mac/Linux
         if: ${{ matrix.os != 'mingw' }}
@@ -259,7 +298,7 @@ jobs:
           WINEPATH: ${{ matrix.winepath }}
           WINEPREFIX: ${{ matrix.wineprefix }}
         run: |
-          make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 LOG_COMPILER=scripts/wine_wrapper.sh || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
+          make -j${{ steps.cores.outputs.cores }} check ${{ matrix.make_flags }} VERBOSE=1 LOG_COMPILER="$GITHUB_WORKSPACE/tests/wine_wrapper.sh" || result=1 ; for i in $(find test -name '*.log') ; do printf '\n%79s\n' | tr ' ' '=' ; echo "$i" ; cat "$i" ; done ; exit $result
 
       - name: Clean up
         run: |
@@ -274,6 +313,10 @@ jobs:
         if: ${{ matrix.address_sanitizer == 'yes' }}
         run: |
           make -j check VERBOSE=1
+
+      - name: Print test log on failure
+        if: failure()
+        run: cat tests/test-suite.log
 
       - name: Clean up
         run: |
@@ -296,10 +339,26 @@ jobs:
             executables/*
           retention-days: 15
 
-      - name: Run distcheck
+      - name: Run dist
+        if: ${{ matrix.distcheck == 'yes' }}
         run: |
+          # Use 'make dist' + manual extract-and-build instead of 'make distcheck'.
+          # 'make distcheck' does a full VPATH build inside the unpacked tarball,
+          # which requires all EXTRA_DIST glob patterns to resolve from the build
+          # subdirectory — something autotools globs don't support. The project
+          # also has Java submodules that require ivy (network) and a pre-built
+          # jar, neither of which is available in a clean distcheck environment.
+          # Instead we run 'make dist' to create the tarball, then extract it and
+          # do a configure+make to verify the tarball is self-contained and builds.
           ./configure
-          make distcheck
+          make dist
+          TARBALL=$(ls sleuthkit-*.tar.gz)
+          tar xzf "$TARBALL"
+          SRCDIR="${TARBALL%.tar.gz}"
+          mkdir _distbuild
+          cd _distbuild
+          ../"$SRCDIR"/configure --disable-java
+          make -j$(nproc)
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher

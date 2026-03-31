@@ -3,12 +3,22 @@ name: TSK Tests on Windows
 on:
   push:
     branches:
-      - '**' # This will trigger the action for all branches
+      - '**'
   pull_request:
-    branches:  # Specify the branches for which pull_request events should trigger the action
-      - main
-      - develop
-      - develop-4.14
+    branches:
+      - '**'
+
+# Cancel any in-progress run for the same branch when a new one starts.
+# This means a push to a branch that already has an open PR will cancel
+# the push-triggered run in favour of the pull_request-triggered run,
+# so only one run completes rather than two.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  # Opt into Node.js 24 for all actions now, ahead of the June 2026 forced migration.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -26,11 +36,11 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/setup-dotnet@v4
       - uses: microsoft/setup-msbuild@v2
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -48,7 +58,7 @@ jobs:
 
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu' # choose 'temurin', 'zulu' or 'adopt'
           java-version: '17'

@@ -109,6 +109,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {

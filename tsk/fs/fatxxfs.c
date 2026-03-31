@@ -76,7 +76,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     /* Read the root directory sector so that we can get the volume
      * label from it */
     cnt = tsk_fs_read_block(fs, fatfs->rootsect, data_buf, fs->block_size);
-    if (cnt != fs->block_size) {
+    if (cnt != (ssize_t) fs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);

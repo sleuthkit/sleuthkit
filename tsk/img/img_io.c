@@ -92,10 +92,10 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     // for ( a_len > SSIZE_MAX ) is better but the code does not seem to
     // use that approach.
 
-    if ((TSK_OFF_T) a_len < 0) {
+    if (a_len > (size_t) INT64_MAX) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: a_len: %zd", a_len);
+        tsk_error_set_errstr("tsk_img_read: a_len: %" PRIuSIZE, a_len);
         return -1;
     }
 

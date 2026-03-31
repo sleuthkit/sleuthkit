@@ -198,7 +198,7 @@ static uint8_t
 #ifdef TSK_WIN32
     {
         HANDLE hWin;
-        if (-1 == GetFileAttributes(hdb_binsrch_info->idx_idx_fname)) {
+        if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(hdb_binsrch_info->idx_idx_fname)) {
             // The file does not exist. Not a problem.
             return 0;
         }
@@ -323,7 +323,7 @@ static uint8_t
         HANDLE hWin;
         DWORD szLow, szHi;
 
-        if (-1 == GetFileAttributes(hdb_binsrch_info->idx_fname)) {
+        if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(hdb_binsrch_info->idx_fname)) {
             tsk_release_lock(&hdb_binsrch_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
@@ -970,13 +970,13 @@ uint8_t
 #ifdef TSK_WIN32
     wchar_t buf[TSK_HDB_MAXLEN];
     /// @@ Expand this to be SYSTEM_ROOT -- GetWindowsDirectory()
-    wchar_t *sys32 = _TSK_T("C:\\WINDOWS\\System32\\sort.exe");
+    const wchar_t *sys32 = _TSK_T("C:\\WINDOWS\\System32\\sort.exe");
     DWORD stat;
     STARTUPINFO myStartInfo;
     PROCESS_INFORMATION pinfo;
 
     stat = GetFileAttributes(sys32);
-    if ((stat != -1) && ((stat & FILE_ATTRIBUTE_DIRECTORY) == 0)) {
+    if ((stat != INVALID_FILE_ATTRIBUTES) && ((stat & FILE_ATTRIBUTE_DIRECTORY) == 0)) {
         TSNPRINTF(buf, TSK_HDB_MAXLEN, _TSK_T("%s /o \"%s\" \"%s\""),
             sys32, hdb_binsrch_info->idx_fname, hdb_binsrch_info->uns_fname);
     }
@@ -1017,7 +1017,7 @@ uint8_t
 
     // verify it was created
     stat = GetFileAttributes(hdb_binsrch_info->idx_fname);
-    if (stat == -1) {
+    if (stat == INVALID_FILE_ATTRIBUTES) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_PROC);
         tsk_error_set_errstr("hdb_binsrch_finalize: sorted file not created");
@@ -1142,16 +1142,16 @@ int8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-            "%s: Hash passed is different size than expected (%d vs %zd)",
-            func_name, hdb_binsrch_info->hash_len, strlen(hash));
+            "%s: Hash passed is different size than expected (%d vs %d)",
+            func_name, hdb_binsrch_info->hash_len, (int)strlen(hash));
         return -1;
     }
     else if (hdb_binsrch_info->idx_llen == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
         tsk_error_set_errstr(
-            "%s: Error: Index line length is zero - %d - %zu",
-            func_name, hdb_binsrch_info->hash_len, strlen(hash));
+            "%s: Error: Index line length is zero - %d - %d",
+            func_name, hdb_binsrch_info->hash_len, (int)strlen(hash));
         return -1;
     }
 
@@ -1175,8 +1175,7 @@ int8_t
         // This will give the offset into the index file for the set of hashes
         // that contains the sought hash.
         char digits[4];
-        strncpy(digits, ucHash, 3);
-        digits[3] = '\0';
+        snprintf(digits, sizeof(digits), "%.3s", ucHash);
         long int idx_idx_off = strtol(digits, NULL, 16);
         if ((idx_idx_off < 0) || (idx_idx_off > (long int)IDX_IDX_ENTRY_COUNT)) {
             tsk_release_lock(&hdb_binsrch_info->base.lock);

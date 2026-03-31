@@ -144,7 +144,7 @@ int aes_xts_decryptor::decrypt_block(void *buffer, size_t length,
   int outlen;
   EVP_DecryptInit_ex(_ctx, nullptr, nullptr, nullptr, tweak);
   EVP_DecryptUpdate(_ctx, static_cast<uint8_t *>(buffer), &outlen,
-                    static_cast<uint8_t *>(buffer), length);
+                    static_cast<uint8_t *>(buffer), (int)length);
 
   return outlen;
 }
@@ -156,8 +156,8 @@ std::unique_ptr<uint8_t[]> pbkdf2_hmac_sha256(const std::string &password,
   auto out = std::make_unique<uint8_t[]>(key_len);
 
   const auto ret = PKCS5_PBKDF2_HMAC(
-      password.c_str(), password.length(), (const uint8_t *)salt, salt_len,
-      iterations, EVP_sha256(), key_len, out.get());
+      password.c_str(), (int)password.length(), (const uint8_t *)salt, (int)salt_len,
+      iterations, EVP_sha256(), (int)key_len, out.get());
 
   if (ret == 0) {
     return nullptr;
@@ -175,14 +175,14 @@ std::unique_ptr<uint8_t[]> rfc3394_key_unwrap(const uint8_t *key,
   }
 
   AES_KEY aes_key;
-  AES_set_decrypt_key(key, key_len * 8, &aes_key);
+  AES_set_decrypt_key(key, (int)(key_len * 8), &aes_key);
 
   const int output_len = (int)(input_len - 8);
 
   auto out = std::make_unique<uint8_t[]>(output_len);
 
   const auto ret = AES_unwrap_key(&aes_key, (const uint8_t *)iv, out.get(),
-                                  (const uint8_t *)input, input_len);
+                                  (const uint8_t *)input, (unsigned int)input_len);
 
   if (ret != output_len) {
     return nullptr;

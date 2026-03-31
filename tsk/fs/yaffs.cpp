@@ -752,11 +752,11 @@ yaffs_load_config_file(TSK_IMG_INFO * a_img_info, std::map<std::string, std::str
     }
 
     // Construct the name of the config file from the first image name
-    config_file_name_len = TSTRLEN(a_img_info->images[0]);
-    config_file_name_len += TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX);
+    size_t base_img_len = TSTRLEN(a_img_info->images[0]) + 1;
+    config_file_name_len = base_img_len - 1 + TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX);
     config_file_name = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (config_file_name_len + 1));
 
-    TSTRNCPY(config_file_name, a_img_info->images[0], TSTRLEN(a_img_info->images[0]) + 1);
+    TSTRNCPY(config_file_name, a_img_info->images[0], base_img_len);
     TSTRNCAT(config_file_name, YAFFS_CONFIG_FILE_SUFFIX, TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX) + 1);
 
 #ifdef TSK_WIN32
@@ -1689,8 +1689,7 @@ static uint8_t
         fs_file->meta->attr = tsk_fs_attrlist_alloc();
     }
 
-    strncpy(fs_file->meta->name2->name, name,
-        TSK_FS_META_NAME_LIST_NSIZE);
+    snprintf(fs_file->meta->name2->name, TSK_FS_META_NAME_LIST_NSIZE, "%s", name);
 
     fs_file->meta->size = 0;
     fs_file->meta->attr_state = TSK_FS_META_ATTR_EMPTY;
@@ -1738,8 +1737,7 @@ static uint8_t
     }
 
     fs_file->meta->addr = inode;
-    strncpy(fs_file->meta->name2->name, name,
-        TSK_FS_META_NAME_LIST_NSIZE);
+    snprintf(fs_file->meta->name2->name, TSK_FS_META_NAME_LIST_NSIZE, "%s", name);
 
     fs_file->meta->size = 0;
     fs_file->meta->attr_state = TSK_FS_META_ATTR_EMPTY;

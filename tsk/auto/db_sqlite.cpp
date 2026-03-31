@@ -32,8 +32,7 @@ using std::for_each;
 TskDbSqlite::TskDbSqlite(const char* a_dbFilePathUtf8, bool a_blkMapFlag)
     : TskDb(a_dbFilePathUtf8, a_blkMapFlag)
 {
-    strncpy(m_dbFilePathUtf8, a_dbFilePathUtf8, 1023);
-    m_dbFilePathUtf8[1023] = '\0';
+    snprintf(m_dbFilePathUtf8, sizeof(m_dbFilePathUtf8), "%s", a_dbFilePathUtf8);
     m_utf8 = true;
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
@@ -2120,12 +2119,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART
         rowData.start = sqlite3_column_int64(vsPartInfosStatement, 2);
         rowData.len = sqlite3_column_int64(vsPartInfosStatement, 3);
         const unsigned char* text = sqlite3_column_text(vsPartInfosStatement, 4);
-        size_t textLen = sqlite3_column_bytes(vsPartInfosStatement, 4);
-        const size_t copyChars = textLen < TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1
-                                     ? textLen
-                                     : TSK_MAX_DB_VS_PART_INFO_DESC_LEN - 1;
-        strncpy(rowData.desc, (char*)text, copyChars);
-        rowData.desc[copyChars] = '\0';
+        snprintf(rowData.desc, TSK_MAX_DB_VS_PART_INFO_DESC_LEN, "%s", (char*)text);
         rowData.flags = (TSK_VS_PART_FLAG_ENUM)sqlite3_column_int(vsPartInfosStatement, 5);
         //insert a copy of the rowData
         vsPartInfos.push_back(rowData);

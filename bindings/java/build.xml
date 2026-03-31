@@ -18,21 +18,21 @@
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
 	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
-	<property name="build-datamodel" location="build/org/sleuthkit/datamodel"/>
+	<property name="build-datamodel" location="${build}/org/sleuthkit/datamodel"/>
 	<property name="dist" location="dist"/>
 	<property name="lib" location="lib"/>
 	<property name="test" location="test"/>
-	<property name="test-standards" location="test/output/gold"/>
-	<property name="test-results" location="test/output/results"/>
-	<property name="test-input" location="test/input"/>
+	<property name="test-standards" location="${test}/output/gold"/>
+	<property name="test-results" location="${test}/output/results"/>
+	<property name="test-input" location="${test}/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
-	<property name="native-libs" location="build/NATIVELIBS"/>
-	<property name="amd64" location="build/NATIVELIBS/amd64"/>
-	<property name="x86" location="build/NATIVELIBS/x86"/>
-	<property name="x86_64" location="build/NATIVELIBS/x86_64"/>
-	<property name="i386" location="build/NATIVELIBS/i386"/>
-	<property name="i586" location="build/NATIVELIBS/i586"/>
-	<property name="i686" location="build/NATIVELIBS/i686"/>
+	<property name="native-libs" location="${build}/NATIVELIBS"/>
+	<property name="amd64" location="${build}/NATIVELIBS/amd64"/>
+	<property name="x86" location="${build}/NATIVELIBS/x86"/>
+	<property name="x86_64" location="${build}/NATIVELIBS/x86_64"/>
+	<property name="i386" location="${build}/NATIVELIBS/i386"/>
+	<property name="i586" location="${build}/NATIVELIBS/i586"/>
+	<property name="i686" location="${build}/NATIVELIBS/i686"/>
 
 	<!-- Only added win folders for now -->
 	<target name="init">
@@ -115,7 +115,7 @@
 	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" unless="offline">
 		<ivy:settings file="ivysettings.xml"/>
 		<ivy:resolve/>
-		<ivy:retrieve sync="true" pattern="lib/[artifact]-[revision](-[classifier]).[ext]"/>
+		<ivy:retrieve sync="true" pattern="${lib}/[artifact]-[revision](-[classifier]).[ext]"/>
 	</target>
 
 	<target name="compile-test" depends="compile" description="compile the tests">
@@ -211,8 +211,8 @@
         <!-- the externalized strings in 'src' are in both the java files as annotations and in the Bundle.property files.
         The strings get merged during compilation.  This target copies that merged file into src so that it can be checked
         in and used as a basis for translation efforts -->
-        <copy todir="src">
-            <fileset dir="build">
+        <copy todir="src" failonerror="false">
+            <fileset dir="${build}">
                 <include name="**/Bundle.properties"/>
             </fileset>
             <globmapper from="*" to="*-MERGED"/>

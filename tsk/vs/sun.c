@@ -263,7 +263,7 @@ sun_load_table(TSK_VS_INFO * vs)
         (vs, SUN_SPARC_PART_SOFFSET, buf, vs->block_size);
 
     /* If -1 is returned, tsk_errno is already set */
-    if (cnt != vs->block_size) {
+    if (cnt != (ssize_t) vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
@@ -311,7 +311,7 @@ sun_load_table(TSK_VS_INFO * vs)
     cnt = tsk_vs_read_block
         (vs, SUN_I386_PART_SOFFSET, buf, vs->block_size);
 
-    if (cnt != vs->block_size) {
+    if (cnt != (ssize_t) vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);

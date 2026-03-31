@@ -67,7 +67,6 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp;
     unsigned int ssize = 0;
     TSK_TCHAR *path = NULL;
-    size_t len;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -90,6 +89,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %" PRIttocTSK "\n"),
                 argv[OPTIND]);
             usage();
+            break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -174,12 +174,12 @@ main(int argc, char **argv1)
 
 
     // copy in path
-    len = (TSTRLEN(argv[OPTIND]) + 1) * sizeof(TSK_TCHAR);
-    if ((path = (TSK_TCHAR *) tsk_malloc(len)) == NULL) {
+    size_t path_len = TSTRLEN(argv[OPTIND]) + 1;
+    if ((path = (TSK_TCHAR *) tsk_malloc(path_len * sizeof(TSK_TCHAR))) == NULL) {
         tsk_fprintf(stderr, "error allocating memory\n");
         exit(1);
     }
-    TSTRNCPY(path, argv[OPTIND], TSTRLEN(argv[OPTIND]) + 1);
+    TSTRNCPY(path, argv[OPTIND], path_len);
 
     if ((img =
             tsk_img_open(argc - OPTIND - 1, &argv[OPTIND+1],

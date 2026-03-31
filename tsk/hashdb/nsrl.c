@@ -177,7 +177,7 @@ static uint8_t
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
                 tsk_error_set_errstr(
                     "nsrl_parse_sha1: Invalid string to parse (commas after name): %s",
-                    ptr);
+                    str);
                 return 1;
             }
 
@@ -197,7 +197,7 @@ static uint8_t
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
                 tsk_error_set_errstr(
                     "nsrl_parse_sha1: Invalid string to parse (commas after name): %s",
-                    ptr);
+                    str);
                 return 1;
             }
 
@@ -621,7 +621,7 @@ uint8_t
                 return 1;
 
             found = 1;
-            strncpy(pname, name, TSK_HDB_MAXLEN);
+            snprintf(pname, TSK_HDB_MAXLEN, "%s", name);
         }
 
         /* Advance to the next row */

@@ -148,37 +148,40 @@ uint8_t TskIsImageSupported::handleError()
         uint32_t errCode = lastError->t_errno;
 
         if (errCode == TSK_ERR_FS_ENCRYPTED || errCode == TSK_ERR_VS_ENCRYPTED) {
-            strncpy(m_encryptionDesc, lastError->errstr, 1024);
+            snprintf(m_encryptionDesc, sizeof(m_encryptionDesc), "%s", lastError->errstr);
             m_wasEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
             // This is the case where we're confident we have BitLocker encryption but
             // failed to initialize it. The most common cause would be a missing
             // or incorrect password.
-            strncpy(m_encryptionDesc, "BitLocker", 1024);
+            snprintf(m_encryptionDesc, sizeof(m_encryptionDesc), "BitLocker");
             m_wasEncryptionFound = true;
             m_bitlockerError = true;
-            strncpy(m_bitlockerDesc, "BitLocker status - ", 1024);
-            strncat(m_bitlockerDesc, lastError->errstr, 950);
+            // %.*s limits the errstr field width so prefix + errstr fits in the buffer.
+            snprintf(m_bitlockerDesc, sizeof(m_bitlockerDesc), "BitLocker status - %.*s",
+                (int)(sizeof(m_bitlockerDesc) - sizeof("BitLocker status - ")), lastError->errstr);
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
-            strncpy(m_possibleEncryptionDesc, lastError->errstr, 1024);
+            snprintf(m_possibleEncryptionDesc, sizeof(m_possibleEncryptionDesc), "%s", lastError->errstr);
             m_wasPossibleEncryptionFound = true;
         }
         else if (errCode == TSK_ERR_IMG_UNSUPTYPE) {
-            strncpy(m_unsupportedDesc, lastError->errstr, 1024);
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "%s", lastError->errstr);
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_VS_MULTTYPE) {
-            // errstr only contains the "MAC or DOS" part, so add more context
-            strncpy(m_unsupportedDesc, "Multiple volume system types found - ", 1024);
-            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            // errstr only contains the "MAC or DOS" part, so add more context.
+            // %.*s limits the errstr field width so prefix + errstr fits in the buffer.
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple volume system types found - %.*s",
+                (int)(sizeof(m_unsupportedDesc) - sizeof("Multiple volume system types found - ")), lastError->errstr);
             m_wasUnsupported = true;
         }
         else if (errCode == TSK_ERR_FS_MULTTYPE) {
-            // errstr only contains the "UFS or NTFS" part, so add more context
-            strncpy(m_unsupportedDesc, "Multiple file system types found - ", 1024);
-            strncat(m_unsupportedDesc, lastError->errstr, 950);
+            // errstr only contains the "UFS or NTFS" part, so add more context.
+            // %.*s limits the errstr field width so prefix + errstr fits in the buffer.
+            snprintf(m_unsupportedDesc, sizeof(m_unsupportedDesc), "Multiple file system types found - %.*s",
+                (int)(sizeof(m_unsupportedDesc) - sizeof("Multiple file system types found - ")), lastError->errstr);
             m_wasUnsupported = true;
         }
 
@@ -226,8 +229,8 @@ std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
                 // To make the output look nicer make sure any open parens get closed (the close paren was likely on the last line of the original error message)
                 // For example we want to add a close paren to this line:
                 //   vmdk_open file: r:\work\images\renamedVM.vmdke: Error opening (libcfile_file_open_wide_with_error_code: no such file: \\?\R:\work\images\renamedVM.vmdke.
-                int nOpenParens = std::count(firstLine.begin(), firstLine.end(), '(');
-                int nCloseParens = std::count(firstLine.begin(), firstLine.end(), ')');
+                int nOpenParens = (int)std::count(firstLine.begin(), firstLine.end(), '(');
+                int nCloseParens = (int)std::count(firstLine.begin(), firstLine.end(), ')');
                 for (int i = nCloseParens; i < nOpenParens; i++) {
                     firstLine += ")";
                 }

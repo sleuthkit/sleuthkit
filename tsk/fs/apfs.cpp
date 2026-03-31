@@ -528,7 +528,7 @@ bool APFSFileSystem::unlock(const std::string& password) noexcept {
     }
 
     const auto user_key = pbkdf2_hmac_sha256(password, wk.salt, sizeof(wk.salt),
-                                             wk.iterations, kek_len);
+                                             (int)wk.iterations, kek_len);
     if (user_key == nullptr) {
       if (tsk_verbose) {
         tsk_fprintf(stderr, "apfs: can not generate user key\n");

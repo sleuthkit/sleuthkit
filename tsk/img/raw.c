@@ -198,7 +198,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // ReadFile returns TRUE and sets nread to zero.
         // We need to check if we've reached the end of a file and set nread to
         // the number of bytes read.
-        if ((raw_info->is_winobj) && (nread == 0) && (offset_to_read + len_to_read == raw_info->img_info.size)) {
+        if ((raw_info->is_winobj) && (nread == 0) && (offset_to_read + (TSK_OFF_T)len_to_read == raw_info->img_info.size)) {
             nread = (DWORD)len_to_read;
         }
         cnt = (ssize_t) nread;
@@ -215,7 +215,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                 tsk_error_set_errno(TSK_ERR_IMG_WRITE);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
                     "\" offset: %" PRIdOFF " tsk_img_writer_add cnt: %" PRIuSIZE " - %d",
-                    raw_info->img_info.images[idx], offset_to_read, cnt
+                    raw_info->img_info.images[idx], offset_to_read, cnt, (int) result
                     );
                 return -1;
             }

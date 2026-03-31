@@ -12,6 +12,10 @@ on:
       - develop
       - develop-4.14
 
+env:
+  # Opt into Node.js 24 for all actions now, ahead of the June 2026 forced migration.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest

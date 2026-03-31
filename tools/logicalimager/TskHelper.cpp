@@ -230,6 +230,7 @@ TskHelper::path2Inum(TSK_FS_INFO *a_fs, const char *a_path, bool anyExtension,
     }
 
     // Get the first part of the directory path. 
+    char *strtok_last;
     cur_name_to_match = (char *)strtok_r(cpath, "/", &strtok_last);
     cur_attr_to_match = NULL;
 

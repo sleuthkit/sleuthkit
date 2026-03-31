@@ -163,7 +163,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile, int recursion_d
                         tsk_fs_read(fs, off, buf2,
                         tsk_getu32(fs->endian, ce->celen_m));
 
-                    if (cnt == tsk_getu32(fs->endian, ce->celen_m)) {
+                    if (cnt == (ssize_t) tsk_getu32(fs->endian, ce->celen_m)) {
                         rockridge_ext *rr_sub_entry = parse_susp(fs, buf2, (int) cnt, hFile, recursion_depth + 1);
 
                         // Prevent an infinite loop
@@ -1292,7 +1292,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         tsk_fprintf(stderr, "iso9660_inode_walk: "
             " start: %" PRIuINUM " last: %" PRIuINUM " flags: %d"
             " action: %" PRIu64 " ptr: %" PRIu64 "\n",
-            start, last, flags, (uint64_t) action, (uint64_t) ptr);
+            start, last, flags, (uint64_t)(uintptr_t) action, (uint64_t)(uintptr_t) ptr);
 
     myflags = TSK_FS_META_FLAG_ALLOC;
 
@@ -1500,7 +1500,7 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
         tsk_fprintf(stderr, "iso9660_block_walk: "
             " start: %" PRIuDADDR " last: %" PRIuDADDR " flags: %d"
             " action: %" PRIu64 " ptr: %" PRIu64 "\n",
-            start, last, flags, (uint64_t) action, (uint64_t) ptr);
+            start, last, flags, (uint64_t)(uintptr_t) action, (uint64_t)(uintptr_t) ptr);
 
     /*
      * Sanity checks.
@@ -1954,7 +1954,7 @@ make_unix_perm(TSK_FS_INFO * fs, iso9660_dentry * dd,
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "make_unix_perm: fs: %" PRIu64
-            " dd: %" PRIu64 "\n", (uint64_t) fs, (uint64_t) dd);
+            " dd: %" PRIu64 "\n", (uint64_t)(uintptr_t) fs, (uint64_t)(uintptr_t) dd);
 
     memset(perm, '-', 10);
     perm[10] = '\0';
@@ -2583,7 +2583,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "iso9660_open img_info: %" PRIu64
-            " ftype: %" PRIu8 " test: %" PRIu8 "\n", (uint64_t) img_info,
+            " ftype: %" PRIu8 " test: %" PRIu8 "\n", (uint64_t)(uintptr_t) img_info,
             ftype, test);
     }
 

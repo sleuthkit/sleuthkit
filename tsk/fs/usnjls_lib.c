@@ -301,6 +301,8 @@ print_usnjent_act(TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr)
             return print_v2_record_long(a_header, record);
         case TSK_FS_USNJLS_MAC:
             return print_v2_record_mac(a_header, record);
+        default:
+            return TSK_WALK_ERROR;
         }
     }
     default: return TSK_WALK_ERROR;

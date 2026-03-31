@@ -75,6 +75,8 @@ logicalfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
  *
  * @return The converted timet
  */
+/* Commented out - used by the commented-out time fields below (search for
+ * filetime_to_timet).  Uncomment together with those call sites when needed.
 #ifdef TSK_WIN32
 static time_t
 filetime_to_timet(FILETIME const& ft)
@@ -85,6 +87,7 @@ filetime_to_timet(FILETIME const& ft)
 	return ull.QuadPart / 10000000ULL - 11644473600ULL;
 }
 #endif
+*/
 
 /**
 * Check if the given path contains the folder separator
@@ -227,8 +230,9 @@ create_path_search_helper(const TSK_TCHAR *target_path) {
 
 	helper->target_found = false;
 	helper->search_type = LOGICALFS_SEARCH_BY_PATH;
-	helper->target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(target_path) + 1));
-	TSTRNCPY(helper->target_path, target_path, TSTRLEN(target_path) + 1);
+	size_t target_path_len = TSTRLEN(target_path) + 1;
+	helper->target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * target_path_len);
+	TSTRNCPY(helper->target_path, target_path, target_path_len);
 	helper->found_inum = LOGICAL_INVALID_INUM;
 	helper->found_path = NULL;
 	return helper;
@@ -284,7 +288,7 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 		if (tsk_verbose)
 			tsk_fprintf(stderr,
 				"convert_wide_string_to_utf8: error converting logical file name to UTF-8\n");
-		strncpy(dest, invalidName, strlen(invalidName));
+		snprintf(dest, maxUTF8len, "%s", invalidName);
 	}
 	return dest;
 }
@@ -390,7 +394,7 @@ TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
 
 	// First convert the base path to an absolute path
 	TCHAR absPath[LOGICAL_MAX_PATH_UNICODE];
-	int ret = GetFullPathNameW(base_path, LOGICAL_MAX_PATH_UNICODE, absPath, NULL);
+	(void)GetFullPathNameW(base_path, LOGICAL_MAX_PATH_UNICODE, absPath, NULL);
 
 	size_t len = TSTRLEN(absPath);
 	TSK_TCHAR * searchPath;
@@ -551,12 +555,13 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *tar
 	// If we found a full or partial match, store the values
 	if (best_match_index >= 0) {
 		*best_inum = logical_img_info->inum_cache[best_match_index].inum;
-		*best_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1));
+		size_t best_path_len = TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1;
+		*best_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * best_path_len);
 		if (*best_path == NULL) {
 			tsk_release_lock(&(img_info->cache_lock));
 			return TSK_ERR;
 		}
-		TSTRNCPY(*best_path, logical_img_info->inum_cache[best_match_index].path, TSTRLEN(logical_img_info->inum_cache[best_match_index].path) + 1);
+		TSTRNCPY(*best_path, logical_img_info->inum_cache[best_match_index].path, best_path_len);
 	}
 
 	tsk_release_lock(&(img_info->cache_lock));
@@ -627,12 +632,13 @@ find_closest_sibling_match_in_cache(LOGICALFS_INFO* logical_fs_info, const TSK_T
 			tsk_release_lock(&(img_info->cache_lock));
 			return TSK_ERR;
 		}
-		*best_name = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(name) + 1));
+		size_t name_len = TSTRLEN(name) + 1;
+		*best_name = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * name_len);
 		if (*best_name == NULL) {
 			tsk_release_lock(&(img_info->cache_lock));
 			return TSK_ERR;
 		}
-		TSTRNCPY(*best_name, name, TSTRLEN(name) + 1);
+		TSTRNCPY(*best_name, name, name_len);
 		*best_inum = logical_img_info->inum_cache[best_match_index].inum;
 	}
 
@@ -661,12 +667,13 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 			logical_img_info->inum_cache[i].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
 
 			// Copy the path
-			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_img_info->inum_cache[i].path) + 1));
+			size_t target_path_len = TSTRLEN(logical_img_info->inum_cache[i].path) + 1;
+			target_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * target_path_len);
 			if (target_path == NULL) {
 				tsk_release_lock(&(img_info->cache_lock));
 				return NULL;
 			}
-			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, TSTRLEN(logical_img_info->inum_cache[i].path) + 1);
+			TSTRNCPY(target_path, logical_img_info->inum_cache[i].path, target_path_len);
 		}
 		else {
 			// The cache entry was not useful so decrease the age
@@ -738,12 +745,13 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	clear_inum_cache_entry(logical_img_info, next_slot);
 
 	// Copy the data
-	logical_img_info->inum_cache[next_slot].path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(path) + 1));
+	size_t cache_path_len = TSTRLEN(path) + 1;
+	logical_img_info->inum_cache[next_slot].path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * cache_path_len);
 	if (logical_img_info->inum_cache[next_slot].path == NULL) {
 		tsk_release_lock(&(img_info->cache_lock));
 		return TSK_ERR;
 	}
-	TSTRNCPY(logical_img_info->inum_cache[next_slot].path, path, TSTRLEN(path) + 1);
+	TSTRNCPY(logical_img_info->inum_cache[next_slot].path, path, cache_path_len);
 	logical_img_info->inum_cache[next_slot].inum = inum;
 	if (always_cache) {
 		logical_img_info->inum_cache[next_slot].cache_age = LOGICAL_INUM_CACHE_MAX_AGE;
@@ -829,9 +837,10 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		}
 
 		search_helper->target_found = true;
-		size_t found_path_len = TSTRLEN(parent_path) + 1 + TSTRLEN(file_names[file_index].c_str());
+		size_t parent_len = TSTRLEN(parent_path) + 1;
+		size_t found_path_len = parent_len + TSTRLEN(file_names[file_index].c_str());
 		search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (found_path_len + 1));
-		TSTRNCPY(search_helper->found_path, parent_path, TSTRLEN(parent_path) + 1);
+		TSTRNCPY(search_helper->found_path, parent_path, parent_len);
 #ifdef TSK_WIN32
 		TSTRNCAT(search_helper->found_path, L"\\", 2);
 #else
@@ -855,10 +864,11 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 	// The directoy name being added should generally be less than 270 characters, but if necessary we will
 	// make more space available.
 	size_t allocated_dir_name_len = 270;
-	TSK_TCHAR* current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(parent_path) + 2 + allocated_dir_name_len));
+	size_t parent_path_base_len = TSTRLEN(parent_path) + 1;
+	TSK_TCHAR* current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (parent_path_base_len + 1 + allocated_dir_name_len));
 	if (current_path == NULL)
 		return TSK_ERR;
-	TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
+	TSTRNCPY(current_path, parent_path, parent_path_base_len);
 #ifdef TSK_WIN32
 	TSTRNCAT(current_path, L"\\", 2);
 #else
@@ -887,10 +897,10 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		if (TSTRLEN(dir_names[i].c_str()) > allocated_dir_name_len) {
 			free(current_path);
 			allocated_dir_name_len = TSTRLEN(dir_names[i].c_str()) + 20;
-			current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(parent_path) + 2 + allocated_dir_name_len));
+			current_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (parent_path_base_len + 1 + allocated_dir_name_len));
 			if (current_path == NULL)
 				return TSK_ERR;
-			TSTRNCPY(current_path, parent_path, TSTRLEN(parent_path) + 1);
+			TSTRNCPY(current_path, parent_path, parent_path_base_len);
 #ifdef TSK_WIN32
 			TSTRNCAT(current_path, L"\\", 2);
 #else
@@ -899,7 +909,7 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		}
 
 		// Append the current directory name to the parent path
-		TSTRNCPY(current_path + parent_path_len, dir_names[i].c_str(), TSTRLEN(dir_names[i].c_str()) + 1);
+		TSTRNCPY(current_path + parent_path_len, dir_names[i].c_str(), allocated_dir_name_len + 1);
 		if (*last_inum_ptr == LOGICAL_INUM_DIR_MAX) {
 			// We're run out of inums to assign. Return an error.
 			tsk_error_reset();
@@ -954,10 +964,11 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 		if ((search_helper->search_type == LOGICALFS_SEARCH_BY_INUM)
 				&& (current_inum == search_helper->target_inum)) {
 			search_helper->target_found = true;
-			search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(current_path) + 1));
+			size_t found_path_size = TSTRLEN(current_path) + 1;
+			search_helper->found_path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * found_path_size);
 			if (search_helper->found_path == NULL)
 				return TSK_ERR;
-			TSTRNCPY(search_helper->found_path, current_path, TSTRLEN(current_path) + 1);
+			TSTRNCPY(search_helper->found_path, current_path, found_path_size);
 			free(current_path);
 			return TSK_OK;
 		}
@@ -989,10 +1000,11 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	TSK_TCHAR *path = NULL;
 	if (a_addr == logical_fs_info->fs_info.root_inum) {
 		// No need to do a search - it's just the root folder
-		path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(logical_fs_info->base_path) + 1));
+		size_t base_path_len = TSTRLEN(logical_fs_info->base_path) + 1;
+		path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * base_path_len);
 		if (path == NULL)
 			return NULL;
-		TSTRNCPY(path, logical_fs_info->base_path, TSTRLEN(logical_fs_info->base_path) + 1);
+		TSTRNCPY(path, logical_fs_info->base_path, base_path_len);
 		return path;
 	}
 
@@ -1029,20 +1041,22 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	}
 
 	if ((result != TSK_OK) || (!search_helper->target_found)) {
+		TSK_INUM_T target_inum = search_helper->target_inum;
 		free_search_helper(search_helper);
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-		tsk_error_set_errstr("load_path_from_inum - failed to find path corresponding to inum %" PRIuINUM, search_helper->target_inum);
+		tsk_error_set_errstr("load_path_from_inum - failed to find path corresponding to inum %" PRIuINUM, target_inum);
 		return NULL;
 	}
 
 	// Copy the path
-	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * (TSTRLEN(search_helper->found_path) + 1));
+	size_t found_len = TSTRLEN(search_helper->found_path) + 1;
+	path = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * found_len);
 	if (path == NULL) {
 		free_search_helper(search_helper);
 		return NULL;
 	}
-	TSTRNCPY(path, search_helper->found_path, TSTRLEN(search_helper->found_path) + 1);
+	TSTRNCPY(path, search_helper->found_path, found_len);
 	free_search_helper(search_helper);
 	return path;
 }
@@ -1090,10 +1104,10 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 		TSTRNCPY(absPath, L"\\\\?\\", 4);
 		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 		if (absPathLen <= 0) {
-			free(path);
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_file_add_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			free(path);
 			return TSK_ERR;
 		}
 		hFind = ::FindFirstFileW(absPath, &fd);
@@ -1187,9 +1201,10 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 #endif
 
 	// Get the full path on disk by combining the base path for the logical image with the relative path in dir_path
-	size_t len = TSTRLEN(base_path) + dir_path.length() + 1;
+	size_t base_len = TSTRLEN(base_path) + 1;
+	size_t len = base_len + dir_path.length();
 	TSK_TCHAR *path_buf = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) *(len + 2));
-	TSTRNCPY(path_buf, base_path, TSTRLEN(base_path) + 1);
+	TSTRNCPY(path_buf, base_path, base_len);
 #ifdef TSK_WIN32
 	TSTRNCAT(path_buf, L"\\", 2);
 #else
@@ -1327,10 +1342,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		TSTRNCPY(absPath, L"\\\\?\\", 4);
 		int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 		if (absPathLen <= 0) {
-			free(path);
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_dir_open_meta: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+			free(path);
 			return TSK_ERR;
 		}
 		hFind = ::FindFirstFileW(absPath, &fd);
@@ -1419,10 +1434,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = dir_inum;
 #ifdef TSK_WIN32
-		strncpy(fs_name->name, utf8Name, name_len);
+		strncpy(fs_name->name, utf8Name, name_len + 1);
 		free(utf8Name);
 #else
-		strncpy(fs_name->name, it->c_str(), name_len);
+		strncpy(fs_name->name, it->c_str(), name_len + 1);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
@@ -1462,10 +1477,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 		fs_name->par_addr = a_addr;
 		fs_name->meta_addr = file_inum;
 #ifdef TSK_WIN32
-		strncpy(fs_name->name, utf8Name, name_len);
+		strncpy(fs_name->name, utf8Name, name_len + 1);
 		free(utf8Name);
 #else
-		strncpy(fs_name->name, it->c_str(), name_len);
+		strncpy(fs_name->name, it->c_str(), name_len + 1);
 #endif
 		if (tsk_fs_dir_add(fs_dir, fs_name)) {
 			tsk_fs_name_free(fs_name);
@@ -1670,10 +1685,10 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 			TSTRNCPY(absPath, L"\\\\?\\", 4);
 			int absPathLen = GetFullPathNameW(path, LOGICAL_MAX_PATH_UNICODE, &(absPath[4]), NULL);
 			if (absPathLen <= 0) {
-				free(path);
 				tsk_error_reset();
 				tsk_error_set_errno(TSK_ERR_FS_GENFS);
 				tsk_error_set_errstr("logicalfs_read_block: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
+				free(path);
 				return TSK_ERR;
 			}
 			fd = CreateFileW(absPath, FILE_READ_DATA,
@@ -1761,7 +1776,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("logicalfs_read_block: file addr %" PRIuINUM
 			" offset: %" PRIu64 " read len: %" PRIuSIZE " - %d",
-			a_fs_file->meta->addr, a_block_num, block_size,
+			a_fs_file->meta->addr, a_block_num, (size_t)block_size,
 			lastError);
 		return -1;
 	}
@@ -1788,7 +1803,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		tsk_error_set_errno(TSK_ERR_IMG_READ);
 		tsk_error_set_errstr("logicalfs_read_block: file addr %" PRIuINUM
 			" offset: %" PRIdOFF " read len: %" PRIuSIZE " - %d",
-			a_fs_file->meta->addr, a_block_num, block_size,
+			a_fs_file->meta->addr, a_block_num, (size_t)block_size,
 			lastError);
 		return -1;
 	}

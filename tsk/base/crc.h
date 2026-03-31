@@ -91,8 +91,12 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 #ifndef DONE_STYLE
 
 typedef unsigned long   ulong;
-typedef unsigned        bool;
 typedef unsigned char * p_ubyte_;
+
+/* bool is a keyword in C++ and in C23; for C99/C11 we need stdbool.h. */
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 
 #ifndef TRUE
 #define FALSE 0
