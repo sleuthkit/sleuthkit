@@ -41,6 +41,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -449,7 +451,7 @@ public class SleuthkitCase {
 			initCollectedStatusTypes(connection);
 			populateHasChildrenMap(true);
 			//iped-patch
-			if (canWrite(dbPath))
+			if (canWriteDatabase(dbPath))
 			    updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
 		}
@@ -457,7 +459,7 @@ public class SleuthkitCase {
 		fileManager = new FileManager(this);
 		communicationsMgr = new CommunicationsManager(this);
 		//iped-patch
-		if (canWrite(dbPath))
+		if (canWriteDatabase(dbPath))
 		    timelineMgr = new TimelineManager(this);
 		dbAccessManager = new CaseDbAccessManager(this);
 		taggingMgr = new TaggingManager(this);
@@ -469,19 +471,49 @@ public class SleuthkitCase {
 		hostAddressManager = new HostAddressManager(this);
 	}
 
-	
-	private static boolean canWrite(String dbPath) {
-	    File file = new File(dbPath);
-            if (!file.exists()) {
-                return false;
-            }
-            try (FileOutputStream fos = new FileOutputStream(file, true)) {
-                return true;
+	// iped-patch
+	private static boolean canWriteDatabase(String dbPath) {
+		File dbFile = new File(dbPath);
+		Path path = dbFile.toPath();
 
-            } catch (IOException e) {
-                return false;
-            }
-        }
+		// 1. OS-Level Check: Does the file exist and does the current user
+		// have the 'Writable' attribute assigned by the OS/Filesystem?
+		if (!Files.exists(path) || !Files.isWritable(path)) {
+			return false;
+		}
+
+		// 2. Directory Check: SQLite requires folder-level write/delete
+		// permissions to manage rollback journals (-journal) or WAL files.
+		// This is especially critical for SMB shares where file-level
+		// permissions may differ from directory-level permissions.
+		File parentDir = dbFile.getParentFile();
+		if (parentDir == null || !parentDir.canWrite()) {
+			return false;
+		}
+
+		// 3. Engine-Level Check: Ask SQLite if the database is internally
+		// read-only (e.g., due to recovery mode, locking, or media write-protection).
+		String url = "jdbc:sqlite:" + dbPath;
+
+		// Set a busy_timeout for network shares to handle transient locks gracefully.
+		Properties props = new Properties();
+		props.setProperty("busy_timeout", "3000");
+
+		try (Connection conn = DriverManager.getConnection(url, props);
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery("PRAGMA query_only;")) {
+
+			if (rs.next()) {
+				// query_only = 0 (false) means the database engine permits writes.
+				return rs.getInt(1) == 0;
+			}
+		} catch (Exception e) {
+			// Includes Connection errors (e.g., WAL mode incompatible with SMB)
+			// or SQL errors (e.g., database file is locked/corrupt).
+			return false;
+		}
+		return false;
+	}
 
 	/**
 	 * Returns the custom content provider for this case if one exists.
@@ -493,11 +525,6 @@ public class SleuthkitCase {
 	ContentStreamProvider getContentProvider() {
 		return this.contentProvider;
 	}
-
-        } catch (IOException e) {
-            return false;
-        }
-    }
 
 	/**
 	 * Returns a set of core table names in the SleuthKit Case database.
