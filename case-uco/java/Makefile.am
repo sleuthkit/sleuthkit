@@ -12,9 +12,19 @@ endif
 $(tsk_caseuco_jar):
 
 all-local:
-	ant $(ant_args)
+	ant -f $(srcdir)/build.xml \
+	    -Dbuild.dir=$(abs_builddir)/build \
+	    -Ddist.dir=$(abs_builddir)/dist \
+	    -Dlib=$(abs_builddir)/lib \
+	    -Dbindings.dist=$(abs_top_builddir)/bindings/java/dist \
+	    $(ant_args)
 
 CLEANFILES = $(tsk_caseuco_jar)
 
 clean-local:
-	ant clean || echo ant not installed
+	ant -f $(srcdir)/build.xml \
+	    -Dbuild.dir=$(abs_builddir)/build \
+	    -Ddist.dir=$(abs_builddir)/dist \
+	    -Dlib=$(abs_builddir)/lib \
+	    -Dbindings.dist=$(abs_top_builddir)/bindings/java/dist \
+	    clean || echo ant not installed
