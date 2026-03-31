@@ -288,7 +288,7 @@ convert_wide_string_to_utf8(const wchar_t *source) {
 		if (tsk_verbose)
 			tsk_fprintf(stderr,
 				"convert_wide_string_to_utf8: error converting logical file name to UTF-8\n");
-		strncpy(dest, invalidName, strlen(invalidName) + 1);
+		snprintf(dest, maxUTF8len, "%s", invalidName);
 	}
 	return dest;
 }
