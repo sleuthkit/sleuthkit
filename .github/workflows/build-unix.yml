@@ -339,11 +339,26 @@ jobs:
             executables/*
           retention-days: 15
 
-      - name: Run distcheck
+      - name: Run dist
         if: ${{ matrix.distcheck == 'yes' }}
         run: |
+          # Use 'make dist' + manual extract-and-build instead of 'make distcheck'.
+          # 'make distcheck' does a full VPATH build inside the unpacked tarball,
+          # which requires all EXTRA_DIST glob patterns to resolve from the build
+          # subdirectory — something autotools globs don't support. The project
+          # also has Java submodules that require ivy (network) and a pre-built
+          # jar, neither of which is available in a clean distcheck environment.
+          # Instead we run 'make dist' to create the tarball, then extract it and
+          # do a configure+make to verify the tarball is self-contained and builds.
           ./configure
-          make distcheck
+          make dist
+          TARBALL=$(ls sleuthkit-*.tar.gz)
+          tar xzf "$TARBALL"
+          SRCDIR="${TARBALL%.tar.gz}"
+          mkdir _distbuild
+          cd _distbuild
+          ../"$SRCDIR"/configure --disable-java
+          make -j$(nproc)
 
       - uses: ammaraskar/gcc-problem-matcher@0.2.0
         name: GCC Problem Matcher
