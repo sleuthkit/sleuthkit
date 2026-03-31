@@ -8,15 +8,29 @@
  * This software is distributed under the Common Public License 1.0
  */
 #include <cstring>
+#include <stdexcept>
 
 #include "apfs_fs.hpp"
+
+// Look up an OID in the object map and return its physical address.
+// Throws std::runtime_error if the OID is not found, rather than allowing
+// a null/end iterator dereference which is undefined behavior.
+static apfs_block_num checked_find_paddr(APFSObjectBtreeNode& obj_root,
+                                         uint64_t oid) {
+  const auto it = obj_root.find(oid);
+  if (it == obj_root.end()) {
+    throw std::runtime_error("APFS: root tree OID not found in object map");
+  }
+  return it->value->paddr;
+}
 
 APFSJObjTree::APFSJObjTree(const APFSPool& pool, apfs_block_num obj_omap,
                            uint64_t root_tree_oid,
                            const APFSFileSystem::crypto_info_t& crypto)
     : _crypto{crypto},
       _obj_root{pool, obj_omap},
-      _jobj_root{&_obj_root, _obj_root.find(root_tree_oid)->value->paddr,
+      _jobj_root{&_obj_root,
+                 checked_find_paddr(_obj_root, root_tree_oid),
                  _crypto.key.get()},
       _root_tree_oid{root_tree_oid} {}
 
@@ -30,14 +44,13 @@ void APFSJObjTree::set_snapshot(uint64_t snap_xid) {
 
   // This type isn't copyable or moveable, so we have to use in-place allocation
   // TODO(JTS): Refactor APFSObjects so that they can be move assigned
+  // Resolve paddr before destroying _jobj_root so a throw leaves it intact.
+  const apfs_block_num paddr = checked_find_paddr(_obj_root, _root_tree_oid);
   _jobj_root.~APFSJObjBtreeNode();
 #ifdef HAVE_LIBOPENSSL
-  new (&_jobj_root) APFSJObjBtreeNode(
-      &_obj_root, _obj_root.find(_root_tree_oid)->value->paddr,
-      _crypto.key.get());
+  new (&_jobj_root) APFSJObjBtreeNode(&_obj_root, paddr, _crypto.key.get());
 #else
-  new (&_jobj_root) APFSJObjBtreeNode(
-      &_obj_root, _obj_root.find(_root_tree_oid)->value->paddr, nullptr);
+  new (&_jobj_root) APFSJObjBtreeNode(&_obj_root, paddr, nullptr);
 #endif
 }
 
