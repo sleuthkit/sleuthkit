@@ -43,7 +43,7 @@ namespace Rejistry {
      */
     class ValueData {
     public:
-        typedef ValueData* ValueDataPtr;
+        typedef std::unique_ptr<ValueData> ValueDataUniqPtr;
 
         enum VALUE_TYPES {
             VALTYPE_NONE = 0,

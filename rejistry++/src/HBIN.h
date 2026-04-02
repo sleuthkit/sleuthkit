@@ -45,9 +45,7 @@ namespace Rejistry {
      */
     class HBIN : public BinaryBlock {
     public:
-        typedef HBIN * HBINPtr;
         typedef std::unique_ptr<HBIN> HBINUniqPtr;
-        typedef std::vector< HBINPtr > HBINPtrList;
 
         HBIN(const REGFHeader * header, RegistryByteBuffer * buf, uint32_t offset);
         
@@ -89,7 +87,7 @@ namespace Rejistry {
         HBIN(const HBIN &);
         HBIN& operator=(const HBIN &);
 
-        const REGFHeader * _header = NULL;
+        const REGFHeader * _header = nullptr;
     };
 };
 

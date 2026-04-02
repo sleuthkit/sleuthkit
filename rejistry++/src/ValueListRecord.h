@@ -49,18 +49,16 @@ namespace Rejistry {
         virtual ~ValueListRecord() {}
     
         /**
-         * @returns The list of value records. The caller is responsible
-         * for freeing these records.
+         * @returns The list of value records.
          */
-        virtual VKRecord::VKRecordUniqPtrList getValues() const;
+        VKRecord::VKRecordUniqPtrList getValues() const;
 
         /**
          * Fetch the value with the given name from the value list.
          * @param name The name of the value to fetch.
-         * @returns The matching value record. The caller is responsible
-         * for freeing this record.
+         * @returns The matching value record.
          */
-        VKRecord::VKRecordPtr getValue(const std::wstring& name) const;
+        VKRecord::VKRecordUniqPtr getValue(const std::wstring& name) const;
 
         /**
         * @returns The ValueListRecord size
@@ -74,8 +72,8 @@ namespace Rejistry {
 
     protected:
         ValueListRecord() {};
-        ValueListRecord(const ValueListRecord &);
-        ValueListRecord& operator=(const ValueListRecord &);
+        ValueListRecord(const ValueListRecord &) = delete;
+        ValueListRecord& operator=(const ValueListRecord &) = delete;
 
     };
 };

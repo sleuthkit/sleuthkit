@@ -52,7 +52,7 @@ namespace Rejistry {
 
         virtual ~RegistryHiveBuffer();
 
-        virtual RegistryKey * getRoot() const;
+        virtual std::unique_ptr <RegistryKey> getRoot() const;
         virtual std::unique_ptr<REGFHeader> getHeader() const;
 
     private:

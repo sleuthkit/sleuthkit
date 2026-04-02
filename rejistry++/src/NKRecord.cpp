@@ -70,10 +70,6 @@ namespace Rejistry {
         }
         uint32_t classnameOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
         auto c = std::make_unique< Cell >(_buf, classnameOffset);
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create cell for class name.");
-        }
-
         std::vector<uint8_t> data = c->getData();
         if (length > data.size()) {
             throw RegistryParseException("Cell size insufficient for parsing classname.");
@@ -130,10 +126,6 @@ namespace Rejistry {
         }
         uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
         auto c = std::make_unique< Cell >(_buf, parentOffset);
-
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create Cell for parent.");
-        }
         return c->getNKRecord();
     }
 
@@ -163,10 +155,6 @@ namespace Rejistry {
 
         auto c = std::make_unique< Cell >(_buf, offset);
 
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create Cell for value list record.");
-        }
-
         return c->getSubkeyList();
     }
 
@@ -179,11 +167,6 @@ namespace Rejistry {
         offset += REGFHeader::FIRST_HBIN_OFFSET;
 
         auto c = std::make_unique< Cell >(_buf, offset);
-
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create Cell for value list record.");
-        }
-
         return c->getValueListRecord(getNumberOfValues());
     }
 };

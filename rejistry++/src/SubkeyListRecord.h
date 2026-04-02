@@ -59,27 +59,24 @@ namespace Rejistry {
         uint16_t getListLength() const;
 
         /**
-         * @returns The list of subkeys. The caller is responsible for
-         * freeing the returned record list.
+         * @returns The list of subkeys.
          */
-        virtual std::vector<NKRecord*> getSubkeys() const = 0;
+        virtual std::vector<std::unique_ptr<NKRecord>> getSubkeys() const = 0;
 
         /**
          * Fetch the subkey with the given name from the subkey list.
          * @param name The name of the subkey to fetch.
-         * @returns The matching subkey record. The caller is responsible
-         * for freeing the returned record.
+         * @returns The matching subkey record.
          */
-        NKRecord * getSubkey(const std::wstring& name) const;
+        std::unique_ptr<NKRecord> getSubkey(const std::wstring& name) const;
 
     private:
         static const uint16_t LIST_LENGTH_OFFSET = 0x02;
 
     protected:
         SubkeyListRecord();
-        SubkeyListRecord(const SubkeyListRecord &);
-        SubkeyListRecord& operator=(const SubkeyListRecord &);
-
+        SubkeyListRecord(const SubkeyListRecord &) = delete;
+        SubkeyListRecord& operator=(const SubkeyListRecord &) = delete;
     };
 };
 

@@ -33,8 +33,8 @@
 
 namespace Rejistry {
     
-    std::vector<NKRecord *> DirectSubkeyListRecord::getSubkeys() const {
-        std::vector<NKRecord *> subkeyList;
+    NKRecord::NKRecordUniqPtrList DirectSubkeyListRecord::getSubkeys() const {
+        NKRecord::NKRecordUniqPtrList subkeyList;
         uint16_t listLength = getListLength();
 
         for (uint16_t index = 0; index < listLength; ++index) {
@@ -46,10 +46,10 @@ namespace Rejistry {
                 throw RegistryParseException("Failed to create Cell for key record.");
             }
 
-            subkeyList.push_back(c->getNKRecord().release());
+            subkeyList.push_back(c->getNKRecord());
         }
 
-        return subkeyList;        
+        return subkeyList;
     }
 
 };

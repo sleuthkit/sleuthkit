@@ -47,7 +47,7 @@ namespace Rejistry {
         Buffer() {}
         Buffer(const uint32_t capacity);
         Buffer(const Buffer& );
-        Buffer& operator=(const Buffer& );
+        Buffer& operator=(const Buffer& ) = delete;
 
         virtual ~Buffer();
 

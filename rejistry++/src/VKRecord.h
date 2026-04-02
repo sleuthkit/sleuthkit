@@ -45,43 +45,8 @@ namespace Rejistry {
     public:
         static const std::wstring DEFAULT_VALUE_NAME;
 
-        typedef VKRecord * VKRecordPtr;
-        typedef std::vector< VKRecordPtr > VKRecordPtrList;
-        typedef std::vector< std::unique_ptr<VKRecord> > VKRecordUniqPtrList;
-
-        /**
-            The AutoNKRecordPtrList class should be used by clients to hold lists of
-            VKRecord pointers returned by methods like ValueListRecord::getValues()
-            so that the record objects will be automatically freed. Example:
-            @code
-            AutoVKRecordPtrList valueList(nkRecord->getValueList()->getValues());
-            for (VKRecord::VKRecordPtrList::iterator i = valueList.begin(); i != valueList.end(); ++i)
-            { ... //do stuff }
-            // Don't worry about delete'ing each record object--valueList will take care of
-            // that when it goes out of scope.
-            @endcode
-        */
-        class AutoVKRecordPtrList
-        {
-        public:
-
-            AutoVKRecordPtrList(VKRecordPtrList recordList) : _recordList(recordList) {}
-            ~AutoVKRecordPtrList()
-            {
-                for (VKRecordPtrList::iterator it = _recordList.begin(); it != _recordList.end(); ++it)
-                {
-                    delete *it;
-                }
-            }
-            VKRecordPtrList::iterator begin() { return _recordList.begin(); }
-            VKRecordPtrList::iterator end()   { return _recordList.end(); }
-            VKRecordPtrList::size_type size() { return _recordList.size(); }
-        private:
-            AutoVKRecordPtrList(const AutoVKRecordPtrList&);
-            AutoVKRecordPtrList& operator=(const AutoVKRecordPtrList&);
-
-            VKRecordPtrList _recordList;
-        };
+        typedef std::unique_ptr<VKRecord> VKRecordUniqPtr;
+        typedef std::vector< VKRecordUniqPtr > VKRecordUniqPtrList;
 
         VKRecord(RegistryByteBuffer * buf, uint32_t offset);
         VKRecord(const VKRecord &);
@@ -135,7 +100,7 @@ namespace Rejistry {
          * responsible for freeing the data.
          * @throws RegistryParseException
          */
-        ValueData::ValueDataPtr getValue() const;
+        ValueData::ValueDataUniqPtr getValue() const;
 
     private:
         static const std::string MAGIC;

@@ -43,6 +43,7 @@ namespace Rejistry {
 
         LARGE_INTEGER fileSize;
         if (!GetFileSizeEx(fileHandle, &fileSize)) {
+            CloseHandle(fileHandle);
             throw RegistryParseException("Failed to get file size.");
         }
 
@@ -75,8 +76,8 @@ namespace Rejistry {
     RegistryHiveFile::~RegistryHiveFile() {
     }
 
-    RegistryKey * RegistryHiveFile::getRoot() const {
-        return new RegistryKey(getHeader()->getRootNKRecord());
+    std::unique_ptr <RegistryKey> RegistryHiveFile::getRoot() const {
+        return std::make_unique <RegistryKey>(getHeader()->getRootNKRecord());
     }
 
     std::unique_ptr<REGFHeader> RegistryHiveFile::getHeader() const {

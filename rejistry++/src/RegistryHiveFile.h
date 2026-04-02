@@ -43,7 +43,7 @@ namespace Rejistry {
 
         virtual ~RegistryHiveFile();
 
-        virtual RegistryKey * getRoot() const;
+        virtual std::unique_ptr <RegistryKey> getRoot() const;
         virtual std::unique_ptr<REGFHeader> getHeader() const;
 
     private:

@@ -59,16 +59,16 @@ namespace Rejistry {
         return subkeyList;
     }
 
-    NKRecord::NKRecordPtrList RIRecord::getSubkeys() const {
-        NKRecord::NKRecordPtrList finalNKRecordList;
-        SubkeyListRecord::SubkeyListRecordPtrList subkeyLists = getSubkeyLists();
+    NKRecord::NKRecordUniqPtrList RIRecord::getSubkeys() const {
+        NKRecord::NKRecordUniqPtrList finalNKRecordList;
 
         // Iterate over each of the subkey lists getting their subkeys.
-        for (const auto& subkeyList : subkeyLists) {
-            NKRecord::NKRecordPtrList nkRecordList = subkeyList->getSubkeys();
-            finalNKRecordList.insert(finalNKRecordList.end(), nkRecordList.begin(), nkRecordList.end());
+        for (const auto& subkeyList : getSubkeyLists()) {
+            for (auto& nk : subkeyList->getSubkeys()) {
+                finalNKRecordList.push_back(std::move(nk));
+            }
         }
 
-        return finalNKRecordList;        
+        return finalNKRecordList;
     }
 };

@@ -42,8 +42,8 @@ namespace Rejistry {
      */
     class RegistryKey {
     public:
-        typedef RegistryKey * RegistryKeyPtr;
-        typedef std::vector<RegistryKeyPtr> RegistryKeyPtrList;
+        typedef std::unique_ptr<RegistryKey> RegistryKeyUniqPtr;
+        typedef std::vector<RegistryKeyUniqPtr> RegistryKeyPtrList;
 
         RegistryKey(std::unique_ptr<NKRecord> nk) { _nk = std::move(nk); }
         RegistryKey(const RegistryKey& );
@@ -83,10 +83,10 @@ namespace Rejistry {
         /**
          * Get the subkey with the given name.
          * @param name ASCII name of the subkey of retrieve.
-         * @returns Pointer to the subkey.
+         * @returns Unique pointer to the subkey.
          * @throws RegistryParseException if subkey cannot be found.
          */
-        RegistryKeyPtr getSubkey(const std::wstring& name) const;
+        RegistryKey::RegistryKeyUniqPtr getSubkey(const std::wstring& name) const;
 
         /**
          * Get all values for the current key.
@@ -108,7 +108,7 @@ namespace Rejistry {
          * @returns Pointer to the value.
          * @throws RegistryParseException on error.
          */
-        RegistryValue::RegistryValuePtr getValue(const std::wstring& name) const;
+        RegistryValue::RegistryValueUniqPtr getValue(const std::wstring& name) const;
 
     private:
         RegistryKey();

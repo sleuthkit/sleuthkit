@@ -46,8 +46,8 @@ namespace Rejistry {
         
         virtual ~EmptySubkeyList() {}
     
-        virtual std::vector<NKRecord *> getSubkeys() const {
-            return std::vector<NKRecord *>();
+        virtual NKRecord::NKRecordUniqPtrList getSubkeys() const {
+            return NKRecord::NKRecordUniqPtrList();
         }
 
     private:

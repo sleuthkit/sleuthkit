@@ -45,7 +45,7 @@ namespace Rejistry {
         return _vk->getValueType();
     }
 
-    ValueData * RegistryValue::getValue() const {
+    ValueData::ValueDataUniqPtr RegistryValue::getValue() const {
         return _vk->getValue();
     }
 

@@ -44,7 +44,7 @@ namespace Rejistry {
     
     // Take ownership of the passed in buffer
     RegistryByteBuffer::RegistryByteBuffer(std::unique_ptr<ByteBuffer> buffer) {
-        if (buffer == NULL) {
+        if (buffer == nullptr) {
             throw RegistryParseException("Buffer must not be null.");
         }
         _byteBuffer = std::move(buffer);

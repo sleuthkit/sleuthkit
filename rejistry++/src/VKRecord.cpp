@@ -101,15 +101,15 @@ namespace Rejistry {
 
     }
 
-    ValueData::ValueDataPtr VKRecord::getValue() const {
+    ValueData::ValueDataUniqPtr VKRecord::getValue() const {
         uint32_t length = getRawDataLength();
         uint32_t offset = getDataOffset();
 
-        if (length > LARGE_DATA_SIZE + DB_DATA_SIZE) {
+        if (length > (LARGE_DATA_SIZE + DB_DATA_SIZE)) {
             throw RegistryParseException("Value size too large.");
         }
 
-        std::unique_ptr< RegistryByteBuffer> data = NULL;
+        std::unique_ptr<RegistryByteBuffer> data = nullptr;
 
         switch (getValueType()) {
         case ValueData::VALTYPE_BIN:
@@ -128,14 +128,8 @@ namespace Rejistry {
             }
             else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
                 auto c = std::make_unique< Cell >(_buf, offset);
-                if (c.get() == NULL) {
-                    throw RegistryParseException("Failed to create Cell for Value data.");
-                }
                 try {
                     auto db = c->getDBRecord();
-                    if (db.get() == NULL) {
-                        throw RegistryParseException("Failed to create Cell for DBRecord.");
-                    }
                     data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(db->getData(length), length));
                 }
                 catch (RegistryParseException& ) {
@@ -144,9 +138,6 @@ namespace Rejistry {
             }
             else {
                 auto c = std::make_unique< Cell >(_buf, offset);
-                if (c.get() == NULL) {
-                    throw RegistryParseException("Failed to create Cell for Value data.");
-                }
                 data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
             }
             break;
@@ -158,9 +149,6 @@ namespace Rejistry {
         case ValueData::VALTYPE_FILETIME:
             {
                 auto c = std::make_unique< Cell >(_buf, offset);
-                if (c.get() == NULL) {
-                    throw RegistryParseException("Failed to create Cell for Value data.");
-                }
                 data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
             }
             break;
@@ -169,6 +157,6 @@ namespace Rejistry {
             data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(0));
         }
 
-        return new ValueData(std::move(data), getValueType());                                                            
+        return std::make_unique<ValueData>(std::move(data), getValueType());                                                            
     }
 };
