@@ -46,35 +46,20 @@ namespace Rejistry {
             offset += REGFHeader::FIRST_HBIN_OFFSET;
 
             auto c = std::make_unique< Cell >(_buf, offset);
-            if (c.get() == NULL) {
-                throw RegistryParseException("Failed to create Cell for value record.");
-            }
-
             valueList.push_back(c->getVKRecord());
         }
 
         return valueList;
     }
 
-    VKRecord::VKRecordPtr ValueListRecord::getValue(const std::wstring& name) const {
-        VKRecord::VKRecordPtr foundRecord = NULL;
-
-        for (const auto& valueRecord : getValues()) {
-            // If we have a name match or we are searching for the "default" entry
-            // (which matches a record with no name) we are done.
+    VKRecord::VKRecordUniqPtr ValueListRecord::getValue(const std::wstring& name) const {
+        for (auto& valueRecord : getValues()) {
             if ((!valueRecord->hasName() && name == VKRecord::DEFAULT_VALUE_NAME) ||
                 (_wcsicmp(name.c_str(), valueRecord->getName().c_str()) == 0)) {
-                // Create a copy of the record to return as the records
-                // in the list will be deleted.
-                foundRecord = new VKRecord(*valueRecord);
-                break;
+                return std::move(valueRecord);
             }
         }
 
-        if (foundRecord == NULL) {
-            throw NoSuchElementException("Failed to find value.");
-        }
-
-        return foundRecord;
+        throw NoSuchElementException("Failed to find value.");
     }
 };

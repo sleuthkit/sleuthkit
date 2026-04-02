@@ -113,7 +113,7 @@ namespace Rejistry {
     }
 
 
-    void printVKRecord(const VKRecord::VKRecordPtr vkRecord, const std::wstring& prefix) {
+    void printVKRecord(const VKRecord* vkRecord, const std::wstring& prefix) {
         try {
 
             std::wcout << prefix << "vkrecord has name: " << getBooleanString(vkRecord->hasName()) << std::endl;
@@ -122,7 +122,7 @@ namespace Rejistry {
             std::wcout << prefix << "vkrecord value type: " << ValueData::getValueType(vkRecord->getValueType()) << std::endl;
             std::wcout << prefix << "vkrecord data length: " << std::dec << vkRecord->getDataLength() << std::endl;
 
-            ValueData::ValueDataPtr data = vkRecord->getValue();
+            ValueData::ValueDataUniqPtr data = vkRecord->getValue();
             std::wcout << prefix << "vkrecord data: ";
 
             switch (data->getValueType()) {
@@ -162,7 +162,7 @@ namespace Rejistry {
         }
     }
 
-    void printNKRecord(const NKRecord::NKRecordPtr nkRecord, const std::wstring& prefix) {
+    void printNKRecord(const NKRecord* nkRecord, const std::wstring& prefix) {
         try {
             std::wcout << prefix << "nkrecord has classname: " << getBooleanString(nkRecord->hasClassname()) << std::endl;
             std::wcout << prefix << "nkrecord classname: " << nkRecord->getClassName() << std::endl;
@@ -175,7 +175,7 @@ namespace Rejistry {
 
             for (auto& vkRecord : nkRecord->getValueList()->getValues()) {
                 std::wcout << prefix << "  value: " << vkRecord->getName() << std::endl;
-                printVKRecord(vkRecord.release(), L"    " + prefix);
+                printVKRecord(vkRecord.get(), L"    " + prefix);
             }
         }
         catch (std::exception& ex) {
@@ -183,17 +183,14 @@ namespace Rejistry {
         }
     }
 
-    void recurseNKRecord(NKRecord::NKRecordPtr nkRecord, const std::wstring& prefix) {
+    void recurseNKRecord(NKRecord* nkRecord, const std::wstring& prefix) {
         printNKRecord(nkRecord, prefix);
 
-        NKRecord::AutoNKRecordPtrList subkeyList(nkRecord->getSubkeyList()->getSubkeys());
-        NKRecord::NKRecordPtrList::iterator it = subkeyList.begin();
-
-        for (; it != subkeyList.end(); ++it) {
-            std::wcout << prefix << "  key: " << (*it)->getName() << std::endl;
-            recurseNKRecord((*it), L"    " + prefix);
+        NKRecord::NKRecordUniqPtrList subkeyList = nkRecord->getSubkeyList()->getSubkeys();
+        for (auto& nk : subkeyList) {
+            std::wcout << prefix << "  key: " << nk->getName() << std::endl;
+            recurseNKRecord(nk.get(), L"    " + prefix);
         }
-
     }
 
     void processRegistryHive(RegistryHive& hive) {
@@ -229,16 +226,8 @@ namespace Rejistry {
                 i++;
             }
 
-            printNKRecord(header->getRootNKRecord().release(), L"root ");
-
-            NKRecord::AutoNKRecordPtrList nkRecordList((header->getRootNKRecord()->getSubkeyList()->getSubkeys()));
-            NKRecord::NKRecordPtrList::iterator keyIter = nkRecordList.begin();
-            for (; keyIter != nkRecordList.end(); ++keyIter) {
-                std::wcout << L"  " << (*keyIter)->getName() << std::endl;
-                printNKRecord((*keyIter), L"    ");
-            }
-
-            recurseNKRecord(header->getRootNKRecord().release(), L"");
+            auto root = header->getRootNKRecord();
+            recurseNKRecord(root.get(), L"");
         }
         catch (std::exception& ex) {
             std::wcout << "processRegistryHive exception: " << ex.what() << std::endl;
