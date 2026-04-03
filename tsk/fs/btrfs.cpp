@@ -450,9 +450,6 @@ btrfs_chunk_item_rawlen(const uint8_t * a_raw)
 {
     const btrfs_chunk_item_raw_t *r = reinterpret_cast<const btrfs_chunk_item_raw_t *>(a_raw);
     uint16_t num_stripes = tsk_getu16(BTRFS_ENDIAN, &r->number_of_stripes);
-    // Guard against integer overflow before multiplying
-    if (num_stripes > (INT_MAX - (int)sizeof(btrfs_chunk_item_raw_t)) / (int)sizeof(BTRFS_CHUNK_ITEM_STRIPE))
-        return -1;
     return (int)(sizeof(btrfs_chunk_item_raw_t) + num_stripes * sizeof(BTRFS_CHUNK_ITEM_STRIPE));
 }
 
@@ -1120,6 +1117,9 @@ btrfs_chunks_from_superblock(BTRFS_INFO * a_btrfs)
             break;
         btrfs_key_rawparse(p, &key);
         p += BTRFS_KEY_RAWLEN;
+
+        if (p + (ptrdiff_t)sizeof(btrfs_chunk_item_raw_t) > sys_chunks_end)
+            break;
 
         int ci_rawlen = btrfs_chunk_item_rawlen(p);
         if (ci_rawlen <= 0 || p + ci_rawlen > sys_chunks_end)
