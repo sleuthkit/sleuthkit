@@ -119,11 +119,16 @@ public:
 	return hexbuf_start;
     }
     std::string hexdigest() const {
-      size_t bufsize = this->SIZE * 2 + 1;
-      char *buf = (char *)calloc(bufsize, 1);
-      auto ret = std::string(hexdigest(buf, bufsize));
-      free(buf);
-      return ret;
+      std::string hexdigest() const {
+        size_t bufsize = this->SIZE * 2 + 1;
+        char *buf = (char *)calloc(bufsize, 1);
+        if (buf == NULL) {
+            return std::string();
+        }
+        auto ret = std::string(hexdigest(buf, bufsize));
+        free(buf);
+        return ret;
+      }
     }
     /**
      * Convert a hex representation to binary, and return
