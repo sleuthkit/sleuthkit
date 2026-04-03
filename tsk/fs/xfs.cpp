@@ -28,16 +28,19 @@ xfs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
         return 1;
     
     xfs_bmbt_irec_t *irec = (xfs_bmbt_irec_t*)tsk_malloc(sizeof(xfs_bmbt_irec_t));
+    if (irec == NULL)
+        return 1;
     xfs_bmbt_disk_get_all(xfs, extent, irec);
-    
+
     uint32_t agno =  XFS_FSB_TO_AGNO(xfs, irec->br_startblock);
     uint32_t blkno = XFS_FSB_TO_AGBNO(xfs, irec->br_startblock);
 
     data_run->offset = 0;
     data_run->addr = agno * tsk_getu32(fs_info->endian, xfs->fs->sb_agblocks) + blkno;
     data_run->len = irec->br_blockcount;
-    
+
     if (tsk_fs_attr_add_run(fs_info, fs_attr, data_run)) {
+        free(irec);
         return 1;
     }
 
@@ -101,18 +104,21 @@ xfs_load_attrs_block(TSK_FS_FILE *fs_file)
         return 1;
     }
 
-    while (true)
+    const xfs_bmbt_rec_t * const content_end =
+        (const xfs_bmbt_rec_t *)((const char *)fs_meta->content_ptr + fs_meta->content_len);
+
+    while (rec < content_end)
     {
         if (tsk_getu64(fs_info->endian, rec->l0) == 0 && tsk_getu64(fs_info->endian, rec->l1) == 0)
             break;
-           
+
         if (xfs_make_data_run_extent(fs_info, fs_attr, rec)) {
             fprintf(stderr, "[i] xfs_load_attr_block: xfs.cpp: %d - xfs_make_data_run_extent failed.\n",
                 __LINE__);
             return 1;
         }
 
-        rec = (xfs_bmbt_rec_t*)xfs_dir2_data_nextentry((xfs_dir2_data_entry*)rec);
+        rec++;
     }
     
     fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
@@ -196,9 +202,10 @@ xfs_dinode_load(XFS_INFO * xfs, TSK_INUM_T dino_inum,
 }
 
 static uint8_t
-xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
+xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_FILE * a_fs_file,
     TSK_INUM_T inum, const xfs_dinode * dino_buf)
 {
+    TSK_FS_META *fs_meta = a_fs_file->meta;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & xfs->fs_info;
 
     if (dino_buf == NULL) {
@@ -310,6 +317,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
                      XFS_CONTENT_LEN_V5(xfs))) == NULL) {
              return 1;
          }
+         a_fs_file->meta = fs_meta;
     }
     
     // Allocating datafork area in content_ptr
@@ -322,7 +330,7 @@ xfs_dinode_copy(XFS_INFO * xfs, TSK_FS_META * fs_meta,
         if (tsk_verbose) {
             fprintf(stderr, "invalid datafork read size, cnt: %ld\n", cnt);
         }
-        return -1;
+        return 1;
     }
   
     if (dino_buf->di_format == XFS_DINODE_FMT_LOCAL){
@@ -395,7 +403,8 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
     if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
         return 1;
 
-    return -1;
+    tsk_fs_file_free(fs_file);
+    return 1;
 }
 
 //block walk
@@ -454,30 +463,35 @@ xfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,  // = file_add_meta
         free(dino_buf);
         return 1;
     }
-    if (xfs_dinode_copy(xfs, a_fs_file->meta, inum, dino_buf)){
+    if (xfs_dinode_copy(xfs, a_fs_file, inum, dino_buf)){
         free(dino_buf);
         return 1;
     }
 
     // Trick to walk unalloc file and dent
     if (a_fs_file->name != NULL){
-        if ((TSK_FS_IS_DIR_META(a_fs_file->meta->type) == 0) && (TSK_FS_IS_DIR_NAME(a_fs_file->name->type) == 0) 
-            && ((a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) == 0) && (a_fs_file->meta->size == 0)) 
+        if ((TSK_FS_IS_DIR_META(a_fs_file->meta->type) == 0) && (TSK_FS_IS_DIR_NAME(a_fs_file->name->type) == 0)
+            && ((a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) == 0) && (a_fs_file->meta->size == 0))
         {
             xfs_bmbt_irec_t *irec = (xfs_bmbt_irec_t*)tsk_malloc(sizeof(xfs_bmbt_irec_t));
+            if (irec == NULL) {
+                free(dino_buf);
+                return 1;
+            }
             xfs_bmbt_disk_get_all(xfs, (xfs_bmbt_rec*) a_fs_file->meta->content_ptr, irec);
             a_fs_file->meta->size = irec->br_blockcount * fs->block_size;
+            free(irec);
 
-        }  
+        }
         else if(a_fs_file->meta->type == TSK_FS_META_TYPE_UNDEF) {
             tsk_fs_meta_reset(a_fs_file->meta);
-            // if ((a_fs_file->meta = tsk_fs_meta_alloc(XFS_CONTENT_LEN_V5(xfs))) == NULL) // #define XFS_CONTENT_LEN 
-            //     return 1;        
+            // if ((a_fs_file->meta = tsk_fs_meta_alloc(XFS_CONTENT_LEN_V5(xfs))) == NULL) // #define XFS_CONTENT_LEN
+            //     return 1;
 
             dino_buf->di_mode[0] = 0x41;
             dino_buf->di_mode[1] = 0xED;
 
-            if(xfs_dinode_copy(xfs, a_fs_file->meta, inum, dino_buf)){
+            if(xfs_dinode_copy(xfs, a_fs_file, inum, dino_buf)){
                 free(dino_buf);
                 return 1;
             }
@@ -496,7 +510,7 @@ uint8_t xfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     XFS_INFO * xfs = (XFS_INFO *) fs;
     xfs_sb *sb = xfs->fs;
     
-    const char *tmptypename;
+    const char *tmptypename = "Unknown";
     
     tsk_error_reset();
     tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
@@ -506,7 +520,7 @@ uint8_t xfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tmptypename = "XFS";
     
     tsk_fprintf(hFile, "File System Type : %s\n", tmptypename);
-    tsk_fprintf(hFile, "Volume Name : %s\n", sb->sb_fname);
+    tsk_fprintf(hFile, "Volume Name : %.12s\n", sb->sb_fname);
     tsk_fprintf(hFile, "\n");
     
     
@@ -704,6 +718,15 @@ xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->dev_bsize = img_info->sector_size;
     fs->first_block = 0;
     fs->block_count = (TSK_DADDR_T)tsk_getu64(fs->endian, xfs->fs->sb_dblocks);
+    if (fs->block_count == 0) {
+        fs->tag = 0;
+        free(xfs->fs);
+        tsk_fs_free((TSK_FS_INFO *)xfs);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+        tsk_error_set_errstr("Not an XFS file system (block count)");
+        return NULL;
+    }
     fs->last_block_act = fs->last_block = fs->block_count - 1;
     fs->block_size = tsk_getu32(fs->endian, xfs->fs->sb_blocksize);
 
@@ -719,7 +742,8 @@ xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
-    if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
+    if (img_info->size > offset &&
+        (TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
         fs->block_count)
         fs->last_block_act =
             (img_info->size - offset) / fs->block_size - 1;
