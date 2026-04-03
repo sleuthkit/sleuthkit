@@ -221,30 +221,51 @@ btrfs_inode_ref_free(BTRFS_INODE_REF * a_ir)
 #endif
 
 
+#pragma pack(push, 1)
+// Fixed header of an on-disk DIR_ENTRY (DIR_ITEM / DIR_INDEX / XATTR_ITEM).
+// Variable-length name[name_len] and data[data_len] follow immediately.
+typedef struct {
+    uint8_t  child_key[BTRFS_KEY_RAWLEN];
+    uint64_t transid;
+    uint16_t data_len;
+    uint16_t name_len;
+    uint8_t  type;
+} btrfs_dir_entry_raw_t;
+#pragma pack(pop)
+static_assert(sizeof(btrfs_dir_entry_raw_t) == 30, "btrfs_dir_entry_raw_t size mismatch");
+
 static inline int
 btrfs_dir_entry_single_rawlen(const uint8_t * a_raw)
 {
-    return 0x1E + tsk_getu16(BTRFS_ENDIAN, a_raw + 0x19) + tsk_getu16(BTRFS_ENDIAN, a_raw + 0x1B);
+    const btrfs_dir_entry_raw_t *r = reinterpret_cast<const btrfs_dir_entry_raw_t *>(a_raw);
+    return (int)(sizeof(btrfs_dir_entry_raw_t)
+        + tsk_getu16(BTRFS_ENDIAN, &r->data_len)
+        + tsk_getu16(BTRFS_ENDIAN, &r->name_len));
 }
+
+// Minimum raw length: fixed header with zero-length name and data
+#define BTRFS_DIR_ENTRY_MIN_RAWLEN sizeof(btrfs_dir_entry_raw_t)
 
 static BTRFS_DIR_ENTRY *
 btrfs_dir_entry_fromraw_single(const uint8_t * a_raw)
 {
+    const btrfs_dir_entry_raw_t *r = reinterpret_cast<const btrfs_dir_entry_raw_t *>(a_raw);
     BTRFS_DIR_ENTRY *de = new BTRFS_DIR_ENTRY;
     // de->next must be set later!
 
-    btrfs_key_rawparse(a_raw + 0x00, &de->child);
-    de->transid         = tsk_getu64(BTRFS_ENDIAN, a_raw + 0x11);
-    de->data_len        = tsk_getu16(BTRFS_ENDIAN, a_raw + 0x19);
-    uint16_t name_len   = tsk_getu16(BTRFS_ENDIAN, a_raw + 0x1B);
-    de->type            = a_raw[0x1D];
+    btrfs_key_rawparse(r->child_key, &de->child);
+    de->transid       = tsk_getu64(BTRFS_ENDIAN, &r->transid);
+    de->data_len      = tsk_getu16(BTRFS_ENDIAN, &r->data_len);
+    uint16_t name_len = tsk_getu16(BTRFS_ENDIAN, &r->name_len);
+    de->type          = r->type;
 
+    const uint8_t *name_start = a_raw + sizeof(btrfs_dir_entry_raw_t);
     de->name = new char[name_len + 1];
-    memcpy(de->name     , a_raw + 0x1E, name_len);
-    de->name[name_len] = 0x00;  // terminator
+    memcpy(de->name, name_start, name_len);
+    de->name[name_len] = '\0';
 
     de->data = new uint8_t[de->data_len];
-    memcpy(de->data     , a_raw + 0x1E + name_len, de->data_len);
+    memcpy(de->data, name_start + name_len, de->data_len);
 
     return de;
 }
@@ -255,7 +276,20 @@ btrfs_dir_entry_fromraw(const uint8_t * a_raw, const uint32_t a_len)
     BTRFS_DIR_ENTRY *first_de = NULL;
     BTRFS_DIR_ENTRY *prev_de = NULL;
 
-    for (const uint8_t *p = a_raw; p < a_raw + a_len; p += btrfs_dir_entry_single_rawlen(p)) {
+    const uint8_t * const end = a_raw + a_len;
+    for (const uint8_t *p = a_raw; p < end; ) {
+        // Ensure at least the fixed header is within bounds before reading lengths
+        if (p + BTRFS_DIR_ENTRY_MIN_RAWLEN > end)
+            break;
+
+        int entry_len = btrfs_dir_entry_single_rawlen(p);
+        // A zero or negative increment would loop forever
+        if (entry_len <= 0)
+            break;
+        // Ensure the full entry (including name and data) is within bounds
+        if (p + entry_len > end)
+            break;
+
         BTRFS_DIR_ENTRY *curr_de = btrfs_dir_entry_fromraw_single(p);
 
         if (!first_de)
@@ -264,8 +298,12 @@ btrfs_dir_entry_fromraw(const uint8_t * a_raw, const uint32_t a_len)
         if (prev_de)
             prev_de->next = curr_de;
         prev_de = curr_de;
+
+        p += entry_len;
     }
-    prev_de->next = NULL;
+
+    if (prev_de)
+        prev_de->next = NULL;
 
     return first_de;
 }
@@ -299,23 +337,44 @@ btrfs_extent_data_free(BTRFS_EXTENT_DATA * a_ed)
 }
 
 
+#pragma pack(push, 1)
+// Fixed header of an on-disk EXTENT_DATA item.
+// For inline extents, raw file data follows immediately.
+// For regular/prealloc extents, a fixed 32-byte extent reference follows.
+typedef struct {
+    uint64_t generation;
+    uint64_t size_decoded;
+    uint8_t  compression;
+    uint8_t  encryption;
+    uint16_t other_encoding;
+    uint8_t  type;
+} btrfs_extent_data_raw_t;
+#pragma pack(pop)
+static_assert(sizeof(btrfs_extent_data_raw_t) == 21, "btrfs_extent_data_raw_t size mismatch");
+
 static BTRFS_EXTENT_DATA *
 btrfs_extent_data_fromraw(const uint8_t * a_raw, const uint32_t a_len)
 {
+    const btrfs_extent_data_raw_t *r = reinterpret_cast<const btrfs_extent_data_raw_t *>(a_raw);
     BTRFS_EXTENT_DATA *ed = new BTRFS_EXTENT_DATA;
 
-    ed->generation      = tsk_getu64(BTRFS_ENDIAN, a_raw + 0x00);
-    ed->size_decoded    = tsk_getu64(BTRFS_ENDIAN, a_raw + 0x08);
-    ed->compression     = a_raw[0x10];
-    ed->encryption      = a_raw[0x11];
-    ed->other_encoding  = tsk_getu16(BTRFS_ENDIAN, a_raw + 0x12);
-    ed->type            = a_raw[0x14];
+    ed->generation      = tsk_getu64(BTRFS_ENDIAN, &r->generation);
+    ed->size_decoded    = tsk_getu64(BTRFS_ENDIAN, &r->size_decoded);
+    ed->compression     = r->compression;
+    ed->encryption      = r->encryption;
+    ed->other_encoding  = tsk_getu16(BTRFS_ENDIAN, &r->other_encoding);
+    ed->type            = r->type;
 
     switch (ed->type) {
     case BTRFS_EXTENT_DATA_TYPE_INLINE:
-        ed->rd.data_len = a_len - 0x15;
+        if (a_len < sizeof(btrfs_extent_data_raw_t)) {
+            btrfs_error(TSK_ERR_FS_INODE_COR, "btrfs_extent_data_fromraw: inline extent too short");
+            btrfs_extent_data_free(ed);
+            return NULL;
+        }
+        ed->rd.data_len = a_len - sizeof(btrfs_extent_data_raw_t);
         ed->rd.data = new uint8_t[ed->rd.data_len];
-        memcpy(ed->rd.data      , a_raw + 0x15, ed->rd.data_len);
+        memcpy(ed->rd.data, a_raw + sizeof(btrfs_extent_data_raw_t), ed->rd.data_len);
         return ed;
     case BTRFS_EXTENT_DATA_TYPE_REGULAR:
     case BTRFS_EXTENT_DATA_TYPE_PREALLOC:
@@ -369,31 +428,67 @@ btrfs_chunk_item_free(BTRFS_CHUNK_ITEM * a_ci)
     delete a_ci;
 }
 
+#pragma pack(push, 1)
+// Fixed header of an on-disk CHUNK_ITEM.
+// An array of num_stripes BTRFS_CHUNK_ITEM_STRIPE records follows immediately.
+typedef struct {
+    uint64_t chunk_size;
+    uint64_t referencing_root;
+    uint64_t stripe_length;
+    uint64_t type;
+    uint32_t optimal_io_align;
+    uint32_t optimal_io_width;
+    uint32_t minimal_io_size;
+    uint16_t number_of_stripes;
+    uint16_t sub_stripes;
+} btrfs_chunk_item_raw_t;
+#pragma pack(pop)
+static_assert(sizeof(btrfs_chunk_item_raw_t) == 48, "btrfs_chunk_item_raw_t size mismatch");
+
 static int
 btrfs_chunk_item_rawlen(const uint8_t * a_raw)
 {
-    return 0x30 + tsk_getu16(BTRFS_ENDIAN, a_raw + 0x2C) * 0x20;
+    const btrfs_chunk_item_raw_t *r = reinterpret_cast<const btrfs_chunk_item_raw_t *>(a_raw);
+    uint16_t num_stripes = tsk_getu16(BTRFS_ENDIAN, &r->number_of_stripes);
+    // Guard against integer overflow before multiplying
+    if (num_stripes > (INT_MAX - (int)sizeof(btrfs_chunk_item_raw_t)) / (int)sizeof(BTRFS_CHUNK_ITEM_STRIPE))
+        return -1;
+    return (int)(sizeof(btrfs_chunk_item_raw_t) + num_stripes * sizeof(BTRFS_CHUNK_ITEM_STRIPE));
 }
 
 static BTRFS_CHUNK_ITEM *
 btrfs_chunk_item_fromraw(const uint8_t * a_raw)
 {
+    const btrfs_chunk_item_raw_t *r = reinterpret_cast<const btrfs_chunk_item_raw_t *>(a_raw);
     BTRFS_CHUNK_ITEM *ci = new BTRFS_CHUNK_ITEM;
 
-    ci->chunk_size          = tsk_getu64(BTRFS_ENDIAN, a_raw + 0x00);
-    ci->referencing_root    = tsk_getu64(BTRFS_ENDIAN, a_raw + 0x08);
-    ci->stripe_length       = tsk_getu64(BTRFS_ENDIAN, a_raw + 0x10);
-    ci->type                = tsk_getu64(BTRFS_ENDIAN, a_raw + 0x18);
-    ci->optimal_io_align    = tsk_getu32(BTRFS_ENDIAN, a_raw + 0x20);
-    ci->optimal_io_width    = tsk_getu32(BTRFS_ENDIAN, a_raw + 0x24);
-    ci->minimal_io_size     = tsk_getu32(BTRFS_ENDIAN, a_raw + 0x28);
-    ci->number_of_stripes   = tsk_getu16(BTRFS_ENDIAN, a_raw + 0x2C);
-    ci->sub_stripes         = tsk_getu16(BTRFS_ENDIAN, a_raw + 0x2E);
+    ci->chunk_size          = tsk_getu64(BTRFS_ENDIAN, &r->chunk_size);
+    ci->referencing_root    = tsk_getu64(BTRFS_ENDIAN, &r->referencing_root);
+    ci->stripe_length       = tsk_getu64(BTRFS_ENDIAN, &r->stripe_length);
+    ci->type                = tsk_getu64(BTRFS_ENDIAN, &r->type);
+    ci->optimal_io_align    = tsk_getu32(BTRFS_ENDIAN, &r->optimal_io_align);
+    ci->optimal_io_width    = tsk_getu32(BTRFS_ENDIAN, &r->optimal_io_width);
+    ci->minimal_io_size     = tsk_getu32(BTRFS_ENDIAN, &r->minimal_io_size);
+    ci->number_of_stripes   = tsk_getu16(BTRFS_ENDIAN, &r->number_of_stripes);
+    ci->sub_stripes         = tsk_getu16(BTRFS_ENDIAN, &r->sub_stripes);
+
+    // Sanity-cap to prevent excessive allocation from a crafted image.
+    // Real Btrfs volumes use far fewer stripes (typical RAID configs: 2-64).
+    static const uint16_t BTRFS_MAX_STRIPES = 4096;
+    if (ci->number_of_stripes > BTRFS_MAX_STRIPES) {
+        btrfs_error(TSK_ERR_FS_INODE_COR,
+            "btrfs_chunk_item_fromraw: number_of_stripes %" PRIu16 " exceeds sanity limit",
+            ci->number_of_stripes);
+        delete ci;
+        return NULL;
+    }
 
     ci->stripes = new BTRFS_CHUNK_ITEM_STRIPE[ci->number_of_stripes];
 
     for (uint16_t i = 0; i < ci->number_of_stripes; i++)
-        btrfs_chunk_item_stripe_rawparse(a_raw + 0x30 + i * 0x20, &ci->stripes[i]);
+        btrfs_chunk_item_stripe_rawparse(
+            a_raw + sizeof(btrfs_chunk_item_raw_t) + i * sizeof(BTRFS_CHUNK_ITEM_STRIPE),
+            &ci->stripes[i]);
 
     return ci;
 }
@@ -1015,12 +1110,23 @@ btrfs_chunks_from_superblock(BTRFS_INFO * a_btrfs)
 
     // iterate over all system chunks embedded into superblock
     btrfs_debug("Parsing superblock system chunks...\n");
-    for (uint8_t *p = a_btrfs->sb->system_chunks; p < a_btrfs->sb->system_chunks + a_btrfs->sb->n;) {
+    // Cap n to the actual array size to guard against a crafted superblock
+    uint32_t sys_chunks_len = a_btrfs->sb->n;
+    if (sys_chunks_len > sizeof(a_btrfs->sb->system_chunks))
+        sys_chunks_len = sizeof(a_btrfs->sb->system_chunks);
+    uint8_t * const sys_chunks_end = a_btrfs->sb->system_chunks + sys_chunks_len;
+    for (uint8_t *p = a_btrfs->sb->system_chunks; p < sys_chunks_end; ) {
+        if (p + BTRFS_KEY_RAWLEN > sys_chunks_end)
+            break;
         btrfs_key_rawparse(p, &key);
         p += BTRFS_KEY_RAWLEN;
 
+        int ci_rawlen = btrfs_chunk_item_rawlen(p);
+        if (ci_rawlen <= 0 || p + ci_rawlen > sys_chunks_end)
+            break;
+
         btrfs_chunks_process_chunk_item(a_btrfs, chunks, key.offset, p);
-        p += btrfs_chunk_item_rawlen(p);
+        p += ci_rawlen;
     }
     return chunks;
 }
@@ -3186,12 +3292,7 @@ btrfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_add
 
         // apply data
         fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-        if (strlen(de->name) > fs_name->name_size) {
-            memcpy(fs_name->name, de->name, fs_name->name_size);
-            fs_name->name[fs_name->name_size] = 0;  // terminator
-        } else {
-            strcpy(fs_name->name, de->name);
-        }
+        snprintf(fs_name->name, fs_name->name_size + 1, "%s", de->name);
         fs_name->type = btrfs_type2nametype[de->type < BTRFS_TYPE2NAMETYPE_COUNT ? de->type : 0];
 
         // derive target virtual inum
