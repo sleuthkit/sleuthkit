@@ -359,6 +359,10 @@ xfs_dent_parse_block(XFS_INFO * xfs, TSK_FS_DIR * a_fs_dir, [[maybe_unused]]uint
         if (ent->namelen == 0)
             break;
 
+        // Validate full entry (name + ftype + tag) fits before reading it
+        if ((char*)ent + XFS_DIR3_DATA_ENTSIZE(ent->namelen) > fbuf_end)
+            break;
+
         if (xfs_dent_copy(xfs, (char*)ent, fs_name, a_fs_dir->fs_file)) {
             tsk_fs_name_free(fs_name);
             free(fbuf);

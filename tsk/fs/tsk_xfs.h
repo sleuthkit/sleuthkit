@@ -1166,7 +1166,7 @@ TSK_OFF_T xfs_inode_get_offset(XFS_INFO * xfs, TSK_INUM_T a_addr){
 
     TSK_OFF_T ag_offset = (TSK_OFF_T)ag_num * ((uint64_t)tsk_getu32(fs->endian, xfs->fs->sb_agblocks) * (uint64_t)tsk_getu32(fs->endian, xfs->fs->sb_blocksize));
     TSK_OFF_T blk_offset = (TSK_OFF_T)blk_num * (uint64_t)tsk_getu32(fs->endian, xfs->fs->sb_blocksize);
-    TSK_OFF_T sec_offset = sec_num * tsk_getu16(fs->endian, xfs->fs->sb_sectsize);
+    TSK_OFF_T sec_offset = (TSK_OFF_T)sec_num * tsk_getu16(fs->endian, xfs->fs->sb_inodesize);
     
     offset = ag_offset + blk_offset + sec_offset;
 

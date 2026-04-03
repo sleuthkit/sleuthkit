@@ -26,10 +26,12 @@ xfs_make_data_run_extent(TSK_FS_INFO * fs_info, TSK_FS_ATTR * fs_attr,
 
     if ((data_run = tsk_fs_attr_run_alloc()) == NULL)
         return 1;
-    
+
     xfs_bmbt_irec_t *irec = (xfs_bmbt_irec_t*)tsk_malloc(sizeof(xfs_bmbt_irec_t));
-    if (irec == NULL)
+    if (irec == NULL) {
+        free(data_run);
         return 1;
+    }
     xfs_bmbt_disk_get_all(xfs, extent, irec);
 
     uint32_t agno =  XFS_FSB_TO_AGNO(xfs, irec->br_startblock);
@@ -403,7 +405,7 @@ uint8_t xfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum, TSK_INUM_T end_i
     if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
         return 1;
 
-    tsk_fs_file_free(fs_file);
+    tsk_fs_file_close(fs_file);
     return 1;
 }
 
@@ -742,11 +744,11 @@ xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
-    if (img_info->size > offset &&
-        (TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
-        fs->block_count)
-        fs->last_block_act =
-            (img_info->size - offset) / fs->block_size - 1;
+    if (img_info->size > offset) {
+        TSK_DADDR_T img_blocks = (TSK_DADDR_T)((img_info->size - offset) / fs->block_size);
+        if (img_blocks > 0 && img_blocks < fs->block_count)
+            fs->last_block_act = img_blocks - 1;
+    }
 
     /* Volume ID */
     for(fs->fs_id_used = 0 ; fs->fs_id_used < 16; fs->fs_id_used++){
