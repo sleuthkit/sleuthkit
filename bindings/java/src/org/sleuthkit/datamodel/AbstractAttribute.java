@@ -69,13 +69,15 @@ public abstract class AbstractAttribute {
 	 *
 	 * @throws IllegalArgumentException If the value type of the specified
 	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG,
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME,
 	 *                                  or
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME_MILLI.
 	 */
 	public AbstractAttribute(BlackboardAttribute.Type attributeType, long valueLong) {
 		if (attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-				&& attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
+				&& attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+				&& attributeType.getValueType() != BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME_MILLI) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.attributeType = attributeType;
@@ -222,6 +224,9 @@ public abstract class AbstractAttribute {
 			case DATETIME:
 				// once we have TSK timezone, that should be used here.
 				return TimeUtilities.epochToTime(getValueLong());
+			case DATETIME_MILLI:
+				// once we have TSK timezone, that should be used here.
+				return TimeUtilities.epochToTime(getValueLong() / 1000);
 			case JSON: {
 				return getValueString();
 			}

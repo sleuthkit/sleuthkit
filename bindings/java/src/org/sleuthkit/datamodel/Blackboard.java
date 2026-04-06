@@ -315,7 +315,7 @@ public final class Blackboard {
 			BlackboardAttribute.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
-						rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type")));
+						rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromTypeWithFallback(rs.getLong("value_type")));
 				this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
 				this.typeNameToAttributeTypeMap.put(attrTypeName, type);
 			}
@@ -355,7 +355,7 @@ public final class Blackboard {
 			BlackboardAttribute.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
-						rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type")));
+						rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromTypeWithFallback(rs.getLong("value_type")));
 				this.typeIdToAttributeTypeMap.put(typeID, type);
 				this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
 			}
@@ -387,7 +387,7 @@ public final class Blackboard {
 
 		caseDb.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = caseDb.getConnection(); PreparedStatement getTypePrepState = connection.prepareStatement(
-				"SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE type_name = ?",
+				"SELECT artifact_type_id, type_name, display_name, category_type, display_column_order FROM blackboard_artifact_types WHERE type_name = ?",
 				 Statement.RETURN_GENERATED_KEYS)) {
 			getTypePrepState.setString(1, artTypeName);
 
@@ -396,7 +396,8 @@ public final class Blackboard {
 				if (rs.next()) {
 					type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
 							rs.getString("type_name"), rs.getString("display_name"),
-							BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+							BlackboardArtifact.Category.fromID(rs.getInt("category_type")),
+							rs.getString("display_column_order"));
 					this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 					this.typeNameToArtifactTypeMap.put(artTypeName, type);
 				}
@@ -431,12 +432,13 @@ public final class Blackboard {
 		try {
 			connection = caseDb.getConnection();
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types WHERE artifact_type_id = " + artTypeId + ""); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type, display_column_order FROM blackboard_artifact_types WHERE artifact_type_id = " + artTypeId + ""); //NON-NLS
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
 						rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.Category.fromID(rs.getInt("category_type")));
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type")),
+						rs.getString("display_column_order"));
 				this.typeIdToArtifactTypeMap.put(artTypeId, type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
 				return type;
@@ -610,7 +612,7 @@ public final class Blackboard {
 		} else {
 			attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
 					rs.getString("display_name"),
-					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
+					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromTypeWithFallback(rs.getInt("value_type")));
 			this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
 			this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
 		}
@@ -731,7 +733,7 @@ public final class Blackboard {
 				} else {
 					attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
 							rs.getString("display_name"),
-							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
+							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromTypeWithFallback(rs.getInt("value_type")));
 					this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
 					this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
 				}
@@ -778,11 +780,12 @@ public final class Blackboard {
 				 * that is being reopened, this should reduce the number of
 				 * separate INSERT staements that will be executed below.
 				 */
-				ResultSet resultSet = connection.executeQuery(getExistingStatement, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
+				ResultSet resultSet = connection.executeQuery(getExistingStatement, "SELECT artifact_type_id, type_name, display_name, category_type, display_column_order FROM blackboard_artifact_types"); //NON-NLS
 				while (resultSet.next()) {
 					BlackboardArtifact.Type type = new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
 							resultSet.getString("type_name"), resultSet.getString("display_name"),
-							BlackboardArtifact.Category.fromID(resultSet.getInt("category_type")));
+							BlackboardArtifact.Category.fromID(resultSet.getInt("category_type")),
+							resultSet.getString("display_column_order"));
 					typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 					typeNameToArtifactTypeMap.put(type.getTypeName(), type);
 				}
@@ -853,7 +856,7 @@ public final class Blackboard {
 			while (resultSet.next()) {
 				BlackboardAttribute.Type type = new BlackboardAttribute.Type(resultSet.getInt("attribute_type_id"),
 						resultSet.getString("type_name"), resultSet.getString("display_name"),
-						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(resultSet.getLong("value_type")));
+						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromTypeWithFallback(resultSet.getLong("value_type")));
 				typeIdToAttributeTypeMap.put(type.getTypeID(), type);
 				typeNameToAttributeTypeMap.put(type.getTypeName(), type);
 			}
@@ -1080,7 +1083,7 @@ public final class Blackboard {
 	}
 	
 	/**
-	 * Ignore the score of the specified analysis result.Updates “ignore_score”
+	 * Ignore the score of the specified analysis result.Updates ï¿½ignore_scoreï¿½
 	 * field in tsk_analysis_results table, and recalculates and updates the
 	 * aggregate score of the content.
 	 *
@@ -1113,7 +1116,7 @@ public final class Blackboard {
 	/**
 	 * Ignore the score of the specified analysis result.
 	 *
-	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * Updates ï¿½ignore_scoreï¿½ field in tsk_analysis_results table,
 	 * and recalculates and updates the aggregate score of the content. Fires an
 	 * event to indicate that the analysis result score is being ignored and that the
 	 * score of the item has changed.
@@ -1140,7 +1143,7 @@ public final class Blackboard {
 	/**
 	 * Ignore the score of the specified analysis result.
 	 *
-	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * Updates ï¿½ignore_scoreï¿½ field in tsk_analysis_results table,
 	 * and recalculates and updates the aggregate score of the content. Fires an
 	 * event to indicate that the analysis result score is being ignored and that the
 	 * score of the item has changed.
@@ -1746,7 +1749,7 @@ public final class Blackboard {
 							rs.getInt("attribute_type_id"),
 							rs.getString("type_name"),
 							rs.getString("display_name"),
-							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type"))
+							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromTypeWithFallback(rs.getLong("value_type"))
 					);
 
 					this.typeIdToAttributeTypeMap.put(foundType.getTypeID(), foundType);

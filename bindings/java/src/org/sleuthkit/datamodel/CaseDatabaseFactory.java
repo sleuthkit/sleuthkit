@@ -285,7 +285,8 @@ class CaseDatabaseFactory {
 	private void createArtifactTables(Statement stmt) throws SQLException {
 		stmt.execute("CREATE TABLE blackboard_artifact_types (artifact_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT NOT NULL, display_name TEXT,"
-				+ "category_type INTEGER DEFAULT 0)");
+				+ "category_type INTEGER DEFAULT 0,"
+				+ "display_column_order TEXT)");
 
 		stmt.execute("CREATE TABLE blackboard_attribute_types (attribute_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)");

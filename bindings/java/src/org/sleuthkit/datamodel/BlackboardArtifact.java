@@ -1488,6 +1488,7 @@ public abstract class BlackboardArtifact implements Content {
 		private final int typeID;
 		private final String displayName;
 		private final Category category;
+		private final String displayColumnOrder;
 
 		/**
 		 * Constructs a custom artifact type.
@@ -1498,10 +1499,28 @@ public abstract class BlackboardArtifact implements Content {
 		 * @param category    The artifact type category.
 		 */
 		Type(int typeID, String typeName, String displayName, Category category) {
+			this(typeID, typeName, displayName, category, null);
+		}
+
+		/**
+		 * Constructs a custom artifact type with an optional display column
+		 * order.
+		 *
+		 * @param typeID             The id of the type.
+		 * @param typeName           The name of the type.
+		 * @param displayName        The display name of the type.
+		 * @param category           The artifact type category.
+		 * @param displayColumnOrder A JSON array of attribute type names
+		 *                           specifying the preferred display order of
+		 *                           columns for this artifact type, or null if
+		 *                           not specified.
+		 */
+		Type(int typeID, String typeName, String displayName, Category category, String displayColumnOrder) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
 			this.category = category;
+			this.displayColumnOrder = displayColumnOrder;
 		}
 
 		/**
@@ -1547,6 +1566,16 @@ public abstract class BlackboardArtifact implements Content {
 		 */
 		public Category getCategory() {
 			return category;
+		}
+
+		/**
+		 * Gets the preferred display column order for this artifact type.
+		 *
+		 * @return A JSON array string of attribute type names specifying the
+		 *         preferred column display order, or null if not specified.
+		 */
+		public String getDisplayColumnOrder() {
+			return displayColumnOrder;
 		}
 
 		/**

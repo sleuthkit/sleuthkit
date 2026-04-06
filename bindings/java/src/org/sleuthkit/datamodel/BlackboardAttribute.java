@@ -345,7 +345,11 @@ public class BlackboardAttribute extends AbstractAttribute {
 	@Override
 	public String getDisplayString() {
 		switch (getAttributeType().getValueType()) {
-			case DATETIME: {
+			case DATETIME:
+			case DATETIME_MILLI: {
+				long epochSeconds = (getAttributeType().getValueType() == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME_MILLI)
+						? getValueLong() / 1000
+						: getValueLong();
 				try {
 					if (parentDataSourceID == null) {
 						BlackboardArtifact parent = getParentArtifact();
@@ -356,13 +360,13 @@ public class BlackboardAttribute extends AbstractAttribute {
 						// return the date/time string in the timezone associated with the datasource,
 						Image image = (Image) dataSource;
 						TimeZone tzone = TimeZone.getTimeZone(image.getTimeZone());
-						return TimeUtilities.epochToTime(getValueLong(), tzone);
+						return TimeUtilities.epochToTime(epochSeconds, tzone);
 					}
 				} catch (TskException ex) {
 					LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
 				}
 				// return time string in default timezone
-				return TimeUtilities.epochToTime(getValueLong());
+				return TimeUtilities.epochToTime(epochSeconds);
 			}
 			default: {
 				return super.getDisplayString();
@@ -919,7 +923,14 @@ public class BlackboardAttribute extends AbstractAttribute {
 		/**
 		 * The value type of the attribute is a JSON string.
 		 */
-		JSON(6, "Json");
+		JSON(6, "Json"),
+		/**
+		 * The value type of the attribute is a long representing milliseconds
+		 * from January 1, 1970.
+		 */
+		DATETIME_MILLI(7, "DateTimeMillis");
+
+		private static final Logger ENUM_LOGGER = Logger.getLogger(TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.class.getName());
 
 		private final long typeId;
 		private final String typeName;
@@ -984,6 +995,31 @@ public class BlackboardAttribute extends AbstractAttribute {
 				}
 			}
 			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE matching type: " + typeId);
+		}
+
+		/**
+		 * Gets the attribute value type for a given value type id, falling back
+		 * to LONG if the id is unrecognized. Use this instead of
+		 * {@link #fromType(long)} when reading from the database so that cases
+		 * created with a newer schema version (which may introduce new value
+		 * types) can still be opened by older library versions without throwing.
+		 *
+		 * @param typeId A value type id.
+		 *
+		 * @return The matching TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE, or LONG if
+		 *         the type id is not recognized.
+		 */
+		static public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE fromTypeWithFallback(long typeId) {
+			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
+				if (valueType.getType() == typeId) {
+					return valueType;
+				}
+			}
+			ENUM_LOGGER.log(Level.WARNING,
+					"Unrecognized attribute value type id {0}; treating as LONG. "
+					+ "The case database may have been created with a newer version of the SleuthKit.", //NON-NLS
+					typeId);
+			return LONG;
 		}
 
 		/**

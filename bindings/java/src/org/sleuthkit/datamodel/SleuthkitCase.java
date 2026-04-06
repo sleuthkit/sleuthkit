@@ -112,7 +112,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 6);
+			= new CaseDbSchemaVersionNumber(9, 7);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1114,7 +1114,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot3toSchema9dot4(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot4toSchema9dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot5toSchema9dot6(dbSchemaVersion, connection);
-				
+				dbSchemaVersion = updateFromSchema9dot6toSchema9dot7(dbSchemaVersion, connection);
+
 
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
@@ -2964,6 +2965,47 @@ public class SleuthkitCase {
 	}	
 
 	/**
+	 * Updates the case database from schema version 9.6 to 9.7.
+	 *
+	 * Schema 9.7 introduces the DATETIME_MILLI attribute value type (type ID 7),
+	 * which stores epoch milliseconds in the value_int64 column. No structural
+	 * schema changes are required; this version bump signals that the database
+	 * may contain attributes with value_type = 7 that older library versions
+	 * cannot interpret.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new schema version (9.7).
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema9dot6toSchema9dot7(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 6) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// DATETIME_MILLI (value type 7) reuses value_int64; no column changes needed
+			// for that. Add display_column_order to blackboard_artifact_types so callers
+			// can specify the preferred attribute display order for custom artifact types.
+			statement.execute("ALTER TABLE blackboard_artifact_types ADD COLUMN display_column_order TEXT");
+
+			return new CaseDbSchemaVersionNumber(9, 7);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
 	 *
@@ -4460,12 +4502,13 @@ public class SleuthkitCase {
 		try {
 			connection = connections.getConnection();
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type FROM blackboard_artifact_types"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name, category_type, display_column_order FROM blackboard_artifact_types"); //NON-NLS
 			ArrayList<BlackboardArtifact.Type> artifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
 				artifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
 						rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.Category.fromID(rs.getInt("category_type"))));
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type")),
+						rs.getString("display_column_order")));
 			}
 			return artifactTypes;
 		} catch (SQLException ex) {
@@ -4541,7 +4584,8 @@ public class SleuthkitCase {
 					"SELECT DISTINCT arts.artifact_type_id AS artifact_type_id, "
 					+ "types.type_name AS type_name, "
 					+ "types.display_name AS display_name, "
-					+ "types.category_type AS category_type "
+					+ "types.category_type AS category_type, "
+					+ "types.display_column_order AS display_column_order "
 					+ "FROM blackboard_artifact_types AS types "
 					+ "INNER JOIN blackboard_artifacts AS arts "
 					+ "ON arts.artifact_type_id = types.artifact_type_id"); //NON-NLS
@@ -4549,7 +4593,8 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
 						rs.getString("type_name"), rs.getString("display_name"),
-						BlackboardArtifact.Category.fromID(rs.getInt("category_type"))));
+						BlackboardArtifact.Category.fromID(rs.getInt("category_type")),
+						rs.getString("display_column_order")));
 			}
 			return uniqueArtifactTypes;
 		} catch (SQLException ex) {
@@ -4581,7 +4626,7 @@ public class SleuthkitCase {
 			ArrayList<BlackboardAttribute.Type> attribute_types = new ArrayList<BlackboardAttribute.Type>();
 			while (rs.next()) {
 				attribute_types.add(new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
-						rs.getString("display_name"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type"))));
+						rs.getString("display_name"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromTypeWithFallback(rs.getLong("value_type"))));
 			}
 			return attribute_types;
 		} catch (SQLException ex) {
@@ -4987,6 +5032,7 @@ public class SleuthkitCase {
 				statement.setDouble(7, attr.getValueDouble());
 				break;
 			case DATETIME:
+			case DATETIME_MILLI:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setLong(7, attr.getValueLong());
