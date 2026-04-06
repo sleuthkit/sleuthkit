@@ -3216,7 +3216,7 @@ public class SleuthkitCase {
 	 */
 	@Beta
 	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName) throws TskCoreException {
-		return openCase(dbPath, contentProvider, null, false);
+		return openCase(dbPath, contentProvider, lockingApplicationName, false);
 	}
 	
 	/**
