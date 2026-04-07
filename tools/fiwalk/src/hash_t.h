@@ -102,28 +102,38 @@ class hash__:public T
 public:
     hash__(){
     }
+
     hash__(const uint8_t *provided){
-	memcpy(this->digest,provided,this->SIZE);
+        memcpy(this->digest,provided,this->SIZE);
     }
+
     const uint8_t *final() const {
-	return this->digest;
+        return this->digest;
     }
+
     /* python like interface for hexdigest */
     const char *hexdigest(char *hexbuf,size_t bufsize) const {
-	const char *hexbuf_start = hexbuf;
-	for(unsigned int i=0;i<this->SIZE && bufsize>=3;i++){
-	    snprintf(hexbuf,bufsize,"%02x",this->digest[i]);
-	    hexbuf  += 2;
-	    bufsize -= 2;
-	}
-	return hexbuf_start;
+        const char *hexbuf_start = hexbuf;
+        for (unsigned int i=0;i<this->SIZE && bufsize>=3;i++){
+            snprintf(hexbuf,bufsize,"%02x",this->digest[i]);
+            hexbuf  += 2;
+            bufsize -= 2;
+        }
+
+        return hexbuf_start;
     }
+
     std::string hexdigest() const {
-      char *buf = (char *)calloc(this->SIZE*2+1,1);
-	auto ret = std::string(hexdigest(buf,sizeof(buf)));
-	free(buf);
-	return ret;
+        size_t bufsize = this->SIZE * 2 + 1;
+        char *buf = (char *)calloc(bufsize, 1);
+        if (buf == NULL) {
+            return std::string();
+        }
+        auto ret = std::string(hexdigest(buf, bufsize));
+        free(buf);
+        return ret;
     }
+
     /**
      * Convert a hex representation to binary, and return
      * the number of bits converted.
