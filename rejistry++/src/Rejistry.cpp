@@ -22,7 +22,6 @@
 #include <Windows.h>
 #include <io.h>
 #include <fcntl.h>
-#include <codecvt>
 
 #include "RegistryHiveFile.h"
 #include "RegistryHiveBuffer.h"
@@ -51,46 +50,34 @@ namespace Rejistry {
         uint8_t line[16];
         uint32_t lineIndex = 0;
 
-        std::cout << "0x";
-        std::cout << std::hex << std::setw(8) << std::setfill('0') << offset; 
+        std::wcout << L"0x";
+        std::wcout << std::hex << std::setw(8) << std::setfill(L'0') << offset;
 
         for (uint32_t i = offset; i < offset + length; ++i) {
             if (lineIndex == 16) {
-                std::wcout << " ";
+                std::wcout << L" ";
 
                 for (uint32_t j = 0; j < 16; j++) {
-                    if (line[j] >= ' ' && line[j] <= '~') {
-                        std::cout << line[j];
-                    }
-                    else {
-                        std::cout << ".";
-                    }
+                    std::wcout << (wchar_t)(line[j] >= ' ' && line[j] <= '~' ? line[j] : '.');
                 }
 
-                std::cout << std::endl;
+                std::wcout << std::endl;
                 for (uint16_t k = 0; k < linePadding; ++k) {
-                    std::cout << " ";
+                    std::wcout << L" ";
                 }
-                std::cout << "0x" << std::hex << std::uppercase << std::setw(8) << i; 
+                std::wcout << L"0x" << std::hex << std::uppercase << std::setw(8) << i;
                 lineIndex = 0;
             }
 
-            std::cout << " ";
-            uint8_t b = data[i];
-            std::wcout << std::hex << std::uppercase << std::setw(2) << std::setfill(L'0') << (int)b;
+            std::wcout << L" ";
+            std::wcout << std::hex << std::uppercase << std::setw(2) << std::setfill(L'0') << (int)data[i];
 
             line[lineIndex++] = data[i];
 
-            if (lineIndex == 16 && i == offset + length -1) {
-                std::cout << " ";
-
+            if (lineIndex == 16 && i == offset + length - 1) {
+                std::wcout << L" ";
                 for (uint32_t j = 0; j < 16; j++) {
-                    if (line[j] >= ' ' && line[j] <= '~') {
-                        std::cout << line[j];
-                    }
-                    else {
-                        std::cout << ".";
-                    }
+                    std::wcout << (wchar_t)(line[j] >= ' ' && line[j] <= '~' ? line[j] : '.');
                 }
             }
         }
@@ -98,16 +85,10 @@ namespace Rejistry {
         if (lineIndex != 16) {
             uint16_t count = ((16 - lineIndex) * 3) + 1;
             for (uint16_t i = 0; i < count; ++i) {
-                std::cout << " ";
+                std::wcout << L" ";
             }
-
             for (uint32_t i = 0; i < lineIndex; ++i) {
-                if (line[i] >= ' ' && line[i] <= '~') {
-                    std::cout << line[i];
-                }
-                else {
-                    std::cout << ".";
-                }
+                std::wcout << (wchar_t)(line[i] >= ' ' && line[i] <= '~' ? line[i] : '.');
             }
         }
     }
@@ -280,11 +261,23 @@ namespace Rejistry {
 int wmain(int argc, wchar_t *argv[], wchar_t *envp[])
 {
     if (argc < 2) {
-        std::wcout << "Usage: " << argv[0] << " <path to registry file>" << std::endl;
+        std::wcout << L"Usage: " << argv[0] << L" <path to registry file> [output file]" << std::endl;
         exit(1);
     }
 
-    std::wcout.imbue(std::locale(std::wcout.getloc(), new std::codecvt_utf8_utf16<wchar_t>()));
+    if (argc >= 3) {
+        // Redirect stdout to the output file at the OS level, then set UTF-8
+        // text mode. This is more reliable than imbuing with codecvt facets.
+        if (_wfreopen(argv[2], L"w", stdout) == nullptr) {
+            std::wcerr << L"Failed to open output file: " << argv[2] << std::endl;
+            exit(1);
+        }
+        _setmode(_fileno(stdout), _O_U8TEXT);
+    }
+    else {
+        // No output file — write UTF-16 directly to the console
+        _setmode(_fileno(stdout), _O_U16TEXT);
+    }
 
     Rejistry::processRegistryFile(argv[1]);
     Rejistry::processRegistryBuffer(argv[1]);
