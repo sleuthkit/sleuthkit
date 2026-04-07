@@ -3352,7 +3352,7 @@ public class SleuthkitCase {
 	 */
 	@Beta
 	public static SleuthkitCase newCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName) throws TskCoreException {
-		return newCase(dbPath, contentProvider, null, false);
+		return newCase(dbPath, contentProvider, lockingApplicationName, false);
 	}
 	
 	/**
