@@ -219,33 +219,6 @@ namespace Rejistry {
         std::wcout.fill(savedFill);
     }
 
-    void processRegistryBuffer(wchar_t * regFilePath) {
-        // Read entire file into memory
-        std::ifstream file(regFilePath, std::ios::binary | std::ios::ate);
-        if (!file.is_open()) {
-            std::wcout << "processRegistryBuffer: failed to open file" << std::endl;
-            return;
-        }
-
-        std::streamsize size = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-        std::vector<uint8_t> buffer(static_cast<size_t>(size));
-        if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
-            std::wcout << "processRegistryBuffer: failed to read file" << std::endl;
-            return;
-        }
-
-        try {
-            std::wcout << L"=== RegistryHiveBuffer ===" << std::endl;
-            RegistryHiveBuffer hiveBuffer(buffer.data(), static_cast<uint32_t>(size));
-            processRegistryHive(hiveBuffer);
-        }
-        catch (std::exception& ex) {
-            std::wcout << "processRegistryBuffer exception: " << ex.what() << std::endl;
-        }
-    }
-
     void processRegistryFile(wchar_t * regFilePath) {
         try {
             std::wcout << L"=== RegistryHiveFile ===" << std::endl;
@@ -280,5 +253,4 @@ int wmain(int argc, wchar_t *argv[], wchar_t *envp[])
     }
 
     Rejistry::processRegistryFile(argv[1]);
-    Rejistry::processRegistryBuffer(argv[1]);
 }

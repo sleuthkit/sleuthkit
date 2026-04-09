@@ -57,24 +57,21 @@ namespace Rejistry {
         }
 
         int32_t offset = (int32_t)getDWord(CLASSNAME_OFFSET_OFFSET);
-        uint16_t length = getWord(CLASSNAME_LENGTH_OFFSET);
-
-        // Not sure why we are performing this check. I haven't found any documentation on
-        // a max length for class name or its purpose. 
-        if (length > MAX_NAME_LENGTH) {
-            throw RegistryParseException("Class name exceeds maximum length.");
-        }
-
         if (offset < 0) {
             throw RegistryParseException("Invalid class name offset.");
         }
         uint32_t classnameOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
         auto c = std::make_unique< Cell >(_buf, classnameOffset);
         std::vector<uint8_t> data = c->getData();
+
+        uint16_t length = getWord(CLASSNAME_LENGTH_OFFSET);
         if (length > data.size()) {
             throw RegistryParseException("Cell size insufficient for parsing classname.");
         }
-        return std::wstring(data.begin(), data.end());
+
+        // Class names are stored as UTF-16LE. Cast directly to wchar_t rather
+        // than widening each byte individually via the iterator constructor.
+        return std::wstring(reinterpret_cast<const wchar_t*>(data.data()), length / sizeof(wchar_t));
     }
 
     uint64_t NKRecord::getTimestamp() const {

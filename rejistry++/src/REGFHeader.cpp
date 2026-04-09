@@ -100,16 +100,9 @@ namespace Rejistry {
     std::unique_ptr<NKRecord> REGFHeader::getRootNKRecord() const {
         int32_t firstCellOffset = (int32_t)(getDWord(FIRST_KEY_OFFSET_OFFSET));
         auto firstHBIN = getFirstHBIN();
-        if (firstHBIN.get() != NULL) {
-            auto cellPtr = firstHBIN->getCellAtOffset(firstCellOffset);
-
-            if (cellPtr.get() == NULL) {
-                throw RegistryParseException("Failed to get first cell.");
-            }
-            return cellPtr->getNKRecord();
-        }
-        else {
+        if (firstHBIN == nullptr) {
             throw RegistryParseException("Failed to get first HBIN.");
         }
+        return firstHBIN->getCellAtOffset(firstCellOffset)->getNKRecord();
     }
 };

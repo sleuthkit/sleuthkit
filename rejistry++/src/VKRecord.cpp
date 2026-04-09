@@ -26,6 +26,7 @@
  *
  */
 #include <memory>
+#include <algorithm>
 
 // Local includes
 #include "VKRecord.h"
@@ -148,8 +149,20 @@ namespace Rejistry {
         case ValueData::VALTYPE_QWORD:
         case ValueData::VALTYPE_FILETIME:
             {
-                auto c = std::make_unique< Cell >(_buf, offset);
-                data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
+                uint32_t dataLen = getDataLength();
+                if (length >= LARGE_DATA_SIZE) {
+                    // Data is stored inline in the VK record (≤4 bytes).
+                    // Malformed QWORD/FILETIME — getAsNumber() will return 0.
+                    data = std::make_unique<RegistryByteBuffer>(
+                        std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, dataLen), dataLen));
+                }
+                else {
+                    auto c = std::make_unique<Cell>(_buf, offset);
+                    ByteBuffer::ByteArray cellData = c->getData();
+                    uint32_t safeLength = std::min(length, static_cast<uint32_t>(cellData.size()));
+                    data = std::make_unique<RegistryByteBuffer>(
+                        std::make_unique<ByteBuffer>(cellData, safeLength));
+                }
             }
             break;
         default:

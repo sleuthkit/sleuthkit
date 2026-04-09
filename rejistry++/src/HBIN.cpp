@@ -61,9 +61,6 @@ namespace Rejistry {
             }
             cellList.push_back(std::move(nextCell));
             nextCellOffset += cellLen;
-            if (nextCellOffset > hbinSize) {
-                break;
-            }
         }
         while (nextCellOffset < hbinSize);
 

@@ -71,7 +71,7 @@ namespace Rejistry {
     }
 
     size_t RegistryKey::getSubkeyListSize() const {
-        return _nk->getSubkeyList()->getListLength();
+        return _nk->getSubkeyCount();
     }
 
     RegistryKey::RegistryKeyUniqPtr RegistryKey::getSubkey(const std::wstring& name) const {
