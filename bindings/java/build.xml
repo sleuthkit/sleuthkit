@@ -118,6 +118,20 @@
 		<ivy:retrieve sync="true" pattern="${lib}/[artifact]-[revision](-[classifier]).[ext]"/>
 	</target>
 
+	<target name="update-nb-classpath" depends="retrieve-deps"
+	        description="Regenerate the NetBeans IDE compile classpath in nbproject/project.xml from Ivy-resolved jars">
+		<pathconvert property="nb.classpath" pathsep=";" dirsep="/">
+			<fileset dir="${lib}" includes="*.jar" excludes="*-sources.jar,*-javadoc.jar"/>
+			<chainedmapper>
+				<flattenmapper/>
+				<globmapper from="*" to="lib/*"/>
+			</chainedmapper>
+		</pathconvert>
+		<replaceregexp file="nbproject/project.xml"
+		    match="(&lt;classpath mode=&quot;compile&quot;>)lib;[^&lt;]*(&lt;/classpath>)"
+		    replace="\1lib;${nb.classpath}\2"/>
+	</target>
+
 	<target name="compile-test" depends="compile" description="compile the tests">
 		<javac encoding="iso-8859-1" debug="on" srcdir="${test}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
@@ -125,7 +139,7 @@
 		</javac>
 	</target>
 
-	<target name="compile" depends="init, set-library-path, retrieve-deps" description="compile the source">
+	<target name="compile" depends="init, set-library-path, update-nb-classpath" description="compile the source">
 		<!-- Compile the java code from ${src} into ${build} -->
 		<javac encoding="iso-8859-1" debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
 			<compilerarg value="-Xlint"/>
