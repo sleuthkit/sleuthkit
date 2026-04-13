@@ -135,7 +135,7 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
         m_valLen = value->getValueLength();
         m_registryValue = new Rejistry::RegistryValue(*value);
 
-        Rejistry::ValueData * valueData = value->getValue();
+        auto valueData = value->getValue();
 
         switch (m_valType) {
         case REG_DWORD:
@@ -164,7 +164,6 @@ int RegVal::initialize(const Rejistry::RegistryValue *value) {
             // This shouldn't happen because we check the range above.
             break;
         }
-        delete valueData;
     }
     catch (Rejistry::RegistryParseException& e)
     {
