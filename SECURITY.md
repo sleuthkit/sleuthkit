@@ -8,7 +8,7 @@ If you discover a security vulnerability in The Sleuth Kit, please report it res
 
 You can report vulnerabilities through either of the following:
 
-- **Email**: security@sleuthkitlabs.com
+- **Email**: security@sleuthkit.org
 - **GitHub Private Vulnerability Reporting**: Use the "Report a vulnerability" button on the Security tab of this repository.
 
 Please include the following in your report:
