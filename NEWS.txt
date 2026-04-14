@@ -1,3 +1,20 @@
+---------------- VERSION 4.15.0 --------------
+
+C/C++
+- Fix bounds checks. Reported by Mobasi
+- NTFS overflow fix from @JustinStitt
+- NTFS overflow fixes from Joachim Metz
+- Added is_image_supported DLL to test file types (SKL)
+- Log large dirs that are skipped (SKL)
+- Added error listener callback (SKL)
+- Logical folder speed ups (SKL)
+- LOTS of compiler warning fixes
+- LOTS of memory bounds checks added from Claude review
+
+Java:
+- Added read only transaction (SKL)
+- Update C3P0
+
 ---------------- VERSION 4.14.0 --------------
 - This release reverts many changes from 4.13.0. It is more close to 4.12.1 than it is to 4.13.0.
 - It was created from the Dec 3, 2024 ct-3.13.0 tag (28a838d) and has changes from the Sleuth Kit Labs team.
