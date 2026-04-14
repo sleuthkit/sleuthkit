@@ -56,7 +56,7 @@ namespace Rejistry {
         /**
          * @returns The number of subkeys this list has.
          */
-        uint16_t getListLength() const;
+        virtual uint16_t getListLength() const;
 
         /**
          * @returns The list of subkeys.
