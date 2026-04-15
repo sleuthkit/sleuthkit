@@ -13,6 +13,7 @@ C/C++
 
 Java:
 - Update C3P0
+- Disabled async childmap loading that was causing deadlocks
 
 ---------------- VERSION 4.14.0 --------------
 - This release reverts many changes from 4.13.0. It is more close to 4.12.1 than it is to 4.13.0.
