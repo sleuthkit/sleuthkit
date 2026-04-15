@@ -527,7 +527,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add this objId to the list of objects that have children (of any type)
+	 * Add this objId to the list of objects that have children (of any type).
+	 *
+	 * Callers must NOT hold a database lock when calling this
+	 * method. It can cause a deadlock if the async task to load it hasn't 
+	 * started yet. 
 	 *
 	 * @param objId
 	 */
@@ -536,7 +540,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add this objId to the list of objects that have children (of any type)
+	 * Add this objId to the list of objects that have children (of any type).
+	 *
+	 * See the no-arg overload for the constraint on not holding the DB 
+	 * lock when initializing is false.
+	 *
 	 * @param objId
 	 * @param initializing set to true if invoked from initialization
 	 */
@@ -948,23 +956,29 @@ public class SleuthkitCase {
 	private void populateHasChildrenMap(boolean async) throws TskCoreException {
 		
 		Runnable childrenBitSetLockInitRunnable =  () -> {
-			
+
 			/**
-			 * This lock is insufficient to handle the case where this thread 
-			 * starts non-deterministically. {@link #childrenBitSetInitLatch} 
-			 * is countdown at the end of the initialization to provide the necessary guarantees. 
+			 * This lock is insufficient to handle the case where this thread
+			 * starts non-deterministically. {@link #childrenBitSetInitLatch}
+			 * is countdown at the end of the initialization to provide the necessary guarantees.
 			 */
 			childrenBitSetLock.lock();
-			// The distinct parent objeect id lookup is expensive in postgresql 
-			// This is offloaded into a thread and the incident open proceeds. 
-			// The access to the results are guarded by an object lock on hasChildrenBitSetMap. 
-			// The issue with this approach is that the SQLException will not cause a TSKCOreException. 
+			// The distinct parent objeect id lookup is expensive in postgresql
+			// This is offloaded into a thread and the incident open proceeds.
+			// The access to the results are guarded by an object lock on hasChildrenBitSetMap.
+			// The issue with this approach is that the SQLException will not cause a TSKCOreException.
 			// Since this is running async, it also acquires a new connection from the pool
-			
+
 			long timestamp = System.currentTimeMillis();
 
 			Statement statement = null;
 			ResultSet resultSet = null;
+			// The write lock is held for the duration of the query so that no
+			// new objects can be inserted into tsk_objects concurrently. This
+			// ensures the map is a complete snapshot of all parent IDs at
+			// initialization time. The lock is released before countDown() so
+			// that callers of setHasChildren() that are awaiting the latch are
+			// not blocked by the DB lock after initialization completes.
 			acquireSingleUserCaseWriteLock();			
 			try (CaseDbConnection neoConnection = connections.getConnection()) {
 				statement = neoConnection.createStatement();
@@ -6713,6 +6727,7 @@ public class SleuthkitCase {
 	 */
 	long addObject(long parentId, int objectType, CaseDbConnection connection) throws SQLException {
 		ResultSet resultSet = null;
+		long newObjId;
 		acquireSingleUserCaseWriteLock();
 		try {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
@@ -6726,12 +6741,8 @@ public class SleuthkitCase {
 			statement.setInt(2, objectType);
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-
 			if (resultSet.next()) {
-				if (parentId != 0) {
-					setHasChildren(parentId);
-				}
-				return resultSet.getLong(1); //last_insert_rowid()
+				newObjId = resultSet.getLong(1); //last_insert_rowid()
 			} else {
 				throw new SQLException("Error inserting object with parent " + parentId + " into tsk_objects");
 			}
@@ -6739,6 +6750,13 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			releaseSingleUserCaseWriteLock();
 		}
+		// setHasChildren is memory-only (childrenBitSetLock handles thread
+		// safety) and must be called after releasing the DB write lock to
+		// avoid deadlocking with populateHasChildrenMap initialization.
+		if (parentId != 0) {
+			setHasChildren(parentId);
+		}
+		return newObjId;
 	}
 
 	/**
