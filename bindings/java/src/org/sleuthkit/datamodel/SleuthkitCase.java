@@ -551,7 +551,15 @@ public class SleuthkitCase {
 	private void setHasChildren(Long objId, boolean initializing) {
 		try {
 			if (!initializing) {
-				// Await initialization 
+				// If the current thread holds the write lock and initialization has
+				// not completed, populateHasChildrenMap cannot have run its DB query
+				// yet (it acquires the write lock first). Calling await() here would
+				// deadlock because populateHasChildrenMap is blocked waiting for the
+				// same write lock this thread holds. Return early — the parent will
+				// be captured by populateHasChildrenMap when the write lock releases.
+				if (rwLock.isWriteLockedByCurrentThread() && childrenBitSetInitLatch.getCount() > 0) {
+					return;
+				}
 				childrenBitSetInitLatch.await();
 			}
 		} catch (InterruptedException ex) {
@@ -13242,7 +13250,7 @@ public class SleuthkitCase {
 				resultSet.close();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error closing ResultSet", ex); //NON-NLS
-			} catch (Error ex) {
+			} catch (InternalError ex) {
 				// C3P0 0.12.0+ throws InternalError ("Marking a ResultSet inactive
 				// that we did not know was opened") when closing a ResultSet that was
 				// produced by a cached PreparedStatement, because those statements
@@ -13251,6 +13259,8 @@ public class SleuthkitCase {
 				// WARNING rather than SEVERE — data integrity is not affected, but
 				// the connection may not be cleaned up perfectly before pool return.
 				logger.log(Level.WARNING, "Non-SQL error closing ResultSet (C3P0 proxy tracking mismatch)", ex); //NON-NLS
+			} catch (VirtualMachineError | ThreadDeath | LinkageError ex) {
+				throw ex;
 			}
 		}
 	}
