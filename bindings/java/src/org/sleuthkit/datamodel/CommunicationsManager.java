@@ -199,56 +199,42 @@ public final class CommunicationsManager {
 		}
 
 		CaseDbTransaction trans = db.beginTransaction();
+		Statement s = null;
+		ResultSet rs = null;
 		try {
-			CaseDbConnection conn = trans.getConnection();
+			s = trans.getConnection().createStatement();
+			rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
+			if (!rs.next()) {
+				rs.close();
+				rs = null;
 
-			// Cached on the connection — do not close.
-			PreparedStatement selectStmt = conn.getPreparedStatement(
-					"SELECT account_type_id, type_name, display_name FROM account_types WHERE type_name = ?", //NON-NLS
-					Statement.NO_GENERATED_KEYS);
-			selectStmt.setString(1, accountTypeName);
-			// Use manual close instead of try-with-resources to prevent C3P0's
-			// ResultSet proxy from throwing InternalError on close() when the
-			// ResultSet was created from a cached PreparedStatement.
-			ResultSet rs = conn.executeQuery(selectStmt);
-			try {
-				if (!rs.next()) {
-					// Not found — insert. Cached on the connection — do not close.
-					PreparedStatement insertStmt = conn.getPreparedStatement(
-							"INSERT INTO account_types (type_name, display_name) VALUES (?, ?)", //NON-NLS
-							Statement.RETURN_GENERATED_KEYS);
-					insertStmt.setString(1, accountTypeName);
-					insertStmt.setString(2, displayName);
-					conn.executeUpdate(insertStmt);
+				s.execute("INSERT INTO account_types (type_name, display_name) VALUES ( '" + accountTypeName + "', '" + displayName + "')"); //NON-NLS
 
-					// Read back the typeID — reuse the same cached select statement.
-					selectStmt.setString(1, accountTypeName);
-					ResultSet rs2 = conn.executeQuery(selectStmt);
-					try {
-						rs2.next();
-						int typeID = rs2.getInt("account_type_id");
-						accountType = new Account.Type(rs2.getString("type_name"), rs2.getString("display_name"));
-						this.accountTypeToTypeIdMap.put(accountType, typeID);
-						this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
-					} finally {
-						SleuthkitCase.closeResultSet(rs2);
-					}
+				// Read back the typeID
+				rs = trans.getConnection().executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
+				rs.next();
 
-					trans.commit();
-					return accountType;
-				} else {
-					int typeID = rs.getInt("account_type_id");
-					accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-					this.accountTypeToTypeIdMap.put(accountType, typeID);
-					trans.rollback();
-					return accountType;
-				}
-			} finally {
-				SleuthkitCase.closeResultSet(rs);
+				int typeID = rs.getInt("account_type_id");
+				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
+				this.accountTypeToTypeIdMap.put(accountType, typeID);
+				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
+
+				trans.commit();
+				return accountType;
+			} else {
+				int typeID = rs.getInt("account_type_id");
+				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
+				this.accountTypeToTypeIdMap.put(accountType, typeID);
+				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
+				trans.rollback();
+				return accountType;
 			}
 		} catch (SQLException ex) {
 			trans.rollback();
 			throw new TskCoreException("Error adding account type", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 		}
 	}
 
