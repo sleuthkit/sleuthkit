@@ -230,7 +230,8 @@ public class SleuthkitCase {
 	// Lock to serialize access to the bitset.
 	private final ReentrantLock childrenBitSetLock = new ReentrantLock();
 	// Latch to enforce a happens before relation
-	private final CountDownLatch childrenBitSetInitLatch = new CountDownLatch(1);
+	// @@@ UPDATE - REMOVED because everything is now sync
+	//private final CountDownLatch childrenBitSetInitLatch = new CountDownLatch(1);
 	
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
@@ -447,7 +448,8 @@ public class SleuthkitCase {
 			initReviewStatuses(connection);
 			initEncodingTypes(connection);
 			initCollectedStatusTypes(connection);
-			populateHasChildrenMap(true);
+			// @@@ UPDATE TO ALLOW CT TO BE ASYNC
+			populateHasChildrenMap(false);
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
 		} 
@@ -504,12 +506,13 @@ public class SleuthkitCase {
 	 */
 	boolean getHasChildren(Content content) {
 		
-		try {
+		//try {
 			// Await initialization 
-			childrenBitSetInitLatch.await();
-		} catch (InterruptedException ex) {
-			throw new AssertionError("Interrupted Exception awaiting Children bit set initialization", ex); //NON-NLS
-		}
+			// @@@ UPDATE - REMOVED because everything is now sync
+			//childrenBitSetInitLatch.await();
+		//} catch (InterruptedException ex) {
+		//	throw new AssertionError("Interrupted Exception awaiting Children bit set initialization", ex); //NON-NLS
+		//}
 		childrenBitSetLock.lock();
 		try {
 			long objId = content.getId();
@@ -549,22 +552,24 @@ public class SleuthkitCase {
 	 * @param initializing set to true if invoked from initialization
 	 */
 	private void setHasChildren(Long objId, boolean initializing) {
-		try {
-			if (!initializing) {
+		//try {
+			//if (!initializing) {
 				// If the current thread holds the write lock and initialization has
 				// not completed, populateHasChildrenMap cannot have run its DB query
 				// yet (it acquires the write lock first). Calling await() here would
 				// deadlock because populateHasChildrenMap is blocked waiting for the
 				// same write lock this thread holds. Return early — the parent will
 				// be captured by populateHasChildrenMap when the write lock releases.
-				if (rwLock.isWriteLockedByCurrentThread() && childrenBitSetInitLatch.getCount() > 0) {
-					return;
-				}
-				childrenBitSetInitLatch.await();
-			}
-		} catch (InterruptedException ex) {
-			throw new AssertionError("Interrupted Exception awaiting Children bit set initialization",ex); //NON-NLS
-		}
+				
+				// @@@ UPDATE - REMOVED because everything is now sync
+				///if (rwLock.isWriteLockedByCurrentThread() && childrenBitSetInitLatch.getCount() > 0) {
+				//	return;
+				//}
+				//childrenBitSetInitLatch.await();
+			//}
+		//} catch (InterruptedException ex) {
+	//		throw new AssertionError("Interrupted Exception awaiting Children bit set initialization",ex); //NON-NLS
+		//}
 
 		childrenBitSetLock.lock();
 		try {
@@ -962,64 +967,61 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	private void populateHasChildrenMap(boolean async) throws TskCoreException {
-		
-		Runnable childrenBitSetLockInitRunnable =  () -> {
+		if (async) {
+			throw new TskCoreException("populateHasChildrenMap: async loading is not supported");
+		}
 
-			/**
-			 * This lock is insufficient to handle the case where this thread
-			 * starts non-deterministically. {@link #childrenBitSetInitLatch}
-			 * is countdown at the end of the initialization to provide the necessary guarantees.
-			 */
-			childrenBitSetLock.lock();
-			// The distinct parent objeect id lookup is expensive in postgresql
-			// This is offloaded into a thread and the incident open proceeds.
-			// The access to the results are guarded by an object lock on hasChildrenBitSetMap.
-			// The issue with this approach is that the SQLException will not cause a TSKCOreException.
-			// Since this is running async, it also acquires a new connection from the pool
+		Runnable childrenBitSetLockInitRunnable = () -> {
 
 			long timestamp = System.currentTimeMillis();
 
+			// Phase 1: hold the write lock only long enough to snapshot all
+			// parent IDs from the DB. childrenBitSetLock is NOT held here.
+			// Holding both locks simultaneously caused a deadlock: this thread
+			// would block on the write lock while an ingest thread held the
+			// write lock (via CaseDbTransaction) and blocked on
+			// childrenBitSetLock inside setHasChildren().
+			List<Long> parentIds = new ArrayList<>();
 			Statement statement = null;
 			ResultSet resultSet = null;
-			// The write lock is held for the duration of the query so that no
-			// new objects can be inserted into tsk_objects concurrently. This
-			// ensures the map is a complete snapshot of all parent IDs at
-			// initialization time. The lock is released before countDown() so
-			// that callers of setHasChildren() that are awaiting the latch are
-			// not blocked by the DB lock after initialization completes.
-			acquireSingleUserCaseWriteLock();			
+			acquireSingleUserCaseWriteLock();
 			try (CaseDbConnection neoConnection = connections.getConnection()) {
 				statement = neoConnection.createStatement();
-				String query = "select distinct par_obj_id from tsk_objects";
+				String query = "select distinct par_obj_id from tsk_objects"; //NON-NLS
 				if (dbType == DbType.POSTGRESQL) {
-					query = "select distinct ON (par_obj_id) par_obj_id from tsk_objects";
+					query = "select distinct ON (par_obj_id) par_obj_id from tsk_objects"; //NON-NLS
 				}
-
-				resultSet = statement.executeQuery(query); //NON-NLS
-
-				/**
-				 * Operating under the re-entrant lock {@link #childrenBitSetLock}
-				 */
+				resultSet = statement.executeQuery(query);
 				while (resultSet.next()) {
-					setHasChildren(resultSet.getLong("par_obj_id"), true);
+					parentIds.add(resultSet.getLong("par_obj_id")); //NON-NLS
 				}
-
-				long delay = System.currentTimeMillis() - timestamp;
-				logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error populating parent node cache", ex); //NON-NLS
-				// Dont really expect this to be thrown, but if this happens, then it is non-recoverable. 
-				throw new AssertionError("Error populating parent node cache",ex); //NON-NLS
+				throw new AssertionError("Error populating parent node cache", ex); //NON-NLS
 			} catch (TskCoreException ex) {
 				logger.log(Level.SEVERE, "Error acquiring connection", ex); //NON-NLS
-				throw new AssertionError("Error acquiring connection",ex); //NON-NLS
+				throw new AssertionError("Error acquiring connection", ex); //NON-NLS
 			} finally {
 				closeResultSet(resultSet);
 				closeStatement(statement);
 				releaseSingleUserCaseWriteLock();
+			}
+
+			// Phase 2: update the in-memory map under its own lock. The write
+			// lock is no longer held so ingest threads can proceed. Any object
+			// inserted between phase 1 and phase 2 will have setHasChildren()
+			// called by addObject(), so the map stays consistent (bits are
+			// only ever set, never cleared).
+			childrenBitSetLock.lock();
+			try {
+				for (Long parentId : parentIds) {
+					setHasChildren(parentId, true);
+				}
+				long delay = System.currentTimeMillis() - timestamp;
+				logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
+			} finally {
 				childrenBitSetLock.unlock();
-				// Countdown the latch as initialization has completed. 
-				childrenBitSetInitLatch.countDown(); 
+				//childrenBitSetInitLatch.countDown();
 			}
 		};
 
@@ -1037,12 +1039,13 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	void addDataSourceToHasChildrenMap() throws TskCoreException {
-		try {
+		//try {
 			// Await initialization. ensure no async version of the init is still running.
-			childrenBitSetInitLatch.await();
-		} catch (InterruptedException ex) {
-			throw new AssertionError("Interrupted Exception awaiting Children bit set initialization", ex); //NON-NLS
-		}
+			// @@@ UPDATE - REMOVED because everything is now sync
+			//childrenBitSetInitLatch.await();
+		//} catch (InterruptedException ex) {
+		//	throw new AssertionError("Interrupted Exception awaiting Children bit set initialization", ex); //NON-NLS
+		//}
 		populateHasChildrenMap(false);		 
 	}
 
