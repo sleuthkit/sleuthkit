@@ -12,7 +12,6 @@ C/C++
 - LOTS of memory bounds checks added from Claude review
 
 Java:
-- Added read only transaction (SKL)
 - Update C3P0
 
 ---------------- VERSION 4.14.0 --------------
