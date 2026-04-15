@@ -527,7 +527,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add this objId to the list of objects that have children (of any type)
+	 * Add this objId to the list of objects that have children (of any type).
+	 *
+	 * Callers must NOT hold a database lock when calling this
+	 * method. It can cause a deadlock if the async task to load it hasn't 
+	 * started yet. 
 	 *
 	 * @param objId
 	 */
@@ -536,14 +540,26 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add this objId to the list of objects that have children (of any type)
+	 * Add this objId to the list of objects that have children (of any type).
+	 *
+	 * See the no-arg overload for the constraint on not holding the DB 
+	 * lock when initializing is false.
+	 *
 	 * @param objId
 	 * @param initializing set to true if invoked from initialization
 	 */
 	private void setHasChildren(Long objId, boolean initializing) {
 		try {
 			if (!initializing) {
-				// Await initialization 
+				// If the current thread holds the write lock and initialization has
+				// not completed, populateHasChildrenMap cannot have run its DB query
+				// yet (it acquires the write lock first). Calling await() here would
+				// deadlock because populateHasChildrenMap is blocked waiting for the
+				// same write lock this thread holds. Return early — the parent will
+				// be captured by populateHasChildrenMap when the write lock releases.
+				if (rwLock.isWriteLockedByCurrentThread() && childrenBitSetInitLatch.getCount() > 0) {
+					return;
+				}
 				childrenBitSetInitLatch.await();
 			}
 		} catch (InterruptedException ex) {
@@ -948,23 +964,29 @@ public class SleuthkitCase {
 	private void populateHasChildrenMap(boolean async) throws TskCoreException {
 		
 		Runnable childrenBitSetLockInitRunnable =  () -> {
-			
+
 			/**
-			 * This lock is insufficient to handle the case where this thread 
-			 * starts non-deterministically. {@link #childrenBitSetInitLatch} 
-			 * is countdown at the end of the initialization to provide the necessary guarantees. 
+			 * This lock is insufficient to handle the case where this thread
+			 * starts non-deterministically. {@link #childrenBitSetInitLatch}
+			 * is countdown at the end of the initialization to provide the necessary guarantees.
 			 */
 			childrenBitSetLock.lock();
-			// The distinct parent objeect id lookup is expensive in postgresql 
-			// This is offloaded into a thread and the incident open proceeds. 
-			// The access to the results are guarded by an object lock on hasChildrenBitSetMap. 
-			// The issue with this approach is that the SQLException will not cause a TSKCOreException. 
+			// The distinct parent objeect id lookup is expensive in postgresql
+			// This is offloaded into a thread and the incident open proceeds.
+			// The access to the results are guarded by an object lock on hasChildrenBitSetMap.
+			// The issue with this approach is that the SQLException will not cause a TSKCOreException.
 			// Since this is running async, it also acquires a new connection from the pool
-			
+
 			long timestamp = System.currentTimeMillis();
 
 			Statement statement = null;
 			ResultSet resultSet = null;
+			// The write lock is held for the duration of the query so that no
+			// new objects can be inserted into tsk_objects concurrently. This
+			// ensures the map is a complete snapshot of all parent IDs at
+			// initialization time. The lock is released before countDown() so
+			// that callers of setHasChildren() that are awaiting the latch are
+			// not blocked by the DB lock after initialization completes.
 			acquireSingleUserCaseWriteLock();			
 			try (CaseDbConnection neoConnection = connections.getConnection()) {
 				statement = neoConnection.createStatement();
@@ -6713,6 +6735,7 @@ public class SleuthkitCase {
 	 */
 	long addObject(long parentId, int objectType, CaseDbConnection connection) throws SQLException {
 		ResultSet resultSet = null;
+		long newObjId;
 		acquireSingleUserCaseWriteLock();
 		try {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
@@ -6726,12 +6749,8 @@ public class SleuthkitCase {
 			statement.setInt(2, objectType);
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-
 			if (resultSet.next()) {
-				if (parentId != 0) {
-					setHasChildren(parentId);
-				}
-				return resultSet.getLong(1); //last_insert_rowid()
+				newObjId = resultSet.getLong(1); //last_insert_rowid()
 			} else {
 				throw new SQLException("Error inserting object with parent " + parentId + " into tsk_objects");
 			}
@@ -6739,6 +6758,13 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			releaseSingleUserCaseWriteLock();
 		}
+		// setHasChildren is memory-only (childrenBitSetLock handles thread
+		// safety) and must be called after releasing the DB write lock to
+		// avoid deadlocking with populateHasChildrenMap initialization.
+		if (parentId != 0) {
+			setHasChildren(parentId);
+		}
+		return newObjId;
 	}
 
 	/**
@@ -13224,6 +13250,17 @@ public class SleuthkitCase {
 				resultSet.close();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error closing ResultSet", ex); //NON-NLS
+			} catch (InternalError ex) {
+				// C3P0 0.12.0+ throws InternalError ("Marking a ResultSet inactive
+				// that we did not know was opened") when closing a ResultSet that was
+				// produced by a cached PreparedStatement, because those statements
+				// bypass C3P0's proxy tracking layer. The query itself completed
+				// successfully; this error is C3P0 confusion during cleanup. Log as
+				// WARNING rather than SEVERE — data integrity is not affected, but
+				// the connection may not be cleaned up perfectly before pool return.
+				logger.log(Level.WARNING, "Non-SQL error closing ResultSet (C3P0 proxy tracking mismatch)", ex); //NON-NLS
+			} catch (VirtualMachineError | ThreadDeath | LinkageError ex) {
+				throw ex;
 			}
 		}
 	}
@@ -14172,6 +14209,13 @@ public class SleuthkitCase {
 
 		PreparedStatement getPreparedStatement(PREPARED_STATEMENT statementKey, int generateKeys) throws SQLException {
 			// Lazy statement preparation.
+			// TODO: Consider replacing this custom PreparedStatement cache with C3P0's
+			// built-in statement caching (maxStatements / maxStatementsPerConnection).
+			// The current approach bypasses C3P0's proxy layer, so ResultSets produced
+			// by cached statements are not tracked by C3P0. In C3P0 0.12.0+, calling
+			// close() on such a ResultSet throws InternalError from NewProxyResultSet
+			// because C3P0 cannot find the ResultSet in its internal tracking map.
+			// C3P0's own cache would keep statements inside its proxy, avoiding this.
 			PreparedStatement statement;
 			if (this.preparedStatements.containsKey(statementKey)) {
 				statement = this.preparedStatements.get(statementKey);

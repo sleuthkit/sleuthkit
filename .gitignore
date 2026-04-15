@@ -204,3 +204,5 @@ sleuthkit-*.tar.gz
 #Test data folder
 
 tests/data
+
+.claude
