@@ -207,7 +207,11 @@ public final class CommunicationsManager {
 					"SELECT account_type_id, type_name, display_name FROM account_types WHERE type_name = ?", //NON-NLS
 					Statement.NO_GENERATED_KEYS);
 			selectStmt.setString(1, accountTypeName);
-			try (ResultSet rs = conn.executeQuery(selectStmt)) {
+			// Use manual close instead of try-with-resources to prevent C3P0's
+			// ResultSet proxy from throwing InternalError on close() when the
+			// ResultSet was created from a cached PreparedStatement.
+			ResultSet rs = conn.executeQuery(selectStmt);
+			try {
 				if (!rs.next()) {
 					// Not found — insert. Cached on the connection — do not close.
 					PreparedStatement insertStmt = conn.getPreparedStatement(
@@ -219,12 +223,15 @@ public final class CommunicationsManager {
 
 					// Read back the typeID — reuse the same cached select statement.
 					selectStmt.setString(1, accountTypeName);
-					try (ResultSet rs2 = conn.executeQuery(selectStmt)) {
+					ResultSet rs2 = conn.executeQuery(selectStmt);
+					try {
 						rs2.next();
 						int typeID = rs2.getInt("account_type_id");
 						accountType = new Account.Type(rs2.getString("type_name"), rs2.getString("display_name"));
 						this.accountTypeToTypeIdMap.put(accountType, typeID);
 						this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
+					} finally {
+						SleuthkitCase.closeResultSet(rs2);
 					}
 
 					trans.commit();
@@ -233,8 +240,11 @@ public final class CommunicationsManager {
 					int typeID = rs.getInt("account_type_id");
 					accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
 					this.accountTypeToTypeIdMap.put(accountType, typeID);
+					trans.rollback();
 					return accountType;
 				}
+			} finally {
+				SleuthkitCase.closeResultSet(rs);
 			}
 		} catch (SQLException ex) {
 			trans.rollback();

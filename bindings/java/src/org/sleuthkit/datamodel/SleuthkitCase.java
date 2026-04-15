@@ -13242,6 +13242,15 @@ public class SleuthkitCase {
 				resultSet.close();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error closing ResultSet", ex); //NON-NLS
+			} catch (Error ex) {
+				// C3P0 0.12.0+ throws InternalError ("Marking a ResultSet inactive
+				// that we did not know was opened") when closing a ResultSet that was
+				// produced by a cached PreparedStatement, because those statements
+				// bypass C3P0's proxy tracking layer. The query itself completed
+				// successfully; this error is C3P0 confusion during cleanup. Log as
+				// WARNING rather than SEVERE — data integrity is not affected, but
+				// the connection may not be cleaned up perfectly before pool return.
+				logger.log(Level.WARNING, "Non-SQL error closing ResultSet (C3P0 proxy tracking mismatch)", ex); //NON-NLS
 			}
 		}
 	}
@@ -14190,6 +14199,13 @@ public class SleuthkitCase {
 
 		PreparedStatement getPreparedStatement(PREPARED_STATEMENT statementKey, int generateKeys) throws SQLException {
 			// Lazy statement preparation.
+			// TODO: Consider replacing this custom PreparedStatement cache with C3P0's
+			// built-in statement caching (maxStatements / maxStatementsPerConnection).
+			// The current approach bypasses C3P0's proxy layer, so ResultSets produced
+			// by cached statements are not tracked by C3P0. In C3P0 0.12.0+, calling
+			// close() on such a ResultSet throws InternalError from NewProxyResultSet
+			// because C3P0 cannot find the ResultSet in its internal tracking map.
+			// C3P0's own cache would keep statements inside its proxy, avoiding this.
 			PreparedStatement statement;
 			if (this.preparedStatements.containsKey(statementKey)) {
 				statement = this.preparedStatements.get(statementKey);
