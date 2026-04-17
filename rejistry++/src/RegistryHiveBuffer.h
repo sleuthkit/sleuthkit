@@ -52,15 +52,15 @@ namespace Rejistry {
 
         virtual ~RegistryHiveBuffer();
 
-        virtual RegistryKey * getRoot() const;
-        virtual REGFHeader * getHeader() const;
+        virtual std::unique_ptr <RegistryKey> getRoot() const;
+        virtual std::unique_ptr<REGFHeader> getHeader() const;
 
     private:
         RegistryHiveBuffer();
         RegistryHiveBuffer(const RegistryHiveBuffer &);
         RegistryHiveBuffer& operator=(const RegistryHiveBuffer &);
 
-        RegistryByteBuffer * _buffer;
+        std::unique_ptr<RegistryByteBuffer> _buffer;
     };
 };
 

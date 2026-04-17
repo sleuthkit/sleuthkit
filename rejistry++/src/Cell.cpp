@@ -64,12 +64,12 @@ namespace Rejistry {
         return getQWord(DATA_OFFSET);
     }
 
-    NKRecord::NKRecordPtr Cell::getNKRecord() const {
-        return new NKRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+    std::unique_ptr<NKRecord> Cell::getNKRecord() const {
+        return std::make_unique<NKRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
-    VKRecord::VKRecordPtr Cell::getVKRecord() const {
-        return new VKRecord(_buf, getAbsoluteOffset(DATA_OFFSET));
+    std::unique_ptr<VKRecord> Cell::getVKRecord() const {
+        return std::make_unique<VKRecord>(_buf, getAbsoluteOffset(DATA_OFFSET));
     }
 
     SubkeyListRecord::SubkeyListRecordPtr Cell::getLFRecord() const {

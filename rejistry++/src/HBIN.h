@@ -45,43 +45,7 @@ namespace Rejistry {
      */
     class HBIN : public BinaryBlock {
     public:
-        typedef HBIN * HBINPtr;
-        typedef std::vector< HBINPtr > HBINPtrList;
-
-        /**
-            The AutoHBINPtrList class should be used by clients to hold lists of
-            HBIN pointers returned by methods like REGFHeader::getHBINs()
-            so that the record objects will be automatically freed. Example:
-            @code
-            AutoHBINPtrList hbinList(header->getHBINs());
-            for (HBIN::HBINPtrList::iterator i = hbinList.begin(); i != hbinList.end(); ++i)
-            { ... //do stuff }
-            // Don't worry about delete'ing each record object--valueList will take care of
-            // that when it goes out of scope.
-            @endcode
-        */
-        class AutoHBINPtrList
-        {
-        public:
-
-            AutoHBINPtrList(HBINPtrList recordList) : _recordList(recordList) {}
-            ~AutoHBINPtrList()
-            {
-                for (HBINPtrList::iterator it = _recordList.begin(); it != _recordList.end(); ++it)
-                {
-                    delete *it;
-                }
-            }
-            HBINPtrList::iterator begin() { return _recordList.begin(); }
-            HBINPtrList::iterator end()   { return _recordList.end(); }
-            HBINPtrList::size_type size() { return _recordList.size(); }
-        private:
-            AutoHBINPtrList(const AutoHBINPtrList&);
-            AutoHBINPtrList& operator=(const AutoHBINPtrList&);
-
-            HBINPtrList _recordList;
-        };
-
+        typedef std::unique_ptr<HBIN> HBINUniqPtr;
 
         HBIN(const REGFHeader * header, RegistryByteBuffer * buf, uint32_t offset);
         
@@ -103,19 +67,16 @@ namespace Rejistry {
 
         /**
          * Get all cells in this HBIN.
-         * @returns A list of Cells. The caller is responsible for freeing
-         * the memory associated with the cells.
+         * @returns A list of Cells.
          */
-        Cell::CellPtrList getCells() const;
+        Cell::CellUniqPtrList getCells() const;
 
         /**
          * Get the cell at the given relative offset into this HBIN.
          * @param offset Relative offset into this HBIN.
-         * @returns A pointer to the Cell at the given offset. The 
-         * caller is responsible for freeing the memory associated with
-         * the Cell.
+         * @returns A unqiue pointer to the Cell at the given offset.
          */
-        Cell::CellPtr getCellAtOffset(uint32_t offset) const;
+        Cell::CellUniqPtr getCellAtOffset(uint32_t offset) const;
 
     private:
         static const uint8_t FIRST_HBIN_OFFSET_OFFSET = 0x4;
@@ -126,7 +87,7 @@ namespace Rejistry {
         HBIN(const HBIN &);
         HBIN& operator=(const HBIN &);
 
-        const REGFHeader * _header = NULL;
+        const REGFHeader * _header = nullptr;
     };
 };
 

@@ -63,9 +63,9 @@ namespace Rejistry {
         return getDWord(LAST_HBIN_OFFSET_OFFSET);
     }
 
-    HBIN::HBINPtrList REGFHeader::getHBINs() const {
+    std::vector<HBIN::HBINUniqPtr> REGFHeader::getHBINs() const {
         uint32_t nextHBINOffset = FIRST_HBIN_OFFSET;
-        HBIN::HBINPtrList hbinList;
+        std::vector<HBIN::HBINUniqPtr> hbinList;
 
         do {
             if (getDWord(nextHBINOffset) != 0x6E696268) {
@@ -73,9 +73,9 @@ namespace Rejistry {
                 break;
             }
 
-            HBIN * nextHBIN = new HBIN(this, _buf, getAbsoluteOffset(nextHBINOffset));
+            auto nextHBIN = std::make_unique<HBIN>(this, _buf, getAbsoluteOffset(nextHBINOffset));
             uint32_t relNext = nextHBIN->getRelativeOffsetNextHBIN();
-            hbinList.push_back(nextHBIN);
+            hbinList.push_back(std::move(nextHBIN));
             if (relNext == 0 || nextHBINOffset + relNext < nextHBINOffset) {
                 break;
             }
@@ -86,30 +86,23 @@ namespace Rejistry {
         return hbinList;
     }
 
-    HBIN::HBINPtr REGFHeader::getFirstHBIN() const {
+    HBIN::HBINUniqPtr REGFHeader::getFirstHBIN() const {
         if (getDWord(FIRST_HBIN_OFFSET) != 0x6E696268) {
             throw RegistryParseException("HBIN magic value not found.");
         }
 
-        return new HBIN(this, _buf, getAbsoluteOffset(FIRST_HBIN_OFFSET));
+        return std::make_unique<HBIN>(this, _buf, getAbsoluteOffset(FIRST_HBIN_OFFSET));
     }
 
     /**
      * @throws RegistryParseException in case of error.
      */
-    NKRecord::NKRecordPtr REGFHeader::getRootNKRecord() const {
+    std::unique_ptr<NKRecord> REGFHeader::getRootNKRecord() const {
         int32_t firstCellOffset = (int32_t)(getDWord(FIRST_KEY_OFFSET_OFFSET));
-        std::unique_ptr< HBIN > firstHBIN(getFirstHBIN());
-        if (firstHBIN.get() != NULL) {
-            std::unique_ptr< Cell > cellPtr(firstHBIN->getCellAtOffset(firstCellOffset));
-
-            if (cellPtr.get() == NULL) {
-                throw RegistryParseException("Failed to get first cell.");
-            }
-            return cellPtr->getNKRecord();
-        }
-        else {
+        auto firstHBIN = getFirstHBIN();
+        if (firstHBIN == nullptr) {
             throw RegistryParseException("Failed to get first HBIN.");
         }
+        return firstHBIN->getCellAtOffset(firstCellOffset)->getNKRecord();
     }
 };

@@ -57,7 +57,7 @@ namespace Rejistry {
     protected:
         Record() {};
         Record(const Record &) {};
-        Record& operator=(const Record &);
+        Record& operator=(const Record &) = delete;
     };
 
 };

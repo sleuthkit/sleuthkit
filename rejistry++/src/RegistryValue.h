@@ -43,10 +43,10 @@ namespace Rejistry {
     class RegistryValue {
     public:
 
-        typedef RegistryValue * RegistryValuePtr;
-        typedef std::vector<RegistryValuePtr> RegistryValuePtrList;
+        typedef std::unique_ptr<RegistryValue> RegistryValueUniqPtr;
+        typedef std::vector<RegistryValueUniqPtr> RegistryValuePtrList;
 
-        RegistryValue(VKRecord* vk) { _vk = vk; }
+        RegistryValue(std::unique_ptr<VKRecord> vk) { _vk = std::move(vk); }
         RegistryValue(const RegistryValue& );
 
         virtual ~RegistryValue();
@@ -65,10 +65,10 @@ namespace Rejistry {
 
         /**
          * Get the value data.
-         * @returns Pointer to the value data.
+         * @returns Unique pointer to the value data.
          * @throws RegistryParseException on error.
          */
-        ValueData * getValue() const;
+        ValueData::ValueDataUniqPtr getValue() const;
 
         /**
          * Get the length of the value in bytes.
@@ -80,7 +80,7 @@ namespace Rejistry {
         RegistryValue();
         RegistryValue& operator=(const RegistryValue &);
 
-        VKRecord * _vk;
+        std::unique_ptr<VKRecord> _vk;
     };
 };
 

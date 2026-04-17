@@ -78,10 +78,10 @@ namespace Rejistry {
 
         /// read at specified offset
         template <typename T> T read(uint32_t offset) const {
-            if (offset + sizeof(T) <= _limit) {
+            if ((uint64_t)offset + sizeof(T) <= (uint64_t)_limit) {
                 return *((T*)&_buffer[offset]);
             }
-            return NULL;
+            return (T)0;
         }
     };
 };

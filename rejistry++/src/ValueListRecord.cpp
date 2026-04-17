@@ -38,50 +38,28 @@ namespace Rejistry {
     ValueListRecord::ValueListRecord(RegistryByteBuffer * buf, uint32_t offset, uint32_t numValues) 
         : Record(buf, offset), _numValues(numValues) {}
 
-    VKRecord::VKRecordPtrList ValueListRecord::getValues() const {
-        VKRecord::VKRecordPtrList valueList;
+    VKRecord::VKRecordUniqPtrList ValueListRecord::getValues() const {
+        VKRecord::VKRecordUniqPtrList valueList;
 
         for (uint32_t index = 0; index < _numValues; ++index) {
             uint32_t offset = getDWord(VALUE_LIST_OFFSET + (0x4 * index));
             offset += REGFHeader::FIRST_HBIN_OFFSET;
-            std::unique_ptr< Cell > c(new Cell(_buf, offset));
-            if (c.get() == NULL) {
-                throw RegistryParseException("Failed to create Cell for value record.");
-            }
 
+            auto c = std::make_unique< Cell >(_buf, offset);
             valueList.push_back(c->getVKRecord());
         }
 
         return valueList;
     }
 
-    VKRecord::VKRecordPtr ValueListRecord::getValue(const std::wstring& name) const {
-        VKRecord::VKRecordPtr foundRecord = NULL;
-
-        VKRecord::VKRecordPtrList recordList = getValues();
-        VKRecord::VKRecordPtrList::iterator it = recordList.begin();
-
-        for (; it != recordList.end(); ++it) {
-            // If we have a name match or we are searching for the "default" entry
-            // (which matches a record with no name) we are done.
-            if ((!(*it)->hasName() && name == VKRecord::DEFAULT_VALUE_NAME) ||
-                (_wcsicmp(name.c_str(), (*it)->getName().c_str()) == 0)) {
-                // Create a copy of the record to return as the records
-                // in the list will be deleted.
-                foundRecord = new VKRecord(*(*it));
-                break;
+    VKRecord::VKRecordUniqPtr ValueListRecord::getValue(const std::wstring& name) const {
+        for (auto& valueRecord : getValues()) {
+            if ((!valueRecord->hasName() && name == VKRecord::DEFAULT_VALUE_NAME) ||
+                (_wcsicmp(name.c_str(), valueRecord->getName().c_str()) == 0)) {
+                return std::move(valueRecord);
             }
         }
 
-        // Free the list of records.
-        for (it = recordList.begin(); it != recordList.end(); ++it) {
-            delete *it;
-        }
-
-        if (foundRecord == NULL) {
-            throw NoSuchElementException("Failed to find value.");
-        }
-
-        return foundRecord;
+        throw NoSuchElementException("Failed to find value.");
     }
 };

@@ -71,20 +71,18 @@ namespace Rejistry {
         uint32_t getLastHbinOffset() const;
 
         /**
-         * Get a list of pointers to HBIN records. The caller is
-         * responsible for freeing the records.
-         * @returns A list of pointers to HBIN records.
+         * Get a list of pointers to HBIN records.
+         * @returns A list of unique pointers to HBIN records.
          */
-        HBIN::HBINPtrList getHBINs() const;
+        std::vector<HBIN::HBINUniqPtr> getHBINs() const;
 
         /**
-         * Get a pointer to the first HBIN record. The caller is 
-         * responsible for freeing the record.
-         * @returns A pointer to the first HBIN record.
+         * Get a unique pointer to the first HBIN record.
+         * @returns A unique pointer to the first HBIN record.
          */
-        HBIN::HBINPtr getFirstHBIN() const;
+        HBIN::HBINUniqPtr getFirstHBIN() const;
 
-        NKRecord::NKRecordPtr getRootNKRecord() const;
+        std::unique_ptr<NKRecord> getRootNKRecord() const;
 
     private:
         static const uint8_t MAGIC_OFFSET = 0x0;

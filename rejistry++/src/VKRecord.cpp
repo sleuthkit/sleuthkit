@@ -26,6 +26,7 @@
  *
  */
 #include <memory>
+#include <algorithm>
 
 // Local includes
 #include "VKRecord.h"
@@ -101,15 +102,15 @@ namespace Rejistry {
 
     }
 
-    ValueData::ValueDataPtr VKRecord::getValue() const {
+    ValueData::ValueDataUniqPtr VKRecord::getValue() const {
         uint32_t length = getRawDataLength();
         uint32_t offset = getDataOffset();
 
-        if (length > LARGE_DATA_SIZE + DB_DATA_SIZE) {
+        if (length > (LARGE_DATA_SIZE + DB_DATA_SIZE)) {
             throw RegistryParseException("Value size too large.");
         }
 
-        RegistryByteBuffer * data = NULL;
+        std::unique_ptr<RegistryByteBuffer> data = nullptr;
 
         switch (getValueType()) {
         case ValueData::VALTYPE_BIN:
@@ -124,53 +125,51 @@ namespace Rejistry {
 
             if (length >= LARGE_DATA_SIZE) {
                 uint32_t bufSize = length - LARGE_DATA_SIZE;
-                data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, bufSize), bufSize));
+                data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, bufSize), bufSize));
             }
             else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
-                std::unique_ptr< Cell > c(new Cell(_buf, offset));
-                if (c.get() == NULL) {
-                    throw RegistryParseException("Failed to create Cell for Value data.");
-                }
+                auto c = std::make_unique< Cell >(_buf, offset);
                 try {
                     auto db = c->getDBRecord();
-                    if (db.get() == NULL) {
-                        throw RegistryParseException("Failed to create Cell for DBRecord.");
-                    }
-                    data = new RegistryByteBuffer(new ByteBuffer(db->getData(length), length));
+                    data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(db->getData(length), length));
                 }
                 catch (RegistryParseException& ) {
-                    data = new RegistryByteBuffer(new ByteBuffer(c->getData(), length));
+                    data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
                 }
             }
             else {
-                std::unique_ptr< Cell > c(new Cell(_buf, offset));
-                if (c.get() == NULL) {
-                    throw RegistryParseException("Failed to create Cell for Value data.");
-                }
-                ByteBuffer * byteBuffer = new ByteBuffer(c->getData(), length);
-                data = new RegistryByteBuffer(byteBuffer);
+                auto c = std::make_unique< Cell >(_buf, offset);
+                data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
             }
             break;
         case ValueData::VALTYPE_DWORD:
         case ValueData::VALTYPE_BIG_ENDIAN:
-            data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, 0x4), 0x4));
+            data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, 0x4), 0x4));
             break;
         case ValueData::VALTYPE_QWORD:
         case ValueData::VALTYPE_FILETIME:
             {
-                std::unique_ptr< Cell > c(new Cell(_buf, offset));
-                if (c.get() == NULL) {
-                    throw RegistryParseException("Failed to create Cell for Value data.");
+                uint32_t dataLen = getDataLength();
+                if (length >= LARGE_DATA_SIZE) {
+                    // Data is stored inline in the VK record (≤4 bytes).
+                    // Malformed QWORD/FILETIME — getAsNumber() will return 0.
+                    data = std::make_unique<RegistryByteBuffer>(
+                        std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, dataLen), dataLen));
                 }
-                ByteBuffer * byteBuffer = new ByteBuffer(c->getData(), length);
-                data = new RegistryByteBuffer(byteBuffer);
+                else {
+                    auto c = std::make_unique<Cell>(_buf, offset);
+                    ByteBuffer::ByteArray cellData = c->getData();
+                    uint32_t safeLength = std::min(length, static_cast<uint32_t>(cellData.size()));
+                    data = std::make_unique<RegistryByteBuffer>(
+                        std::make_unique<ByteBuffer>(cellData, safeLength));
+                }
             }
             break;
         default:
             // Unknown registry type. Create an empty buffer.
-            data = new RegistryByteBuffer(new ByteBuffer(0));
+            data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(0));
         }
 
-        return new ValueData(data, getValueType());                                                            
+        return std::make_unique<ValueData>(std::move(data), getValueType());                                                            
     }
 };

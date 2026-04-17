@@ -57,28 +57,21 @@ namespace Rejistry {
         }
 
         int32_t offset = (int32_t)getDWord(CLASSNAME_OFFSET_OFFSET);
-        uint16_t length = getWord(CLASSNAME_LENGTH_OFFSET);
-
-        // Not sure why we are performing this check. I haven't found any documentation on
-        // a max length for class name or its purpose. 
-        if (length > MAX_NAME_LENGTH) {
-            throw RegistryParseException("Class name exceeds maximum length.");
-        }
-
         if (offset < 0) {
             throw RegistryParseException("Invalid class name offset.");
         }
         uint32_t classnameOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
-        std::unique_ptr< Cell > c(new Cell(_buf, classnameOffset));
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create cell for class name.");
-        }
-
+        auto c = std::make_unique< Cell >(_buf, classnameOffset);
         std::vector<uint8_t> data = c->getData();
+
+        uint16_t length = getWord(CLASSNAME_LENGTH_OFFSET);
         if (length > data.size()) {
             throw RegistryParseException("Cell size insufficient for parsing classname.");
         }
-        return std::wstring(data.begin(), data.end());
+
+        // Class names are stored as UTF-16LE. Cast directly to wchar_t rather
+        // than widening each byte individually via the iterator constructor.
+        return std::wstring(reinterpret_cast<const wchar_t*>(data.data()), length / sizeof(wchar_t));
     }
 
     uint64_t NKRecord::getTimestamp() const {
@@ -123,17 +116,13 @@ namespace Rejistry {
         }
     }
 
-    NKRecord::NKRecordPtr NKRecord::getParentRecord() const {
+    std::unique_ptr<NKRecord> NKRecord::getParentRecord() const {
         int32_t offset = (int32_t)getDWord(PARENT_RECORD_OFFSET_OFFSET);
         if (offset < 0) {
             throw RegistryParseException("Invalid parent record offset.");
         }
         uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + (uint32_t)offset;
-        std::unique_ptr< Cell > c(new Cell(_buf, parentOffset));
-
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create Cell for parent.");
-        }
+        auto c = std::make_unique< Cell >(_buf, parentOffset);
         return c->getNKRecord();
     }
 
@@ -161,11 +150,7 @@ namespace Rejistry {
         uint32_t offset = (uint32_t)getDWord(SUBKEY_LIST_OFFSET_OFFSET);
         offset += REGFHeader::FIRST_HBIN_OFFSET;
 
-        std::unique_ptr< Cell > c(new Cell(_buf, offset));
-
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create Cell for value list record.");
-        }
+        auto c = std::make_unique< Cell >(_buf, offset);
 
         return c->getSubkeyList();
     }
@@ -178,12 +163,7 @@ namespace Rejistry {
         uint32_t offset = (uint32_t)getDWord(VALUE_LIST_OFFSET_OFFSET);
         offset += REGFHeader::FIRST_HBIN_OFFSET;
 
-        std::unique_ptr< Cell > c(new Cell(_buf, offset));
-
-        if (c.get() == NULL) {
-            throw RegistryParseException("Failed to create Cell for value list record.");
-        }
-
+        auto c = std::make_unique< Cell >(_buf, offset);
         return c->getValueListRecord(getNumberOfValues());
     }
 };

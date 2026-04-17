@@ -48,27 +48,23 @@ namespace Rejistry {
         for (uint16_t index = 0; index < listLength; ++index) {
             uint32_t offset = getDWord(LIST_START_OFFSET + (index * LIST_ENTRY_SIZE));
             uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
-            std::unique_ptr< Cell > c(new Cell(_buf, parentOffset));
-            if (c.get() == NULL) {
-                throw RegistryParseException("Failed to create Cell for key record.");
-            }
-
+            auto c = std::make_unique< Cell >(_buf, parentOffset);
             subkeyList.push_back(c->getSubkeyList());
         }
 
         return subkeyList;
     }
 
-    NKRecord::NKRecordPtrList RIRecord::getSubkeys() const {
-        NKRecord::NKRecordPtrList finalNKRecordList;
-        SubkeyListRecord::SubkeyListRecordPtrList subkeyLists = getSubkeyLists();
+    NKRecord::NKRecordUniqPtrList RIRecord::getSubkeys() const {
+        NKRecord::NKRecordUniqPtrList finalNKRecordList;
 
         // Iterate over each of the subkey lists getting their subkeys.
-        for (const auto& subkeyList : subkeyLists) {
-            NKRecord::NKRecordPtrList nkRecordList = subkeyList->getSubkeys();
-            finalNKRecordList.insert(finalNKRecordList.end(), nkRecordList.begin(), nkRecordList.end());
+        for (const auto& subkeyList : getSubkeyLists()) {
+            for (auto& nk : subkeyList->getSubkeys()) {
+                finalNKRecordList.push_back(std::move(nk));
+            }
         }
 
-        return finalNKRecordList;        
+        return finalNKRecordList;
     }
 };

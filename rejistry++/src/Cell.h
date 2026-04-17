@@ -50,43 +50,8 @@ namespace Rejistry {
      */
     class Cell : public BinaryBlock {
     public:
-        typedef Cell * CellPtr;
-        typedef std::vector< CellPtr > CellPtrList;
-
-        /**
-            The AutoCellPtrList class should be used by clients to hold lists of
-            Cell pointers returned by methods like HBIN::getCells()
-            so that the record objects will be automatically freed. Example:
-            @code
-            AutoCellPtrList cellList(hbin->getCells());
-            for (Cell::CellPtrList::iterator i = cellList.begin(); i != cellList.end(); ++i)
-            { ... //do stuff }
-            // Don't worry about delete'ing each record object--valueList will take care of
-            // that when it goes out of scope.
-            @endcode
-        */
-        class AutoCellPtrList
-        {
-        public:
-
-            AutoCellPtrList(CellPtrList recordList) : _recordList(recordList) {}
-            ~AutoCellPtrList()
-            {
-                for (CellPtrList::iterator it = _recordList.begin(); it != _recordList.end(); ++it)
-                {
-                    delete *it;
-                }
-            }
-            CellPtrList::iterator begin() { return _recordList.begin(); }
-            CellPtrList::iterator end()   { return _recordList.end(); }
-            CellPtrList::size_type size() { return _recordList.size(); }
-        private:
-            AutoCellPtrList(const AutoCellPtrList&);
-            AutoCellPtrList& operator=(const AutoCellPtrList&);
-
-            CellPtrList _recordList;
-        };
-
+        typedef std::unique_ptr <Cell> CellUniqPtr;
+        typedef std::vector<CellUniqPtr> CellUniqPtrList;
 
         Cell(RegistryByteBuffer * buf, const uint32_t offset) : BinaryBlock(*buf, offset) {} 
         
@@ -126,17 +91,17 @@ namespace Rejistry {
 
         /**
          * Interprets the cell data as an NKRecord and returns it.
-         * @returns Pointer to an NKRecord object. Caller is responsible for freeing.
+         * @returns Unique pointer to an NKRecord object.
          * @throws RegistryParseException
          */
-        NKRecord::NKRecordPtr getNKRecord() const;
+        std::unique_ptr<NKRecord> getNKRecord() const;
 
         /**
          * Interprets the cell data as an VKRecord and returns it.
-         * @returns Pointer to an VKRecord object. (Caller must free using delete)
+         * @returns Unique pointer to an VKRecord object.
          * @throws RegistryParseException
          */
-        VKRecord::VKRecordPtr getVKRecord() const;
+        std::unique_ptr<VKRecord> getVKRecord() const;
 
         /**
          * Interprets the cell data as an LFRecord and returns it.

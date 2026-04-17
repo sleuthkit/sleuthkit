@@ -41,12 +41,12 @@ namespace Rejistry {
         /**
          * Get the root key for this hive.
          */
-        virtual RegistryKey * getRoot() const = 0;
+        virtual std::unique_ptr<RegistryKey> getRoot() const = 0;
 
         /**
          * Get the header for this hive.
          */
-        virtual REGFHeader * getHeader() const = 0;
+        virtual std::unique_ptr<REGFHeader> getHeader() const = 0;
 
         /**
          * Virtual destructor to prevent memory leak

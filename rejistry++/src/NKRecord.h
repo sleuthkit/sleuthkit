@@ -43,42 +43,8 @@ namespace Rejistry {
      */
     class NKRecord : public Record {
     public:
-        typedef NKRecord * NKRecordPtr;
-        typedef std::vector<NKRecordPtr> NKRecordPtrList;
-
-        /**
-            The AutoNKRecordPtrList class should be used by clients to hold lists of
-            NKRecord pointers returned by methods like SubkeyListRecord::getSubkeys()
-            so that the record objects will be automatically freed. Example:
-            @code
-            AutoNKRecordPtrList subkeyList(nkrecord->getSubkeyList()->getSubkeys());
-            for (NKRecord::NKRecordPtrList::iterator i = subkeyList.begin(); i != subkeyList.end(); ++i)
-            { ... //do stuff }
-            // Don't worry about delete'ing each record object--subkeyList will take care of
-            // that when it goes out of scope.
-            @endcode
-        */
-        class AutoNKRecordPtrList
-        {
-        public:
-
-            AutoNKRecordPtrList(NKRecordPtrList recordList) : _recordList(recordList) {}
-            ~AutoNKRecordPtrList()
-            {
-                for (NKRecordPtrList::iterator it = _recordList.begin(); it != _recordList.end(); ++it)
-                {
-                    delete *it;
-                }
-            }
-            NKRecordPtrList::iterator begin() { return _recordList.begin(); }
-            NKRecordPtrList::iterator end()   { return _recordList.end(); }
-            NKRecordPtrList::size_type size() { return _recordList.size(); }
-        private:
-            AutoNKRecordPtrList(const AutoNKRecordPtrList&);
-            AutoNKRecordPtrList& operator=(const AutoNKRecordPtrList&);
-
-            NKRecordPtrList _recordList;
-        };
+        typedef std::unique_ptr<NKRecord> NKRecordUniqPtr;
+        typedef std::vector<NKRecordUniqPtr> NKRecordUniqPtrList;
 
         NKRecord(RegistryByteBuffer * buf, uint32_t offset);
         NKRecord(const NKRecord& );
@@ -124,10 +90,10 @@ namespace Rejistry {
 
         /**
          * Get the parent record for this key.
-         * @returns The parent record. (Caller is responsible for freeing)
+         * @returns The parent record.
          * @throws RegistryParseException.
          */
-        NKRecordPtr getParentRecord() const;
+        std::unique_ptr<NKRecord> getParentRecord() const;
 
         /**
          * @returns The number of values for this key.
