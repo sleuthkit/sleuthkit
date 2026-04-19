@@ -142,11 +142,12 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     
     // combine the volume name and path
     char path8[FILENAME_MAX];
-    if (snprintf(path8, FILENAME_MAX, "%s%s", m_vsName, a_path) >= FILENAME_MAX) {
+    int path8_len = snprintf(path8, sizeof(path8), "%s%s", m_vsName, a_path);
+    if (path8_len < 0 || path8_len >= (int)sizeof(path8)) {
         fprintf(stderr, "Error: output path too long\n");
         return 1;
     }
-    size_t ilen = strlen(path8);
+    size_t ilen = (size_t)path8_len;
 
     // check for .. at start of path (no preceding separator to trigger the loop check)
     if (ilen >= 2 && path8[0] == '.' && path8[1] == '.' && (ilen == 2 || path8[2] == '\\')) {
