@@ -147,7 +147,13 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         return 1;
     }
     size_t ilen = strlen(path8);
-    
+
+    // check for .. at start of path (no preceding separator to trigger the loop check)
+    if (ilen >= 2 && path8[0] == '.' && path8[1] == '.' && (ilen == 2 || path8[2] == '\\')) {
+        path8[0] = '^';
+        path8[1] = '^';
+    }
+
     // clean up any control characters
     for (size_t i = 0; i < ilen; i++) {
         if (TSK_IS_CNTRL(path8[i])) {
@@ -159,7 +165,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
         // make sure there is no \..\ or trailing \.. path traversal
         // note: i+3 == ilen is intentional — path8[ilen] is the null terminator,
-        // which matches '\0' to catch \.. at end-of-string as well as \..\
+        // which matches '\0' to catch \.. at end-of-string as well as \..\ scenario
         if (i + 3 <= ilen) {
             if ((path8[i] == '\\') && (path8[i+1] == '.') && (path8[i+2] == '.') &&
                 (path8[i+3] == '\\' || path8[i+3] == '\0')) {
