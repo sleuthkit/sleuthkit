@@ -4,17 +4,6 @@ on:
   push:
     branches:
       - '**'
-  pull_request:
-    branches:
-      - '**'
-
-# Cancel any in-progress run for the same branch when a new one starts.
-# This means a push to a branch that already has an open PR will cancel
-# the push-triggered run in favour of the pull_request-triggered run,
-# so only one run completes rather than two.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
 
 env:
   # Opt into Node.js 24 for all actions now, ahead of the June 2026 forced migration.
