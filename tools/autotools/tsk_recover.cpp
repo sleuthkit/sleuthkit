@@ -11,6 +11,7 @@
 
 #include "tsk/tsk_tools_i.h"
 #include <locale.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <errno.h>
 
@@ -141,8 +142,10 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     
     // combine the volume name and path
     char path8[FILENAME_MAX];
-    strncpy(path8, m_vsName, FILENAME_MAX);
-    strncat(path8, a_path, FILENAME_MAX-strlen(path8)); 
+    if (snprintf(path8, FILENAME_MAX, "%s%s", m_vsName, a_path) >= FILENAME_MAX) {
+        fprintf(stderr, "Error: output path too long\n");
+        return 1;
+    }
     size_t ilen = strlen(path8);
     
     // clean up any control characters
@@ -154,9 +157,12 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         if (path8[i] == '/')
             path8[i] = '\\';
 
-        // make sure there is no \..\ path traversal
-        if (i + 4 < ilen) {
-            if ((path8[i] == '\\') && (path8[i+1] == '.') && (path8[i+2] == '.') && (path8[i+3] == '\\')) {
+        // make sure there is no \..\ or trailing \.. path traversal
+        // note: i+3 == ilen is intentional — path8[ilen] is the null terminator,
+        // which matches '\0' to catch \.. at end-of-string as well as \..\
+        if (i + 3 <= ilen) {
+            if ((path8[i] == '\\') && (path8[i+1] == '.') && (path8[i+2] == '.') &&
+                (path8[i+3] == '\\' || path8[i+3] == '\0')) {
                 path8[i+1] = '^';
                 path8[i+2] = '^';
             }
@@ -288,9 +294,12 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         if (TSK_IS_CNTRL(fbuf[i]))
             fbuf[i] = '^';
 
-        // make sure there is no /../ path traversal 
-        if (i + 4 < strlen(fbuf)) {
-            if ((fbuf[i] == '/') && (fbuf[i+1] == '.') && (fbuf[i+2] == '.') && (fbuf[i+3] == '/')) {
+        // make sure there is no /../ or trailing /.. path traversal
+        // note: i+3 == strlen(fbuf) is intentional — fbuf[strlen(fbuf)] is the null terminator,
+        // which matches '\0' to catch /.. at end-of-string as well as /../
+        if (i + 3 <= strlen(fbuf)) {
+            if ((fbuf[i] == '/') && (fbuf[i+1] == '.') && (fbuf[i+2] == '.') &&
+                (fbuf[i+3] == '/' || fbuf[i+3] == '\0')) {
                 fbuf[i+1] = '^';
                 fbuf[i+2] = '^';
             }
