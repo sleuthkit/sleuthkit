@@ -30,6 +30,7 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>
 
 // Local includes
 #include "ByteBuffer.h"
@@ -41,7 +42,7 @@ namespace Rejistry {
      */
     class RegistryByteBuffer {
     public:
-        RegistryByteBuffer(ByteBuffer * buffer);
+        RegistryByteBuffer(std::unique_ptr<ByteBuffer> buffer);
         virtual ~RegistryByteBuffer();
 
         uint16_t getWord(const uint32_t offset) const;
@@ -67,7 +68,7 @@ namespace Rejistry {
         RegistryByteBuffer(const RegistryByteBuffer &);
         RegistryByteBuffer& operator=(const RegistryByteBuffer &);
 
-        ByteBuffer * _byteBuffer;
+        std::unique_ptr<ByteBuffer> _byteBuffer;
 
     };
 };

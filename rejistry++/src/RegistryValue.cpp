@@ -31,14 +31,10 @@
 
 namespace Rejistry {
     RegistryValue::RegistryValue(const RegistryValue& rv) {
-        _vk = new VKRecord(*(rv._vk));
+        _vk = std::make_unique<VKRecord>(*(rv._vk));
     }
 
     RegistryValue::~RegistryValue() {
-        if (_vk != NULL) {
-            delete _vk;
-            _vk = NULL;
-        }
     }
 
     std::wstring RegistryValue::getName() const {
@@ -49,7 +45,7 @@ namespace Rejistry {
         return _vk->getValueType();
     }
 
-    ValueData * RegistryValue::getValue() const {
+    ValueData::ValueDataUniqPtr RegistryValue::getValue() const {
         return _vk->getValue();
     }
 

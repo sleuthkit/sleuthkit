@@ -43,7 +43,7 @@ namespace Rejistry {
      */
     class ValueData {
     public:
-        typedef ValueData * ValueDataPtr;
+        typedef std::unique_ptr<ValueData> ValueDataUniqPtr;
 
         enum VALUE_TYPES {
             VALTYPE_NONE = 0,
@@ -65,14 +65,12 @@ namespace Rejistry {
         /// Map the value type enum to a string.
         static std::wstring getValueType(ValueData::VALUE_TYPES type);
 
-        ValueData(RegistryByteBuffer * buf, const VALUE_TYPES type) {
-            _buf = buf;
+        ValueData(std::unique_ptr<RegistryByteBuffer> buf, const VALUE_TYPES type) {
+            _buf = std::move(buf);
             _type = type;
         }
         
         ~ValueData() {
-            if (_buf)
-                delete _buf;
         }
 
         VALUE_TYPES getValueType() const { return _type; };
@@ -113,7 +111,7 @@ namespace Rejistry {
         ValueData(const ValueData &);
         ValueData& operator=(const ValueData &);
 
-        RegistryByteBuffer * _buf;
+        std::unique_ptr<RegistryByteBuffer> _buf;
         VALUE_TYPES _type;
     };
 };

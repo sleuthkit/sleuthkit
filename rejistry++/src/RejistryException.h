@@ -76,6 +76,7 @@ namespace Rejistry {
     private:
         std::string m_msg;
         int m_code;
+        mutable std::string m_what; ///< Cached result of what() to avoid returning a dangling pointer.
     };
 
     inline const std::string& RejistryException::message() const

@@ -47,7 +47,7 @@ namespace Rejistry {
         
         virtual ~RIRecord() {}
 
-        virtual NKRecord::NKRecordPtrList getSubkeys() const;
+        virtual std::vector<std::unique_ptr<NKRecord>> getSubkeys() const;
 
     private:
         static const uint16_t LIST_START_OFFSET = 0x04;

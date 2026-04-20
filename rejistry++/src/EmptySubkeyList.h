@@ -45,9 +45,17 @@ namespace Rejistry {
         EmptySubkeyList(RegistryByteBuffer * buf, uint32_t offset) : SubkeyListRecord(buf, offset) {}
         
         virtual ~EmptySubkeyList() {}
-    
-        virtual std::vector<NKRecord *> getSubkeys() const {
-            return std::vector<NKRecord *>();
+
+        uint16_t getListLength() const override { return 0; }
+
+        /**
+         * Shadows Record::getMagic(). EmptySubkeyList has no valid record
+         * header, so reading the buffer would return garbage bytes.
+         */
+        std::string getMagic() const { return ""; }
+
+        virtual NKRecord::NKRecordUniqPtrList getSubkeys() const {
+            return NKRecord::NKRecordUniqPtrList();
         }
 
     private:

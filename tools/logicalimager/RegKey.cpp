@@ -52,8 +52,8 @@ int RegKey::initialize(const Rejistry::RegistryKey *regKey) {
     // TODO - replace the following 2 lines when these methods are available in PR #1665
     // m_numSubkeys = regKey->getSubkeyListSize();
     // m_numValues = regKey->getValueListSize();
-    m_numSubkeys = regKey->getSubkeyList().size();
-    m_numValues = regKey->getValueList().size();
+    m_numSubkeys = regKey->getSubkeyListSize();
+    m_numValues = regKey->getValueListSize();
     uint64_t timestamp = regKey->getTimestamp();
     m_modifyTime.dwLowDateTime = (DWORD)(timestamp & 0xFFFFFFFF);
     m_modifyTime.dwHighDateTime = (DWORD)(timestamp >> 32);

@@ -37,30 +37,14 @@ namespace Rejistry {
         return getWord(LIST_LENGTH_OFFSET);
     }
 
-    NKRecord * SubkeyListRecord::getSubkey(const std::wstring& name) const {
-        NKRecord::NKRecordPtr foundRecord = NULL;
-
-        NKRecord::NKRecordPtrList subKeys = getSubkeys();
-        NKRecord::NKRecordPtrList::iterator nkIter = subKeys.begin();
-        for (; nkIter != subKeys.end(); ++nkIter) {
-            if (_wcsicmp(name.c_str(), (*nkIter)->getName().c_str()) == 0) {
-                // Create a copy of the record to return as the records
-                // in the list will be deleted.
-                foundRecord = new NKRecord(*(*nkIter));
-                break;
+    NKRecord::NKRecordUniqPtr SubkeyListRecord::getSubkey(const std::wstring& name) const {
+        for (auto& nk : getSubkeys()) {
+            if (_wcsicmp(name.c_str(), nk->getName().c_str()) == 0) {
+                return std::move(nk);
             }
         }
 
-        // Free the list of records.
-        for (nkIter = subKeys.begin(); nkIter != subKeys.end(); ++nkIter) {
-            delete *nkIter;
-        }
-
-        if (foundRecord == NULL) {
-            throw NoSuchElementException("Failed to find subkey.");
-        }
-
-        return foundRecord;
+        throw NoSuchElementException("Failed to find subkey.");
     }
 
 };

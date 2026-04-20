@@ -19,7 +19,7 @@ RegParser::RegParser(const RegHiveType::Enum aHiveType)
 
 RegParser::RegParser(const std::wstring &filePath) {
     m_registryHive = new Rejistry::RegistryHiveFile(filePath);
-    m_rootKey = m_registryHive->getRoot();
+    m_rootKey = m_registryHive->getRoot().release();
 }
 
 RegParser::~RegParser() {
@@ -81,7 +81,7 @@ int RegParser::loadHive(TSK_FS_FILE *aHiveFile, RegHiveType::Enum aHiveType) {
         free(registryBuffer);
         return -1;
     }
-    m_rootKey = m_registryHive->getRoot();
+    m_rootKey = m_registryHive->getRoot().release();
 
     free(registryBuffer);
     return 0;
@@ -116,10 +116,9 @@ int RegParser::getRootKey(RegKey &aKey) {
  *      -2 if there was an error getting the key.
  */
 int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
-    const Rejistry::RegistryKey *key = NULL;
-
     try {
-        key = findKey(keyName);
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        aKey.initialize(key.get());
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;
@@ -131,11 +130,6 @@ int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
         return -2;
     }
 
-    aKey.initialize(key);
-
-    if (key != NULL) {
-        delete key;
-    }
     return 0;
 }
 
@@ -154,18 +148,13 @@ int RegParser::getKey(const std::wstring &keyName, RegKey &aKey) {
  */
 int RegParser::getSubKeys(const std::wstring &keyName, std::vector<std::wstring> &subKeyNamesList) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
 
-        Rejistry::RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
+        auto subkeys = key->getSubkeyList();
         subKeyNamesList.reserve(subkeys.size());
-        Rejistry::RegistryKey::RegistryKeyPtrList::iterator subKeyIter = subkeys.begin();
 
-        for (; subKeyIter != subkeys.end(); ++subKeyIter) {
-            subKeyNamesList.push_back((*subKeyIter)->getName());
-        }
-
-        for (subKeyIter = subkeys.begin(); subKeyIter != subkeys.end(); ++subKeyIter) {
-            delete *subKeyIter;
+        for (auto& subkey : subkeys) {
+            subKeyNamesList.push_back(subkey->getName());
         }
     }
     catch (Rejistry::NoSuchElementException&) {
@@ -195,20 +184,15 @@ int RegParser::getSubKeys(const std::wstring &keyName, std::vector<std::wstring>
  */
 int RegParser::getSubKeys(const std::wstring &keyName, std::vector<RegKey*> &subKeysList) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
 
-        Rejistry::RegistryKey::RegistryKeyPtrList subkeys = key->getSubkeyList();
+        auto subkeys = key->getSubkeyList();
         subKeysList.reserve(subkeys.size());
-        Rejistry::RegistryKey::RegistryKeyPtrList::iterator subKeyIter = subkeys.begin();
 
-        for (; subKeyIter != subkeys.end(); ++subKeyIter) {
-            RegKey * key = new RegKey((*subKeyIter)->getName());
-            key->initialize(*subKeyIter);
-            subKeysList.push_back(key);
-        }
-
-        for (subKeyIter = subkeys.begin(); subKeyIter != subkeys.end(); ++subKeyIter) {
-            delete *subKeyIter;
+        for (auto& subkey : subkeys) {
+            RegKey * rk = new RegKey(subkey->getName());
+            rk->initialize(subkey.get());
+            subKeysList.push_back(rk);
         }
     }
     catch (Rejistry::NoSuchElementException&) {
@@ -240,10 +224,9 @@ int RegParser::getSubKeys(const std::wstring &keyName, std::vector<RegKey*> &sub
  */
 int RegParser::getValue(const std::wstring &keyName, const std::wstring &valName, RegVal &val) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
-        Rejistry::RegistryValue *value = key->getValue(valName);
-        val.initialize(value);
-        delete value;
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        auto value = key->getValue(valName);
+        val.initialize(value.get());
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;
@@ -281,10 +264,9 @@ int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName,
     }
 
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
-        Rejistry::RegistryValue *value = key->getValue(valName);
-        val.initialize(value);
-        delete value;
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
+        auto value = key->getValue(valName);
+        val.initialize(value.get());
     }
     catch (Rejistry::NoSuchElementException&) {
         return -1;
@@ -313,18 +295,13 @@ int RegParser::getValue(const RegKey *startKey, const std::wstring &subpathName,
 */
 int RegParser::getValues(const std::wstring &keyName, std::vector<RegVal *> &valList) {
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(keyName));
 
-        Rejistry::RegistryValue::RegistryValuePtrList values = key->getValueList();
+        auto values = key->getValueList();
         valList.reserve(values.size());
-        Rejistry::RegistryValue::RegistryValuePtrList::iterator valueIter = values.begin();
 
-        for (; valueIter != values.end(); ++valueIter) {
-            valList.push_back(new RegVal((*valueIter)));
-        }
-
-        for (valueIter = values.begin(); valueIter != values.end(); ++valueIter) {
-            delete *valueIter;
+        for (auto& value : values) {
+            valList.push_back(new RegVal(value.get()));
         }
     }
     catch (Rejistry::NoSuchElementException&) {
@@ -359,18 +336,13 @@ int RegParser::getValues(const RegKey *startKey, const std::wstring &subpathName
     }
 
     try {
-        std::auto_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
+        std::unique_ptr<Rejistry::RegistryKey const> key(findKey(subpathName, startKey->getRegistryKey()));
 
-        Rejistry::RegistryValue::RegistryValuePtrList values = key->getValueList();
+        auto values = key->getValueList();
         valList.reserve(values.size());
-        Rejistry::RegistryValue::RegistryValuePtrList::iterator valueIter = values.begin();
 
-        for (; valueIter != values.end(); ++valueIter) {
-            valList.push_back(new RegVal((*valueIter)));
-        }
-
-        for (valueIter = values.begin(); valueIter != values.end(); ++valueIter) {
-            delete *valueIter;
+        for (auto& value : values) {
+            valList.push_back(new RegVal(value.get()));
         }
     }
     catch (Rejistry::NoSuchElementException&) {
@@ -405,16 +377,13 @@ const Rejistry::RegistryKey *RegParser::findKey(const std::wstring &keyName, con
     std::vector<std::wstring> keyElements = splitKeyName(keyName);
     std::vector<std::wstring>::iterator keyIter = keyElements.begin();
     const Rejistry::RegistryKey *currentKey = startingKey == NULL ? m_rootKey : startingKey;
+    std::unique_ptr<Rejistry::RegistryKey> ownedKey;
 
     // Navigate our way down the tree looking to locate the desired key.
     for (; keyIter != keyElements.end(); ++keyIter) {
         try {
-            Rejistry::RegistryKey *nextKey = currentKey->getSubkey((*keyIter));
-            if (currentKey != m_rootKey && currentKey != startingKey) {
-                // Free the key we just searched (as long as its not the root or the starting key)
-                delete currentKey;
-            }
-            currentKey = nextKey;
+            ownedKey = currentKey->getSubkey((*keyIter));
+            currentKey = ownedKey.get();
         }
         catch (Rejistry::NoSuchElementException&) {
             // If we fail on the root element, we will continue and
@@ -426,11 +395,11 @@ const Rejistry::RegistryKey *RegParser::findKey(const std::wstring &keyName, con
         }
     }
 
-    if (currentKey == startingKey) {
-        return new Rejistry::RegistryKey(*currentKey);
+    if (ownedKey) {
+        return ownedKey.release();
     }
     else {
-        return currentKey;
+        return new Rejistry::RegistryKey(*currentKey);
     }
 }
 
