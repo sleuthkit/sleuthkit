@@ -29,20 +29,29 @@
 #include <assert.h>
 
 /*
- * Identify if the dentry is a valid 8.3 name
+ * Identify if the dentry has a valid 8.3 name.
  *
- * returns 1 if it is, 0 if it does not
+ * @param de     Directory entry to check.
+ * @param strict Non-zero to use strict validation (carving / unallocated
+ *               space), zero to use relaxed validation (known directory).
+ *               See FATXXFS_IS_83_NAME_STRICT / FATXXFS_IS_83_NAME_RELAXED
+ *               in tsk_fatxxfs.h for the character sets each mode accepts.
+ *
+ * Returns 1 if the name is valid, 0 otherwise.
  */
 static uint8_t
-is_83_name(FATXXFS_DENTRY * de)
+is_83_name(FATXXFS_DENTRY * de, uint8_t strict)
 {
+/* Dispatch to the correct character-validation macro based on mode. */
+#define IS_OK(c)  (strict ? FATXXFS_IS_83_NAME_STRICT(c) : FATXXFS_IS_83_NAME_RELAXED(c))
+
     if (!de)
         return 0;
 
-    /* The IS_NAME macro will fail if the value is 0x05, which is only
+    /* The IS_OK macro will fail if the value is 0x05, which is only
      * valid in name[0], similarly with '.' */
     if ((de->name[0] != FATXXFS_SLOT_E5) && (de->name[0] != '.') &&
-        (FATXXFS_IS_83_NAME(de->name[0]) == 0)) {
+        (IS_OK(de->name[0]) == 0)) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[0] is invalid\n");
         return 0;
@@ -63,53 +72,53 @@ is_83_name(FATXXFS_DENTRY * de)
             return 0;
         }
     }
-    else if (FATXXFS_IS_83_NAME(de->name[1]) == 0) {
+    else if (IS_OK(de->name[1]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[1] is invalid\n");
         return 0;
     }
 
-    if (FATXXFS_IS_83_NAME(de->name[2]) == 0) {
+    if (IS_OK(de->name[2]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[2] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[3]) == 0) {
+    else if (IS_OK(de->name[3]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[3] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[4]) == 0) {
+    else if (IS_OK(de->name[4]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[4] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[5]) == 0) {
+    else if (IS_OK(de->name[5]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[5] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[6]) == 0) {
+    else if (IS_OK(de->name[6]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[6] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[7]) == 0) {
+    else if (IS_OK(de->name[7]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[7] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->ext[0]) == 0) {
+    else if (IS_OK(de->ext[0]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[0] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->ext[1]) == 0) {
+    else if (IS_OK(de->ext[1]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[1] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->ext[2]) == 0) {
+    else if (IS_OK(de->ext[2]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[2] is invalid\n");
         return 0;
@@ -136,6 +145,8 @@ is_83_name(FATXXFS_DENTRY * de)
     }
 
     return 1;
+
+#undef IS_OK
 }
 
 /**
@@ -274,7 +285,8 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
             return 0;
         }
 		
-		else if((a_fatfs->subtype == TSK_FATFS_SUBTYPE_SPEC) && (is_83_name(dentry) == 0))
+		else if((a_fatfs->subtype == TSK_FATFS_SUBTYPE_SPEC) &&
+                (is_83_name(dentry, a_do_basic_tests_only == 0) == 0))
 			return 0;
 
         // basic sanity check on values
