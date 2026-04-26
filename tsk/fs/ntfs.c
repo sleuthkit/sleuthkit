@@ -3308,7 +3308,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         goto on_error;
     }
     attr_len = tsk_getu32(fs->endian, data_attr->len);
-    if (attr_len > ntfs->mft_rsize_b) {
+    if ((uintptr_t) data_attr + attr_len > (uintptr_t) mft + ntfs->mft_rsize_b) {
         goto on_error;
     }
 
