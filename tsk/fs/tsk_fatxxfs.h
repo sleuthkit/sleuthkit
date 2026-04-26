@@ -109,10 +109,6 @@
 /* Legacy alias — strict validation, same as FATXXFS_IS_83_NAME_STRICT. */
 #define FATXXFS_IS_83_NAME(c)		FATXXFS_IS_83_NAME_STRICT(c)
 
-// extensions are to be ascii / latin
-#define FATXXFS_IS_83_EXT(c)		\
-    (FATXXFS_IS_83_NAME((c)) && ((c) < 0x7f))
-
 /* flags for lowercase field */
 #define FATXXFS_CASE_LOWER_BASE	0x08    /* base is lower case */
 #define FATXXFS_CASE_LOWER_EXT	0x10    /* extension is lower case */
