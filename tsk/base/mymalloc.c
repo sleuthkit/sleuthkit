@@ -44,7 +44,7 @@ tsk_realloc(void *ptr, size_t len)
 {
     // Use tmpPtr to prevent memory leak when realloc failed
     void *tmpPtr = realloc(ptr, len);
-    if (tmpPtr == 0) {
+    if (tmpPtr == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
         tsk_error_set_errstr("tsk_realloc: %s (%" PRIuSIZE" requested)", strerror(errno), len);
