@@ -259,7 +259,7 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe, uintptr_t endaddr,
     name8 = (UTF8 *) fs_name->name;
     
     const UTF16 * sourceEnd = (UTF16 *) ((uintptr_t) name16 + fname->nlen * 2);
-    if (((uintptr_t) sourceEnd) >= endaddr) {
+    if (((uintptr_t) sourceEnd) > endaddr) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "sourceEnd: %" PRIuINUM " is out of endaddr bounds: %" PRIuINUM,
@@ -313,7 +313,7 @@ ntfs_dent_copy_short_only(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
     name8 = (UTF8 *) fs_name->shrt_name;
 
     const UTF16 *sourceEnd = (UTF16 *) ((uintptr_t) name16 + fname->nlen * 2);
-    if ((uintptr_t) sourceEnd >= endaddr) {
+    if ((uintptr_t) sourceEnd > endaddr) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_dent_copy_short_only: name extends past end of buffer\n");
@@ -544,7 +544,13 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
             if (fs_name_preventry) {
                 // check its the same entry and if so, add short name
                 if (fs_name_preventry->meta_addr == tsk_getu48(fs->endian, a_idxe->file_ref)) {
-                    ntfs_dent_copy_short_only(a_ntfs, a_idxe, endaddr, fs_name_preventry);
+                    if (ntfs_dent_copy_short_only(a_ntfs, a_idxe, endaddr, fs_name_preventry)) {
+                        if (tsk_verbose)
+                            tsk_fprintf(stderr,
+                                "ntfs_dent_parse_buf: failed to copy short name for meta_addr %"
+                                PRIuINUM "\n", fs_name_preventry->meta_addr);
+                        tsk_fs_name_reset(fs_name_preventry);
+                    }
                 }
 
                 // regardless, add preventry to dir and move on to next entry.
