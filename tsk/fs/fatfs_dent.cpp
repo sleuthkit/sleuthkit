@@ -279,6 +279,16 @@ TSK_RETVAL_ENUM
     }
 
     size = fs_dir->fs_file->meta->size;
+
+    /* A directory cannot be larger than the entire image */
+    if (size > a_fs->img_info->size) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr("%s: directory size %" PRIdOFF
+            " exceeds image size", func_name, size);
+        return TSK_COR;
+    }
+
     len = roundup(size, fatfs->ssize);
 
     if (tsk_verbose) {
