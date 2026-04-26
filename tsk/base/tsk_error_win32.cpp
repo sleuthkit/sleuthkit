@@ -47,8 +47,11 @@ void *tsk_error_win32_get_per_thread_(unsigned struct_size) {
 
 	DWORD index = tsk::getTlsIndex.GetIndex();
 	void *ptr = TlsGetValue( index );
-	if (ptr == 0) {
+	if (ptr == NULL) {
 		ptr = malloc(struct_size);
+		if (ptr == NULL) {
+			return 0;
+		}
 		memset(ptr, 0, struct_size);
 		TlsSetValue(index, ptr);
 	}
