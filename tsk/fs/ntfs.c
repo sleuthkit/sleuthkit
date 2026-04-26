@@ -2333,7 +2333,11 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             fs_file->meta->crtime_nano =
                 nt2nano(tsk_getu64(fs->endian, si->crtime));
 
-            fs_file->meta->uid = tsk_getu32(fs->endian, si->own_id);
+            // own_id is only present in the 72-byte (NTFS 3.x) variant;
+            // a 48-byte SI attribute is valid NTFS 1.x and lacks this field.
+            if (attr_off + offsetof(ntfs_attr_si, own_id) + sizeof(si->own_id) <= attr_len) {
+                fs_file->meta->uid = tsk_getu32(fs->endian, si->own_id);
+            }
             fs_file->meta->mode |=
                 (TSK_FS_META_MODE_IXUSR | TSK_FS_META_MODE_IXGRP |
                 TSK_FS_META_MODE_IXOTH);
