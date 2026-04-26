@@ -677,9 +677,13 @@ int tsk_img_copy_image_names(TSK_IMG_INFO* img_info, const TSK_TCHAR* const imag
         return 0;
     }
     img_info->num_img = num;
-    memset(img_info->images, 0, sizeof(num * sizeof(TSK_TCHAR*)));
+    memset(img_info->images, 0, num * sizeof(TSK_TCHAR*));
 
     for (int i = 0; i < num; ++i) {
+        if (images[i] == NULL) {
+            tsk_img_free_image_names(img_info);
+            return 0;
+        }
         const size_t len = TSTRLEN(images[i]);
         if (!(img_info->images[i] = (TSK_TCHAR*) tsk_malloc((len+1)*sizeof(TSK_TCHAR)))) {
             tsk_img_free_image_names(img_info);
