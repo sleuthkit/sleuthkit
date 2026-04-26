@@ -301,7 +301,7 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe, uintptr_t endaddr,
  * No other fields are copied.  Just the name into shrt_name. */
 static uint8_t
 ntfs_dent_copy_short_only(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
-    TSK_FS_NAME * fs_name)
+    uintptr_t endaddr, TSK_FS_NAME * fs_name)
 {
     ntfs_attr_fname *fname = (ntfs_attr_fname *) & idxe->stream;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
@@ -312,9 +312,16 @@ ntfs_dent_copy_short_only(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
     name16 = (UTF16 *) & fname->name;
     name8 = (UTF8 *) fs_name->shrt_name;
 
+    const UTF16 *sourceEnd = (UTF16 *) ((uintptr_t) name16 + fname->nlen * 2);
+    if ((uintptr_t) sourceEnd >= endaddr) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_dent_copy_short_only: name extends past end of buffer\n");
+        return 1;
+    }
+
     retVal = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
-        (UTF16 *) ((uintptr_t) name16 +
-            fname->nlen * 2), &name8,
+        sourceEnd, &name8,
         (UTF8 *) ((uintptr_t) name8 +
             fs_name->shrt_name_size), TSKlenientConversion);
 
@@ -537,7 +544,7 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
             if (fs_name_preventry) {
                 // check its the same entry and if so, add short name
                 if (fs_name_preventry->meta_addr == tsk_getu48(fs->endian, a_idxe->file_ref)) {
-                    ntfs_dent_copy_short_only(a_ntfs, a_idxe, fs_name_preventry);
+                    ntfs_dent_copy_short_only(a_ntfs, a_idxe, endaddr, fs_name_preventry);
                 }
 
                 // regardless, add preventry to dir and move on to next entry.
