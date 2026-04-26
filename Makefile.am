@@ -643,6 +643,11 @@ tools/sorter/sorter: $(top_srcdir)/tools/sorter/sorter.base Makefile
 ## Check system
 ## check system test data that's not in SLEUTHKIT_TEST_DATA_DIR
 
+check-local:
+	@if test -z "$$SLEUTHKIT_TEST_DATA_DIR"; then \
+	    echo "WARNING: Environment variable SLEUTHKIT_TEST_DATA_DIR is not set. Some tests may be skipped."; \
+	fi
+
 clean-local:
 	rm -f thread-*log testdb.db base.log
 	find $(top_builddir) -type d -name '.deps' -exec rm -rf {} +

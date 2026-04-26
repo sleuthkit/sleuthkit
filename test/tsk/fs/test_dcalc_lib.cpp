@@ -43,12 +43,12 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc with ext2 fs DD flag", "[dcalc_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKCALC_FLAG_ENUM flags = TSK_FS_BLKCALC_DD;
-    TSK_DADDR_T cnt = 1; 
+    TSK_DADDR_T cnt = 1;
     int8_t result = tsk_fs_blkcalc(fs, flags, cnt);
-    REQUIRE(result == 0); 
-    
+    REQUIRE(result == 0);
+
     cleanup_ext2_image(img, fs);
 }
 
@@ -57,26 +57,26 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc with ext2 fs BLKLS flag", "[dcalc_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKCALC_FLAG_ENUM flags = TSK_FS_BLKCALC_BLKLS;
-    TSK_DADDR_T cnt = 1; 
+    TSK_DADDR_T cnt = 1;
     int8_t result = tsk_fs_blkcalc(fs, flags, cnt);
-    REQUIRE(result == 0); 
-    
+    REQUIRE(result == 0);
+
     cleanup_ext2_image(img, fs);
 }
 
-// Test tsk_fs_blkcalc with count too large 
+// Test tsk_fs_blkcalc with count too large
 TEST_CASE("dcalc_lib: tsk_fs_blkcalc with count too large returns block too large", "[dcalc_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKCALC_FLAG_ENUM flags = TSK_FS_BLKCALC_DD;
-    TSK_DADDR_T cnt = 1000000; 
+    TSK_DADDR_T cnt = 1000000;
     int8_t result = tsk_fs_blkcalc(fs, flags, cnt);
-    REQUIRE(result == 1); 
-    
+    REQUIRE(result == 1);
+
     cleanup_ext2_image(img, fs);
 }
 
@@ -85,12 +85,12 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc with zero count", "[dcalc_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKCALC_FLAG_ENUM flags = TSK_FS_BLKCALC_DD;
     TSK_DADDR_T cnt = 0;
     int8_t result = tsk_fs_blkcalc(fs, flags, cnt);
-    REQUIRE(result == 0); 
-    
+    REQUIRE(result == 0);
+
     cleanup_ext2_image(img, fs);
 }
 
@@ -99,27 +99,27 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc with invalid flags returns error", "[dcalc_
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     // Test with no flags set
     TSK_FS_BLKCALC_FLAG_ENUM flags = (TSK_FS_BLKCALC_FLAG_ENUM)0;
     TSK_DADDR_T cnt = 0;
     int8_t result = tsk_fs_blkcalc(fs, flags, cnt);
-    REQUIRE(result == 1); 
-    
+    REQUIRE(result == 1);
+
     cleanup_ext2_image(img, fs);
 }
 
-// Test tsk_fs_blkcalc with multiple flags set 
+// Test tsk_fs_blkcalc with multiple flags set
 TEST_CASE("dcalc_lib: tsk_fs_blkcalc with multiple flags set", "[dcalc_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKCALC_FLAG_ENUM flags = (TSK_FS_BLKCALC_FLAG_ENUM)(TSK_FS_BLKCALC_DD | TSK_FS_BLKCALC_BLKLS);
     TSK_DADDR_T cnt = 1;
     int8_t result = tsk_fs_blkcalc(fs, flags, cnt);
-    REQUIRE(result == 1); 
-    
+    REQUIRE(result == 1);
+
     cleanup_ext2_image(img, fs);
 }
 
@@ -132,8 +132,8 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc with all flags set", "[dcalc_lib]") {
     TSK_FS_BLKCALC_FLAG_ENUM flags = (TSK_FS_BLKCALC_FLAG_ENUM)(TSK_FS_BLKCALC_DD | TSK_FS_BLKCALC_BLKLS | TSK_FS_BLKCALC_SLACK);
     TSK_DADDR_T cnt = 1;
     int8_t result = tsk_fs_blkcalc(fs, flags, cnt);
-    REQUIRE(result == 1); 
-    
+    REQUIRE(result == 1);
+
     cleanup_ext2_image(img, fs);
 }
 
@@ -142,18 +142,18 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc with different count values", "[dcalc_lib]"
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKCALC_FLAG_ENUM flags = TSK_FS_BLKCALC_DD;
-    
+
     int8_t result = tsk_fs_blkcalc(fs, flags, 1);
     REQUIRE(result == 0);
-    
+
     result = tsk_fs_blkcalc(fs, flags, 5);
     REQUIRE(result == 0);
-    
+
     result = tsk_fs_blkcalc(fs, flags, 10);
     REQUIRE(result == 0);
-    
+
     cleanup_ext2_image(img, fs);
 }
 
@@ -162,17 +162,17 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc BLKLS with different count values", "[dcalc
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKCALC_FLAG_ENUM flags = TSK_FS_BLKCALC_BLKLS;
-    
+
     int8_t result = tsk_fs_blkcalc(fs, flags, 1);
     REQUIRE(result == 0);
-    
+
     result = tsk_fs_blkcalc(fs, flags, 3);
     REQUIRE(result == 0);
-    
+
     result = tsk_fs_blkcalc(fs, flags, 7);
     REQUIRE(result == 0);
-    
+
     cleanup_ext2_image(img, fs);
 }

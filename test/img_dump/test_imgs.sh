@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-ID=${srcdir}/test/img_dump/img_differ.sh
+IMAGE_DIFFER=${srcdir}/test/img_dump/img_differ.sh
 
-$ID '$DATA_DIR/image/image.dd' '$DATA_DIR/image/image.dd.json'
-$ID '$DATA_DIR/image/fat_dst_test.dd' '$DATA_DIR/image/fat_dst_test.dd.json'
+$IMAGE_DIFFER ${srcdir}/test/data/image/image.dd  ${srcdir}/test/data/image/image.dd.json
+$IMAGE_DIFFER ${srcdir}/test/data/fat_dst_test.dd ${srcdir}/test/data/fat_dst_test.dd.json

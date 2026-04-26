@@ -175,8 +175,16 @@ main(int argc, [[maybe_unused]] char **argv1)
                     tsk_fprintf(stderr, "error allocating memory\n");
                     exit(1);
                 }
-                TSTRNCPY(path.get(), OPTARG, TSTRLEN(OPTARG) + 1);
-                break;
+                // Allocate exactly enough space for OPTARG + NUL
+                {
+                    const size_t len2 = TSTRLEN(OPTARG);
+                    path.reset(new TSK_TCHAR[len2 + 1]);
+
+                    // Copy safely: use destination size, not source length
+                    TSTRNCPY(path.get(), OPTARG, len2);
+                    path.get()[len] = _TSK_T('\0');  // Ensure null termination
+                    break;
+                }
             }
         case 'o':
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {

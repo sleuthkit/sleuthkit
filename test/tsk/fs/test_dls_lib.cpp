@@ -5,10 +5,13 @@
 #include <cstdio>
 #include <cstring>
 
+#define EXT2_TEST_IMAGE "test/data/image_ext2.dd"
+
 // Helper to check if the ext2 image exists
 static bool ext2_image_exists() {
     FILE *f = fopen("test/data/image_ext2.dd", "rb");
     if (f) { fclose(f); return true; }
+    WARN("File not found: test/data/image_ext2.dd");
     return false;
 }
 
@@ -43,15 +46,15 @@ TEST_CASE("dls_lib: tsk_fs_blkls with NONE flag", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_NONE;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 2;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_UNALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -60,15 +63,15 @@ TEST_CASE("dls_lib: tsk_fs_blkls with LIST flag", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_LIST;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 5;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -77,15 +80,15 @@ TEST_CASE("dls_lib: tsk_fs_blkls with SLACK flag", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_SLACK;
     TSK_DADDR_T bstart = 0;
     TSK_DADDR_T blast = 0;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_NONE;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -94,15 +97,15 @@ TEST_CASE("dls_lib: tsk_fs_blkls with CAT flag", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_CAT;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 1;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -111,36 +114,36 @@ TEST_CASE("dls_lib: tsk_fs_blkls with different block walk flags", "[dls_lib]") 
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_NONE;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 2;
-    
+
     // Test with allocated blocks only
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     // Test with unallocated blocks only
     block_flags = TSK_FS_BLOCK_WALK_FLAG_UNALLOC;
     result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     // Test with content blocks only
     block_flags = TSK_FS_BLOCK_WALK_FLAG_CONT;
     result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     // Test with metadata blocks only
     block_flags = TSK_FS_BLOCK_WALK_FLAG_META;
     result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     // Test with AONLY flag
     block_flags = TSK_FS_BLOCK_WALK_FLAG_AONLY;
     result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -149,20 +152,20 @@ TEST_CASE("dls_lib: tsk_fs_blkls with combined block walk flags", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_NONE;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 3;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = (TSK_FS_BLOCK_WALK_FLAG_ENUM)(
-        TSK_FS_BLOCK_WALK_FLAG_ALLOC | 
-        TSK_FS_BLOCK_WALK_FLAG_UNALLOC | 
-        TSK_FS_BLOCK_WALK_FLAG_CONT | 
+        TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+        TSK_FS_BLOCK_WALK_FLAG_UNALLOC |
+        TSK_FS_BLOCK_WALK_FLAG_CONT |
         TSK_FS_BLOCK_WALK_FLAG_META
     );
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -171,28 +174,28 @@ TEST_CASE("dls_lib: tsk_fs_blkls with different block ranges", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_NONE;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     // Test with single block
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block;
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     // Test with multiple blocks
     bstart = fs->first_block;
     blast = fs->first_block + 5;
     result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     // Test with middle range
     bstart = fs->first_block + 10;
     blast = fs->first_block + 15;
     result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -201,17 +204,17 @@ TEST_CASE("dls_lib: tsk_fs_blkls with all flags combined", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = (TSK_FS_BLKLS_FLAG_ENUM)(
         TSK_FS_BLKLS_CAT | TSK_FS_BLKLS_LIST | TSK_FS_BLKLS_SLACK
     );
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 2;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -220,15 +223,15 @@ TEST_CASE("dls_lib: tsk_fs_blkls with zero block range", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_NONE;
     TSK_DADDR_T bstart = 0;
     TSK_DADDR_T blast = 0;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -237,15 +240,15 @@ TEST_CASE("dls_lib: tsk_fs_blkls with maximum block range", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_NONE;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->last_block;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     cleanup_image(img, fs);
 }
 
@@ -254,19 +257,19 @@ TEST_CASE("dls_lib: tsk_fs_blkls with verbose mode", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     tsk_verbose = 1;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_NONE;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 1;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     tsk_verbose = 0;
-    
+
     cleanup_image(img, fs);
 }
 
@@ -275,19 +278,19 @@ TEST_CASE("dls_lib: tsk_fs_blkls LIST with verbose mode", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     tsk_verbose = 1;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_LIST;
     TSK_DADDR_T bstart = fs->first_block;
     TSK_DADDR_T blast = fs->first_block + 2;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_ALLOC;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     tsk_verbose = 0;
-    
+
     cleanup_image(img, fs);
 }
 
@@ -296,18 +299,18 @@ TEST_CASE("dls_lib: tsk_fs_blkls SLACK with verbose mode", "[dls_lib]") {
     TSK_IMG_INFO *img = nullptr;
     TSK_FS_INFO *fs = nullptr;
     if (!setup_ext2_image(&img, &fs)) return;
-    
+
     tsk_verbose = 1;
-    
+
     TSK_FS_BLKLS_FLAG_ENUM flags = TSK_FS_BLKLS_SLACK;
     TSK_DADDR_T bstart = 0;
     TSK_DADDR_T blast = 0;
     TSK_FS_BLOCK_WALK_FLAG_ENUM block_flags = TSK_FS_BLOCK_WALK_FLAG_NONE;
-    
+
     uint8_t result = tsk_fs_blkls(fs, flags, bstart, blast, block_flags);
     REQUIRE(result == 0);
-    
+
     tsk_verbose = 0;
-    
+
     cleanup_image(img, fs);
-} 
+}
