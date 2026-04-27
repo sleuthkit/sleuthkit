@@ -75,9 +75,13 @@ static void
 parse_record_header(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
                     TSK_ENDIAN_ENUM endian)
 {
-    header->length = tsk_getu32(endian, &buf[0]);
-    header->major_version = tsk_getu16(endian, &buf[4]);
-    header->minor_version = tsk_getu16(endian, &buf[6]);
+    /* Cast to ntfs_usn_v2_rec to use named fields, even though only the
+     * first three fields (length, major_version, minor_version) are read
+     * here. These fields are shared across all USN record versions. */
+    const ntfs_usn_v2_rec *rec = (const ntfs_usn_v2_rec *) buf;
+    header->length = tsk_getu32(endian, rec->length);
+    header->major_version = tsk_getu16(endian, rec->major_version);
+    header->minor_version = tsk_getu16(endian, rec->minor_version);
 }
 
 
@@ -89,28 +93,40 @@ static uint8_t
 parse_v2_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
                 TSK_USN_RECORD_V2 *record, TSK_ENDIAN_ENUM endian)
 {
+    const ntfs_usn_v2_rec *rec = (const ntfs_usn_v2_rec *) buf;
     uint64_t timestamp = 0;
-    uint16_t name_offset = 0, name_length = 0;
+    uint16_t name_length = 0, name_offset = 0;
 
-    record->refnum = tsk_getu48(endian, &buf[8]);
-    record->refnum_seq = tsk_getu16(endian, &buf[14]);
-    record->parent_refnum = tsk_getu48(endian, &buf[16]);
-    record->parent_refnum_seq = tsk_getu16(endian, &buf[22]);
-    record->usn = tsk_getu64(endian, &buf[24]);
+    record->refnum = tsk_getu48(endian, rec->file_ref);
+    record->refnum_seq = tsk_getu16(endian, rec->file_ref_seq);
+    record->parent_refnum = tsk_getu48(endian, rec->par_ref);
+    record->parent_refnum_seq = tsk_getu16(endian, rec->par_ref_seq);
+    record->usn = tsk_getu64(endian, rec->usn);
 
     /* Convert NT timestamp into Unix */
-    timestamp = tsk_getu64(endian, &buf[32]);
+    timestamp = tsk_getu64(endian, rec->timestamp);
     record->time_sec = nt2unixtime(timestamp);
     record->time_nsec = nt2nano(timestamp);
 
-    record->reason = tsk_getu32(endian, &buf[40]);
-    record->source_info = tsk_getu32(endian, &buf[44]);
-    record->security = tsk_getu32(endian, &buf[48]);
-    record->attributes = tsk_getu32(endian, &buf[52]);
+    record->reason = tsk_getu32(endian, rec->reason);
+    record->source_info = tsk_getu32(endian, rec->source_info);
+    record->security = tsk_getu32(endian, rec->security_id);
+    record->attributes = tsk_getu32(endian, rec->attributes);
 
     /* Extract file name */
-    name_length = tsk_getu16(endian, &buf[56]);
-    name_offset = tsk_getu16(endian, &buf[58]);
+    name_length = tsk_getu16(endian, rec->fname_length);
+    name_offset = tsk_getu16(endian, rec->fname_offset);
+
+    /* Validate that the name falls within the record bounds.
+     * name_offset must point past the fixed header (sizeof(ntfs_usn_v2_rec) == 60). */
+    if (name_offset < sizeof(ntfs_usn_v2_rec) ||
+        (uint32_t) name_offset + name_length > header->length) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "parse_v2_record: file name out of record bounds\n");
+        record->fname = NULL;
+        return 0;
+    }
 
     return parse_fname(&buf[name_offset], name_length, record, endian);
 }
