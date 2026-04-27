@@ -4835,6 +4835,14 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         name16 = (UTF16 *) & fname->name;
         name8 = (UTF8 *) name8buf;
 
+        /* Verify fname->nlen doesn't extend past the attribute buffer */
+        if (fs_attr->rd.buf_size < offsetof(ntfs_attr_fname, name) + (size_t) fname->nlen * 2) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ntfs_istat: $FILE_NAME name length extends past end of attribute buffer\n");
+            continue;
+        }
+
         retVal =
             tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
             (UTF16 *) ((uintptr_t) name16 +
