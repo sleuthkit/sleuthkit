@@ -279,6 +279,25 @@ TSK_RETVAL_ENUM
     }
 
     size = fs_dir->fs_file->meta->size;
+
+    /* A negative size from corrupt metadata would wrap to a huge unsigned
+     * value in roundup() and the subsequent tsk_malloc call. */
+    if (size < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr("%s: directory size %" PRIdOFF
+            " is negative", func_name, size);
+        return TSK_COR;
+    }
+    /* A directory cannot exceed the filesystem's usable data area. */
+    else if (size > (TSK_OFF_T)(a_fs->block_count * a_fs->block_size)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr("%s: directory size %" PRIdOFF
+            " exceeds filesystem size", func_name, size);
+        return TSK_COR;
+    }
+
     len = roundup(size, fatfs->ssize);
 
     if (tsk_verbose) {
