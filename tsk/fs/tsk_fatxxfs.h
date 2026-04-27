@@ -42,25 +42,72 @@
 	((name[0] == 0) && (name[1] == 0)) : \
 	(name[0] == FATXXFS_SLOT_DELETED) 
 
-/* 
- *Return 1 if c is an valid character for a short file name 
+/*
+ * Return 1 if c is a valid character for a short file name — strict mode.
+ *
+ * Used during carving (scanning unallocated space) where a permissive check
+ * risks accepting random data as a valid directory entry.
  *
  * NOTE: 0x05 is allowed in name[0], and 0x2e (".") is allowed for name[0]
- * and name[1] and 0xe5 is allowed for name[0]
+ * and name[1] and 0xe5 is allowed for name[0].
+ *
+ * The MS FAT spec forbids values below 0x20 and: 0x22 " 0x2a * 0x2b +
+ * 0x2c , 0x2e . 0x2f / 0x3a : 0x3b ; 0x3c < 0x3d = 0x3e > 0x3f ? 0x5b [
+ * 0x5c \ 0x5d ] 0x7c |.  This macro relaxes two of those:
+ *
+ * 0x2b (+) allowed: low-risk printable character observed in real embedded
+ *   Linux FAT filesystems (e.g. directory names like "7+1_MODE"). Linux's
+ *   FAT driver does not validate characters when reading short names, so
+ *   entries with + can be read back correctly on Linux devices.
+ * 0x3d (=) allowed: low-risk printable character; MS spec forbids it as
+ *   part of the 0x3a-0x3f range, but Linux can read it and it has low
+ *   false-positive risk when carving.
+ *
+ * All other MS-forbidden characters remain forbidden to minimise false
+ * positives during carving.
  */
-#define FATXXFS_IS_83_NAME(c)		\
+#define FATXXFS_IS_83_NAME_STRICT(c)	\
 	((((c) < 0x20) || \
 	  ((c) == 0x22) || \
-	  (((c) >= 0x2a) && ((c) <= 0x2c)) || \
+	  ((c) == 0x2a) || \
+	  ((c) == 0x2c) || \
 	  ((c) == 0x2e) || \
 	  ((c) == 0x2f) || \
-	  (((c) >= 0x3a) && ((c) <= 0x3f)) || \
+	  ((c) == 0x3a) || \
+	  ((c) == 0x3b) || \
+	  ((c) == 0x3c) || \
+	  ((c) == 0x3e) || \
+	  ((c) == 0x3f) || \
 	  (((c) >= 0x5b) && ((c) <= 0x5d)) || \
 	  ((c) == 0x7c)) == 0)
 
-// extensions are to be ascii / latin
-#define FATXXFS_IS_83_EXT(c)		\
-    (FATXXFS_IS_83_NAME((c)) && ((c) < 0x7f))
+/*
+ * Return 1 if c is a valid character for a short file name — relaxed mode.
+ *
+ * Used when traversing a known allocated directory.  Because we have
+ * structural confidence in the entry we can accept characters that the MS
+ * FAT spec forbids but that Linux's FAT driver can read without validation.
+ * Only the highest-risk characters remain forbidden:
+ *
+ * 0x00-0x1f (control chars): never valid.
+ * 0x2a (*): glob wildcard — high false-positive risk even in known dirs.
+ * 0x2e (.): period — handled by caller special-cases; not generically valid.
+ * 0x2f (/): path separator — security risk.
+ * 0x3f (?): glob wildcard — high false-positive risk.
+ *
+ * Characters not in the MS spec but allowed here because Linux can read them:
+ * 0x22 " 0x2b + 0x2c , 0x3a : 0x3b ; 0x3c < 0x3d = 0x3e > 0x5b [
+ * 0x5c \ 0x5d ] 0x7c |
+ */
+#define FATXXFS_IS_83_NAME_RELAXED(c)	\
+	((((c) < 0x20) || \
+	  ((c) == 0x2a) || \
+	  ((c) == 0x2e) || \
+	  ((c) == 0x2f) || \
+	  ((c) == 0x3f)) == 0)
+
+/* Legacy alias — strict validation, same as FATXXFS_IS_83_NAME_STRICT. */
+#define FATXXFS_IS_83_NAME(c)		FATXXFS_IS_83_NAME_STRICT(c)
 
 /* flags for lowercase field */
 #define FATXXFS_CASE_LOWER_BASE	0x08    /* base is lower case */

@@ -29,20 +29,33 @@
 #include <assert.h>
 
 /*
- * Identify if the dentry is a valid 8.3 name
+ * Identify if the dentry has a valid 8.3 name.
  *
- * returns 1 if it is, 0 if it does not
+ * @param de     Directory entry to check.
+ * @param strict Non-zero to use strict validation (carving / unallocated
+ *               space), zero to use relaxed validation (known directory).
+ *               See FATXXFS_IS_83_NAME_STRICT / FATXXFS_IS_83_NAME_RELAXED
+ *               in tsk_fatxxfs.h for the character sets each mode accepts.
+ *
+ * Returns 1 if the name is valid, 0 otherwise.
  */
 static uint8_t
-is_83_name(FATXXFS_DENTRY * de)
+is_83_name(FATXXFS_DENTRY * de, uint8_t strict)
 {
+/* Dispatch to the correct character-validation macro based on mode. */
+#define IS_OK(c)  (strict ? FATXXFS_IS_83_NAME_STRICT(c) : FATXXFS_IS_83_NAME_RELAXED(c))
+
     if (!de)
         return 0;
 
-    /* The IS_NAME macro will fail if the value is 0x05, which is only
-     * valid in name[0], similarly with '.' */
+    /* name[0] has two special on-disk values that are not valid elsewhere:
+     * 0x05 (FATXXFS_SLOT_E5) represents a real 0xE5 byte in the filename,
+     * and 0x2E ('.') is the directory self/parent entry marker.  Both strict
+     * and relaxed modes would otherwise reject 0x05 (a control character) and
+     * 0x2E (period), so they are exempted for name[0] only before calling
+     * IS_OK. */
     if ((de->name[0] != FATXXFS_SLOT_E5) && (de->name[0] != '.') &&
-        (FATXXFS_IS_83_NAME(de->name[0]) == 0)) {
+        (IS_OK(de->name[0]) == 0)) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[0] is invalid\n");
         return 0;
@@ -63,53 +76,53 @@ is_83_name(FATXXFS_DENTRY * de)
             return 0;
         }
     }
-    else if (FATXXFS_IS_83_NAME(de->name[1]) == 0) {
+    else if (IS_OK(de->name[1]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[1] is invalid\n");
         return 0;
     }
 
-    if (FATXXFS_IS_83_NAME(de->name[2]) == 0) {
+    if (IS_OK(de->name[2]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[2] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[3]) == 0) {
+    else if (IS_OK(de->name[3]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[3] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[4]) == 0) {
+    else if (IS_OK(de->name[4]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[4] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[5]) == 0) {
+    else if (IS_OK(de->name[5]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[5] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[6]) == 0) {
+    else if (IS_OK(de->name[6]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[6] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->name[7]) == 0) {
+    else if (IS_OK(de->name[7]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[7] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->ext[0]) == 0) {
+    else if (IS_OK(de->ext[0]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[0] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->ext[1]) == 0) {
+    else if (IS_OK(de->ext[1]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[1] is invalid\n");
         return 0;
     }
-    else if (FATXXFS_IS_83_NAME(de->ext[2]) == 0) {
+    else if (IS_OK(de->ext[2]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[2] is invalid\n");
         return 0;
@@ -136,6 +149,8 @@ is_83_name(FATXXFS_DENTRY * de)
     }
 
     return 1;
+
+#undef IS_OK
 }
 
 /**
@@ -156,6 +171,9 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     const char *func_name = "fatxxfs_is_dentry";
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_fatfs->fs_info;
     FATXXFS_DENTRY *dentry = (FATXXFS_DENTRY*)a_dentry;
+    /* a_do_basic_tests_only is inverted: 0 means in-depth (carving), which
+     * requires strict name validation to avoid false positives. */
+    uint8_t strict = (a_do_basic_tests_only == 0);
 
     if (!a_dentry)
         return 0;
@@ -176,7 +194,7 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     }
     else {
         // the basic test is only for the 'essential data'.
-        if (a_do_basic_tests_only == 0) {
+        if (strict) {
             if (dentry->lowercase & ~(FATXXFS_CASE_LOWER_ALL)) {
                 if (tsk_verbose)
                     fprintf(stderr, "%s: lower case all\n", func_name);
@@ -274,7 +292,8 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
             return 0;
         }
 		
-		else if((a_fatfs->subtype == TSK_FATFS_SUBTYPE_SPEC) && (is_83_name(dentry) == 0))
+		else if((a_fatfs->subtype == TSK_FATFS_SUBTYPE_SPEC) &&
+                (is_83_name(dentry, strict) == 0))
 			return 0;
 
         // basic sanity check on values
