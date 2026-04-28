@@ -13,6 +13,7 @@
 
 #include <locale.h>
 #include "tsk/fs/tsk_fs_i.h"
+#include "tsk/fs/tsk_ntfs.h"
 
 #include <memory>
 
