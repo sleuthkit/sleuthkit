@@ -434,9 +434,7 @@ TSK_TCHAR * create_search_path_long_path(const TSK_TCHAR *base_path) {
  * @return TSK_OK if successful, TSK_ERR otherwise
  */
 #ifdef TSK_WIN32
-/**
- * Load files and/or directories from a given path using Windows API.
- *
+/*
  * Currently uses FindFirstFileW/FindNextFileW which is compatible with XP+.
  * For future optimization on Windows 7+, could switch to FindFirstFileEx with
  * FIND_FIRST_EX_LARGE_FETCH flag to internally batch multiple directory entries
@@ -919,25 +917,32 @@ get_or_load_cached_dir_files(IMG_LOGICAL_INFO* logical_img_info, TSK_INUM_T dir_
     // key) but with file_names = NULL / file_count = 0 - subsequent lookups for that
     // dir_inum would silently return "directory has no files" with TSK_OK, causing the
     // collector to lose every file in that directory.
+    //
+    // Cache insertion is best-effort: if any allocation fails here, file_names (the
+    // output parameter) is already populated with valid data from the disk enumeration
+    // above, so we free our partial temporaries and return TSK_OK. The caller continues
+    // with the loaded data; the directory simply doesn't get cached this time.
     TSK_TCHAR** new_file_names = NULL;
     size_t new_file_count = file_names.size();
 
     if (new_file_count > 0) {
         new_file_names = (TSK_TCHAR**)malloc(sizeof(TSK_TCHAR*) * new_file_count);
         if (new_file_names == NULL) {
-            return TSK_ERR;
+            // Couldn't cache, but the caller already has the data via file_names.
+            return TSK_OK;
         }
 
         for (size_t j = 0; j < new_file_count; j++) {
             size_t name_len = file_names[j].length() + 1;
             new_file_names[j] = (TSK_TCHAR*)malloc(sizeof(TSK_TCHAR) * name_len);
             if (new_file_names[j] == NULL) {
-                // Free what we've allocated so far. The existing cache slot is untouched.
+                // Free what we've allocated so far. The existing cache slot is untouched
+                // and the caller already has the data via file_names.
                 for (size_t k = 0; k < j; k++) {
                     free(new_file_names[k]);
                 }
                 free(new_file_names);
-                return TSK_ERR;
+                return TSK_OK;
             }
             TSTRNCPY(new_file_names[j], file_names[j].c_str(), name_len);
         }
@@ -1230,6 +1235,9 @@ load_path_from_inum(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T a_addr) {
 	// Create the struct that holds search params and results
 	LOGICALFS_SEARCH_HELPER *search_helper = create_inum_search_helper(a_addr);
 	if (search_helper == NULL) {
+		if (cache_path != NULL) {
+			free(cache_path);
+		}
 		return NULL;
 	}
 
