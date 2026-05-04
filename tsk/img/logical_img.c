@@ -71,6 +71,15 @@ logical_close(TSK_IMG_INFO * img_info)
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		clear_inum_cache_entry(logical_img_info, i);
 	}
+	// Clean up the per-directory file-list cache entries
+	for (int i = 0; i < DIR_FILE_LIST_CACHE_LEN; i++) {
+		if (logical_img_info->dir_file_list_cache.entries[i].file_names != NULL) {
+			for (size_t j = 0; j < logical_img_info->dir_file_list_cache.entries[i].file_count; j++) {
+				free(logical_img_info->dir_file_list_cache.entries[i].file_names[j]);
+			}
+			free(logical_img_info->dir_file_list_cache.entries[i].file_names);
+		}
+	}
 	tsk_img_free(img_info);
 }
 
@@ -152,6 +161,14 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 		logical_info->inum_cache[i].inum = LOGICAL_INVALID_INUM;
 		logical_info->inum_cache[i].path = NULL;
 		logical_info->inum_cache[i].cache_age = 0;
+	}
+
+	// Initialize the per-directory file-list cache
+	logical_info->dir_file_list_cache.next_insert_index = 0;
+	for (int i = 0; i < DIR_FILE_LIST_CACHE_LEN; i++) {
+		logical_info->dir_file_list_cache.entries[i].dir_inum = 0;  // 0 = empty slot
+		logical_info->dir_file_list_cache.entries[i].file_names = NULL;
+		logical_info->dir_file_list_cache.entries[i].file_count = 0;
 	}
 
 	img_info->read = logical_read;
