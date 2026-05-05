@@ -3516,11 +3516,12 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
             return 1;
         }
 
-        len = sprintf(sid_str, "S-1-%" PRIu64, authority);
+        len = snprintf(sid_str, sid_str_len, "S-1-%" PRIu64, authority);
         sid_str_offset = sid_str + len;
 
         for (i = 0; i < sid->sub_auth_count; i++) {
-            len = sprintf(sid_str_offset, "-%" PRIu32, sid->sub_auth[i]);
+            unsigned int remaining = sid_str_len - (unsigned int)(sid_str_offset - sid_str);
+            len = snprintf(sid_str_offset, remaining, "-%" PRIu32, sid->sub_auth[i]);
             sid_str_offset += len;
         }
         *a_sidstr = sid_str;
