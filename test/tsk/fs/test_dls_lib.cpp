@@ -2,8 +2,16 @@
 #include "tsk/fs/tsk_fs_i.h"
 #include "tsk/fs/tsk_fs.h"
 #include "tsk/libtsk.h"
+#include "tsk/base/tsk_base.h"
+#include "test/tools/tsk_tempfile.h"
 #include <cstdio>
 #include <cstring>
+
+FILE* dls_temp_out = tsk_make_tempfile();
+FILE* dls_temp_err = tsk_make_tempfile();
+
+FILE* old_dls_out = tsk_set_printf_fd(dls_temp_out);
+FILE* old_dls_err = tsk_set_stderr_fd(dls_temp_err);
 
 // Helper to check if the ext2 image exists
 static bool ext2_image_exists() {
@@ -311,3 +319,14 @@ TEST_CASE("dls_lib: tsk_fs_blkls SLACK with verbose mode", "[dls_lib]") {
     
     cleanup_image(img, fs);
 } 
+
+struct CleanupDlsTempFiles {
+    ~CleanupDlsTempFiles() {
+        tsk_set_printf_fd(old_dls_out);
+        tsk_set_stderr_fd(old_dls_err);
+        if (dls_temp_out) fclose(dls_temp_out);
+        if (dls_temp_err) fclose(dls_temp_err);
+    }
+};
+
+CleanupDlsTempFiles dls_cleanup_guard;

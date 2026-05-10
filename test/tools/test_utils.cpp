@@ -15,6 +15,7 @@
 
 #include "tsk_tempfile.h"
 #include "test_utils.h"
+#include "tsk/base/tsk_base.h"
 
 bool parse_test_line(const std::string& line,
     std::string& id,
@@ -65,8 +66,8 @@ bool compare_files(FILE* expected, FILE* actual) {
     std::string actual_content = read_file(actual);
     
     if (expected_content != actual_content) {
-        std::cout << "Expected File: " << expected_content << '\n';
-        std::cout << "Output: " << actual_content << '\n';
+        tsk_printf("Expected File: %s \n", expected_content.c_str());
+        tsk_printf("Output: %s \n", actual_content.c_str());
     }
 
     return expected_content == actual_content;
@@ -81,23 +82,23 @@ void print_diff(const std::string& expected, const std::string& actual) {
     while (std::getline(expected_stream, expected_line) &&
            std::getline(actual_stream, actual_line)) {
         if (expected_line != actual_line) {
-            std::cout << "  Line " << line_num << " differs:\n";
-            std::cout << "    Expected: \"" << expected_line << "\"\n";
-            std::cout << "    Actual  : \"" << actual_line << "\"\n";
+            tsk_printf("  Line %d differs:\n", line_num);
+            tsk_printf("    Expected: \"%s \"\n", expected_line.c_str());
+            tsk_printf("    Actual  : \" %s \"\n", actual_line.c_str());
         }
         ++line_num;
     }
 
     // Handle extra lines
     while (std::getline(expected_stream, expected_line)) {
-        std::cout << "  Line " << line_num << " missing in actual output:\n";
-        std::cout << "    Expected: \"" << expected_line << "\"\n";
+        tsk_printf("  Line %d missing in actual output:\n", line_num);
+        tsk_printf("    Expected: \"%s\"\n", expected_line.c_str());
         ++line_num;
     }
 
     while (std::getline(actual_stream, actual_line)) {
-        std::cout << "  Extra line " << line_num << " in actual output:\n";
-        std::cout << "    Actual  : \"" << actual_line << "\"\n";
+        tsk_printf("  Extra line %d in actual output:\n", line_num);
+        tsk_printf("    Actual  : \"%s\"\n", actual_line.c_str());
         ++line_num;
     }
 }
@@ -135,12 +136,12 @@ int run_test(const std::string& cmd,
     if (cmd.find("$SLEUTHKIT_TEST_DATA_DIR") != std::string::npos) {
         const char* test_data_dir = std::getenv("SLEUTHKIT_TEST_DATA_DIR");
         if (!test_data_dir || !*test_data_dir) {
-            std::cout << "[skip] Test \"" << result.id 
-                      << "\" references $SLEUTHKIT_TEST_DATA_DIR, but it is not set.\n";
+            tsk_printf("[skip] Test \"%s\" $SLEUTHKIT_TEST_DATA_DIR not set.\n", result.id.c_str());
             result.skipped = true;
             return 0;
         }
     }
+    
     
     std::string resolved_cmd = adjust_tool_path(cmd);
 
@@ -150,7 +151,7 @@ int run_test(const std::string& cmd,
     FILE* err_file = tsk_make_named_tempfile(&stderr_path);
 
     if (!out_file || !err_file) {
-        std::cerr << "Failed to create temp file for command output.\n";
+        tsk_fprintf(stderr, "Failed to create temp file for command output.\n");
         result.error = true;
         return 1;
     }
@@ -200,7 +201,7 @@ int run_test(const std::string& cmd,
 
     result.stdout_match = (normalized_actual == normalized_expected);
     if (!result.stdout_match) {
-        std::cout << "  [diff] stdout mismatch in test: " << result.id << "\n";
+        tsk_printf("  [diff] stdout mismatch in test: %s\n", result.id.c_str());
         print_diff(normalized_expected, normalized_actual);
     }
 
@@ -215,7 +216,7 @@ int run_test(const std::string& cmd,
         std::string expected_error = read_file(expected_stderr);
         result.stderr_match = (actual_error == expected_error);
         if (!result.stderr_match) {
-            std::cout << "  [diff] stderr mismatch in test: " << result.id << "\n";
+            tsk_printf("  [diff] stderr mismatch in test: %s\n", result.id.c_str());
             print_diff(expected_error, actual_error);
         }
     } else {
@@ -231,29 +232,26 @@ int run_test(const std::string& cmd,
 
 // Print result summary table
 void print_summary(const std::vector<TestResult>& results) {
-    std::cout << "\nTest Summary:\n";
-    std::cout << std::setw(12) << "Test ID"
-        << std::setw(10) << "Exit"
-        << std::setw(10) << "Match"
-        << "\n";
+    tsk_printf("\nTest Summary:\n");
+    tsk_printf("%12s%10s%10s\n", "Test ID", "Exit", "Match");
 
     for (const auto& r : results) {
-        std::cout << std::setw(12) << r.id
-          << std::setw(10) << r.actual_exit
-          << std::setw(10) << (r.skipped ? "skipped" :
-                              (r.stdout_match && r.stderr_match ? "yes" : "NO"))
-          << "\n";
+        tsk_printf("%12s%10d%10s\n", 
+            r.id.c_str(), 
+            r.actual_exit, 
+            r.skipped ? "skipped" : (r.stdout_match && r.stderr_match ? "yes" : "NO"));
 
         if (!r.skipped) {
             if (!r.stdout_match) {
-                std::cout << "  stdout mismatch for test: " << r.id << "\n";
+                tsk_printf("  stdout mismatch for test: %s\n", r.id.c_str());
             }
             if (!r.stderr_match) {
-                std::cout << "  stderr mismatch or unexpected stderr in: " << r.id << "\n";
+                tsk_printf("  stderr mismatch or unexpected stderr in: %s\n", r.id.c_str());
             }
         }
+
         if (results.empty()) {
-            std::cout << "[!] No tests were run or no results were recorded.\n";
+            tsk_printf("[!] No tests were run or no results were recorded.\n");
         }
     }
 }
@@ -322,9 +320,7 @@ int run_all_tests() {
 
     print_summary(results);
 
-    std::cout << "\nTests run: " << tests_run
-        << ", Skipped: " << tests_skipped
-        << ", Failed: " << tests_failed << "\n";
+    tsk_printf("\nTests run: %d, Skipped: %d, Failed: %d\n", tests_run, tests_skipped, tests_failed);
     if (tests_failed > 0) {
         return 1;
     }

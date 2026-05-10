@@ -184,6 +184,13 @@ typedef void(*TSK_ERROR_LISTENER_CB) (unsigned int errno, const char* errmsg);
     // print internal UTF-8 strings to local platform Unicode format
     extern void tsk_fprintf(FILE * fd, const char *msg, ...);
     extern void tsk_printf(const char *msg, ...);
+    
+    /* printf/stderr redirection support */
+    extern FILE *g_tsk_printf_fd;
+    extern FILE *g_tsk_stderr_fd;
+    /* Set new destinations; return previous value */
+    FILE *tsk_set_printf_fd(FILE *fd);
+    FILE *tsk_set_stderr_fd(FILE *fd);
 
     // print path removing special characters
     extern int tsk_print_sanitized(FILE * fd, const char *str);

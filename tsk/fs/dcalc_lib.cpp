@@ -64,7 +64,7 @@ count_dd_act(const TSK_FS_BLOCK * fs_block, void *ptr)
         if (fs_block->flags & TSK_FS_BLOCK_FLAG_UNALLOC)
             tsk_printf("%" PRIuDADDR "\n", data->uncnt);
         else
-            printf
+            tsk_printf
                 ("ERROR: unit is allocated, it will not be in an blkls image\n");
 
         data->found = 1;

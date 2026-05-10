@@ -18,6 +18,34 @@
 #include "tsk_base_i.h"
 #include <stdarg.h>
 
+/**
+ * @name Global output redirection
+ * A global FILE* that can be redirected to control where all tsk_printf
+ * calls write to. Defaults to stdout.
+ */
+FILE *g_tsk_printf_fd = (FILE *)0;
+FILE *g_tsk_stderr_fd = (FILE *)0;
+
+/**
+ * Sets the global FILE* for tsk_printf output and stderr output.
+ * @param fd The new file descriptor to write to.
+ * @returns The previous file descriptor that was being used.
+ */
+FILE* tsk_set_printf_fd(FILE *fd) {
+    FILE *old_fd = g_tsk_printf_fd;
+    if (fd != NULL) {
+        g_tsk_printf_fd = fd;
+    }
+    return old_fd ? old_fd : stdout;
+}
+
+FILE* tsk_set_stderr_fd(FILE *fd) {
+    FILE *old_fd = g_tsk_stderr_fd;
+    if (fd != NULL) {
+        g_tsk_stderr_fd = fd;
+    }
+    return old_fd ? old_fd : stderr;
+}
 
 /** \internal
  * Convert the UTF-8 printf arguments to UTF-16 and fill in the
@@ -82,23 +110,33 @@ tsk_printf_conv(WCHAR * wbuf, int wlen, const char *msg, va_list * args)
  * @param fd File to print to
  * @param msg printf message
  */
-void
-tsk_fprintf(FILE * fd, const char *msg, ...)
+void tsk_fprintf(FILE *fd, const char *msg, ...)
 {
+    if (g_tsk_printf_fd == NULL) {
+        g_tsk_printf_fd = stdout;
+    }
+    if (g_tsk_stderr_fd == NULL) {
+        g_tsk_stderr_fd = stderr;
+    }
+
+    if (fd == NULL) {
+        fd = g_tsk_printf_fd;
+    } else if (fd == stderr) {
+        fd = g_tsk_stderr_fd;
+    }
+
     va_list args;
     va_start(args, msg);
-
 #ifdef TSK_WIN32
-    {
-        WCHAR wbuf[2048];
-        tsk_printf_conv(wbuf, 2048, msg, &args);
-        fwprintf(fd, _TSK_T("%ls"), wbuf);
-    }
+    WCHAR wbuf[2048];
+    tsk_printf_conv(wbuf, 2048, msg, &args);
+    fwprintf(fd, _TSK_T("%ls"), wbuf);
 #else
     vfprintf(fd, msg, args);
 #endif
     va_end(args);
 }
+
 
 /**
  * \ingroup baselib
@@ -112,6 +150,9 @@ tsk_fprintf(FILE * fd, const char *msg, ...)
 void
 tsk_printf(const char *msg, ...)
 {
+    if (g_tsk_printf_fd == NULL) {
+        g_tsk_printf_fd = stdout;
+    }
     va_list args;
     va_start(args, msg);
 
@@ -119,10 +160,10 @@ tsk_printf(const char *msg, ...)
     {
         WCHAR wbuf[2048];
         tsk_printf_conv(wbuf, 2048, msg, &args);
-        wprintf(_TSK_T("%ls"), wbuf);
+        fwprintf(g_tsk_printf_fd, _TSK_T("%ls"), wbuf);
     }
 #else
-    vprintf(msg, args);
+    vfprintf(g_tsk_printf_fd, msg, args);
 #endif
     va_end(args);
 }
@@ -142,7 +183,7 @@ tsk_print_sanitized(FILE * fd, const char *str)
     size_t index = 0;
     char *buf = NULL;
 
-    buf = tsk_malloc(strlen(str) + 1);
+    buf = (char *)tsk_malloc(strlen(str) + 1);
     if (buf == NULL)
       return 1;
 

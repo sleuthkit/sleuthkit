@@ -93,9 +93,9 @@ print_block(
     if (tsk_verbose)
         tsk_fprintf(stderr, "write block %" PRIuDADDR "\n",
             fs_block->addr);
-
+    FILE *out = (g_tsk_printf_fd != NULL) ? g_tsk_printf_fd : stdout;        
     if (fwrite(fs_block->buf, fs_block->fs_info->block_size, 1,
-            stdout) != 1) {
+            out) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WRITE);
         tsk_error_set_errstr("blkls_lib: error writing to stdout: %s",
@@ -147,7 +147,8 @@ slack_file_act(
             memset(buf, 0, (size_t) data->flen);
             data->flen = 0;
         }
-        if (fwrite(buf, size, 1, stdout) != 1) {
+        FILE *out = (g_tsk_printf_fd != NULL) ? g_tsk_printf_fd : stdout;
+        if (fwrite(buf, size, 1, out) != 1) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WRITE);
             tsk_error_set_errstr("blkls_lib: error writing to stdout: %s",

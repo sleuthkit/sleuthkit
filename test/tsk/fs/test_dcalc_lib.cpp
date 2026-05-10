@@ -2,8 +2,17 @@
 #include "tsk/fs/tsk_fs_i.h"
 #include "tsk/fs/tsk_fs.h"
 #include "tsk/libtsk.h"
+#include "tsk/base/tsk_base.h"
+#include "test/tools/tsk_tempfile.h"
 #include <cstdio>
 #include <cstring>
+
+FILE* dcalc_temp_output = tsk_make_tempfile();
+FILE* dcalc_temp_err = tsk_make_tempfile();
+
+// Save the current output targets and redirect to temp files
+FILE* dcalc_old_output = tsk_set_printf_fd(dcalc_temp_output);
+FILE* dcalc_old_err = tsk_set_stderr_fd(dcalc_temp_err);
 
 // Helper to check if the ext2 image exists
 static bool ext2_image_exists() {
@@ -175,4 +184,15 @@ TEST_CASE("dcalc_lib: tsk_fs_blkcalc BLKLS with different count values", "[dcalc
     REQUIRE(result == 0);
     
     cleanup_ext2_image(img, fs);
-}
+} 
+
+struct CleanupDcalcTempFiles {
+    ~CleanupDcalcTempFiles() {
+        tsk_set_printf_fd(dcalc_old_output);
+        tsk_set_stderr_fd(dcalc_old_err);
+        if (dcalc_temp_output) fclose(dcalc_temp_output);
+        if (dcalc_temp_err) fclose(dcalc_temp_err);
+    }
+};
+
+CleanupDcalcTempFiles dcalc_cleanup_guard;

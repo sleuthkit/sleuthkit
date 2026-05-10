@@ -2,8 +2,16 @@
 #include "tsk/fs/tsk_fs_i.h"
 #include "tsk/fs/tsk_fs.h"
 #include "tsk/libtsk.h"
+#include "tsk/base/tsk_base.h"
+#include "test/tools/tsk_tempfile.h"
 #include <cstdio>
 #include <cstring>
+
+FILE* dcat_temp_out = tsk_make_tempfile();
+FILE* dcat_temp_err = tsk_make_tempfile();
+
+FILE* old_dcat_out = tsk_set_printf_fd(dcat_temp_out);
+FILE* old_dcat_err = tsk_set_stderr_fd(dcat_temp_err);
 
 // Helper to check if the ext2 image exists
 static bool ext2_image_exists() {
@@ -178,3 +186,12 @@ TEST_CASE("dcat_lib: tsk_fs_blkcat with zero read units", "[dcat_lib]") {
     uint8_t result = tsk_fs_blkcat(&fs, flags, addr, read_num_units);
     REQUIRE(result == 1);
 }
+
+struct CleanupDcatTempFiles {
+    ~CleanupDcatTempFiles() {
+        tsk_set_printf_fd(old_dcat_out);
+        tsk_set_stderr_fd(old_dcat_err);
+        if (dcat_temp_out) fclose(dcat_temp_out);
+        if (dcat_temp_err) fclose(dcat_temp_err);
+    }
+};
