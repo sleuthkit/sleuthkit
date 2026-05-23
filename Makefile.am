@@ -778,6 +778,7 @@ test_catch_runner_SOURCES = \
 	test/tsk/hashdb/test_idxonly.cpp \
 	test/tsk/hashdb/test_incase.cpp \
 	test/tsk/hashdb/test_hashkeeper.cpp \
+	test/tsk/hashdb/test_nsrl.cpp \
 	test/tsk/hashdb/test_md5sum.cpp \
 	test/tsk/hashdb/test_sqlite_hdb.cpp \
 	test/tsk/hashdb/test_tsk_hashdb.cpp \

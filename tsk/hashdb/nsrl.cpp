@@ -518,7 +518,7 @@ nsrl_getentry(
         "nsrl_getentry: Lookup up hash %s at offset %" PRIdOFF
         "\n", hash, offset);
 
-    if ((hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_MD5_ID)
+    if ((hdb_binsrch_info->hash_type & TSK_HDB_HTYPE_MD5_ID)
         && (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -527,7 +527,7 @@ nsrl_getentry(
                 hash);
             return 1;
     }
-    else if ((hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_SHA1_ID)
+    else if ((hdb_binsrch_info->hash_type & TSK_HDB_HTYPE_SHA1_ID)
         && (strlen(hash) != TSK_HDB_HTYPE_SHA1_LEN)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -589,7 +589,7 @@ nsrl_getentry(
         }
 
         /* Which field are we looking for */
-        if (hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
+        if (hdb_binsrch_info->hash_type & TSK_HDB_HTYPE_SHA1_ID) {
             if (nsrl_parse_sha1(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
@@ -599,7 +599,7 @@ nsrl_getentry(
                 return 1;
             }
         }
-        else if (hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
+        else if (hdb_binsrch_info->hash_type & TSK_HDB_HTYPE_MD5_ID) {
             if (nsrl_parse_md5(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
