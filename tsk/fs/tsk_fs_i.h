@@ -96,6 +96,8 @@ extern "C" {
     extern void tsk_fs_attr_clear(TSK_FS_ATTR *);
     extern uint8_t tsk_fs_attr_set_str(TSK_FS_FILE *, TSK_FS_ATTR *,
         const char *, TSK_FS_ATTR_TYPE_ENUM, uint16_t, void *, size_t);
+    extern uint8_t tsk_fs_attr_set_str_offset(TSK_FS_FILE *, TSK_FS_ATTR *,
+        const char *, TSK_FS_ATTR_TYPE_ENUM, uint16_t, void *, size_t, TSK_OFF_T);
     extern uint8_t tsk_fs_attr_set_run(TSK_FS_FILE *,
         TSK_FS_ATTR * a_fs_attr, TSK_FS_ATTR_RUN * data_run_new,
         const char *name, TSK_FS_ATTR_TYPE_ENUM type, uint16_t id,
