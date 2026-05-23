@@ -139,6 +139,11 @@ extern "C" {
         const UTF16 ** sourceStart, const UTF16 * sourceEnd,
         UTF8 ** targetStart, UTF8 * targetEnd, TSKConversionFlags flags);
 
+    extern TSKConversionResult tsk_safeUTF16toUTF8(TSK_ENDIAN_ENUM,
+        const uint8_t *source, size_t source_len,
+	size_t number_of_characters,
+        UTF8 ** targetStart, UTF8 * targetEnd, TSKConversionFlags flags);
+
     extern TSKConversionResult
         tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
         const UTF16 * sourceEnd, UTF8 ** targetStart,

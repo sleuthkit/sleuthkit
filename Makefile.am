@@ -760,6 +760,7 @@ test_catch_runner_LDADD = $(TSK_LIBS)
 test_catch_runner_SOURCES = \
 	test/tsk/img/test_img.h \
 	test/tsk/base/test_tsk_error.cpp \
+	test/tsk/base/test_tsk_unicode.cpp \
 	test/tsk/img/test_aff4.cpp \
 	test/tsk/img/test_ewf.cpp \
 	test/tsk/img/test_img_io.cpp \

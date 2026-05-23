@@ -303,21 +303,20 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe, uintptr_t endaddr,
  * No other fields are copied.  Just the name into shrt_name. */
 static uint8_t
 ntfs_dent_copy_short_only(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
-    TSK_FS_NAME * fs_name)
+    uint32_t idxe_len, TSK_FS_NAME * fs_name)
 {
     ntfs_attr_fname *fname = (ntfs_attr_fname *) & idxe->stream;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
-    UTF16 *name16;
     UTF8 *name8;
     int retVal;
 
-    name16 = (UTF16 *) & fname->name;
     name8 = (UTF8 *) fs_name->shrt_name;
 
-    retVal = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
-        (UTF16 *) ((uintptr_t) name16 +
-            fname->nlen * 2), &name8,
-        (UTF8 *) ((uintptr_t) name8 +
+    // Note that NTFS uses UCS-2 (not UTF-16) hence lenient conversion is needed.
+    // See: https://osdfir.blogspot.com/2023/07/whats-in-file-path.html
+    retVal = tsk_safeUTF16toUTF8(fs->endian,
+        &fname->name, (size_t) idxe_len - 16, fname->nlen,
+       	&name8, (UTF8 *) ((uintptr_t) name8 +
             fs_name->shrt_name_size), TSKlenientConversion);
 
     if (retVal != TSKconversionOK) {
@@ -370,8 +369,8 @@ is_time(uint64_t t)
  * Process a list of index entries and add to FS_DIR
  *
  * @param a_is_del Set to 1 if these entries are for a deleted directory
- * @param idxe Buffer with index entries to process
- * @param idxe_len Length of idxe buffer (in bytes)
+ * @param a_idxe Buffer with index entries to process
+ * @param a_idxe_len Length of idxe buffer (in bytes)
  * @param used_len Length of data as reported by idexlist header (everything
  * after which and less then idxe_len is considered deleted)
  *
@@ -475,9 +474,8 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
 
         /* do some sanity checks on the deleted entries
          */
-        if ((tsk_getu16(fs->endian, a_idxe->strlen) == 0) ||
-            (((uintptr_t) a_idxe + tsk_getu16(fs->endian,
-                        a_idxe->idxlen)) > endaddr_alloc)) {
+	uint16_t idxlen = tsk_getu16(fs->endian, a_idxe->idxlen);
+        if ((idxlen == 0) || (((uintptr_t) a_idxe + idxlen) > endaddr_alloc)) {
 
             /* name space checks */
             if ((fname->nspace != NTFS_FNAME_POSIX) &&
@@ -539,7 +537,7 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
             if (fs_name_preventry) {
                 // check its the same entry and if so, add short name
                 if (fs_name_preventry->meta_addr == tsk_getu48(fs->endian, a_idxe->file_ref)) {
-                    ntfs_dent_copy_short_only(a_ntfs, a_idxe, fs_name_preventry);
+                    ntfs_dent_copy_short_only(a_ntfs, a_idxe, a_idxe_len, fs_name_preventry);
                 }
 
                 // regardless, add preventry to dir and move on to next entry.
