@@ -1,7 +1,8 @@
-This document provides information on building the debing package.
+This document provides information on building the debian package.
 
+Previously, the debian 'deb' packages were built by a perl script that operated on the git repo.
 
-
+This version builds a deb from the current directory. This has the advantage of allowing the CI/CD system to test building the deb directly and create it as an artifact of the CI/CD process.
 
 References
 ==========
