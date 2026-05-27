@@ -589,6 +589,27 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Marks each non-zero parent id in the collection as having children.
+	 * Memory-only update; safe to call from any thread.
+	 *
+	 * Used by the batched artifact-creation path to amortize the parent
+	 * has-children bookkeeping across a chunk of newly-created artifacts.
+	 *
+	 * @param parentIds Parent obj_ids; nulls and zeros are ignored to mirror
+	 *                  the single-row {@code addObject} semantics.
+	 */
+	void markParentsHaveChildren(Collection<Long> parentIds) {
+		if (parentIds == null || parentIds.isEmpty()) {
+			return;
+		}
+		for (Long parentId : parentIds) {
+			if (parentId != null && parentId != 0L) {
+				setHasChildren(parentId);
+			}
+		}
+	}
+
+	/**
 	 * Gets the communications manager for this case.
 	 *
 	 * @return The per case CommunicationsManager object.
@@ -5535,6 +5556,78 @@ public class SleuthkitCase {
 		}
 
 		return statement;
+	}
+
+	/**
+	 * Returns the cached prepared statement that reserves N obj_ids and N
+	 * artifact_ids in a single PostgreSQL round trip. PostgreSQL only.
+	 *
+	 * Used by {@link Blackboard#newDataArtifacts} to pre-allocate IDs before
+	 * the batched INSERTs. Keeping this accessor avoids widening the
+	 * {@link PREPARED_STATEMENT} enum visibility.
+	 */
+	PreparedStatement getReserveArtifactIdsStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_RESERVE_ARTIFACT_IDS, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached prepared statement that inserts into tsk_objects with
+	 * an explicit obj_id. PostgreSQL only — used by the batched artifact
+	 * creation path which pre-allocates obj_ids via
+	 * {@link #getReserveArtifactIdsStatement}.
+	 */
+	PreparedStatement getInsertObjectWithIdStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_INSERT_OBJECT_WITH_ID, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached prepared statement that inserts into
+	 * blackboard_artifacts with an explicit artifact_id. Reuses the same SQL
+	 * shape SQLite uses for the single-row path; explicit values are accepted
+	 * on PostgreSQL BIGSERIAL columns when the IDs are pre-allocated.
+	 */
+	PreparedStatement getInsertArtifactStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached prepared statement that inserts a row into
+	 * tsk_data_artifacts. Shared between the single-row {@code newDataArtifact}
+	 * path and the batched {@link Blackboard#newDataArtifacts} path.
+	 */
+	PreparedStatement getInsertDataArtifactStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_ARTIFACT, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached attribute-INSERT prepared statement matching the
+	 * given attribute value type. Mirrors the switch in
+	 * {@link #addBlackBoardAttribute}.
+	 */
+	PreparedStatement getInsertAttributeStatement(CaseDbConnection connection, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) throws SQLException, TskCoreException {
+		PREPARED_STATEMENT key;
+		switch (valueType) {
+			case STRING:
+			case JSON:
+				key = PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE;
+				break;
+			case BYTE:
+				key = PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE;
+				break;
+			case INTEGER:
+				key = PREPARED_STATEMENT.INSERT_INT_ATTRIBUTE;
+				break;
+			case LONG:
+			case DATETIME:
+				key = PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE;
+				break;
+			case DOUBLE:
+				key = PREPARED_STATEMENT.INSERT_DOUBLE_ATTRIBUTE;
+				break;
+			default:
+				throw new TskCoreException("Unrecognized attribute value type: " + valueType);
+		}
+		return connection.getPreparedStatement(key, Statement.NO_GENERATED_KEYS);
 	}
 
 	/**
@@ -13688,6 +13781,13 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
+		POSTGRESQL_RESERVE_ARTIFACT_IDS(
+				"SELECT nextval(pg_get_serial_sequence('tsk_objects', 'obj_id'))               AS obj_id, " //NON-NLS
+				+ "       nextval(pg_get_serial_sequence('blackboard_artifacts', 'artifact_id')) AS artifact_id " //NON-NLS
+				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
+				+ "ORDER BY ord"), //NON-NLS
+		POSTGRESQL_INSERT_OBJECT_WITH_ID("INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)"), //NON-NLS
+		INSERT_DATA_ARTIFACT("INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id, collected) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id, collected)"

@@ -524,6 +524,21 @@ public abstract class BlackboardArtifact implements Content {
 	}
 
 	/**
+	 * Adds attributes to this artifact's in-memory cache without performing
+	 * any DB write. Internal use only — the caller is responsible for having
+	 * already written the corresponding rows to {@code blackboard_attributes}.
+	 *
+	 * Mirrors the cache mutation done by {@link #addAttributes} (line 520).
+	 * Invoked by {@link Blackboard#newDataArtifacts} after batched
+	 * attribute INSERTs have been persisted.
+	 *
+	 * @param attributes attributes already written to the DB.
+	 */
+	void markAttributesAdded(Collection<BlackboardAttribute> attributes) {
+		attrsCache.addAll(attributes);
+	}
+
+	/**
 	 * This overiding implementation returns the unique path of the parent. It
 	 * does not include the Artifact name in the unique path.
 	 *
