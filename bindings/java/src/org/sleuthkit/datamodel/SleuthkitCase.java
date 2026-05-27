@@ -13953,6 +13953,10 @@ public class SleuthkitCase {
 				} else {
 					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}
+				// SSL constants already lead with "?ssl=true&..." — append with &.
+				connectionURL += "&reWriteBatchedInserts=true";
+			} else {
+				connectionURL += "?reWriteBatchedInserts=true";
 			}
 			comboPooledDataSource.setJdbcUrl(connectionURL);
 			comboPooledDataSource.setUser(info.getUserName());

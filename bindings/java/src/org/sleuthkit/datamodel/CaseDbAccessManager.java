@@ -837,15 +837,129 @@ public final class CaseDbAccessManager {
 	 */
 	@Beta
 	public void insert(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
-		
+
 		if (!preparedStatement.getType().equals(StatementType.INSERT)) {
 			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for insert operation");
 		}
-		
+
 		try {
 			preparedStatement.getStatement().executeUpdate();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error inserting row in table " + "" + " with sql = "+ "", ex);
+		}
+	}
+
+	/**
+	 * Adds the current parameter state of the prepared statement to its
+	 * driver-side batch. Does not execute. The caller is expected to call
+	 * {@link #insertBatch} once a batch's worth of rows has been added.
+	 *
+	 * <p>Mirrors {@link #insert(CaseDbPreparedStatement)} — the statement
+	 * must be of INSERT type. Use the usual {@code setLong}/{@code setString}/...
+	 * methods on the {@code CaseDbPreparedStatement} between {@code addToBatch}
+	 * calls to bind each row. Every column should be rebound for every row.</p>
+	 *
+	 * @param preparedStatement INSERT-type case prepared statement.
+	 *
+	 * @throws TskCoreException if the statement is not of INSERT type, or
+	 *                          if the underlying {@code addBatch} call fails.
+	 */
+	@Beta
+	public void addToBatch(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+
+		if (!preparedStatement.getType().equals(StatementType.INSERT)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for batch insert operation");
+		}
+
+		try {
+			preparedStatement.getStatement().addBatch();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding row to batch", ex);
+		}
+	}
+
+	/**
+	 * Executes the accumulated batch on the prepared statement and returns
+	 * the per-row update counts.
+	 *
+	 * <p>On PostgreSQL with the JDBC URL parameter
+	 * {@code reWriteBatchedInserts=true} set on the case-DB connection pool,
+	 * the driver fuses the batched rows into a single multi-VALUES INSERT at
+	 * the wire level. Without that flag, {@code executeBatch} still sends one
+	 * INSERT statement per row; the round-trip cost is unchanged.</p>
+	 *
+	 * <p>This method does NOT return generated keys. Callers using batch
+	 * insert must supply their own row identifiers.</p>
+	 *
+	 * <p>Failure semantics: if the underlying {@code executeBatch} throws,
+	 * this method wraps the exception in a {@link TskCoreException}. The
+	 * transaction is left as the caller configured it; the caller is
+	 * responsible for rolling back on failure (same contract as
+	 * {@link #insert(CaseDbPreparedStatement)}).</p>
+	 *
+	 * @param preparedStatement INSERT-type case prepared statement.
+	 *
+	 * @return Per-row update counts as returned by
+	 *         {@link PreparedStatement#executeBatch}.
+	 *
+	 * @throws TskCoreException if the statement is not of INSERT type, or
+	 *                          if the underlying {@code executeBatch} fails.
+	 */
+	@Beta
+	public int[] insertBatch(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+
+		if (!preparedStatement.getType().equals(StatementType.INSERT)) {
+			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for batch insert operation");
+		}
+
+		try {
+			return preparedStatement.getStatement().executeBatch();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error executing batch insert", ex);
+		}
+	}
+
+	/**
+	 * Returns a conservative upper bound on the number of rows that can be
+	 * accumulated via {@link #addToBatch} before {@link #insertBatch} must be
+	 * called.
+	 *
+	 * <p>The bound is derived from the prepared statement's parameter count
+	 * and the PostgreSQL wire-protocol ceiling of 65,535 bind parameters per
+	 * statement. With {@code reWriteBatchedInserts=true} the driver fuses
+	 * batched rows into a single multi-VALUES INSERT, and each batched row
+	 * contributes its columns as bind parameters, so the row ceiling is
+	 * approximately {@code 65,535 / columns}. A small margin is left below
+	 * the wire-level ceiling for safety.</p>
+	 *
+	 * <p>This bound does NOT account for driver-side memory pressure from
+	 * large string or blob columns. Callers writing wide rows with large
+	 * payloads (e.g. JSON, long text) should cap further at their own
+	 * discretion.</p>
+	 *
+	 * <p>SQLite has different parameter ceilings, but its JDBC driver
+	 * executes batches as a loop of single-row updates, so this bound is
+	 * not strictly necessary there; the value returned is still safe to
+	 * use.</p>
+	 *
+	 * @param preparedStatement Any case prepared statement.
+	 *
+	 * @return Maximum rows per batch driven by the PostgreSQL bind-parameter
+	 *         ceiling. Returns {@link Integer#MAX_VALUE} if the statement has
+	 *         no bind parameters.
+	 *
+	 * @throws TskCoreException if parameter metadata cannot be retrieved.
+	 */
+	@Beta
+	public int getMaxBatchSize(CaseDbPreparedStatement preparedStatement) throws TskCoreException {
+		try {
+			int paramsPerRow = preparedStatement.getStatement().getParameterMetaData().getParameterCount();
+			if (paramsPerRow <= 0) {
+				return Integer.MAX_VALUE;
+			}
+			return 65000 / paramsPerRow;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error determining max batch size for prepared statement", ex);
 		}
 	}
 
