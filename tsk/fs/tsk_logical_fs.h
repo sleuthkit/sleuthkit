@@ -60,6 +60,50 @@ enum LOGICALFS_DIR_LOADING_MODE {
 extern ssize_t logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, char *buf);
 extern ssize_t logicalfs_read(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_offset, size_t len, char *buf);
 
+/*
+ * Result of probing the host filesystem for a logical-FS path.
+ * Used to drive path-resolution dispatch (file paths and directory paths follow
+ * different resolution strategies because of how logical-FS inums are encoded).
+ */
+typedef enum {
+	TSK_LOGICAL_PATH_NOT_FOUND = 0,
+	TSK_LOGICAL_PATH_FILE = 1,
+	TSK_LOGICAL_PATH_DIRECTORY = 2
+} TSK_LOGICAL_PATH_TYPE;
+
+/*
+ * Probe the host filesystem for a path inside a logical FS image. Returns whether
+ * the path exists and, if so, whether it's a file or directory. Only meaningful for
+ * logical filesystems on Windows (returns NOT_FOUND otherwise).
+ *
+ * Caller is responsible for converting the path to wide-char with backslash separators
+ * before calling. The dispatcher in tsk_fs_path2inum already does this once for both
+ * logical-FS helpers, so callers should not need to do the conversion themselves.
+ *
+ * @param a_fs        File system. Must be of type TSK_FS_TYPE_LOGICAL.
+ * @param a_path_wide Wide-char path with backslash separators, relative to the FS root.
+ *
+ * @return TSK_LOGICAL_PATH_NOT_FOUND, TSK_LOGICAL_PATH_FILE, or TSK_LOGICAL_PATH_DIRECTORY
+ */
+extern TSK_LOGICAL_PATH_TYPE tsk_logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide);
+
+/*
+ * Logical-FS-specific path → inum resolver. Caller passes the result of an
+ * earlier tsk_logical_fs_check_path call to avoid re-probing the host filesystem.
+ *
+ * Same wide-char convention as tsk_logical_fs_check_path - caller should pre-convert
+ * once and pass the converted path to both functions.
+ *
+ * @param a_fs        File system. Must be of type TSK_FS_TYPE_LOGICAL.
+ * @param a_path_wide Wide-char path with backslash separators, relative to the FS root.
+ * @param path_type   Result of tsk_logical_fs_check_path(a_fs, a_path_wide).
+ * @param a_result    OUT: the resolved inum on success.
+ *
+ * @returns -1 on (system) error, 0 if found, and 1 if not found.
+ */
+extern int8_t tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide,
+    TSK_LOGICAL_PATH_TYPE path_type, TSK_INUM_T *a_result);
+
 #ifdef __cplusplus
 }
 #endif

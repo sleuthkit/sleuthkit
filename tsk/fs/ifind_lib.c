@@ -27,6 +27,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
+#include "tsk_logical_fs.h"     // for the logical-FS path probe
 
 
 /*******************************************************************************
@@ -178,6 +179,119 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     uint8_t is_done;
     char *strtok_last;
     *a_result = 0;
+
+#ifdef TSK_WIN32
+    // Logical file systems are backed by a directory tree on the host OS, so on
+    // Windows we can resolve paths much faster by leveraging Win32 APIs and the
+    // logical-FS-specific caches instead of going through the generic dir-open-meta
+    // walk. The optimization is gated on both the FS type and TSK_WIN32 because
+    // the host-side enumeration this relies on is only implemented for Windows.
+    if (a_fs != NULL && a_fs->ftype == TSK_FS_TYPE_LOGICAL) {
+        // TEMP: cumulative timing for prep, check_path, and path2inum.
+        // Remove this whole block (and the related counters/QueryPerformanceCounter
+        // calls below) when measurement is done.
+        static LARGE_INTEGER timer_freq = {0};
+        if (timer_freq.QuadPart == 0) {
+            QueryPerformanceFrequency(&timer_freq);
+        }
+        static long long total_prep_us = 0;
+        static long long total_check_us = 0;
+        static long long total_resolve_us = 0;
+        static long prep_count = 0;
+        static long check_count = 0;
+        static long resolve_count = 0;
+        LARGE_INTEGER t_prep_start, t_prep_end, t_check_end, t_resolve_end;
+        QueryPerformanceCounter(&t_prep_start);
+
+        // Both logical-FS helpers below need the path in UTF-16 with backslash
+        // separators. Convert once here so we don't duplicate the work in each
+        // helper. UTF-16 needs at most as many code units as UTF-8 has bytes
+        // (ASCII = 1:1, multi-byte sequences collapse), so the input byte length
+        // is always a safe upper bound for the wide-char allocation.
+        size_t a_path_len = strlen(a_path);
+        TSK_TCHAR *a_path_wide = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (a_path_len + 1));
+        if (a_path_wide == NULL) {
+            return -1;
+        }
+        UTF8 *utf8_src = (UTF8 *)a_path;
+        UTF16 *utf16_dst = (UTF16 *)a_path_wide;
+        TSKConversionResult cnv = tsk_UTF8toUTF16(
+            (const UTF8 **)&utf8_src, &utf8_src[a_path_len],
+            &utf16_dst, &utf16_dst[a_path_len], TSKlenientConversion);
+        if (cnv != TSKconversionOK) {
+            free(a_path_wide);
+            return 1;
+        }
+        // tsk_UTF8toUTF16 advances utf16_dst past the last written code unit.
+        // Null-terminate at that position. We allocated (a_path_len + 1) wchars
+        // so this write is always in-bounds.
+        *utf16_dst = L'\0';
+
+        // Convert forward slashes to backslashes (logical-FS internals use
+        // backslashes; the \\?\ long-path namespace requires backslashes).
+        for (TSK_TCHAR *p = a_path_wide; *p != L'\0'; p++) {
+            if (*p == L'/') *p = L'\\';
+        }
+
+        QueryPerformanceCounter(&t_prep_end);
+        total_prep_us +=
+            ((t_prep_end.QuadPart - t_prep_start.QuadPart) * 1000000) / timer_freq.QuadPart;
+        prep_count++;
+
+        TSK_LOGICAL_PATH_TYPE path_type = tsk_logical_fs_check_path(a_fs, a_path_wide);
+
+        QueryPerformanceCounter(&t_check_end);
+        total_check_us +=
+            ((t_check_end.QuadPart - t_prep_end.QuadPart) * 1000000) / timer_freq.QuadPart;
+        check_count++;
+
+        if (path_type == TSK_LOGICAL_PATH_NOT_FOUND) {
+            // Path doesn't exist on the host filesystem - skip the expensive walk
+            free(a_path_wide);
+            if (check_count % 1000 == 0) {
+                tsk_fprintf(stderr,
+                    "[path2inum timing] prep: n=%ld total_us=%lld avg=%.2f | "
+                    "check: n=%ld total_us=%lld avg=%.2f | "
+                    "resolve: n=%ld total_us=%lld avg=%.2f\n",
+                    prep_count, total_prep_us,
+                    prep_count ? (double)total_prep_us / (double)prep_count : 0.0,
+                    check_count, total_check_us,
+                    check_count ? (double)total_check_us / (double)check_count : 0.0,
+                    resolve_count, total_resolve_us,
+                    resolve_count ? (double)total_resolve_us / (double)resolve_count : 0.0);
+                fflush(stderr);
+            }
+            return 1;
+        }
+        // Path exists. Dispatch to the logical-FS-specific resolver, which uses
+        // get_inum_from_directory_path (cache-aware) for directories and the
+        // sorted-file-list lookup for files.
+        int8_t ret = tsk_logical_fs_path2inum(a_fs, a_path_wide, path_type, a_result);
+
+        QueryPerformanceCounter(&t_resolve_end);
+        total_resolve_us +=
+            ((t_resolve_end.QuadPart - t_check_end.QuadPart) * 1000000) / timer_freq.QuadPart;
+        resolve_count++;
+
+        free(a_path_wide);
+
+        if (check_count % 1000 == 0) {
+            tsk_fprintf(stderr,
+                "[path2inum timing] prep: n=%ld total_us=%lld avg=%.2f | "
+                "check: n=%ld total_us=%lld avg=%.2f | "
+                "resolve: n=%ld total_us=%lld avg=%.2f\n",
+                prep_count, total_prep_us,
+                prep_count ? (double)total_prep_us / (double)prep_count : 0.0,
+                check_count, total_check_us,
+                check_count ? (double)total_check_us / (double)check_count : 0.0,
+                resolve_count, total_resolve_us,
+                resolve_count ? (double)total_resolve_us / (double)resolve_count : 0.0);
+            fflush(stderr);
+        }
+        return ret;
+    }
+#endif
+
 
     // copy path to a buffer that we can modify
     clen = strlen(a_path) + 1;

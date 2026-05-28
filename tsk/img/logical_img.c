@@ -47,7 +47,8 @@ clear_inum_cache_entry(IMG_LOGICAL_INFO *logical_img_info, int index) {
 		free(logical_img_info->inum_cache[index].path);
 		logical_img_info->inum_cache[index].path = NULL;
 	}
-	logical_img_info->inum_cache[index].cache_age = 0;
+	logical_img_info->inum_cache[index].path_len = 0;
+	logical_img_info->inum_cache[index].last_used = 0;
 }
 
 /**
@@ -157,10 +158,12 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	logical_info->next_file_handle_cache_slot = 0;
 
 	// Initialize the inum cache
+	logical_info->inum_cache_clock = 0;
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		logical_info->inum_cache[i].inum = LOGICAL_INVALID_INUM;
 		logical_info->inum_cache[i].path = NULL;
-		logical_info->inum_cache[i].cache_age = 0;
+		logical_info->inum_cache[i].path_len = 0;
+		logical_info->inum_cache[i].last_used = 0;
 	}
 
 	// Initialize the per-directory file-list cache

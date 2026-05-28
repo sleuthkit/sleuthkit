@@ -22,8 +22,7 @@ extern "C" {
 #define LOGICAL_IMG_DEBUG_PRINT 0
 #define LOGICAL_IMG_CACHE_AGE   1000
 #define LOGICAL_FILE_HANDLE_CACHE_LEN 10
-#define LOGICAL_INUM_CACHE_LEN 50000
-#define LOGICAL_INUM_CACHE_MAX_AGE 10000
+#define LOGICAL_INUM_CACHE_LEN 5000
 #define LOGICAL_INUM_CACHE_MAX_PATH_LEN 500
 #define LOGICAL_INVALID_INUM 0
 #define DIR_FILE_LIST_CACHE_LEN 500  ///< Max number of cached directory file lists
@@ -41,7 +40,8 @@ extern "C" {
 	typedef struct {
 		TSK_INUM_T inum;
 		TSK_TCHAR *path;
-		int cache_age;
+		size_t path_len;     ///< Cached length of path (in TCHARs, excluding NUL), avoids TSTRLEN() in scan loops
+		uint32_t last_used;  ///< Logical-clock tick of last access; 0 = empty slot. Used for LRU eviction.
 	} LOGICAL_INUM_CACHE;
 
 	typedef struct {
@@ -71,6 +71,7 @@ extern "C" {
 
 		// Cache a number of inums / directory path pairs (protected by cache_lock)
 		LOGICAL_INUM_CACHE inum_cache[LOGICAL_INUM_CACHE_LEN];
+		uint32_t inum_cache_clock;  ///< Monotonically-increasing LRU clock; incremented on each cache access (protected by cache_lock)
 
 		// Cache of sorted file lists per directory (FIFO, protected by cache_lock)
 		DIR_FILE_LIST_CACHE dir_file_list_cache;
