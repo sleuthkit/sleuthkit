@@ -51,7 +51,8 @@ import org.junit.runners.Suite;
 	TimelineEventTypesTest.class,
 	CaseDbAccessManagerBatchTest.class,
 	BatchedArtifactTest.class,
-	
+	BatchedFileSystemFileTest.class,
+
 //  Note: these tests have dependencies on images being placed in the input folder: nps-2009-canon2-gen6, ntfs1-gen, and small2	
 //	org.sleuthkit.datamodel.TopDownTraversal.class, 
 //	org.sleuthkit.datamodel.SequentialTraversal.class, 
