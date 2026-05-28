@@ -350,15 +350,17 @@ populate_fs_file_from_win_find_data(const WIN32_FIND_DATA* fd, TSK_FS_FILE * a_f
 
 #ifdef TSK_WIN32
 /*
- * If the given path is too long for non-prefixed Win32 APIs, build a \\?\-prefixed
- * absolute path safe for those APIs in a newly-allocated buffer. Otherwise return
- * the input pointer unchanged (no allocation).
+ * If the given path is too long for non-prefixed Win32 APIs, build an extended-length
+ * prefixed absolute path safe for those APIs in a newly-allocated buffer. Otherwise
+ * return the input pointer unchanged (no allocation).
  *
- * Long-path branch uses GetFullPathNameW twice: once to query the required buffer
- * size, once to actually resolve. tsk_malloc allocates exactly the needed size
- * (no over-allocation). The \\?\ prefix tells the kernel to skip path normalization,
- * so the path it precedes must be absolute with no . or .. segments —
- * GetFullPathNameW ensures both.
+ * Local paths receive the \\?\ prefix.  UNC paths (\\server\share\...) require the
+ * \\?\UNC\ prefix with the leading \\ of the resolved path replaced, e.g.:
+ *   \\server\share\very\long\path  →  \\?\UNC\server\share\very\long\path
+ * Blindly prepending \\?\ to a UNC path produces \\?\\server\... which is invalid.
+ *
+ * The function resolves the path via GetFullPathNameW first (eliminating . and ..
+ * segments and making it absolute), then applies the appropriate prefix.
  *
  * Caller MUST check the returned pointer against the input to determine cleanup:
  *
@@ -385,27 +387,42 @@ get_win32_safe_path(const TSK_TCHAR *path) {
 		return const_cast<TSK_TCHAR *>(path);
 	}
 
-	// Long path: query required absolute-path size, then allocate exactly that
-	// many wchars plus the 4-char "\\?\" prefix and null terminator.
-	// GetFullPathNameW with size=0 returns the required size in TCHARs, including
-	// the terminating null.
+	// Long path: resolve to an absolute, normalized path first.
+	// GetFullPathNameW with size=0 returns the required buffer size in TCHARs,
+	// including the null terminator.
 	DWORD required = GetFullPathNameW(path, 0, NULL, NULL);
 	if (required == 0) {
 		return NULL;
 	}
-	TSK_TCHAR *buf = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (required + 4));
-	if (buf == NULL) {
+	TSK_TCHAR *resolved = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * required);
+	if (resolved == NULL) {
 		return NULL;
 	}
-	buf[0] = L'\\';
-	buf[1] = L'\\';
-	buf[2] = L'?';
-	buf[3] = L'\\';
-	DWORD written = GetFullPathNameW(path, required, &buf[4], NULL);
+	DWORD written = GetFullPathNameW(path, required, resolved, NULL);
 	if (written == 0 || written >= required) {
-		free(buf);
+		free(resolved);
 		return NULL;
 	}
+
+	// Choose the correct extended-length prefix.
+	// UNC paths start with \\ and need \\?\UNC\ (8 chars) with the leading \\
+	// of the resolved path replaced. Local paths use \\?\ (4 chars).
+	const bool is_unc = (resolved[0] == L'\\' && resolved[1] == L'\\');
+	const size_t prefix_len = is_unc ? 8 : 4;  // "\\?\UNC\" vs "\\?\"
+	const size_t path_skip  = is_unc ? 2 : 0;  // skip leading "\\" of UNC path
+
+	TSK_TCHAR *buf = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (prefix_len + written - path_skip + 1));
+	if (buf == NULL) {
+		free(resolved);
+		return NULL;
+	}
+
+	buf[0] = L'\\'; buf[1] = L'\\'; buf[2] = L'?'; buf[3] = L'\\';
+	if (is_unc) {
+		buf[4] = L'U'; buf[5] = L'N'; buf[6] = L'C'; buf[7] = L'\\';
+	}
+	TSTRNCPY(buf + prefix_len, resolved + path_skip, written - path_skip + 1);
+	free(resolved);
 	return buf;
 }
 #endif
@@ -613,7 +630,7 @@ load_dir_and_file_lists_win(
 		// Only evict the existing slot once every allocation has succeeded; that
 		// way a malloc failure leaves the previous occupant intact and the caller
 		// still gets valid data via the output vector below.
-		TSK_TCHAR** new_file_names = (TSK_TCHAR**)malloc(sizeof(TSK_TCHAR*) * file_names.size());
+		TSK_TCHAR** new_file_names = (TSK_TCHAR**)tsk_malloc(sizeof(TSK_TCHAR*) * file_names.size());
 		if (new_file_names == NULL) {
 			// Cache write failed; caller already has the data.
 			return TSK_OK;
@@ -623,7 +640,7 @@ load_dir_and_file_lists_win(
 		size_t alloc_failed_at = 0;
 		for (size_t j = 0; j < file_names.size(); j++) {
 			size_t name_len = file_names[j].length() + 1;
-			new_file_names[j] = (TSK_TCHAR*)malloc(sizeof(TSK_TCHAR) * name_len);
+			new_file_names[j] = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) * name_len);
 			if (new_file_names[j] == NULL) {
 				alloc_ok = false;
 				alloc_failed_at = j;
@@ -1690,6 +1707,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 
 		if (result != TSK_OK) {
 			// Error message already set
+			free(path);
 			return TSK_ERR;
 		}
 
@@ -1730,6 +1748,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_dir_open_meta: Error looking up inum from path");
+			free(path);
 			return TSK_ERR;
 		}
 
@@ -1741,6 +1760,7 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_UNICODE);
 			tsk_error_set_errstr("logicalfs_dir_open_meta: Error converting wide string");
+			free(path);
 			return TSK_ERR;
 		}
 		size_t name_len = strlen(utf8Name);
@@ -2046,6 +2066,13 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 #endif
 		// Load the path
 		TSK_TCHAR* path = load_path_from_inum(logical_fs_info, a_fs_file->meta->addr);
+		if (path == NULL) {
+			tsk_release_lock(&(img_info->cache_lock));
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+			tsk_error_set_errstr("logicalfs_read_block: Failed to resolve path for inum %" PRIuINUM, a_fs_file->meta->addr);
+			return TSK_ERR;
+		}
 
 #ifdef TSK_WIN32
 		QueryPerformanceCounter(&rb_t_loadpath_end);   // TEMP rb
@@ -2055,6 +2082,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		// Open the file
 		TSK_TCHAR *safe_path = get_win32_safe_path(path);
 		if (safe_path == NULL) {
+			tsk_release_lock(&(img_info->cache_lock));
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_GENFS);
 			tsk_error_set_errstr("logicalfs_read_block: Error looking up contents of directory (path too long) %" PRIttocTSK, path);
