@@ -205,7 +205,10 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             &utf16_dst, &utf16_dst[a_path_len], TSKlenientConversion);
         if (cnv != TSKconversionOK) {
             free(a_path_wide);
-            return 1;
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+            tsk_error_set_errstr("tsk_fs_path2inum: UTF-8 to UTF-16 conversion failed for path: %s", a_path);
+            return -1;
         }
 
         // tsk_UTF8toUTF16 advances utf16_dst past the last written code unit.
@@ -505,7 +508,11 @@ tsk_fs_ifind_path(TSK_FS_INFO * fs, TSK_TCHAR * tpath, TSK_INUM_T * result)
             free(cpath);
             return -1;
         }
-        return tsk_fs_path2inum(fs, cpath, result, NULL);
+        // tsk_fs_path2inum does not take ownership of cpath - it makes its own
+        // internal copy. Free our buffer before returning to avoid a leak.
+        int8_t ret = tsk_fs_path2inum(fs, cpath, result, NULL);
+        free(cpath);
+        return ret;
     }
 #else
     return tsk_fs_path2inum(fs, (const char *) tpath, result, NULL);

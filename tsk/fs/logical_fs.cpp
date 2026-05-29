@@ -20,7 +20,6 @@
 #include <set>
 #include <string.h>
 #include <cwctype>
-#include <assert.h>
 
 #include "tsk_fs_i.h"
 #include "tsk_fs.h"
@@ -39,9 +38,9 @@ using std::wstring;
 // before caching, but the function bodies live further down. Keep these signatures in
 // sync with the definitions below.
 #ifdef TSK_WIN32
-bool case_insensitive_compare(const std::wstring& a, const std::wstring& b);
+static bool case_insensitive_compare(const std::wstring& a, const std::wstring& b);
 #else
-bool case_insensitive_compare(const std::string& a, const std::string& b);
+static bool case_insensitive_compare(const std::string& a, const std::string& b);
 #endif
 
 static uint8_t
@@ -419,12 +418,13 @@ load_dir_and_file_lists_win(
 	if (logical_img_info == nullptr) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("load_dir_and_file_lists: Error building search path for directory %. Nullptr passed in." PRIttocTSK, base_path);
+		tsk_error_set_errstr("load_dir_and_file_lists: Nullptr logical_img_info passed in for directory %" PRIttocTSK,
+			base_path != NULL ? base_path : _TSK_T("(null)"));
 		return TSK_ERR;
 	}
 
-	// The dir_file_list_cache currently only stores file names, so it can only
-	// don't attempt to look up when just returning dirs
+	// The dir_file_list_cache currently only stores file names, so skip the
+	// cache path entirely when the caller is only after dir names.
 	bool can_cache = (dir_inum != LOGICAL_INVALID_INUM
 		&& mode != LOGICALFS_LOAD_DIRS_ONLY);
 
@@ -435,8 +435,8 @@ load_dir_and_file_lists_win(
 		tsk_take_lock(&img_info->cache_lock);
 		for (int i = 0; i < DIR_FILE_LIST_CACHE_LEN; i++) {
 			DIR_FILE_CACHE_ENTRY* entry = &logical_img_info->dir_file_list_cache.entries[i];
-			if (entry->dir_inum != dir_inum) {
-				continue;
+			if (entry->dir_inum == LOGICAL_INVALID_INUM || entry->dir_inum != dir_inum) {
+				continue; // empty slot or different dir
 			}
 
 			// Cache hit: copy the cached file list
@@ -482,22 +482,34 @@ load_dir_and_file_lists_win(
 		return TSK_ERR;
 	}
 
-	do {
-		if (shouldTreatAsDirectory(fd.dwFileAttributes)) {
-			if (mode == LOGICALFS_LOAD_ALL || mode == LOGICALFS_LOAD_DIRS_ONLY) {
-				// For the moment at least, skip . and ..
-				if (0 != wcsncmp(fd.cFileName, L"..", 3) && 0 != wcsncmp(fd.cFileName, L".", 3)) {
-					dir_names.push_back(wstring(fd.cFileName));
+	// std::vector::push_back can throw std::bad_alloc on grow. The Win32 enumeration
+	// handle (and search_path_wildcard) must be cleaned up before the exception
+	// unwinds the caller's stack, otherwise we leak a kernel handle per failure.
+	try {
+		do {
+			if (shouldTreatAsDirectory(fd.dwFileAttributes)) {
+				if (mode == LOGICALFS_LOAD_ALL || mode == LOGICALFS_LOAD_DIRS_ONLY) {
+					// For the moment at least, skip . and ..
+					if (0 != wcsncmp(fd.cFileName, L"..", 3) && 0 != wcsncmp(fd.cFileName, L".", 3)) {
+						dir_names.push_back(wstring(fd.cFileName));
+					}
 				}
 			}
-		}
-		else {
-			if (!file_cache_hit && (mode == LOGICALFS_LOAD_ALL || mode == LOGICALFS_LOAD_FILES_ONLY)) {
-				// For now, consider everything else to be a file
-				file_names.push_back(wstring(fd.cFileName));
+			else {
+				if (!file_cache_hit && (mode == LOGICALFS_LOAD_ALL || mode == LOGICALFS_LOAD_FILES_ONLY)) {
+					// For now, consider everything else to be a file
+					file_names.push_back(wstring(fd.cFileName));
+				}
 			}
-		}
-	} while (::FindNextFileW(hFind, &fd));
+		} while (::FindNextFileW(hFind, &fd));
+	} catch (const std::bad_alloc&) {
+		::FindClose(hFind);
+		free(search_path_wildcard);
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_GENFS);
+		tsk_error_set_errstr("load_dir_and_file_lists: Out of memory enumerating %" PRIttocTSK, base_path);
+		return TSK_ERR;
+	}
 
 	::FindClose(hFind);
 	free(search_path_wildcard);
@@ -549,6 +561,26 @@ load_dir_and_file_lists_win(
 		TSK_IMG_INFO* img_info = &logical_img_info->img_info;
 		tsk_take_lock(&img_info->cache_lock);
 
+		// Recheck under lock: another thread may have inserted the same dir while
+		// we were enumerating from disk. If we find an existing entry for this
+		// dir_inum, drop our temporaries instead of creating a duplicate slot.
+		bool already_cached = false;
+		for (int i = 0; i < DIR_FILE_LIST_CACHE_LEN; i++) {
+			TSK_INUM_T existing = logical_img_info->dir_file_list_cache.entries[i].dir_inum;
+			if (existing != LOGICAL_INVALID_INUM && existing == dir_inum) {
+				already_cached = true;
+				break;
+			}
+		}
+		if (already_cached) {
+			tsk_release_lock(&img_info->cache_lock);
+			for (size_t k = 0; k < file_names.size(); k++) {
+				free(new_file_names[k]);
+			}
+			free(new_file_names);
+			return TSK_OK;
+		}
+
 		int insert_idx = logical_img_info->dir_file_list_cache.next_insert_index;
 		DIR_FILE_CACHE_ENTRY* entry = &logical_img_info->dir_file_list_cache.entries[insert_idx];
 
@@ -579,23 +611,33 @@ load_dir_and_file_lists_win(
  * Cache entries store paths without the base_path prefix to save memory and to keep
  * LOGICAL_INUM_CACHE_MAX_PATH_LEN evaluating only the meaningful portion of the path.
  *
- * The caller MUST guarantee that 'path' starts with logical_fs_info->base_path. This
- * is verified by an assertion in debug builds. Violating this precondition advances
- * the returned pointer past the end of 'path' (or into the wrong substring), leading
- * to silent memory corruption or wrong cache matches.
+ * Returns NULL if 'path' does not start with logical_fs_info->base_path (or if either
+ * argument is NULL). Callers MUST handle this — without the runtime check, a bogus
+ * pointer arithmetic result would silently corrupt subsequent cache comparisons.
  *
  * @param logical_fs_info The logical file system (must have a non-NULL base_path)
  * @param path            A full path that starts with logical_fs_info->base_path
  *
- * @return Pointer into 'path' just past the base_path prefix
+ * @return Pointer into 'path' just past the base_path prefix, or NULL on precondition
+ *         violation. The returned pointer is non-owning — do not free.
  */
 static const TSK_TCHAR*
 get_path_relative_to_base(const LOGICALFS_INFO* logical_fs_info, const TSK_TCHAR* path) {
+	if (path == NULL || logical_fs_info == NULL || logical_fs_info->base_path == NULL) {
+		return NULL;
+	}
 	size_t base_len = TSTRLEN(logical_fs_info->base_path);
+	if (TSTRLEN(path) < base_len) {
+		return NULL;
+	}
 #ifdef TSK_WIN32
-	assert(_wcsnicmp(path, logical_fs_info->base_path, base_len) == 0);
+	if (_wcsnicmp(path, logical_fs_info->base_path, base_len) != 0) {
+		return NULL;
+	}
 #else
-	assert(strncmp(path, logical_fs_info->base_path, base_len) == 0);
+	if (strncmp(path, logical_fs_info->base_path, base_len) != 0) {
+		return NULL;
+	}
 #endif
 	return path + base_len;
 }
@@ -625,6 +667,10 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHA
 	// Cache entries store paths relative to base_path. Strip the base prefix from target_path
 	// so comparisons are performed entirely in relative-path space.
 	const TSK_TCHAR *relative_target = get_path_relative_to_base(logical_fs_info, target_path);
+	if (relative_target == NULL) {
+		tsk_release_lock(&(img_info->cache_lock));
+		return TSK_ERR;
+	}
 	size_t base_len = TSTRLEN(logical_fs_info->base_path);
 	size_t target_len = TSTRLEN(relative_target);
 
@@ -717,6 +763,10 @@ find_closest_sibling_match_in_cache(LOGICALFS_INFO* logical_fs_info, const TSK_T
 	// caller-supplied full OS paths so comparisons are performed in relative-path space.
 	const TSK_TCHAR *relative_target = get_path_relative_to_base(logical_fs_info, target_path);
 	const TSK_TCHAR *relative_parent = get_path_relative_to_base(logical_fs_info, parent_path);
+	if (relative_target == NULL || relative_parent == NULL) {
+		tsk_release_lock(&(img_info->cache_lock));
+		return TSK_ERR;
+	}
 
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if (logical_img_info->inum_cache[i].inum == LOGICAL_INVALID_INUM) {
@@ -792,7 +842,7 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 		if (logical_img_info->inum_cache[i].inum == LOGICAL_INVALID_INUM) {
 			break; // Entries are packed from index 0; first empty slot means no more entries.
 		}
-		if ((target_path == NULL) && (logical_img_info->inum_cache[i].inum == target_inum)) {
+		if (logical_img_info->inum_cache[i].inum == target_inum) {
 			// Mark as recently used and reconstruct the full OS path by prepending base_path
 			logical_img_info->inum_cache[i].last_used = ++logical_img_info->inum_cache_clock;
 			size_t base_len = TSTRLEN(logical_fs_info->base_path);
@@ -804,6 +854,7 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 			}
 			TSTRNCPY(target_path, logical_fs_info->base_path, base_len + 1);
 			TSTRNCAT(target_path, logical_img_info->inum_cache[i].path, target_path_len - base_len);
+			break; // inums are unique in the cache; no need to scan further.
 		}
 	}
 
@@ -841,7 +892,7 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 	// Single pass: check for an existing entry, track the first empty slot, and track the LRU
 	// candidate — all at once so we never walk the array more than once.
 	int next_slot = -1;
-	uint32_t oldest_tick = UINT32_MAX;
+	uint64_t oldest_tick = UINT64_MAX;
 	for (int i = 0; i < LOGICAL_INUM_CACHE_LEN; i++) {
 		if (logical_img_info->inum_cache[i].inum == LOGICAL_INVALID_INUM) {
 			// First empty slot — use it and stop looking for a victim.
@@ -893,7 +944,7 @@ add_directory_to_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *path, T
 // This should be done with a template, but I'm lazy.
 // Windows version
 #ifdef TSK_WIN32
-bool case_insensitive_compare(const std::wstring& a, const std::wstring& b) {
+static bool case_insensitive_compare(const std::wstring& a, const std::wstring& b) {
 	return std::lexicographical_compare(
 		a.begin(), a.end(),
 		b.begin(), b.end(),
@@ -903,7 +954,7 @@ bool case_insensitive_compare(const std::wstring& a, const std::wstring& b) {
 	);
 }
 #else
-bool case_insensitive_compare(const string& a, const string& b) {
+static bool case_insensitive_compare(const string& a, const string& b) {
 	return std::lexicographical_compare(
 		a.begin(), a.end(),
 		b.begin(), b.end(),
@@ -1011,19 +1062,21 @@ search_directory_recursive(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR * pa
 #endif
 	size_t parent_path_len = TSTRLEN(current_path);
 
-	// If we were given a sibling directory, look for it in the list so we can start the search there
+	// If we were given a sibling directory, look for it in the list so we can start the search there.
+	// dir_names is sorted via case_insensitive_compare in load_dir_and_file_lists_win, so use the
+	// same predicate for an O(log N) binary search instead of an O(N) linear scan.
 	size_t starting_dir_index = 0;
 	if (sibling_inum != LOGICAL_INVALID_INUM && sibling_name != NULL) {
-		for (size_t i = 0; i < dir_names.size(); i++) {
 #ifdef TSK_WIN32
-			if (0 == _wcsicmp(dir_names[i].c_str(), sibling_name)) {
-				// Found it. Save the index and adjust the last inum (LOGICAL_INUM_DIR_INC will get added to last_inum_ptr)
-				starting_dir_index = i;
-				*last_inum_ptr = sibling_inum - LOGICAL_INUM_DIR_INC;
-				break;
-			}
-#endif
+		std::wstring needle(sibling_name);
+		auto it = std::lower_bound(dir_names.begin(), dir_names.end(),
+			needle, case_insensitive_compare);
+		if (it != dir_names.end() && !case_insensitive_compare(needle, *it)) {
+			// Found it. Save the index and adjust the last inum (LOGICAL_INUM_DIR_INC will get added to last_inum_ptr)
+			starting_dir_index = (size_t)(it - dir_names.begin());
+			*last_inum_ptr = sibling_inum - LOGICAL_INUM_DIR_INC;
 		}
+#endif
 	}
 
 	for (size_t i = starting_dir_index; i < dir_names.size(); i++) {
@@ -1246,21 +1299,17 @@ logicalfs_file_add_meta(TSK_FS_INFO *a_fs, TSK_FS_FILE * a_fs_file,
 	WIN32_FIND_DATAW fd;
 	// path is built from base_path which is always \\?\-prefixed — no conversion needed.
 	HANDLE hFind = ::FindFirstFileW(path, &fd);
-
-	free(path);
-	path = nullptr;
-
 	if (hFind != INVALID_HANDLE_VALUE) {
 		TSK_RETVAL_ENUM result = populate_fs_file_from_win_find_data(&fd, a_fs_file);
 		::FindClose(hFind);
+		free(path);
 		return result;
 	}
-	else {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_FS_GENFS);
-		tsk_error_set_errstr("logicalfs_file_add_meta: Error loading directory %" PRIttocTSK, path);
-		return TSK_ERR;
-	}
+	tsk_error_reset();
+	tsk_error_set_errno(TSK_ERR_FS_GENFS);
+	tsk_error_set_errstr("logicalfs_file_add_meta: Error loading directory %" PRIttocTSK, path);
+	free(path);
+	return TSK_ERR;
 #endif
 	return TSK_OK;
 }
@@ -1295,6 +1344,9 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 	// directory inum.
 	TSK_TCHAR* path = load_path_from_inum(logical_fs_info, last_assigned_inum);
 	if (path == NULL) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+		tsk_error_set_errstr("find_max_inum: failed to resolve path for last assigned inum %" PRIuINUM, last_assigned_inum);
 		return LOGICAL_INVALID_INUM;
 	}
 
@@ -1303,8 +1355,8 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 #ifdef TSK_WIN32
 	vector<wstring> file_names;
 	vector<wstring> dir_names;
-	IMG_LOGICAL_INFO* img_info_fmi = (IMG_LOGICAL_INFO*)logical_fs_info->fs_info.img_info;
-	if (TSK_OK != load_dir_and_file_lists_win(img_info_fmi, last_assigned_inum,
+	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)logical_fs_info->fs_info.img_info;
+	if (TSK_OK != load_dir_and_file_lists_win(logical_img_info, last_assigned_inum,
 			path, file_names, dir_names, LOGICALFS_LOAD_FILES_ONLY)) {
 		free(path);
 		return LOGICAL_INVALID_INUM;
@@ -1319,11 +1371,11 @@ find_max_inum(LOGICALFS_INFO *logical_fs_info) {
 }
 
 /*
-* Find the inum corresponding to the given dir path
+* Find the inum corresponding to the given directory path.
 *
 * @param logical_fs_info The logical file system
-* @param base_path  Will be loaded with path corresponding to the inum
-* @param dir_path   Size of base_path
+* @param base_path       The host path that represents the FS root (logical_fs_info->base_path)
+* @param dir_path        Relative path (no leading separator) of the directory to resolve
 *
 * @return The corresponding inum, or LOGICAL_INVALID_INUM if an error occurs
 */
@@ -1338,6 +1390,9 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 	size_t base_len = TSTRLEN(base_path) + 1;
 	size_t len = base_len + dir_path.length();
 	TSK_TCHAR *path_buf = (TSK_TCHAR*)tsk_malloc(sizeof(TSK_TCHAR) *(len + 2));
+	if (path_buf == NULL) {
+		return LOGICAL_INVALID_INUM;
+	}
 	TSTRNCPY(path_buf, base_path, base_len);
 #ifdef TSK_WIN32
 	TSTRNCAT(path_buf, L"\\", 2);
@@ -1358,6 +1413,7 @@ get_inum_from_directory_path(LOGICALFS_INFO *logical_fs_info, TSK_TCHAR *base_pa
 
 	TSK_RETVAL_ENUM result = find_closest_path_match_in_cache(logical_fs_info, path_buf, &cache_path, &cache_inum);
 	if (result != TSK_OK) {
+		free(path_buf);
 		return LOGICAL_INVALID_INUM;
 	}
 	if (cache_inum != LOGICAL_INVALID_INUM) {
@@ -1499,8 +1555,8 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	// LOAD_ALL: caching doesn't apply yet (cache only stores file names, not dir names),
 	// so pass NULL/LOGICAL_INVALID_INUM to bypass the cache path. Future work could extend
 	// the cache to also store dir names, which would let this call benefit too.
-	IMG_LOGICAL_INFO* img_info_lfp = (IMG_LOGICAL_INFO*)a_fs->img_info;
-	if (TSK_OK != load_dir_and_file_lists_win(img_info_lfp, a_addr,
+	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)a_fs->img_info;
+	if (TSK_OK != load_dir_and_file_lists_win(logical_img_info, a_addr,
 			path, file_names, dir_names, LOGICALFS_LOAD_ALL)) {
 		// Error message already set
 		free(path);
@@ -1511,8 +1567,10 @@ logicalfs_dir_open_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR ** a_fs_dir,
 	vector<string> dir_names;
 #endif
 
-	// Add the folders
-	// CR: This is an area of concern regarding performance
+	// Add the folders. Each get_inum_from_directory_path call may walk the cache
+	// and/or enumerate from disk for sibling lookups; for large directories this
+	// dominates dir_open_meta time. Future work: extend dir_file_list_cache to
+	// also store dir_names so this loop can hit the cache like LOAD_FILES_ONLY.
 	for (auto it = begin(dir_names); it != end(dir_names); ++it) {
 		TSK_INUM_T dir_inum = get_inum_from_directory_path(logical_fs_info, path, *it);
 		if (dir_inum == LOGICAL_INVALID_INUM) {
@@ -1801,12 +1859,13 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
 			NULL);
 		if (fd == INVALID_HANDLE_VALUE) {
-			tsk_release_lock(&(img_info->cache_lock));
 			int lastError = (int)GetLastError();
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_READ);
 			tsk_error_set_errstr("logical_fs_read_block: file \"%" PRIttocTSK
 				"\" - %d", path, lastError);
+			free(path);
+			tsk_release_lock(&(img_info->cache_lock));
 			return -1;
 		}
 #else
@@ -1814,6 +1873,9 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		// use path variable on non-win32 builds to prevent error
 		(void)path;
 #endif
+		// path is only needed to open the handle; the cache stores the handle, not the path.
+		free(path);
+		path = NULL;
 
 		// Set up this cache entry
 		file_handle_entry = &(logical_img_info->file_handle_cache[logical_img_info->next_file_handle_cache_slot]);
@@ -2219,11 +2281,15 @@ tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide,
 	std::wstring relative_path = a_path_wide + 1;
 
 	// ── Directory path: one-shot resolution via the existing wrapper ──
+	// tsk_logical_fs_check_path already verified the path exists on disk, so any
+	// LOGICAL_INVALID_INUM result here is a system error (alloc failure, host FS
+	// race, internal bug) rather than a genuine "not found". Return -1 per the
+	// tsk_fs_path2inum contract (-1 system error, 1 not found).
 	if (path_type == TSK_LOGICAL_PATH_DIRECTORY) {
 		TSK_INUM_T inum = get_inum_from_directory_path(logical_fs_info,
 			logical_fs_info->base_path, relative_path);
 		if (inum == LOGICAL_INVALID_INUM) {
-			return 1;
+			return -1;
 		}
 		*a_result = inum;
 		return 0;
@@ -2243,13 +2309,14 @@ tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide,
 	}
 
 	// Resolve parent dir → inum. Empty parent_relative means file is in root.
+	// As above: path was already confirmed to exist, so failure here is a system error.
 	TSK_INUM_T parent_inum;
 	if (parent_relative.empty()) {
 		parent_inum = a_fs->root_inum;
 	} else {
 		parent_inum = get_inum_from_directory_path(logical_fs_info, logical_fs_info->base_path, parent_relative);
 		if (parent_inum == LOGICAL_INVALID_INUM) {
-			return 1;
+			return -1;
 		}
 	}
 
@@ -2267,21 +2334,26 @@ tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide,
 	// enumerates the parent directory from disk.
 	std::vector<std::wstring> file_names;
 	std::vector<std::wstring> dir_names_unused;
-	IMG_LOGICAL_INFO* img_info_lfp = (IMG_LOGICAL_INFO*)a_fs->img_info;
-	if (TSK_OK != load_dir_and_file_lists_win(img_info_lfp, parent_inum,
+	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)a_fs->img_info;
+	if (TSK_OK != load_dir_and_file_lists_win(logical_img_info, parent_inum,
 			parent_full_path.c_str(),
 			file_names, dir_names_unused, LOGICALFS_LOAD_FILES_ONLY)) {
-		return 1;
+		// load_dir_and_file_lists_win failure is a real system error (alloc /
+		// FindFirstFileW), not a missing path. Return -1 per the contract.
+		return -1;
 	}
 
-	// Find the filename in the sorted list (case-insensitive).
-	for (size_t i = 0; i < file_names.size(); i++) {
-		if (_wcsicmp(file_names[i].c_str(), filename.c_str()) == 0) {
-			// File inum encoding: high 32 bits = parent dir id, low 32 bits = (index + 1).
-			// parent_inum already has the dir id in the high bits and zeros in the low.
-			*a_result = parent_inum | ((TSK_INUM_T)i + 1);
-			return 0;
-		}
+	// Find the filename in the sorted list. file_names is sorted via
+	// case_insensitive_compare in load_dir_and_file_lists_win, so use the same
+	// predicate for an O(log N) binary search instead of an O(N) linear scan.
+	auto it = std::lower_bound(file_names.begin(), file_names.end(),
+		filename, case_insensitive_compare);
+	if (it != file_names.end() && !case_insensitive_compare(filename, *it)) {
+		// File inum encoding: high 32 bits = parent dir id, low 32 bits = (index + 1).
+		// parent_inum already has the dir id in the high bits and zeros in the low.
+		size_t i = (size_t)(it - file_names.begin());
+		*a_result = parent_inum | ((TSK_INUM_T)i + 1);
+		return 0;
 	}
 
 	// Filename wasn't in the parent's file list. Shouldn't happen if path_type was

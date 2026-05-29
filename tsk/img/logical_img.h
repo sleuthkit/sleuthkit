@@ -41,11 +41,11 @@ extern "C" {
 		TSK_INUM_T inum;
 		TSK_TCHAR *path;
 		size_t path_len;     ///< Cached length of path (in TCHARs, excluding NUL), avoids TSTRLEN() in scan loops
-		uint32_t last_used;  ///< Logical-clock tick of last access; 0 = empty slot. Used for LRU eviction.
+		uint64_t last_used;  ///< Logical-clock tick of last access; 0 = empty slot. Used for LRU eviction. uint64_t so it cannot wrap in any realistic run.
 	} LOGICAL_INUM_CACHE;
 
 	typedef struct {
-		TSK_INUM_T dir_inum;           ///< Directory inode (0 = empty slot)
+		TSK_INUM_T dir_inum;           ///< Directory inode (LOGICAL_INVALID_INUM = empty slot)
 		TSK_TCHAR** file_names;        ///< Array of file name pointers (wide strings)
 		size_t file_count;             ///< Number of files in this directory
 	} DIR_FILE_CACHE_ENTRY;
@@ -57,6 +57,17 @@ extern "C" {
 
     typedef struct {
 		TSK_IMG_INFO img_info;
+		/**
+		 * Fully resolved, \\?\-prefixed host path that represents the root of
+		 * the logical image, set at logical_open time. Invariants:
+		 *   - Never has a trailing separator.
+		 *   - Consumers that build child paths MUST prepend their own '\\' before
+		 *     appending the relative component (the inum cache stores relative
+		 *     paths that start without a separator).
+		 *   - Drive-root inputs like "C:\" are NOT a supported use case — they
+		 *     resolve to "\\?\C:" which several Win32 APIs reject. Logical
+		 *     images are expected to point at a real directory subtree.
+		 */
 		TSK_TCHAR * base_path;
 		uint8_t is_winobj;
 
@@ -71,7 +82,7 @@ extern "C" {
 
 		// Cache a number of inums / directory path pairs (protected by cache_lock)
 		LOGICAL_INUM_CACHE inum_cache[LOGICAL_INUM_CACHE_LEN];
-		uint32_t inum_cache_clock;  ///< Monotonically-increasing LRU clock; incremented on each cache access (protected by cache_lock)
+		uint64_t inum_cache_clock;  ///< Monotonically-increasing LRU clock; incremented on each cache access (protected by cache_lock). uint64_t so it cannot wrap in any realistic run.
 
 		// Cache of sorted file lists per directory (FIFO, protected by cache_lock)
 		DIR_FILE_LIST_CACHE dir_file_list_cache;

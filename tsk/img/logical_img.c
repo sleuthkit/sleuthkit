@@ -16,6 +16,20 @@
 #include "logical_img.h"
 #include "tsk/util/file_system_utils.h"
 
+#ifdef TSK_WIN32
+// Extended-length path prefixes. "\\?\" enables long-path support for Win32 APIs;
+// UNC paths use "\\?\UNC\" with the leading "\\" of the original path replaced.
+static const TSK_TCHAR LOGICAL_LONG_PATH_PREFIX[]     = L"\\\\?\\";
+static const TSK_TCHAR LOGICAL_UNC_LONG_PATH_PREFIX[] = L"\\\\?\\UNC\\";
+// Wide-char lengths (excluding trailing NUL).
+#define LOGICAL_LONG_PATH_PREFIX_LEN     ((sizeof(LOGICAL_LONG_PATH_PREFIX)     / sizeof(TSK_TCHAR)) - 1)
+#define LOGICAL_UNC_LONG_PATH_PREFIX_LEN ((sizeof(LOGICAL_UNC_LONG_PATH_PREFIX) / sizeof(TSK_TCHAR)) - 1)
+// Number of leading characters to skip from the source path when applying the
+// corresponding prefix (UNC strips the leading "\\" so it isn't duplicated).
+#define LOGICAL_LONG_PATH_SOURCE_SKIP     0
+#define LOGICAL_UNC_LONG_PATH_SOURCE_SKIP 2
+#endif
+
 /**
  * \internal
  * Display information about the disk image set.
@@ -169,7 +183,7 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	// Initialize the per-directory file-list cache
 	logical_info->dir_file_list_cache.next_insert_index = 0;
 	for (int i = 0; i < DIR_FILE_LIST_CACHE_LEN; i++) {
-		logical_info->dir_file_list_cache.entries[i].dir_inum = 0;  // 0 = empty slot
+		logical_info->dir_file_list_cache.entries[i].dir_inum = LOGICAL_INVALID_INUM;
 		logical_info->dir_file_list_cache.entries[i].file_names = NULL;
 		logical_info->dir_file_list_cache.entries[i].file_count = 0;
 	}
@@ -202,17 +216,28 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	// UNC paths (\\server\share) require \\?\UNC\ with the leading \\ replaced.
 	DWORD required = GetFullPathNameW(logical_info->base_path, 0, NULL, NULL);
 	if (required == 0) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+		tsk_error_set_errstr("logical_open: GetFullPathNameW failed for %" PRIttocTSK " (error %d)",
+			logical_info->base_path, (int)GetLastError());
+		free(logical_info->base_path);
 		tsk_img_free(img_info);
 		return NULL;
 	}
 	TSK_TCHAR *resolved = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * required);
 	if (resolved == NULL) {
+		free(logical_info->base_path);
 		tsk_img_free(img_info);
 		return NULL;
 	}
 	DWORD written = GetFullPathNameW(logical_info->base_path, required, resolved, NULL);
 	if (written == 0 || written >= required) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+		tsk_error_set_errstr("logical_open: GetFullPathNameW failed for %" PRIttocTSK " (error %d)",
+			logical_info->base_path, (int)GetLastError());
 		free(resolved);
+		free(logical_info->base_path);
 		tsk_img_free(img_info);
 		return NULL;
 	}
@@ -222,11 +247,13 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 		written--;
 	}
 
-	// Choose prefix: UNC paths need \\?\UNC\ (8 chars) replacing the leading \\;
-	// local paths need \\?\ (4 chars).
+	// Choose prefix based on path type. UNC inputs (\\server\share\...) take the
+	// \\?\UNC\ prefix with the leading "\\" of the source replaced; non-UNC inputs
+	// take the plain \\?\ prefix.
 	const int is_unc = (resolved[0] == L'\\' && resolved[1] == L'\\');
-	const size_t prefix_len = is_unc ? 8 : 4;
-	const size_t path_skip  = is_unc ? 2 : 0;
+	const TSK_TCHAR *prefix = is_unc ? LOGICAL_UNC_LONG_PATH_PREFIX : LOGICAL_LONG_PATH_PREFIX;
+	const size_t prefix_len = is_unc ? LOGICAL_UNC_LONG_PATH_PREFIX_LEN : LOGICAL_LONG_PATH_PREFIX_LEN;
+	const size_t path_skip  = is_unc ? LOGICAL_UNC_LONG_PATH_SOURCE_SKIP : LOGICAL_LONG_PATH_SOURCE_SKIP;
 
 	free(logical_info->base_path);
 	logical_info->base_path = (TSK_TCHAR *)tsk_malloc(
@@ -236,16 +263,7 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 		tsk_img_free(img_info);
 		return NULL;
 	}
-	logical_info->base_path[0] = L'\\';
-	logical_info->base_path[1] = L'\\';
-	logical_info->base_path[2] = L'?';
-	logical_info->base_path[3] = L'\\';
-	if (is_unc) {
-		logical_info->base_path[4] = L'U';
-		logical_info->base_path[5] = L'N';
-		logical_info->base_path[6] = L'C';
-		logical_info->base_path[7] = L'\\';
-	}
+	memcpy(logical_info->base_path, prefix, prefix_len * sizeof(TSK_TCHAR));
 	TSTRNCPY(logical_info->base_path + prefix_len, resolved + path_skip, written - path_skip + 1);
 	free(resolved);
 
