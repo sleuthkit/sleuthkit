@@ -187,22 +187,6 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     // walk. The optimization is gated on both the FS type and TSK_WIN32 because
     // the host-side enumeration this relies on is only implemented for Windows.
     if (a_fs != NULL && a_fs->ftype == TSK_FS_TYPE_LOGICAL) {
-        // TEMP: cumulative timing for prep, check_path, and path2inum.
-        // Remove this whole block (and the related counters/QueryPerformanceCounter
-        // calls below) when measurement is done.
-        static LARGE_INTEGER timer_freq = {0};
-        if (timer_freq.QuadPart == 0) {
-            QueryPerformanceFrequency(&timer_freq);
-        }
-        static long long total_prep_us = 0;
-        static long long total_check_us = 0;
-        static long long total_resolve_us = 0;
-        static long prep_count = 0;
-        static long check_count = 0;
-        static long resolve_count = 0;
-        LARGE_INTEGER t_prep_start, t_prep_end, t_check_end, t_resolve_end;
-        QueryPerformanceCounter(&t_prep_start);
-
         // Both logical-FS helpers below need the path in UTF-16 with backslash
         // separators. Convert once here so we don't duplicate the work in each
         // helper. UTF-16 needs at most as many code units as UTF-8 has bytes
@@ -235,34 +219,11 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             if (*p == L'/') *p = L'\\';
         }
 
-        QueryPerformanceCounter(&t_prep_end);
-        total_prep_us +=
-            ((t_prep_end.QuadPart - t_prep_start.QuadPart) * 1000000) / timer_freq.QuadPart;
-        prep_count++;
-
         TSK_LOGICAL_PATH_TYPE path_type = tsk_logical_fs_check_path(a_fs, a_path_wide);
-
-        QueryPerformanceCounter(&t_check_end);
-        total_check_us +=
-            ((t_check_end.QuadPart - t_prep_end.QuadPart) * 1000000) / timer_freq.QuadPart;
-        check_count++;
 
         if (path_type == TSK_LOGICAL_PATH_NOT_FOUND) {
             // Path doesn't exist on the host filesystem - skip the expensive walk
             free(a_path_wide);
-            if (check_count % 1000 == 0) {
-                tsk_fprintf(stderr,
-                    "[path2inum timing] prep: n=%ld total_us=%lld avg=%.2f | "
-                    "check: n=%ld total_us=%lld avg=%.2f | "
-                    "resolve: n=%ld total_us=%lld avg=%.2f\n",
-                    prep_count, total_prep_us,
-                    prep_count ? (double)total_prep_us / (double)prep_count : 0.0,
-                    check_count, total_check_us,
-                    check_count ? (double)total_check_us / (double)check_count : 0.0,
-                    resolve_count, total_resolve_us,
-                    resolve_count ? (double)total_resolve_us / (double)resolve_count : 0.0);
-                fflush(stderr);
-            }
             return 1;
         }
 
@@ -271,26 +232,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         // sorted-file-list lookup for files.
         int8_t ret = tsk_logical_fs_path2inum(a_fs, a_path_wide, path_type, a_result);
 
-        QueryPerformanceCounter(&t_resolve_end);
-        total_resolve_us +=
-            ((t_resolve_end.QuadPart - t_check_end.QuadPart) * 1000000) / timer_freq.QuadPart;
-        resolve_count++;
-
         free(a_path_wide);
-
-        if (check_count % 1000 == 0) {
-            tsk_fprintf(stderr,
-                "[path2inum timing] prep: n=%ld total_us=%lld avg=%.2f | "
-                "check: n=%ld total_us=%lld avg=%.2f | "
-                "resolve: n=%ld total_us=%lld avg=%.2f\n",
-                prep_count, total_prep_us,
-                prep_count ? (double)total_prep_us / (double)prep_count : 0.0,
-                check_count, total_check_us,
-                check_count ? (double)total_check_us / (double)check_count : 0.0,
-                resolve_count, total_resolve_us,
-                resolve_count ? (double)total_resolve_us / (double)resolve_count : 0.0);
-            fflush(stderr);
-        }
         return ret;
     }
 #endif

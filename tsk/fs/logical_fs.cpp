@@ -21,7 +21,6 @@
 #include <string.h>
 #include <cwctype>
 #include <assert.h>
-#include <chrono>   // TEMP: for sort-timing instrumentation; remove when done
 
 #include "tsk_fs_i.h"
 #include "tsk_fs.h"
@@ -504,37 +503,10 @@ load_dir_and_file_lists_win(
 	free(search_path_wildcard);
 
 	// Need to sort to keep Inums consistent
-	// TEMP: instrument sort time to evaluate whether it's worth optimizing.
-	// Remove this block + the <chrono> include when measurement is done.
-	{
-		static long long total_sort_us = 0;
-		static long sort_call_count = 0;
-		static size_t total_items_sorted = 0;
-		auto t_start = std::chrono::high_resolution_clock::now();
-
-		if (!file_cache_hit) {
-			sort(file_names.begin(), file_names.end(), case_insensitive_compare);
-		}
-		sort(dir_names.begin(), dir_names.end(), case_insensitive_compare);
-
-		auto t_end = std::chrono::high_resolution_clock::now();
-		long long elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(
-			t_end - t_start).count();
-		total_sort_us += elapsed_us;
-		sort_call_count++;
-		total_items_sorted += file_names.size() + dir_names.size();
-
-		// Print a summary every 1000 calls so we get a feel without flooding stderr.
-		if (sort_call_count % 1000 == 0) {
-			tsk_fprintf(stderr,
-				"[sort timing] calls=%ld total_us=%lld avg_us=%.2f total_items=%" PRIuSIZE " avg_items=%.1f\n",
-				sort_call_count, total_sort_us,
-				(double)total_sort_us / (double)sort_call_count,
-				total_items_sorted,
-				(double)total_items_sorted / (double)sort_call_count);
-			fflush(stderr);
-		}
+	if (!file_cache_hit) {
+		sort(file_names.begin(), file_names.end(), case_insensitive_compare);
 	}
+	sort(dir_names.begin(), dir_names.end(), case_insensitive_compare);
 
 	// ──── Cache file list if needed ────
 	// Skip caching dirs with 0 or 1 files. Cost of caching exceeds the benefit
@@ -641,16 +613,6 @@ get_path_relative_to_base(const LOGICALFS_INFO* logical_fs_info, const TSK_TCHAR
  */
 static TSK_RETVAL_ENUM
 find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHAR *target_path, TSK_TCHAR **best_path, TSK_INUM_T *best_inum) {
-	// TEMP cs: time hit vs miss in the inum_cache prefix scan. Remove when done.
-#ifdef TSK_WIN32
-	static LARGE_INTEGER cs_pm_freq = {0};
-	if (cs_pm_freq.QuadPart == 0) QueryPerformanceFrequency(&cs_pm_freq);
-	static long long cs_pm_hit_us = 0, cs_pm_miss_us = 0;
-	static long cs_pm_hits = 0, cs_pm_misses = 0;
-	LARGE_INTEGER cs_pm_t0, cs_pm_t1;
-	QueryPerformanceCounter(&cs_pm_t0);
-#endif
-
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 	tsk_take_lock(&(img_info->cache_lock));
@@ -721,25 +683,6 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHA
 
 	tsk_release_lock(&(img_info->cache_lock));
 
-#ifdef TSK_WIN32
-	// TEMP cs: accumulate prefix-scan timing by outcome
-	QueryPerformanceCounter(&cs_pm_t1);
-	long long cs_pm_elapsed = ((cs_pm_t1.QuadPart - cs_pm_t0.QuadPart) * 1000000) / cs_pm_freq.QuadPart;
-	if (best_match_index >= 0) {
-		cs_pm_hit_us += cs_pm_elapsed;
-		cs_pm_hits++;
-	} else {
-		cs_pm_miss_us += cs_pm_elapsed;
-		cs_pm_misses++;
-	}
-	if ((cs_pm_hits + cs_pm_misses) % 1000 == 0) {
-		tsk_fprintf(stderr,
-			"[cache_scan prefix] hits=%ld total_us=%lld avg=%.2f | misses=%ld total_us=%lld avg=%.2f\n",
-			cs_pm_hits, cs_pm_hit_us, cs_pm_hits ? (double)cs_pm_hit_us / (double)cs_pm_hits : 0.0,
-			cs_pm_misses, cs_pm_miss_us, cs_pm_misses ? (double)cs_pm_miss_us / (double)cs_pm_misses : 0.0);
-		fflush(stderr);
-	}
-#endif
 	return TSK_OK;
 }
 
@@ -760,15 +703,6 @@ find_closest_path_match_in_cache(LOGICALFS_INFO *logical_fs_info, const TSK_TCHA
  */
 static TSK_RETVAL_ENUM
 find_closest_sibling_match_in_cache(LOGICALFS_INFO* logical_fs_info, const TSK_TCHAR* target_path, const TSK_TCHAR* parent_path, TSK_INUM_T parent_inum, TSK_TCHAR** best_name, TSK_INUM_T* best_inum) {
-	// TEMP cs: time hit vs miss in the inum_cache sibling scan. Remove when done.
-#ifdef TSK_WIN32
-	static LARGE_INTEGER cs_sb_freq = {0};
-	if (cs_sb_freq.QuadPart == 0) QueryPerformanceFrequency(&cs_sb_freq);
-	static long long cs_sb_hit_us = 0, cs_sb_miss_us = 0;
-	static long cs_sb_hits = 0, cs_sb_misses = 0;
-	LARGE_INTEGER cs_sb_t0, cs_sb_t1;
-	QueryPerformanceCounter(&cs_sb_t0);
-#endif
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 	tsk_take_lock(&(img_info->cache_lock));
@@ -836,25 +770,6 @@ find_closest_sibling_match_in_cache(LOGICALFS_INFO* logical_fs_info, const TSK_T
 
 	tsk_release_lock(&(img_info->cache_lock));
 
-#ifdef TSK_WIN32
-	// TEMP cs: accumulate sibling-scan timing by outcome
-	QueryPerformanceCounter(&cs_sb_t1);
-	long long cs_sb_elapsed = ((cs_sb_t1.QuadPart - cs_sb_t0.QuadPart) * 1000000) / cs_sb_freq.QuadPart;
-	if (best_match_index >= 0) {
-		cs_sb_hit_us += cs_sb_elapsed;
-		cs_sb_hits++;
-	} else {
-		cs_sb_miss_us += cs_sb_elapsed;
-		cs_sb_misses++;
-	}
-	if ((cs_sb_hits + cs_sb_misses) % 1000 == 0) {
-		tsk_fprintf(stderr,
-			"[cache_scan sibling] hits=%ld total_us=%lld avg=%.2f | misses=%ld total_us=%lld avg=%.2f\n",
-			cs_sb_hits, cs_sb_hit_us, cs_sb_hits ? (double)cs_sb_hit_us / (double)cs_sb_hits : 0.0,
-			cs_sb_misses, cs_sb_miss_us, cs_sb_misses ? (double)cs_sb_miss_us / (double)cs_sb_misses : 0.0);
-		fflush(stderr);
-	}
-#endif
 	return TSK_OK;
 }
 
@@ -869,16 +784,6 @@ find_closest_sibling_match_in_cache(LOGICALFS_INFO* logical_fs_info, const TSK_T
  */
 static TSK_TCHAR*
 find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_inum) {
-	// TEMP cs: time hit vs miss in the inum_cache reverse-lookup scan. Remove when done.
-#ifdef TSK_WIN32
-	static LARGE_INTEGER cs_in_freq = {0};
-	if (cs_in_freq.QuadPart == 0) QueryPerformanceFrequency(&cs_in_freq);
-	static long long cs_in_hit_us = 0, cs_in_miss_us = 0;
-	static long cs_in_hits = 0, cs_in_misses = 0;
-	LARGE_INTEGER cs_in_t0, cs_in_t1;
-	QueryPerformanceCounter(&cs_in_t0);
-#endif
-
 	TSK_IMG_INFO* img_info = logical_fs_info->fs_info.img_info;
 	IMG_LOGICAL_INFO* logical_img_info = (IMG_LOGICAL_INFO*)img_info;
 	tsk_take_lock(&(img_info->cache_lock));
@@ -904,25 +809,6 @@ find_path_for_inum_in_cache(LOGICALFS_INFO *logical_fs_info, TSK_INUM_T target_i
 
 	tsk_release_lock(&(img_info->cache_lock));
 
-#ifdef TSK_WIN32
-	// TEMP cs: accumulate inum-lookup-scan timing by outcome
-	QueryPerformanceCounter(&cs_in_t1);
-	long long cs_in_elapsed = ((cs_in_t1.QuadPart - cs_in_t0.QuadPart) * 1000000) / cs_in_freq.QuadPart;
-	if (target_path != NULL) {
-		cs_in_hit_us += cs_in_elapsed;
-		cs_in_hits++;
-	} else {
-		cs_in_miss_us += cs_in_elapsed;
-		cs_in_misses++;
-	}
-	if ((cs_in_hits + cs_in_misses) % 1000 == 0) {
-		tsk_fprintf(stderr,
-			"[cache_scan inum_lookup] hits=%ld total_us=%lld avg=%.2f | misses=%ld total_us=%lld avg=%.2f\n",
-			cs_in_hits, cs_in_hit_us, cs_in_hits ? (double)cs_in_hit_us / (double)cs_in_hits : 0.0,
-			cs_in_misses, cs_in_miss_us, cs_in_misses ? (double)cs_in_miss_us / (double)cs_in_misses : 0.0);
-		fflush(stderr);
-	}
-#endif
 	return target_path;
 }
 
@@ -1830,32 +1716,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		return -1;
 	}
 
-	// TEMP: cumulative timing for the suspect hot-path phases. Remove this block
-	// (and the QueryPerformanceCounter calls scattered below) when measurement
-	// is done. Search for "TEMP rb" to find every related insertion.
-#ifdef TSK_WIN32
-	static LARGE_INTEGER rb_freq = {0};
-	if (rb_freq.QuadPart == 0) {
-		QueryPerformanceFrequency(&rb_freq);
-	}
-	static long long rb_total_func_us = 0;
-	static long long rb_total_blockcache_us = 0;
-	static long long rb_total_loadpath_us = 0;
-	static long long rb_total_createfile_us = 0;
-	static long long rb_total_seek_us = 0;
-	static long long rb_total_read_us = 0;
-	static long rb_call_count = 0;
-	static long rb_block_cache_hits = 0;
-	static long rb_handle_cache_hits = 0;
-	static long rb_handle_cache_misses = 0;
-	static long rb_seeks_performed = 0;
-	LARGE_INTEGER rb_t_func_start, rb_t_blockcache_end, rb_t_loadpath_start, rb_t_loadpath_end;
-	LARGE_INTEGER rb_t_createfile_start, rb_t_createfile_end;
-	LARGE_INTEGER rb_t_seek_start, rb_t_seek_end, rb_t_read_start, rb_t_read_end;
-	LARGE_INTEGER rb_t_func_end;
-	QueryPerformanceCounter(&rb_t_func_start);
-#endif
-
 	unsigned int block_size = a_fs->block_size;
 
 	// The caching used for logical file blocks is simpler than
@@ -1909,22 +1769,8 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		}
 	}
 
-#ifdef TSK_WIN32
-	QueryPerformanceCounter(&rb_t_blockcache_end);   // TEMP rb
-	rb_total_blockcache_us +=
-		((rb_t_blockcache_end.QuadPart - rb_t_func_start.QuadPart) * 1000000) / rb_freq.QuadPart;
-#endif
-
 	// If we found the block in the cache, we're done
 	if (match_found) {
-#ifdef TSK_WIN32
-		// TEMP rb: count block-cache hits but don't print here - main summary covers it
-		rb_block_cache_hits++;
-		rb_call_count++;
-		QueryPerformanceCounter(&rb_t_func_end);
-		rb_total_func_us +=
-			((rb_t_func_end.QuadPart - rb_t_func_start.QuadPart) * 1000000) / rb_freq.QuadPart;
-#endif
 		tsk_release_lock(&(img_info->cache_lock));
 		return block_size;
 	}
@@ -1937,18 +1783,8 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 			file_handle_entry = &(logical_img_info->file_handle_cache[i]);
 		}
 	}
-#ifdef TSK_WIN32
-	if (file_handle_entry != NULL) {
-		rb_handle_cache_hits++;   // TEMP rb
-	}
-#endif
-
 	// If we didn't find it, open the file and save to the cache
 	if (file_handle_entry == NULL) {
-#ifdef TSK_WIN32
-		rb_handle_cache_misses++;   // TEMP rb
-		QueryPerformanceCounter(&rb_t_loadpath_start);   // TEMP rb
-#endif
 		// Load the path
 		TSK_TCHAR* path = load_path_from_inum(logical_fs_info, a_fs_file->meta->addr);
 		if (path == NULL) {
@@ -1960,18 +1796,10 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 		}
 
 #ifdef TSK_WIN32
-		QueryPerformanceCounter(&rb_t_loadpath_end);   // TEMP rb
-		rb_total_loadpath_us +=
-			((rb_t_loadpath_end.QuadPart - rb_t_loadpath_start.QuadPart) * 1000000) / rb_freq.QuadPart;
-
 		// Open the file. path is built from base_path which is always \\?\-prefixed.
-		QueryPerformanceCounter(&rb_t_createfile_start);   // TEMP rb
 		HANDLE fd = CreateFileW(path, FILE_READ_DATA,
 			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
 			NULL);
-		QueryPerformanceCounter(&rb_t_createfile_end);   // TEMP rb
-		rb_total_createfile_us +=
-			((rb_t_createfile_end.QuadPart - rb_t_createfile_start.QuadPart) * 1000000) / rb_freq.QuadPart;
 		if (fd == INVALID_HANDLE_VALUE) {
 			tsk_release_lock(&(img_info->cache_lock));
 			int lastError = (int)GetLastError();
@@ -2010,16 +1838,11 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	TSK_OFF_T offset_to_read = a_block_num * block_size;
 	if (offset_to_read != file_handle_entry->seek_pos) {
 #ifdef TSK_WIN32
-		rb_seeks_performed++;   // TEMP rb
-		QueryPerformanceCounter(&rb_t_seek_start);   // TEMP rb
 		LARGE_INTEGER li;
 		li.QuadPart = a_block_num * block_size;
 
 		li.LowPart = SetFilePointer(file_handle_entry->fd, li.LowPart,
 			&li.HighPart, FILE_BEGIN);
-		QueryPerformanceCounter(&rb_t_seek_end);   // TEMP rb
-		rb_total_seek_us +=
-			((rb_t_seek_end.QuadPart - rb_t_seek_start.QuadPart) * 1000000) / rb_freq.QuadPart;
 
 		if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
 			(GetLastError() != NO_ERROR)) {
@@ -2051,7 +1874,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 
 #ifdef TSK_WIN32
 	DWORD nread;
-	QueryPerformanceCounter(&rb_t_read_start);   // TEMP rb
 	if (FALSE == ReadFile(file_handle_entry->fd, buf, (DWORD)len_to_read, &nread, NULL)) {
 		tsk_release_lock(&(img_info->cache_lock));
 		int lastError = GetLastError();
@@ -2063,9 +1885,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 			lastError);
 		return -1;
 	}
-	QueryPerformanceCounter(&rb_t_read_end);   // TEMP rb
-	rb_total_read_us +=
-		((rb_t_read_end.QuadPart - rb_t_read_start.QuadPart) * 1000000) / rb_freq.QuadPart;
 	file_handle_entry->seek_pos += nread;
 #else
 	// otherwise, not used; ensure used to prevent warning
@@ -2080,26 +1899,6 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 	logical_img_info->cache_inum[cache_next] = a_fs_file->meta->addr;
 
 	tsk_release_lock(&(img_info->cache_lock));
-
-#ifdef TSK_WIN32
-	// TEMP rb: final accounting + periodic summary
-	rb_call_count++;
-	QueryPerformanceCounter(&rb_t_func_end);
-	rb_total_func_us +=
-		((rb_t_func_end.QuadPart - rb_t_func_start.QuadPart) * 1000000) / rb_freq.QuadPart;
-	if (rb_call_count % 1000 == 0) {
-		tsk_fprintf(stderr,
-			"[read_block timing] calls=%ld total_func_us=%lld avg_us=%.2f | "
-			"block_cache hits=%ld | handle_cache hits=%ld misses=%ld | seeks=%ld\n"
-			"  phases: blockcache=%lld load_path=%lld create_file=%lld seek=%lld read=%lld\n",
-			rb_call_count, rb_total_func_us,
-			(double)rb_total_func_us / (double)rb_call_count,
-			rb_block_cache_hits, rb_handle_cache_hits, rb_handle_cache_misses, rb_seeks_performed,
-			rb_total_blockcache_us, rb_total_loadpath_us, rb_total_createfile_us,
-			rb_total_seek_us, rb_total_read_us);
-		fflush(stderr);
-	}
-#endif
 
 	// If we didn't read the expected number of bytes, return an error
 #ifdef TSK_WIN32
