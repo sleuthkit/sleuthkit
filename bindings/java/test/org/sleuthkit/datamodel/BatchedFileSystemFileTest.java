@@ -74,8 +74,8 @@ public class BatchedFileSystemFileTest {
 			caseDB = SleuthkitCase.newCase(dbPath);
 
 			// Uncomment to manually exercise the batched PostgreSQL path.
-			CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
-			caseDB = SleuthkitCase.newCase("TskBatchedFileSystemFileTest", connectionInfo, tempDirPath);
+			// CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
+			// caseDB = SleuthkitCase.newCase("TskBatchedFileSystemFileTest", connectionInfo, tempDirPath);
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
