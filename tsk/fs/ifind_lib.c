@@ -213,6 +213,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         if (a_path_wide == NULL) {
             return -1;
         }
+
         UTF8 *utf8_src = (UTF8 *)a_path;
         UTF16 *utf16_dst = (UTF16 *)a_path_wide;
         TSKConversionResult cnv = tsk_UTF8toUTF16(
@@ -222,6 +223,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             free(a_path_wide);
             return 1;
         }
+
         // tsk_UTF8toUTF16 advances utf16_dst past the last written code unit.
         // Null-terminate at that position. We allocated (a_path_len + 1) wchars
         // so this write is always in-bounds.
@@ -263,6 +265,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             }
             return 1;
         }
+
         // Path exists. Dispatch to the logical-FS-specific resolver, which uses
         // get_inum_from_directory_path (cache-aware) for directories and the
         // sorted-file-list lookup for files.

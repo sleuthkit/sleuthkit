@@ -186,15 +186,74 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 		return NULL;
 	}
 	TSTRNCPY(logical_info->base_path, a_images[0], len + 1);
-	// Remove trailing slash
+
 #ifdef TSK_WIN32
-	if ((logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'/')
-			|| (logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == L'\\')) {
-		logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] = '\0';
+	// Remove trailing slash
+	size_t base_len = TSTRLEN(logical_info->base_path);
+	if (base_len > 0 &&
+		(logical_info->base_path[base_len - 1] == L'/' ||
+		 logical_info->base_path[base_len - 1] == L'\\')) {
+		logical_info->base_path[base_len - 1] = L'\0';
 	}
+
+	// Fully resolve the path (handles relative paths, symlinks, . and ..) then
+	// prepend the \\?\ extended-length prefix so that every path built from
+	// base_path is long-path safe without any per-call conversion.
+	// UNC paths (\\server\share) require \\?\UNC\ with the leading \\ replaced.
+	DWORD required = GetFullPathNameW(logical_info->base_path, 0, NULL, NULL);
+	if (required == 0) {
+		tsk_img_free(img_info);
+		return NULL;
+	}
+	TSK_TCHAR *resolved = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * required);
+	if (resolved == NULL) {
+		tsk_img_free(img_info);
+		return NULL;
+	}
+	DWORD written = GetFullPathNameW(logical_info->base_path, required, resolved, NULL);
+	if (written == 0 || written >= required) {
+		free(resolved);
+		tsk_img_free(img_info);
+		return NULL;
+	}
+	// Strip any trailing slash that GetFullPathNameW may have added (e.g. for "C:\")
+	if (written > 1 && resolved[written - 1] == L'\\') {
+		resolved[written - 1] = L'\0';
+		written--;
+	}
+
+	// Choose prefix: UNC paths need \\?\UNC\ (8 chars) replacing the leading \\;
+	// local paths need \\?\ (4 chars).
+	const int is_unc = (resolved[0] == L'\\' && resolved[1] == L'\\');
+	const size_t prefix_len = is_unc ? 8 : 4;
+	const size_t path_skip  = is_unc ? 2 : 0;
+
+	free(logical_info->base_path);
+	logical_info->base_path = (TSK_TCHAR *)tsk_malloc(
+		sizeof(TSK_TCHAR) * (prefix_len + written - path_skip + 1));
+	if (logical_info->base_path == NULL) {
+		free(resolved);
+		tsk_img_free(img_info);
+		return NULL;
+	}
+	logical_info->base_path[0] = L'\\';
+	logical_info->base_path[1] = L'\\';
+	logical_info->base_path[2] = L'?';
+	logical_info->base_path[3] = L'\\';
+	if (is_unc) {
+		logical_info->base_path[4] = L'U';
+		logical_info->base_path[5] = L'N';
+		logical_info->base_path[6] = L'C';
+		logical_info->base_path[7] = L'\\';
+	}
+	TSTRNCPY(logical_info->base_path + prefix_len, resolved + path_skip, written - path_skip + 1);
+	free(resolved);
+
 #else
-	if (logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] == '/') {
-		logical_info->base_path[TSTRLEN(logical_info->base_path) - 1] = '\0';
+	// Non-Windows: just strip trailing slash
+	size_t base_len = TSTRLEN(logical_info->base_path);
+	if (base_len > 0 && logical_info->base_path[base_len - 1] == '/') {
+		logical_info->base_path[base_len - 1] = '\0';
 	}
 #endif
 
