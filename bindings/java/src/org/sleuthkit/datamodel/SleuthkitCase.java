@@ -5621,6 +5621,31 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Returns the cached prepared statement that inserts a row into
+	 * tsk_analysis_results. Shared between the single-row {@code newAnalysisResult}
+	 * leaf and the batched {@link Blackboard#newAnalysisResults} path.
+	 */
+	PreparedStatement getInsertAnalysisResultStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ANALYSIS_RESULT, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached race-safe aggregate-score UPSERT prepared statement used
+	 * by the batched analysis-result insert path. PostgreSQL only.
+	 */
+	PreparedStatement getUpsertAggregateScoreIfHigherStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.UPSERT_AGGREGATE_SCORE_IF_HIGHER, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached batched-DELETE prepared statement for analysis-result
+	 * artifacts (deletes by a bigint[] of artifact_obj_ids). PostgreSQL only.
+	 */
+	PreparedStatement getDeleteBbArtifactsByIdsStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_BB_ARTIFACTS_BY_IDS, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
 	 * Returns the cached attribute-INSERT prepared statement matching the
 	 * given attribute value type. Mirrors the switch in
 	 * {@link #addBlackBoardAttribute}.
@@ -14378,6 +14403,26 @@ public class SleuthkitCase {
 				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
 				+ "ORDER BY ord"), //NON-NLS
 		POSTGRESQL_INSERT_OBJECT_WITH_ID("INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)"), //NON-NLS
+		// Race-safe UPSERT for tsk_aggregate_score, used by the batched analysis-result insert path.
+		// The WHERE guard ensures a concurrent transaction's higher score is never overwritten by our
+		// lower one. NOTE: Score.compareTo orders by PRIORITY first, then significance (Score.java:233),
+		// so the ROW comparison must lead with priority. The stored id columns are monotonic with the
+		// enum ordinals within each enum, so comparing the id columns matches the Java comparator.
+		// PostgreSQL only (SQLite path delegates to the single-row method). See design doc 5.1/10.1.
+		// Bind columns: 1=obj_id, 2=data_source_obj_id (or NULL), 3=significance, 4=priority,
+		//               5=significance (ON CONFLICT branch), 6=priority (ON CONFLICT branch).
+		UPSERT_AGGREGATE_SCORE_IF_HIGHER(
+				"INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance, priority) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?) " //NON-NLS
+				+ "ON CONFLICT (obj_id) DO UPDATE SET significance = ?, priority = ? " //NON-NLS
+				+ "WHERE (EXCLUDED.priority, EXCLUDED.significance) " //NON-NLS
+				+ "    > (tsk_aggregate_score.priority, tsk_aggregate_score.significance)"), //NON-NLS
+		// Batched DELETE for analysis-result artifacts. The single bind is a bigint[] of artifact_obj_ids.
+		// FK CASCADE on tsk_analysis_results, blackboard_attributes, and tsk_data_artifacts handles the
+		// dependent rows; tsk_objects rows are left orphaned (matches single-row deleteAnalysisResult).
+		// PostgreSQL only. See design doc 5.1/7.8.
+		DELETE_BB_ARTIFACTS_BY_IDS(
+				"DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ANY(?::bigint[])"), //NON-NLS
 		POSTGRESQL_RESERVE_FILE_IDS(
 				"SELECT nextval(pg_get_serial_sequence('tsk_objects', 'obj_id')) AS obj_id " //NON-NLS
 				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
@@ -15307,7 +15352,18 @@ public class SleuthkitCase {
 		void registerScoreChange(ScoreChange scoreChange) {
 			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
 		}
-		
+
+		/**
+		 * For test use only. Returns an unmodifiable view of the ScoreChange
+		 * entries registered in this transaction (keyed internally by obj_id, so
+		 * at most one entry per object). Production code must not call this.
+		 *
+		 * @return Unmodifiable collection of registered score changes.
+		 */
+		Collection<ScoreChange> getRegisteredScoreChanges() {
+			return Collections.unmodifiableCollection(scoreChangeMap.values());
+		}
+
 		/**
 		 * Register timeline event to be fired when transaction finishes.
 		 * @param timelineEvent The timeline event.

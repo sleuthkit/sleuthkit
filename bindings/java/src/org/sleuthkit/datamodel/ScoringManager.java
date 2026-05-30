@@ -22,8 +22,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -113,6 +116,62 @@ public class ScoringManager {
 			}
 		} finally {
 			db.releaseSingleUserCaseReadLock();
+		}
+		return results;
+	}
+
+	/**
+	 * Bulk-reads aggregate scores for the supplied object ids in one SQL
+	 * statement, optionally with FOR UPDATE on PostgreSQL. Uses the connection
+	 * from the supplied transaction (does NOT acquire a case read lock - it is
+	 * an internal helper for the batched analysis-result paths, which run under
+	 * a caller-managed transaction).
+	 *
+	 * <p>Uses a bigint[] array parameter rather than an inline IN list so the PG
+	 * planner gets a stable plan regardless of input size. PostgreSQL only - the
+	 * SQLite batched paths delegate to the single-row methods and never call
+	 * this.</p>
+	 *
+	 * @param objIds      Object ids to read; must not be null. Empty returns an
+	 *                    empty map without issuing SQL.
+	 * @param forUpdate   If true and the DB is PostgreSQL, the SELECT is
+	 *                    decorated with FOR UPDATE for row-level locking.
+	 * @param transaction Caller-managed transaction; must not be null.
+	 *
+	 * @return Map of objId to Score for every supplied id that has a row in
+	 *         tsk_aggregate_score. Missing rows are absent from the map (callers
+	 *         treat them as SCORE_UNKNOWN).
+	 *
+	 * @throws TskCoreException
+	 */
+	Map<Long, Score> getAggregateScores(Collection<Long> objIds, boolean forUpdate, CaseDbTransaction transaction) throws TskCoreException {
+
+		if (objIds == null) {
+			throw new TskCoreException("objIds is required");
+		}
+		if (objIds.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		boolean isPostgres = db.getDatabaseType().equals(DbType.POSTGRESQL);
+		String queryString = "SELECT obj_id, significance, priority FROM tsk_aggregate_score WHERE obj_id = ANY(?::bigint[])"
+				+ (isPostgres && forUpdate ? " FOR UPDATE" : "");
+
+		Map<Long, Score> results = new HashMap<>();
+		CaseDbConnection connection = transaction.getConnection();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+			Long[] ids = objIds.toArray(new Long[0]);
+			preparedStatement.setArray(1, connection.getConnection().createArrayOf("bigint", ids));
+			try (ResultSet rs = preparedStatement.executeQuery()) {
+				while (rs.next()) {
+					results.put(rs.getLong("obj_id"),
+							new Score(Significance.fromID(rs.getInt("significance")), Priority.fromID(rs.getInt("priority"))));
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error bulk-reading aggregate scores", ex);
 		}
 		return results;
 	}
@@ -267,7 +326,136 @@ public class ScoringManager {
 			return currentAggregateScore;
 		}
 	}
-	
+
+	/**
+	 * Bulk counterpart to {@link #updateAggregateScoreAfterAddition}. Updates the
+	 * aggregate score for every parent objId touched by a batch of newly-added
+	 * analysis results, registering one ScoreChange per upgraded parent.
+	 *
+	 * <p><strong>PostgreSQL only.</strong> Collapses the per-parent recompute:
+	 * one bulk SELECT (FOR UPDATE) of the current scores, then one batched
+	 * race-safe UPSERT for the parents whose score is upgraded. The UPSERT WHERE
+	 * guard ({@code UPSERT_AGGREGATE_SCORE_IF_HIGHER}) prevents a concurrent
+	 * batch's higher score from being overwritten by our lower one.</p>
+	 *
+	 * <p><strong>ScoreChange semantics differ from the sequential path.</strong>
+	 * The sequential path emits one ScoreChange per upward step, but the
+	 * transaction's score-change map is keyed by objId so only the last step
+	 * survives commit. This batched API emits one ScoreChange per upgraded parent
+	 * with the (currentBeforeBatch, finalAfterBatch) pair. Different, equally
+	 * valid; documented for reviewer awareness.</p>
+	 *
+	 * <p>If two requests for the same parent specify different dataSourceObjId
+	 * values, the first-seen value is used for the aggregate-score row.</p>
+	 *
+	 * @param requests    The batch of analysis-result requests. Empty is a no-op
+	 *                    returning an empty map.
+	 * @param transaction Caller-managed transaction.
+	 *
+	 * @return Map of every parent objId in the input to its final aggregate score
+	 *         (upgraded or unchanged). Callers use this to populate the per-AR
+	 *         AnalysisResultAdded aggregate score.
+	 *
+	 * @throws TskCoreException
+	 */
+	Map<Long, Score> updateAggregateScoresAfterAdditions(List<Blackboard.NewAnalysisResultRequest> requests, CaseDbTransaction transaction) throws TskCoreException {
+
+		if (requests == null) {
+			throw new TskCoreException("requests is required");
+		}
+		if (requests.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		// Step A: group by parent objId; max-merge scores; first-seen dataSourceObjId.
+		Map<Long, Score> maxNewScorePerParent = new HashMap<>();
+		Map<Long, Long> dataSourceObjIdPerParent = new HashMap<>();
+		for (Blackboard.NewAnalysisResultRequest r : requests) {
+			maxNewScorePerParent.merge(r.objId, r.score,
+					(a, b) -> Score.getScoreComparator().compare(a, b) > 0 ? a : b);
+			dataSourceObjIdPerParent.putIfAbsent(r.objId, r.dataSourceObjId);
+		}
+
+		boolean isPostgres = db.getDatabaseType().equals(DbType.POSTGRESQL);
+
+		// Step B: bulk-read current scores with FOR UPDATE on PG.
+		Map<Long, Score> currentScorePerParent = getAggregateScores(maxNewScorePerParent.keySet(), isPostgres, transaction);
+
+		// Step C: classify upgraded vs unchanged. Mirrors the single-row decision
+		// in updateAggregateScoreAfterAddition: a previously-Unknown parent is
+		// upgraded by any non-Unknown score; otherwise the comparator decides.
+		// NOTE: Score has no equals() override, so the Unknown test uses compareTo.
+		List<Long> upgradedParents = new ArrayList<>();
+		Map<Long, Score> finalScorePerParent = new HashMap<>();
+		for (Map.Entry<Long, Score> e : maxNewScorePerParent.entrySet()) {
+			Long objId = e.getKey();
+			Score maxNew = e.getValue();
+			Score current = currentScorePerParent.getOrDefault(objId, Score.SCORE_UNKNOWN);
+			boolean upgrade = (current.compareTo(Score.SCORE_UNKNOWN) == 0 && maxNew.compareTo(Score.SCORE_UNKNOWN) != 0)
+					|| Score.getScoreComparator().compare(maxNew, current) > 0;
+			if (upgrade) {
+				upgradedParents.add(objId);
+				finalScorePerParent.put(objId, maxNew);
+			} else {
+				finalScorePerParent.put(objId, current);
+			}
+		}
+
+		// Step D: batched race-safe UPSERT for upgraded parents only.
+		if (!upgradedParents.isEmpty()) {
+			try {
+				PreparedStatement preparedStatement = db.getUpsertAggregateScoreIfHigherStatement(transaction.getConnection());
+				preparedStatement.clearBatch();
+				for (Long objId : upgradedParents) {
+					Score finalScore = finalScorePerParent.get(objId);
+					Long dsObjId = dataSourceObjIdPerParent.get(objId);
+					preparedStatement.clearParameters();
+					preparedStatement.setLong(1, objId);
+					if (dsObjId != null) {
+						preparedStatement.setLong(2, dsObjId);
+					} else {
+						preparedStatement.setNull(2, Types.BIGINT);
+					}
+					preparedStatement.setInt(3, finalScore.getSignificance().getId());
+					preparedStatement.setInt(4, finalScore.getPriority().getId());
+					preparedStatement.setInt(5, finalScore.getSignificance().getId());
+					preparedStatement.setInt(6, finalScore.getPriority().getId());
+					preparedStatement.addBatch();
+				}
+				preparedStatement.executeBatch();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Batched updateAggregateScoresAfterAdditions: UPSERT failed (rows: "
+						+ upgradedParents.size() + ")", ex);
+			}
+		}
+
+		// Step E: register one ScoreChange per upgraded parent. The WHERE guard in
+		// step D may have suppressed an upgrade if a concurrent batch wrote a
+		// higher score between our SELECT and our UPSERT. Re-read the upgraded
+		// parents to discover the actual final score for the return value, and
+		// only register a ScoreChange when our write actually took effect.
+		if (!upgradedParents.isEmpty()) {
+			Map<Long, Score> recheck = getAggregateScores(upgradedParents, false, transaction);
+			for (Long objId : upgradedParents) {
+				Score actual = recheck.getOrDefault(objId, Score.SCORE_UNKNOWN);
+				Score expected = finalScorePerParent.get(objId);
+				if (actual.compareTo(expected) != 0) {
+					// Concurrent transaction wrote a higher score; honor it in the
+					// return value but do NOT register a ScoreChange (the other
+					// transaction owns that event).
+					finalScorePerParent.put(objId, actual);
+				} else {
+					transaction.registerScoreChange(new ScoreChange(objId,
+							dataSourceObjIdPerParent.get(objId),
+							currentScorePerParent.getOrDefault(objId, Score.SCORE_UNKNOWN),
+							actual));
+				}
+			}
+		}
+
+		return finalScorePerParent;
+	}
+
 	/**
 	 * Recalculate the aggregate score after an analysis result was 
 	 * deleted.
