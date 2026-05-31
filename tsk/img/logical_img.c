@@ -202,8 +202,29 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	TSTRNCPY(logical_info->base_path, a_images[0], len + 1);
 
 #ifdef TSK_WIN32
-	// Remove trailing slash
 	size_t base_len = TSTRLEN(logical_info->base_path);
+
+	// Reject bare drive-root inputs like "C:\" or "C:/". Stripping the trailing
+	// separator below would leave them as "C:" — a drive-relative path that
+	// GetFullPathNameW resolves against the current directory of that drive,
+	// silently producing a wrong base_path. Logical images are expected to
+	// point at a real directory subtree (see logical_img.h).
+	if (base_len == 3 &&
+		((logical_info->base_path[0] >= L'A' && logical_info->base_path[0] <= L'Z') ||
+		 (logical_info->base_path[0] >= L'a' && logical_info->base_path[0] <= L'z')) &&
+		logical_info->base_path[1] == L':' &&
+		(logical_info->base_path[2] == L'\\' || logical_info->base_path[2] == L'/')) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_IMG_ARG);
+		tsk_error_set_errstr("logical_open: drive-root path %" PRIttocTSK
+			" is not supported; specify a directory subtree",
+			logical_info->base_path);
+		free(logical_info->base_path);
+		tsk_img_free(img_info);
+		return NULL;
+	}
+
+	// Remove trailing slash
 	if (base_len > 0 &&
 		(logical_info->base_path[base_len - 1] == L'/' ||
 		logical_info->base_path[base_len - 1] == L'\\')) {

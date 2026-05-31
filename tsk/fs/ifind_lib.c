@@ -185,9 +185,10 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     // Windows we resolve paths much faster via the logical-FS-specific resolver
     // (Win32 APIs + cache-aware walk) than the generic per-component walker
     // below. Gated on TSK_WIN32 because the underlying host enumeration is only
-    // implemented for Windows.
+    // implemented for Windows. The resolver populates a_fs_name (if non-NULL)
+    // internally, so behavior matches the generic walker.
     if (a_fs != NULL && a_fs->ftype == TSK_FS_TYPE_LOGICAL) {
-        return tsk_logical_fs_path2inum(a_fs, a_path, a_result);
+        return tsk_logical_fs_path2inum(a_fs, a_path, a_result, a_fs_name);
     }
 #endif
 

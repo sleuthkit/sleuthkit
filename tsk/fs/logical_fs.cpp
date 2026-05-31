@@ -435,27 +435,37 @@ load_dir_and_file_lists_win(
 	if (can_cache) {
 		TSK_IMG_INFO* img_info = &a_logical_img_info->img_info;
 		tsk_take_lock(&img_info->cache_lock);
-		for (int i = 0; i < DIR_FILE_LIST_CACHE_LEN; i++) {
-			DIR_FILE_CACHE_ENTRY* entry = &a_logical_img_info->dir_file_list_cache.entries[i];
-			if (entry->dir_inum == LOGICAL_INVALID_INUM || entry->dir_inum != a_dir_inum) {
-				continue; // empty slot or different dir
-			}
+		// std::wstring construction and vector grow inside the copy loop can both
+		// throw std::bad_alloc. Catch under lock so we release before unwinding.
+		try {
+			for (int i = 0; i < DIR_FILE_LIST_CACHE_LEN; i++) {
+				DIR_FILE_CACHE_ENTRY* entry = &a_logical_img_info->dir_file_list_cache.entries[i];
+				if (entry->dir_inum == LOGICAL_INVALID_INUM || entry->dir_inum != a_dir_inum) {
+					continue; // empty slot or different dir
+				}
 
-			// Cache hit: copy the cached file list
-			file_cache_hit = true;
-			a_file_names.clear();
-			for (size_t j = 0; j < entry->file_count; j++) {
-				a_file_names.push_back(entry->file_names[j]);
-			}
+				// Cache hit: copy the cached file list
+				file_cache_hit = true;
+				a_file_names.clear();
+				for (size_t j = 0; j < entry->file_count; j++) {
+					a_file_names.push_back(entry->file_names[j]);
+				}
 
-			// LOAD_FILES_ONLY callers don't need the dir list, so we can short-circuit
-			// before enumerating. LOAD_ALL callers still need the dir list - fall
-			// through so the Win32 enumeration below populates a_dir_names.
-			if (a_mode == LOGICALFS_LOAD_FILES_ONLY) {
-				tsk_release_lock(&img_info->cache_lock);
-				return TSK_OK;
+				// LOAD_FILES_ONLY callers don't need the dir list, so we can short-circuit
+				// before enumerating. LOAD_ALL callers still need the dir list - fall
+				// through so the Win32 enumeration below populates a_dir_names.
+				if (a_mode == LOGICALFS_LOAD_FILES_ONLY) {
+					tsk_release_lock(&img_info->cache_lock);
+					return TSK_OK;
+				}
+				break;
 			}
-			break;
+		} catch (const std::bad_alloc&) {
+			tsk_release_lock(&img_info->cache_lock);
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_FS_GENFS);
+			tsk_error_set_errstr("load_dir_and_file_lists: Out of memory copying cached file list for dir inum %" PRIuINUM, a_dir_inum);
+			return TSK_ERR;
 		}
 
 		tsk_release_lock(&img_info->cache_lock);
@@ -1854,7 +1864,7 @@ logicalfs_read_block(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file, TSK_DADDR_T a_bl
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
 			tsk_error_set_errstr("logicalfs_read_block: Failed to resolve path for inum %" PRIuINUM, a_fs_file->meta->addr);
-			return TSK_ERR;
+			return -1;
 		}
 
 #ifdef TSK_WIN32
@@ -2237,7 +2247,11 @@ logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide) {
 	if (attribs == INVALID_FILE_ATTRIBUTES) {
 		return LOGICAL_PATH_NOT_FOUND;
 	}
-	if (attribs & FILE_ATTRIBUTE_DIRECTORY) {
+	// Use the same directory-vs-file rule as the enumeration slow path so the
+	// fast path and slow path produce consistent inums. should_treat_as_directory
+	// excludes reparse points (junctions / directory symlinks) which are
+	// surfaced as files everywhere else in the logical FS.
+	if (should_treat_as_directory(attribs)) {
 		return LOGICAL_PATH_DIRECTORY;
 	}
 	return LOGICAL_PATH_FILE;
@@ -2247,12 +2261,58 @@ logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide) {
 }
 
 /*
+ * Populate a TSK_FS_NAME from a resolved logical-FS leaf. Mirrors what the
+ * generic per-component walker does at its success points (see ifind_lib.c
+ * tsk_fs_path2inum: the root special-case and the file-found tsk_fs_name_copy
+ * call). Logical FS doesn't have on-disk directory entries to copy from, so
+ * we synthesize the fields:
+ *   - meta_addr from the resolved inum
+ *   - type from the host-FS probe (DIR vs REG)
+ *   - flags = ALLOC (logical FS only sees allocated entries)
+ *   - name = the leaf (last path component, or empty for root)
+ *   - shrt_name = empty (logical FS has no short names)
+ *   - meta_seq / par_addr / par_seq / date_added = 0 (not meaningful)
+ *
+ * Caller is responsible for having allocated a_fs_name->name and shrt_name
+ * buffers. No-op if a_fs_name is NULL.
+ */
+static void
+populate_fs_name(TSK_FS_NAME *a_fs_name, TSK_INUM_T a_inum,
+                 const wchar_t *a_leaf_wide, bool a_is_dir) {
+	if (a_fs_name == NULL) {
+		return;
+	}
+
+	if (a_fs_name->name != NULL && a_fs_name->name_size > 0) {
+		a_fs_name->name[0] = '\0';
+		if (a_leaf_wide != NULL && a_leaf_wide[0] != L'\0') {
+			char *utf8 = convert_wide_string_to_utf8(a_leaf_wide);
+			if (utf8 != NULL) {
+				snprintf(a_fs_name->name, a_fs_name->name_size, "%s", utf8);
+				free(utf8);
+			}
+		}
+	}
+	if (a_fs_name->shrt_name != NULL && a_fs_name->shrt_name_size > 0) {
+		a_fs_name->shrt_name[0] = '\0';
+	}
+	a_fs_name->meta_addr = a_inum;
+	a_fs_name->meta_seq = 0;
+	a_fs_name->par_addr = 0;
+	a_fs_name->par_seq = 0;
+	a_fs_name->date_added = 0;
+	a_fs_name->type = a_is_dir ? TSK_FS_NAME_TYPE_DIR : TSK_FS_NAME_TYPE_REG;
+	a_fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+}
+
+/*
  * Logical-FS path → inum resolver. Single entry point used by tsk_fs_path2inum's
  * logical-FS fast path. Owns the full pipeline:
  *   1. UTF-8 → UTF-16 conversion (input may use either '/' or '\' separators)
  *   2. Slash normalization to '\' (required by the \\?\ long-path namespace)
  *   3. Host-filesystem existence probe via GetFileAttributesW
  *   4. Inum resolution (different strategy for files vs directories)
+ *   5. Optional FS_NAME population (if caller passes a non-NULL a_fs_name)
  *
  * Resolution strategy:
  *   - DIRECTORY paths: forward to get_inum_from_directory_path (cache-aware
@@ -2265,7 +2325,8 @@ logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide) {
  * @returns -1 on (system) error, 0 if found, and 1 if not found.
  */
 int8_t
-tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const char *a_path, TSK_INUM_T *a_result) {
+tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const char *a_path,
+    TSK_INUM_T *a_result, TSK_FS_NAME *a_fs_name) {
 
 	if (a_fs == NULL || a_path == NULL || a_result == NULL) {
 		return -1;
@@ -2323,6 +2384,9 @@ tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const char *a_path, TSK_INUM_T *a_re
 	if (a_path_wide[0] == L'\0' ||
 		(a_path_wide[0] == L'\\' && a_path_wide[1] == L'\0')) {
 		*a_result = a_fs->root_inum;
+		// Root entry: empty name, DIR type — matches the generic walker's
+		// root special-case in ifind_lib.c tsk_fs_path2inum.
+		populate_fs_name(a_fs_name, *a_result, L"", true);
 		free(a_path_wide);
 		return 0;
 	}
@@ -2345,6 +2409,12 @@ tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const char *a_path, TSK_INUM_T *a_re
 			return -1;
 		}
 		*a_result = inum;
+		// Leaf name = last path component (everything after the last '\').
+		size_t dir_last_slash = relative_path.find_last_of(L'\\');
+		const wchar_t *dir_leaf = (dir_last_slash == std::wstring::npos)
+			? relative_path.c_str()
+			: relative_path.c_str() + dir_last_slash + 1;
+		populate_fs_name(a_fs_name, *a_result, dir_leaf, true);
 		return 0;
 	}
 
@@ -2406,6 +2476,9 @@ tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const char *a_path, TSK_INUM_T *a_re
 		// parent_inum already has the dir id in the high bits and zeros in the low.
 		size_t i = (size_t)(it - file_names.begin());
 		*a_result = parent_inum | ((TSK_INUM_T)i + 1);
+		// Use the matched cached name (it->c_str()) rather than the caller's
+		// filename so casing reflects what's on disk.
+		populate_fs_name(a_fs_name, *a_result, it->c_str(), false);
 		return 0;
 	}
 
@@ -2416,6 +2489,7 @@ tsk_logical_fs_path2inum(TSK_FS_INFO *a_fs, const char *a_path, TSK_INUM_T *a_re
 #else
 	(void)a_path;
 	(void)a_result;
+	(void)a_fs_name;
 	return 1;
 #endif
 }
