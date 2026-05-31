@@ -93,7 +93,7 @@ extern "C" {
 		const TSK_TCHAR * const a_images[], unsigned int a_ssize);
 
 	extern void
-		clear_inum_cache_entry(IMG_LOGICAL_INFO *logical_img_info, int index);
+		clear_inum_cache_entry(IMG_LOGICAL_INFO *a_logical_img_info, int a_index);
 
 #ifdef __cplusplus
 }

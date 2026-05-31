@@ -182,61 +182,12 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
 
 #ifdef TSK_WIN32
     // Logical file systems are backed by a directory tree on the host OS, so on
-    // Windows we can resolve paths much faster by leveraging Win32 APIs and the
-    // logical-FS-specific caches instead of going through the generic dir-open-meta
-    // walk. The optimization is gated on both the FS type and TSK_WIN32 because
-    // the host-side enumeration this relies on is only implemented for Windows.
+    // Windows we resolve paths much faster via the logical-FS-specific resolver
+    // (Win32 APIs + cache-aware walk) than the generic per-component walker
+    // below. Gated on TSK_WIN32 because the underlying host enumeration is only
+    // implemented for Windows.
     if (a_fs != NULL && a_fs->ftype == TSK_FS_TYPE_LOGICAL) {
-        // Both logical-FS helpers below need the path in UTF-16 with backslash
-        // separators. Convert once here so we don't duplicate the work in each
-        // helper. UTF-16 needs at most as many code units as UTF-8 has bytes
-        // (ASCII = 1:1, multi-byte sequences collapse), so the input byte length
-        // is always a safe upper bound for the wide-char allocation.
-        size_t a_path_len = strlen(a_path);
-        TSK_TCHAR *a_path_wide = (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (a_path_len + 1));
-        if (a_path_wide == NULL) {
-            return -1;
-        }
-
-        UTF8 *utf8_src = (UTF8 *)a_path;
-        UTF16 *utf16_dst = (UTF16 *)a_path_wide;
-        TSKConversionResult cnv = tsk_UTF8toUTF16(
-            (const UTF8 **)&utf8_src, &utf8_src[a_path_len],
-            &utf16_dst, &utf16_dst[a_path_len], TSKlenientConversion);
-        if (cnv != TSKconversionOK) {
-            free(a_path_wide);
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-            tsk_error_set_errstr("tsk_fs_path2inum: UTF-8 to UTF-16 conversion failed for path: %s", a_path);
-            return -1;
-        }
-
-        // tsk_UTF8toUTF16 advances utf16_dst past the last written code unit.
-        // Null-terminate at that position. We allocated (a_path_len + 1) wchars
-        // so this write is always in-bounds.
-        *utf16_dst = L'\0';
-
-        // Convert forward slashes to backslashes (logical-FS internals use
-        // backslashes; the \\?\ long-path namespace requires backslashes).
-        for (TSK_TCHAR *p = a_path_wide; *p != L'\0'; p++) {
-            if (*p == L'/') *p = L'\\';
-        }
-
-        TSK_LOGICAL_PATH_TYPE path_type = tsk_logical_fs_check_path(a_fs, a_path_wide);
-
-        if (path_type == TSK_LOGICAL_PATH_NOT_FOUND) {
-            // Path doesn't exist on the host filesystem - skip the expensive walk
-            free(a_path_wide);
-            return 1;
-        }
-
-        // Path exists. Dispatch to the logical-FS-specific resolver, which uses
-        // get_inum_from_directory_path (cache-aware) for directories and the
-        // sorted-file-list lookup for files.
-        int8_t ret = tsk_logical_fs_path2inum(a_fs, a_path_wide, path_type, a_result);
-
-        free(a_path_wide);
-        return ret;
+        return tsk_logical_fs_path2inum(a_fs, a_path, a_result);
     }
 #endif
 

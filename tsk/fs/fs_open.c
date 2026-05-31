@@ -167,7 +167,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 			return NULL;
 		}
 
-		return logical_fs_open(a_img_info);
+		return logicalfs_open(a_img_info);
 	}
 
     /* We will try different file systems ...

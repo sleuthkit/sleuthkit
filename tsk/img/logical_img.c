@@ -38,14 +38,14 @@ static const TSK_TCHAR LOGICAL_UNC_LONG_PATH_PREFIX[] = L"\\\\?\\UNC\\";
  * @param hFile Handle to print information to
  */
 static void
-logical_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
+logical_imgstat(TSK_IMG_INFO * a_img_info, FILE * a_hFile)
 {
-	IMG_LOGICAL_INFO *dir_info = (IMG_LOGICAL_INFO *) img_info;
+	IMG_LOGICAL_INFO *dir_info = (IMG_LOGICAL_INFO *) a_img_info;
 
-    tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
-    tsk_fprintf(hFile, "--------------------------------------------\n");
-    tsk_fprintf(hFile, "Image Type: logical directory\n");
-	tsk_fprintf(hFile,
+	tsk_fprintf(a_hFile, "IMAGE FILE INFORMATION\n");
+	tsk_fprintf(a_hFile, "--------------------------------------------\n");
+	tsk_fprintf(a_hFile, "Image Type: logical directory\n");
+	tsk_fprintf(a_hFile,
 		"Base Directory Path: %" PRIttocTSK "\n",
 		dir_info->base_path);
 }
@@ -55,14 +55,14 @@ logical_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
  * of closing the image and don't need it.
  */
 void
-clear_inum_cache_entry(IMG_LOGICAL_INFO *logical_img_info, int index) {
-	logical_img_info->inum_cache[index].inum = LOGICAL_INVALID_INUM;
-	if (logical_img_info->inum_cache[index].path != NULL) {
-		free(logical_img_info->inum_cache[index].path);
-		logical_img_info->inum_cache[index].path = NULL;
+clear_inum_cache_entry(IMG_LOGICAL_INFO *a_logical_img_info, int a_index) {
+	a_logical_img_info->inum_cache[a_index].inum = LOGICAL_INVALID_INUM;
+	if (a_logical_img_info->inum_cache[a_index].path != NULL) {
+		free(a_logical_img_info->inum_cache[a_index].path);
+		a_logical_img_info->inum_cache[a_index].path = NULL;
 	}
-	logical_img_info->inum_cache[index].path_len = 0;
-	logical_img_info->inum_cache[index].last_used = 0;
+	a_logical_img_info->inum_cache[a_index].path_len = 0;
+	a_logical_img_info->inum_cache[a_index].last_used = 0;
 }
 
 /**
@@ -72,9 +72,9 @@ clear_inum_cache_entry(IMG_LOGICAL_INFO *logical_img_info, int index) {
  * @param img_info logical directory to close
  */
 static void
-logical_close(TSK_IMG_INFO * img_info)
+logical_close(TSK_IMG_INFO * a_img_info)
 {
-	IMG_LOGICAL_INFO *logical_img_info = (IMG_LOGICAL_INFO *)img_info;
+	IMG_LOGICAL_INFO *logical_img_info = (IMG_LOGICAL_INFO *)a_img_info;
 	free(logical_img_info->base_path);
 	for (int i = 0; i < LOGICAL_FILE_HANDLE_CACHE_LEN; i++) {
 #ifdef TSK_WIN32
@@ -95,11 +95,11 @@ logical_close(TSK_IMG_INFO * img_info)
 			free(logical_img_info->dir_file_list_cache.entries[i].file_names);
 		}
 	}
-	tsk_img_free(img_info);
+	tsk_img_free(a_img_info);
 }
 
 static ssize_t
-logical_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
+logical_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset, char *a_buf, size_t a_len)
 {
 	tsk_error_reset();
 	tsk_error_set_errno(TSK_ERR_IMG_READ);
@@ -206,7 +206,7 @@ logical_open(int a_num_img, const TSK_TCHAR * const a_images[],
 	size_t base_len = TSTRLEN(logical_info->base_path);
 	if (base_len > 0 &&
 		(logical_info->base_path[base_len - 1] == L'/' ||
-		 logical_info->base_path[base_len - 1] == L'\\')) {
+		logical_info->base_path[base_len - 1] == L'\\')) {
 		logical_info->base_path[base_len - 1] = L'\0';
 	}
 
