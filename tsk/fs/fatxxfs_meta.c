@@ -294,7 +294,7 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
 		
 		else if((a_fatfs->subtype == TSK_FATFS_SUBTYPE_SPEC) &&
                 (is_83_name(dentry, strict) == 0)) {
-            if (!strict) {
+            if (!strict && tsk_verbose) {
                 tsk_fprintf(stderr,
                     "%s: skipping entry in allocated directory with invalid 8.3 name\n",
                     func_name);
