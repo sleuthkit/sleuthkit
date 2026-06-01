@@ -27,6 +27,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
+#include "tsk_logical_fs.h"     // for the logical-FS path probe
 
 
 /*******************************************************************************
@@ -178,6 +179,19 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     uint8_t is_done;
     char *strtok_last;
     *a_result = 0;
+
+#ifdef TSK_WIN32
+    // Logical file systems are backed by a directory tree on the host OS, so on
+    // Windows we resolve paths much faster via the logical-FS-specific resolver
+    // (Win32 APIs + cache-aware walk) than the generic per-component walker
+    // below. Gated on TSK_WIN32 because the underlying host enumeration is only
+    // implemented for Windows. The resolver populates a_fs_name (if non-NULL)
+    // internally, so behavior matches the generic walker.
+    if (a_fs != NULL && a_fs->ftype == TSK_FS_TYPE_LOGICAL) {
+        return tsk_logical_fs_path2inum(a_fs, a_path, a_result, a_fs_name);
+    }
+#endif
+
 
     // copy path to a buffer that we can modify
     clen = strlen(a_path) + 1;
@@ -446,7 +460,11 @@ tsk_fs_ifind_path(TSK_FS_INFO * fs, TSK_TCHAR * tpath, TSK_INUM_T * result)
             free(cpath);
             return -1;
         }
-        return tsk_fs_path2inum(fs, cpath, result, NULL);
+        // tsk_fs_path2inum does not take ownership of cpath - it makes its own
+        // internal copy. Free our buffer before returning to avoid a leak.
+        int8_t ret = tsk_fs_path2inum(fs, cpath, result, NULL);
+        free(cpath);
+        return ret;
     }
 #else
     return tsk_fs_path2inum(fs, (const char *) tpath, result, NULL);
