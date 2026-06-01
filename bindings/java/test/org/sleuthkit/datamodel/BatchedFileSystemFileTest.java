@@ -74,8 +74,8 @@ public class BatchedFileSystemFileTest {
 			caseDB = SleuthkitCase.newCase(dbPath);
 
 			// Uncomment to manually exercise the batched PostgreSQL path.
-			CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
-			 caseDB = SleuthkitCase.newCase("TskBatchedFileSystemFileTest", connectionInfo, tempDirPath);
+			// CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
+			// caseDB = SleuthkitCase.newCase("TskBatchedFileSystemFileTest", connectionInfo, tempDirPath);
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
@@ -100,6 +100,7 @@ public class BatchedFileSystemFileTest {
 			System.out.println("BatchedFileSystemFileTest DB created at: " + dbPath);
 		} catch (TskCoreException | OsAccountManager.NotUserSIDException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to set up BatchedFileSystemFileTest", ex);
+			fail("Failed to set up BatchedFileSystemFileTest: " + ex.getMessage());
 		}
 	}
 
@@ -181,25 +182,25 @@ public class BatchedFileSystemFileTest {
 
 	// ---------- DTO request builder (defaults for terseness) ----------
 
-	private static SleuthkitCase.NewFileSystemFileRequest dirRequest(String name, String normalizedFullPath, Content parent, String inBatchParentPath, String parentPath) {
+	private static SleuthkitCase.NewFileSystemFileRequest dirRequest(String name, String normalizedFullPath, Content parent, String inBatchParentPath) {
 		return new SleuthkitCase.NewFileSystemFileRequest(
 				image.getId(), fs.getId(), name, 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC, (short) 0, 0,
 				0, 0, 0, 0,
 				null, null, null, null, false,
-				parent, inBatchParentPath, parentPath, normalizedFullPath,
+				parent, inBatchParentPath, normalizedFullPath,
 				null, null, TskData.CollectedStatus.UNKNOWN, Collections.emptyList());
 	}
 
-	private static SleuthkitCase.NewFileSystemFileRequest fileRequest(String name, Content parent, String inBatchParentPath, String parentPath, List<Attribute> attrs) {
+	private static SleuthkitCase.NewFileSystemFileRequest fileRequest(String name, Content parent, String inBatchParentPath, List<Attribute> attrs) {
 		return new SleuthkitCase.NewFileSystemFileRequest(
 				image.getId(), fs.getId(), name, 0, 0,
 				TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC, (short) 0, 100,
 				0, 0, 0, 0,
 				null, null, null, null, true,
-				parent, inBatchParentPath, parentPath, null,
+				parent, inBatchParentPath, null,
 				null, null, TskData.CollectedStatus.UNKNOWN, attrs);
 	}
 
@@ -231,21 +232,21 @@ public class BatchedFileSystemFileTest {
 
 			// DTO constructor: both parent refs set → IAE.
 			try {
-				dirRequest("d", "/d/", rootFile, "/something/", "/");
+				dirRequest("d", "/d/", rootFile, "/something/");
 				fail("Expected IAE for both parent refs non-null");
 			} catch (IllegalArgumentException expected) {
 			}
 
 			// DTO constructor: neither parent ref set → IAE.
 			try {
-				dirRequest("d", "/d/", null, null, "/");
+				dirRequest("d", "/d/", null, null);
 				fail("Expected IAE for both parent refs null");
 			} catch (IllegalArgumentException expected) {
 			}
 
 			// DTO constructor: directory row without normalizedFullPath → IAE.
 			try {
-				dirRequest("d", null, rootFile, null, "/");
+				dirRequest("d", null, rootFile, null);
 				fail("Expected IAE for directory without normalizedFullPath");
 			} catch (IllegalArgumentException expected) {
 			}
@@ -258,7 +259,7 @@ public class BatchedFileSystemFileTest {
 						TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC, (short) 0, 100,
 						0, 0, 0, 0,
 						null, null, null, null, true,
-						rootFile, null, "/", null,
+						rootFile, null, null,
 						null, null, TskData.CollectedStatus.UNKNOWN, null);
 				fail("Expected IAE for null fileAttributes");
 			} catch (IllegalArgumentException expected) {
@@ -275,7 +276,7 @@ public class BatchedFileSystemFileTest {
 	@Test
 	public void singleFile() throws TskCoreException {
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Collections.singletonList(
-				fileRequest("solo.txt", rootFile, null, "/root.dir/", Collections.<Attribute>emptyList()));
+				fileRequest("solo.txt", rootFile, null, Collections.<Attribute>emptyList()));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		List<FsContent> result;
@@ -297,7 +298,7 @@ public class BatchedFileSystemFileTest {
 		// tsk_files row with the right fields.
 		assertEquals(1, countRows("tsk_files", "obj_id = " + file.getId()));
 		assertEquals("solo.txt", selectString("name", "tsk_files", "obj_id = " + file.getId()));
-		assertEquals("/root.dir/", selectString("parent_path", "tsk_files", "obj_id = " + file.getId()));
+		assertEquals("/", selectString("parent_path", "tsk_files", "obj_id = " + file.getId()));
 		assertEquals(image.getId(), selectLong("data_source_obj_id", "tsk_files", "obj_id = " + file.getId()));
 		assertEquals(fs.getId(), selectLong("fs_obj_id", "tsk_files", "obj_id = " + file.getId()));
 		// meta_type = REG for files.
@@ -315,10 +316,10 @@ public class BatchedFileSystemFileTest {
 	@Test
 	public void mixedFilesAndDirs() throws TskCoreException {
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Arrays.asList(
-				dirRequest("etc", "/root.dir/etc/", rootFile, null, "/root.dir/"),
-				fileRequest("hosts", rootFile, null, "/root.dir/", Collections.<Attribute>emptyList()),
-				dirRequest("var", "/root.dir/var/", rootFile, null, "/root.dir/"),
-				fileRequest("README", rootFile, null, "/root.dir/", Collections.<Attribute>emptyList()));
+				dirRequest("etc", "/root.dir/etc/", rootFile, null),
+				fileRequest("hosts", rootFile, null, Collections.<Attribute>emptyList()),
+				dirRequest("var", "/root.dir/var/", rootFile, null),
+				fileRequest("README", rootFile, null, Collections.<Attribute>emptyList()));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		List<FsContent> result;
@@ -359,8 +360,8 @@ public class BatchedFileSystemFileTest {
 	@Test
 	public void inBatchParentResolves() throws TskCoreException {
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Arrays.asList(
-				dirRequest("subdir", "/root.dir/subdir/", rootFile, null, "/root.dir/"),
-				fileRequest("inside.txt", null, "/root.dir/subdir/", "/root.dir/subdir/", Collections.<Attribute>emptyList()));
+				dirRequest("subdir", "/root.dir/subdir/", rootFile, null),
+				fileRequest("inside.txt", null, "/root.dir/subdir/", Collections.<Attribute>emptyList()));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		List<FsContent> result;
@@ -388,7 +389,7 @@ public class BatchedFileSystemFileTest {
 	@Test
 	public void inBatchParentMissingThrows() throws TskCoreException {
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Collections.singletonList(
-				fileRequest("orphan.txt", null, "/never/declared/", "/never/declared/", Collections.<Attribute>emptyList()));
+				fileRequest("orphan.txt", null, "/never/declared/", Collections.<Attribute>emptyList()));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		try {
@@ -409,10 +410,10 @@ public class BatchedFileSystemFileTest {
 	@Test
 	public void deepChain() throws TskCoreException {
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Arrays.asList(
-				dirRequest("a", "/a/", rootFile, null, "/root.dir/"),
-				dirRequest("b", "/a/b/", null, "/a/", "/a/"),
-				dirRequest("c", "/a/b/c/", null, "/a/b/", "/a/b/"),
-				fileRequest("d.exe", null, "/a/b/c/", "/a/b/c/", Collections.<Attribute>emptyList()));
+				dirRequest("a", "/a/", rootFile, null),
+				dirRequest("b", "/a/b/", null, "/a/"),
+				dirRequest("c", "/a/b/c/", null, "/a/b/"),
+				fileRequest("d.exe", null, "/a/b/c/", Collections.<Attribute>emptyList()));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		List<FsContent> result;
@@ -443,8 +444,8 @@ public class BatchedFileSystemFileTest {
 	@Test
 	public void duplicateInBatchPathThrows() throws TskCoreException {
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Arrays.asList(
-				dirRequest("etc", "/root.dir/etc/", rootFile, null, "/root.dir/"),
-				dirRequest("etc-copy", "/root.dir/etc/", rootFile, null, "/root.dir/"));
+				dirRequest("etc", "/root.dir/etc/", rootFile, null),
+				dirRequest("etc-copy", "/root.dir/etc/", rootFile, null));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		try {
@@ -473,7 +474,7 @@ public class BatchedFileSystemFileTest {
 		attrs.add(new Attribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME), 1700000000L));
 
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Collections.singletonList(
-				fileRequest("attrs.txt", rootFile, null, "/root.dir/", attrs));
+				fileRequest("attrs.txt", rootFile, null, attrs));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		List<FsContent> result;
@@ -523,9 +524,9 @@ public class BatchedFileSystemFileTest {
 				new Attribute(BlackboardAttribute.Type.TSK_PATH_ID, 1003L));
 
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Arrays.asList(
-				fileRequest("a.txt", rootFile, null, "/root.dir/", attrsA),
-				fileRequest("b.txt", rootFile, null, "/root.dir/", attrsB),
-				fileRequest("c.txt", rootFile, null, "/root.dir/", attrsC));
+				fileRequest("a.txt", rootFile, null, attrsA),
+				fileRequest("b.txt", rootFile, null, attrsB),
+				fileRequest("c.txt", rootFile, null, attrsC));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		List<FsContent> result;
@@ -570,7 +571,7 @@ public class BatchedFileSystemFileTest {
 				TskData.TSK_FS_NAME_FLAG_ENUM.ALLOC, (short) 0, 100,
 				0, 0, 0, 0,
 				null, null, null, null, true,
-				rootFile, null, "/root.dir/", null,
+				rootFile, null, null,
 				null, osAccount, TskData.CollectedStatus.UNKNOWN, Collections.<Attribute>emptyList());
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
@@ -605,9 +606,9 @@ public class BatchedFileSystemFileTest {
 	@Test
 	public void hasChildrenPropagates() throws TskCoreException {
 		List<SleuthkitCase.NewFileSystemFileRequest> reqs = Arrays.asList(
-				fileRequest("c1.txt", rootFile, null, "/root.dir/", Collections.<Attribute>emptyList()),
-				fileRequest("c2.txt", rootFile, null, "/root.dir/", Collections.<Attribute>emptyList()),
-				fileRequest("c3.txt", rootFile, null, "/root.dir/", Collections.<Attribute>emptyList()));
+				fileRequest("c1.txt", rootFile, null, Collections.<Attribute>emptyList()),
+				fileRequest("c2.txt", rootFile, null, Collections.<Attribute>emptyList()),
+				fileRequest("c3.txt", rootFile, null, Collections.<Attribute>emptyList()));
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 		try {

@@ -70,6 +70,7 @@ public class CaseDbAccessManagerBatchTest {
 			System.out.println("CaseDbAccessManagerBatchTest DB created at: " + dbPath);
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to set up batch insert test", ex);
+			fail("Failed to set up batch insert test: " + ex.getMessage());
 		}
 	}
 

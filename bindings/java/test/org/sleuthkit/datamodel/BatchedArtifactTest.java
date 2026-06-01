@@ -77,8 +77,8 @@ public class BatchedArtifactTest {
 			caseDB = SleuthkitCase.newCase(dbPath);
 
 			// Uncomment to manually exercise the batched PostgreSQL path.
-			 CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
-			  caseDB = SleuthkitCase.newCase("TskBatchedArtifactTest", connectionInfo, tempDirPath);
+			// CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
+			// caseDB = SleuthkitCase.newCase("TskBatchedArtifactTest", connectionInfo, tempDirPath);
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 
@@ -105,6 +105,7 @@ public class BatchedArtifactTest {
 			System.out.println("BatchedArtifactTest DB created at: " + dbPath);
 		} catch (TskCoreException | OsAccountManager.NotUserSIDException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to set up BatchedArtifactTest", ex);
+			fail("Failed to set up BatchedArtifactTest: " + ex.getMessage());
 		}
 	}
 
@@ -423,10 +424,9 @@ public class BatchedArtifactTest {
 	}
 
 	/**
-	 * A null {@code dataSourceObjId} must persist as NULL in
-	 * {@code blackboard_artifacts.data_source_obj_id}, exercising the
-	 * {@code setNull(4, Types.BIGINT)} branch in the batched
-	 * blackboard_artifacts INSERT.
+	 * A null {@code dataSourceObjId} is invalid input for batched data artifact
+	 * creation and must be rejected up front with a {@link TskCoreException}
+	 * (rather than persisted or surfaced as a NullPointerException).
 	 *
 	 * (Note: {@code sourceObjId == 0} is not a supported case for data
 	 * artifacts — {@code blackboard_artifacts.obj_id} is a FK to
@@ -434,27 +434,22 @@ public class BatchedArtifactTest {
 	 * batched paths fail the same way; not tested here.)
 	 */
 	@Test
-	public void nullDataSourceObjIdPersistsAsNull() throws TskCoreException {
+	public void nullDataSourceObjIdRejected() throws TskCoreException {
 		BlackboardArtifact.Type type = new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_GPS_SEARCH);
 
 		Blackboard.NewDataArtifactRequest req = new Blackboard.NewDataArtifactRequest(
 				type, rootFile.getId(), null, Collections.emptyList(), null, null);
 
 		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
-		List<DataArtifact> result;
 		try {
-			result = caseDB.getBlackboard().newDataArtifacts(Collections.singletonList(req), trans);
+			caseDB.getBlackboard().newDataArtifacts(Collections.singletonList(req), trans);
 			trans.commit();
+			fail("Expected TskCoreException for null dataSourceObjId");
 		} catch (TskCoreException ex) {
 			trans.rollback();
-			throw ex;
+			assertTrue("Exception should explain the null dataSourceObjId: " + ex.getMessage(),
+					ex.getMessage().toLowerCase().contains("datasourceobjid"));
 		}
-
-		assertEquals(1, result.size());
-		DataArtifact a = result.get(0);
-
-		assertEquals("data_source_obj_id should be NULL when dataSourceObjId==null",
-				1, countRows("blackboard_artifacts", "artifact_id = " + a.getArtifactID() + " AND data_source_obj_id IS NULL"));
 	}
 
 	/**

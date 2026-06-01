@@ -957,7 +957,7 @@ public final class CaseDbAccessManager {
 			if (paramsPerRow <= 0) {
 				return Integer.MAX_VALUE;
 			}
-			return 65000 / paramsPerRow;
+			return Math.max(1, 65000 / paramsPerRow);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error determining max batch size for prepared statement", ex);
 		}

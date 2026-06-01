@@ -8026,6 +8026,11 @@ public class SleuthkitCase {
 		if (requests.isEmpty()) {
 			return Collections.emptyList();
 		}
+		for (int i = 0; i < requests.size(); i++) {
+			if (requests.get(i) == null) {
+				throw new TskCoreException("requests contains null element at index " + i);
+			}
+		}
 
 		if (getDatabaseType() == DbType.POSTGRESQL) {
 			List<FsContent> out = new ArrayList<>(requests.size());
@@ -8035,8 +8040,14 @@ public class SleuthkitCase {
 			// "inBatchParentPath ... did not resolve" error at the first row of
 			// the first chunk that references a prior chunk's directory.
 			Map<String, Long> sharedInBatchMap = new HashMap<>(requests.size() * 2);
+			// Parallel to sharedInBatchMap: normalizedFullPath -> the parent_path
+			// string that this directory's children must receive. Lets the derived
+			// parent_path of an in-batch child reference a directory created in any
+			// prior chunk, mirroring the topology-based derivation of the single-row
+			// path on both backends.
+			Map<String, String> sharedInBatchChildPaths = new HashMap<>(requests.size() * 2);
 			for (List<NewFileSystemFileRequest> chunk : Lists.partition(requests, PG_FILES_CHUNK_SIZE)) {
-				out.addAll(addFileSystemFilesBatchedPostgres(chunk, sharedInBatchMap, transaction));
+				out.addAll(addFileSystemFilesBatchedPostgres(chunk, sharedInBatchMap, sharedInBatchChildPaths, transaction));
 			}
 			return out;
 		}
@@ -8067,6 +8078,10 @@ public class SleuthkitCase {
 					r.fileAttributes, transaction);
 			out.add(created);
 			if (!r.isFile && r.normalizedFullPath != null) {
+				if (inBatchCreated.containsKey(r.normalizedFullPath)) {
+					throw new TskCoreException("addFileSystemFiles: duplicate normalizedFullPath in batch: '"
+							+ r.normalizedFullPath + "'");
+				}
 				inBatchCreated.put(r.normalizedFullPath, created);
 			}
 		}
@@ -8092,14 +8107,21 @@ public class SleuthkitCase {
 	 *                         {@code inBatchParentPath} resolutions consult it,
 	 *                         so a child request can reference a directory
 	 *                         created in any prior chunk of the same call.
+	 * @param inBatchChildPaths Shared {@code normalizedFullPath -> child
+	 *                         parent_path} map accumulated across chunks. For each
+	 *                         directory row this chunk records the parent_path its
+	 *                         children should receive; in-batch children consult it
+	 *                         to derive their own parent_path, spanning chunks like
+	 *                         {@code inBatchMap}.
 	 * @param transaction      Caller-managed transaction.
 	 */
-	private List<FsContent> addFileSystemFilesBatchedPostgres(List<NewFileSystemFileRequest> requests, Map<String, Long> inBatchMap, CaseDbTransaction transaction) throws TskCoreException {
+	private List<FsContent> addFileSystemFilesBatchedPostgres(List<NewFileSystemFileRequest> requests, Map<String, Long> inBatchMap, Map<String, String> inBatchChildPaths, CaseDbTransaction transaction) throws TskCoreException {
 
 		int n = requests.size();
 		CaseDbConnection connection = transaction.getConnection();
 		long[] objIds = new long[n];
 		long[] parObjIds = new long[n];
+		String[] parentPaths = new String[n];
 
 		try {
 			// Step 1: reserve N obj_ids in one round trip.
@@ -8119,20 +8141,31 @@ public class SleuthkitCase {
 				}
 			}
 
-			// Step 2: extend the caller-owned in-batch map with this chunk's
-			// directory rows, then resolve par_obj_id for each row. The map
-			// spans all chunks of the enclosing addFileSystemFiles call.
+			// Step 2: resolve par_obj_id and derive parent_path for each row first,
+			// then extend the caller-owned in-batch maps with this chunk's
+			// directory rows. The maps span all chunks of the enclosing
+			// addFileSystemFiles call. Resolving before publishing prevents a
+			// directory from resolving its inBatchParentPath against its own
+			// normalizedFullPath; legitimate parents always appear earlier in the
+			// input list.
+			//
+			// parent_path is derived from topology to match the single-row path
+			// (and the SQLite batched path, which delegates to it): a child of the
+			// file system root directory gets "/", otherwise
+			// parentDerivedPath + parentName + "/".
 			for (int i = 0; i < n; i++) {
 				NewFileSystemFileRequest r = requests.get(i);
-				if (!r.isFile && r.normalizedFullPath != null) {
-					Long prev = inBatchMap.put(r.normalizedFullPath, objIds[i]);
-					if (prev != null) {
-						throw new TskCoreException("addFileSystemFiles: duplicate normalizedFullPath in batch: '"
-								+ r.normalizedFullPath + "' at index " + i);
-					}
-				}
+				String parentPath;
 				if (r.parent != null) {
 					parObjIds[i] = r.parent.getId();
+					if (r.parent instanceof AbstractFile) {
+						AbstractFile parentFile = (AbstractFile) r.parent;
+						parentPath = isRootDirectory(parentFile, transaction)
+								? "/"
+								: parentFile.getParentPath() + parentFile.getName() + "/";
+					} else {
+						parentPath = "/";
+					}
 				} else {
 					Long resolved = inBatchMap.get(r.inBatchParentPath);
 					if (resolved == null) {
@@ -8140,6 +8173,24 @@ public class SleuthkitCase {
 								+ "' at index " + i + " did not resolve. Parents must appear earlier in the input list with matching normalizedFullPath.");
 					}
 					parObjIds[i] = resolved;
+					parentPath = inBatchChildPaths.get(r.inBatchParentPath);
+				}
+				parentPaths[i] = parentPath;
+
+				if (!r.isFile && r.normalizedFullPath != null) {
+					Long prev = inBatchMap.put(r.normalizedFullPath, objIds[i]);
+					if (prev != null) {
+						throw new TskCoreException("addFileSystemFiles: duplicate normalizedFullPath in batch: '"
+								+ r.normalizedFullPath + "' at index " + i);
+					}
+					// The parent_path this directory's children should receive. A
+					// directory whose parent is a non-AbstractFile container
+					// (FS/IMG/VS/VOL) is the file system root, so its children get
+					// "/" — mirroring isRootDirectory in the single-row path.
+					String childPath = (r.parent != null && !(r.parent instanceof AbstractFile))
+							? "/"
+							: parentPath + r.name + "/";
+					inBatchChildPaths.put(r.normalizedFullPath, childPath);
 				}
 			}
 
@@ -8196,7 +8247,7 @@ public class SleuthkitCase {
 				fileStmt.setString(21, r.sha256Hash);
 				fileStmt.setString(22, r.sha1Hash);
 				fileStmt.setString(23, r.mimeType);
-				fileStmt.setString(24, r.parentPath);
+				fileStmt.setString(24, parentPaths[i]);
 				fileStmt.setString(25, extractExtension(r.name));
 				fileStmt.setString(26, r.ownerUid);
 				if (r.osAccount != null) {
@@ -8241,7 +8292,7 @@ public class SleuthkitCase {
 					dirType, metaType, r.dirFlag, r.metaFlags,
 					r.size, r.ctime, r.crtime, r.atime, r.mtime,
 					(short) 0, 0, 0, r.md5Hash, r.sha256Hash, r.sha1Hash,
-					null, r.parentPath, r.mimeType, extractExtension(r.name), r.ownerUid,
+					null, parentPaths[i], r.mimeType, extractExtension(r.name), r.ownerUid,
 					osAccountId, r.collected, r.fileAttributes));
 		}
 
@@ -8409,8 +8460,9 @@ public class SleuthkitCase {
 	 *       added earlier in the same batch and does not yet exist as a
 	 *       {@link Content}). Exactly one of these MUST be non-null; the
 	 *       constructor enforces this.</li>
-	 *   <li>The {@code parent_path} column value is supplied directly via
-	 *       {@link #parentPath} (caller-computed).</li>
+	 *   <li>The {@code parent_path} column value is derived from the parent's
+	 *       topology (identical to the single-row path), not supplied by the
+	 *       caller.</li>
 	 * </ul>
 	 *
 	 * <p>The {@link #normalizedFullPath} field is the caller's chosen unique
@@ -8442,7 +8494,6 @@ public class SleuthkitCase {
 		public final boolean isFile;
 		public final Content parent;
 		public final String inBatchParentPath;
-		public final String parentPath;
 		public final String normalizedFullPath;
 		public final String ownerUid;
 		public final OsAccount osAccount;
@@ -8471,7 +8522,6 @@ public class SleuthkitCase {
 				boolean isFile,
 				Content parent,
 				String inBatchParentPath,
-				String parentPath,
 				String normalizedFullPath,
 				String ownerUid,
 				OsAccount osAccount,
@@ -8481,9 +8531,6 @@ public class SleuthkitCase {
 				throw new IllegalArgumentException("Exactly one of parent or inBatchParentPath must be non-null (got parent="
 						+ (parent == null ? "null" : "id=" + parent.getId())
 						+ ", inBatchParentPath=" + inBatchParentPath + ")");
-			}
-			if (parentPath == null) {
-				throw new IllegalArgumentException("parentPath is required");
 			}
 			if (attrType == null) {
 				throw new IllegalArgumentException("attrType is required");
@@ -8521,7 +8568,6 @@ public class SleuthkitCase {
 			this.isFile = isFile;
 			this.parent = parent;
 			this.inBatchParentPath = inBatchParentPath;
-			this.parentPath = parentPath;
 			this.normalizedFullPath = normalizedFullPath;
 			this.ownerUid = ownerUid;
 			this.osAccount = osAccount;

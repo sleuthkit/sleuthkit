@@ -83,8 +83,8 @@ public class BatchedAnalysisResultTest {
 			caseDB = SleuthkitCase.newCase(dbPath);
 
 			// Uncomment to manually exercise the batched PostgreSQL path.
-			CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
-			 caseDB = SleuthkitCase.newCase("TskBatchedAnalysisResultTest", connectionInfo, tempDirPath);
+			// CaseDbConnectionInfo connectionInfo = new CaseDbConnectionInfo("localhost", "5432", "ct_user", "ct_user_abc", TskData.DbType.POSTGRESQL);
+			// caseDB = SleuthkitCase.newCase("TskBatchedAnalysisResultTest", connectionInfo, tempDirPath);
 
 			SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
 			image = caseDB.addImage(TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT, 512, 1024, "", Collections.emptyList(), "America/NewYork", null, null, null, "BatchedAnalysisResultTestImage", trans);

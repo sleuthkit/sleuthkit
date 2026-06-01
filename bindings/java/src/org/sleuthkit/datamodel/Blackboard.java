@@ -2557,7 +2557,9 @@ public final class Blackboard {
 	 * @return DataArtifacts in input order; same size as {@code requests}.
 	 *
 	 * @throws TskCoreException If any request has a non-DATA_ARTIFACT
-	 *                          category, or on any underlying SQL failure.
+	 *                          category, if any request has a null
+	 *                          {@code dataSourceObjId}, or on any underlying SQL
+	 *                          failure.
 	 */
 	@Beta
 	public List<DataArtifact> newDataArtifacts(List<NewDataArtifactRequest> requests, final CaseDbTransaction transaction) throws TskCoreException {
@@ -2573,8 +2575,14 @@ public final class Blackboard {
 		}
 
 		for (NewDataArtifactRequest r : requests) {
+			if (r == null) {
+				throw new TskCoreException("requests list contains a null NewDataArtifactRequest element");
+			}
 			if (r.artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
 				throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", r.artifactType.getTypeName()));
+			}
+			if (r.dataSourceObjId == null) {
+				throw new TskCoreException("dataSourceObjId cannot be null for batched data artifact creation");
 			}
 		}
 
@@ -2668,11 +2676,8 @@ public final class Blackboard {
 				artStmt.setLong(1, artifactIds[i]);
 				artStmt.setLong(2, r.sourceObjId);
 				artStmt.setLong(3, objIds[i]);
-				if (r.dataSourceObjId != null) {
-					artStmt.setLong(4, r.dataSourceObjId);
-				} else {
-					artStmt.setNull(4, Types.BIGINT);
-				}
+				// dataSourceObjId is guaranteed non-null by the validation in newDataArtifacts.
+				artStmt.setLong(4, r.dataSourceObjId);
 				artStmt.setInt(5, r.artifactType.getTypeID());
 				artStmt.addBatch();
 			}
@@ -2997,7 +3002,8 @@ public final class Blackboard {
 	 *
 	 * @return AnalysisResultAdded entries in input order; same size as requests.
 	 *
-	 * @throws BlackboardException On non-ANALYSIS_RESULT category or SQL failure.
+	 * @throws BlackboardException On non-ANALYSIS_RESULT category, on a null
+	 *                             {@code dataSourceObjId}, or on SQL failure.
 	 */
 	public List<AnalysisResultAdded> newAnalysisResults(List<NewAnalysisResultRequest> requests, final CaseDbTransaction transaction) throws BlackboardException {
 
@@ -3014,6 +3020,9 @@ public final class Blackboard {
 		for (NewAnalysisResultRequest r : requests) {
 			if (r.artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
 				throw new BlackboardException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", r.artifactType.getTypeName()));
+			}
+			if (r.dataSourceObjId == null) {
+				throw new BlackboardException("dataSourceObjId cannot be null for batched analysis result creation");
 			}
 		}
 
@@ -3104,11 +3113,8 @@ public final class Blackboard {
 				artStmt.setLong(1, artifactIds[i]);
 				artStmt.setLong(2, r.objId);
 				artStmt.setLong(3, objIds[i]);
-				if (r.dataSourceObjId != null) {
-					artStmt.setLong(4, r.dataSourceObjId);
-				} else {
-					artStmt.setNull(4, Types.BIGINT);
-				}
+				// dataSourceObjId is guaranteed non-null by the validation in newAnalysisResults.
+				artStmt.setLong(4, r.dataSourceObjId);
 				artStmt.setInt(5, r.artifactType.getTypeID());
 				artStmt.addBatch();
 			}
@@ -3231,6 +3237,11 @@ public final class Blackboard {
 		}
 		if (artifactObjIds.isEmpty()) {
 			return Collections.emptyMap();
+		}
+		for (int i = 0; i < artifactObjIds.size(); i++) {
+			if (artifactObjIds.get(i) == null) {
+				throw new BlackboardException("artifactObjIds contains null element at index " + i);
+			}
 		}
 
 		try {
