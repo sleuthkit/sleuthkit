@@ -97,6 +97,13 @@ parse_v2_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
     uint64_t timestamp = 0;
     uint16_t name_length = 0, name_offset = 0;
 
+    if (header->length < sizeof(ntfs_usn_v2_rec)) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "parse_v2_record: record too short for fixed fields\n");
+        return 1;
+    }
+
     record->refnum = tsk_getu48(endian, rec->file_ref);
     record->refnum_seq = tsk_getu16(endian, rec->file_ref_seq);
     record->parent_refnum = tsk_getu48(endian, rec->par_ref);
