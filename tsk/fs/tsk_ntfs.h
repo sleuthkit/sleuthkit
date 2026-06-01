@@ -614,6 +614,26 @@ extern "C" {
 /************************************************************************
 */
 
+    /* On-disk layout of a USN journal V2 record (little-endian). */
+    typedef struct {
+        uint8_t length[4];          /* 0:  RecordLength */
+        uint8_t major_version[2];   /* 4:  MajorVersion */
+        uint8_t minor_version[2];   /* 6:  MinorVersion */
+        uint8_t file_ref[6];        /* 8:  FileReferenceNumber (MFT entry) */
+        uint8_t file_ref_seq[2];    /* 14: FileReferenceNumber (sequence) */
+        uint8_t par_ref[6];         /* 16: ParentFileReferenceNumber (MFT entry) */
+        uint8_t par_ref_seq[2];     /* 22: ParentFileReferenceNumber (sequence) */
+        uint8_t usn[8];             /* 24: Usn */
+        uint8_t timestamp[8];       /* 32: TimeStamp */
+        uint8_t reason[4];          /* 40: Reason */
+        uint8_t source_info[4];     /* 44: SourceInfo */
+        uint8_t security_id[4];     /* 48: SecurityId */
+        uint8_t attributes[4];      /* 52: FileAttributes */
+        uint8_t fname_length[2];    /* 56: FileNameLength */
+        uint8_t fname_offset[2];    /* 58: FileNameOffset */
+        /* FileName (UTF-16LE) follows immediately at offset 60 */
+    } ntfs_usn_v2_rec;
+
 
     enum TSK_FS_USN_REASON {
         TSK_FS_USN_REASON_DATA_OVERWRITE = 0x00000001,
