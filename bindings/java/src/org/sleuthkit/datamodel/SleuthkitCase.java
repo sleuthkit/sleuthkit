@@ -22,6 +22,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.gson.Gson;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -195,6 +196,26 @@ public class SleuthkitCase {
 	
 	// key in acquisition tool settings; the password for decrypting an image
 	static final String IMAGE_PASSWORD_KEY = "imagePassword";
+
+	/**
+	 * Maximum number of files per PostgreSQL batch chunk inside
+	 * {@link #addFileSystemFiles}. Internal chunking unit; callers may pass any
+	 * size and the method partitions internally.
+	 *
+	 * Sized to keep tsk_files INSERTs (28 columns per row) under PostgreSQL's
+	 * 65,535 bind-parameter ceiling: 2000 rows = 56,000 params.
+	 */
+	static final int PG_FILES_CHUNK_SIZE = 2000;
+
+	/**
+	 * Maximum number of attributes per PostgreSQL batch chunk inside the
+	 * tsk_file_attributes INSERT loop. Independent of
+	 * {@link #PG_FILES_CHUNK_SIZE}.
+	 *
+	 * Sized for tsk_file_attributes INSERTs (9 columns per row): 5000 rows =
+	 * 45,000 parameters.
+	 */
+	static final int PG_FILE_ATTR_CHUNK_SIZE = 5000;
 
 	private final ConnectionPool connections;
 	private final Object carvedFileDirsLock = new Object();
@@ -585,6 +606,27 @@ public class SleuthkitCase {
 			}
 		} finally {
 			childrenBitSetLock.unlock();
+		}
+	}
+
+	/**
+	 * Marks each non-zero parent id in the collection as having children.
+	 * Memory-only update; safe to call from any thread.
+	 *
+	 * Used by the batched artifact-creation path to amortize the parent
+	 * has-children bookkeeping across a chunk of newly-created artifacts.
+	 *
+	 * @param parentIds Parent obj_ids; nulls and zeros are ignored to mirror
+	 *                  the single-row {@code addObject} semantics.
+	 */
+	void markParentsHaveChildren(Collection<Long> parentIds) {
+		if (parentIds == null || parentIds.isEmpty()) {
+			return;
+		}
+		for (Long parentId : parentIds) {
+			if (parentId != null && parentId != 0L) {
+				setHasChildren(parentId);
+			}
 		}
 	}
 
@@ -5538,6 +5580,103 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Returns the cached prepared statement that reserves N obj_ids and N
+	 * artifact_ids in a single PostgreSQL round trip. PostgreSQL only.
+	 *
+	 * Used by {@link Blackboard#newDataArtifacts} to pre-allocate IDs before
+	 * the batched INSERTs. Keeping this accessor avoids widening the
+	 * {@link PREPARED_STATEMENT} enum visibility.
+	 */
+	PreparedStatement getReserveArtifactIdsStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_RESERVE_ARTIFACT_IDS, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached prepared statement that inserts into tsk_objects with
+	 * an explicit obj_id. PostgreSQL only — used by the batched artifact
+	 * creation path which pre-allocates obj_ids via
+	 * {@link #getReserveArtifactIdsStatement}.
+	 */
+	PreparedStatement getInsertObjectWithIdStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_INSERT_OBJECT_WITH_ID, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached prepared statement that inserts into
+	 * blackboard_artifacts with an explicit artifact_id. Reuses the same SQL
+	 * shape SQLite uses for the single-row path; explicit values are accepted
+	 * on PostgreSQL BIGSERIAL columns when the IDs are pre-allocated.
+	 */
+	PreparedStatement getInsertArtifactStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached prepared statement that inserts a row into
+	 * tsk_data_artifacts. Shared between the single-row {@code newDataArtifact}
+	 * path and the batched {@link Blackboard#newDataArtifacts} path.
+	 */
+	PreparedStatement getInsertDataArtifactStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DATA_ARTIFACT, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached prepared statement that inserts a row into
+	 * tsk_analysis_results. Shared between the single-row {@code newAnalysisResult}
+	 * leaf and the batched {@link Blackboard#newAnalysisResults} path.
+	 */
+	PreparedStatement getInsertAnalysisResultStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ANALYSIS_RESULT, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached race-safe aggregate-score UPSERT prepared statement used
+	 * by the batched analysis-result insert path. PostgreSQL only.
+	 */
+	PreparedStatement getUpsertAggregateScoreIfHigherStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.UPSERT_AGGREGATE_SCORE_IF_HIGHER, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached batched-DELETE prepared statement for analysis-result
+	 * artifacts (deletes by a bigint[] of artifact_obj_ids). PostgreSQL only.
+	 */
+	PreparedStatement getDeleteBbArtifactsByIdsStatement(CaseDbConnection connection) throws SQLException {
+		return connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_BB_ARTIFACTS_BY_IDS, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
+	 * Returns the cached attribute-INSERT prepared statement matching the
+	 * given attribute value type. Mirrors the switch in
+	 * {@link #addBlackBoardAttribute}.
+	 */
+	PreparedStatement getInsertAttributeStatement(CaseDbConnection connection, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) throws SQLException, TskCoreException {
+		PREPARED_STATEMENT key;
+		switch (valueType) {
+			case STRING:
+			case JSON:
+				key = PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE;
+				break;
+			case BYTE:
+				key = PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE;
+				break;
+			case INTEGER:
+				key = PREPARED_STATEMENT.INSERT_INT_ATTRIBUTE;
+				break;
+			case LONG:
+			case DATETIME:
+				key = PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE;
+				break;
+			case DOUBLE:
+				key = PREPARED_STATEMENT.INSERT_DOUBLE_ATTRIBUTE;
+				break;
+			default:
+				throw new TskCoreException("Unrecognized attribute value type: " + valueType);
+		}
+		return connection.getPreparedStatement(key, Statement.NO_GENERATED_KEYS);
+	}
+
+	/**
 	 * Add a new blackboard artifact with the given type.
 	 *
 	 * @param artifact_type_id    The type the given artifact should have.
@@ -7818,6 +7957,622 @@ public class SleuthkitCase {
 			throw new TskCoreException(String.format("Failed to INSERT file system file %s (%s) with parent id %d in tsk_files table", fileName, parentPath, parent.getId()), ex);
 		} finally {
 			closeStatement(queryStatement);
+		}
+	}
+
+	/**
+	 * Bulk variant of {@link #addFileSystemFile}: creates many file/directory
+	 * rows under one caller-managed transaction.
+	 *
+	 * <p><strong>PostgreSQL behavior:</strong> internally partitions the input
+	 * at {@value #PG_FILES_CHUNK_SIZE} and uses sequence pre-allocation plus
+	 * batched INSERTs into tsk_objects, tsk_files and tsk_file_attributes. Each
+	 * chunk runs a fixed number of round trips regardless of chunk size.</p>
+	 *
+	 * <p><strong>SQLite behavior:</strong> delegates to the single-row
+	 * {@link #addFileSystemFile} in a loop.</p>
+	 *
+	 * <p><strong>Parent ordering:</strong> each request's parent is referenced
+	 * via exactly one of {@link NewFileSystemFileRequest#parent} (a
+	 * {@link Content} the caller already holds — typically from a committed
+	 * prior batch) or {@link NewFileSystemFileRequest#inBatchParentPath} (parent
+	 * is created earlier in the same {@code requests} list). The caller MUST
+	 * place parents before their children in input order. An in-batch parent
+	 * reference that cannot be resolved is a {@link TskCoreException}.
+	 * Parent references work across the entire {@code requests} list regardless
+	 * of how the implementation internally chunks the input — internal chunking
+	 * at {@value #PG_FILES_CHUNK_SIZE} is an implementation detail and callers
+	 * may pass any number of requests in one call.</p>
+	 *
+	 * <p><strong>Return order:</strong> the returned list matches input order
+	 * element-for-element.</p>
+	 *
+	 * <p><strong>Timeline events:</strong> when
+	 * {@code timelineEventsDisabled.get() == false}, this method invokes
+	 * {@code timelineManager.addEventsForNewFile} once per row in a final loop
+	 * — identical conditional as single-row {@link #addFileSystemFile}.
+	 * Per-row timeline event creation is NOT batched by this method.</p>
+	 *
+	 * <p><strong>OS account instance handling:</strong> for each request where
+	 * {@code osAccount != null}, a {@code newOsAccountInstance} upsert with
+	 * type {@code ACCESSED} is issued in a final per-row loop after the main
+	 * batched INSERTs.</p>
+	 *
+	 * <p><strong>Lock behavior:</strong> does NOT acquire
+	 * {@code acquireSingleUserCaseWriteLock}; the caller-owned transaction
+	 * serializes writes on its connection and PostgreSQL sequence atomicity
+	 * handles cross-connection concurrency.</p>
+	 *
+	 * @param requests    Per-row request data; must not be null. May be empty
+	 *                    (returns empty list immediately).
+	 * @param transaction Caller-managed transaction; must not be null.
+	 *
+	 * @return FsContents (all {@code org.sleuthkit.datamodel.File}) in input
+	 *         order; same size as {@code requests}.
+	 *
+	 * @throws TskCoreException If input validation fails, if an
+	 *                          {@code inBatchParentPath} cannot be resolved,
+	 *                          or on any underlying SQL failure.
+	 */
+	@Beta
+	public List<FsContent> addFileSystemFiles(List<NewFileSystemFileRequest> requests, final CaseDbTransaction transaction) throws TskCoreException {
+
+		if (requests == null) {
+			throw new TskCoreException("requests list is required");
+		}
+		if (transaction == null) {
+			throw new TskCoreException("transaction is required");
+		}
+		if (requests.isEmpty()) {
+			return Collections.emptyList();
+		}
+		for (int i = 0; i < requests.size(); i++) {
+			if (requests.get(i) == null) {
+				throw new TskCoreException("requests contains null element at index " + i);
+			}
+		}
+
+		if (getDatabaseType() == DbType.POSTGRESQL) {
+			List<FsContent> out = new ArrayList<>(requests.size());
+			// Shared across chunks so a child request in chunk N+1 can resolve
+			// its inBatchParentPath against a directory row defined in chunk N.
+			// Without this, the internal chunking would surface as an
+			// "inBatchParentPath ... did not resolve" error at the first row of
+			// the first chunk that references a prior chunk's directory.
+			Map<String, Long> sharedInBatchMap = new HashMap<>(requests.size() * 2);
+			// Parallel to sharedInBatchMap: normalizedFullPath -> the parent_path
+			// string that this directory's children must receive. Lets the derived
+			// parent_path of an in-batch child reference a directory created in any
+			// prior chunk, mirroring the topology-based derivation of the single-row
+			// path on both backends.
+			Map<String, String> sharedInBatchChildPaths = new HashMap<>(requests.size() * 2);
+			for (List<NewFileSystemFileRequest> chunk : Lists.partition(requests, PG_FILES_CHUNK_SIZE)) {
+				out.addAll(addFileSystemFilesBatchedPostgres(chunk, sharedInBatchMap, sharedInBatchChildPaths, transaction));
+			}
+			return out;
+		}
+
+		// SQLite: per-row delegation against the caller-owned transaction. Pass
+		// the Content references directly — re-fetching via getContentById would
+		// open a separate pooled connection that cannot see rows still in the
+		// caller's uncommitted transaction.
+		List<FsContent> out = new ArrayList<>(requests.size());
+		Map<String, FsContent> inBatchCreated = new HashMap<>();
+		for (NewFileSystemFileRequest r : requests) {
+			Content parent;
+			if (r.parent != null) {
+				parent = r.parent;
+			} else {
+				parent = inBatchCreated.get(r.inBatchParentPath);
+				if (parent == null) {
+					throw new TskCoreException("addFileSystemFiles: inBatchParentPath '" + r.inBatchParentPath
+							+ "' not resolved (parent must appear earlier in the requests list with a matching normalizedFullPath)");
+				}
+			}
+			FsContent created = addFileSystemFile(
+					r.dataSourceObjId, r.fsObjId, r.name, r.metaAddr, r.metaSeq,
+					r.attrType, r.attrId, r.dirFlag, r.metaFlags, r.size,
+					r.ctime, r.crtime, r.atime, r.mtime,
+					r.md5Hash, r.sha256Hash, r.sha1Hash, r.mimeType, r.isFile,
+					parent, r.ownerUid, r.osAccount, r.collected,
+					r.fileAttributes, transaction);
+			out.add(created);
+			if (!r.isFile && r.normalizedFullPath != null) {
+				if (inBatchCreated.containsKey(r.normalizedFullPath)) {
+					throw new TskCoreException("addFileSystemFiles: duplicate normalizedFullPath in batch: '"
+							+ r.normalizedFullPath + "'");
+				}
+				inBatchCreated.put(r.normalizedFullPath, created);
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * PostgreSQL-only batched implementation of {@link #addFileSystemFiles}.
+	 *
+	 * <p>Does NOT acquire {@code acquireSingleUserCaseWriteLock}. The single-row
+	 * {@link #addFileSystemFile} acquires it indirectly through
+	 * {@link #addObject}; here we omit it for the same reason as the batched
+	 * artifact path. The caller-owned {@link CaseDbTransaction} serializes
+	 * writes on its connection and PostgreSQL sequence atomicity handles
+	 * cross-connection concurrency.</p>
+	 *
+	 * @param requests         Pre-chunked to size &le; {@link #PG_FILES_CHUNK_SIZE};
+	 *                         non-empty.
+	 * @param inBatchMap       Shared {@code normalizedFullPath -> objId} map
+	 *                         accumulated across chunks of one
+	 *                         {@link #addFileSystemFiles} call. This chunk's
+	 *                         directory rows are added to it; this chunk's
+	 *                         {@code inBatchParentPath} resolutions consult it,
+	 *                         so a child request can reference a directory
+	 *                         created in any prior chunk of the same call.
+	 * @param inBatchChildPaths Shared {@code normalizedFullPath -> child
+	 *                         parent_path} map accumulated across chunks. For each
+	 *                         directory row this chunk records the parent_path its
+	 *                         children should receive; in-batch children consult it
+	 *                         to derive their own parent_path, spanning chunks like
+	 *                         {@code inBatchMap}.
+	 * @param transaction      Caller-managed transaction.
+	 */
+	private List<FsContent> addFileSystemFilesBatchedPostgres(List<NewFileSystemFileRequest> requests, Map<String, Long> inBatchMap, Map<String, String> inBatchChildPaths, CaseDbTransaction transaction) throws TskCoreException {
+
+		int n = requests.size();
+		CaseDbConnection connection = transaction.getConnection();
+		long[] objIds = new long[n];
+		long[] parObjIds = new long[n];
+		String[] parentPaths = new String[n];
+
+		try {
+			// Step 1: reserve N obj_ids in one round trip.
+			PreparedStatement reserveStmt = connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_RESERVE_FILE_IDS, Statement.NO_GENERATED_KEYS);
+			reserveStmt.clearParameters();
+			reserveStmt.setInt(1, n);
+			try (ResultSet rs = reserveStmt.executeQuery()) {
+				int i = 0;
+				while (rs.next()) {
+					if (i >= n) {
+						throw new TskCoreException("addFileSystemFiles: reserve query returned more than " + n + " rows");
+					}
+					objIds[i++] = rs.getLong("obj_id");
+				}
+				if (i != n) {
+					throw new TskCoreException("addFileSystemFiles: reserve query returned " + i + " rows, expected " + n);
+				}
+			}
+
+			// Step 2: resolve par_obj_id and derive parent_path for each row first,
+			// then extend the caller-owned in-batch maps with this chunk's
+			// directory rows. The maps span all chunks of the enclosing
+			// addFileSystemFiles call. Resolving before publishing prevents a
+			// directory from resolving its inBatchParentPath against its own
+			// normalizedFullPath; legitimate parents always appear earlier in the
+			// input list.
+			//
+			// parent_path is derived from topology to match the single-row path
+			// (and the SQLite batched path, which delegates to it): a child of the
+			// file system root directory gets "/", otherwise
+			// parentDerivedPath + parentName + "/".
+			for (int i = 0; i < n; i++) {
+				NewFileSystemFileRequest r = requests.get(i);
+				String parentPath;
+				if (r.parent != null) {
+					parObjIds[i] = r.parent.getId();
+					if (r.parent instanceof AbstractFile) {
+						AbstractFile parentFile = (AbstractFile) r.parent;
+						parentPath = isRootDirectory(parentFile, transaction)
+								? "/"
+								: parentFile.getParentPath() + parentFile.getName() + "/";
+					} else {
+						parentPath = "/";
+					}
+				} else {
+					Long resolved = inBatchMap.get(r.inBatchParentPath);
+					if (resolved == null) {
+						throw new TskCoreException("addFileSystemFiles: inBatchParentPath '" + r.inBatchParentPath
+								+ "' at index " + i + " did not resolve. Parents must appear earlier in the input list with matching normalizedFullPath.");
+					}
+					parObjIds[i] = resolved;
+					parentPath = inBatchChildPaths.get(r.inBatchParentPath);
+				}
+				parentPaths[i] = parentPath;
+
+				if (!r.isFile && r.normalizedFullPath != null) {
+					Long prev = inBatchMap.put(r.normalizedFullPath, objIds[i]);
+					if (prev != null) {
+						throw new TskCoreException("addFileSystemFiles: duplicate normalizedFullPath in batch: '"
+								+ r.normalizedFullPath + "' at index " + i);
+					}
+					// The parent_path this directory's children should receive. A
+					// directory whose parent is a non-AbstractFile container
+					// (FS/IMG/VS/VOL) is the file system root, so its children get
+					// "/" — mirroring isRootDirectory in the single-row path.
+					String childPath = (r.parent != null && !(r.parent instanceof AbstractFile))
+							? "/"
+							: parentPath + r.name + "/";
+					inBatchChildPaths.put(r.normalizedFullPath, childPath);
+				}
+			}
+
+			// Step 3: batch INSERT into tsk_objects with explicit obj_ids.
+			// Null-on-zero par_obj_id mirrors addObject:6840-6844.
+			PreparedStatement objStmt = connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_INSERT_OBJECT_WITH_ID, Statement.NO_GENERATED_KEYS);
+			objStmt.clearBatch();
+			for (int i = 0; i < n; i++) {
+				objStmt.clearParameters();
+				objStmt.setLong(1, objIds[i]);
+				if (parObjIds[i] != 0L) {
+					objStmt.setLong(2, parObjIds[i]);
+				} else {
+					objStmt.setNull(2, java.sql.Types.BIGINT);
+				}
+				objStmt.setInt(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+				objStmt.addBatch();
+			}
+			try {
+				objStmt.executeBatch();
+			} catch (SQLException ex) {
+				throw new TskCoreException("addFileSystemFiles: tsk_objects INSERT failed (chunk size " + n + ")", ex);
+			}
+
+			// Step 4: batch INSERT into tsk_files with explicit obj_ids.
+			// Reuses INSERT_FILE_SYSTEM_FILE; first bind parameter is obj_id.
+			PreparedStatement fileStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE_SYSTEM_FILE, Statement.NO_GENERATED_KEYS);
+			fileStmt.clearBatch();
+			for (int i = 0; i < n; i++) {
+				NewFileSystemFileRequest r = requests.get(i);
+				fileStmt.clearParameters();
+				fileStmt.setLong(1, objIds[i]);
+				fileStmt.setLong(2, r.fsObjId);
+				fileStmt.setLong(3, r.dataSourceObjId);
+				fileStmt.setShort(4, (short) r.attrType.getValue());
+				fileStmt.setInt(5, r.attrId);
+				fileStmt.setString(6, r.name);
+				fileStmt.setLong(7, r.metaAddr);
+				fileStmt.setInt(8, r.metaSeq);
+				fileStmt.setShort(9, TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType());
+				fileStmt.setShort(10, (short) 1);
+				TSK_FS_NAME_TYPE_ENUM dirType = r.isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+				fileStmt.setShort(11, dirType.getValue());
+				TSK_FS_META_TYPE_ENUM metaType = r.isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+				fileStmt.setShort(12, metaType.getValue());
+				fileStmt.setShort(13, r.dirFlag.getValue());
+				fileStmt.setShort(14, r.metaFlags);
+				fileStmt.setLong(15, r.size < 0 ? 0 : r.size);
+				fileStmt.setLong(16, r.ctime);
+				fileStmt.setLong(17, r.crtime);
+				fileStmt.setLong(18, r.atime);
+				fileStmt.setLong(19, r.mtime);
+				fileStmt.setString(20, r.md5Hash);
+				fileStmt.setString(21, r.sha256Hash);
+				fileStmt.setString(22, r.sha1Hash);
+				fileStmt.setString(23, r.mimeType);
+				fileStmt.setString(24, parentPaths[i]);
+				fileStmt.setString(25, extractExtension(r.name));
+				fileStmt.setString(26, r.ownerUid);
+				if (r.osAccount != null) {
+					fileStmt.setLong(27, r.osAccount.getId());
+				} else {
+					fileStmt.setNull(27, java.sql.Types.BIGINT);
+				}
+				fileStmt.setLong(28, r.collected.getType());
+				fileStmt.addBatch();
+			}
+			try {
+				fileStmt.executeBatch();
+			} catch (SQLException ex) {
+				throw new TskCoreException("addFileSystemFiles: tsk_files INSERT failed (chunk size " + n + ")", ex);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("addFileSystemFiles: SQL error during chunk of size " + n, ex);
+		}
+
+		// Step 5: batched tsk_file_attributes INSERTs.
+		addFileAttributesBatched(requests, objIds, connection);
+
+		// Step 6: parent-has-children bookkeeping for unique parents.
+		Set<Long> uniqueParents = new HashSet<>();
+		for (int i = 0; i < n; i++) {
+			uniqueParents.add(parObjIds[i]);
+		}
+		markParentsHaveChildren(uniqueParents);
+
+		// Step 7: construct File result list (same shape as single-row path).
+		// Must happen before Steps 8/9 because they pass File instances to the
+		// side-effect APIs.
+		List<FsContent> out = new ArrayList<>(n);
+		for (int i = 0; i < n; i++) {
+			NewFileSystemFileRequest r = requests.get(i);
+			TSK_FS_NAME_TYPE_ENUM dirType = r.isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			TSK_FS_META_TYPE_ENUM metaType = r.isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			Long osAccountId = (r.osAccount != null) ? r.osAccount.getId() : null;
+			out.add(new org.sleuthkit.datamodel.File(
+					this, objIds[i], r.dataSourceObjId, r.fsObjId,
+					r.attrType, r.attrId, r.name, r.metaAddr, r.metaSeq,
+					dirType, metaType, r.dirFlag, r.metaFlags,
+					r.size, r.ctime, r.crtime, r.atime, r.mtime,
+					(short) 0, 0, 0, r.md5Hash, r.sha256Hash, r.sha1Hash,
+					null, parentPaths[i], r.mimeType, extractExtension(r.name), r.ownerUid,
+					osAccountId, r.collected, r.fileAttributes));
+		}
+
+		// Step 8: per-row timeline event creation when timeline events are NOT
+		// globally disabled. Mirrors single-row conditional at line 7889. The
+		// returned File (rather than the transient DerivedFile single-row code
+		// builds) is passed in; both extend AbstractFile and both expose the
+		// timestamps/parent_path/data_source_obj_id getters used by
+		// addEventsForNewFileQuiet, so the call is observationally equivalent.
+		if (!timelineEventsDisabled.get()) {
+			TimelineManager timelineManager = getTimelineManager();
+			for (int i = 0; i < n; i++) {
+				timelineManager.addEventsForNewFile((AbstractFile) out.get(i), connection);
+			}
+		}
+
+		// Step 9: OS account instance upsert per row. Per-row to match
+		// single-row contract; batching newOsAccountInstance is a follow-up PR.
+		for (int i = 0; i < n; i++) {
+			NewFileSystemFileRequest r = requests.get(i);
+			if (r.osAccount != null) {
+				osAccountManager.newOsAccountInstance(r.osAccount.getId(), r.dataSourceObjId, OsAccountInstance.OsAccountInstanceType.ACCESSED, connection);
+			}
+		}
+
+		return out;
+	}
+
+	/**
+	 * Batched persistence of {@link Attribute} rows owned by files just created
+	 * by {@link #addFileSystemFilesBatchedPostgres}.
+	 *
+	 * <p>Pre-allocates {@code tsk_file_attributes.id} via a sequence reserve,
+	 * then issues a chunked batched INSERT against
+	 * {@code POSTGRESQL_INSERT_FILE_ATTRIBUTE_WITH_ID}. Inner chunk size is
+	 * {@link #PG_FILE_ATTR_CHUNK_SIZE}.</p>
+	 *
+	 * <p>After persistence, each {@link Attribute} has its {@code id} set via
+	 * package-private {@link Attribute#setId} and its
+	 * {@code attributeParentId} set via {@link Attribute#setAttributeParentId}
+	 * — mirroring the single-row {@code addFileAttribute} contract.</p>
+	 *
+	 * <p>If no request has any attributes, this method allocates nothing and
+	 * returns immediately (no sequence reserve, no SQL).</p>
+	 *
+	 * @param requests   Original chunk of requests (carries attribute lists).
+	 * @param objIds     The obj_ids assigned to each request (parallel array).
+	 * @param connection Case DB connection bound to the caller's transaction.
+	 */
+	private void addFileAttributesBatched(List<NewFileSystemFileRequest> requests, long[] objIds, CaseDbConnection connection) throws TskCoreException {
+
+		int totalAttrs = 0;
+		for (NewFileSystemFileRequest r : requests) {
+			totalAttrs += r.fileAttributes.size();
+		}
+		if (totalAttrs == 0) {
+			return;
+		}
+
+		try {
+			long[] attrIds = new long[totalAttrs];
+			PreparedStatement reserveStmt = connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_RESERVE_FILE_ATTRIBUTE_IDS, Statement.NO_GENERATED_KEYS);
+			reserveStmt.clearParameters();
+			reserveStmt.setInt(1, totalAttrs);
+			try (ResultSet rs = reserveStmt.executeQuery()) {
+				int i = 0;
+				while (rs.next()) {
+					if (i >= totalAttrs) {
+						throw new TskCoreException("addFileSystemFiles: file_attr reserve query returned more than " + totalAttrs + " rows");
+					}
+					attrIds[i++] = rs.getLong("attr_id");
+				}
+				if (i != totalAttrs) {
+					throw new TskCoreException("addFileSystemFiles: file_attr reserve query returned " + i + " rows, expected " + totalAttrs);
+				}
+			}
+
+			PreparedStatement attrStmt = connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_INSERT_FILE_ATTRIBUTE_WITH_ID, Statement.NO_GENERATED_KEYS);
+			attrStmt.clearBatch();
+
+			int attrCursor = 0;
+			int batchedInChunk = 0;
+			for (int reqIdx = 0; reqIdx < requests.size(); reqIdx++) {
+				NewFileSystemFileRequest r = requests.get(reqIdx);
+				long parentObjId = objIds[reqIdx];
+				for (Attribute a : r.fileAttributes) {
+					long assignedId = attrIds[attrCursor++];
+					a.setId(assignedId);
+					a.setAttributeParentId(parentObjId);
+					a.setCaseDatabase(this);
+
+					attrStmt.clearParameters();
+					attrStmt.setLong(1, assignedId);
+					attrStmt.setLong(2, parentObjId);
+					attrStmt.setInt(3, a.getAttributeType().getTypeID());
+					attrStmt.setLong(4, a.getAttributeType().getValueType().getType());
+					TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE vt = a.getAttributeType().getValueType();
+					if (vt == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+						attrStmt.setBytes(5, a.getValueBytes());
+					} else {
+						attrStmt.setBytes(5, null);
+					}
+					if (vt == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+							|| vt == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.JSON) {
+						attrStmt.setString(6, a.getValueString());
+					} else {
+						attrStmt.setString(6, null);
+					}
+					if (vt == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+						attrStmt.setInt(7, a.getValueInt());
+					} else {
+						attrStmt.setNull(7, java.sql.Types.INTEGER);
+					}
+					if (vt == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+							|| vt == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
+						attrStmt.setLong(8, a.getValueLong());
+					} else {
+						attrStmt.setNull(8, java.sql.Types.BIGINT);
+					}
+					if (vt == TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+						attrStmt.setDouble(9, a.getValueDouble());
+					} else {
+						attrStmt.setNull(9, java.sql.Types.DOUBLE);
+					}
+					attrStmt.addBatch();
+					batchedInChunk++;
+
+					if (batchedInChunk >= PG_FILE_ATTR_CHUNK_SIZE) {
+						try {
+							attrStmt.executeBatch();
+						} catch (SQLException ex) {
+							throw new TskCoreException("addFileSystemFiles: tsk_file_attributes INSERT failed (chunk size " + batchedInChunk + ")", ex);
+						}
+						attrStmt.clearBatch();
+						batchedInChunk = 0;
+					}
+				}
+			}
+			if (batchedInChunk > 0) {
+				try {
+					attrStmt.executeBatch();
+				} catch (SQLException ex) {
+					throw new TskCoreException("addFileSystemFiles: tsk_file_attributes INSERT failed (tail chunk size " + batchedInChunk + ")", ex);
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("addFileSystemFiles: SQL error during file_attribute INSERTs", ex);
+		}
+	}
+
+	/**
+	 * Per-row request data for {@link SleuthkitCase#addFileSystemFiles}.
+	 *
+	 * <p>Field semantics match the parameters of the 25-arg single-row
+	 * {@link SleuthkitCase#addFileSystemFile(long, long, String, long, int,
+	 * TSK_FS_ATTR_TYPE_ENUM, int, TSK_FS_NAME_FLAG_ENUM, short, long, long,
+	 * long, long, long, String, String, String, String, boolean, Content,
+	 * String, OsAccount, TskData.CollectedStatus, List, CaseDbTransaction)}
+	 * with two differences:</p>
+	 *
+	 * <ul>
+	 *   <li>The parent is supplied via exactly one of {@link #parent} (an
+	 *       in-memory {@link Content} the caller already holds, typically from
+	 *       a committed prior batch) or {@link #inBatchParentPath} (parent is
+	 *       added earlier in the same batch and does not yet exist as a
+	 *       {@link Content}). Exactly one of these MUST be non-null; the
+	 *       constructor enforces this.</li>
+	 *   <li>The {@code parent_path} column value is derived from the parent's
+	 *       topology (identical to the single-row path), not supplied by the
+	 *       caller.</li>
+	 * </ul>
+	 *
+	 * <p>The {@link #normalizedFullPath} field is the caller's chosen unique
+	 * key for this row when referenced by other rows in the same batch via
+	 * {@code inBatchParentPath}. Used ONLY for in-batch parent resolution;
+	 * not stored in the database. For file rows it may be {@code null}; for
+	 * directory rows it MUST be unique within a single batch.</p>
+	 */
+	public static final class NewFileSystemFileRequest {
+
+		public final long dataSourceObjId;
+		public final long fsObjId;
+		public final String name;
+		public final long metaAddr;
+		public final int metaSeq;
+		public final TSK_FS_ATTR_TYPE_ENUM attrType;
+		public final int attrId;
+		public final TSK_FS_NAME_FLAG_ENUM dirFlag;
+		public final short metaFlags;
+		public final long size;
+		public final long ctime;
+		public final long crtime;
+		public final long atime;
+		public final long mtime;
+		public final String md5Hash;
+		public final String sha256Hash;
+		public final String sha1Hash;
+		public final String mimeType;
+		public final boolean isFile;
+		public final Content parent;
+		public final String inBatchParentPath;
+		public final String normalizedFullPath;
+		public final String ownerUid;
+		public final OsAccount osAccount;
+		public final TskData.CollectedStatus collected;
+		public final List<Attribute> fileAttributes;
+
+		public NewFileSystemFileRequest(
+				long dataSourceObjId,
+				long fsObjId,
+				String name,
+				long metaAddr,
+				int metaSeq,
+				TSK_FS_ATTR_TYPE_ENUM attrType,
+				int attrId,
+				TSK_FS_NAME_FLAG_ENUM dirFlag,
+				short metaFlags,
+				long size,
+				long ctime,
+				long crtime,
+				long atime,
+				long mtime,
+				String md5Hash,
+				String sha256Hash,
+				String sha1Hash,
+				String mimeType,
+				boolean isFile,
+				Content parent,
+				String inBatchParentPath,
+				String normalizedFullPath,
+				String ownerUid,
+				OsAccount osAccount,
+				TskData.CollectedStatus collected,
+				List<Attribute> fileAttributes) {
+			if ((parent == null) == (inBatchParentPath == null)) {
+				throw new IllegalArgumentException("Exactly one of parent or inBatchParentPath must be non-null (got parent="
+						+ (parent == null ? "null" : "id=" + parent.getId())
+						+ ", inBatchParentPath=" + inBatchParentPath + ")");
+			}
+			if (attrType == null) {
+				throw new IllegalArgumentException("attrType is required");
+			}
+			if (dirFlag == null) {
+				throw new IllegalArgumentException("dirFlag is required");
+			}
+			if (collected == null) {
+				throw new IllegalArgumentException("collected is required");
+			}
+			if (fileAttributes == null) {
+				throw new IllegalArgumentException("fileAttributes must not be null; use Collections.emptyList()");
+			}
+			if (!isFile && normalizedFullPath == null) {
+				throw new IllegalArgumentException("normalizedFullPath is required for directory rows (isFile=false)");
+			}
+			this.dataSourceObjId = dataSourceObjId;
+			this.fsObjId = fsObjId;
+			this.name = name;
+			this.metaAddr = metaAddr;
+			this.metaSeq = metaSeq;
+			this.attrType = attrType;
+			this.attrId = attrId;
+			this.dirFlag = dirFlag;
+			this.metaFlags = metaFlags;
+			this.size = size;
+			this.ctime = ctime;
+			this.crtime = crtime;
+			this.atime = atime;
+			this.mtime = mtime;
+			this.md5Hash = md5Hash;
+			this.sha256Hash = sha256Hash;
+			this.sha1Hash = sha1Hash;
+			this.mimeType = mimeType;
+			this.isFile = isFile;
+			this.parent = parent;
+			this.inBatchParentPath = inBatchParentPath;
+			this.normalizedFullPath = normalizedFullPath;
+			this.ownerUid = ownerUid;
+			this.osAccount = osAccount;
+			this.collected = collected;
+			this.fileAttributes = fileAttributes;
 		}
 	}
 
@@ -13688,6 +14443,45 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
+		POSTGRESQL_RESERVE_ARTIFACT_IDS(
+				"SELECT nextval(pg_get_serial_sequence('tsk_objects', 'obj_id'))               AS obj_id, " //NON-NLS
+				+ "       nextval(pg_get_serial_sequence('blackboard_artifacts', 'artifact_id')) AS artifact_id " //NON-NLS
+				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
+				+ "ORDER BY ord"), //NON-NLS
+		POSTGRESQL_INSERT_OBJECT_WITH_ID("INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)"), //NON-NLS
+		// Race-safe UPSERT for tsk_aggregate_score, used by the batched analysis-result insert path.
+		// The WHERE guard ensures a concurrent transaction's higher score is never overwritten by our
+		// lower one. NOTE: Score.compareTo orders by PRIORITY first, then significance (Score.java:233),
+		// so the ROW comparison must lead with priority. The stored id columns are monotonic with the
+		// enum ordinals within each enum, so comparing the id columns matches the Java comparator.
+		// PostgreSQL only (SQLite path delegates to the single-row method). See design doc 5.1/10.1.
+		// Bind columns: 1=obj_id, 2=data_source_obj_id (or NULL), 3=significance, 4=priority,
+		//               5=significance (ON CONFLICT branch), 6=priority (ON CONFLICT branch).
+		UPSERT_AGGREGATE_SCORE_IF_HIGHER(
+				"INSERT INTO tsk_aggregate_score (obj_id, data_source_obj_id, significance, priority) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?) " //NON-NLS
+				+ "ON CONFLICT (obj_id) DO UPDATE SET significance = ?, priority = ? " //NON-NLS
+				+ "WHERE (EXCLUDED.priority, EXCLUDED.significance) " //NON-NLS
+				+ "    > (tsk_aggregate_score.priority, tsk_aggregate_score.significance)"), //NON-NLS
+		// Batched DELETE for analysis-result artifacts. The single bind is a bigint[] of artifact_obj_ids.
+		// FK CASCADE on tsk_analysis_results, blackboard_attributes, and tsk_data_artifacts handles the
+		// dependent rows; tsk_objects rows are left orphaned (matches single-row deleteAnalysisResult).
+		// PostgreSQL only. See design doc 5.1/7.8.
+		DELETE_BB_ARTIFACTS_BY_IDS(
+				"DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ANY(?::bigint[])"), //NON-NLS
+		POSTGRESQL_RESERVE_FILE_IDS(
+				"SELECT nextval(pg_get_serial_sequence('tsk_objects', 'obj_id')) AS obj_id " //NON-NLS
+				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
+				+ "ORDER BY ord"), //NON-NLS
+		POSTGRESQL_RESERVE_FILE_ATTRIBUTE_IDS(
+				"SELECT nextval(pg_get_serial_sequence('tsk_file_attributes', 'id')) AS attr_id " //NON-NLS
+				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
+				+ "ORDER BY ord"), //NON-NLS
+		POSTGRESQL_INSERT_FILE_ATTRIBUTE_WITH_ID(
+				"INSERT INTO tsk_file_attributes (id, obj_id, attribute_type_id, value_type, " //NON-NLS
+				+ "value_byte, value_text, value_int32, value_int64, value_double) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_DATA_ARTIFACT("INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, known, mime_type, parent_path, data_source_obj_id, extension, owner_uid, os_account_obj_id, collected) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_FILE_SYSTEM_FILE("INSERT INTO tsk_files(obj_id, fs_obj_id, data_source_obj_id, attr_type, attr_id, name, meta_addr, meta_seq, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, md5, sha256, sha1, mime_type, parent_path, extension, owner_uid, os_account_obj_id, collected)"
@@ -13953,6 +14747,10 @@ public class SleuthkitCase {
 				} else {
 					connectionURL += CaseDatabaseFactory.SSL_NONVERIFY_URL;
 				}
+				// SSL constants already lead with "?ssl=true&..." — append with &.
+				connectionURL += "&reWriteBatchedInserts=true";
+			} else {
+				connectionURL += "?reWriteBatchedInserts=true";
 			}
 			comboPooledDataSource.setJdbcUrl(connectionURL);
 			comboPooledDataSource.setUser(info.getUserName());
@@ -14600,7 +15398,18 @@ public class SleuthkitCase {
 		void registerScoreChange(ScoreChange scoreChange) {
 			scoreChangeMap.put(scoreChange.getObjectId(), scoreChange);
 		}
-		
+
+		/**
+		 * For test use only. Returns an unmodifiable view of the ScoreChange
+		 * entries registered in this transaction (keyed internally by obj_id, so
+		 * at most one entry per object). Production code must not call this.
+		 *
+		 * @return Unmodifiable collection of registered score changes.
+		 */
+		Collection<ScoreChange> getRegisteredScoreChanges() {
+			return Collections.unmodifiableCollection(scoreChangeMap.values());
+		}
+
 		/**
 		 * Register timeline event to be fired when transaction finishes.
 		 * @param timelineEvent The timeline event.

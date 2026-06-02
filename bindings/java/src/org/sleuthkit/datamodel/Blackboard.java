@@ -20,15 +20,18 @@ package org.sleuthkit.datamodel;
 
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,12 +39,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
+import org.sleuthkit.datamodel.TskData.DbType;
+import org.sleuthkit.datamodel.TskData.ObjectType;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeResultSet;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
@@ -67,6 +75,34 @@ public final class Blackboard {
 	private final Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
 
 	static final int MIN_USER_DEFINED_TYPE_ID = 10000;
+
+	/**
+	 * Maximum number of artifacts per PostgreSQL batch chunk in
+	 * {@link #newDataArtifacts}. Internal chunking unit; callers may pass any
+	 * size and the method partitions internally.
+	 *
+	 * Sized to keep all per-chunk INSERTs well under PostgreSQL's 65,535
+	 * bind-parameter ceiling: blackboard_artifacts has 5 bind columns, so
+	 * 9000 rows = 45,000 parameters per batched statement.
+	 */
+	static final int PG_CHUNK_SIZE = 9000;
+
+	/**
+	 * Maximum number of attributes per PostgreSQL batch chunk in the
+	 * per-value-type attribute INSERT loop. Independent of
+	 * {@link #PG_CHUNK_SIZE}.
+	 *
+	 * Sized for attribute INSERTs (7 bind columns per row): 5000 rows =
+	 * 35,000 parameters, well under the 65,535 ceiling.
+	 */
+	static final int PG_ATTR_CHUNK_SIZE = 5000;
+
+	/**
+	 * Maximum number of artifact_obj_ids per PostgreSQL DELETE batch in
+	 * {@link #deleteAnalysisResults}. The single bigint[] array parameter has
+	 * plenty of headroom; sized to match {@link #PG_CHUNK_SIZE}.
+	 */
+	static final int PG_DELETE_CHUNK_SIZE = 9000;
 
 	private final SleuthkitCase caseDb;
 
@@ -1080,7 +1116,7 @@ public final class Blackboard {
 	}
 	
 	/**
-	 * Ignore the score of the specified analysis result.Updates “ignore_score”
+	 * Ignore the score of the specified analysis result.Updates ï¿½ignore_scoreï¿½
 	 * field in tsk_analysis_results table, and recalculates and updates the
 	 * aggregate score of the content.
 	 *
@@ -1113,7 +1149,7 @@ public final class Blackboard {
 	/**
 	 * Ignore the score of the specified analysis result.
 	 *
-	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * Updates ï¿½ignore_scoreï¿½ field in tsk_analysis_results table,
 	 * and recalculates and updates the aggregate score of the content. Fires an
 	 * event to indicate that the analysis result score is being ignored and that the
 	 * score of the item has changed.
@@ -1140,7 +1176,7 @@ public final class Blackboard {
 	/**
 	 * Ignore the score of the specified analysis result.
 	 *
-	 * Updates “ignore_score” field in tsk_analysis_results table,
+	 * Updates ï¿½ignore_scoreï¿½ field in tsk_analysis_results table,
 	 * and recalculates and updates the aggregate score of the content. Fires an
 	 * event to indicate that the analysis result score is being ignored and that the
 	 * score of the item has changed.
@@ -2459,9 +2495,7 @@ public final class Blackboard {
 
 				// Add a row in tsk_data_artifact if the os account is present
 				if (osAccountObjId != null) {
-					String insertDataArtifactSQL = "INSERT INTO tsk_data_artifacts (artifact_obj_id, os_account_obj_id) VALUES (?, ?)";
-
-					statement = connection.getPreparedStatement(insertDataArtifactSQL, Statement.NO_GENERATED_KEYS);
+					statement = caseDb.getInsertDataArtifactStatement(connection);
 					statement.clearParameters();
 
 					statement.setLong(1, artifact_obj_id);
@@ -2483,6 +2517,888 @@ public final class Blackboard {
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating a data artifact with type id = %d, objId = %d, and data source oj id = %d ", artifactType.getTypeID(), sourceObjId, dataSourceObjId), ex);
+		}
+	}
+
+	/**
+	 * Bulk variant of {@link #newDataArtifact}: creates many DataArtifacts
+	 * under one caller-managed transaction.
+	 *
+	 * <p><strong>PostgreSQL behavior:</strong> partitions the input at
+	 * {@value #PG_CHUNK_SIZE} and uses sequence pre-allocation plus batched
+	 * INSERTs to amortize round trips across many artifacts. Each chunk runs
+	 * a fixed handful of round trips regardless of chunk size (1 ID reserve,
+	 * 1 tsk_objects batch, 1 blackboard_artifacts batch, optionally 1
+	 * tsk_data_artifacts batch, plus one batch per attribute value type).</p>
+	 *
+	 * <p><strong>SQLite behavior:</strong> delegates to the single-row
+	 * {@link #newDataArtifact} for each request. SQLite's in-process driver
+	 * makes cross-row batching unprofitable.</p>
+	 *
+	 * <p><strong>Return order:</strong> the returned list matches input order
+	 * element-for-element.</p>
+	 *
+	 * <p><strong>Attribute handling:</strong> attributes (if any) are
+	 * persisted in blackboard_attributes and added to each artifact's
+	 * in-memory attribute cache â€” identical to the single-row contract.</p>
+	 *
+	 * <p><strong>Failure semantics:</strong> on a
+	 * {@link java.sql.BatchUpdateException} mid-batch the exception is
+	 * wrapped in {@link TskCoreException} and the caller's transaction
+	 * should be rolled back. Individual-row attribution within a failed
+	 * batch is not preserved: with {@code reWriteBatchedInserts=true} the
+	 * driver sends the batch as one wire-level statement which is
+	 * all-or-nothing.</p>
+	 *
+	 * @param requests    Per-artifact request data. May be empty (returns an
+	 *                    empty list immediately). Must not be null.
+	 * @param transaction Caller-managed transaction. Must not be null.
+	 *
+	 * @return DataArtifacts in input order; same size as {@code requests}.
+	 *
+	 * @throws TskCoreException If any request has a non-DATA_ARTIFACT
+	 *                          category, if any request has a null
+	 *                          {@code dataSourceObjId}, or on any underlying SQL
+	 *                          failure.
+	 */
+	@Beta
+	public List<DataArtifact> newDataArtifacts(List<NewDataArtifactRequest> requests, final CaseDbTransaction transaction) throws TskCoreException {
+
+		if (requests == null) {
+			throw new TskCoreException("requests list is required");
+		}
+		if (transaction == null) {
+			throw new TskCoreException("transaction is required");
+		}
+		if (requests.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		for (NewDataArtifactRequest r : requests) {
+			if (r == null) {
+				throw new TskCoreException("requests list contains a null NewDataArtifactRequest element");
+			}
+			if (r.artifactType.getCategory() != BlackboardArtifact.Category.DATA_ARTIFACT) {
+				throw new TskCoreException(String.format("Artifact type (name = %s) is not of Data Artifact category. ", r.artifactType.getTypeName()));
+			}
+			if (r.dataSourceObjId == null) {
+				throw new TskCoreException("dataSourceObjId cannot be null for batched data artifact creation");
+			}
+		}
+
+		if (caseDb.getDatabaseType() == DbType.POSTGRESQL) {
+			List<DataArtifact> out = new ArrayList<>(requests.size());
+			for (List<NewDataArtifactRequest> chunk : Lists.partition(requests, PG_CHUNK_SIZE)) {
+				out.addAll(newDataArtifactsBatchedPostgres(chunk, transaction));
+			}
+			return out;
+		}
+
+		// SQLite: per-row delegation against the same caller-owned transaction.
+		List<DataArtifact> out = new ArrayList<>(requests.size());
+		for (NewDataArtifactRequest r : requests) {
+			out.add(newDataArtifact(r.artifactType, r.sourceObjId, r.dataSourceObjId, r.attributes, r.osAccountObjId, r.osAccountInstanceType, transaction));
+		}
+		return out;
+	}
+
+	/**
+	 * PostgreSQL-only batched implementation of {@link #newDataArtifacts}.
+	 *
+	 * <p>Does NOT acquire {@code acquireSingleUserCaseWriteLock}. That lock
+	 * historically serializes API calls against a shared SleuthkitCase
+	 * instance, motivated by single-user SQLite-mode process concurrency. On
+	 * PostgreSQL with a caller-owned {@link CaseDbTransaction} the connection
+	 * already serializes its own writes and PostgreSQL sequence atomicity
+	 * handles cross-connection concurrency. Reintroducing the lock here would
+	 * serialize concurrent batched calls and defeat the throughput win.</p>
+	 *
+	 * @param requests    Pre-chunked to size &le; {@link #PG_CHUNK_SIZE}.
+	 *                    Must be non-empty.
+	 * @param transaction Caller-managed transaction.
+	 */
+	private List<DataArtifact> newDataArtifactsBatchedPostgres(List<NewDataArtifactRequest> requests, CaseDbTransaction transaction) throws TskCoreException {
+
+		int n = requests.size();
+		CaseDbConnection connection = transaction.getConnection();
+		long[] objIds = new long[n];
+		long[] artifactIds = new long[n];
+
+		try {
+			// Step 1: reserve N obj_ids + N artifact_ids in one round trip.
+			PreparedStatement reserveStmt = caseDb.getReserveArtifactIdsStatement(connection);
+			reserveStmt.clearParameters();
+			reserveStmt.setInt(1, n);
+			try (ResultSet rs = reserveStmt.executeQuery()) {
+				int i = 0;
+				while (rs.next()) {
+					if (i >= n) {
+						throw new TskCoreException("Reserve query returned more than " + n + " rows");
+					}
+					objIds[i] = rs.getLong("obj_id");
+					artifactIds[i] = rs.getLong("artifact_id");
+					i++;
+				}
+				if (i != n) {
+					throw new TskCoreException("Reserve query returned " + i + " rows, expected " + n);
+				}
+			}
+
+			// Step 2: batch INSERT into tsk_objects with explicit obj_ids.
+			// Null-on-zero parent mirrors SleuthkitCase.addObject:6747-6751.
+			PreparedStatement objStmt = caseDb.getInsertObjectWithIdStatement(connection);
+			objStmt.clearBatch();
+			for (int i = 0; i < n; i++) {
+				NewDataArtifactRequest r = requests.get(i);
+				objStmt.clearParameters();
+				objStmt.setLong(1, objIds[i]);
+				if (r.sourceObjId != 0) {
+					objStmt.setLong(2, r.sourceObjId);
+				} else {
+					objStmt.setNull(2, Types.BIGINT);
+				}
+				objStmt.setInt(3, ObjectType.ARTIFACT.getObjectType());
+				objStmt.addBatch();
+			}
+			try {
+				objStmt.executeBatch();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Batched newDataArtifacts: tsk_objects INSERT failed (chunk size " + n + ")", ex);
+			}
+
+			// Step 3: batch INSERT into blackboard_artifacts with explicit artifact_ids.
+			// Reuses INSERT_ARTIFACT (the SQLite-shape entry); BIGSERIAL columns accept explicit values.
+			PreparedStatement artStmt = caseDb.getInsertArtifactStatement(connection);
+			artStmt.clearBatch();
+			for (int i = 0; i < n; i++) {
+				NewDataArtifactRequest r = requests.get(i);
+				artStmt.clearParameters();
+				artStmt.setLong(1, artifactIds[i]);
+				artStmt.setLong(2, r.sourceObjId);
+				artStmt.setLong(3, objIds[i]);
+				// dataSourceObjId is guaranteed non-null by the validation in newDataArtifacts.
+				artStmt.setLong(4, r.dataSourceObjId);
+				artStmt.setInt(5, r.artifactType.getTypeID());
+				artStmt.addBatch();
+			}
+			try {
+				artStmt.executeBatch();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Batched newDataArtifacts: blackboard_artifacts INSERT failed (chunk size " + n + ")", ex);
+			}
+
+			// Step 4: batch INSERT into tsk_data_artifacts for requests with an osAccountObjId.
+			PreparedStatement daStmt = null;
+			int daCount = 0;
+			for (int i = 0; i < n; i++) {
+				NewDataArtifactRequest r = requests.get(i);
+				if (r.osAccountObjId == null) {
+					continue;
+				}
+				if (daStmt == null) {
+					daStmt = caseDb.getInsertDataArtifactStatement(connection);
+					daStmt.clearBatch();
+				}
+				daStmt.clearParameters();
+				daStmt.setLong(1, objIds[i]);
+				daStmt.setLong(2, r.osAccountObjId);
+				daStmt.addBatch();
+				daCount++;
+			}
+			if (daStmt != null) {
+				try {
+					daStmt.executeBatch();
+				} catch (SQLException ex) {
+					throw new TskCoreException("Batched newDataArtifacts: tsk_data_artifacts INSERT failed (rows: " + daCount + ")", ex);
+				}
+			}
+
+			// Step 5: OS account instance side-effect, per row. CT hot paths pass
+			// null osAccountInstanceType, making this loop a no-op. Kept for parity
+			// with the single-row contract.
+			for (int i = 0; i < n; i++) {
+				NewDataArtifactRequest r = requests.get(i);
+				if (r.osAccountObjId != null && r.osAccountInstanceType != null) {
+					caseDb.getOsAccountManager().newOsAccountInstance(r.osAccountObjId, r.dataSourceObjId, r.osAccountInstanceType, connection);
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Batched newDataArtifacts: SQL error during chunk of size " + n, ex);
+		}
+
+		// Step 6: update the parent-has-children bitset for unique parents.
+		Set<Long> uniqueParents = new HashSet<>();
+		for (NewDataArtifactRequest r : requests) {
+			uniqueParents.add(r.sourceObjId);
+		}
+		caseDb.markParentsHaveChildren(uniqueParents);
+
+		// Step 7: construct DataArtifact result list. isNew=true sets
+		// loadedCacheFromDb=true on each artifact so the attribute cache is
+		// authoritative (never lazy-loaded from DB).
+		List<DataArtifact> out = new ArrayList<>(n);
+		for (int i = 0; i < n; i++) {
+			NewDataArtifactRequest r = requests.get(i);
+			out.add(new DataArtifact(caseDb, artifactIds[i], r.sourceObjId, objIds[i], r.dataSourceObjId, r.artifactType.getTypeID(), r.artifactType.getTypeName(), r.artifactType.getDisplayName(), BlackboardArtifact.ReviewStatus.UNDECIDED, r.osAccountObjId, true));
+		}
+
+		// Step 8: batched attribute INSERTs + cache update.
+		addAttributesBatched(out, requests, connection);
+
+		return out;
+	}
+
+	/**
+	 * Persists attributes from {@code requests} in batches and updates each
+	 * artifact's in-memory attribute cache.
+	 *
+	 * <p>Attributes are grouped by
+	 * {@link TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE} so each bucket can be
+	 * INSERTed against a single prepared statement. Bucket size is
+	 * inner-capped at {@link #PG_ATTR_CHUNK_SIZE} for bind-parameter safety.
+	 * Within a bucket, attribute order across artifacts is not preserved â€”
+	 * row order in {@code blackboard_attributes} is not part of any API
+	 * contract.</p>
+	 *
+	 * <p>After successful persistence, calls
+	 * {@link BlackboardArtifact#markAttributesAdded} on each artifact with
+	 * non-empty attributes â€” mirroring the cache mutation in
+	 * {@link BlackboardArtifact#addAttributes}.</p>
+	 *
+	 * <p>For CT hot paths (windowsEvent / logonSession) the per-request
+	 * attribute list is empty, so this method allocates nothing and returns
+	 * immediately.</p>
+	 *
+	 * @param artifacts  Just-created artifacts, one per request, in input order.
+	 * @param requests   Original chunk of requests (carries the attribute lists).
+	 * @param connection Case DB connection bound to the caller's transaction.
+	 */
+	private void addAttributesBatched(List<? extends BlackboardArtifact> artifacts, List<? extends HasArtifactRequestAttributes> requests, CaseDbConnection connection) throws TskCoreException {
+
+		// Lazy allocation: skip all heap work when no request has attributes.
+		EnumMap<TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE, List<PendingAttr>> grouped = null;
+
+		for (int i = 0; i < requests.size(); i++) {
+			Collection<BlackboardAttribute> attrs = requests.get(i).getAttributes();
+			if (attrs == null || attrs.isEmpty()) {
+				continue;
+			}
+			long artifactId = artifacts.get(i).getArtifactID();
+			int artifactTypeId = requests.get(i).getArtifactType().getTypeID();
+			if (grouped == null) {
+				grouped = new EnumMap<>(TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.class);
+			}
+			for (BlackboardAttribute a : attrs) {
+				a.setArtifactId(artifactId);
+				a.setCaseDatabase(caseDb);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType = a.getAttributeType().getValueType();
+				grouped.computeIfAbsent(valueType, k -> new ArrayList<>()).add(new PendingAttr(artifactId, artifactTypeId, a));
+			}
+		}
+
+		if (grouped == null) {
+			return;
+		}
+
+		try {
+			for (Map.Entry<TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE, List<PendingAttr>> entry : grouped.entrySet()) {
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType = entry.getKey();
+				List<PendingAttr> bucket = entry.getValue();
+				PreparedStatement ps = caseDb.getInsertAttributeStatement(connection, valueType);
+
+				// Inner-chunk to stay safely under PostgreSQL's bind-param ceiling.
+				for (List<PendingAttr> chunk : Lists.partition(bucket, PG_ATTR_CHUNK_SIZE)) {
+					ps.clearBatch();
+					for (PendingAttr p : chunk) {
+						BlackboardAttribute a = p.attr;
+						ps.clearParameters();
+						ps.setLong(1, p.artifactId);
+						ps.setInt(2, p.artifactTypeId);
+						ps.setString(3, a.getSourcesCSV());
+						ps.setString(4, "");
+						ps.setInt(5, a.getAttributeType().getTypeID());
+						ps.setLong(6, a.getAttributeType().getValueType().getType());
+						switch (valueType) {
+							case STRING:
+							case JSON:
+								ps.setString(7, a.getValueString());
+								break;
+							case BYTE:
+								ps.setBytes(7, a.getValueBytes());
+								break;
+							case INTEGER:
+								ps.setInt(7, a.getValueInt());
+								break;
+							case LONG:
+							case DATETIME:
+								ps.setLong(7, a.getValueLong());
+								break;
+							case DOUBLE:
+								ps.setDouble(7, a.getValueDouble());
+								break;
+							default:
+								throw new TskCoreException("Unrecognized attribute value type: " + valueType);
+						}
+						ps.addBatch();
+					}
+					try {
+						ps.executeBatch();
+					} catch (SQLException ex) {
+						throw new TskCoreException("Batched newDataArtifacts: blackboard_attributes INSERT failed (value type " + valueType + ", rows " + chunk.size() + ")", ex);
+					}
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Batched newDataArtifacts: SQL error during attribute INSERTs", ex);
+		}
+
+		// Cache update mirrors BlackboardArtifact.addAttributes line 520.
+		for (int i = 0; i < requests.size(); i++) {
+			Collection<BlackboardAttribute> attrs = requests.get(i).getAttributes();
+			if (attrs != null && !attrs.isEmpty()) {
+				artifacts.get(i).markAttributesAdded(attrs);
+			}
+		}
+	}
+
+	/**
+	 * Per-artifact request data for {@link Blackboard#newDataArtifacts}.
+	 *
+	 * Field semantics match the parameters of the 7-arg single-row
+	 * {@link Blackboard#newDataArtifact(BlackboardArtifact.Type, long, Long,
+	 * Collection, Long, OsAccountInstance.OsAccountInstanceType,
+	 * CaseDbTransaction)}.
+	 */
+	public static final class NewDataArtifactRequest implements HasArtifactRequestAttributes {
+
+		public final BlackboardArtifact.Type artifactType;
+		public final long sourceObjId;
+		public final Long dataSourceObjId;
+		public final Collection<BlackboardAttribute> attributes;
+		public final Long osAccountObjId;
+		public final OsAccountInstance.OsAccountInstanceType osAccountInstanceType;
+
+		public NewDataArtifactRequest(BlackboardArtifact.Type artifactType, long sourceObjId, Long dataSourceObjId, Collection<BlackboardAttribute> attributes, Long osAccountObjId, OsAccountInstance.OsAccountInstanceType osAccountInstanceType) {
+			if (artifactType == null) {
+				throw new IllegalArgumentException("artifactType is required");
+			}
+			this.artifactType = artifactType;
+			this.sourceObjId = sourceObjId;
+			this.dataSourceObjId = dataSourceObjId;
+			this.attributes = attributes;
+			this.osAccountObjId = osAccountObjId;
+			this.osAccountInstanceType = osAccountInstanceType;
+		}
+
+		@Override
+		public BlackboardArtifact.Type getArtifactType() {
+			return artifactType;
+		}
+
+		@Override
+		public Collection<BlackboardAttribute> getAttributes() {
+			return attributes;
+		}
+	}
+
+	/**
+	 * Adapter contract used by {@link #addAttributesBatched} to read the
+	 * attribute payload and artifact type from request DTOs without coupling the
+	 * helper to a specific request class. Package-private: it is an internal
+	 * adapter, not a public extension point. Implementations live in this file
+	 * ({@link NewDataArtifactRequest} and {@link NewAnalysisResultRequest}).
+	 */
+	interface HasArtifactRequestAttributes {
+
+		BlackboardArtifact.Type getArtifactType();
+
+		Collection<BlackboardAttribute> getAttributes();
+	}
+
+	/**
+	 * Per-AR request data for {@link Blackboard#newAnalysisResults}.
+	 *
+	 * <p>Field semantics match the parameters of the 9-arg single-row
+	 * {@link Blackboard#newAnalysisResult(BlackboardArtifact.Type, long, Long, Score,
+	 * String, String, String, Collection, CaseDbTransaction)}.</p>
+	 *
+	 * <p><strong>Multiple requests for the same parent objId are allowed.</strong>
+	 * The batched path collapses them: one aggregate-score recompute per parent
+	 * (using the max of all scores for that parent), one ScoreChange event per
+	 * upgraded parent. If two requests for the same parent specify different
+	 * {@code dataSourceObjId} values, the first-seen value wins for the
+	 * aggregate-score row's {@code data_source_obj_id} column - in practice
+	 * children share their parent's data source so this is rarely exercised.</p>
+	 */
+	public static final class NewAnalysisResultRequest implements HasArtifactRequestAttributes {
+
+		public final BlackboardArtifact.Type artifactType;
+		public final long objId;
+		public final Long dataSourceObjId;
+		public final Score score;
+		public final String conclusion;
+		public final String configuration;
+		public final String justification;
+		public final Collection<BlackboardAttribute> attributes;
+
+		public NewAnalysisResultRequest(BlackboardArtifact.Type artifactType, long objId, Long dataSourceObjId, Score score,
+				String conclusion, String configuration, String justification, Collection<BlackboardAttribute> attributes) {
+			if (artifactType == null) {
+				throw new IllegalArgumentException("artifactType is required");
+			}
+			if (score == null) {
+				throw new IllegalArgumentException("score is required");
+			}
+			if (artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+				throw new IllegalArgumentException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", artifactType.getTypeName()));
+			}
+			this.artifactType = artifactType;
+			this.objId = objId;
+			this.dataSourceObjId = dataSourceObjId;
+			this.score = score;
+			this.conclusion = conclusion;
+			this.configuration = configuration;
+			this.justification = justification;
+			this.attributes = attributes;
+		}
+
+		@Override
+		public BlackboardArtifact.Type getArtifactType() {
+			return artifactType;
+		}
+
+		@Override
+		public Collection<BlackboardAttribute> getAttributes() {
+			return attributes;
+		}
+	}
+
+	/**
+	 * Bulk variant of {@link #newAnalysisResult}: creates many AnalysisResults
+	 * under one caller-managed transaction.
+	 *
+	 * <p><strong>PostgreSQL behavior:</strong> partitions the input at
+	 * {@value #PG_CHUNK_SIZE} and uses sequence pre-allocation plus batched
+	 * INSERTs to amortize round trips (reserve ids, tsk_objects,
+	 * blackboard_artifacts, tsk_analysis_results (conditional subset), batched
+	 * attribute INSERTs grouped by value type, and a collapsed per-parent
+	 * aggregate-score recompute).</p>
+	 *
+	 * <p><strong>SQLite behavior:</strong> delegates to the single-row
+	 * {@link #newAnalysisResult} per request.</p>
+	 *
+	 * <p><strong>Return order</strong> matches input order.</p>
+	 *
+	 * <p><strong>Aggregate-score semantics:</strong> if N requests target the
+	 * same parent objId, the aggregate score is recomputed once for that parent
+	 * (max of the N scores, gated by the comparator against the current value).
+	 * All N AnalysisResultAdded entries for that parent report the same
+	 * aggregate. One ScoreChange is registered per upgraded parent with the
+	 * (currentBeforeBatch, finalAfterBatch) pair, which differs from the
+	 * sequential path's "last upward transition" semantics.</p>
+	 *
+	 * @param requests    Per-AR request data; must not be null. May be empty.
+	 * @param transaction Caller-managed transaction; must not be null.
+	 *
+	 * @return AnalysisResultAdded entries in input order; same size as requests.
+	 *
+	 * @throws BlackboardException On non-ANALYSIS_RESULT category, on a null
+	 *                             {@code dataSourceObjId}, or on SQL failure.
+	 */
+	public List<AnalysisResultAdded> newAnalysisResults(List<NewAnalysisResultRequest> requests, final CaseDbTransaction transaction) throws BlackboardException {
+
+		if (requests == null) {
+			throw new BlackboardException("requests list is required");
+		}
+		if (transaction == null) {
+			throw new BlackboardException("transaction is required");
+		}
+		if (requests.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		for (NewAnalysisResultRequest r : requests) {
+			if (r.artifactType.getCategory() != BlackboardArtifact.Category.ANALYSIS_RESULT) {
+				throw new BlackboardException(String.format("Artifact type (name = %s) is not of Analysis Result category. ", r.artifactType.getTypeName()));
+			}
+			if (r.dataSourceObjId == null) {
+				throw new BlackboardException("dataSourceObjId cannot be null for batched analysis result creation");
+			}
+		}
+
+		try {
+			if (caseDb.getDatabaseType() == DbType.POSTGRESQL) {
+				List<AnalysisResultAdded> out = new ArrayList<>(requests.size());
+				for (List<NewAnalysisResultRequest> chunk : Lists.partition(requests, PG_CHUNK_SIZE)) {
+					out.addAll(newAnalysisResultsBatchedPostgres(chunk, transaction));
+				}
+				return out;
+			}
+
+			// SQLite: per-row delegation against the same caller-owned transaction.
+			List<AnalysisResultAdded> out = new ArrayList<>(requests.size());
+			for (NewAnalysisResultRequest r : requests) {
+				out.add(newAnalysisResult(r.artifactType, r.objId, r.dataSourceObjId, r.score,
+						r.conclusion, r.configuration, r.justification, r.attributes, transaction));
+			}
+			return out;
+		} catch (TskCoreException ex) {
+			throw new BlackboardException("Failed to add analysis results in batch.", ex);
+		}
+	}
+
+	/**
+	 * PostgreSQL-only batched implementation of {@link #newAnalysisResults}.
+	 *
+	 * <p>Does NOT acquire {@code acquireSingleUserCaseWriteLock} - same rationale
+	 * as {@link #newDataArtifactsBatchedPostgres}.</p>
+	 *
+	 * @param requests    Pre-chunked to size &le; {@link #PG_CHUNK_SIZE}.
+	 * @param transaction Caller-managed transaction.
+	 */
+	private List<AnalysisResultAdded> newAnalysisResultsBatchedPostgres(List<NewAnalysisResultRequest> requests, CaseDbTransaction transaction) throws TskCoreException {
+
+		int n = requests.size();
+		CaseDbConnection connection = transaction.getConnection();
+		long[] objIds = new long[n];
+		long[] artifactIds = new long[n];
+
+		try {
+			// Step 1: reserve N obj_ids + N artifact_ids in one round trip.
+			PreparedStatement reserveStmt = caseDb.getReserveArtifactIdsStatement(connection);
+			reserveStmt.clearParameters();
+			reserveStmt.setInt(1, n);
+			try (ResultSet rs = reserveStmt.executeQuery()) {
+				int i = 0;
+				while (rs.next()) {
+					if (i >= n) {
+						throw new TskCoreException("Reserve query returned more than " + n + " rows");
+					}
+					objIds[i] = rs.getLong("obj_id");
+					artifactIds[i] = rs.getLong("artifact_id");
+					i++;
+				}
+				if (i != n) {
+					throw new TskCoreException("Reserve query returned " + i + " rows, expected " + n);
+				}
+			}
+
+			// Step 2: batch INSERT into tsk_objects with explicit obj_ids.
+			PreparedStatement objStmt = caseDb.getInsertObjectWithIdStatement(connection);
+			objStmt.clearBatch();
+			for (int i = 0; i < n; i++) {
+				NewAnalysisResultRequest r = requests.get(i);
+				objStmt.clearParameters();
+				objStmt.setLong(1, objIds[i]);
+				if (r.objId != 0) {
+					objStmt.setLong(2, r.objId);
+				} else {
+					objStmt.setNull(2, Types.BIGINT);
+				}
+				objStmt.setInt(3, ObjectType.ARTIFACT.getObjectType());
+				objStmt.addBatch();
+			}
+			try {
+				objStmt.executeBatch();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Batched newAnalysisResults: tsk_objects INSERT failed (chunk size " + n + ")", ex);
+			}
+
+			// Step 3: batch INSERT into blackboard_artifacts with explicit artifact_ids.
+			PreparedStatement artStmt = caseDb.getInsertArtifactStatement(connection);
+			artStmt.clearBatch();
+			for (int i = 0; i < n; i++) {
+				NewAnalysisResultRequest r = requests.get(i);
+				artStmt.clearParameters();
+				artStmt.setLong(1, artifactIds[i]);
+				artStmt.setLong(2, r.objId);
+				artStmt.setLong(3, objIds[i]);
+				// dataSourceObjId is guaranteed non-null by the validation in newAnalysisResults.
+				artStmt.setLong(4, r.dataSourceObjId);
+				artStmt.setInt(5, r.artifactType.getTypeID());
+				artStmt.addBatch();
+			}
+			try {
+				artStmt.executeBatch();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Batched newAnalysisResults: blackboard_artifacts INSERT failed (chunk size " + n + ")", ex);
+			}
+
+			// Step 4: batch INSERT into tsk_analysis_results (conditional subset).
+			// Only requests whose score/conclusion/configuration/justification is
+			// non-default get a row (mirrors the single-row leaf at
+			// SleuthkitCase.newAnalysisResult).
+			PreparedStatement arStmt = null;
+			int arCount = 0;
+			for (int i = 0; i < n; i++) {
+				NewAnalysisResultRequest r = requests.get(i);
+				boolean needsRow = r.score.getSignificance() != Score.Significance.UNKNOWN
+						|| !StringUtils.isBlank(r.conclusion)
+						|| !StringUtils.isBlank(r.configuration)
+						|| !StringUtils.isBlank(r.justification);
+				if (!needsRow) {
+					continue;
+				}
+				if (arStmt == null) {
+					arStmt = caseDb.getInsertAnalysisResultStatement(connection);
+					arStmt.clearBatch();
+				}
+				arStmt.clearParameters();
+				arStmt.setLong(1, objIds[i]);
+				arStmt.setString(2, (r.conclusion != null) ? r.conclusion : "");
+				arStmt.setInt(3, r.score.getSignificance().getId());
+				arStmt.setInt(4, r.score.getPriority().getId());
+				arStmt.setString(5, (r.configuration != null) ? r.configuration : "");
+				arStmt.setString(6, (r.justification != null) ? r.justification : "");
+				arStmt.addBatch();
+				arCount++;
+			}
+			if (arStmt != null) {
+				try {
+					arStmt.executeBatch();
+				} catch (SQLException ex) {
+					throw new TskCoreException("Batched newAnalysisResults: tsk_analysis_results INSERT failed (rows: " + arCount + ")", ex);
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Batched newAnalysisResults: SQL error during chunk of size " + n, ex);
+		}
+
+		// Step 5: update the parent-has-children bitset for unique parents.
+		// In-memory only; not rollback-safe (same as newDataArtifactsBatchedPostgres).
+		Set<Long> uniqueParents = new HashSet<>();
+		for (NewAnalysisResultRequest r : requests) {
+			uniqueParents.add(r.objId);
+		}
+		caseDb.markParentsHaveChildren(uniqueParents);
+
+		// Step 6: construct AnalysisResult result list. isNew=true sets
+		// loadedCacheFromDb=true so the attribute cache is authoritative.
+		List<AnalysisResult> analysisResults = new ArrayList<>(n);
+		for (int i = 0; i < n; i++) {
+			NewAnalysisResultRequest r = requests.get(i);
+			analysisResults.add(new AnalysisResult(caseDb, artifactIds[i], r.objId, objIds[i], r.dataSourceObjId,
+					r.artifactType.getTypeID(), r.artifactType.getTypeName(), r.artifactType.getDisplayName(),
+					BlackboardArtifact.ReviewStatus.UNDECIDED, true,
+					r.score, (r.conclusion != null) ? r.conclusion : "",
+					(r.configuration != null) ? r.configuration : "", (r.justification != null) ? r.justification : ""));
+		}
+
+		// Step 7: batched attribute INSERTs + cache update (reuses generalized helper).
+		addAttributesBatched(analysisResults, requests, connection);
+
+		// Step 8: batched aggregate-score collapse + ScoreChange registration.
+		Map<Long, Score> finalScorePerParent = caseDb.getScoringManager().updateAggregateScoresAfterAdditions(requests, transaction);
+
+		// Step 9: build AnalysisResultAdded list using each parent's final aggregate.
+		List<AnalysisResultAdded> out = new ArrayList<>(n);
+		for (int i = 0; i < n; i++) {
+			out.add(new AnalysisResultAdded(analysisResults.get(i), finalScorePerParent.get(requests.get(i).objId)));
+		}
+		return out;
+	}
+
+	/**
+	 * Bulk variant of {@link #deleteAnalysisResult(long, CaseDbTransaction)}:
+	 * deletes many analysis results and recomputes the aggregate score once per
+	 * unique parent objId.
+	 *
+	 * <p><strong>PostgreSQL behavior:</strong> partitions input at
+	 * {@value #PG_DELETE_CHUNK_SIZE}; each chunk runs a bulk SELECT to resolve
+	 * parent objIds, one batched DELETE (FK CASCADE handles dependent tables),
+	 * then one aggregate-score recompute per unique parent.</p>
+	 *
+	 * <p><strong>SQLite behavior:</strong> delegates to single-row
+	 * {@link #deleteAnalysisResult(long, CaseDbTransaction)} per id.</p>
+	 *
+	 * <p><strong>Tolerance:</strong> artifact_obj_ids that do not exist in
+	 * blackboard_artifacts are silently skipped (logged at FINE). The result map
+	 * omits parents that had no rows to delete.</p>
+	 *
+	 * <p><strong>Aggregate-score semantics:</strong> per unique parent objId the
+	 * single-row {@link ScoringManager#updateAggregateScoreAfterDeletion} is
+	 * invoked once (parents sorted ascending by objId for deadlock avoidance).</p>
+	 *
+	 * @param artifactObjIds artifact_obj_ids to delete; must not be null. May be empty.
+	 * @param transaction    Caller-managed transaction; must not be null.
+	 *
+	 * @return Map of unique parent objId to new aggregate Score (one entry per
+	 *         parent that had at least one AR successfully deleted).
+	 *
+	 * @throws BlackboardException On SQL failure.
+	 */
+	public Map<Long, Score> deleteAnalysisResults(List<Long> artifactObjIds, CaseDbTransaction transaction) throws BlackboardException {
+
+		if (artifactObjIds == null) {
+			throw new BlackboardException("artifactObjIds list is required");
+		}
+		if (transaction == null) {
+			throw new BlackboardException("transaction is required");
+		}
+		if (artifactObjIds.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		for (int i = 0; i < artifactObjIds.size(); i++) {
+			if (artifactObjIds.get(i) == null) {
+				throw new BlackboardException("artifactObjIds contains null element at index " + i);
+			}
+		}
+
+		try {
+			if (caseDb.getDatabaseType() == DbType.POSTGRESQL) {
+				Map<Long, Score> out = new HashMap<>();
+				for (List<Long> chunk : Lists.partition(artifactObjIds, PG_DELETE_CHUNK_SIZE)) {
+					out.putAll(deleteAnalysisResultsBatchedPostgres(chunk, transaction));
+				}
+				return out;
+			}
+
+			// SQLite: per-row delegation. Look up the parent BEFORE deleting (the
+			// row is gone afterward), then delegate to the single-row delete. If
+			// two ids share a parent the last recompute's value wins, which
+			// matches sequential semantics (each delete re-reads and recomputes).
+			Map<Long, Score> out = new HashMap<>();
+			for (Long artifactObjId : artifactObjIds) {
+				Long parentObjId = lookupParentObjIdForArtifact(artifactObjId, transaction);
+				if (parentObjId == null) {
+					LOGGER.log(Level.FINE, "deleteAnalysisResults: skipping missing artifact_obj_id {0}", artifactObjId);
+					continue;
+				}
+				Score newScore = deleteAnalysisResult(artifactObjId, transaction);
+				out.put(parentObjId, newScore);
+			}
+			return out;
+		} catch (TskCoreException ex) {
+			throw new BlackboardException("Failed to delete analysis results in batch.", ex);
+		}
+	}
+
+	/**
+	 * PostgreSQL-only batched implementation of {@link #deleteAnalysisResults}.
+	 *
+	 * @param artifactObjIds Pre-chunked to size &le; {@link #PG_DELETE_CHUNK_SIZE}.
+	 *                       Must be non-empty.
+	 * @param transaction    Caller-managed transaction.
+	 */
+	private Map<Long, Score> deleteAnalysisResultsBatchedPostgres(List<Long> artifactObjIds, CaseDbTransaction transaction) throws TskCoreException {
+
+		CaseDbConnection connection = transaction.getConnection();
+
+		// Step 1: bulk-resolve each artifact_obj_id to (parent objId, dataSourceObjId).
+		// Ids that don't exist are simply absent from the result (silent tolerance).
+		Map<Long, ParentLookup> parentByArtifactObjId = new HashMap<>();
+		try {
+			PreparedStatement ps = connection.getPreparedStatement(
+					"SELECT artifact_obj_id, obj_id, data_source_obj_id FROM blackboard_artifacts WHERE artifact_obj_id = ANY(?::bigint[])",
+					Statement.NO_GENERATED_KEYS);
+			ps.clearParameters();
+			Long[] ids = artifactObjIds.toArray(new Long[0]);
+			ps.setArray(1, connection.getConnection().createArrayOf("bigint", ids));
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					long aoid = rs.getLong("artifact_obj_id");
+					long parent = rs.getLong("obj_id");
+					long dsObjIdRaw = rs.getLong("data_source_obj_id");
+					Long dsObjId = rs.wasNull() ? null : dsObjIdRaw;
+					parentByArtifactObjId.put(aoid, new ParentLookup(parent, dsObjId));
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Batched deleteAnalysisResults: parent-lookup SELECT failed (chunk size " + artifactObjIds.size() + ")", ex);
+		}
+
+		if (parentByArtifactObjId.isEmpty()) {
+			// All ids were missing.
+			return Collections.emptyMap();
+		}
+
+		// Step 2: batched DELETE on blackboard_artifacts. FK CASCADE handles
+		// tsk_analysis_results, blackboard_attributes, and tsk_data_artifacts.
+		try {
+			PreparedStatement ps = caseDb.getDeleteBbArtifactsByIdsStatement(connection);
+			ps.clearParameters();
+			Long[] foundIds = parentByArtifactObjId.keySet().toArray(new Long[0]);
+			ps.setArray(1, connection.getConnection().createArrayOf("bigint", foundIds));
+			ps.executeUpdate();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Batched deleteAnalysisResults: DELETE failed (rows: " + parentByArtifactObjId.size() + ")", ex);
+		}
+
+		// Step 3: register one deleted-AR event per actually-deleted row. The
+		// single-row deleteAnalysisResult registers analysisResult.getObjectID()
+		// (the parent content obj_id, not the AR's own obj_id); match that so the
+		// resulting AnalysisResultsDeletedTskEvent carries the same ids.
+		for (ParentLookup p : parentByArtifactObjId.values()) {
+			transaction.registerDeletedAnalysisResult(p.parentObjId);
+		}
+
+		// Step 4: per-unique-parent aggregate-score recompute. Parents collected
+		// into a TreeSet (ascending objId order) so concurrent batches acquire
+		// FOR UPDATE locks in a consistent order and cannot deadlock.
+		Set<Long> uniqueParents = new TreeSet<>();
+		Map<Long, Long> dsObjIdByParent = new HashMap<>();
+		for (ParentLookup p : parentByArtifactObjId.values()) {
+			uniqueParents.add(p.parentObjId);
+			dsObjIdByParent.putIfAbsent(p.parentObjId, p.dataSourceObjId);
+		}
+		Map<Long, Score> out = new HashMap<>();
+		for (Long parentObjId : uniqueParents) {
+			Score newScore = caseDb.getScoringManager().updateAggregateScoreAfterDeletion(parentObjId, dsObjIdByParent.get(parentObjId), transaction);
+			out.put(parentObjId, newScore);
+		}
+		return out;
+	}
+
+	/**
+	 * Single-row helper used by the SQLite delete path to recover the parent
+	 * objId for an artifact_obj_id. The PG path resolves parents in bulk.
+	 *
+	 * @return The parent obj_id, or null if the artifact is not in
+	 *         blackboard_artifacts.
+	 */
+	private Long lookupParentObjIdForArtifact(long artifactObjId, CaseDbTransaction transaction) throws TskCoreException {
+		CaseDbConnection connection = transaction.getConnection();
+		String queryString = "SELECT obj_id FROM blackboard_artifacts WHERE artifact_obj_id = " + artifactObjId;
+		try (Statement s = connection.createStatement(); ResultSet rs = connection.executeQuery(s, queryString)) {
+			if (rs.next()) {
+				return rs.getLong("obj_id");
+			}
+			return null;
+		} catch (SQLException ex) {
+			throw new TskCoreException("deleteAnalysisResults: parent-lookup failed for artifact_obj_id " + artifactObjId, ex);
+		}
+	}
+
+	/**
+	 * Internal carrier: parent objId + dataSourceObjId for one AR being deleted.
+	 */
+	private static final class ParentLookup {
+
+		final long parentObjId;
+		final Long dataSourceObjId;
+
+		ParentLookup(long parentObjId, Long dataSourceObjId) {
+			this.parentObjId = parentObjId;
+			this.dataSourceObjId = dataSourceObjId;
+		}
+	}
+
+	/**
+	 * Internal carrier for an attribute pending a batched INSERT. Bundles
+	 * the artifact_id and artifact_type_id alongside the attribute so the
+	 * attribute-batch helper can stage rows without re-deriving them per
+	 * attribute.
+	 */
+	private static final class PendingAttr {
+
+		final long artifactId;
+		final int artifactTypeId;
+		final BlackboardAttribute attr;
+
+		PendingAttr(long artifactId, int artifactTypeId, BlackboardAttribute attr) {
+			this.artifactId = artifactId;
+			this.artifactTypeId = artifactTypeId;
+			this.attr = attr;
 		}
 	}
 
