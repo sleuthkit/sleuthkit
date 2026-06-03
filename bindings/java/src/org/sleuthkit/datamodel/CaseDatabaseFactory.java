@@ -787,9 +787,15 @@ class CaseDatabaseFactory {
 			try (Statement stmt = conn.createStatement()) {
 				stmt.execute("ALTER SEQUENCE blackboard_artifacts_artifact_id_seq minvalue -9223372036854775808 restart with -9223372036854775808");
 				
-				// CT-9000: Postgres supports composite and partial indexes which results in smaller indexes and faster inserts. 
+				// CT-9000: Postgres supports composite and partial indexes which results in smaller indexes and faster inserts.
 				// So in Postgres we can have an index which indexes only tsk_files with non-null MD5 and non-zero size:
 				stmt.execute("CREATE INDEX tsk_files_datasrc_md5_size_partial_index ON tsk_files(data_source_obj_id, md5, size) WHERE md5 IS NOT NULL AND size > 0");
+
+				// Speeds up OS-account merge UPDATEs (mergeOsAccounts), which rewrite os_account_obj_id on tsk_files and
+				// tsk_data_artifacts via "WHERE os_account_obj_id = ?". Without these the merge forces sequential scans of
+				// these large tables. Partial (NOT NULL) so the index stays tiny - the vast majority of rows have no OS account.
+				stmt.execute("CREATE INDEX tsk_files_os_account_obj_id_partial_index ON tsk_files(os_account_obj_id) WHERE os_account_obj_id IS NOT NULL");
+				stmt.execute("CREATE INDEX tsk_data_artifacts_os_account_obj_id_partial_index ON tsk_data_artifacts(os_account_obj_id) WHERE os_account_obj_id IS NOT NULL");
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error performing PostgreSQL post table initialization", ex);
 			}
@@ -863,9 +869,14 @@ class CaseDatabaseFactory {
 		@Override
 		void performPostTableInitialization(Connection conn) throws TskCoreException {
 			try (Statement stmt = conn.createStatement()) {				
-				// CT-9000: SQLite supports composite indexes but has only limited support for partial indexes 
+				// CT-9000: SQLite supports composite indexes but has only limited support for partial indexes
 				// (partial indexes in SQLite do not support IS NOT NULL as a condition):
 				stmt.execute("CREATE INDEX tsk_files_datasrc_md5_size_index ON tsk_files(data_source_obj_id, md5, size)");
+
+				// Speeds up OS-account merge UPDATEs (mergeOsAccounts) on tsk_files and tsk_data_artifacts. SQLite cannot
+				// use an "IS NOT NULL" partial predicate here, so these are full (non-partial) indexes.
+				stmt.execute("CREATE INDEX tsk_files_os_account_obj_id_index ON tsk_files(os_account_obj_id)");
+				stmt.execute("CREATE INDEX tsk_data_artifacts_os_account_obj_id_index ON tsk_data_artifacts(os_account_obj_id)");
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error performing SQLite post table initialization", ex);
 			}

@@ -113,7 +113,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 6);
+			= new CaseDbSchemaVersionNumber(9, 7);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1181,7 +1181,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot3toSchema9dot4(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot4toSchema9dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot5toSchema9dot6(dbSchemaVersion, connection);
-				
+				dbSchemaVersion = updateFromSchema9dot6toSchema9dot7(dbSchemaVersion, connection);
+
 
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
@@ -3028,7 +3029,50 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}
-	}	
+	}
+
+	private CaseDbSchemaVersionNumber updateFromSchema9dot6toSchema9dot7(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 6) {
+			return schemaVersion;
+		}
+
+		// Add indexes on os_account_obj_id for tsk_files and tsk_data_artifacts. The OS-account merge
+		// (mergeOsAccounts) rewrites this column via "WHERE os_account_obj_id = ?"; without an index those
+		// UPDATEs force sequential scans of these large tables.
+		String filesIndexSQL;
+		String dataArtifactsIndexSQL;
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				// Partial so the index stays tiny - the vast majority of rows have no OS account.
+				filesIndexSQL = "CREATE INDEX tsk_files_os_account_obj_id_partial_index ON tsk_files(os_account_obj_id) WHERE os_account_obj_id IS NOT NULL"; //NON-NLS
+				dataArtifactsIndexSQL = "CREATE INDEX tsk_data_artifacts_os_account_obj_id_partial_index ON tsk_data_artifacts(os_account_obj_id) WHERE os_account_obj_id IS NOT NULL"; //NON-NLS
+				break;
+			case SQLITE:
+				// SQLite cannot use an "IS NOT NULL" partial predicate, so these are full indexes.
+				filesIndexSQL = "CREATE INDEX tsk_files_os_account_obj_id_index ON tsk_files(os_account_obj_id)"; //NON-NLS
+				dataArtifactsIndexSQL = "CREATE INDEX tsk_data_artifacts_os_account_obj_id_index ON tsk_data_artifacts(os_account_obj_id)"; //NON-NLS
+				break;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement.execute(filesIndexSQL);
+			statement.execute(dataArtifactsIndexSQL);
+
+			return new CaseDbSchemaVersionNumber(9, 7);
+
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
 
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
