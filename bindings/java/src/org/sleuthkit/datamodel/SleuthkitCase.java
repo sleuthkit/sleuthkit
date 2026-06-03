@@ -3060,11 +3060,18 @@ public class SleuthkitCase {
 				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
 		}
 
+		// Composite covering index for grouping and lookups of files by (name, size) within a data source -
+		// e.g. duplicate-filename aggregates (sort-free GroupAggregate) and known-file name lookups. extension is
+		// carried as a payload column so extension filters are satisfied without a heap fetch. Not partial, so it
+		// covers files of any size; the SQL is identical on PostgreSQL and SQLite.
+		String nameSizeIndexSQL = "CREATE INDEX tsk_files_datasrc_name_size_index ON tsk_files(data_source_obj_id, name, size, extension)"; //NON-NLS
+
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
 			statement.execute(filesIndexSQL);
 			statement.execute(dataArtifactsIndexSQL);
+			statement.execute(nameSizeIndexSQL);
 
 			return new CaseDbSchemaVersionNumber(9, 7);
 

@@ -796,6 +796,12 @@ class CaseDatabaseFactory {
 				// these large tables. Partial (NOT NULL) so the index stays tiny - the vast majority of rows have no OS account.
 				stmt.execute("CREATE INDEX tsk_files_os_account_obj_id_partial_index ON tsk_files(os_account_obj_id) WHERE os_account_obj_id IS NOT NULL");
 				stmt.execute("CREATE INDEX tsk_data_artifacts_os_account_obj_id_partial_index ON tsk_data_artifacts(os_account_obj_id) WHERE os_account_obj_id IS NOT NULL");
+
+				// Composite covering index for grouping and lookups of files by (name, size) within a data source -
+				// e.g. duplicate-filename aggregates (sort-free GroupAggregate) and known-file name lookups. extension
+				// is carried as a payload column so extension filters are satisfied without a heap fetch. Not partial,
+				// so it covers files of any size and the same index serves name lookups regardless of file size.
+				stmt.execute("CREATE INDEX tsk_files_datasrc_name_size_index ON tsk_files(data_source_obj_id, name, size, extension)");
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error performing PostgreSQL post table initialization", ex);
 			}
@@ -877,6 +883,12 @@ class CaseDatabaseFactory {
 				// use an "IS NOT NULL" partial predicate here, so these are full (non-partial) indexes.
 				stmt.execute("CREATE INDEX tsk_files_os_account_obj_id_index ON tsk_files(os_account_obj_id)");
 				stmt.execute("CREATE INDEX tsk_data_artifacts_os_account_obj_id_index ON tsk_data_artifacts(os_account_obj_id)");
+
+				// Composite covering index for grouping and lookups of files by (name, size) within a data source -
+				// e.g. duplicate-filename aggregates (sort-free GroupAggregate) and known-file name lookups. extension
+				// is carried as a payload column so extension filters are satisfied without a heap fetch. Not partial,
+				// so it covers files of any size and the same index serves name lookups regardless of file size.
+				stmt.execute("CREATE INDEX tsk_files_datasrc_name_size_index ON tsk_files(data_source_obj_id, name, size, extension)");
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error performing SQLite post table initialization", ex);
 			}
