@@ -966,17 +966,6 @@ case_insensitive_compare(const std::wstring& a_a, const std::wstring& a_b) {
 		}
 	);
 }
-#else
-static bool
-case_insensitive_compare(const string& a_a, const string& a_b) {
-	return std::lexicographical_compare(
-		a_a.begin(), a_a.end(),
-		a_b.begin(), a_b.end(),
-		[](char a_a, char a_b) {
-			return std::tolower(a_a) < std::tolower(a_b);
-		}
-	);
-}
 #endif
 
 /*
@@ -2220,6 +2209,7 @@ typedef enum {
  *     entry point handles conversion)
  *   - Joins with base_path (which is always \\?\-prefixed) — no further conversion needed
  */
+#ifdef TSK_WIN32
 static LOGICAL_PATH_TYPE
 logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide) {
 	if (a_fs == NULL || a_path_wide == NULL || a_fs->ftype != TSK_FS_TYPE_LOGICAL) {
@@ -2232,7 +2222,6 @@ logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide) {
 		return LOGICAL_PATH_NOT_FOUND;
 	}
 
-#ifdef TSK_WIN32
 	LOGICALFS_INFO* logical_fs_info = (LOGICALFS_INFO*)a_fs;
 
 	// Build full host path: base_path + a_path_wide.
@@ -2255,10 +2244,8 @@ logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide) {
 		return LOGICAL_PATH_DIRECTORY;
 	}
 	return LOGICAL_PATH_FILE;
-#else
-	return LOGICAL_PATH_NOT_FOUND;
-#endif
 }
+#endif
 
 /*
  * Populate a TSK_FS_NAME from a resolved logical-FS leaf. Mirrors what the
@@ -2276,6 +2263,7 @@ logical_fs_check_path(TSK_FS_INFO *a_fs, const TSK_TCHAR *a_path_wide) {
  * Caller is responsible for having allocated a_fs_name->name and shrt_name
  * buffers. No-op if a_fs_name is NULL.
  */
+#ifdef TSK_WIN32
 static void
 populate_fs_name(TSK_FS_NAME *a_fs_name, TSK_INUM_T a_inum,
                  const wchar_t *a_leaf_wide, bool a_is_dir) {
@@ -2304,6 +2292,7 @@ populate_fs_name(TSK_FS_NAME *a_fs_name, TSK_INUM_T a_inum,
 	a_fs_name->type = a_is_dir ? TSK_FS_NAME_TYPE_DIR : TSK_FS_NAME_TYPE_REG;
 	a_fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 }
+#endif  /* TSK_WIN32 */
 
 /*
  * Logical-FS path → inum resolver. Single entry point used by tsk_fs_path2inum's
