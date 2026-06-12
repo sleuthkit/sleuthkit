@@ -40,9 +40,6 @@ using std::wstring;
 #ifdef TSK_WIN32
 static bool
 case_insensitive_compare(const std::wstring& a_a, const std::wstring& a_b);
-#else
-static bool
-case_insensitive_compare(const std::string& a_a, const std::string& a_b);
 #endif
 
 static uint8_t
