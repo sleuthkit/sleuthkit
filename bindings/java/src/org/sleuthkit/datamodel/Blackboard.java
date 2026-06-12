@@ -1211,23 +1211,36 @@ public final class Blackboard {
 		}
 	}	
 
-	private final static String ANALYSIS_RESULT_QUERY_STRING_GENERIC = "SELECT DISTINCT artifacts.artifact_id AS artifact_id, " //NON-NLS
+	// Column list and FROM/JOIN clause shared by the analysis-result query variants. Kept
+	// separate so the no-attributes path can omit SELECT DISTINCT (its joins are to-one, so
+	// the result set is already unique) while the attributes path retains DISTINCT (see below).
+	private final static String ANALYSIS_RESULT_QUERY_COLUMNS = " artifacts.artifact_id AS artifact_id, " //NON-NLS
 			+ " artifacts.obj_id AS obj_id, artifacts.artifact_obj_id AS artifact_obj_id, artifacts.data_source_obj_id AS data_source_obj_id, artifacts.artifact_type_id AS artifact_type_id, "
 			+ " types.type_name AS type_name, types.display_name AS display_name, types.category_type as category_type,"//NON-NLS
 			+ " artifacts.review_status_id AS review_status_id, " //NON-NLS
 			+ " results.conclusion AS conclusion,  results.significance AS significance,  results.priority AS priority,  "
 			+ " results.configuration AS configuration,  results.justification AS justification, "
-			+ " results.ignore_score AS ignore_score "
-			+ " FROM blackboard_artifacts AS artifacts "
+			+ " results.ignore_score AS ignore_score ";
+
+	private final static String ANALYSIS_RESULT_QUERY_FROM
+			= " FROM blackboard_artifacts AS artifacts "
 			+ " JOIN blackboard_artifact_types AS types " //NON-NLS
 			+ "		ON artifacts.artifact_type_id = types.artifact_type_id" //NON-NLS
 			+ " LEFT JOIN tsk_analysis_results AS results "
 			+ "		ON artifacts.artifact_obj_id = results.artifact_obj_id "; //NON-NLS
 
+	// No SELECT DISTINCT: blackboard_artifact_types joins on its primary key and
+	// tsk_analysis_results joins 1:1 on artifact_obj_id, so neither join multiplies rows.
+	// The result set is already unique; DISTINCT would only add a wasted sort/hash that can
+	// spill to disk on large result sets.
+	private final static String ANALYSIS_RESULT_QUERY_STRING_GENERIC = "SELECT" + ANALYSIS_RESULT_QUERY_COLUMNS + ANALYSIS_RESULT_QUERY_FROM;
+
+	// SELECT DISTINCT is required here: the blackboard_attributes join fans out one row per
+	// matching attribute, so DISTINCT collapses the result back to one row per artifact.
 	private final static String ANALYSIS_RESULT_QUERY_STRING_WITH_ATTRIBUTES
-			= ANALYSIS_RESULT_QUERY_STRING_GENERIC
-			+ " JOIN blackboard_attributes AS attributes " //NON-NLS 
-			+ " ON artifacts.artifact_id = attributes.artifact_id " //NON-NLS 
+			= "SELECT DISTINCT" + ANALYSIS_RESULT_QUERY_COLUMNS + ANALYSIS_RESULT_QUERY_FROM
+			+ " JOIN blackboard_attributes AS attributes " //NON-NLS
+			+ " ON artifacts.artifact_id = attributes.artifact_id " //NON-NLS
 			+ " WHERE types.category_type = " + BlackboardArtifact.Category.ANALYSIS_RESULT.getID(); // NON-NLS
 
 	private final static String ANALYSIS_RESULT_QUERY_STRING_WHERE
