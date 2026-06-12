@@ -9,11 +9,13 @@ on:
       - main
       - develop
       - develop-4.14
+      - develop-4.1x
   pull_request:
     branches:
       - main
       - develop
       - develop-4.14
+      - develop-4.1x
 
 # Cancel any in-progress run for the same branch when a new one starts.
 concurrency:
