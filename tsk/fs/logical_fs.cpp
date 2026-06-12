@@ -28,11 +28,11 @@
 
 #ifdef TSK_WIN32
 #include <windows.h>
+using std::wstring;
 #endif
 
 using std::vector;
 using std::string;
-using std::wstring;
 
 // Forward declaration: load_dir_and_file_lists_win uses this comparator when sorting
 // before caching, but the function bodies live further down. Keep these signatures in
