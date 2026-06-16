@@ -718,7 +718,7 @@ ewf_image_verify(TSK_IMG_INFO * img_info,
     if (ewf_info->md5hash_isset != 1)
         return TSK_IMG_VERIFY_UNSUPPORTED;
 
-    const size_t BUF_SIZE = 1 << 20;  /* 1 MB read buffer */
+    const size_t BUF_SIZE = 4 << 20;  /* 4 MB read buffer */
     char *buf = (char *) tsk_malloc(BUF_SIZE);
     if (buf == NULL) {
         if (cb) cb(100, "out of memory allocating read buffer", cb_ctx);
