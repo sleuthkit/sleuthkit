@@ -162,7 +162,8 @@ main(int argc, char **argv1)
             exit(1);
         case TSK_IMG_VERIFY_UNSUPPORTED:
             tsk_printf("Verification: UNSUPPORTED\n");
-            break;
+            tsk_img_close(img);
+            exit(1);
         }
     }
 
