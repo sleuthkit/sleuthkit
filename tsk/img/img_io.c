@@ -248,3 +248,30 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     tsk_release_lock(&(a_img_info->cache_lock));
     return read_count;
 }
+
+/**
+ * \ingroup imglib
+ * Verifies the integrity of an open disk image by recomputing its hash and
+ * comparing it to the stored value.  Currently only EWF (E01) images with a
+ * stored MD5 hash are supported.
+ *
+ * @param a_img_info Disk image to verify
+ * @param cb     Optional callback (may be NULL). Called as cb(percent, NULL, ctx)
+ *               for progress ticks 0-100, and cb(100, message, ctx) on FAIL or ERROR.
+ * @param cb_ctx Opaque pointer forwarded to cb.
+ * @returns TSK_IMG_VERIFY_RESULT value
+ */
+TSK_IMG_VERIFY_RESULT
+tsk_img_verify(TSK_IMG_INFO * a_img_info,
+    TSK_IMG_VERIFY_CB cb, void *cb_ctx)
+{
+    if (a_img_info == NULL || a_img_info->tag != TSK_IMG_INFO_TAG)
+        return TSK_IMG_VERIFY_ERROR;
+
+#if HAVE_LIBEWF
+    if (TSK_IMG_TYPE_ISEWF(a_img_info->itype))
+        return ewf_image_verify(a_img_info, cb, cb_ctx);
+#endif
+
+    return TSK_IMG_VERIFY_UNSUPPORTED;
+}

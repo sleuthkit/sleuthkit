@@ -9,16 +9,32 @@
  * This software is distributed under the Common Public License 1.0
  */
 #include "tsk/tsk_tools_i.h"
+#include <stdio.h>
 
 static TSK_TCHAR *progname;
+
+static void
+verify_progress_cb(int a_percent, const char *a_msg, void *a_ctx)
+{
+    if (a_msg != NULL) {
+        /* Final call on FAIL/ERROR: clear progress line, capture message. */
+        tsk_printf("\r%-45s\r", "");   /* erase progress line */
+        if (a_ctx)
+            snprintf((char *) a_ctx, 100, "%s", a_msg);
+    } else {
+        tsk_printf("\rCalculating hash of image: %3d%%", a_percent);
+        fflush(stdout);
+    }
+}
 
 static void
 usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %" PRIttocTSK " [-tvV] [-i imgtype] [-b dev_sector_size] image\n"),
+        ("usage: %" PRIttocTSK " [-ctvV] [-i imgtype] [-b dev_sector_size] image\n"),
         progname);
+    tsk_fprintf(stderr, "\t-c: verify image integrity (MD5 check; EWF only)\n");
     tsk_fprintf(stderr, "\t-t: display type only\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for list of supported types)\n");
@@ -38,6 +54,7 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     int ch;
     uint8_t type = 0;
+    uint8_t do_check = 0;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
@@ -55,7 +72,7 @@ main(int argc, char **argv1)
 
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:tvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:ci:tvV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -84,6 +101,10 @@ main(int argc, char **argv1)
                     OPTARG);
                 usage();
             }
+            break;
+
+        case _TSK_T('c'):
+            do_check = 1;
             break;
 
         case _TSK_T('t'):
@@ -119,6 +140,30 @@ main(int argc, char **argv1)
     }
     else {
         img->imgstat(img, stdout);
+    }
+
+    if (do_check) {
+        char vdetail[100];
+        vdetail[0] = '\0';
+        TSK_IMG_VERIFY_RESULT vr = tsk_img_verify(img, verify_progress_cb, vdetail);
+        switch (vr) {
+        case TSK_IMG_VERIFY_PASS:
+            tsk_printf("\rVerification: PASS                    \n");
+            break;
+        case TSK_IMG_VERIFY_FAIL:
+            tsk_printf("Verification: FAIL\n");
+            if (vdetail[0]) tsk_printf("Details: %s\n", vdetail);
+            tsk_img_close(img);
+            exit(1);
+        case TSK_IMG_VERIFY_ERROR:
+            tsk_printf("Verification: ERROR\n");
+            if (vdetail[0]) tsk_printf("Details: %s\n", vdetail);
+            tsk_img_close(img);
+            exit(1);
+        case TSK_IMG_VERIFY_UNSUPPORTED:
+            tsk_printf("Verification: UNSUPPORTED\n");
+            break;
+        }
     }
 
     tsk_img_close(img);

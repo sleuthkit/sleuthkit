@@ -40,6 +40,11 @@ extern void tsk_img_free(void *);
 extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR * a_startingName,
     int *a_numFound);
 
+#if HAVE_LIBEWF
+extern TSK_IMG_VERIFY_RESULT ewf_image_verify(TSK_IMG_INFO *img_info,
+    TSK_IMG_VERIFY_CB cb, void *cb_ctx);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
