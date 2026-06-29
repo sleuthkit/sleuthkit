@@ -1130,7 +1130,7 @@ search_directory_recursive(LOGICALFS_INFO *a_logical_fs_info, const TSK_TCHAR * 
 			is_near_root_folder = (slash_count < 2);
 		}
 		if (a_search_helper->search_type == LOGICALFS_SEARCH_BY_PATH) {
-			if (is_near_root_folder || TSTRNCMP(current_path, a_search_helper->target_path, current_path_len) == 0) {
+			if (is_near_root_folder || TSTRNICMP(current_path, a_search_helper->target_path, current_path_len) == 0) {
 				add_directory_to_cache(a_logical_fs_info, current_path, current_inum, true);
 			}
 			else {
@@ -1417,7 +1417,7 @@ get_inum_from_directory_path(LOGICALFS_INFO *a_logical_fs_info, TSK_TCHAR *a_bas
 		return LOGICAL_INVALID_INUM;
 	}
 	if (cache_inum != LOGICAL_INVALID_INUM) {
-		if (TSTRCMP(path_buf, cache_path) == 0) {
+		if (TSTRICMP(path_buf, cache_path) == 0) {
 			// We found an exact match - no need to do a search
 			free(cache_path);
 			return cache_inum;
