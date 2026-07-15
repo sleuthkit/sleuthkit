@@ -113,6 +113,26 @@ extern "C" {
         void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function
     };
 
+    /**
+     * Return value for tsk_img_verify().
+     */
+    typedef enum {
+        TSK_IMG_VERIFY_UNSUPPORTED = 0,  ///< Image type does not support verification
+        TSK_IMG_VERIFY_ERROR       = 1,  ///< Error during verification (e.g., read failure)
+        TSK_IMG_VERIFY_PASS        = 2,  ///< Hash matched
+        TSK_IMG_VERIFY_FAIL        = 3,  ///< Hash mismatch
+    } TSK_IMG_VERIFY_RESULT;
+
+    /**
+     * Optional callback for tsk_img_verify().
+     * Called periodically during hash computation and once on completion.
+     * @param a_percent  Completion percentage 0–100
+     * @param a_msg      NULL during progress ticks; on FAIL or ERROR, a
+     *                   human-readable description of the problem.
+     * @param a_context  Caller-supplied context pointer.
+     */
+    typedef void (*TSK_IMG_VERIFY_CB)(int a_percent, const char *a_msg, void *a_context);
+
     // open and close functions
     extern TSK_IMG_INFO *tsk_img_open_sing(const TSK_TCHAR * a_image,
         TSK_IMG_TYPE_ENUM type, unsigned int a_ssize);
@@ -134,6 +154,10 @@ extern "C" {
     // read functions
     extern ssize_t tsk_img_read(TSK_IMG_INFO * img, TSK_OFF_T off,
         char *buf, size_t len);
+
+    // verify functions
+    extern TSK_IMG_VERIFY_RESULT tsk_img_verify(TSK_IMG_INFO * img,
+        TSK_IMG_VERIFY_CB cb, void *cb_ctx);
 
     // type conversion functions
     extern TSK_IMG_TYPE_ENUM tsk_img_type_toid_utf8(const char *);

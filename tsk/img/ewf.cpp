@@ -696,4 +696,88 @@ std::string ewf_get_details(IMG_EWF_INFO *ewf_info) {
     free(result);
     return collectionDetails;
 }
+
+/**
+ * Verify an EWF image by recomputing the MD5 hash of all logical bytes and
+ * comparing it to the hash stored in the image.
+ *
+ * @param img_info  Open EWF image
+ * @param cb        Optional callback invoked during computation.
+ *                  Called as cb(percent, NULL, ctx) for progress ticks (0-100).
+ *                  Called as cb(100, message, ctx) on FAIL or ERROR, where
+ *                  message describes the problem.  Pass NULL to disable.
+ * @param cb_ctx    Caller context pointer forwarded to cb.
+ * @returns TSK_IMG_VERIFY_RESULT
+ */
+TSK_IMG_VERIFY_RESULT
+ewf_image_verify(TSK_IMG_INFO * img_info,
+    TSK_IMG_VERIFY_CB cb, void *cb_ctx)
+{
+    IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
+
+    if (ewf_info->md5hash_isset != 1)
+        return TSK_IMG_VERIFY_UNSUPPORTED;
+
+    const size_t BUF_SIZE = 4 << 20;  /* 4 MB read buffer */
+    char *buf = (char *) tsk_malloc(BUF_SIZE);
+    if (buf == NULL) {
+        if (cb) cb(100, "out of memory allocating read buffer", cb_ctx);
+        return TSK_IMG_VERIFY_ERROR;
+    }
+
+    TSK_MD5_CTX ctx;
+    TSK_MD5_Init(&ctx);
+
+    int last_pct = -1;
+    TSK_OFF_T off = 0;
+    while (off < img_info->size) {
+        TSK_OFF_T remaining = img_info->size - off;
+        size_t want = (size_t) (remaining < (TSK_OFF_T) BUF_SIZE
+                                ? remaining : (TSK_OFF_T) BUF_SIZE);
+        ssize_t got = tsk_img_read(img_info, off, buf, want);
+        if (got <= 0) {
+            free(buf);
+            if (cb) {
+                char errmsg[80];
+                snprintf(errmsg, sizeof(errmsg),
+                         "read error at offset %" PRIdOFF, off);
+                cb(100, errmsg, cb_ctx);
+            }
+            return TSK_IMG_VERIFY_ERROR;
+        }
+        TSK_MD5_Update(&ctx, (unsigned char *) buf, (unsigned int) got);
+        off += got;
+
+        if (cb != NULL) {
+            int pct = (int) ((off * 100) / img_info->size);
+            if (pct != last_pct) {
+                cb(pct, NULL, cb_ctx);
+                last_pct = pct;
+            }
+        }
+    }
+    free(buf);
+
+    unsigned char raw[TSK_MD5_DIGEST_LENGTH];
+    TSK_MD5_Final(raw, &ctx);
+
+    /* Convert raw bytes to lowercase hex string */
+    char computed[33];
+    for (int i = 0; i < TSK_MD5_DIGEST_LENGTH; i++) {
+        snprintf(computed + i * 2, 3, "%02x", (unsigned int) raw[i]);
+    }
+
+    if (strcasecmp(ewf_info->md5hash, computed) == 0) {
+        if (cb) cb(100, NULL, cb_ctx);
+        return TSK_IMG_VERIFY_PASS;
+    }
+
+    if (cb) {
+        char errmsg[100];
+        snprintf(errmsg, sizeof(errmsg), "MD5 mismatch: stored=%s  computed=%s",
+                 ewf_info->md5hash, computed);
+        cb(100, errmsg, cb_ctx);
+    }
+    return TSK_IMG_VERIFY_FAIL;
+}
 #endif                          /* HAVE_LIBEWF */
