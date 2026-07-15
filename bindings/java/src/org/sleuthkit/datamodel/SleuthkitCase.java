@@ -113,7 +113,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 7);
+			= new CaseDbSchemaVersionNumber(9, 8);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1182,6 +1182,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot4toSchema9dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot5toSchema9dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot6toSchema9dot7(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot7toSchema9dot8(dbSchemaVersion, connection);
 
 
 				statement = connection.createStatement();
@@ -3075,6 +3076,46 @@ public class SleuthkitCase {
 
 			return new CaseDbSchemaVersionNumber(9, 7);
 
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	private CaseDbSchemaVersionNumber updateFromSchema9dot7toSchema9dot8(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 7) {
+			return schemaVersion;
+		}
+
+		String bigIntDataType = "BIGINT";
+		String primaryKeyType = "BIGSERIAL";
+		if (this.dbType.equals(DbType.SQLITE)) {
+			bigIntDataType = "INTEGER";
+			primaryKeyType = "INTEGER";
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// Alternate/secondary names for an OS account (UPN, down-level SAM name, object id, ...),
+			// beyond the single login_name/addr on tsk_os_accounts, so an account can be resolved by any
+			// observed name form. See OsAccount.OsAccountNameType.
+			statement.execute("CREATE TABLE tsk_os_account_names (id " + primaryKeyType + " PRIMARY KEY, "
+					+ "os_account_obj_id " + bigIntDataType + " NOT NULL, "
+					+ "host_id " + bigIntDataType + ", "
+					+ "name TEXT NOT NULL, "
+					+ "name_type INTEGER NOT NULL, "
+					+ "UNIQUE(os_account_obj_id, name, name_type, host_id), "
+					+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) ON DELETE CASCADE )");
+
+			statement.execute("CREATE INDEX tsk_os_account_names_name_idx ON tsk_os_account_names(name, host_id)");
+
+			return new CaseDbSchemaVersionNumber(9, 8);
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();

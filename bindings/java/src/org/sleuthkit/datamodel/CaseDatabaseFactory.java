@@ -415,6 +415,7 @@ class CaseDatabaseFactory {
 			// For DC support 
 			stmt.execute("CREATE INDEX tsk_os_accounts_login_name_idx  ON tsk_os_accounts(login_name, db_status, realm_id)");
 			stmt.execute("CREATE INDEX tsk_os_accounts_addr_idx  ON tsk_os_accounts(addr, db_status, realm_id)");
+			stmt.execute("CREATE INDEX tsk_os_account_names_name_idx  ON tsk_os_account_names(name, host_id)");
 
 			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_name_idx  ON tsk_os_account_realms(realm_name)");
 			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_addr_idx  ON tsk_os_account_realms(realm_addr)");
@@ -551,7 +552,23 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(realm_id) REFERENCES tsk_os_account_realms(id) ON DELETE CASCADE,"
 				+ "FOREIGN KEY(merged_into) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE )");
-		
+
+		// References tsk_os_accounts, tsk_hosts
+		// Alternate/secondary names for an account, beyond the single login_name/addr on
+		// tsk_os_accounts, so an account can be resolved by another observed name form. host_id scopes
+		// a name to a host when the name is only unique within a host (e.g. the Entra down-level/SAM
+		// name - two hosts can each have a local "johndoe" for different accounts); host_id is
+		// null for names that are unique across the whole realm (e.g. a UPN). Search with a host to
+		// match host-scoped names, without one to match realm-wide names. Generic across operating
+		// systems. See OsAccount.OsAccountNameType.
+		stmt.execute("CREATE TABLE tsk_os_account_names (id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "os_account_obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// account the name belongs to
+				+ "host_id " + dbQueryHelper.getBigIntType() + ", "	// host the name is scoped to; null if unique across the realm
+				+ "name TEXT NOT NULL, "		// an alternate name for the account
+				+ "name_type INTEGER NOT NULL, "	// the kind of name (see OsAccount.OsAccountNameType)
+				+ "UNIQUE(os_account_obj_id, name, name_type, host_id), "
+				+ "FOREIGN KEY(os_account_obj_id) REFERENCES tsk_os_accounts(os_account_obj_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY(host_id) REFERENCES tsk_hosts(id) ON DELETE CASCADE )");
 	}
 	// Must be called after createAccountTables() and blackboard_attribute_types, blackboard_artifacts creation.
 	private void createAccountInstancesAndArtifacts(Statement stmt) throws SQLException {
