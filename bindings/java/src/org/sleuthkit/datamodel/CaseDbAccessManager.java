@@ -765,26 +765,14 @@ public final class CaseDbAccessManager {
 				tskDB.releaseSingleUserCaseWriteLock();
 			}
 		} else {
-			CaseDbTransaction localTrans = tskDB.beginTransaction();
-
-			try {
-				CaseDbConnection connection = localTrans.getConnection();
-
-				try (Statement statement = connection.createStatement()) {
-					statement.executeUpdate("ANALYZE");
-				} catch (SQLException ex) {
-					throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
-				}
-				localTrans.commit();
-				localTrans = null;
-			} finally {
-				if (null != localTrans) {
-					try {
-						localTrans.rollback();
-					} catch (TskCoreException ex) {
-						logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
-					}
-				}
+			// ANALYZE is a single, self-contained maintenance statement; it needs no
+			// explicit transaction. Run it on a plain (auto-commit) connection so it
+			// commits itself, matching the SQLite branch above.
+			try (CaseDbConnection connection = tskDB.getConnection();
+					Statement statement = connection.createStatement()) {
+				statement.executeUpdate("ANALYZE");
+			} catch (SQLException ex) {
+				throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
 			}
 		}
 	}
