@@ -747,6 +747,51 @@ public final class OsAccountManager {
 	}
 
 	/**
+	 * Gets the alternate (secondary) names of the given type recorded for the given account
+	 * in tsk_os_account_names - e.g. an Entra down-level/SAM name.
+	 *
+	 * A host-specific name type (nameType.isHostSpecific()) is only unique within a host, so
+	 * it is matched together with the host, which is then required. A name type that is not
+	 * host-specific is unique across the whole realm and is matched with no host (host_id is
+	 * null); host is ignored in that case.
+	 *
+	 * @param account  The account to get alternate names for.
+	 * @param nameType The kind of name - determines whether host is used to match.
+	 * @param host     The host to scope host-specific names to. Required if nameType.isHostSpecific().
+	 *
+	 * @return The alternate names recorded for the account (empty if none).
+	 *
+	 * @throws TskCoreException If there is an error getting the names, or if a host is
+	 *                          required for nameType but not supplied.
+	 */
+	public List<String> getOsAccountAlternateNames(OsAccount account, OsAccount.OsAccountNameType nameType, Host host) throws TskCoreException {
+
+		if (nameType.isHostSpecific() && host == null) {
+			throw new TskCoreException("A host is required to get host-specific alternate names for an OS account.");
+		}
+
+		String queryString = "SELECT name FROM tsk_os_account_names WHERE os_account_obj_id = " + account.getId()
+				+ " AND name_type = " + nameType.getId()
+				+ (nameType.isHostSpecific() ? " AND host_id = " + host.getHostId() : " AND host_id IS NULL");
+
+		List<String> names = new ArrayList<>();
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			while (rs.next()) {
+				names.add(rs.getString("name"));
+			}
+			return names;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting alternate names for OS account id = %d", account.getId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
 	 * Get the OS Account with the given object id.
 	 *
 	 * @param osAccountObjId Object id for the account.
