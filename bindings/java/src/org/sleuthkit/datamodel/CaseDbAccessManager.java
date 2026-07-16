@@ -730,66 +730,60 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
-	 * Performs a select statement query with the given case prepared statement.
+	 * Refreshes the case database's query-planner statistics so queries that run
+	 * after a large data change (bulk insert/update/delete) plan against
+	 * up-to-date row estimates instead of stale ones. Single entry point for both
+	 * database types.
 	 *
-	 * NOTE: Run optimize only runs for SQLite, and is not applicable to
-	 * postgres. Optimize seems to work on a connection by connection basis.
-	 * Given the connection pool, it must be assumed that any new connection has
-	 * not necessarily been optimized. Optimize should be ran in situations
-	 * where statistics in the database would change the query plan thus
-	 * improving query speed. In most instances, running optimize is a no-op.
-	 * See https://sqlite.org/pragma.html#pragma_optimize for more information.
+	 * PostgreSQL: a plain ANALYZE. Statistics are server-side, so the refresh is
+	 * immediately visible to every pooled connection.
 	 *
-	 * @param preparedStatement The case prepared statement.
-	 * @param runOptimize       Runs optimization before executing the query.
-	 *                          See note above.
-	 * @param queryCallback     The callback to handle the result set.
-	 *
-	 * @throws TskCoreException
-	 */
-	@Beta
-	public void select(CaseDbPreparedStatement preparedStatement, boolean runOptimize, CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
-		if (runOptimize && this.tskDB.getDatabaseType() == DbType.SQLITE) {
-			try (Statement optimizeStmt = preparedStatement.connection.createStatement()) {
-				optimizeStmt.execute("PRAGMA optimize");
-			} catch (SQLException ex) {
-				throw new TskCoreException("An error occurred while attempting to optimize the call", ex);
-			}
-		}
-		
-		select(preparedStatement, queryCallback);
-	}
-	
-	/**
-	 * Runs the ANALYZE SQL command to refresh query-planner statistics.
-	 *
-	 * This is primarily useful for SQLite after large data changes (bulk
-	 * inserts, updates, deletes) or index/schema changes, or when query plans
-	 * appear suboptimal. For PostgreSQL, statistics are refreshed automatically, 
-	 * so manually running ANALYZE is usually unnecessary.
+	 * SQLite: a bounded ANALYZE (PRAGMA analysis_limit caps the rows sampled per
+	 * index, keeping it fast and the write-lock hold short), gated by the
+	 * single-user write lock like every other SQLite write. SQLite caches
+	 * sqlite_stat1 per connection at schema-parse time, so the connection pool is
+	 * then soft-reset to make later connections re-read the refreshed statistics.
 	 *
 	 * @throws TskCoreException
 	 */
 	@Beta
-	public void runAnalyze() throws TskCoreException {
-		CaseDbTransaction localTrans = tskDB.beginTransaction();
-
-		try {
-			CaseDbConnection connection = localTrans.getConnection();
-
-			try (Statement statement = connection.createStatement()) {
-				statement.executeUpdate("ANALYZE");
-			} catch (SQLException ex) {
-				throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
+	public void refreshQueryPlannerStats() throws TskCoreException {
+		if (tskDB.getDatabaseType() == DbType.SQLITE) {
+			tskDB.acquireSingleUserCaseWriteLock();
+			try {
+				try (CaseDbConnection connection = tskDB.getConnection();
+						Statement statement = connection.createStatement()) {
+					statement.execute("PRAGMA analysis_limit=600");
+					statement.executeUpdate("ANALYZE");
+				} catch (SQLException ex) {
+					throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
+				}
+				// sqlite_stat1 is cached per connection at schema-parse time; recycle idle
+				// pooled connections so later queries re-read the refreshed statistics.
+				tskDB.softResetCaseDbConnectionPool();
+			} finally {
+				tskDB.releaseSingleUserCaseWriteLock();
 			}
-			localTrans.commit();
-			localTrans = null;
-		} finally {
-			if (null != localTrans) {
-				try {
-					localTrans.rollback();
-				} catch (TskCoreException ex) {
-					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+		} else {
+			CaseDbTransaction localTrans = tskDB.beginTransaction();
+
+			try {
+				CaseDbConnection connection = localTrans.getConnection();
+
+				try (Statement statement = connection.createStatement()) {
+					statement.executeUpdate("ANALYZE");
+				} catch (SQLException ex) {
+					throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
+				}
+				localTrans.commit();
+				localTrans = null;
+			} finally {
+				if (null != localTrans) {
+					try {
+						localTrans.rollback();
+					} catch (TskCoreException ex) {
+						logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+					}
 				}
 			}
 		}

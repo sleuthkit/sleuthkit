@@ -3293,6 +3293,27 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Soft-resets the case database connection pool: idle connections are
+	 * discarded and replaced, and checked-out connections are destroyed when
+	 * returned. Used after an ANALYZE so pooled SQLite connections re-read the
+	 * refreshed sqlite_stat1, which SQLite caches per connection at schema-parse
+	 * time. No-op for PostgreSQL, whose statistics are server-side and visible to
+	 * all connections immediately.
+	 *
+	 * @throws TskCoreException
+	 */
+	void softResetCaseDbConnectionPool() throws TskCoreException {
+		if (dbType != DbType.SQLITE) {
+			return;
+		}
+		try {
+			connections.getPooledDataSource().softResetAllUsers();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to reset case database connection pool", ex);
+		}
+	}
+
+	/**
 	 * Open an existing case database.
 	 *
 	 * @param dbPath Path to SQLite case database.
