@@ -150,6 +150,10 @@
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
+	<target name="java-only-jar" depends="init, init-ivy, compile" description="Build Java-only JAR (no native libs) for compile-time dependency resolution">
+		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
+	</target>
+
 	<target name="check-build" depends="check-native-build">
 		<uptodate property="java-up-to-date" targetfile="${dist}/sleuthkit-${VERSION}.jar">
 			<srcfiles dir="${src}" includes="**/*.java"/>
