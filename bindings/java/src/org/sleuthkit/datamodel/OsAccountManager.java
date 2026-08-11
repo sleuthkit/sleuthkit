@@ -650,12 +650,11 @@ public final class OsAccountManager {
 	 */
 	Optional<OsAccount> getOsAccountByAlternateName(String name, OsAccount.OsAccountNameType nameType, Host host, OsAccountRealm realm) throws TskCoreException {
 
-		if (nameType.isHostSpecific() && host == null) {
-			throw new TskCoreException("A host is required to look up a host-specific alternate name.");
-		}
-
 		String hostIdClause;
 		if (nameType.isHostSpecific()) {
+			if (host == null) {
+				throw new TskCoreException("A host is required to look up a host-specific alternate name.");
+			}
 			hostIdClause = " AND names.host_id = " + host.getHostId();
 		} else {
 			hostIdClause = " AND names.host_id IS NULL";
@@ -708,14 +707,19 @@ public final class OsAccountManager {
 	 */
 	public void addAlternateOsAccountName(OsAccount account, String name, OsAccount.OsAccountNameType nameType, Host host) throws TskCoreException {
 
-		if (nameType.isHostSpecific() && host == null) {
-			throw new TskCoreException("A host is required to add a host-specific alternate name to an OS account.");
-		}
 		if (Strings.isNullOrEmpty(name)) {
 			return;
 		}
 		String normalizedName = name.toLowerCase(Locale.ENGLISH);
-		Long hostId = nameType.isHostSpecific() ? host.getHostId() : null;
+		Long hostId;
+		if (nameType.isHostSpecific()) {
+			if (host == null) {
+				throw new TskCoreException("A host is required to add a host-specific alternate name to an OS account.");
+			}
+			hostId = host.getHostId();
+		} else {
+			hostId = null;
+		}
 
 		synchronized (osAccountLockObj) {
 			db.acquireSingleUserCaseWriteLock();
@@ -762,12 +766,11 @@ public final class OsAccountManager {
 	 */
 	public List<String> getOsAccountAlternateNames(OsAccount account, OsAccount.OsAccountNameType nameType, Host host) throws TskCoreException {
 
-		if (nameType.isHostSpecific() && host == null) {
-			throw new TskCoreException("A host is required to get host-specific alternate names for an OS account.");
-		}
-
 		String hostIdClause;
 		if (nameType.isHostSpecific()) {
+			if (host == null) {
+				throw new TskCoreException("A host is required to get host-specific alternate names for an OS account.");
+			}
 			hostIdClause = " AND host_id = " + host.getHostId();
 		} else {
 			hostIdClause = " AND host_id IS NULL";
