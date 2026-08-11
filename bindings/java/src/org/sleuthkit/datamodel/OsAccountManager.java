@@ -654,11 +654,17 @@ public final class OsAccountManager {
 			throw new TskCoreException("A host is required to look up a host-specific alternate name.");
 		}
 
+		String hostIdClause;
+		if (nameType.isHostSpecific()) {
+			hostIdClause = " AND names.host_id = " + host.getHostId();
+		} else {
+			hostIdClause = " AND names.host_id IS NULL";
+		}
 		String queryString = "SELECT accounts.* FROM tsk_os_accounts accounts "
 				+ "INNER JOIN tsk_os_account_names names ON names.os_account_obj_id = accounts.os_account_obj_id "
 				+ "WHERE names.name = ?"
 				+ " AND names.name_type = " + nameType.getId()
-				+ (nameType.isHostSpecific() ? " AND names.host_id = " + host.getHostId() : " AND names.host_id IS NULL")
+				+ hostIdClause
 				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 				+ " AND accounts.realm_id = " + realm.getRealmId();
 
