@@ -656,21 +656,23 @@ public final class OsAccountManager {
 
 		String queryString = "SELECT accounts.* FROM tsk_os_accounts accounts "
 				+ "INNER JOIN tsk_os_account_names names ON names.os_account_obj_id = accounts.os_account_obj_id "
-				+ "WHERE names.name = '" + name.toLowerCase(Locale.ENGLISH) + "'"
+				+ "WHERE names.name = ?"
 				+ " AND names.name_type = " + nameType.getId()
 				+ (nameType.isHostSpecific() ? " AND names.host_id = " + host.getHostId() : " AND names.host_id IS NULL")
 				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
 				+ " AND accounts.realm_id = " + realm.getRealmId();
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = this.db.getConnection();
-				Statement s = connection.createStatement();
-				ResultSet rs = connection.executeQuery(s, queryString)) {
-
-			if (!rs.next()) {
-				return Optional.empty();	// no match found
-			} else {
-				return Optional.of(osAccountFromResultSet(rs));
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+			preparedStatement.setString(1, name.toLowerCase(Locale.ENGLISH));
+			try (ResultSet rs = connection.executeQuery(preparedStatement)) {
+				if (!rs.next()) {
+					return Optional.empty();	// no match found
+				} else {
+					return Optional.of(osAccountFromResultSet(rs));
+				}
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account for realm = %s and name = %s.", (realm != null) ? realm.getSignature() : "NULL", name), ex);
@@ -713,19 +715,7 @@ public final class OsAccountManager {
 			db.acquireSingleUserCaseWriteLock();
 			try (CaseDbConnection connection = db.getConnection()) {
 
-				// Skip if this (name, name_type, host) is already recorded for the account.
-				String checkSQL = "SELECT id FROM tsk_os_account_names WHERE os_account_obj_id = " + account.getId()
-						+ " AND name = '" + normalizedName + "'"
-						+ " AND name_type = " + nameType.getId()
-						+ (hostId != null ? " AND host_id = " + hostId : " AND host_id IS NULL");
-				try (Statement s = connection.createStatement();
-						ResultSet rs = connection.executeQuery(s, checkSQL)) {
-					if (rs.next()) {
-						return;
-					}
-				}
-
-				String insertSQL = "INSERT INTO tsk_os_account_names(os_account_obj_id, host_id, name, name_type) VALUES (?, ?, ?, ?)"; // NON-NLS
+				String insertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_names(os_account_obj_id, host_id, name, name_type) VALUES (?, ?, ?, ?)"); // NON-NLS
 				PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQL, Statement.NO_GENERATED_KEYS);
 				preparedStatement.clearParameters();
 				preparedStatement.setLong(1, account.getId());
@@ -770,9 +760,15 @@ public final class OsAccountManager {
 			throw new TskCoreException("A host is required to get host-specific alternate names for an OS account.");
 		}
 
+		String hostIdClause;
+		if (nameType.isHostSpecific()) {
+			hostIdClause = " AND host_id = " + host.getHostId();
+		} else {
+			hostIdClause = " AND host_id IS NULL";
+		}
 		String queryString = "SELECT name FROM tsk_os_account_names WHERE os_account_obj_id = " + account.getId()
 				+ " AND name_type = " + nameType.getId()
-				+ (nameType.isHostSpecific() ? " AND host_id = " + host.getHostId() : " AND host_id IS NULL");
+				+ hostIdClause;
 
 		List<String> names = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
@@ -1277,7 +1273,7 @@ public final class OsAccountManager {
 					+ "WHERE id IN ( "
 					+ "SELECT sourceName.id "
 					+ "FROM tsk_os_account_names destName "
-					+ "INNER JOIN tsk_os_account_names sourceName ON destName.name = sourceName.name AND destName.name_type = sourceName.name_type AND destName.host_id = sourceName.host_id "
+					+ "INNER JOIN tsk_os_account_names sourceName ON destName.name = sourceName.name AND destName.name_type = sourceName.name_type AND (destName.host_id = sourceName.host_id OR (destName.host_id IS NULL AND sourceName.host_id IS NULL)) "
 					+ "WHERE destName.os_account_obj_id = " + destAccount.getId()
 					+ " AND sourceName.os_account_obj_id = " + sourceAccount.getId() + ")";
 			s.executeUpdate(query);
