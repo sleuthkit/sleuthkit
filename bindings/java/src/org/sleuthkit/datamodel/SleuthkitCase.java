@@ -196,6 +196,7 @@ public class SleuthkitCase {
 	
 	// key in acquisition tool settings; the password for decrypting an image
 	static final String IMAGE_PASSWORD_KEY = "imagePassword";
+	static final String IMAGE_PASSWORDS_KEY = "imagePasswords";
 
 	/**
 	 * Maximum number of files per PostgreSQL batch chunk inside
@@ -3763,7 +3764,7 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer.
 	 */
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
-		return makeAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, null);
+		return makeAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, (String) null);
 	}
 
 	/**
@@ -3788,6 +3789,31 @@ public class SleuthkitCase {
 	@Beta
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath, String password) {
 		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, password, this);
+	}
+
+	/**
+	 * Starts the multi-step process of adding an image data source to the case
+	 * by creating an object that can be used to control the process and get
+	 * progress messages from it. Each of the candidate passwords will be
+	 * tried, in order, when opening encrypted file systems in the image.
+	 *
+	 * @param timeZone        The time zone of the image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 *                        unallocated space in the image.
+	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
+	 *                        file systems.
+	 * @param imageCopyPath   Path to which a copy of the image should be
+	 *                        written. Use the empty string to disable image
+	 *                        writing.
+	 * @param passwords       The candidate passwords for decrypting the image
+	 *                        (may be null or empty).
+	 *
+	 * @return An object that encapsulates control of adding an image via the
+	 *         SleuthKit native code layer.
+	 */
+	@Beta
+	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath, List<String> passwords) {
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, passwords, this);
 	}
 	
 	/**
@@ -7423,7 +7449,7 @@ public class SleuthkitCase {
 			String deviceId, Host host,
 			CaseDbTransaction transaction) throws TskCoreException {
 
-		return addImage(type, sectorSize, size, displayName, imagePaths, timezone, md5, sha1, sha256, deviceId, host, null, transaction);
+		return addImage(type, sectorSize, size, displayName, imagePaths, timezone, md5, sha1, sha256, deviceId, host, (String) null, transaction);
 	}
 
 	/**
@@ -7451,6 +7477,69 @@ public class SleuthkitCase {
 	public Image addImage(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName, List<String> imagePaths,
 			String timezone, String md5, String sha1, String sha256,
 			String deviceId, Host host, String password,
+			CaseDbTransaction transaction) throws TskCoreException {
+		return addImageInternal(type, sectorSize, size, displayName, imagePaths, timezone, md5, sha1, sha256, deviceId, host, password, null, transaction);
+	}
+
+	/**
+	 * Add an image to the database. Each of the candidate passwords will be
+	 * tried, in order, when opening encrypted file systems in the image.
+	 *
+	 * @param type        Type of image
+	 * @param sectorSize  Sector size
+	 * @param size        Image size
+	 * @param displayName Display name for the image
+	 * @param imagePaths  Image path(s)
+	 * @param timezone    Time zone
+	 * @param md5         MD5 hash
+	 * @param sha1        SHA1 hash
+	 * @param sha256      SHA256 hash
+	 * @param deviceId    Device ID
+	 * @param host        Host
+	 * @param passwords   The candidate passwords to decrypt the image (may be
+	 *                    null or empty).
+	 * @param transaction Case DB transaction
+	 *
+	 * @return the newly added Image
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public Image addImage(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName, List<String> imagePaths,
+			String timezone, String md5, String sha1, String sha256,
+			String deviceId, Host host, List<String> passwords,
+			CaseDbTransaction transaction) throws TskCoreException {
+		return addImageInternal(type, sectorSize, size, displayName, imagePaths, timezone, md5, sha1, sha256, deviceId, host, null, passwords, transaction);
+	}
+
+	/**
+	 * Add an image to the database. If a candidate password list is given it
+	 * is persisted (and takes precedence over the single password); otherwise
+	 * the single password is persisted if not null.
+	 *
+	 * @param type        Type of image
+	 * @param sectorSize  Sector size
+	 * @param size        Image size
+	 * @param displayName Display name for the image
+	 * @param imagePaths  Image path(s)
+	 * @param timezone    Time zone
+	 * @param md5         MD5 hash
+	 * @param sha1        SHA1 hash
+	 * @param sha256      SHA256 hash
+	 * @param deviceId    Device ID
+	 * @param host        Host
+	 * @param password    The password to decrypt the image or null.
+	 * @param passwords   The candidate passwords to decrypt the image (may be
+	 *                    null or empty).
+	 * @param transaction Case DB transaction
+	 *
+	 * @return the newly added Image
+	 *
+	 * @throws TskCoreException
+	 */
+	private Image addImageInternal(TskData.TSK_IMG_TYPE_ENUM type, long sectorSize, long size, String displayName, List<String> imagePaths,
+			String timezone, String md5, String sha1, String sha256,
+			String deviceId, Host host, String password, List<String> passwords,
 			CaseDbTransaction transaction) throws TskCoreException {
 		Statement statement = null;
 		try {
@@ -7506,7 +7595,14 @@ public class SleuthkitCase {
 			}
 
 			Map<String, Object> acquisitionToolMap = new HashMap<>();
-			if (password != null) {
+			if (passwords != null && !passwords.isEmpty()) {
+				acquisitionToolMap.put(IMAGE_PASSWORDS_KEY, passwords);
+				if (passwords.size() == 1) {
+					// Also write the legacy single-password key so older code
+					// can still find the password.
+					acquisitionToolMap.put(IMAGE_PASSWORD_KEY, passwords.get(0));
+				}
+			} else if (password != null) {
 				acquisitionToolMap.put(IMAGE_PASSWORD_KEY, password);
 			}
 			String acquisitionToolJson = (new Gson()).toJson(acquisitionToolMap);
@@ -16393,7 +16489,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", null, this);
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", (String) null, this);
 	}
 
 	/**

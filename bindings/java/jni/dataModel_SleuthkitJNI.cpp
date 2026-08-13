@@ -785,6 +785,37 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 }
 
 /*
+ * Convert a Java String array to a vector of strings. Null entries are skipped.
+ *
+ * @param env Pointer to java environment.
+ * @param arrayJ The Java array of strings (may be null).
+ *
+ * @return Vector containing a copy of the non-null strings in the array.
+ */
+static std::vector<std::string> convertJavaStringArray(JNIEnv * env, jobjectArray arrayJ) {
+    std::vector<std::string> result;
+    if (arrayJ == NULL) {
+        return result;
+    }
+
+    jsize len = env->GetArrayLength(arrayJ);
+    for (jsize i = 0; i < len; i++) {
+        jstring strJ = (jstring)env->GetObjectArrayElement(arrayJ, i);
+        if (strJ == NULL) {
+            continue;
+        }
+        jboolean isCopy;
+        const char *str = (const char*)env->GetStringUTFChars(strJ, &isCopy);
+        if (str != NULL) {
+            result.push_back(std::string(str));
+            env->ReleaseStringUTFChars(strJ, str);
+        }
+        env->DeleteLocalRef(strJ);
+    }
+    return result;
+}
+
+/*
  * Initialize a process for adding an image to a case database.
  *
  * @param env Pointer to java environment.
@@ -920,6 +951,36 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(JNIEnv * e
     }
 
     return (jlong)tskAutoJava;
+}
+
+/*
+ * Initialize a process for adding an image to a case database, with a list of
+ * candidate passwords that will each be tried when opening encrypted file systems.
+ *
+ * @param env Pointer to java environment.
+ * @param obj Pointer the Java class object.
+ * @param timeZone The time zone for the image.
+ * @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
+ * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
+ * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
+ * @param passwordsJ Array of candidate passwords for the file systems or null for no passwords.
+ *
+ * @return A pointer to the process (TskAutoDbJava object) or NULL on error.
+ */
+JNIEXPORT jlong JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgCandidatesNat(JNIEnv * env, jclass obj,
+    jobject callbackObj, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans, jobjectArray passwordsJ) {
+
+    jlong autoDbPtr = Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(env, obj,
+        callbackObj, timeZone, addFileSystems, addUnallocSpace, skipFatFsOrphans, NULL);
+    if (autoDbPtr == 0) {
+        // exception already set
+        return 0;
+    }
+
+    TskAutoDbJava *tskAutoJava = (TskAutoDbJava *)autoDbPtr;
+    tskAutoJava->setCandidatePasswords(convertJavaStringArray(env, passwordsJ));
+    return autoDbPtr;
 }
 
 /*
@@ -2412,6 +2473,46 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSuppo
         tskIsImage.setFileSystemPassword(string(password));
         env->ReleaseStringUTFChars(passwordJ, (const char*)password);
     }
+
+    jstring resultStr = env->NewStringUTF(""); // This will stay empty if we can open the image/file system
+
+    // It seems like passing &imagePathT should work instead of making this new array,
+    // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
+    TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
+    imagePaths[0] = imagePathT;
+    if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
+        resultStr = env->NewStringUTF("Error opening image");
+    } else {
+        tskIsImage.findFilesInImg();
+        resultStr = env->NewStringUTF(tskIsImage.getMessageForIsImageSupportedNat().c_str());
+    }
+
+    // Cleanup
+    tskIsImage.closeImage();
+    free(imagePaths);
+
+    return resultStr;
+}
+
+/*
+ * Test whether an image is supported, trying each of the given candidate
+ * passwords when opening encrypted file systems.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param imagePathJ the image path
+ * @param passwordsJ  array of candidate passwords to try for any file systems found (may be null)
+ * @return empty string if the image can be processed, error message otherwise.
+ *         If multiple volumes could not be opened due to BitLocker errors, the
+ *         message will contain one line per locked volume.
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedListNat
+  (JNIEnv * env, jclass obj, jstring imagePathJ, jobjectArray passwordsJ) {
+
+    TskIsImageSupported tskIsImage;
+    TSK_TCHAR imagePathT[1024];
+    toTCHAR(env, imagePathT, 1024, imagePathJ);
+
+    tskIsImage.setCandidatePasswords(convertJavaStringArray(env, passwordsJ));
 
     jstring resultStr = env->NewStringUTF(""); // This will stay empty if we can open the image/file system
 
