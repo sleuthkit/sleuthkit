@@ -1556,7 +1556,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsDecryptN
     fs_info =
         tsk_fs_open_img_decrypt(img_info, (TSK_OFF_T) fs_offset,
         TSK_FS_TYPE_DETECT, password);
-    env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+    if (passwordJ != NULL) {
+        env->ReleaseStringUTFChars(passwordJ, (const char*)password);
+    }
 
     if (fs_info == NULL) {
         setThrowTskCoreError(env, tsk_error_get());

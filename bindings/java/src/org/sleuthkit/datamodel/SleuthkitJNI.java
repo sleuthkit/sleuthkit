@@ -88,9 +88,11 @@ public class SleuthkitJNI {
 
 		/*
 		 * A SleuthKit file system handles cache implemented as a mapping of
-		 * image handles to image offset and file system handle pairs.
+		 * image handles to cache key (image offset and password for regular
+		 * file systems, pool block for file systems in pools) and file system
+		 * handle pairs.
 		 */
-		private final Map<Long, Map<Long, Long>> fsHandleCache = new HashMap<>();
+		private final Map<Long, Map<String, Long>> fsHandleCache = new HashMap<>();
 
 		/*
 		 * The collection of open file handles. We will only allow requests
@@ -306,7 +308,7 @@ public class SleuthkitJNI {
 				/*
 				 * Close any cached file system handles.
 				 */
-				for (Map<Long, Long> imageToFsMap : getCaseHandles(caseIdentifier).fsHandleCache.values()) {
+				for (Map<String, Long> imageToFsMap : getCaseHandles(caseIdentifier).fsHandleCache.values()) {
 					for (Long fsHandle : imageToFsMap.values()) {						
 						// First close all open file handles for the file system.
 						if (getCaseHandles(caseIdentifier).fileSystemToFileHandles.containsKey(fsHandle)) {
@@ -1185,17 +1187,20 @@ public class SleuthkitJNI {
 				} else {
 					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
-				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
+				final Map<String, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
 				if (imgOffSetToFsHandle == null) {
 					throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
 				}
-				if (imgOffSetToFsHandle.containsKey(fsOffset)) {
+				// The password is part of the cache key so that a retry with a
+				// different password does not return a stale handle.
+				final String fsKey = fsOffset + ":" + ((password == null) ? "" : password);
+				if (imgOffSetToFsHandle.containsKey(fsKey)) {
 					//return cached
-					fsHandle = imgOffSetToFsHandle.get(fsOffset);
+					fsHandle = imgOffSetToFsHandle.get(fsKey);
 				} else {
 					fsHandle = openFsDecryptNat(imgHandle, fsOffset, password);
 					//cache it
-					imgOffSetToFsHandle.put(fsOffset, fsHandle);
+					imgOffSetToFsHandle.put(fsKey, fsHandle);
 				}
 			}
 			return fsHandle;
@@ -1236,20 +1241,21 @@ public class SleuthkitJNI {
 				} else {
 					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
-				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
+				final Map<String, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
 				if (imgOffSetToFsHandle == null) {
 					throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
 				}
-				
-				if (imgOffSetToFsHandle.containsKey(poolBlock)) {
+
+				final String poolKey = String.valueOf(poolBlock);
+				if (imgOffSetToFsHandle.containsKey(poolKey)) {
 					//return cached
-					fsHandle = imgOffSetToFsHandle.get(poolBlock);
+					fsHandle = imgOffSetToFsHandle.get(poolKey);
 				} else {
 					long poolImgHandle = getImgInfoForPoolNat(poolHandle, poolBlock);
 					HandleCache.getCaseHandles(caseIdentifier).poolImgCache.add(poolImgHandle);
 					fsHandle = openFsNat(poolImgHandle, fsOffset);
 					//cache it
-					imgOffSetToFsHandle.put(poolBlock, fsHandle);
+					imgOffSetToFsHandle.put(poolKey, fsHandle);
 					HandleCache.getCaseHandles(caseIdentifier).poolFsList.add(fsHandle);
 				}
 			}
