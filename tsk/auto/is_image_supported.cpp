@@ -36,6 +36,7 @@ TskIsImageSupported::TskIsImageSupported()
     m_possibleEncryptionDesc[0] = '\0';
     m_unsupportedDesc[0] = '\0';
     m_bitlockerDesc[0] = '\0';
+    m_curVolOffset = 0;
 }
 
 bool TskIsImageSupported::isImageSupported()
@@ -161,6 +162,13 @@ uint8_t TskIsImageSupported::handleError()
             // %.*s limits the errstr field width so prefix + errstr fits in the buffer.
             snprintf(m_bitlockerDesc, sizeof(m_bitlockerDesc), "BitLocker status - %.*s",
                 (int)(sizeof(m_bitlockerDesc) - sizeof("BitLocker status - ")), lastError->errstr);
+
+            // Also record the failure with the volume offset so that an image
+            // with multiple locked volumes can report every one of them.
+            BitlockerFailure failure;
+            failure.offset = m_curVolOffset;
+            failure.desc = lastError->errstr;
+            m_bitlockerFailures.push_back(failure);
         }
         else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
             snprintf(m_possibleEncryptionDesc, sizeof(m_possibleEncryptionDesc), "%s", lastError->errstr);
@@ -204,7 +212,23 @@ std::string TskIsImageSupported::getMessageForIsImageSupportedNat() {
     // - Otherwise return the error string
 
     if (m_bitlockerError) {
-        return getSingleLineErrorMessage();
+        // With a single locked volume, keep the original message format.
+        if (m_bitlockerFailures.size() <= 1) {
+            return getSingleLineErrorMessage();
+        }
+
+        // Multiple volumes failed to open because of BitLocker. Report one
+        // per line, keeping the single-volume format and appending the volume
+        // offset so the user can tell which volume each message applies to.
+        std::stringstream ss;
+        for (size_t i = 0; i < m_bitlockerFailures.size(); i++) {
+            if (i > 0) {
+                ss << "\n";
+            }
+            ss << "BitLocker status - " << m_bitlockerFailures[i].desc
+                << " (Volume offset: " << m_bitlockerFailures[i].offset << ")";
+        }
+        return ss.str();
     }
 
     if (isImageSupported()) {
@@ -278,8 +302,12 @@ TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)
+TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_wasDataFound = true;
+    // Track the byte offset of the volume about to be processed (matches the
+    // offset used to open the file system in vsWalkCb) so that errors can be
+    // tied back to the volume they occurred in.
+    m_curVolOffset = vs_part->start * vs_part->vs->block_size;
     return TSK_FILTER_CONT;
 }
