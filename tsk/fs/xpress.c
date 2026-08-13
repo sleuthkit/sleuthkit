@@ -5,9 +5,11 @@
  *
  * Clean-room implementation written against the MS-XCA specification
  * ("Xpress Compression Algorithm", Open Specifications) and validated with
- * the worked example in section 3.1 of that document. This is the compression
- * format used for NTFS compressed files on Windows 8 and later and for WIM
- * images.
+ * the worked examples in section 3.1 of that document. The plain LZ77
+ * variant is the COMPRESSION_FORMAT_XPRESS format of the Windows
+ * RtlCompressBuffer API (used e.g. for hibernation files); the LZ77+Huffman
+ * variant is the COMPRESSION_FORMAT_XPRESS_HUFF format used in WIM images
+ * and in Windows Overlay Filter (Compact OS) NTFS files.
  *
  * Plain LZ77 (MS-XCA 2.1.1):
  *   The stream is a sequence of 32-bit flag groups, each flag tested from
