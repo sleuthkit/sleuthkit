@@ -176,6 +176,7 @@ int xpress_huffman_decode(void *dst, size_t dst_size,
     const unsigned char *in = (const unsigned char *)src;
     const unsigned char *in_end = in + src_size;
     unsigned char *out = (unsigned char *)dst;
+    unsigned char *out_start = out;
     unsigned char *out_end = out + dst_size;
     uint16_t lens[XPRESS_NUM_SYMBOLS];
     uint16_t *table;
@@ -205,6 +206,12 @@ int xpress_huffman_decode(void *dst, size_t dst_size,
             if (lens[s] == l) {
                 int k;
                 for (k = 1 << (XPRESS_TABLEBITS - l); k > 0; k--) {
+                    if (entry >= XPRESS_TABLE_SIZE) {
+                        /* Oversubscribed codes: the table cannot hold
+                         * this many entries. */
+                        free(table);
+                        return -1;
+                    }
                     table[entry++] = (uint16_t)s;
                 }
             }
@@ -255,7 +262,7 @@ int xpress_huffman_decode(void *dst, size_t dst_size,
             if (out == out_end) {
                 break;
             }
-            if (out_end - out < 3) {
+            if (out == out_start || out_end - out < 3) {
                 free(table);
                 return -1;
             }
