@@ -4,6 +4,7 @@ This file tracks the status of every OSSFuzz issue we have triaged.
 
 | OSSFuzz ID | GitHub ID | Branch | Status | Notes |
 |------------|-----------|--------|--------|-------|
+| 471568277 | 3427 | 20260817-gh3427-ossfuzz471568277-ntfs-shift-cast | FIXED | UBSAN undefined-shift: signed 1<<31 in ntfs_open mft_rsize/idx_rsize; cast to (uint32_t)1 |
 | 471522069 | 3421 | 20260817-gh3421-ossfuzz471522069-ext2fs-dir-size-limit | FIXED | Timeout: ext2fs_dir_open_meta rejects directory size > 128 MB before block walk loop |
 | 542909776 | 3530 | 20260817-gh3530-ossfuzz542909776-fatxxfs-name-leak | FIXED | Direct-leak: fs_name leaked on two early-return paths in fatxxfs_dent_parse_buf |
 | 542853444 | 3529 | 20260817-gh3529-ossfuzz542853444-ntfs-invalid-enum | FIXED | UBSAN invalid-enum-value: NTFS attribute type read from disk not validated; values >0x100 skipped |
