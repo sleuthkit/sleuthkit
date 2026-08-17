@@ -288,8 +288,8 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (length == 0 || length > (128UL * 1024 * 1024)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr("iso9660_dir_open_meta: directory size %" PRIuOFF
-            " is unreasonably large", fs_dir->fs_file->meta->size);
+        tsk_error_set_errstr("iso9660_dir_open_meta: directory size %" PRIdOFF
+            " is invalid (must be between 1 and 128 MB)", fs_dir->fs_file->meta->size);
         return TSK_COR;
     }
 
