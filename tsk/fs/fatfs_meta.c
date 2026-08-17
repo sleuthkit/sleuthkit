@@ -482,6 +482,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         if ((fs_attr =
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
+            tsk_fs_attr_run_free(data_run);
             return 1;
         }
 
@@ -491,6 +492,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 data_run->len * fs->block_size,
                 data_run->len * fs->block_size,
                 data_run->len * fs->block_size, 0, 0)) {
+            tsk_fs_attr_run_free(data_run);
             return 1;
         }
 
@@ -524,6 +526,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         if ((fs_attr =
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
+            tsk_fs_attr_run_free(data_run);
             return 1;
         }
 
@@ -533,6 +536,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 data_run->len * fs->block_size,
                 data_run->len * fs->block_size,
                 data_run->len * fs->block_size, 0, 0)) {
+            tsk_fs_attr_run_free(data_run);
             return 1;
         }
 
@@ -696,6 +700,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                     fs_meta->size, fs_meta->size, roundup(fs_meta->size,
                         fatfs->csize * fs->block_size), 0, 0)) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+                tsk_fs_attr_run_free(data_run_head);
                 return 1;
             }
 
@@ -719,6 +724,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                     fs_meta->size, fs_meta->size, roundup(fs_meta->size,
                         fatfs->csize * fs->block_size), 0, 0)) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+                tsk_fs_attr_run_free(data_run_tmp);
                 return 1;
             }
 
@@ -845,6 +851,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+            tsk_fs_attr_run_free(data_run_head);
             if (list_seen != NULL) {
                 tsk_list_free(list_seen);
                 list_seen = NULL;
