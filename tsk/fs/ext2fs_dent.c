@@ -330,6 +330,14 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_ERR;
         }
         size = roundup(fs_dir->fs_file->meta->size, a_fs->block_size);
+        if (size > (TSK_OFF_T)(128UL * 1024 * 1024)) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr("ext2fs_dir_open_meta: directory size %" PRIdOFF
+                " exceeds 128 MB limit", size);
+            free(dirbuf);
+            return TSK_COR;
+        }
     }
     TSK_OFF_T offset = 0;
 
