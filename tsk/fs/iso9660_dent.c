@@ -280,6 +280,19 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     /* read directory extent into memory */
     length = (size_t) fs_dir->fs_file->meta->size;
+
+    /* Sanity check: ISO9660 directories are read in their entirety.
+     * A directory claiming to be larger than the image itself (or
+     * unreasonably large relative to a real disc) indicates corrupt data.
+     * Cap at 128 MB to prevent OOM from fuzz/corrupted images. */
+    if (length == 0 || length > (128UL * 1024 * 1024)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr("iso9660_dir_open_meta: directory size %" PRIuOFF
+            " is unreasonably large", fs_dir->fs_file->meta->size);
+        return TSK_COR;
+    }
+
     if ((buf = tsk_malloc(length)) == NULL)
         return TSK_ERR;
 
