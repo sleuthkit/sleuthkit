@@ -291,6 +291,9 @@ class APFSBtreeNodeIterator {
     }
 
     // Non-Leaf nodes return the pointer
+    if (_child_it == nullptr) {
+      return nullptr;
+    }
     return _child_it->operator->();
   }
 
@@ -354,6 +357,11 @@ class APFSBtreeNodeIterator {
     // If we're leaves then we're good.
     if (_node->is_leaf()) {
       return true;
+    }
+
+    // Guard against a null child iterator (can occur with corrupt on-disk data).
+    if (_child_it == nullptr || rhs._child_it == nullptr) {
+      return (_child_it == nullptr && rhs._child_it == nullptr);
     }
 
     // Otherwise, let's compare the child iterators.
