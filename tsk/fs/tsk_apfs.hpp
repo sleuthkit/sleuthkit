@@ -501,6 +501,15 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
     const auto vec = [&] {
       std::vector<typename iterator::value_type> v{};
 
+      // Sanity check: key_count is read directly from the on-disk node header
+      // and can be corrupted.  A node cannot hold more entries than its total
+      // storage in bytes (minimum 1 byte per key + 1 byte per value + TOC).
+      // Iterating over a bogus key_count (e.g. 2^32-1) would spin for hours.
+      if (key_count() > _storage.size()) {
+        throw std::runtime_error(
+            "APFSBtreeNode: key_count exceeds node storage size");
+      }
+
       std::for_each(begin(), end(), [&v](const auto e) { v.push_back(e); });
 
       return v;
