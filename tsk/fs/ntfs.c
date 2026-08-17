@@ -1047,9 +1047,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                         }
 
                         pheader =
-                            ((((comp->comp_buf[cl_index +
-                                            1]) << 8) & 0xFF00) |
-                            (comp->comp_buf[cl_index] & 0xFF));
+                            tsk_getu16(TSK_LIT_ENDIAN, comp->comp_buf + cl_index);
                         cl_index += 2;
 
 
