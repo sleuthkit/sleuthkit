@@ -4,6 +4,8 @@ This file tracks the status of every OSSFuzz issue we have triaged.
 
 | OSSFuzz ID | GitHub ID | Branch | Status | Notes |
 |------------|-----------|--------|--------|-------|
+| 517917402 | 3506 | 20260817-gh3426-gh3506-ossfuzz471525117-517917402-apfs-iter-null-child | FIXED | UBSAN null-deref: APFSBtreeNodeIterator::operator==() dereferences null _child_it on non-leaf end |
+| 471525117 | 3426 | 20260817-gh3426-gh3506-ossfuzz471525117-517917402-apfs-iter-null-child | FIXED | ASAN SEGV: APFSBtreeNodeIterator::operator++() calls _child_it->operator++() when _child_it is null |
 | 471568277 | 3427 | 20260817-gh3427-ossfuzz471568277-ntfs-shift-cast | FIXED | UBSAN undefined-shift: signed 1<<31 in ntfs_open mft_rsize/idx_rsize; cast to (uint32_t)1 |
 | 471522069 | 3421 | 20260817-gh3421-ossfuzz471522069-ext2fs-dir-size-limit | FIXED | Timeout: ext2fs_dir_open_meta rejects directory size > 128 MB before block walk loop |
 | 542909776 | 3530 | 20260817-gh3530-ossfuzz542909776-fatxxfs-name-leak | FIXED | Direct-leak: fs_name leaked on two early-return paths in fatxxfs_dent_parse_buf |
