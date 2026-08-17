@@ -2615,6 +2615,22 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     /* Clear the contents of the todo buffer */
     memset(mftToDo, 0, sizeof(mftToDo));
 
+    /* Sanity-check attribute list size before allocating.  The $ATTR_LIST
+     * stream holds a list of attribute locator entries (~26+ bytes each).
+     * Even a heavily fragmented file would never need more than a few MB.
+     * A corrupt value above 100 MB would cause OOM or a very long run-list
+     * walk (timeout). */
+    if (fs_attr_attrlist->size > (100ULL * 1024 * 1024)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr("ntfs_proc_attrlist: attribute list size %"
+            PRIdOFF " is unreasonably large for inode %" PRIuINUM,
+            fs_attr_attrlist->size, fs_file->meta->addr);
+        free(mft);
+        free(map);
+        return TSK_COR;
+    }
+
     /* Get a copy of the attribute list stream using the above action */
     load_file.left = load_file.total = (size_t) fs_attr_attrlist->size;
     load_file.base = load_file.cur = buf =
