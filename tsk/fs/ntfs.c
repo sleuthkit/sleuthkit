@@ -5395,7 +5395,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
     else if (ntfs->fs->mft_rsize_c > -32) {
         /* if the mft_rsize_c is not > 0, then it is -log2(rsize_b) */
-        ntfs->mft_rsize_b = 1 << -ntfs->fs->mft_rsize_c;
+        ntfs->mft_rsize_b = (uint32_t)1 << (-(int)ntfs->fs->mft_rsize_c);
     }
 
     if ((ntfs->mft_rsize_b == 0) || (ntfs->mft_rsize_b % 512)) {
@@ -5414,7 +5414,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
     else if (ntfs->fs->idx_rsize_c > -32) {
         /* if the idx_rsize_c is not > 0, then it is -log2(rsize_b) */
-        ntfs->idx_rsize_b = 1 << -ntfs->fs->idx_rsize_c;
+        ntfs->idx_rsize_b = (uint32_t)1 << (-(int)ntfs->fs->idx_rsize_c);
     }
 
     if ((ntfs->idx_rsize_b == 0) || (ntfs->idx_rsize_b % 512)) {
