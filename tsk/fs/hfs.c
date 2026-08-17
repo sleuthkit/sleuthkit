@@ -3936,9 +3936,16 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         return 0;
     }
 
-    if (attrFile.nodeSize < sizeof(hfs_btree_node)) {
-        error_returned
-            ("hfs_load_extended_attrs: node size too small");
+    /* HFS+ B-tree node sizes must be a power-of-two in the range [512, 32768].
+     * An out-of-range or non-power-of-two value from a corrupt image would
+     * cause malloc() to allocate an invalid amount of memory.  Reject anything
+     * that does not satisfy the spec. */
+    if (attrFile.nodeSize < 512 || attrFile.nodeSize > 32768 ||
+            (attrFile.nodeSize & (attrFile.nodeSize - 1)) != 0) {
+        error_detected(TSK_ERR_FS_CORRUPT,
+            "hfs_load_extended_attrs: node size %" PRIu32
+            " is not a valid HFS+ B-tree node size (must be a power of two between 512 and 32768)",
+            (uint32_t) attrFile.nodeSize);
         close_attr_file(&attrFile);
         return 1;
     }
