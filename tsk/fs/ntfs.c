@@ -1910,6 +1910,19 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         id = tsk_getu16(fs->endian, attr->id);
         id_new = id;
 
+        /* Validate attribute type: NTFS types are multiples of 0x10 up to
+         * 0x100 (TSK_FS_ATTR_TYPE_NTFS_LOG). Values outside this range are
+         * not valid NTFS attribute types and cannot be stored safely in a
+         * TSK_FS_ATTR_TYPE_ENUM (UBSAN: invalid-enum-value). Skip them. */
+        if (type > 0x100) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ntfs_proc_attrseq: Skipping attribute with invalid type 0x%"
+                    PRIx32 " at inode %" PRIuINUM "\n", type,
+                    fs_file->meta->addr);
+            continue;
+        }
+
         /* If the map was supplied, search through it to see if this
          * entry is in there.  Use that ID instead so that we always have
          * unique IDs for each attribute -- even if it spans multiple MFT entries. */
