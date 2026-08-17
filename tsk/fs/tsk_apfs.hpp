@@ -309,6 +309,12 @@ class APFSBtreeNodeIterator {
       return (*this);
     }
 
+    // If _child_it is null (non-leaf node whose index reached key_count),
+    // the iterator is already at end; nothing more to advance.
+    if (_child_it == nullptr) {
+      return (*this);
+    }
+
     _child_it->operator++();
 
     if (*_child_it != _child_it->_node->end()) {
@@ -357,6 +363,10 @@ class APFSBtreeNodeIterator {
     }
 
     // Otherwise, let's compare the child iterators.
+    // Either child may be null if the non-leaf node is at end (index == key_count).
+    if (_child_it == nullptr || rhs._child_it == nullptr) {
+      return (_child_it == rhs._child_it);
+    }
     return (*_child_it == *rhs._child_it);
   }
 
