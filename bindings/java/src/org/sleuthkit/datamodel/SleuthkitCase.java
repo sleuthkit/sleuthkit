@@ -421,16 +421,46 @@ public class SleuthkitCase {
 		this.caseDirPath = dbFile.getParentFile().getAbsolutePath();
 		this.databaseName = dbFile.getName();
 
-		this.lockResources = lockingApplicationName == null
+		LockResources lockResources = lockingApplicationName == null
 				? null
 				: LockResources.tryAcquireFileLock(this.caseDirPath, this.databaseName, lockingApplicationName);
 
-		this.connections = new SQLiteConnections(dbPath, useWAL);
-		this.caseHandle = caseHandle;
-		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
-		this.contentProvider = contentProvider;
-		init();
-		logSQLiteJDBCDriverInfo();
+		// If anything below fails, this object never finishes constructing and its own
+		// close() - which would normally release the lock and the connection pool - never
+		// gets called. Release, in reverse acquisition order, whatever was already acquired,
+		// or the file lock (and, once acquired, the pool) leaks for the life of the JVM. A
+		// leaked file lock is what previously caused OverlappingFileLockException on every
+		// later attempt to open this same case in this process.
+		ConnectionPool connections = null;
+		boolean success = false;
+		try {
+			connections = new SQLiteConnections(dbPath, useWAL);
+			this.lockResources = lockResources;
+			this.connections = connections;
+			this.caseHandle = caseHandle;
+			this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+			this.contentProvider = contentProvider;
+			init();
+			logSQLiteJDBCDriverInfo();
+			success = true;
+		} finally {
+			if (!success) {
+				if (connections != null) {
+					try {
+						connections.close();
+					} catch (Exception closeEx) {
+						logger.log(Level.WARNING, "Error closing connection pool while cleaning up after a failed case open", closeEx);
+					}
+				}
+				if (lockResources != null) {
+					try {
+						lockResources.close();
+					} catch (Exception closeEx) {
+						logger.log(Level.WARNING, "Error releasing case lock while cleaning up after a failed case open", closeEx);
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -449,12 +479,48 @@ public class SleuthkitCase {
 		this.databaseName = dbName;
 		this.dbType = info.getDbType();
 		this.caseDirPath = caseDirPath;
-		this.connections = new PostgreSQLConnections(info, dbName);
-		this.caseHandle = caseHandle;
-		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
-		this.contentProvider = contentProvider;
 		this.lockResources = null;
-		init();
+
+		// See the SQLite constructor for why this needs manual cleanup on failure: this
+		// object never finishes constructing, so its own close() never runs to release the
+		// pool.
+		ConnectionPool connections = new PostgreSQLConnections(info, dbName);
+		boolean success = false;
+		try {
+			this.connections = connections;
+			this.caseHandle = caseHandle;
+			this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+			this.contentProvider = contentProvider;
+			init();
+			success = true;
+		} finally {
+			if (!success) {
+				try {
+					connections.close();
+				} catch (Exception closeEx) {
+					logger.log(Level.WARNING, "Error closing connection pool while cleaning up after a failed case open", closeEx);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Frees a case handle after the SleuthkitCase constructor it was passed to failed to
+	 * complete, so the native handle / HandleCache entry doesn't leak - the caller (one of the
+	 * openCase()/newCase() factory methods) creates this handle before calling the
+	 * constructor, so the constructor itself has no opportunity to release it on its own
+	 * failure. Never throws - any failure freeing the handle is attached to the original
+	 * exception as a suppressed exception rather than replacing it.
+	 *
+	 * @param caseHandle The handle to free.
+	 * @param originalEx The exception that motivated freeing the handle.
+	 */
+	private static void freeCaseHandleQuietly(SleuthkitJNI.CaseDbHandle caseHandle, Throwable originalEx) {
+		try {
+			caseHandle.free();
+		} catch (TskCoreException freeEx) {
+			originalEx.addSuppressed(freeEx);
+		}
 	}
 
 	private void init() throws Exception {
@@ -3378,7 +3444,12 @@ public class SleuthkitCase {
 	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			try {
+				return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (TskUnsupportedSchemaVersionException ex) {
 			//don't wrap in new TskCoreException
 			throw ex;
@@ -3433,7 +3504,12 @@ public class SleuthkitCase {
 			 * are able, but do not lose any information if unable.
 			 */
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info, databaseName, caseHandle, caseDir, contentProvider);
+			try {
+				return new SleuthkitCase(info, databaseName, caseHandle, caseDir, contentProvider);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -3521,7 +3597,12 @@ public class SleuthkitCase {
 			factory.createCaseDatabase();
 
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			try {
+				return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -3583,7 +3664,12 @@ public class SleuthkitCase {
 			factory.createCaseDatabase();
 
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info, databaseName, caseHandle, caseDirPath, contentProvider);
+			try {
+				return new SleuthkitCase(info, databaseName, caseHandle, caseDirPath, contentProvider);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
