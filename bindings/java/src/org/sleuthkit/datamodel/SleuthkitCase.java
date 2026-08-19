@@ -421,16 +421,46 @@ public class SleuthkitCase {
 		this.caseDirPath = dbFile.getParentFile().getAbsolutePath();
 		this.databaseName = dbFile.getName();
 
-		this.lockResources = lockingApplicationName == null
+		LockResources lockResources = lockingApplicationName == null
 				? null
 				: LockResources.tryAcquireFileLock(this.caseDirPath, this.databaseName, lockingApplicationName);
 
-		this.connections = new SQLiteConnections(dbPath, useWAL);
-		this.caseHandle = caseHandle;
-		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
-		this.contentProvider = contentProvider;
-		init();
-		logSQLiteJDBCDriverInfo();
+		// If anything below fails, this object never finishes constructing and its own
+		// close() - which would normally release the lock and the connection pool - never
+		// gets called. Release, in reverse acquisition order, whatever was already acquired,
+		// or the file lock (and, once acquired, the pool) leaks for the life of the JVM. A
+		// leaked file lock is what previously caused OverlappingFileLockException on every
+		// later attempt to open this same case in this process.
+		ConnectionPool connections = null;
+		boolean success = false;
+		try {
+			connections = new SQLiteConnections(dbPath, useWAL);
+			this.lockResources = lockResources;
+			this.connections = connections;
+			this.caseHandle = caseHandle;
+			this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+			this.contentProvider = contentProvider;
+			init();
+			logSQLiteJDBCDriverInfo();
+			success = true;
+		} finally {
+			if (!success) {
+				if (connections != null) {
+					try {
+						connections.close();
+					} catch (Exception closeEx) {
+						logger.log(Level.WARNING, "Error closing connection pool while cleaning up after a failed case open", closeEx);
+					}
+				}
+				if (lockResources != null) {
+					try {
+						lockResources.close();
+					} catch (Exception closeEx) {
+						logger.log(Level.WARNING, "Error releasing case lock while cleaning up after a failed case open", closeEx);
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -449,12 +479,48 @@ public class SleuthkitCase {
 		this.databaseName = dbName;
 		this.dbType = info.getDbType();
 		this.caseDirPath = caseDirPath;
-		this.connections = new PostgreSQLConnections(info, dbName);
-		this.caseHandle = caseHandle;
-		this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
-		this.contentProvider = contentProvider;
 		this.lockResources = null;
-		init();
+
+		// See the SQLite constructor for why this needs manual cleanup on failure: this
+		// object never finishes constructing, so its own close() never runs to release the
+		// pool.
+		ConnectionPool connections = new PostgreSQLConnections(info, dbName);
+		boolean success = false;
+		try {
+			this.connections = connections;
+			this.caseHandle = caseHandle;
+			this.caseHandleIdentifier = caseHandle.getCaseDbIdentifier();
+			this.contentProvider = contentProvider;
+			init();
+			success = true;
+		} finally {
+			if (!success) {
+				try {
+					connections.close();
+				} catch (Exception closeEx) {
+					logger.log(Level.WARNING, "Error closing connection pool while cleaning up after a failed case open", closeEx);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Frees a case handle after the SleuthkitCase constructor it was passed to failed to
+	 * complete, so the native handle / HandleCache entry doesn't leak - the caller (one of the
+	 * openCase()/newCase() factory methods) creates this handle before calling the
+	 * constructor, so the constructor itself has no opportunity to release it on its own
+	 * failure. Never throws - any failure freeing the handle is attached to the original
+	 * exception as a suppressed exception rather than replacing it.
+	 *
+	 * @param caseHandle The handle to free.
+	 * @param originalEx The exception that motivated freeing the handle.
+	 */
+	private static void freeCaseHandleQuietly(SleuthkitJNI.CaseDbHandle caseHandle, Throwable originalEx) {
+		try {
+			caseHandle.free();
+		} catch (TskCoreException freeEx) {
+			originalEx.addSuppressed(freeEx);
+		}
 	}
 
 	private void init() throws Exception {
@@ -3378,7 +3444,12 @@ public class SleuthkitCase {
 	public static SleuthkitCase openCase(String dbPath, ContentStreamProvider contentProvider, String lockingApplicationName, boolean useWAL) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			try {
+				return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (TskUnsupportedSchemaVersionException ex) {
 			//don't wrap in new TskCoreException
 			throw ex;
@@ -3433,7 +3504,12 @@ public class SleuthkitCase {
 			 * are able, but do not lose any information if unable.
 			 */
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info, databaseName, caseHandle, caseDir, contentProvider);
+			try {
+				return new SleuthkitCase(info, databaseName, caseHandle, caseDir, contentProvider);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -3521,7 +3597,12 @@ public class SleuthkitCase {
 			factory.createCaseDatabase();
 
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			try {
+				return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE, contentProvider, lockingApplicationName, useWAL);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -3583,7 +3664,12 @@ public class SleuthkitCase {
 			factory.createCaseDatabase();
 
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-			return new SleuthkitCase(info, databaseName, caseHandle, caseDirPath, contentProvider);
+			try {
+				return new SleuthkitCase(info, databaseName, caseHandle, caseDirPath, contentProvider);
+			} catch (Exception ex) {
+				freeCaseHandleQuietly(caseHandle, ex);
+				throw ex;
+			}
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
@@ -15394,7 +15480,12 @@ public class SleuthkitCase {
 		private final boolean readOnlyTransaction;
 		private SleuthkitCase sleuthkitCase;
 
-        /* This class can store information about what was 
+		// Guards against a second commit()/rollback() call double-releasing the lock. close()
+		// unconditionally released it with no guard; a second release from the same thread throws
+		// IllegalMonitorStateException, masking whatever exception motivated the redundant call.
+		private boolean closed = false;
+
+        /* This class can store information about what was
          * inserted as part of the transaction so that we can
          * fire events after the data has been persisted. */
 
@@ -15431,24 +15522,42 @@ public class SleuthkitCase {
 			if (readOnlyTransaction) {
 				sleuthkitCase.acquireSingleUserCaseReadLock();
 			} else {
-				sleuthkitCase.acquireSingleUserCaseWriteLock();	
-			}
-			
-			this.connection = sleuthkitCase.getConnection();
-			try {
-				synchronized (threadsWithOpenTransactionLock) {
-					this.connection.beginTransaction();
-					threadsWithOpenTransaction.add(Thread.currentThread().getId());
-				}
-			} catch (SQLException ex) {
-				if (readOnlyTransaction) {
-					sleuthkitCase.releaseSingleUserCaseReadLock();
-				} else {
-					sleuthkitCase.releaseSingleUserCaseWriteLock();	
-				}
-				throw new TskCoreException("Failed to create transaction on case database", ex);
+				sleuthkitCase.acquireSingleUserCaseWriteLock();
 			}
 
+			boolean success = false;
+			CaseDbConnection conn = null;
+			try {
+				conn = sleuthkitCase.getConnection();
+				synchronized (threadsWithOpenTransactionLock) {
+					conn.beginTransaction();
+					threadsWithOpenTransaction.add(Thread.currentThread().getId());
+				}
+				this.connection = conn;
+				success = true;
+			} catch (SQLException ex) {
+				throw new TskCoreException("Failed to create transaction on case database", ex);
+			} finally {
+				// On success, ownership of both the connection and the lock transfers to this
+				// transaction - released later by commit()/rollback()/close(). Any failure here,
+				// checked or unchecked (getConnection() is declared to throw TskCoreException,
+				// which this catch does not cover, on purpose - it must still release the lock
+				// before propagating), must undo both immediately: restore the connection to
+				// auto-commit and return it to the pool (rollbackTransaction()/close() are both
+				// safe to call even if beginTransaction() never got that far), then release the
+				// lock, or every future reader/writer against this case blocks forever.
+				if (!success) {
+					if (conn != null) {
+						conn.rollbackTransaction();
+						conn.close();
+					}
+					if (readOnlyTransaction) {
+						sleuthkitCase.releaseSingleUserCaseReadLock();
+					} else {
+						sleuthkitCase.releaseSingleUserCaseWriteLock();
+					}
+				}
+			}
 		}
 
 		/**
@@ -15575,6 +15684,9 @@ public class SleuthkitCase {
 		 * @throws TskCoreException
 		 */
 		public void commit() throws TskCoreException {
+			if (closed) {
+				return;
+			}
 			try {
 				this.connection.commitTransaction();
 			} catch (SQLException ex) {
@@ -15622,6 +15734,9 @@ public class SleuthkitCase {
 		 * @throws TskCoreException
 		 */
 		public void rollback() throws TskCoreException {
+			if (closed) {
+				return;
+			}
 			try {
 				this.connection.rollbackTransactionWithThrow();
 			} catch (SQLException ex) {
@@ -15636,6 +15751,10 @@ public class SleuthkitCase {
 		 *
 		 */
 		void close() {
+			if (closed) {
+				return;
+			}
+			closed = true;
 			this.connection.close();
 			if (readOnlyTransaction) {
 				sleuthkitCase.releaseSingleUserCaseReadLock();
