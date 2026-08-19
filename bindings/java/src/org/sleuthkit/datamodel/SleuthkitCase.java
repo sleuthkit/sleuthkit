@@ -15394,7 +15394,12 @@ public class SleuthkitCase {
 		private final boolean readOnlyTransaction;
 		private SleuthkitCase sleuthkitCase;
 
-        /* This class can store information about what was 
+		// Guards against a second commit()/rollback() call double-releasing the lock. close()
+		// unconditionally released it with no guard; a second release from the same thread throws
+		// IllegalMonitorStateException, masking whatever exception motivated the redundant call.
+		private boolean closed = false;
+
+        /* This class can store information about what was
          * inserted as part of the transaction so that we can
          * fire events after the data has been persisted. */
 
@@ -15593,6 +15598,9 @@ public class SleuthkitCase {
 		 * @throws TskCoreException
 		 */
 		public void commit() throws TskCoreException {
+			if (closed) {
+				return;
+			}
 			try {
 				this.connection.commitTransaction();
 			} catch (SQLException ex) {
@@ -15640,6 +15648,9 @@ public class SleuthkitCase {
 		 * @throws TskCoreException
 		 */
 		public void rollback() throws TskCoreException {
+			if (closed) {
+				return;
+			}
 			try {
 				this.connection.rollbackTransactionWithThrow();
 			} catch (SQLException ex) {
@@ -15654,6 +15665,10 @@ public class SleuthkitCase {
 		 *
 		 */
 		void close() {
+			if (closed) {
+				return;
+			}
+			closed = true;
 			this.connection.close();
 			if (readOnlyTransaction) {
 				sleuthkitCase.releaseSingleUserCaseReadLock();
