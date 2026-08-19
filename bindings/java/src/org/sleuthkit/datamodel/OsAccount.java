@@ -204,6 +204,80 @@ public final class OsAccount extends AbstractContent {
 	}
 
 	/**
+	 * The kind of an alternate/secondary name recorded for an account in
+	 * tsk_os_account_names (beyond the primary login_name/addr on tsk_os_accounts).
+	 * Generic across operating systems.
+	 */
+	public enum OsAccountNameType {
+		// Keep this minimal: only add a type when we are confident it is a distinct, needed
+		// name form. Unrecognized ids (e.g. written by a newer schema) resolve to OTHER.
+		//
+		// HOST_LOCAL_NAME is only unique within a host, so it MUST be matched together with a host
+		// (e.g. the Entra down-level/SAM name "briancarrier": two different hosts can each have a
+		// local "briancarrier" that belong to different accounts). Never match it on name alone.
+		HOST_LOCAL_NAME(0, "Host-local Name", true),	// a name unique only within a host; match with a host
+		OTHER(1, "Other", false);			// an unclassified alternate name / fallback for unknown ids
+
+		private final int id;
+		private final String name;
+		private final boolean hostSpecific;
+
+		OsAccountNameType(int id, String name, boolean hostSpecific) {
+			this.id = id;
+			this.name = name;
+			this.hostSpecific = hostSpecific;
+		}
+
+		/**
+		 * Get the name type id.
+		 *
+		 * @return The id.
+		 */
+		public int getId() {
+			return id;
+		}
+
+		/**
+		 * Get the name type display name.
+		 *
+		 * @return The display name.
+		 */
+		public String getName() {
+			return name;
+		}
+
+		/**
+		 * Whether this name type is only unique within a host (e.g. HOST_LOCAL_NAME), and so must
+		 * always be recorded/matched together with a host. Types that are not host-specific are
+		 * unique across the whole realm and are recorded/matched with a null host - see
+		 * tsk_os_account_names.host_id in the schema.
+		 *
+		 * @return True if this name type must be scoped to a host.
+		 */
+		public boolean isHostSpecific() {
+			return hostSpecific;
+		}
+
+		/**
+		 * Gets a name type from its id. Resilient to unknown ids (e.g. a name type
+		 * written by a newer schema version): never throws and never returns null -
+		 * any unrecognized id maps to {@link #OTHER}.
+		 *
+		 * @param typeId Id to look for.
+		 *
+		 * @return The matching name type, or OTHER if the id is not recognized.
+		 */
+		public static OsAccountNameType fromID(int typeId) {
+			for (OsAccountNameType nameType : OsAccountNameType.values()) {
+				if (nameType.id == typeId) {
+					return nameType;
+				}
+			}
+			return OTHER;
+		}
+	}
+
+	/**
 	 * Constructs an OsAccount with a realm/username and unique id, and
 	 * signature.
 	 *

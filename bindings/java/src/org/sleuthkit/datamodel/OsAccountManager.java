@@ -627,6 +627,176 @@ public final class OsAccountManager {
 	}
 
 	/**
+	 * Gets the OS account, if any, that has the given name recorded as an alternate
+	 * (secondary) name of the given type in tsk_os_account_names, in the given realm
+	 * - e.g. an Entra down-level/SAM name. This searches ONLY the alternate names; it
+	 * does not consider an account's primary login_name (use getOsAccountByLoginName
+	 * for that).
+	 *
+	 * A host-specific name type (nameType.isHostSpecific()) is only unique within a host, so
+	 * it is matched together with the host, which is then required. A name type that is not
+	 * host-specific is unique across the whole realm and is matched with no host (host_id is
+	 * null); host is ignored in that case.
+	 *
+	 * @param name     The alternate name to look for (matched case-insensitively).
+	 * @param nameType The kind of name - determines whether host is used to match.
+	 * @param host     The host the name is scoped to. Required if nameType.isHostSpecific().
+	 * @param realm    The realm to scope the search to.
+	 *
+	 * @return Optional with the matching account, empty if none.
+	 *
+	 * @throws TskCoreException If there is an error getting the account, or if a host is
+	 *                          required for nameType but not supplied.
+	 */
+	Optional<OsAccount> getOsAccountByAlternateName(String name, OsAccount.OsAccountNameType nameType, Host host, OsAccountRealm realm) throws TskCoreException {
+
+		String hostIdClause;
+		if (nameType.isHostSpecific()) {
+			if (host == null) {
+				throw new TskCoreException("A host is required to look up a host-specific alternate name.");
+			}
+			hostIdClause = " AND names.host_id = " + host.getHostId();
+		} else {
+			hostIdClause = " AND names.host_id IS NULL";
+		}
+		String queryString = "SELECT accounts.* FROM tsk_os_accounts accounts "
+				+ "INNER JOIN tsk_os_account_names names ON names.os_account_obj_id = accounts.os_account_obj_id "
+				+ "WHERE names.name = ?"
+				+ " AND names.name_type = " + nameType.getId()
+				+ hostIdClause
+				+ " AND accounts.db_status = " + OsAccount.OsAccountDbStatus.ACTIVE.getId()
+				+ " AND accounts.realm_id = " + realm.getRealmId();
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+			preparedStatement.setString(1, name.toLowerCase(Locale.ENGLISH));
+			try (ResultSet rs = connection.executeQuery(preparedStatement)) {
+				if (!rs.next()) {
+					return Optional.empty();	// no match found
+				} else {
+					return Optional.of(osAccountFromResultSet(rs));
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting OS account for realm = %s and name = %s.", (realm != null) ? realm.getSignature() : "NULL", name), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Records an alternate (secondary) name for an account, in addition to its primary
+	 * login_name/addr, so the account can later be resolved by that name form via
+	 * getOsAccountByAlternateName. No-op if the name is blank or already recorded for
+	 * the account (on the same host, for a host-specific name type).
+	 *
+	 * A host-specific name type (nameType.isHostSpecific()) is only unique within a host, so
+	 * host is required and is stored/matched together with the name. A name type that is not
+	 * host-specific is unique across the whole realm and is stored with a null host; host is
+	 * ignored in that case.
+	 *
+	 * @param account  The account to add the alternate name to.
+	 * @param name     The alternate name (stored/matched case-insensitively).
+	 * @param nameType The kind of name - determines whether host is stored.
+	 * @param host     The host the name is scoped to. Required if nameType.isHostSpecific().
+	 *
+	 * @throws TskCoreException If there is an error adding the name, or if host is null
+	 *                          for a host-specific nameType.
+	 */
+	public void addAlternateOsAccountName(OsAccount account, String name, OsAccount.OsAccountNameType nameType, Host host) throws TskCoreException {
+
+		if (Strings.isNullOrEmpty(name)) {
+			return;
+		}
+		String normalizedName = name.toLowerCase(Locale.ENGLISH);
+		Long hostId;
+		if (nameType.isHostSpecific()) {
+			if (host == null) {
+				throw new TskCoreException("A host is required to add a host-specific alternate name to an OS account.");
+			}
+			hostId = host.getHostId();
+		} else {
+			hostId = null;
+		}
+
+		synchronized (osAccountLockObj) {
+			db.acquireSingleUserCaseWriteLock();
+			try (CaseDbConnection connection = db.getConnection()) {
+
+				String insertSQL = db.getInsertOrIgnoreSQL("INTO tsk_os_account_names(os_account_obj_id, host_id, name, name_type) VALUES (?, ?, ?, ?)"); // NON-NLS
+				PreparedStatement preparedStatement = connection.getPreparedStatement(insertSQL, Statement.NO_GENERATED_KEYS);
+				preparedStatement.clearParameters();
+				preparedStatement.setLong(1, account.getId());
+				if (hostId != null) {
+					preparedStatement.setLong(2, hostId);
+				} else {
+					preparedStatement.setNull(2, Types.BIGINT);
+				}
+				preparedStatement.setString(3, normalizedName);
+				preparedStatement.setInt(4, nameType.getId());
+				connection.executeUpdate(preparedStatement);
+
+			} catch (SQLException ex) {
+				throw new TskCoreException(String.format("Error adding name '%s' to OS account id = %d", name, account.getId()), ex);
+			} finally {
+				db.releaseSingleUserCaseWriteLock();
+			}
+		}
+	}
+
+	/**
+	 * Gets the alternate (secondary) names of the given type recorded for the given account
+	 * in tsk_os_account_names - e.g. an Entra down-level/SAM name.
+	 *
+	 * A host-specific name type (nameType.isHostSpecific()) is only unique within a host, so
+	 * it is matched together with the host, which is then required. A name type that is not
+	 * host-specific is unique across the whole realm and is matched with no host (host_id is
+	 * null); host is ignored in that case.
+	 *
+	 * @param account  The account to get alternate names for.
+	 * @param nameType The kind of name - determines whether host is used to match.
+	 * @param host     The host to scope host-specific names to. Required if nameType.isHostSpecific().
+	 *
+	 * @return The alternate names recorded for the account (empty if none).
+	 *
+	 * @throws TskCoreException If there is an error getting the names, or if a host is
+	 *                          required for nameType but not supplied.
+	 */
+	public List<String> getOsAccountAlternateNames(OsAccount account, OsAccount.OsAccountNameType nameType, Host host) throws TskCoreException {
+
+		String hostIdClause;
+		if (nameType.isHostSpecific()) {
+			if (host == null) {
+				throw new TskCoreException("A host is required to get host-specific alternate names for an OS account.");
+			}
+			hostIdClause = " AND host_id = " + host.getHostId();
+		} else {
+			hostIdClause = " AND host_id IS NULL";
+		}
+		String queryString = "SELECT name FROM tsk_os_account_names WHERE os_account_obj_id = " + account.getId()
+				+ " AND name_type = " + nameType.getId()
+				+ hostIdClause;
+
+		List<String> names = new ArrayList<>();
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection();
+				Statement s = connection.createStatement();
+				ResultSet rs = connection.executeQuery(s, queryString)) {
+
+			while (rs.next()) {
+				names.add(rs.getString("name"));
+			}
+			return names;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting alternate names for OS account id = %d", account.getId()), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
 	 * Get the OS Account with the given object id.
 	 *
 	 * @param osAccountObjId Object id for the account.
@@ -1106,7 +1276,21 @@ public final class OsAccountManager {
 			query = makeOsAccountUpdateQuery("tsk_data_artifacts", sourceAccount, destAccount);
 			s.executeUpdate(query);
 
-			
+			// tsk_os_account_names has a unique constraint on (os_account_obj_id, name, name_type, host_id),
+			// so delete any source rows that would duplicate an existing dest row before re-pointing.
+			query = "DELETE FROM tsk_os_account_names "
+					+ "WHERE id IN ( "
+					+ "SELECT sourceName.id "
+					+ "FROM tsk_os_account_names destName "
+					+ "INNER JOIN tsk_os_account_names sourceName ON destName.name = sourceName.name AND destName.name_type = sourceName.name_type AND (destName.host_id = sourceName.host_id OR (destName.host_id IS NULL AND sourceName.host_id IS NULL)) "
+					+ "WHERE destName.os_account_obj_id = " + destAccount.getId()
+					+ " AND sourceName.os_account_obj_id = " + sourceAccount.getId() + ")";
+			s.executeUpdate(query);
+
+			query = makeOsAccountUpdateQuery("tsk_os_account_names", sourceAccount, destAccount);
+			s.executeUpdate(query);
+
+
 			// register the merged accounts with the transaction to fire off an event
 			trans.registerMergedOsAccount(sourceAccount.getId(), destAccount.getId());
 			
@@ -1152,7 +1336,8 @@ public final class OsAccountManager {
 			"tsk_os_account_attributes",
 			"tsk_os_account_instances",
 			"tsk_files",
-			"tsk_data_artifacts"
+			"tsk_data_artifacts",
+			"tsk_os_account_names"
 		))
 	);
 
@@ -1346,7 +1531,14 @@ public final class OsAccountManager {
 		// search by login name
 		if (!Strings.isNullOrEmpty(loginName)) {
 			String resolvedLoginName = WindowsAccountUtils.toWellknownEnglishLoginName(loginName);
-			return this.getOsAccountByLoginName(resolvedLoginName, realm.get());
+			Optional<OsAccount> account = this.getOsAccountByLoginName(resolvedLoginName, realm.get());
+			if (account.isPresent()) {
+				return account;
+			}
+			// Fall back to a host-local alternate name recorded for the account (e.g. an Entra
+			// down-level/SAM name), scoped to this host, so a name-only observation on this host
+			// still maps to the existing account.
+			return this.getOsAccountByAlternateName(resolvedLoginName, OsAccount.OsAccountNameType.HOST_LOCAL_NAME, referringHost, realm.get());
 		} else {
 			return Optional.empty();
 		}
