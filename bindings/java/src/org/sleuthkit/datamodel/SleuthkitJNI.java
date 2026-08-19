@@ -586,10 +586,18 @@ public class SleuthkitJNI {
 						runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, image.getId(), timeZone, imageWriterPath);
 					}
 				} finally {
-					finishAddImageProcess();
-					releaseTSKReadLock();
+					// finishAddImageProcess() is declared to throw TskCoreException - if it does,
+					// the nested finally below still guarantees releaseTSKReadLock() runs. Without
+					// it, a failure here would leave tskLock's read lock held forever: it is
+					// static/JVM-wide, gating every native TSK call across every open case, so one
+					// failed add-image run could wedge the whole process, not just this case.
+					try {
+						finishAddImageProcess();
+					} finally {
+						releaseTSKReadLock();
+					}
 				}
-			}			
+			}
 
 			/**
 			 * Stops the process of adding the image to the case database that
