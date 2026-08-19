@@ -15431,24 +15431,42 @@ public class SleuthkitCase {
 			if (readOnlyTransaction) {
 				sleuthkitCase.acquireSingleUserCaseReadLock();
 			} else {
-				sleuthkitCase.acquireSingleUserCaseWriteLock();	
-			}
-			
-			this.connection = sleuthkitCase.getConnection();
-			try {
-				synchronized (threadsWithOpenTransactionLock) {
-					this.connection.beginTransaction();
-					threadsWithOpenTransaction.add(Thread.currentThread().getId());
-				}
-			} catch (SQLException ex) {
-				if (readOnlyTransaction) {
-					sleuthkitCase.releaseSingleUserCaseReadLock();
-				} else {
-					sleuthkitCase.releaseSingleUserCaseWriteLock();	
-				}
-				throw new TskCoreException("Failed to create transaction on case database", ex);
+				sleuthkitCase.acquireSingleUserCaseWriteLock();
 			}
 
+			boolean success = false;
+			CaseDbConnection conn = null;
+			try {
+				conn = sleuthkitCase.getConnection();
+				synchronized (threadsWithOpenTransactionLock) {
+					conn.beginTransaction();
+					threadsWithOpenTransaction.add(Thread.currentThread().getId());
+				}
+				this.connection = conn;
+				success = true;
+			} catch (SQLException ex) {
+				throw new TskCoreException("Failed to create transaction on case database", ex);
+			} finally {
+				// On success, ownership of both the connection and the lock transfers to this
+				// transaction - released later by commit()/rollback()/close(). Any failure here,
+				// checked or unchecked (getConnection() is declared to throw TskCoreException,
+				// which this catch does not cover, on purpose - it must still release the lock
+				// before propagating), must undo both immediately: restore the connection to
+				// auto-commit and return it to the pool (rollbackTransaction()/close() are both
+				// safe to call even if beginTransaction() never got that far), then release the
+				// lock, or every future reader/writer against this case blocks forever.
+				if (!success) {
+					if (conn != null) {
+						conn.rollbackTransaction();
+						conn.close();
+					}
+					if (readOnlyTransaction) {
+						sleuthkitCase.releaseSingleUserCaseReadLock();
+					} else {
+						sleuthkitCase.releaseSingleUserCaseWriteLock();
+					}
+				}
+			}
 		}
 
 		/**
