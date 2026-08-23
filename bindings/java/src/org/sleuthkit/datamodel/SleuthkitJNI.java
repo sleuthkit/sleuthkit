@@ -88,9 +88,11 @@ public class SleuthkitJNI {
 
 		/*
 		 * A SleuthKit file system handles cache implemented as a mapping of
-		 * image handles to image offset and file system handle pairs.
+		 * image handles to cache key (image offset and password for regular
+		 * file systems, pool block for file systems in pools) and file system
+		 * handle pairs.
 		 */
-		private final Map<Long, Map<Long, Long>> fsHandleCache = new HashMap<>();
+		private final Map<Long, Map<String, Long>> fsHandleCache = new HashMap<>();
 
 		/*
 		 * The collection of open file handles. We will only allow requests
@@ -306,7 +308,7 @@ public class SleuthkitJNI {
 				/*
 				 * Close any cached file system handles.
 				 */
-				for (Map<Long, Long> imageToFsMap : getCaseHandles(caseIdentifier).fsHandleCache.values()) {
+				for (Map<String, Long> imageToFsMap : getCaseHandles(caseIdentifier).fsHandleCache.values()) {
 					for (Long fsHandle : imageToFsMap.values()) {						
 						// First close all open file handles for the file system.
 						if (getCaseHandles(caseIdentifier).fileSystemToFileHandles.containsKey(fsHandle)) {
@@ -482,6 +484,30 @@ public class SleuthkitJNI {
 		}
 
 		/**
+		 * Initializes a multi-step process for adding an image to the case
+		 * database, trying each of the given candidate passwords when opening
+		 * encrypted file systems.
+		 *
+		 * @param timeZone         The time zone of the image.
+		 * @param addUnallocSpace  Pass true to create virtual files for
+		 *                         unallocated space.
+		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
+		 *                         for FAT file systems.
+		 * @param imageCopyPath    Path to which a copy of the image should be
+		 *                         written. Use the empty string to disable
+		 *                         image writing.
+		 * @param passwords        The candidate passwords for decrypting the
+		 *                         image (may be null or empty).
+		 * @param skCase           The Sleuth Kit case.
+		 *
+		 * @return An object that can be used to exercise fine-grained control
+		 *         of the process of adding the image to the case database.
+		 */
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath, List<String> passwords, SleuthkitCase skCase) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath, passwords, skCase);
+		}
+
+		/**
 		 * Encapsulates a multi-step process to add an image to the case
 		 * database.
 		 */
@@ -497,6 +523,7 @@ public class SleuthkitJNI {
 			private final SleuthkitCase skCase;
 			private TskCaseDbBridge dbHelper;
 			private final String password;
+			private final List<String> passwords;
 
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
@@ -522,7 +549,36 @@ public class SleuthkitJNI {
 				this.isCanceled = false;
 				this.skCase = skCase;
 				this.password = password;
-				
+				this.passwords = null;
+			}
+
+			/**
+			 * Constructs an object that encapsulates a multi-step process to
+			 * add an image to the case database, trying each of the given
+			 * candidate passwords when opening encrypted file systems.
+			 *
+			 * @param timeZone         The time zone of the image.
+			 * @param addUnallocSpace  Pass true to create virtual files for
+			 *                         unallocated space.
+			 * @param skipFatFsOrphans Pass true to skip processing of orphan
+			 *                         files for FAT file systems.
+			 * @param imageWriterPath  Path that a copy of the image should be
+			 *                         written to. Use empty string to disable
+			 *                         image writing
+			 * @param passwords        The candidate passwords for decrypting
+			 *                         the image (may be null or empty).
+			 * @param skCase           The Sleuth Kit case.
+			 */
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath, List<String> passwords, SleuthkitCase skCase) {
+				this.timeZone = timeZone;
+				this.addUnallocSpace = addUnallocSpace;
+				this.skipFatFsOrphans = skipFatFsOrphans;
+				this.imageWriterPath = imageWriterPath;
+				tskAutoDbPointer = 0;
+				this.isCanceled = false;
+				this.skCase = skCase;
+				this.password = null;
+				this.passwords = passwords;
 			}
 
 			/**
@@ -542,7 +598,12 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
-				Image img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId, password, null);
+				Image img;
+				if (passwords != null) {
+					img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId, passwords, null);
+				} else {
+					img = addImageToDatabase(skCase, imageFilePaths, sectorSize, "", "", "", "", deviceId, password, null);
+				}
 				run(deviceId, img, sectorSize, new DefaultAddDataSourceCallbacks());
 			}
 			
@@ -576,7 +637,11 @@ public class SleuthkitJNI {
 						}
 						if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
 							imageHandle = image.getImageHandle();
-							tskAutoDbPointer = initAddImgNatPassword(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans, password);
+							if (passwords != null) {
+								tskAutoDbPointer = initializeAddImgCandidatesNat(dbHelper, timezoneLongToShort(timeZone), true, addUnallocSpace, skipFatFsOrphans, passwords.toArray(new String[0]));
+							} else {
+								tskAutoDbPointer = initAddImgNatPassword(dbHelper, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans, password);
+							}
 						}
 						if (0 == tskAutoDbPointer) {
 							throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
@@ -977,7 +1042,7 @@ public class SleuthkitJNI {
 	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
 		String timeZone, String md5fromSettings, String sha1fromSettings, String sha256fromSettings, String deviceId, Host host) throws TskCoreException {
 		
-		return addImageToDatabase(skCase, imagePaths, sectorSize, timeZone, md5fromSettings, sha1fromSettings, sha256fromSettings, deviceId, null, host);
+		return addImageToDatabase(skCase, imagePaths, sectorSize, timeZone, md5fromSettings, sha1fromSettings, sha256fromSettings, deviceId, (String) null, host);
 	}
 	
 	/**
@@ -1046,8 +1111,77 @@ public class SleuthkitJNI {
 			throw(ex);
 		}
 	}
-	
-	
+
+	/**
+	 * Add an image to the database and return the open image. Each of the
+	 * candidate passwords will be tried, in order, when opening encrypted
+	 * file systems in the image.
+	 *
+	 * @param skCase     The current case.
+	 * @param imagePaths The path(s) to the image (will just be the first for .e01, .001, etc).
+	 * @param sectorSize The sector size (0 for auto-detect).
+	 * @param timeZone   The time zone.
+	 * @param md5fromSettings        MD5 hash (if known).
+	 * @param sha1fromSettings       SHA1 hash (if known).
+	 * @param sha256fromSettings     SHA256 hash (if known).
+	 * @param deviceId   Device ID.
+	 * @param passwords  The candidate passwords to use to decrypt the image (may be null or empty).
+	 * @param host       Host.
+	 *
+	 * @return The Image object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public static Image addImageToDatabase(SleuthkitCase skCase, String[] imagePaths, int sectorSize,
+		String timeZone, String md5fromSettings, String sha1fromSettings, String sha256fromSettings, String deviceId, List<String> passwords, Host host) throws TskCoreException {
+
+		// Open the image
+		long imageHandle = openImgNat(imagePaths, 1, sectorSize);
+
+		// Get the fields stored in the native code
+		List<String> computedPaths = Arrays.asList(getPathsForImageNat(imageHandle));
+		long size = getSizeForImageNat(imageHandle);
+		long type = getTypeForImageNat(imageHandle);
+		long computedSectorSize = getSectorSizeForImageNat(imageHandle);
+		String md5 = md5fromSettings;
+		if (StringUtils.isEmpty(md5)) {
+			md5 = getMD5HashForImageNat(imageHandle);
+		}
+		String sha1 = sha1fromSettings;
+		if (StringUtils.isEmpty(sha1)) {
+			sha1 = getSha1HashForImageNat(imageHandle);
+		}
+		// Sleuthkit does not currently generate any SHA256 hashes. Set to empty
+		// string for consistency.
+		String sha256 = sha256fromSettings;
+		if (sha256 == null) {
+			sha256 = "";
+		}
+		String collectionDetails = getCollectionDetailsForImageNat(imageHandle);
+
+		//  Now save to database
+		CaseDbTransaction transaction = skCase.beginTransaction();
+		try {
+			Image img = skCase.addImage(TskData.TSK_IMG_TYPE_ENUM.valueOf(type), computedSectorSize,
+				size, null, computedPaths,
+				timeZone, md5, sha1, sha256,
+				deviceId, host, passwords, transaction);
+			if (!StringUtils.isEmpty(collectionDetails)) {
+				skCase.setAcquisitionDetails(img, collectionDetails);
+			}
+			transaction.commit();
+
+		    img.setImageHandle(imageHandle);
+			cacheImageHandle(skCase, computedPaths, imageHandle);
+			return img;
+		} catch (TskCoreException ex) {
+			transaction.rollback();
+			throw(ex);
+		}
+	}
+
+
 
 	/**
 	 * Get volume system Handle
@@ -1185,17 +1319,20 @@ public class SleuthkitJNI {
 				} else {
 					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
-				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
+				final Map<String, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
 				if (imgOffSetToFsHandle == null) {
 					throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
 				}
-				if (imgOffSetToFsHandle.containsKey(fsOffset)) {
+				// The password is part of the cache key so that a retry with a
+				// different password does not return a stale handle.
+				final String fsKey = fsOffset + ":" + ((password == null) ? "" : password);
+				if (imgOffSetToFsHandle.containsKey(fsKey)) {
 					//return cached
-					fsHandle = imgOffSetToFsHandle.get(fsOffset);
+					fsHandle = imgOffSetToFsHandle.get(fsKey);
 				} else {
 					fsHandle = openFsDecryptNat(imgHandle, fsOffset, password);
 					//cache it
-					imgOffSetToFsHandle.put(fsOffset, fsHandle);
+					imgOffSetToFsHandle.put(fsKey, fsHandle);
 				}
 			}
 			return fsHandle;
@@ -1236,20 +1373,21 @@ public class SleuthkitJNI {
 				} else {
 					caseIdentifier = skCase.getCaseHandleIdentifier();
 				}
-				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
+				final Map<String, Long> imgOffSetToFsHandle = HandleCache.getCaseHandles(caseIdentifier).fsHandleCache.get(imgHandle);
 				if (imgOffSetToFsHandle == null) {
 					throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
 				}
-				
-				if (imgOffSetToFsHandle.containsKey(poolBlock)) {
+
+				final String poolKey = String.valueOf(poolBlock);
+				if (imgOffSetToFsHandle.containsKey(poolKey)) {
 					//return cached
-					fsHandle = imgOffSetToFsHandle.get(poolBlock);
+					fsHandle = imgOffSetToFsHandle.get(poolKey);
 				} else {
 					long poolImgHandle = getImgInfoForPoolNat(poolHandle, poolBlock);
 					HandleCache.getCaseHandles(caseIdentifier).poolImgCache.add(poolImgHandle);
 					fsHandle = openFsNat(poolImgHandle, fsOffset);
 					//cache it
-					imgOffSetToFsHandle.put(poolBlock, fsHandle);
+					imgOffSetToFsHandle.put(poolKey, fsHandle);
 					HandleCache.getCaseHandles(caseIdentifier).poolFsList.add(fsHandle);
 				}
 			}
@@ -2020,6 +2158,26 @@ public class SleuthkitJNI {
 		}
 		return new TestOpenImageResult(false, resultStr);
 	}
+
+	/**
+	 * Tries opening the image, trying each of the given candidate passwords
+	 * when opening encrypted volumes.
+	 *
+	 * @param imagePath  Path to the image (will just be the first for .e01, .001, etc).
+	 * @param passwords  Candidate passwords to use when trying to decrypt the volumes (may be null or empty).
+	 *
+	 * @return TestOpenImageResult that will contain whether we were able to open a file system and a user-friendly
+	 *         message. If multiple volumes could not be opened due to BitLocker errors, the message will contain
+	 *         one line per locked volume.
+	 */
+	@Beta
+	public static TestOpenImageResult testOpenImage(String imagePath, List<String> passwords) {
+		String resultStr = isImageSupportedListNat(imagePath, (passwords == null) ? null : passwords.toArray(new String[0]));
+		if (resultStr.isBlank()) {
+			return new TestOpenImageResult(true, "Image opened successfully");
+		}
+		return new TestOpenImageResult(false, resultStr);
+	}
 	
 	/** Get the version of the Sleuthkit code in number form.
 	 * Upper byte is A, next is B, and next byte is C in version A.B.C.
@@ -2226,6 +2384,8 @@ public class SleuthkitJNI {
 
 	private static native long initializeAddImgPasswordNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans, String password) throws TskCoreException;
 
+	private static native long initializeAddImgCandidatesNat(TskCaseDbBridge dbHelperObj, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans, String[] passwords) throws TskCoreException;
+
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
 	private static native void runAddImgNat(long process, String deviceId, long a_img_info, long image_id, String timeZone, String imageWriterPath) throws TskCoreException, TskDataException;
@@ -2293,6 +2453,8 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 
 	private static native String isImageSupportedStringNat(String imagePath, String password);
+
+	private static native String isImageSupportedListNat(String imagePath, String[] passwords);
 	
 	private static native long getSleuthkitVersionNat();
 
