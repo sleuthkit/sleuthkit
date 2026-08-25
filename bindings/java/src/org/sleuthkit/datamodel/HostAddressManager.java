@@ -20,19 +20,29 @@ package org.sleuthkit.datamodel;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Lists;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.HostAddress.HostAddressType;
+import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
  * Responsible for creating/updating/retrieving host addresses.
@@ -43,6 +53,14 @@ public class HostAddressManager {
 
 	private final SleuthkitCase db;
 	private final static byte DEFAULT_MAPPING_CACHE_VALUE = 1;
+
+	/**
+	 * Chunk size for the bulk read methods on SQLite, which has no array
+	 * parameter type and so has to fall back to an IN list. Sized under the
+	 * historical SQLITE_MAX_VARIABLE_NUMBER default of 999. PostgreSQL passes
+	 * the whole set as a single array parameter and is never chunked.
+	 */
+	private final static int SQLITE_CHUNK_SIZE = 900;
 
 	/**
 	 * An HostAddress Object Id entry is maintained in this cache when a
@@ -88,12 +106,137 @@ public class HostAddressManager {
 	 * @throws TskCoreException
 	 */
 	public Optional<HostAddress> getHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
-		
+
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection()) {
 			return HostAddressManager.this.getHostAddress(type, address, connection);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Bulk form of {@link #getHostAddress(HostAddress.HostAddressType, java.lang.String)}.
+	 * Reads every supplied address under a single case read lock instead of one
+	 * lock acquisition per address.
+	 * <br>
+	 * <b>Note:</b> This api call uses a database connection. Do not invoke
+	 * within a transaction.
+	 *
+	 * @param type      Address type. DNS_AUTO is resolved per address, so one
+	 *                  batch may span IPV4 and IPV6.
+	 * @param addresses Addresses to look up. Duplicates are collapsed. Empty
+	 *                  returns an empty map without issuing SQL.
+	 *
+	 * @return The addresses that were found, keyed by the caller's supplied
+	 *         string rather than the normalized form, so callers do not have to
+	 *         replicate normalization. Addresses with no row are absent.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Map<String, HostAddress> getHostAddresses(HostAddress.HostAddressType type, Collection<String> addresses) throws TskCoreException {
+
+		if (type == null) {
+			throw new TskCoreException("type is required");
+		}
+		if (addresses == null) {
+			throw new TskCoreException("addresses is required");
+		}
+
+		/*
+		 * Normalize once. The query matches on the stored form (normalized and
+		 * lower cased), but the returned map is keyed by what the caller passed
+		 * in, so lookupKeysByStored carries us back.
+		 */
+		Map<String, HostAddress> results = new HashMap<>();
+		Map<String, List<String>> lookupKeysByStored = new LinkedHashMap<>();
+		Map<String, HostAddressType> typesByStored = new HashMap<>();
+		for (String address : addresses) {
+			if (address == null) {
+				continue;
+			}
+			HostAddressType addressType = type.equals(HostAddress.HostAddressType.DNS_AUTO) ? getDNSType(address) : type;
+			String stored = getNormalizedAddress(address).toLowerCase();
+
+			/*
+			 * Keyed on the resolved type and the stored form, which is what
+			 * every write to this cache uses. The single-row path probes with
+			 * the caller's type instead, so a DNS_AUTO lookup there can never
+			 * hit an entry it just wrote; probing the written key only means
+			 * more hits for the same address, never a different one.
+			 */
+			HostAddress cached = recentHostAddressCache.getIfPresent(createRecentHostAddressKey(addressType, stored));
+			if (Objects.nonNull(cached)) {
+				results.put(address, cached);
+				continue;
+			}
+			lookupKeysByStored.computeIfAbsent(stored, k -> new ArrayList<>()).add(address);
+			typesByStored.put(stored, addressType);
+		}
+
+		if (lookupKeysByStored.isEmpty()) {
+			return results;
+		}
+
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			/*
+			 * Matched on address alone and filtered by type in memory. A batch
+			 * built from DNS_AUTO can carry more than one concrete type, and
+			 * (address_type, address) is effectively unique, so this stays a
+			 * single statement instead of one per type.
+			 */
+			for (List<String> chunk : chunkedStrings(new ArrayList<>(lookupKeysByStored.keySet()))) {
+				readHostAddressesByAddress(connection, chunk, typesByStored, lookupKeysByStored, results);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error bulk reading host addresses of type " + type.getName(), ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+		return results;
+	}
+
+	/**
+	 * Reads one chunk of addresses and folds the rows into the result map.
+	 *
+	 * @param connection         Connection to use.
+	 * @param chunk              Stored (normalized, lower cased) addresses.
+	 * @param typesByStored      Expected concrete type per stored address.
+	 * @param lookupKeysByStored The caller's original strings per stored address.
+	 * @param results            Accumulator, keyed by the caller's strings.
+	 */
+	private void readHostAddressesByAddress(CaseDbConnection connection, List<String> chunk,
+			Map<String, HostAddressType> typesByStored, Map<String, List<String>> lookupKeysByStored,
+			Map<String, HostAddress> results) throws SQLException, TskCoreException {
+
+		boolean isPostgres = db.getDatabaseType().equals(DbType.POSTGRESQL);
+		String queryString = "SELECT id, address_type, address FROM tsk_host_addresses WHERE address "
+				+ (isPostgres ? "= ANY(?::text[])" : "IN (" + questionMarks(chunk.size()) + ")");
+
+		PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+		query.clearParameters();
+		if (isPostgres) {
+			query.setArray(1, connection.getConnection().createArrayOf("text", chunk.toArray(new String[0])));
+		} else {
+			for (int i = 0; i < chunk.size(); i++) {
+				query.setString(i + 1, chunk.get(i));
+			}
+		}
+
+		try (ResultSet rs = query.executeQuery()) {
+			while (rs.next()) {
+				String stored = rs.getString("address");
+				HostAddressType rowType = HostAddressType.fromID(rs.getInt("address_type"));
+				if (!rowType.equals(typesByStored.get(stored))) {
+					continue;
+				}
+				HostAddress hostAddress = new HostAddress(db, rs.getLong("id"), rowType, stored);
+				recentHostAddressCache.put(createRecentHostAddressKey(rowType, stored), hostAddress);
+				for (String callerKey : lookupKeysByStored.getOrDefault(stored, Collections.emptyList())) {
+					results.put(callerKey, hostAddress);
+				}
+			}
 		}
 	}
 
@@ -587,6 +730,174 @@ public class HostAddressManager {
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
+	}
+
+	/**
+	 * Gets the IP addresses mapped to each of the given DNS name addresses,
+	 * keyed by the name address itself.
+	 *
+	 * <p>
+	 * Bulk replacement for the per-address sequence of
+	 * {@link #getHostAddress(long)}, {@link #hostNameAndIpMappingExists(long)}
+	 * and {@link #getIpAddress(java.lang.String)}: the key supplies the name
+	 * address, an empty value stands in for the "no mapping" answer, and a
+	 * non-empty value is the mapped IP list. Everything is read under a single
+	 * case read lock, and the IP rows are joined rather than fetched one query
+	 * per row.</p>
+	 *
+	 * <p>
+	 * Follows the {@code dns_address_id -> ip_address_id} direction only, which
+	 * is the whole story for a HOSTNAME address:
+	 * {@link #addHostNameAndIpMapping(HostAddress, HostAddress, java.lang.Long, Content)}
+	 * rejects anything else on the name side. Passing an IP address id yields an
+	 * empty list even when it is mapped; a bulk form of the reverse lookup would
+	 * be a separate addition.</p>
+	 * <br>
+	 * <b>Note:</b> This api call uses a database connection. Do not invoke
+	 * within a transaction.
+	 *
+	 * @param dnsAddressObjectIds Address object ids to look up. Duplicates are
+	 *                            collapsed. Empty returns an empty map without
+	 *                            issuing SQL.
+	 *
+	 * @return The addresses that were found, each mapped to its IP addresses.
+	 *         An address that exists but has no mapping is present with an empty
+	 *         list. An id with no row in tsk_host_addresses is absent entirely -
+	 *         note that {@link #getHostAddress(long)} throws in that case.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Map<HostAddress, List<HostAddress>> getHostAddressMappings(Collection<Long> dnsAddressObjectIds) throws TskCoreException {
+
+		if (dnsAddressObjectIds == null) {
+			throw new TskCoreException("dnsAddressObjectIds is required");
+		}
+
+		Set<Long> ids = new LinkedHashSet<>(dnsAddressObjectIds);
+		ids.remove(null);
+		if (ids.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		Map<HostAddress, List<HostAddress>> results = new LinkedHashMap<>();
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			for (List<Long> chunk : chunkedLongs(new ArrayList<>(ids))) {
+				readHostAddressMappings(connection, chunk, results);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error bulk reading host address mappings", ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+		return results;
+	}
+
+	/**
+	 * Reads one chunk of name addresses plus their mapped IPs and folds the rows
+	 * into the result map.
+	 *
+	 * @param connection Connection to use.
+	 * @param chunk      Address object ids.
+	 * @param results    Accumulator.
+	 */
+	private void readHostAddressMappings(CaseDbConnection connection, List<Long> chunk,
+			Map<HostAddress, List<HostAddress>> results) throws SQLException, TskCoreException {
+
+		boolean isPostgres = db.getDatabaseType().equals(DbType.POSTGRESQL);
+		/*
+		 * Left joined so that a name address with no mapping still comes back -
+		 * that absence is the signal the caller branches on, and losing it would
+		 * silently turn "not mapped yet" into "no such address".
+		 */
+		String queryString = "SELECT a.id, a.address_type, a.address,"
+				+ " ip.id AS ip_id, ip.address_type AS ip_address_type, ip.address AS ip_address"
+				+ " FROM tsk_host_addresses a"
+				+ " LEFT JOIN tsk_host_address_dns_ip_map m ON m.dns_address_id = a.id"
+				+ " LEFT JOIN tsk_host_addresses ip ON ip.id = m.ip_address_id"
+				+ " WHERE a.id "
+				+ (isPostgres ? "= ANY(?::bigint[])" : "IN (" + questionMarks(chunk.size()) + ")");
+
+		PreparedStatement query = connection.getPreparedStatement(queryString, Statement.NO_GENERATED_KEYS);
+		query.clearParameters();
+		if (isPostgres) {
+			query.setArray(1, connection.getConnection().createArrayOf("bigint", chunk.toArray(new Long[0])));
+		} else {
+			for (int i = 0; i < chunk.size(); i++) {
+				query.setLong(i + 1, chunk.get(i));
+			}
+		}
+
+		// One row per mapping, so a name with several IPs arrives as several rows.
+		Map<Long, HostAddress> nameAddressesById = new HashMap<>();
+		try (ResultSet rs = query.executeQuery()) {
+			while (rs.next()) {
+				long nameId = rs.getLong("id");
+				HostAddress nameAddress = nameAddressesById.get(nameId);
+				if (Objects.isNull(nameAddress)) {
+					HostAddressType nameType = HostAddressType.fromID(rs.getInt("address_type"));
+					String nameValue = rs.getString("address");
+					nameAddress = new HostAddress(db, nameId, nameType, nameValue);
+					nameAddressesById.put(nameId, nameAddress);
+					recentHostAddressCache.put(createRecentHostAddressKey(nameType, nameValue), nameAddress);
+					results.put(nameAddress, new ArrayList<>());
+				}
+
+				rs.getLong("ip_id");
+				if (rs.wasNull()) {
+					continue;	// left join miss: exists, but not mapped
+				}
+
+				HostAddressType ipType = HostAddressType.fromID(rs.getInt("ip_address_type"));
+				String ipValue = rs.getString("ip_address");
+				HostAddress ipAddress = new HostAddress(db, rs.getLong("ip_id"), ipType, ipValue);
+				recentHostAddressCache.put(createRecentHostAddressKey(ipType, ipValue), ipAddress);
+
+				// Same bookkeeping the single-row mapping paths do.
+				recentHostNameAndIpMappingCache.put(nameId, DEFAULT_MAPPING_CACHE_VALUE);
+				recentHostNameAndIpMappingCache.put(ipAddress.getId(), DEFAULT_MAPPING_CACHE_VALUE);
+
+				results.get(nameAddress).add(ipAddress);
+			}
+		}
+	}
+
+	/**
+	 * Splits ids into chunks the database can take in one statement. PostgreSQL
+	 * passes the whole set as a single array parameter, so it is never chunked.
+	 *
+	 * @param ids The ids.
+	 *
+	 * @return The chunks.
+	 */
+	private List<List<Long>> chunkedLongs(List<Long> ids) {
+		return db.getDatabaseType().equals(DbType.POSTGRESQL)
+				? Collections.singletonList(ids)
+				: Lists.partition(ids, SQLITE_CHUNK_SIZE);
+	}
+
+	/**
+	 * Splits addresses into chunks the database can take in one statement.
+	 *
+	 * @param addresses The addresses.
+	 *
+	 * @return The chunks.
+	 */
+	private List<List<String>> chunkedStrings(List<String> addresses) {
+		return db.getDatabaseType().equals(DbType.POSTGRESQL)
+				? Collections.singletonList(addresses)
+				: Lists.partition(addresses, SQLITE_CHUNK_SIZE);
+	}
+
+	/**
+	 * Builds a comma separated run of bind placeholders for an IN list.
+	 *
+	 * @param count How many.
+	 *
+	 * @return "?, ?, ?" and so on.
+	 */
+	private static String questionMarks(int count) {
+		return Collections.nCopies(count, "?").stream().collect(Collectors.joining(", "));
 	}
 
 	/**
