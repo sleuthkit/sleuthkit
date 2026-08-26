@@ -868,17 +868,16 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(JNIEnv * e
             return 0;
         }
 
-        char envstr[70];
-        snprintf(envstr, 70, "TZ=%s", tzstr);
-        env->ReleaseStringUTFChars(timeZone, tzstr);
+        if (0 != setenv("TZ", tzstr, 1)) {
+            env->ReleaseStringUTFChars(timeZone, tzstr);
 
-        if (0 != putenv(envstr)) {
             stringstream ss;
-            ss << "Error setting timezone environment, using: ";
-            ss << envstr;
+            ss << "Error setting timezone environment";
             setThrowTskCoreError(env, ss.str().c_str());
             return 0;
         }
+
+        env->ReleaseStringUTFChars(timeZone, tzstr);
 
         /* we should be checking this somehow */
         TZSET();
