@@ -26,11 +26,64 @@
 
 	<target name="check-native-build" depends="check-native-build-mac,check-native-build-unix"/>
 
-	<target name="check-native-build-mac" depends="testTSKLibs" if="tsk_dylib.present">
-		<condition property="native-up-to-date">
+	<target name="detect-mac-architectures" depends="testTSKLibs" if="tsk_dylib.present">
+		<exec executable="/usr/bin/lipo" outputproperty="mac.architectures" failonerror="true">
+			<arg file="${jni.build.dir}/.libs/libtsk_jni.dylib"/>
+			<arg value="-archs"/>
+		</exec>
+		<condition property="mac.arm64.present">
+			<matches string="${mac.architectures}" pattern="(^| )arm64( |$)"/>
+		</condition>
+		<condition property="mac.x86_64.present">
+			<matches string="${mac.architectures}" pattern="(^| )x86_64( |$)"/>
+		</condition>
+		<condition property="mac.arm64.missing">
+			<not><isset property="mac.arm64.present"/></not>
+		</condition>
+		<condition property="mac.x86_64.missing">
+			<not><isset property="mac.x86_64.present"/></not>
+		</condition>
+		<fail message="The JNI library contains neither an arm64 nor an x86_64 Mach-O slice.">
+			<condition>
+				<and>
+					<isset property="mac.arm64.missing"/>
+					<isset property="mac.x86_64.missing"/>
+				</and>
+			</condition>
+		</fail>
+	</target>
+
+	<target name="check-native-build-mac-arm64" depends="detect-mac-architectures" if="mac.arm64.present">
+		<uptodate property="mac.arm64.up-to-date" srcfile="${jni.build.dir}/.libs/libtsk_jni.dylib" targetfile="${aarch64}/mac/libtsk_jni.jnilib"/>
+	</target>
+	<target name="check-native-build-mac-arm64-missing" depends="detect-mac-architectures" if="mac.arm64.missing">
+		<condition property="mac.arm64.up-to-date">
+			<not><available file="${aarch64}/mac/libtsk_jni.jnilib"/></not>
+		</condition>
+	</target>
+
+	<target name="check-native-build-mac-x86_64" depends="detect-mac-architectures" if="mac.x86_64.present">
+		<condition property="mac.x86_64.up-to-date">
 			<and>
 				<uptodate srcfile="${jni.build.dir}/.libs/libtsk_jni.dylib" targetfile="${amd64}/mac/libtsk_jni.jnilib"/>
-				<uptodate srcfile="${jni.build.dir}/.libs/libtsk_jni.dylib" targetfile="${aarch64}/mac/libtsk_jni.jnilib"/>
+				<uptodate srcfile="${jni.build.dir}/.libs/libtsk_jni.dylib" targetfile="${x86_64}/mac/libtsk_jni.jnilib"/>
+			</and>
+		</condition>
+	</target>
+	<target name="check-native-build-mac-x86_64-missing" depends="detect-mac-architectures" if="mac.x86_64.missing">
+		<condition property="mac.x86_64.up-to-date">
+			<and>
+				<not><available file="${amd64}/mac/libtsk_jni.jnilib"/></not>
+				<not><available file="${x86_64}/mac/libtsk_jni.jnilib"/></not>
+			</and>
+		</condition>
+	</target>
+
+	<target name="check-native-build-mac" depends="detect-mac-architectures,check-native-build-mac-arm64,check-native-build-mac-arm64-missing,check-native-build-mac-x86_64,check-native-build-mac-x86_64-missing" if="tsk_dylib.present">
+		<condition property="native-up-to-date">
+			<and>
+				<isset property="mac.arm64.up-to-date"/>
+				<isset property="mac.x86_64.up-to-date"/>
 			</and>
 		</condition>
 	</target>
@@ -67,17 +120,29 @@
 		<copy file="${jni.build.dir}/.libs/libtsk_jni.dylib" tofile="./libtsk_jni.jnilib" overwrite="true"/>
 	</target>
 
-	<target name="copyMacLibs" depends="testTSKLibs" if="tsk_dylib.present">
-		<property environment="env"/>
+	<target name="removeMacArm64Lib" depends="detect-mac-architectures" if="mac.arm64.missing">
+		<delete file="${aarch64}/mac/libtsk_jni.jnilib"/>
+	</target>
+
+	<target name="removeMacX86_64Libs" depends="detect-mac-architectures" if="mac.x86_64.missing">
+		<delete file="${x86_64}/mac/libtsk_jni.jnilib"/>
+		<delete file="${amd64}/mac/libtsk_jni.jnilib"/>
+	</target>
+
+	<target name="copyMacArm64Lib" depends="detect-mac-architectures" if="mac.arm64.present">
 		<property name="jni.dylib" location="${jni.build.dir}/.libs/libtsk_jni.dylib"/>
 		<property name="jni.jnilib" value="libtsk_jni.jnilib"/>
-		<!-- x86_64 -->
-		<copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}" overwrite="true"/>
-		<!-- amd64 -->
-		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}" overwrite="true"/>
-		<!-- aarch64 -->
 		<copy file="${jni.dylib}" tofile="${aarch64}/mac/${jni.jnilib}" overwrite="true"/>
 	</target>
+
+	<target name="copyMacX86_64Libs" depends="detect-mac-architectures" if="mac.x86_64.present">
+		<property name="jni.dylib" location="${jni.build.dir}/.libs/libtsk_jni.dylib"/>
+		<property name="jni.jnilib" value="libtsk_jni.jnilib"/>
+		<copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}" overwrite="true"/>
+		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}" overwrite="true"/>
+	</target>
+
+	<target name="copyMacLibs" depends="removeMacArm64Lib,removeMacX86_64Libs,copyMacArm64Lib,copyMacX86_64Libs"/>
 
 	<!-- Non-OS X -->
 	<target name="copyTskLibs_so" depends="testTSKLibs" if="tsk_so.present">
