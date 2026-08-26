@@ -1,10 +1,9 @@
 dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
+AC_PREREQ([2.71])
 
-AC_PREREQ(2.59)
-
-AC_INIT(sleuthkit, 4.15.0)
+AC_INIT([sleuthkit],[4.15.0])
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for
 m4_include([m4/cppunit.m4])
@@ -21,7 +20,7 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign tar-ustar])
 AM_PATH_CPPUNIT(1.12.1)
 AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
-AM_PROG_LIBTOOL
+LT_INIT
 AM_MAINTAINER_MODE
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -38,7 +37,8 @@ AC_PATH_PROG(PERL, perl)
 TSK_CHECK_PROG_PKGCONFIG
 
 dnl Checks for header files.
-AC_HEADER_STDC
+dnl obsolote: AC_HEADER_STDC
+
 dnl AC_HEADER_MAJOR
 dnl AC_HEADER_SYS_WAIT
 dnl AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h unistd.h utime.h wchar.h wctype.h])
@@ -52,7 +52,9 @@ AC_TYPE_MODE_T
 AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
 dnl AC_CHECK_MEMBERS([struct stat.st_rdev])
-dnl AC_HEADER_TIME
+dnl obsolete: AC_HEADER_TIME
+AC_CHECK_HEADERS_ONCE([sys/time.h])
+
 dnl AC_STRUCT_TM
 
 dnl check for large file support
@@ -63,7 +65,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_ERROR_AT_LINE
 dnl AC_FUNC_FORK
 AC_FUNC_FSEEKO
-AC_PROG_GCC_TRADITIONAL
+dnl obsolete: AC_PROG_GCC_TRADITIONAL
 AC_FUNC_LSTAT
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 dnl AC_FUNC_MALLOC
