@@ -27,7 +27,12 @@
 	<target name="check-native-build" depends="check-native-build-mac,check-native-build-unix"/>
 
 	<target name="check-native-build-mac" depends="testTSKLibs" if="tsk_dylib.present">
-		<uptodate property="native-up-to-date" srcfile="${jni.build.dir}/.libs/libtsk_jni.dylib" targetfile="${amd64}/mac/libtsk_jni.jnilib"/>
+		<condition property="native-up-to-date">
+			<and>
+				<uptodate srcfile="${jni.build.dir}/.libs/libtsk_jni.dylib" targetfile="${amd64}/mac/libtsk_jni.jnilib"/>
+				<uptodate srcfile="${jni.build.dir}/.libs/libtsk_jni.dylib" targetfile="${aarch64}/mac/libtsk_jni.jnilib"/>
+			</and>
+		</condition>
 	</target>
 
 	<target name="check-native-build-unix" depends="testTSKLibs" if="tsk_so.present">
@@ -70,6 +75,8 @@
 		<copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}" overwrite="true"/>
 		<!-- amd64 -->
 		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}" overwrite="true"/>
+		<!-- aarch64 -->
+		<copy file="${jni.dylib}" tofile="${aarch64}/mac/${jni.jnilib}" overwrite="true"/>
 	</target>
 
 	<!-- Non-OS X -->
