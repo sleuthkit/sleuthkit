@@ -868,7 +868,22 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgPasswordNat(JNIEnv * e
             return 0;
         }
 
-        if (0 != setenv("TZ", tzstr, 1)) {
+        TSK_TCHAR timezone[65];
+#ifdef TSK_WIN32
+        UTF16 *timezonePtr = (UTF16 *) timezone;
+        const UTF8 *tzstrPtr = (const UTF8 *) tzstr;
+        if (tsk_UTF8toUTF16(&tzstrPtr, &tzstrPtr[strlen(tzstr)],
+                &timezonePtr, (UTF16 *) &timezone[65], TSKlenientConversion) != TSKconversionOK) {
+            env->ReleaseStringUTFChars(timeZone, tzstr);
+            setThrowTskCoreError(env, "Error converting timezone to UTF-16");
+            return 0;
+        }
+        *timezonePtr = '\0';
+#else
+        snprintf(timezone, sizeof(timezone), "%s", tzstr);
+#endif
+
+        if (0 != TSETENV(_TSK_T("TZ"), timezone)) {
             env->ReleaseStringUTFChars(timeZone, tzstr);
 
             stringstream ss;
