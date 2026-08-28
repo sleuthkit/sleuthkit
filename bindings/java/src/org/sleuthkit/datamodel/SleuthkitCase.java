@@ -113,7 +113,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 8);
+			= new CaseDbSchemaVersionNumber(9, 9);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -193,6 +193,7 @@ public class SleuthkitCase {
 	private static final String SCHEMA_MINOR_VERSION_KEY = "SCHEMA_MINOR_VERSION";
 	private static final String CREATION_SCHEMA_MAJOR_VERSION_KEY = "CREATION_SCHEMA_MAJOR_VERSION";
 	private static final String CREATION_SCHEMA_MINOR_VERSION_KEY = "CREATION_SCHEMA_MINOR_VERSION";
+	private static final String CASE_OBJECT_ID_KEY = "CASE_OBJECT_ID";
 	
 	// key in acquisition tool settings; the password for decrypting an image
 	static final String IMAGE_PASSWORD_KEY = "imagePassword";
@@ -274,6 +275,11 @@ public class SleuthkitCase {
 	private HostManager hostManager;
 	private PersonManager personManager;
 	private HostAddressManager hostAddressManager;
+	private NoteManager noteManager;
+
+	// Object id of the row in tsk_objects that stands for the case itself, so that
+	// case level notes have something to point at. Read or created on every open.
+	private long caseObjectId;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -469,11 +475,13 @@ public class SleuthkitCase {
 			initReviewStatuses(connection);
 			initEncodingTypes(connection);
 			initCollectedStatusTypes(connection);
+			initNoteTypes(connection);
+			initCaseObject(connection);
 			// @@@ UPDATE TO ALLOW CT TO BE ASYNC
 			populateHasChildrenMap(false);
 			updateExaminers(connection);
 			initDBSchemaCreationVersion(connection);
-		} 
+		}
 
 		fileManager = new FileManager(this);
 		communicationsMgr = new CommunicationsManager(this);
@@ -486,6 +494,7 @@ public class SleuthkitCase {
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this);
+		noteManager = new NoteManager(this);
 	}
 		
 	/**
@@ -757,6 +766,34 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets the note manager for this case.
+	 *
+	 * @return The per case NoteManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public NoteManager getNoteManager() throws TskCoreException {
+		return noteManager;
+	}
+
+	/**
+	 * Gets the object id of the row in tsk_objects that stands for the case
+	 * itself. It is a root level object, a sibling of the data sources rather
+	 * than their parent, and it exists so that case level content such as a
+	 * summary of the whole incident has an object to hang from.
+	 *
+	 * The case is not exposed as a Content: it is not forensic content, and a
+	 * new Content subtype would mean a new method on the public ContentVisitor
+	 * and SleuthkitItemVisitor interfaces and a coordinated release with every
+	 * implementor. It is a plain object id instead.
+	 *
+	 * @return The object id of the case object.
+	 */
+	public long getCaseObjectId() {
+		return caseObjectId;
+	}
+
+	/**
 	 * Initializes the next artifact id. If there are entries in the
 	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
 	 * will initialize the value to 0x8000000000000000 (the maximum negative
@@ -961,6 +998,146 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Put the built-in note types into the table. Note types are open, so this
+	 * seeds the ones The Sleuth Kit ships with and leaves consumers to add
+	 * their own by name at runtime through NoteManager.
+	 *
+	 * On PostgreSQL two clients can open the same case at once and both run
+	 * this, so the insert leans on the UNIQUE constraint on type_name rather
+	 * than checking first.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private void initNoteTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		// The display names and descriptions are prose, so they are bound rather than
+		// interpolated. An apostrophe in one of them would otherwise fail every case
+		// open, and this runs on every open.
+		String query = "INTO tsk_note_types (type_name, display_name, description) VALUES (?, ?, ?)";
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				query = "INSERT " + query + " ON CONFLICT DO NOTHING"; // NON-NLS
+				break;
+			case SQLITE:
+				query = "INSERT OR IGNORE " + query;
+				break;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+		}
+
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			for (NoteType.BuiltIn type : NoteType.BuiltIn.values()) {
+				statement.clearParameters();
+				statement.setString(1, type.getTypeName());
+				statement.setString(2, type.getDisplayName());
+				statement.setString(3, type.getDescription());
+				connection.executeUpdate(statement);
+			}
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Get the object id of the case object, creating it if this is the first
+	 * open since the case was created or upgraded to 9.9.
+	 *
+	 * This runs on every open rather than only at creation because it has to.
+	 * On PostgreSQL two clients can open the same case at the same time and
+	 * both find it missing, and acquireSingleUserCaseWriteLock() would not help
+	 * because it is a JVM lock that is real only for single-user SQLite. The
+	 * primary key on tsk_db_info_extended.name settles the race instead: both
+	 * insert, one wins, and both then read back the same id.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private void initCaseObject(CaseDbConnection connection) throws SQLException, TskCoreException {
+		acquireSingleUserCaseWriteLock();
+		try {
+			Long existingId = getCaseObjectId(connection);
+			if (existingId != null) {
+				caseObjectId = existingId;
+				return;
+			}
+
+			// The object row and the row naming it have to land together. This
+			// connection is otherwise in autocommit, so without a transaction a failure
+			// after the first insert would leave a parentless CASE object behind that
+			// nothing points at, and the next open would make another one.
+			connection.beginTransaction();
+			try {
+				// A null parent, not a self reference. AbstractContent walks up the
+				// parent chain in four places and stops only when getParent() returns
+				// null, and getContentById() hands back an UnsupportedContent for a type
+				// it does not know, so a self-referencing parent would recurse forever
+				// in anything generic that touched this object.
+				long newObjId = addObject(0, TskData.ObjectType.CASE.getObjectType(), connection);
+
+				String insertSql = String.format("INTO tsk_db_info_extended (name, value) VALUES ('%s', '%d')",
+						CASE_OBJECT_ID_KEY, newObjId);
+				switch (getDatabaseType()) {
+					case POSTGRESQL:
+						insertSql = "INSERT " + insertSql + " ON CONFLICT DO NOTHING"; // NON-NLS
+						break;
+					case SQLITE:
+						insertSql = "INSERT OR IGNORE " + insertSql;
+						break;
+					default:
+						throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+				}
+				try (Statement statement = connection.createStatement()) {
+					statement.execute(insertSql);
+				}
+
+				Long storedId = getCaseObjectId(connection);
+				if (storedId == null) {
+					throw new TskCoreException("Error reading back the case object id from tsk_db_info_extended");
+				}
+				// If another client won the race its object is the case object and the
+				// row just added to tsk_objects is an orphan. Remove it rather than
+				// leave a second parentless CASE row behind.
+				if (storedId.longValue() != newObjId) {
+					try (Statement statement = connection.createStatement()) {
+						statement.executeUpdate("DELETE FROM tsk_objects WHERE obj_id = " + newObjId);
+					}
+				}
+
+				connection.commitTransaction();
+				caseObjectId = storedId;
+			} catch (SQLException | TskCoreException ex) {
+				rollbackTransaction(connection);
+				throw ex;
+			}
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Read the recorded case object id.
+	 *
+	 * @param connection A case database connection.
+	 *
+	 * @return The case object id, or null if it has not been recorded yet.
+	 *
+	 * @throws SQLException
+	 */
+	private Long getCaseObjectId(CaseDbConnection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement,
+						"SELECT value FROM tsk_db_info_extended WHERE name = '" + CASE_OBJECT_ID_KEY + "'")) {
+
+			if (resultSet.next()) {
+				return Long.valueOf(resultSet.getString("value"));
+			}
+			return null;
 		}
 	}
 
@@ -1183,6 +1360,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot5toSchema9dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot6toSchema9dot7(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot7toSchema9dot8(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot8toSchema9dot9(dbSchemaVersion, connection);
 
 
 				statement = connection.createStatement();
@@ -3122,6 +3300,82 @@ public class SleuthkitCase {
 		}
 	}
 
+	private CaseDbSchemaVersionNumber updateFromSchema9dot8toSchema9dot9(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 8) {
+			return schemaVersion;
+		}
+
+		String bigIntDataType = "BIGINT";
+		String primaryKeyType = "BIGSERIAL";
+		if (this.dbType.equals(DbType.SQLITE)) {
+			bigIntDataType = "INTEGER";
+			primaryKeyType = "INTEGER";
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// Notes: text about an object in the case that has no score and can change after
+			// it is written. See CaseDatabaseFactory.createNoteTables() for the same DDL with
+			// the full column commentary, and NoteManager for the API over it.
+			//
+			// There is no table for the case object. Its id is a database-level singleton
+			// fact, which is what tsk_db_info_extended already is, and that table exists in
+			// every 9.x database. The row is written by initCaseObject() on the first open
+			// after this upgrade, so this method creates the tables and nothing else.
+			statement.execute("CREATE TABLE tsk_note_types (note_type_id " + primaryKeyType + " PRIMARY KEY, "
+					+ "type_name TEXT NOT NULL UNIQUE, "
+					+ "display_name TEXT, "
+					+ "description TEXT)");
+
+			statement.execute("CREATE TABLE tsk_notes (note_id " + primaryKeyType + " PRIMARY KEY, "
+					+ "obj_id " + bigIntDataType + " NOT NULL, "
+					+ "data_source_obj_id " + bigIntDataType + ", "
+					+ "note_type_id " + bigIntDataType + " NOT NULL, "
+					+ "body TEXT NOT NULL, "
+					+ "details TEXT, "
+					+ "author_kind INTEGER NOT NULL, "
+					+ "author_id TEXT NOT NULL, "
+					+ "author_display TEXT NOT NULL, "
+					+ "config_id TEXT, "
+					+ "created_time " + bigIntDataType + " NOT NULL, "
+					+ "parent_note_id " + bigIntDataType + ", "
+					+ "root_note_id " + bigIntDataType + ", "
+					+ "original_note_id " + bigIntDataType + ", "
+					+ "is_current INTEGER NOT NULL DEFAULT 1, "
+					+ "is_deleted INTEGER NOT NULL DEFAULT 0, "
+					+ "analysis_result_id " + bigIntDataType + ", "
+					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(note_type_id) REFERENCES tsk_note_types(note_type_id), "
+					+ "FOREIGN KEY(parent_note_id) REFERENCES tsk_notes(note_id) ON DELETE CASCADE, "
+					+ "FOREIGN KEY(root_note_id) REFERENCES tsk_notes(note_id), "
+					+ "FOREIGN KEY(original_note_id) REFERENCES tsk_notes(note_id), "
+					+ "FOREIGN KEY(analysis_result_id) REFERENCES tsk_analysis_results(artifact_obj_id) ON DELETE SET NULL)");
+
+			statement.execute("CREATE INDEX tsk_notes_obj_id_created_index ON tsk_notes(obj_id, created_time)");
+			statement.execute("CREATE INDEX tsk_notes_datasrc_type_index ON tsk_notes(data_source_obj_id, note_type_id)");
+			statement.execute("CREATE INDEX tsk_notes_root_index ON tsk_notes(root_note_id)");
+			statement.execute("CREATE INDEX tsk_notes_original_index ON tsk_notes(original_note_id, is_current)");
+			statement.execute("CREATE UNIQUE INDEX tsk_notes_current_revision_index ON tsk_notes(original_note_id) WHERE is_current = 1");
+
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE INDEX tsk_notes_ar_index ON tsk_notes(analysis_result_id)");
+			} else {
+				statement.execute("CREATE INDEX tsk_notes_ar_partial_index ON tsk_notes(analysis_result_id) WHERE analysis_result_id IS NOT NULL");
+			}
+
+			return new CaseDbSchemaVersionNumber(9, 9);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
 	/**
 	 * Inserts a row for the given account type in account_types table, if one
 	 * doesn't exist.
@@ -3875,6 +4129,12 @@ public class SleuthkitCase {
 						case OS_ACCOUNT:
 							break;
 						case HOST_ADDRESS:
+							break;
+						case CASE:
+							// The case object is a sibling of the data sources rather than
+							// their parent, so it turns up here. It is not forensic content
+							// and is not part of the tree. This case is not optional: without
+							// it the default below throws once the enum knows the value.
 							break;
 						case UNSUPPORTED:
 							break;
@@ -15447,8 +15707,12 @@ public class SleuthkitCase {
 		private List<OsAccount> accountsAdded = new ArrayList<>();
 		private List<TskEvent.MergedAccountsPair> accountsMerged = new ArrayList<>();
 
+		private List<Note> notesAdded = new ArrayList<>();
+		private List<Note> notesUpdated = new ArrayList<>();
+
 		private List<Long> deletedOsAccountObjectIds = new ArrayList<>();
 		private List<Long> deletedResultObjectIds = new ArrayList<>();
+		private List<Long> deletedNoteIds = new ArrayList<>();
 		
 
     // Keep track of which threads have connections to debug deadlocks
@@ -15596,6 +15860,41 @@ public class SleuthkitCase {
 		}
 
 		/**
+		 * Saves notes that have been added as a part of this transaction. A
+		 * batch of notes written together fires one event, so they are added to
+		 * the same list rather than one call per note.
+		 *
+		 * @param notes The notes.
+		 */
+		void registerAddedNotes(List<Note> notes) {
+			if (notes != null) {
+				this.notesAdded.addAll(notes);
+			}
+		}
+
+		/**
+		 * Saves a note that has been revised as a part of this transaction.
+		 *
+		 * @param note The new current revision.
+		 */
+		void registerUpdatedNote(Note note) {
+			if (note != null) {
+				this.notesUpdated.add(note);
+			}
+		}
+
+		/**
+		 * Saves notes that have been deleted as a part of this transaction.
+		 *
+		 * @param noteIds The note ids.
+		 */
+		void registerDeletedNotes(List<Long> noteIds) {
+			if (noteIds != null) {
+				this.deletedNoteIds.addAll(noteIds);
+			}
+		}
+
+		/**
 		 * Check if the given thread has an open transaction.
 		 *
 		 * @param threadId Thread id to check for.
@@ -15652,6 +15951,15 @@ public class SleuthkitCase {
 				}
 				if (!deletedResultObjectIds.isEmpty()) {
 					sleuthkitCase.fireTSKEvent(new TskEvent.AnalysisResultsDeletedTskEvent(deletedResultObjectIds));
+				}
+				if (!notesAdded.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new TskEvent.NotesAddedTskEvent(notesAdded));
+				}
+				if (!notesUpdated.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new TskEvent.NotesUpdatedTskEvent(notesUpdated));
+				}
+				if (!deletedNoteIds.isEmpty()) {
+					sleuthkitCase.fireTSKEvent(new TskEvent.NotesDeletedTskEvent(deletedNoteIds));
 				}
 			}
 		}

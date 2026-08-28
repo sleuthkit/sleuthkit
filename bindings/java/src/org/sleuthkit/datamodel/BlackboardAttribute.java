@@ -612,6 +612,15 @@ public class BlackboardAttribute extends AbstractAttribute {
 		public static final Type TSK_CORRELATION_TYPE = new Type(157, "TSK_CORRELATION_TYPE", bundle.getString("BlackboardAttribute.tskCorrelationType.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_CORRELATION_VALUE = new Type(158, "TSK_CORRELATION_VALUE", bundle.getString("BlackboardAttribute.tskCorrelationValue.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		public static final Type TSK_OTHER_CASES = new Type(159, "TSK_OTHER_CASES", bundle.getString("BlackboardAttribute.tskOtherCases.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+		/*
+		 * The note that holds the reasoning behind an analysis result, so that a
+		 * result is self-describing and anything loading it finds the detail without
+		 * having to know the notes feature exists. The value is the note's
+		 * original_note_id and never a revision id, so the attribute is written once
+		 * when the result is created and stays correct when the note is revised. See
+		 * NoteManager.getCurrentRevision().
+		 */
+		public static final Type TSK_NOTE_ID = new Type(160, "TSK_NOTE_ID", bundle.getString("BlackboardAttribute.tskNoteId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
 
 		// NOTE: When adding a new standard BlackboardAttribute.Type, add the instance and then add to the STANDARD_TYPES list.
 		/**
@@ -767,7 +776,8 @@ public class BlackboardAttribute extends AbstractAttribute {
 				TSK_IS_ADMIN,
 				TSK_CORRELATION_TYPE,
 				TSK_CORRELATION_VALUE,
-				TSK_OTHER_CASES
+				TSK_OTHER_CASES,
+				TSK_NOTE_ID
 		));
 
 		private static final long serialVersionUID = 1L;
@@ -1544,7 +1554,10 @@ public class BlackboardAttribute extends AbstractAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_OTHER_CASES(159, "TSK_OTHER_CASES",
 				bundle.getString("BlackboardAttribute.tskOtherCases.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),;
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_NOTE_ID(160, "TSK_NOTE_ID",
+				bundle.getString("BlackboardAttribute.tskNoteId.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),;
 
 		private final int typeID;
 		private final String typeName;
