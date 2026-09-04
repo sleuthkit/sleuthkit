@@ -644,6 +644,7 @@ public class TskData {
 		POOL(7, bundle.getString("TskData.ObjectType.Pool.name")),	///< Pool
 		OS_ACCOUNT(8, bundle.getString("TskData.ObjectType.OsAccount.name")), ///< OS Account - see tsk_os_accounts for more details
 		HOST_ADDRESS(9, bundle.getString("TskData.ObjectType.HostAddress.name")), ///< Host Address - see tsk_host_addresses for more details
+		CASE(10, bundle.getString("TskData.ObjectType.Case.name")), ///< The case itself, so that case level notes have something to point at. One per case database, with a null parent, and its id is recorded in tsk_db_info_extended under CASE_OBJECT_ID.
 		UNSUPPORTED(-1, bundle.getString("TskData.ObjectType.Unsupported.name")) ///< Unsupported type
 		; 
 		private final short objectType;

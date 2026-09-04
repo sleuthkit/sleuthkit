@@ -48,6 +48,7 @@ import org.junit.runners.Suite;
 	AttributeTest.class,
 	ArtifactTest.class,
 	OsAccountTest.class,
+	NoteTest.class,
 	TimelineEventTypesTest.class,
 	CaseDbAccessManagerBatchTest.class,
 	BatchedArtifactTest.class,

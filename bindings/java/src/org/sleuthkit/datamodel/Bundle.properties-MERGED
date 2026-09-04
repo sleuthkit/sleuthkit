@@ -224,6 +224,7 @@ BlackboardAttribute.tskIsAdmin.text=Is Administrator
 BlackboardAttribute.tskCorrelationType.text=Correlation Type
 BlackboardAttribute.tskCorrelationValue.text=Correlation Value
 BlackboardAttribute.tskOtherCases.text=Other Cases
+BlackboardAttribute.tskNoteId.text=Note
 AbstractFile.readLocal.exception.msg4.text=Error reading local file\: {0}
 AbstractFile.readLocal.exception.msg1.text=Error reading local file, local path is not set
 AbstractFile.readLocal.exception.msg2.text=Error reading local file, it does not exist at local path\: {0}
@@ -459,5 +460,6 @@ TskData.ObjectType.Report.name=Report
 TskData.ObjectType.Pool.name=Pool
 TskData.ObjectType.OsAccount.name=OS Account
 TskData.ObjectType.HostAddress.name=Host Address
+TskData.ObjectType.Case.name=Case
 TskData.ObjectType.Unsupported.name=Unsupported
 
