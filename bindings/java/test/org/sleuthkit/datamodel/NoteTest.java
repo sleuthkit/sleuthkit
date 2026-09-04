@@ -270,6 +270,16 @@ public class NoteTest {
 			assertTrue(ex.getMessage().contains("different author"));
 		}
 
+		// The id space is not split by kind, so a model that happens to share the
+		// analyst's id is still a different author.
+		try {
+			noteManager.reviseNote(note.getNoteId(), "Not yours either", null,
+					new Note.Author(Note.AuthorKind.AI, ANALYST.getId(), "Some Model", "prompt-v1"));
+			fail("Expected revising under a different author kind to be rejected");
+		} catch (TskCoreException ex) {
+			assertTrue(ex.getMessage().contains("different author"));
+		}
+
 		// Nothing was written.
 		assertEquals(1, noteManager.getRevisions(note.getOriginalNoteId()).size());
 		assertEquals("Mine", noteManager.getCurrentRevision(note.getOriginalNoteId()).get().getBody());

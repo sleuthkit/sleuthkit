@@ -422,8 +422,8 @@ public final class NoteManager {
 	 *                revision of its lineage.
 	 * @param body    The new prose. Required.
 	 * @param details The new structured payload, may be null.
-	 * @param author  Who is revising. The author id must match the note's, and
-	 *                the config id may have moved on.
+	 * @param author  Who is revising. The author kind and id must match the
+	 *                note's, and the config id may have moved on.
 	 *
 	 * @return The new current revision.
 	 *
@@ -461,8 +461,8 @@ public final class NoteManager {
 	 *                revision of its lineage.
 	 * @param body    The new prose. Required.
 	 * @param details The new structured payload, may be null.
-	 * @param author  Who is revising. The author id must match the note's, and
-	 *                the config id may have moved on.
+	 * @param author  Who is revising. The author kind and id must match the
+	 *                note's, and the config id may have moved on.
 	 * @param trans   Transaction to use.
 	 *
 	 * @return The new current revision.
@@ -493,7 +493,12 @@ public final class NoteManager {
 			// bring a retracted note back. A retraction stands; write a new note instead.
 			throw new TskCoreException(String.format("Cannot revise note with id = %d, it has been deleted.", noteId));
 		}
-		if (!existing.getAuthor().getId().equals(author.getId())) {
+		// Identity is the kind and the id together. The id space is per product, not
+		// per kind, so a user id and a model id can read the same and still be two
+		// different authors. The config id is deliberately left out - a model may
+		// revise its own answer under a newer prompt version.
+		Note.Author existingAuthor = existing.getAuthor();
+		if (existingAuthor.getKind() != author.getKind() || !existingAuthor.getId().equals(author.getId())) {
 			throw new TskCoreException(String.format("Cannot revise note with id = %d, it was written by a different author. "
 					+ "Reply to it instead.", noteId));
 		}
