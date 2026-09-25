@@ -25,10 +25,10 @@ import java.util.Optional;
  * after it is written. Comments, AI enrichment, remediation advice and
  * summaries are all notes.
  *
- * Notes are append-only. Editing one does not rewrite it: a new row is inserted
- * carrying the same original note id and the previous row stops being the
- * current revision. Every revision in a lineage therefore shares one stable id,
- * which is what outside references (the TSK_ASSOCIATED_NOTE_ID attribute) point at.
+ * A note is edited in place: revising it updates the row and sets
+ * modifiedTime, rather than writing a new row. Its own note id is therefore
+ * stable for the life of the note, which is what outside references (the
+ * TSK_ASSOCIATED_NOTE_ID attribute) point at.
  *
  * Instances are immutable snapshots of a row. Use NoteManager to create,
  * revise and read them.
@@ -44,17 +44,16 @@ public final class Note {
 	private final Author author;
 	private final String configuration;
 	private final long createdTime;
+	private final Long modifiedTime;
 	private final Long parentNoteId;
 	private final long rootNoteId;
-	private final long originalNoteId;
-	private final boolean isCurrent;
 	private final boolean isDeleted;
 	private final Long analysisResultId;
 
 	/**
 	 * Constructs a note from a persisted row.
 	 *
-	 * @param noteId           Id of this row.
+	 * @param noteId           Id of this note. Stable for its whole life.
 	 * @param objId            Object the note is about.
 	 * @param dataSourceObjId  Data source the object belongs to, null for a
 	 *                         case level note.
@@ -66,18 +65,17 @@ public final class Note {
 	 * @param configuration    Prompt or module configuration version that
 	 *                         produced the note, may be null.
 	 * @param createdTime      Creation time, epoch milliseconds.
+	 * @param modifiedTime     Time of the last edit, epoch milliseconds, null
+	 *                         unless the note has been revised.
 	 * @param parentNoteId     Note this one replies to, null on a thread root.
 	 * @param rootNoteId       Root of the thread, own note id on a root.
-	 * @param originalNoteId   First version of this note, own note id on a
-	 *                         first version.
-	 * @param isCurrent        True if this is the live revision of the lineage.
 	 * @param isDeleted        True if this note has been retracted.
 	 * @param analysisResultId The scored finding this note explains, null if it
 	 *                         explains none.
 	 */
 	Note(long noteId, long objId, Long dataSourceObjId, NoteType type, String body, String details,
-			Author author, String configuration, long createdTime, Long parentNoteId, long rootNoteId,
-			long originalNoteId, boolean isCurrent, boolean isDeleted, Long analysisResultId) {
+			Author author, String configuration, long createdTime, Long modifiedTime, Long parentNoteId,
+			long rootNoteId, boolean isDeleted, Long analysisResultId) {
 		this.noteId = noteId;
 		this.objId = objId;
 		this.dataSourceObjId = dataSourceObjId;
@@ -87,18 +85,16 @@ public final class Note {
 		this.author = author;
 		this.configuration = configuration;
 		this.createdTime = createdTime;
+		this.modifiedTime = modifiedTime;
 		this.parentNoteId = parentNoteId;
 		this.rootNoteId = rootNoteId;
-		this.originalNoteId = originalNoteId;
-		this.isCurrent = isCurrent;
 		this.isDeleted = isDeleted;
 		this.analysisResultId = analysisResultId;
 	}
 
 	/**
-	 * Gets the id of this revision. This changes every time the note is
-	 * revised. Anything that needs to refer to the note across edits should use
-	 * getOriginalNoteId() instead.
+	 * Gets the id of this note. Stable for the whole life of the note, since
+	 * it is edited in place rather than replaced by a new row.
 	 *
 	 * @return The note id.
 	 */
@@ -175,7 +171,7 @@ public final class Note {
 	}
 
 	/**
-	 * Gets the creation time of this revision, in epoch milliseconds.
+	 * Gets the creation time of this note, in epoch milliseconds.
 	 * Milliseconds rather than seconds because ordering collaborative comments
 	 * needs sub-second resolution. Ties break on note id.
 	 *
@@ -183,6 +179,16 @@ public final class Note {
 	 */
 	public long getCreatedTime() {
 		return createdTime;
+	}
+
+	/**
+	 * Gets the time of the last edit to this note, in epoch milliseconds.
+	 *
+	 * @return Optional with the modified time, empty if the note has never
+	 *         been revised.
+	 */
+	public Optional<Long> getModifiedTime() {
+		return Optional.ofNullable(modifiedTime);
 	}
 
 	/**
@@ -202,27 +208,6 @@ public final class Note {
 	 */
 	public long getRootNoteId() {
 		return rootNoteId;
-	}
-
-	/**
-	 * Gets the stable id of this note across edits. A first version is its own
-	 * original. This is the id an analysis result's TSK_ASSOCIATED_NOTE_ID attribute
-	 * points at, so the attribute stays correct when the note is revised.
-	 *
-	 * @return The original note id.
-	 */
-	public long getOriginalNoteId() {
-		return originalNoteId;
-	}
-
-	/**
-	 * Indicates whether this is the live revision of its lineage. A partial
-	 * unique index makes two current revisions of one note impossible.
-	 *
-	 * @return True if this is the current revision.
-	 */
-	public boolean isCurrent() {
-		return isCurrent;
 	}
 
 	/**

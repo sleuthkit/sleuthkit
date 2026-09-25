@@ -3426,10 +3426,9 @@ public class SleuthkitCase {
 					+ "author_id " + bigIntDataType + " NOT NULL, "
 					+ "configuration TEXT, "
 					+ "created_time " + bigIntDataType + " NOT NULL, "
+					+ "modified_time " + bigIntDataType + ", "
 					+ "parent_note_id " + bigIntDataType + ", "
 					+ "root_note_id " + bigIntDataType + ", "
-					+ "original_note_id " + bigIntDataType + ", "
-					+ "is_current INTEGER NOT NULL DEFAULT 1, "
 					+ "is_deleted INTEGER NOT NULL DEFAULT 0, "
 					+ "analysis_result_id " + bigIntDataType + ", "
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
@@ -3438,14 +3437,11 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(author_id) REFERENCES tsk_authors(author_id), "
 					+ "FOREIGN KEY(parent_note_id) REFERENCES tsk_notes(note_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(root_note_id) REFERENCES tsk_notes(note_id), "
-					+ "FOREIGN KEY(original_note_id) REFERENCES tsk_notes(note_id), "
 					+ "FOREIGN KEY(analysis_result_id) REFERENCES tsk_analysis_results(artifact_obj_id) ON DELETE SET NULL)");
 
 			statement.execute("CREATE INDEX tsk_notes_obj_id_created_index ON tsk_notes(obj_id, created_time)");
 			statement.execute("CREATE INDEX tsk_notes_datasrc_type_index ON tsk_notes(data_source_obj_id, note_type_id)");
 			statement.execute("CREATE INDEX tsk_notes_root_index ON tsk_notes(root_note_id)");
-			statement.execute("CREATE INDEX tsk_notes_original_index ON tsk_notes(original_note_id, is_current)");
-			statement.execute("CREATE UNIQUE INDEX tsk_notes_current_revision_index ON tsk_notes(original_note_id) WHERE is_current = 1");
 
 			if (this.dbType.equals(DbType.SQLITE)) {
 				statement.execute("CREATE INDEX tsk_notes_ar_index ON tsk_notes(analysis_result_id)");
@@ -16002,7 +15998,7 @@ public class SleuthkitCase {
 		/**
 		 * Saves a note that has been revised as a part of this transaction.
 		 *
-		 * @param note The new current revision.
+		 * @param note The note as revised.
 		 */
 		void registerUpdatedNote(Note note) {
 			if (note != null) {

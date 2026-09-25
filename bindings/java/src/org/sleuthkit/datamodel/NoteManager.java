@@ -42,17 +42,16 @@ import org.sleuthkit.datamodel.TskData.TSK_AUTHOR_TYPE_ENUM;
 /**
  * Responsible for creating, revising, deleting and retrieving Notes.
  *
- * Reads do not filter. Superseded revisions and soft-deleted rows come back
- * along with everything else and the caller decides what to render, so no
- * method quietly drops a row. The narrower reads - getCurrentNotes(),
- * getCurrentRevision(), getCurrentNoteCounts() - are opt-in.
+ * A note is edited in place: reviseNote() updates the row and sets its
+ * modified time, rather than writing a new row. There is therefore at most one
+ * row per note; a soft-deleted note keeps its row so replies stay reachable
+ * and a consumer can render a tombstone, and reads do not filter it out.
  *
  * This manager enforces no permissions. It exposes the author of each note so
  * a consumer can decide who may act, and that is the whole contract. The one
  * rule here that looks like policy, reviseNote() requiring the same author, is
- * not: it holds a property of the data, that every revision in a lineage has
- * one author, so that "who wrote this" has a single answer no matter which
- * revision you are looking at.
+ * not: it holds a property of the data, that a note has one author for its
+ * whole life.
  */
 public final class NoteManager {
 
@@ -82,9 +81,9 @@ public final class NoteManager {
 	private static final int MAX_THREAD_DEPTH = 100;
 
 	/**
-	 * The bound columns of an insert, in order. original_note_id is left to its
-	 * default of NULL and back-filled, and is_current / is_deleted take their
-	 * column defaults.
+	 * The bound columns of an insert, in order. A thread root's root_note_id is
+	 * unknown until the note id is generated, so it is bound NULL and
+	 * back-filled; modified_time / is_deleted take their column defaults.
 	 */
 	private static final String NOTE_INSERT_COLUMNS
 			= "obj_id, data_source_obj_id, note_type_id, body, details, "
@@ -103,8 +102,8 @@ public final class NoteManager {
 	static final String NOTE_SELECT
 			= "SELECT notes.note_id, notes.obj_id, notes.data_source_obj_id, notes.note_type_id, "
 			+ "notes.body, notes.details, notes.author_id, "
-			+ "notes.configuration, notes.created_time, notes.parent_note_id, notes.root_note_id, "
-			+ "notes.original_note_id, notes.is_current, notes.is_deleted, notes.analysis_result_id, "
+			+ "notes.configuration, notes.created_time, notes.modified_time, notes.parent_note_id, notes.root_note_id, "
+			+ "notes.is_deleted, notes.analysis_result_id, "
 			+ "types.type_name, types.display_name, types.description, "
 			+ "authors.author_type, authors.author_name, authors.display_name "
 			+ "FROM tsk_notes notes "
@@ -124,8 +123,8 @@ public final class NoteManager {
 	public enum DeleteMode {
 
 		/**
-		 * Remove the rows. This takes the whole revision lineage of the note
-		 * and, through the parent_note_id cascade, its reply subtree with it.
+		 * Remove the row. Through the parent_note_id cascade, its reply
+		 * subtree goes with it.
 		 */
 		HARD,
 		/**
@@ -323,7 +322,7 @@ public final class NoteManager {
 			noteIds.addAll(insertNotes(chunk, connection));
 		}
 
-		backFillSelfReferences(noteIds, connection);
+		backFillRootNoteId(noteIds, connection);
 
 		List<Note> notes = new ArrayList<>(pending.size());
 		for (int i = 0; i < pending.size(); i++) {
@@ -334,32 +333,25 @@ public final class NoteManager {
 	}
 
 	/**
-	/**
 	 * Revise a note as part of the caller's transaction.
 	 *
-	 * Nothing is rewritten in place. The previous revision keeps its row and
-	 * stops being current, and a new row is inserted carrying the same original
-	 * note id, so the earlier text survives and anything pointing at the note
-	 * still resolves. The partial unique index on (original_note_id) where
-	 * is_current = 1 makes it impossible for two writers to both leave the
-	 * lineage with a current revision; the loser gets a constraint violation it
-	 * can retry.
+	 * The row is updated in place and modified_time is set to now, so the
+	 * note's own id never changes and anything pointing at it still resolves.
 	 *
 	 * You revise your own note. You reply to someone else's - there is no
 	 * operation that rewrites another person's words under their name.
 	 *
-	 * @param noteId        Id of the revision being replaced. It must be the
-	 *                      current revision of its lineage.
+	 * @param noteId        Id of the note to revise.
 	 * @param body          The new prose. Required.
 	 * @param details       The new structured payload, may be null.
 	 * @param configuration The new prompt or module configuration version, may
-	 *                      be null. May differ from the note's, since a model
-	 *                      or module can move on to a newer configuration
-	 *                      between revisions.
+	 *                      be null. May differ from the note's previous value,
+	 *                      since a model or module can move on to a newer
+	 *                      configuration between edits.
 	 * @param author        Who is revising. Must be the note's author.
 	 * @param trans         Transaction to use.
 	 *
-	 * @return The new current revision.
+	 * @return The revised note.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -379,13 +371,9 @@ public final class NoteManager {
 		Note existing = getNoteById(noteId, connection).orElseThrow(()
 				-> new TskCoreException(String.format("Cannot revise note with id = %d, it does not exist", noteId)));
 
-		if (!existing.isCurrent()) {
-			throw new TskCoreException(String.format("Cannot revise note with id = %d, it has already been superseded. "
-					+ "Use getCurrentRevision(%d) to find the revision to revise.", noteId, existing.getOriginalNoteId()));
-		}
 		if (existing.isDeleted()) {
-			// Without this the new row would take the is_deleted default of 0 and quietly
-			// bring a retracted note back. A retraction stands; write a new note instead.
+			// A retraction stands; without this the update would quietly bring a
+			// retracted note back to life under a new body.
 			throw new TskCoreException(String.format("Cannot revise note with id = %d, it has been deleted.", noteId));
 		}
 		if (!existing.getAuthor().equals(author)) {
@@ -394,60 +382,39 @@ public final class NoteManager {
 		}
 
 		try {
-			// Clear the old revision first. Doing it the other way round would put two
-			// current rows in the lineage for the length of a statement, which the
-			// unique index rejects.
-			PreparedStatement clear = connection.getPreparedStatement(
-					"UPDATE tsk_notes SET is_current = 0 WHERE note_id = ?", Statement.NO_GENERATED_KEYS);
-			clear.clearParameters();
-			clear.setLong(1, noteId);
-			connection.executeUpdate(clear);
+			long modifiedTime = System.currentTimeMillis();
+			PreparedStatement update = connection.getPreparedStatement(
+					"UPDATE tsk_notes SET body = ?, details = ?, configuration = ?, modified_time = ? WHERE note_id = ?",
+					Statement.NO_GENERATED_KEYS);
+			update.clearParameters();
+			update.setString(1, body);
+			update.setString(2, details);
+			update.setString(3, configuration);
+			update.setLong(4, modifiedTime);
+			update.setLong(5, noteId);
+			connection.executeUpdate(update);
 
-			String insertSql = "INSERT INTO tsk_notes (" + NOTE_INSERT_COLUMNS + ", original_note_id) "
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-			PreparedStatement insert = connection.getPreparedStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
-			insert.clearParameters();
-
-			PendingNote revision = new PendingNote(existing.getObjectId(),
-					existing.getDataSourceObjectId().orElse(null), existing.getType(), body, details, author,
-					configuration, System.currentTimeMillis(), existing.getParentNoteId().orElse(null),
-					existing.getRootNoteId(), existing.getAnalysisResultId().orElse(null));
-			setNoteParameters(insert, revision);
-			insert.setLong(NOTE_INSERT_PARAM_COUNT + 1, existing.getOriginalNoteId());
-			connection.executeUpdate(insert);
-
-			long revisionId;
-			try (ResultSet rs = insert.getGeneratedKeys()) {
-				if (!rs.next()) {
-					throw new TskCoreException(String.format("Error reading back the revision of note with id = %d", noteId));
-				}
-				revisionId = rs.getLong(1);
-			}
-
-			Note note = revision.toNote(revisionId, existing.getOriginalNoteId());
-			trans.registerUpdatedNote(note);
-			return note;
+			Note revised = new Note(noteId, existing.getObjectId(), existing.getDataSourceObjectId().orElse(null),
+					existing.getType(), body, details, author, configuration, existing.getCreatedTime(), modifiedTime,
+					existing.getParentNoteId().orElse(null), existing.getRootNoteId(), false,
+					existing.getAnalysisResultId().orElse(null));
+			trans.registerUpdatedNote(revised);
+			return revised;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error revising note with id = %d", noteId), ex);
 		}
 	}
 
 	/**
-	/**
 	 * Delete notes, in one transaction.
 	 *
-	 * Both modes act on the whole revision lineage of each named note, so it
-	 * does not matter whether the caller holds a revision id or the stable
-	 * original note id - the id an analysis result's TSK_ASSOCIATED_NOTE_ID attribute
-	 * carries. A hard delete removes the lineage and, through the
-	 * parent_note_id cascade, the replies underneath it; it has to take the
-	 * whole lineage, since the later revisions reference the first one and
-	 * deleting that row on its own would be a foreign key violation. A soft
-	 * delete marks the lineage deleted and leaves the rows, and the replies,
-	 * alone.
+	 * A hard delete removes the row and, through the parent_note_id cascade,
+	 * the replies underneath it. A soft delete marks the note deleted and
+	 * leaves the row, and the replies, alone.
 	 *
-	 * The fired event carries the live revisions of the notes the caller asked to
-	 * delete, read just before they went, not the other rows that went with them.
+	 * The fired event carries the notes the caller asked to delete, read just
+	 * before they went, not the replies that went with them under a hard
+	 * delete.
 	 *
 	 * @param noteIds Ids of the notes to delete. May be empty.
 	 * @param mode    Whether to remove the rows or mark the notes deleted.
@@ -467,48 +434,25 @@ public final class NoteManager {
 
 		List<Long> requested = new ArrayList<>(new LinkedHashSet<>(noteIds));
 		List<Note> deleted = new ArrayList<>();
-		// Ids are deduplicated, lineages are not: two ids the caller passed can be two
-		// revisions of one note, and the chunks they land in are resolved separately. A
-		// lineage is therefore tracked across the whole batch rather than per chunk, so
-		// it is deleted once and reported once however many of its revisions were named.
-		Set<Long> lineagesSeen = new LinkedHashSet<>();
 		CaseDbTransaction trans = db.beginTransaction();
 		try {
 			CaseDbConnection connection = trans.getConnection();
 			try (Statement s = connection.createStatement()) {
 				for (List<Long> chunk : Lists.partition(requested, PG_NOTES_CHUNK_SIZE)) {
-					// Resolve the lineages first, in two steps rather than a subquery on
-					// the table being written to. Both modes work on lineages, so a caller
-					// holding either a revision id or the stable original id gets the same
-					// answer.
-					List<Long> lineageIds = new ArrayList<>();
-					try (ResultSet rs = connection.executeQuery(s, "SELECT DISTINCT original_note_id FROM tsk_notes "
-							+ "WHERE note_id IN (" + toIdList(chunk) + ")")) {
-						while (rs.next()) {
-							long lineageId = rs.getLong(1);
-							if (lineagesSeen.add(lineageId)) {
-								lineageIds.add(lineageId);
-							}
-						}
-					}
-					if (lineageIds.isEmpty()) {
-						continue;
-					}
-
 					// Read what is about to go, for the event. It has to happen here: after a
 					// hard delete there is no row left to describe, and an event carrying only
 					// ids tells a consumer nothing about which object lost a note.
-					try (ResultSet rs = connection.executeQuery(s, NOTE_SELECT + "WHERE notes.original_note_id IN ("
-							+ toIdList(lineageIds) + ") AND notes.is_current = 1" + NOTE_ORDER)) {
+					try (ResultSet rs = connection.executeQuery(s, NOTE_SELECT + "WHERE notes.note_id IN ("
+							+ toIdList(chunk) + ")" + NOTE_ORDER)) {
 						while (rs.next()) {
 							deleted.add(getNoteFromResultSet(rs));
 						}
 					}
 
 					if (mode == DeleteMode.SOFT) {
-						connection.executeUpdate(s, "UPDATE tsk_notes SET is_deleted = 1 WHERE original_note_id IN (" + toIdList(lineageIds) + ")");
+						connection.executeUpdate(s, "UPDATE tsk_notes SET is_deleted = 1 WHERE note_id IN (" + toIdList(chunk) + ")");
 					} else {
-						connection.executeUpdate(s, "DELETE FROM tsk_notes WHERE original_note_id IN (" + toIdList(lineageIds) + ")");
+						connection.executeUpdate(s, "DELETE FROM tsk_notes WHERE note_id IN (" + toIdList(chunk) + ")");
 					}
 				}
 			}
@@ -526,16 +470,15 @@ public final class NoteManager {
 	}
 
 	/**
-	 * Get the live notes of several types, written by particular types of
-	 * author, on many objects.
+	 * Get the notes of several types, written by particular types of author,
+	 * on many objects.
 	 *
 	 * The author filter is here rather than left to the caller because "never
 	 * show a model its own output" is the kind of rule that has to hold for
 	 * every consumer at once: one filtered query is a single place to be right,
 	 * where an in-memory check is one place per call site to be wrong.
 	 *
-	 * Soft-deleted notes are still included; only superseded revisions are
-	 * dropped.
+	 * Soft-deleted notes are still included.
 	 *
 	 * @param objIds      The objects.
 	 * @param types       The note types. Required and must not be empty: an
@@ -561,7 +504,7 @@ public final class NoteManager {
 	}
 
 	/**
-	 * Count the live notes of several types on many objects, per type, without
+	 * Count the notes of several types on many objects, per type, without
 	 * loading any prose. This is what a table that badges each row with a note
 	 * count wants: reading every body to count them is the obvious N+1 trap.
 	 *
@@ -586,7 +529,44 @@ public final class NoteManager {
 		if (authorTypes != null) {
 			requireAuthorTypes(authorTypes);
 		}
-		return getCurrentNoteCounts(objIds, types, authorTypes, true);
+		if (objIds == null) {
+			throw new TskCoreException("Illegal argument passed to getCurrentNoteCounts: object ids are required.");
+		}
+
+		// Indexed by id from what the caller passed, so turning a counted note_type_id
+		// back into a NoteType costs no extra query.
+		Map<Long, NoteType> typesById = new HashMap<>();
+		for (NoteType type : types) {
+			typesById.put(type.getNoteTypeId(), type);
+		}
+
+		Map<Long, Map<NoteType, Integer>> countsByObject = new HashMap<>();
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = db.getConnection();
+				Statement s = connection.createStatement()) {
+
+			for (List<Long> chunk : partitionIds(objIds)) {
+				String queryString = "SELECT notes.obj_id, notes.note_type_id, COUNT(*) AS count FROM tsk_notes notes "
+						+ "INNER JOIN tsk_authors authors ON notes.author_id = authors.author_id "
+						+ "WHERE " + currentNotesPredicate(chunk, types, authorTypes)
+						+ " GROUP BY notes.obj_id, notes.note_type_id";
+				try (ResultSet rs = connection.executeQuery(s, queryString)) {
+					while (rs.next()) {
+						NoteType type = typesById.get(rs.getLong("note_type_id"));
+						if (type == null) {
+							continue; // cannot happen: the query filtered on these very ids
+						}
+						countsByObject.computeIfAbsent(rs.getLong("obj_id"), key -> new HashMap<>())
+								.put(type, rs.getInt("count"));
+					}
+				}
+			}
+			return countsByObject;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error counting notes", ex);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
 	}
 
 	/**
@@ -619,62 +599,8 @@ public final class NoteManager {
 	}
 
 	/**
-	 * Count the notes of several types on many objects, per type.
-	 *
-	 * @param objIds      The objects.
-	 * @param types       The note types, already validated.
-	 * @param authorTypes The author types to include, or null for no filter.
-	 * @param currentOnly True to count only the live revision of each note.
-	 *
-	 * @return Map of object id to a map of note type to count.
-	 *
-	 * @throws TskCoreException
-	 */
-	private Map<Long, Map<NoteType, Integer>> getCurrentNoteCounts(Collection<Long> objIds, Collection<NoteType> types,
-			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes, boolean currentOnly) throws TskCoreException {
-		if (objIds == null) {
-			throw new TskCoreException("Illegal argument passed to getCurrentNoteCounts: object ids are required.");
-		}
-
-		// Indexed by id from what the caller passed, so turning a counted note_type_id
-		// back into a NoteType costs no extra query.
-		Map<Long, NoteType> typesById = new HashMap<>();
-		for (NoteType type : types) {
-			typesById.put(type.getNoteTypeId(), type);
-		}
-
-		Map<Long, Map<NoteType, Integer>> countsByObject = new HashMap<>();
-		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				Statement s = connection.createStatement()) {
-
-			for (List<Long> chunk : partitionIds(objIds)) {
-				String queryString = "SELECT notes.obj_id, notes.note_type_id, COUNT(*) AS count FROM tsk_notes notes "
-						+ "INNER JOIN tsk_authors authors ON notes.author_id = authors.author_id "
-						+ "WHERE " + currentNotesPredicate(chunk, types, authorTypes, currentOnly)
-						+ " GROUP BY notes.obj_id, notes.note_type_id";
-				try (ResultSet rs = connection.executeQuery(s, queryString)) {
-					while (rs.next()) {
-						NoteType type = typesById.get(rs.getLong("note_type_id"));
-						if (type == null) {
-							continue; // cannot happen: the query filtered on these very ids
-						}
-						countsByObject.computeIfAbsent(rs.getLong("obj_id"), key -> new HashMap<>())
-								.put(type, rs.getInt("count"));
-					}
-				}
-			}
-			return countsByObject;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error counting notes", ex);
-		} finally {
-			db.releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
-	 * Build the WHERE clause shared by the multi-type reads, restricted to the
-	 * live revision of each note.
+	 * Build the WHERE clause shared by the multi-type reads, so that a count
+	 * can never disagree with the list it is counting.
 	 *
 	 * @param objIdChunk  The objects, already chunked.
 	 * @param types       The note types.
@@ -685,25 +611,6 @@ public final class NoteManager {
 	 */
 	private static String currentNotesPredicate(List<Long> objIdChunk, Collection<NoteType> types,
 			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes) {
-		return currentNotesPredicate(objIdChunk, types, authorTypes, true);
-	}
-
-	/**
-	 * Build the WHERE clause shared by the multi-type reads.
-	 *
-	 * Both reads run through this so that a count can never disagree with the
-	 * list it is counting.
-	 *
-	 * @param objIdChunk  The objects, already chunked.
-	 * @param types       The note types.
-	 * @param authorTypes The author types to include, or null for no filter.
-	 * @param currentOnly True to restrict to the live revision of each note.
-	 *
-	 * @return The predicate, with every column qualified by the notes or
-	 *         authors alias.
-	 */
-	private static String currentNotesPredicate(List<Long> objIdChunk, Collection<NoteType> types,
-			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes, boolean currentOnly) {
 
 		List<Long> typeIds = new ArrayList<>(types.size());
 		for (NoteType type : types) {
@@ -713,9 +620,6 @@ public final class NoteManager {
 		StringBuilder predicate = new StringBuilder();
 		predicate.append("notes.obj_id IN (").append(toIdList(objIdChunk)).append(")")
 				.append(" AND notes.note_type_id IN (").append(toIdList(typeIds)).append(")");
-		if (currentOnly) {
-			predicate.append(" AND notes.is_current = 1");
-		}
 		if (authorTypes != null) {
 			List<Long> authorTypeIds = new ArrayList<>(authorTypes.size());
 			for (TSK_AUTHOR_TYPE_ENUM authorType : authorTypes) {
@@ -727,7 +631,7 @@ public final class NoteManager {
 	}
 
 	/**
-	 * Get one note by the id of the revision.
+	 * Get one note by its id.
 	 *
 	 * @param noteId     The note id.
 	 * @param connection Database connection to use.
@@ -1037,12 +941,12 @@ public final class NoteManager {
 	}
 
 	/**
-	 * Point the self-referencing columns of newly inserted notes at their own
-	 * rows. They cannot be set on the insert because they hold the row's own
-	 * note id, and pre-allocating that id from the sequence is possible only on
-	 * PostgreSQL, which would give the two engines different mechanisms for the
-	 * two columns the batch paths exist to keep identical. So both engines
-	 * insert them as NULL and run this one statement per batch instead.
+	 * Point a thread root's root_note_id at its own row. It cannot be set on
+	 * the insert because it holds the row's own note id, and pre-allocating
+	 * that id from the sequence is possible only on PostgreSQL, which would
+	 * give the two engines different mechanisms for the column the batch paths
+	 * exist to keep identical. So both engines insert it as NULL and run this
+	 * one statement per batch instead.
 	 *
 	 * A reply already has its root note id, inherited from the note it replies
 	 * to, which is why the root is coalesced rather than overwritten.
@@ -1052,14 +956,14 @@ public final class NoteManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private void backFillSelfReferences(List<Long> noteIds, CaseDbConnection connection) throws TskCoreException {
+	private void backFillRootNoteId(List<Long> noteIds, CaseDbConnection connection) throws TskCoreException {
 		try (Statement s = connection.createStatement()) {
 			for (List<Long> chunk : Lists.partition(noteIds, PG_NOTES_CHUNK_SIZE)) {
-				connection.executeUpdate(s, "UPDATE tsk_notes SET original_note_id = note_id, "
+				connection.executeUpdate(s, "UPDATE tsk_notes SET "
 						+ "root_note_id = COALESCE(root_note_id, note_id) WHERE note_id IN (" + toIdList(chunk) + ")");
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error setting the thread and revision ids of %d new notes", noteIds.size()), ex);
+			throw new TskCoreException(String.format("Error setting the thread root of %d new notes", noteIds.size()), ex);
 		}
 	}
 
@@ -1147,9 +1051,8 @@ public final class NoteManager {
 
 		return new Note(rs.getLong("note_id"), rs.getLong("obj_id"), getNullableLong(rs, "data_source_obj_id"),
 				type, rs.getString("body"), rs.getString("details"), author, rs.getString("configuration"),
-				rs.getLong("created_time"), getNullableLong(rs, "parent_note_id"), rs.getLong("root_note_id"),
-				rs.getLong("original_note_id"), rs.getInt("is_current") != 0, rs.getInt("is_deleted") != 0,
-				getNullableLong(rs, "analysis_result_id"));
+				rs.getLong("created_time"), getNullableLong(rs, "modified_time"), getNullableLong(rs, "parent_note_id"),
+				rs.getLong("root_note_id"), rs.getInt("is_deleted") != 0, getNullableLong(rs, "analysis_result_id"));
 	}
 
 	/**
@@ -1281,28 +1184,16 @@ public final class NoteManager {
 		}
 
 		/**
-		 * Build the note this became once it was written as a first version, so
-		 * that it is its own original and, if it starts a thread, its own root.
+		 * Build the note this became once it was written, so that it is its own
+		 * root if it starts a thread.
 		 *
 		 * @param noteId The generated note id.
 		 *
 		 * @return The note.
 		 */
 		Note toNote(long noteId) {
-			return toNote(noteId, noteId);
-		}
-
-		/**
-		 * Build the note this became once it was written.
-		 *
-		 * @param noteId         The generated note id.
-		 * @param originalNoteId The lineage this note belongs to.
-		 *
-		 * @return The note.
-		 */
-		Note toNote(long noteId, long originalNoteId) {
 			return new Note(noteId, objId, dataSourceObjId, type, body, details, author, configuration, createdTime,
-					parentNoteId, rootNoteId == null ? noteId : rootNoteId, originalNoteId, true, false, analysisResultId);
+					null, parentNoteId, rootNoteId == null ? noteId : rootNoteId, false, analysisResultId);
 		}
 	}
 

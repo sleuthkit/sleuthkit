@@ -370,8 +370,7 @@ class CaseDatabaseFactory {
 		// written: comments, AI enrichment, remediation advice, summaries. Analysis
 		// results must not change, which is why this is a separate table rather than
 		// more columns on one - a finding that can be quietly rewritten is not evidence.
-		// The table is append-only: an edit inserts a new row carrying the same
-		// original_note_id and clears is_current on the row it replaces.
+		// A note is edited in place; modified_time records that it happened.
 		stmt.execute("CREATE TABLE tsk_notes (note_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "obj_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// file, artifact, data source, or the case object
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + ", "	// derived from obj_id; null for a case level note
@@ -381,10 +380,9 @@ class CaseDatabaseFactory {
 				+ "author_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// who wrote it, see tsk_authors
 				+ "configuration TEXT, "	// prompt or module configuration version that produced the note; null for people
 				+ "created_time " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// epoch MILLIS, since comment ordering needs sub-second resolution
+				+ "modified_time " + dbQueryHelper.getBigIntType() + ", "	// epoch MILLIS of the last edit; null unless edited
 				+ "parent_note_id " + dbQueryHelper.getBigIntType() + ", "	// note this one replies to; null on a thread root
 				+ "root_note_id " + dbQueryHelper.getBigIntType() + ", "	// root of the thread; own note_id on a root, set just after the insert
-				+ "original_note_id " + dbQueryHelper.getBigIntType() + ", "	// stable id across edits; own note_id on a first version, set just after the insert
-				+ "is_current INTEGER NOT NULL DEFAULT 1, "	// boolean, the live revision of this note
 				+ "is_deleted INTEGER NOT NULL DEFAULT 0, "	// boolean, retracted but kept so replies stay reachable
 				+ "analysis_result_id " + dbQueryHelper.getBigIntType() + ", "	// the scored finding this note explains
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
@@ -393,7 +391,6 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(author_id) REFERENCES tsk_authors(author_id), "
 				+ "FOREIGN KEY(parent_note_id) REFERENCES tsk_notes(note_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(root_note_id) REFERENCES tsk_notes(note_id), "
-				+ "FOREIGN KEY(original_note_id) REFERENCES tsk_notes(note_id), "
 				+ "FOREIGN KEY(analysis_result_id) REFERENCES tsk_analysis_results(artifact_obj_id) ON DELETE SET NULL)");
 	}
 
@@ -480,16 +477,6 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX tsk_notes_obj_id_created_index ON tsk_notes(obj_id, created_time)");
 			stmt.execute("CREATE INDEX tsk_notes_datasrc_type_index ON tsk_notes(data_source_obj_id, note_type_id)");
 			stmt.execute("CREATE INDEX tsk_notes_root_index ON tsk_notes(root_note_id)");
-			stmt.execute("CREATE INDEX tsk_notes_original_index ON tsk_notes(original_note_id, is_current)");
-
-			// Makes two current revisions of one note impossible rather than merely unlikely.
-			// The revision flip - clear the old current row, set the new one - is a
-			// check-then-act with no lock behind it on PostgreSQL, so enforcing it here
-			// means the second writer gets a constraint violation it can retry rather than
-			// every call site having to remember. Partial on is_current so the index holds
-			// one entry per note rather than one per revision; SQLite has supported partial
-			// indexes since 3.8.0, so this one is not PostgreSQL-only.
-			stmt.execute("CREATE UNIQUE INDEX tsk_notes_current_revision_index ON tsk_notes(original_note_id) WHERE is_current = 1");
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing db_info tables", ex);

@@ -35,7 +35,6 @@ import java.util.logging.Logger;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
@@ -138,8 +137,8 @@ public class NoteTest {
 
 	/**
 	 * A note on a file records what the caller gave it, and the manager fills
-	 * in the columns the caller does not supply: the data source, and the self
-	 * references that make it its own thread root and its own first version.
+	 * in the columns the caller does not supply: the data source, and the
+	 * self reference that makes it its own thread root.
 	 */
 	@Test
 	public void addNoteTests() throws TskCoreException {
@@ -154,13 +153,12 @@ public class NoteTest {
 		assertEquals(ANALYST, note.getAuthor());
 		assertEquals(TskData.TSK_AUTHOR_TYPE_ENUM.USER, note.getAuthor().getType());
 		assertFalse(note.getConfiguration().isPresent());
-		assertTrue(note.isCurrent());
+		assertFalse(note.getModifiedTime().isPresent());
 		assertFalse(note.isDeleted());
 
 		// Derived by the manager, not passed in.
 		assertEquals(Long.valueOf(image.getId()), note.getDataSourceObjectId().orElse(null));
 		assertEquals(note.getNoteId(), note.getRootNoteId());
-		assertEquals(note.getNoteId(), note.getOriginalNoteId());
 
 		// What was written is what comes back.
 		List<Note> read = notesOn(caseDB, file.getId());
@@ -196,9 +194,6 @@ public class NoteTest {
 		assertEquals(root.getNoteId(), replyToReply.getRootNoteId());
 		assertEquals(Long.valueOf(reply.getNoteId()), replyToReply.getParentNoteId().orElse(null));
 
-		// A reply is its own first version, even though it is not its own root.
-		assertEquals(reply.getNoteId(), reply.getOriginalNoteId());
-
 		List<Note> thread = thread(caseDB, root.getNoteId());
 		assertEquals(3, thread.size());
 		assertEquals(root.getNoteId(), thread.get(0).getNoteId());
@@ -213,55 +208,42 @@ public class NoteTest {
 	}
 
 	/**
-	 * Revising appends. The previous text keeps its row and stops being
-	 * current, the new row joins the same lineage, and anything holding the
-	 * original id still resolves to the live text.
+	 * Revising edits in place: the note keeps its own id and root, gets new
+	 * text, and picks up a modified time.
 	 */
 	@Test
 	public void reviseNoteTests() throws TskCoreException {
 		AbstractFile file = addFile("revise.txt");
 
 		Note first = addNote(caseDB, new NewNoteRequest(file.getId(), commentType, "First draft", ANALYST));
+		assertFalse(first.getModifiedTime().isPresent());
+
 		Note second = reviseNote(caseDB, first.getNoteId(), "Second draft", "{\"v\":2}", null, ANALYST);
 
-		assertNotEquals(first.getNoteId(), second.getNoteId());
-		assertEquals(first.getOriginalNoteId(), second.getOriginalNoteId());
+		assertEquals(first.getNoteId(), second.getNoteId());
 		assertEquals(first.getRootNoteId(), second.getRootNoteId());
-		assertTrue(second.isCurrent());
+		assertEquals(first.getCreatedTime(), second.getCreatedTime());
+		assertEquals("Second draft", second.getBody());
+		assertEquals("{\"v\":2}", second.getDetails().orElse(null));
+		assertTrue(second.getModifiedTime().isPresent());
 
-		Optional<Note> current = currentRevision(caseDB, first.getOriginalNoteId());
-		assertTrue(current.isPresent());
-		assertEquals(second.getNoteId(), current.get().getNoteId());
-		assertEquals("Second draft", current.get().getBody());
+		Optional<Note> reread = noteById(caseDB, first.getNoteId());
+		assertTrue(reread.isPresent());
+		assertEquals("Second draft", reread.get().getBody());
+		assertEquals(second.getModifiedTime(), reread.get().getModifiedTime());
 
-		// The broad read hands back both drafts; the narrow one hands back the live text.
-		List<Note> revisions = revisions(caseDB, first.getOriginalNoteId());
-		assertEquals(2, revisions.size());
-		assertEquals(first.getNoteId(), revisions.get(0).getNoteId());
-		assertFalse(revisions.get(0).isCurrent());
-
-		List<Note> currentNotes = currentNotesOn(caseDB, file.getId(), commentType);
-		assertEquals(1, currentNotes.size());
-		assertEquals("Second draft", currentNotes.get(0).getBody());
+		assertEquals(1, notesOn(caseDB, file.getId(), commentType).size());
 
 		// A model revising its own summary is the same author with a newer prompt.
 		Note summary = addNote(caseDB, new NewNoteRequest(file.getId(), summaryType, "Nothing yet", MODEL));
 		Note regenerated = reviseNote(caseDB, summary.getNoteId(), "One notable item", null, "prompt-v2", MODEL);
 		assertEquals("prompt-v2", regenerated.getConfiguration().orElse(null));
-
-		// A superseded revision is not the one to revise.
-		try {
-			reviseNote(caseDB, first.getNoteId(), "Too late", null, null, ANALYST);
-			fail("Expected revising a superseded revision to be rejected");
-		} catch (TskCoreException ex) {
-			assertTrue(ex.getMessage().contains("superseded"));
-		}
 	}
 
 	/**
 	 * You revise your own note and reply to someone else's. There is no path
-	 * that rewrites another person's words under their name, so every revision
-	 * in a lineage has one author.
+	 * that rewrites another person's words under their name, so a note has one
+	 * author for its whole life.
 	 */
 	@Test
 	public void reviseRejectsADifferentAuthorTest() throws TskCoreException {
@@ -287,40 +269,14 @@ public class NoteTest {
 		}
 
 		// Nothing was written.
-		assertEquals(1, revisions(caseDB, note.getOriginalNoteId()).size());
-		assertEquals("Mine", currentRevision(caseDB, note.getOriginalNoteId()).get().getBody());
-	}
-
-	/**
-	 * The revision flip is a check-then-act with no lock behind it on
-	 * PostgreSQL, so it is settled by a constraint instead. Two current
-	 * revisions of one note have to be impossible rather than merely unlikely.
-	 */
-	@Test
-	public void uniqueIndexRejectsASecondCurrentRevisionTest() throws TskCoreException {
-		AbstractFile file = addFile("concurrent.txt");
-
-		Note first = addNote(caseDB, new NewNoteRequest(file.getId(), commentType, "First", ANALYST));
-		reviseNote(caseDB, first.getNoteId(), "Second", null, null, ANALYST);
-
-		// Stand in for a second writer that flipped is_current without noticing the
-		// first one had already done it.
-		try (SleuthkitCase.CaseDbConnection connection = caseDB.getConnection();
-				Statement s = connection.createStatement()) {
-
-			s.executeUpdate("UPDATE tsk_notes SET is_current = 1 WHERE note_id = " + first.getNoteId());
-			fail("Expected the unique index to reject a second current revision");
-		} catch (SQLException ex) {
-			// Expected.
-		}
-
-		assertEquals(1, currentNotesOn(caseDB, file.getId(), commentType).size());
+		assertEquals("Mine", noteById(caseDB, note.getNoteId()).get().getBody());
+		assertFalse(noteById(caseDB, note.getNoteId()).get().getModifiedTime().isPresent());
 	}
 
 	/**
 	 * A note written in a batch of several must be indistinguishable from one
 	 * written in a batch of one on the columns the manager derives. That is the
-	 * whole reason the self references are back-filled rather than
+	 * whole reason the self reference is back-filled rather than
 	 * pre-allocated.
 	 */
 	@Test
@@ -350,7 +306,6 @@ public class NoteTest {
 
 		for (Note note : batch) {
 			assertEquals("Batch root note should be its own thread root", note.getNoteId(), note.getRootNoteId());
-			assertEquals("Batch root note should be its own first version", note.getNoteId(), note.getOriginalNoteId());
 			assertEquals(single.getDataSourceObjectId(), note.getDataSourceObjectId());
 		}
 
@@ -375,7 +330,6 @@ public class NoteTest {
 			}
 		}
 		assertEquals(single.getNoteId(), replies.get(0).getRootNoteId());
-		assertEquals(replies.get(0).getNoteId(), replies.get(0).getOriginalNoteId());
 	}
 
 	/**
@@ -413,7 +367,6 @@ public class NoteTest {
 			assertEquals("{\"i\":" + i + "}", note.getDetails().orElse(null));
 			assertEquals(1700000000000L + i, note.getCreatedTime());
 			assertEquals(note.getNoteId(), note.getRootNoteId());
-			assertEquals(note.getNoteId(), note.getOriginalNoteId());
 			assertNoteEquals(note, noteById(caseDB, note.getNoteId()).get());
 		}
 
@@ -427,7 +380,6 @@ public class NoteTest {
 			trans.commit();
 			trans = null;
 			assertEquals(batched.get(0).getNoteId(), reply.get(0).getRootNoteId());
-			assertEquals(reply.get(0).getNoteId(), reply.get(0).getOriginalNoteId());
 		} finally {
 			if (trans != null) {
 				trans.rollback();
@@ -436,9 +388,9 @@ public class NoteTest {
 	}
 
 	/**
-	 * A hard delete takes the thread underneath the note, and every revision of
-	 * it. A soft delete keeps the row so that a colleague's reply is not lost
-	 * because someone retracted the note it hangs from.
+	 * A hard delete takes the thread underneath the note with it. A soft
+	 * delete keeps the row so that a colleague's reply is not lost because
+	 * someone retracted the note it hangs from.
 	 */
 	@Test
 	public void deleteNoteTests() throws TskCoreException {
@@ -454,67 +406,32 @@ public class NoteTest {
 		assertTrue(afterSoftDelete.get(0).isDeleted());
 		assertFalse("A soft delete must not touch the replies", afterSoftDelete.get(1).isDeleted());
 
-		// A retraction stands. Revising the note would otherwise write a row that takes
-		// the is_deleted default and quietly bring it back.
+		// A retraction stands. Revising the note would otherwise quietly bring it back
+		// under a new body.
 		try {
 			reviseNote(caseDB, root.getNoteId(), "Actually, let me rephrase", null, null, ANALYST);
 			fail("Expected revising a deleted note to be rejected");
 		} catch (TskCoreException ex) {
 			assertTrue(ex.getMessage().contains("has been deleted"));
 		}
-		assertTrue(currentRevision(caseDB, root.getOriginalNoteId()).get().isDeleted());
+		assertTrue(noteById(caseDB, root.getNoteId()).get().isDeleted());
 
-		// Revise the reply first: the cascade has to take a reply that is several rows,
-		// whose later revisions reference its first one.
-		Note revisedReply = reviseNote(caseDB, reply.getNoteId(), "Replying, more carefully", null, null, OTHER_ANALYST);
-		addNote(caseDB, new NewNoteRequest(file.getId(), commentType, "Reply to the reply",
-				null, ANALYST, null, revisedReply.getNoteId(), null, null));
+		reviseNote(caseDB, reply.getNoteId(), "Replying, more carefully", null, null, OTHER_ANALYST);
+		Note replyToReply = addNote(caseDB, new NewNoteRequest(file.getId(), commentType, "Reply to the reply",
+				null, ANALYST, null, reply.getNoteId(), null, null));
 
 		deleteNote(caseDB, root.getNoteId(), NoteManager.DeleteMode.HARD);
 		assertTrue(thread(caseDB, root.getNoteId()).isEmpty());
 		assertFalse(noteById(caseDB, reply.getNoteId()).isPresent());
-		assertTrue(revisions(caseDB, reply.getOriginalNoteId()).isEmpty());
-
-		// A revised note is more than one row, and a hard delete has to take all of
-		// them: the later revisions reference the first.
-		Note revised = addNote(caseDB, new NewNoteRequest(file.getId(), commentType, "First", ANALYST));
-		reviseNote(caseDB, revised.getNoteId(), "Second", null, null, ANALYST);
-		deleteNote(caseDB, revised.getNoteId(), NoteManager.DeleteMode.HARD);
-		assertTrue(revisions(caseDB, revised.getOriginalNoteId()).isEmpty());
+		assertFalse("The cascade takes the reply's own reply with it", noteById(caseDB, replyToReply.getNoteId()).isPresent());
 
 		assertTrue(notesOn(caseDB, file.getId()).isEmpty());
 	}
 
 	/**
-	 * Both delete modes work on the whole revision lineage, so a consumer
-	 * holding the stable original note id - which is what an analysis result's
-	 * TSK_ASSOCIATED_NOTE_ID attribute carries - retracts the note the reader can see, not
-	 * just the draft that id happens to name.
-	 */
-	@Test
-	public void deleteByOriginalNoteIdTest() throws TskCoreException {
-		AbstractFile file = addFile("deleteByOriginal.txt");
-
-		Note first = addNote(caseDB, new NewNoteRequest(file.getId(), commentType, "First", ANALYST));
-		Note second = reviseNote(caseDB, first.getNoteId(), "Second", null, null, ANALYST);
-		assertNotEquals("The stable id names the superseded draft after a revision",
-				first.getOriginalNoteId(), second.getNoteId());
-
-		deleteNote(caseDB, first.getOriginalNoteId(), NoteManager.DeleteMode.SOFT);
-
-		for (Note revision : revisions(caseDB, first.getOriginalNoteId())) {
-			assertTrue("Every revision in the lineage should be marked deleted", revision.isDeleted());
-		}
-		assertTrue(currentRevision(caseDB, first.getOriginalNoteId()).get().isDeleted());
-
-		deleteNote(caseDB, first.getOriginalNoteId(), NoteManager.DeleteMode.HARD);
-		assertTrue(revisions(caseDB, first.getOriginalNoteId()).isEmpty());
-	}
-
-	/**
 	 * A table of items needs a note count per row without loading any prose.
-	 * The broad count includes every revision, matching the broad reads; the
-	 * current count is the one a badge wants.
+	 * A soft-deleted note is still counted, so the badge and the list behind
+	 * it always agree.
 	 */
 	@Test
 	public void batchReadTests() throws TskCoreException {
@@ -530,23 +447,20 @@ public class NoteTest {
 		List<Long> objIds = Arrays.asList(fileOne.getId(), fileTwo.getId(), fileThree.getId());
 
 		Map<Long, List<Note>> comments = notesOnEach(caseDB, objIds, commentType);
-		assertEquals(2, comments.get(fileOne.getId()).size());
+		assertEquals(1, comments.get(fileOne.getId()).size());
+		assertEquals("Second", comments.get(fileOne.getId()).get(0).getBody());
 		assertEquals(1, comments.get(fileTwo.getId()).size());
 		assertFalse("Objects with no note are absent from the map", comments.containsKey(fileThree.getId()));
 
-		Map<Long, Integer> allCounts = noteCounts(caseDB, objIds, commentType);
-		assertEquals(Integer.valueOf(2), allCounts.get(fileOne.getId()));
-		assertEquals(Integer.valueOf(1), allCounts.get(fileTwo.getId()));
-
-		Map<Long, Integer> currentCounts = currentNoteCountsOf(caseDB, objIds, commentType);
-		assertEquals(Integer.valueOf(1), currentCounts.get(fileOne.getId()));
-		assertEquals(Integer.valueOf(1), currentCounts.get(fileTwo.getId()));
+		Map<Long, Integer> counts = noteCounts(caseDB, objIds, commentType);
+		assertEquals(Integer.valueOf(1), counts.get(fileOne.getId()));
+		assertEquals(Integer.valueOf(1), counts.get(fileTwo.getId()));
 
 		// The badge count and the list behind it have to agree, retractions included.
 		// Whether a retraction is shown is the consumer's ruling, not this manager's.
-		deleteNote(caseDB, revised.getOriginalNoteId(), NoteManager.DeleteMode.SOFT);
-		assertEquals(currentNotesOn(caseDB, fileOne.getId(), commentType).size(),
-				(int) currentNoteCountsOf(caseDB, objIds, commentType).get(fileOne.getId()));
+		deleteNote(caseDB, revised.getNoteId(), NoteManager.DeleteMode.SOFT);
+		assertEquals(notesOn(caseDB, fileOne.getId(), commentType).size(),
+				(int) noteCounts(caseDB, objIds, commentType).get(fileOne.getId()));
 
 		List<Note> summaries = notesInDataSource(caseDB, image.getId(), summaryType);
 		assertTrue(summaries.stream().anyMatch(note -> note.getObjectId() == fileTwo.getId()));
@@ -572,8 +486,7 @@ public class NoteTest {
 		List<Long> objIds = Arrays.asList(fileOne.getId(), fileTwo.getId(), fileThree.getId());
 		List<NoteType> bothTypes = Arrays.asList(commentType, summaryType);
 
-		// One query covers both types, and supersedes are dropped: the revised comment
-		// contributes its current revision only.
+		// One query covers both types, contributing one row per note.
 		Map<Long, List<Note>> notes = noteManager.getCurrentNotes(objIds, bothTypes, null);
 		assertEquals(2, notes.get(fileOne.getId()).size());
 		assertEquals(1, notes.get(fileTwo.getId()).size());
@@ -621,8 +534,7 @@ public class NoteTest {
 	/**
 	 * The reasoning behind a finding lives in the note and the score lives in
 	 * the analysis result, linked both ways. The attribute holds the note's
-	 * stable id rather than a revision id, so it still resolves to the live
-	 * text after the note is edited.
+	 * own id, which is stable since editing a note does not replace its row.
 	 */
 	@Test
 	public void analysisResultLinkTest() throws TskCoreException, Blackboard.BlackboardException {
@@ -638,14 +550,14 @@ public class NoteTest {
 				"{\"mitre\":[\"T1204\"]}", MODEL, null, null, result.getId(), null));
 		assertEquals(Long.valueOf(result.getId()), note.getAnalysisResultId().orElse(null));
 
-		result.addAttribute(new BlackboardAttribute(BlackboardAttribute.Type.TSK_ASSOCIATED_NOTE_ID, MODULE_NAME, note.getOriginalNoteId()));
+		result.addAttribute(new BlackboardAttribute(BlackboardAttribute.Type.TSK_ASSOCIATED_NOTE_ID, MODULE_NAME, note.getNoteId()));
 
 		// Revising the note must not invalidate the attribute.
 		reviseNote(caseDB, note.getNoteId(), "Also seen contacting a known bad host", null, "prompt-v2", MODEL);
 
 		AnalysisResult reread = caseDB.getBlackboard().getAnalysisResultById(result.getId());
 		BlackboardAttribute noteAttribute = reread.getAttribute(BlackboardAttribute.Type.TSK_ASSOCIATED_NOTE_ID);
-		Optional<Note> resolved = currentRevision(caseDB, noteAttribute.getValueLong());
+		Optional<Note> resolved = noteById(caseDB, noteAttribute.getValueLong());
 		assertTrue(resolved.isPresent());
 		assertEquals("Also seen contacting a known bad host", resolved.get().getBody());
 
@@ -668,7 +580,7 @@ public class NoteTest {
 		Note summary = addNote(caseDB, new NewNoteRequest(caseObjId, summaryType,
 				"Two hosts, one confirmed compromise", null, MODEL, null, null, null, null));
 		assertFalse("A case level note has no data source", summary.getDataSourceObjectId().isPresent());
-		assertEquals(1, currentNotesOn(caseDB, caseObjId, summaryType).size());
+		assertEquals(1, notesOn(caseDB, caseObjId, summaryType).size());
 
 		// The case object is parentless, so it turns up in the root object query. That
 		// query throws on a root type it does not recognise.
@@ -757,12 +669,11 @@ public class NoteTest {
 			Note note = addNote(upgradedCase, new NewNoteRequest(upgradedCase.getCaseObjectId(),
 					upgradedCommentType, "Written after the upgrade", upgradedAnalyst));
 			assertEquals(note.getNoteId(), note.getRootNoteId());
-			assertEquals(note.getNoteId(), note.getOriginalNoteId());
 			assertFalse(note.getDataSourceObjectId().isPresent());
 
 			Note revision = reviseNote(upgradedCase, note.getNoteId(), "Revised after the upgrade", null, null, upgradedAnalyst);
-			assertEquals(note.getOriginalNoteId(), revision.getOriginalNoteId());
-			assertEquals(1, currentNotesOn(upgradedCase, upgradedCase.getCaseObjectId(), upgradedCommentType).size());
+			assertEquals(note.getNoteId(), revision.getNoteId());
+			assertEquals(1, notesOn(upgradedCase, upgradedCase.getCaseObjectId(), upgradedCommentType).size());
 		} finally {
 			upgradedCase.close();
 		}
@@ -783,10 +694,10 @@ public class NoteTest {
 	//
 	// NoteManager exposes one read - getCurrentNotes(objIds, types, authorTypes) -
 	// because that is the only one a consumer needs today. These tests have to see
-	// rows that read does not return: superseded revisions, whole threads, notes by
-	// id. They query for them directly, and hydrate through the manager's own
-	// getNoteFromResultSet() rather than building Notes here, so a column added to
-	// the table cannot quietly go unasserted.
+	// rows that read does not return: whole threads, notes by id. They query for
+	// them directly, and hydrate through the manager's own getNoteFromResultSet()
+	// rather than building Notes here, so a column added to the table cannot
+	// quietly go unasserted.
 	// ------------------------------------------------------------------
 	/**
 	 * Run a note query and hydrate the rows.
@@ -810,20 +721,14 @@ public class NoteTest {
 		}
 	}
 
-	/** Every note on an object, every type, revisions and retractions included. */
+	/** Every note on an object, every type, retractions included. */
 	private static List<Note> notesOn(SleuthkitCase skCase, long objId) throws TskCoreException {
 		return query(skCase, "notes.obj_id = " + objId);
 	}
 
-	/** Every note of one type on an object, revisions and retractions included. */
+	/** Every note of one type on an object, retractions included. */
 	private static List<Note> notesOn(SleuthkitCase skCase, long objId, NoteType type) throws TskCoreException {
 		return query(skCase, "notes.obj_id = " + objId + " AND notes.note_type_id = " + type.getNoteTypeId());
-	}
-
-	/** The current revisions of one type on an object, retractions included. */
-	private static List<Note> currentNotesOn(SleuthkitCase skCase, long objId, NoteType type) throws TskCoreException {
-		return query(skCase, "notes.obj_id = " + objId + " AND notes.note_type_id = " + type.getNoteTypeId()
-				+ " AND notes.is_current = 1");
 	}
 
 	/** Every note of one type anywhere in a data source. */
@@ -831,17 +736,6 @@ public class NoteTest {
 			throws TskCoreException {
 		return query(skCase, "notes.data_source_obj_id = " + dataSourceObjId
 				+ " AND notes.note_type_id = " + type.getNoteTypeId());
-	}
-
-	/** Every revision of one note, oldest first. */
-	private static List<Note> revisions(SleuthkitCase skCase, long originalNoteId) throws TskCoreException {
-		return query(skCase, "notes.original_note_id = " + originalNoteId);
-	}
-
-	/** The live revision of one note, which the unique index makes at most one. */
-	private static Optional<Note> currentRevision(SleuthkitCase skCase, long originalNoteId) throws TskCoreException {
-		List<Note> notes = query(skCase, "notes.original_note_id = " + originalNoteId + " AND notes.is_current = 1");
-		return notes.isEmpty() ? Optional.empty() : Optional.of(notes.get(0));
 	}
 
 	/** A whole thread, oldest first. */
@@ -881,25 +775,12 @@ public class NoteTest {
 		return byObject;
 	}
 
-	/** Note counts of one type per object, revisions and retractions included. */
+	/** Note counts of one type per object, retractions included. */
 	private static Map<Long, Integer> noteCounts(SleuthkitCase skCase, Collection<Long> objIds, NoteType type)
 			throws TskCoreException {
 		Map<Long, Integer> counts = new HashMap<>();
 		for (Long objId : objIds) {
 			int count = notesOn(skCase, objId, type).size();
-			if (count > 0) {
-				counts.put(objId, count);
-			}
-		}
-		return counts;
-	}
-
-	/** Current-revision counts of one type per object, retractions included. */
-	private static Map<Long, Integer> currentNoteCountsOf(SleuthkitCase skCase, Collection<Long> objIds, NoteType type)
-			throws TskCoreException {
-		Map<Long, Integer> counts = new HashMap<>();
-		for (Long objId : objIds) {
-			int count = currentNotesOn(skCase, objId, type).size();
 			if (count > 0) {
 				counts.put(objId, count);
 			}
@@ -992,10 +873,9 @@ public class NoteTest {
 		assertEquals(expected.getAuthor(), actual.getAuthor());
 		assertEquals(expected.getConfiguration(), actual.getConfiguration());
 		assertEquals(expected.getCreatedTime(), actual.getCreatedTime());
+		assertEquals(expected.getModifiedTime(), actual.getModifiedTime());
 		assertEquals(expected.getParentNoteId(), actual.getParentNoteId());
 		assertEquals(expected.getRootNoteId(), actual.getRootNoteId());
-		assertEquals(expected.getOriginalNoteId(), actual.getOriginalNoteId());
-		assertEquals(expected.isCurrent(), actual.isCurrent());
 		assertEquals(expected.isDeleted(), actual.isDeleted());
 		assertEquals(expected.getAnalysisResultId(), actual.getAnalysisResultId());
 	}

@@ -615,10 +615,9 @@ public class BlackboardAttribute extends AbstractAttribute {
 		/*
 		 * The note that holds the reasoning behind an analysis result, so that a
 		 * result is self-describing and anything loading it finds the detail without
-		 * having to know the notes feature exists. The value is the note's
-		 * original_note_id and never a revision id, so the attribute is written once
-		 * when the result is created and stays correct when the note is revised. See
-		 * NoteManager.getCurrentRevision().
+		 * having to know the notes feature exists. The value is the note's own id;
+		 * a note is edited in place, so that id stays correct when the note is
+		 * revised.
 		 */
 		public static final Type TSK_ASSOCIATED_NOTE_ID = new Type(160, "TSK_ASSOCIATED_NOTE_ID", bundle.getString("BlackboardAttribute.tskAssociatedNoteId.text"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
 
