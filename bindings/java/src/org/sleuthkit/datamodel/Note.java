@@ -40,7 +40,7 @@ public final class Note {
 	private final Long dataSourceObjId;
 	private final NoteType type;
 	private final String body;
-	private final String details;
+	private final String payload;
 	private final Author author;
 	private final String configuration;
 	private final long createdTime;
@@ -59,7 +59,7 @@ public final class Note {
 	 *                         case level note.
 	 * @param type             Note type.
 	 * @param body             The prose a person reads.
-	 * @param details          Structured payload as JSON, may be null. The
+	 * @param payload          Structured payload as JSON, may be null. The
 	 *                         Sleuth Kit never parses it.
 	 * @param author           Who wrote it.
 	 * @param configuration    Prompt or module configuration version that
@@ -73,7 +73,7 @@ public final class Note {
 	 * @param analysisResultId The scored finding this note explains, null if it
 	 *                         explains none.
 	 */
-	Note(long noteId, long objId, Long dataSourceObjId, NoteType type, String body, String details,
+	Note(long noteId, long objId, Long dataSourceObjId, NoteType type, String body, String payload,
 			Author author, String configuration, long createdTime, Long modifiedTime, Long parentNoteId,
 			long rootNoteId, boolean isDeleted, Long analysisResultId) {
 		this.noteId = noteId;
@@ -81,7 +81,7 @@ public final class Note {
 		this.dataSourceObjId = dataSourceObjId;
 		this.type = type;
 		this.body = body;
-		this.details = details;
+		this.payload = payload;
 		this.author = author;
 		this.configuration = configuration;
 		this.createdTime = createdTime;
@@ -145,10 +145,10 @@ public final class Note {
 	 * Gets the structured payload that goes with the prose, as JSON. The Sleuth
 	 * Kit stores it and never parses it.
 	 *
-	 * @return Optional with the details, empty if there are none.
+	 * @return Optional with the payload, empty if there is none.
 	 */
-	public Optional<String> getDetails() {
-		return Optional.ofNullable(details);
+	public Optional<String> getPayload() {
+		return Optional.ofNullable(payload);
 	}
 
 	/**

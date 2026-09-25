@@ -32,7 +32,7 @@ public final class NewNoteRequest {
 	private final long objId;
 	private final NoteType type;
 	private final String body;
-	private final String details;
+	private final String payload;
 	private final Author author;
 	private final String configuration;
 	private final Long parentNoteId;
@@ -61,7 +61,7 @@ public final class NewNoteRequest {
 	 *                         thread cannot span objects.
 	 * @param type             Note type. Required.
 	 * @param body             The prose a person reads. Required.
-	 * @param details          Structured payload as JSON, may be null. The
+	 * @param payload          Structured payload as JSON, may be null. The
 	 *                         Sleuth Kit stores it and never parses it.
 	 * @param author           Who wrote it. Required.
 	 * @param configuration    Prompt or module configuration version that
@@ -73,7 +73,7 @@ public final class NewNoteRequest {
 	 * @param createdTime      Creation time in epoch milliseconds, null for
 	 *                         now.
 	 */
-	public NewNoteRequest(long objId, NoteType type, String body, String details, Author author,
+	public NewNoteRequest(long objId, NoteType type, String body, String payload, Author author,
 			String configuration, Long parentNoteId, Long analysisResultId, Long createdTime) {
 		if (type == null) {
 			throw new IllegalArgumentException("Note type is required");
@@ -87,7 +87,7 @@ public final class NewNoteRequest {
 		this.objId = objId;
 		this.type = type;
 		this.body = body;
-		this.details = details;
+		this.payload = payload;
 		this.author = author;
 		this.configuration = configuration;
 		this.parentNoteId = parentNoteId;
@@ -125,10 +125,10 @@ public final class NewNoteRequest {
 	/**
 	 * Gets the structured payload that goes with the prose.
 	 *
-	 * @return Optional with the details, empty if there are none.
+	 * @return Optional with the payload, empty if there is none.
 	 */
-	public Optional<String> getDetails() {
-		return Optional.ofNullable(details);
+	public Optional<String> getPayload() {
+		return Optional.ofNullable(payload);
 	}
 
 	/**

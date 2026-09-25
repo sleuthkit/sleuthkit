@@ -376,7 +376,7 @@ class CaseDatabaseFactory {
 				+ "data_source_obj_id " + dbQueryHelper.getBigIntType() + ", "	// derived from obj_id; null for a case level note
 				+ "note_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "body TEXT NOT NULL, "	// the prose a person reads
-				+ "details TEXT, "	// structured payload as JSON; The Sleuth Kit never parses it
+				+ "payload TEXT, "	// structured payload as JSON; The Sleuth Kit never parses it
 				+ "author_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// who wrote it, see tsk_authors
 				+ "configuration TEXT, "	// prompt or module configuration version that produced the note; null for people
 				+ "created_time " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// epoch MILLIS, since comment ordering needs sub-second resolution

@@ -3422,7 +3422,7 @@ public class SleuthkitCase {
 					+ "data_source_obj_id " + bigIntDataType + ", "
 					+ "note_type_id " + bigIntDataType + " NOT NULL, "
 					+ "body TEXT NOT NULL, "
-					+ "details TEXT, "
+					+ "payload TEXT, "
 					+ "author_id " + bigIntDataType + " NOT NULL, "
 					+ "configuration TEXT, "
 					+ "created_time " + bigIntDataType + " NOT NULL, "

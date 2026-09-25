@@ -86,7 +86,7 @@ public final class NoteManager {
 	 * back-filled; modified_time / is_deleted take their column defaults.
 	 */
 	private static final String NOTE_INSERT_COLUMNS
-			= "obj_id, data_source_obj_id, note_type_id, body, details, "
+			= "obj_id, data_source_obj_id, note_type_id, body, payload, "
 			+ "author_id, configuration, created_time, "
 			+ "parent_note_id, root_note_id, analysis_result_id";
 
@@ -101,7 +101,7 @@ public final class NoteManager {
 	 */
 	static final String NOTE_SELECT
 			= "SELECT notes.note_id, notes.obj_id, notes.data_source_obj_id, notes.note_type_id, "
-			+ "notes.body, notes.details, notes.author_id, "
+			+ "notes.body, notes.payload, notes.author_id, "
 			+ "notes.configuration, notes.created_time, notes.modified_time, notes.parent_note_id, notes.root_note_id, "
 			+ "notes.is_deleted, notes.analysis_result_id, "
 			+ "types.type_name, types.display_name, types.description, "
@@ -343,7 +343,7 @@ public final class NoteManager {
 	 *
 	 * @param noteId        Id of the note to revise.
 	 * @param body          The new prose. Required.
-	 * @param details       The new structured payload, may be null.
+	 * @param payload       The new structured payload, may be null.
 	 * @param configuration The new prompt or module configuration version, may
 	 *                      be null. May differ from the note's previous value,
 	 *                      since a model or module can move on to a newer
@@ -355,7 +355,7 @@ public final class NoteManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Note reviseNote(long noteId, String body, String details, String configuration, Author author,
+	public Note reviseNote(long noteId, String body, String payload, String configuration, Author author,
 			CaseDbTransaction trans) throws TskCoreException {
 		if (body == null) {
 			throw new TskCoreException("Illegal argument passed to reviseNote: body is required.");
@@ -384,18 +384,18 @@ public final class NoteManager {
 		try {
 			long modifiedTime = System.currentTimeMillis();
 			PreparedStatement update = connection.getPreparedStatement(
-					"UPDATE tsk_notes SET body = ?, details = ?, configuration = ?, modified_time = ? WHERE note_id = ?",
+					"UPDATE tsk_notes SET body = ?, payload = ?, configuration = ?, modified_time = ? WHERE note_id = ?",
 					Statement.NO_GENERATED_KEYS);
 			update.clearParameters();
 			update.setString(1, body);
-			update.setString(2, details);
+			update.setString(2, payload);
 			update.setString(3, configuration);
 			update.setLong(4, modifiedTime);
 			update.setLong(5, noteId);
 			connection.executeUpdate(update);
 
 			Note revised = new Note(noteId, existing.getObjectId(), existing.getDataSourceObjectId().orElse(null),
-					existing.getType(), body, details, author, configuration, existing.getCreatedTime(), modifiedTime,
+					existing.getType(), body, payload, author, configuration, existing.getCreatedTime(), modifiedTime,
 					existing.getParentNoteId().orElse(null), existing.getRootNoteId(), false,
 					existing.getAnalysisResultId().orElse(null));
 			trans.registerUpdatedNote(revised);
@@ -738,7 +738,7 @@ public final class NoteManager {
 			}
 
 			pending.add(new PendingNote(request.getObjectId(), dataSourceObjIds.get(request.getObjectId()),
-					request.getType(), request.getBody(), request.getDetails().orElse(null), request.getAuthor(),
+					request.getType(), request.getBody(), request.getPayload().orElse(null), request.getAuthor(),
 					request.getConfiguration().orElse(null), request.getCreatedTime(), parentNoteId, rootNoteId,
 					request.getAnalysisResultId().orElse(null)));
 		}
@@ -994,7 +994,7 @@ public final class NoteManager {
 		setNullableLong(statement, offset + 2, note.dataSourceObjId);
 		statement.setLong(offset + 3, note.type.getNoteTypeId());
 		statement.setString(offset + 4, note.body);
-		statement.setString(offset + 5, note.details);
+		statement.setString(offset + 5, note.payload);
 		statement.setLong(offset + 6, note.author.getAuthorId());
 		statement.setString(offset + 7, note.configuration);
 		statement.setLong(offset + 8, note.createdTime);
@@ -1050,7 +1050,7 @@ public final class NoteManager {
 				rs.getString("author_name"), rs.getString("display_name"));
 
 		return new Note(rs.getLong("note_id"), rs.getLong("obj_id"), getNullableLong(rs, "data_source_obj_id"),
-				type, rs.getString("body"), rs.getString("details"), author, rs.getString("configuration"),
+				type, rs.getString("body"), rs.getString("payload"), author, rs.getString("configuration"),
 				rs.getLong("created_time"), getNullableLong(rs, "modified_time"), getNullableLong(rs, "parent_note_id"),
 				rs.getLong("root_note_id"), rs.getInt("is_deleted") != 0, getNullableLong(rs, "analysis_result_id"));
 	}
@@ -1159,7 +1159,7 @@ public final class NoteManager {
 		private final Long dataSourceObjId;
 		private final NoteType type;
 		private final String body;
-		private final String details;
+		private final String payload;
 		private final Author author;
 		private final String configuration;
 		private final long createdTime;
@@ -1167,14 +1167,14 @@ public final class NoteManager {
 		private final Long rootNoteId;
 		private final Long analysisResultId;
 
-		PendingNote(long objId, Long dataSourceObjId, NoteType type, String body, String details,
+		PendingNote(long objId, Long dataSourceObjId, NoteType type, String body, String payload,
 				Author author, String configuration, long createdTime, Long parentNoteId, Long rootNoteId,
 				Long analysisResultId) {
 			this.objId = objId;
 			this.dataSourceObjId = dataSourceObjId;
 			this.type = type;
 			this.body = body;
-			this.details = details;
+			this.payload = payload;
 			this.author = author;
 			this.configuration = configuration;
 			this.createdTime = createdTime;
@@ -1192,7 +1192,7 @@ public final class NoteManager {
 		 * @return The note.
 		 */
 		Note toNote(long noteId) {
-			return new Note(noteId, objId, dataSourceObjId, type, body, details, author, configuration, createdTime,
+			return new Note(noteId, objId, dataSourceObjId, type, body, payload, author, configuration, createdTime,
 					null, parentNoteId, rootNoteId == null ? noteId : rootNoteId, false, analysisResultId);
 		}
 	}

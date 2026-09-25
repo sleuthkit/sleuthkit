@@ -149,7 +149,7 @@ public class NoteTest {
 
 		assertEquals(file.getId(), note.getObjectId());
 		assertEquals("Looks like a dropper", note.getBody());
-		assertEquals("{\"priority\":\"HIGH\"}", note.getDetails().orElse(null));
+		assertEquals("{\"priority\":\"HIGH\"}", note.getPayload().orElse(null));
 		assertEquals(ANALYST, note.getAuthor());
 		assertEquals(TskData.TSK_AUTHOR_TYPE_ENUM.USER, note.getAuthor().getType());
 		assertFalse(note.getConfiguration().isPresent());
@@ -224,7 +224,7 @@ public class NoteTest {
 		assertEquals(first.getRootNoteId(), second.getRootNoteId());
 		assertEquals(first.getCreatedTime(), second.getCreatedTime());
 		assertEquals("Second draft", second.getBody());
-		assertEquals("{\"v\":2}", second.getDetails().orElse(null));
+		assertEquals("{\"v\":2}", second.getPayload().orElse(null));
 		assertTrue(second.getModifiedTime().isPresent());
 
 		Optional<Note> reread = noteById(caseDB, first.getNoteId());
@@ -364,7 +364,7 @@ public class NoteTest {
 		for (int i = 0; i < 5; i++) {
 			Note note = batched.get(i);
 			assertEquals("Batched notes must come back in request order", "Note " + i, note.getBody());
-			assertEquals("{\"i\":" + i + "}", note.getDetails().orElse(null));
+			assertEquals("{\"i\":" + i + "}", note.getPayload().orElse(null));
 			assertEquals(1700000000000L + i, note.getCreatedTime());
 			assertEquals(note.getNoteId(), note.getRootNoteId());
 			assertNoteEquals(note, noteById(caseDB, note.getNoteId()).get());
@@ -793,11 +793,11 @@ public class NoteTest {
 	 * of the caller's transaction; these tests have nothing to commit alongside
 	 * it, so the transaction is opened here rather than in every test.
 	 */
-	private static Note reviseNote(SleuthkitCase skCase, long noteId, String body, String details,
+	private static Note reviseNote(SleuthkitCase skCase, long noteId, String body, String payload,
 			String configuration, Author author) throws TskCoreException {
 		SleuthkitCase.CaseDbTransaction trans = skCase.beginTransaction();
 		try {
-			Note revision = skCase.getNoteManager().reviseNote(noteId, body, details, configuration, author, trans);
+			Note revision = skCase.getNoteManager().reviseNote(noteId, body, payload, configuration, author, trans);
 			trans.commit();
 			trans = null;
 			return revision;
@@ -869,7 +869,7 @@ public class NoteTest {
 		assertEquals(expected.getDataSourceObjectId(), actual.getDataSourceObjectId());
 		assertEquals(expected.getType().getNoteTypeId(), actual.getType().getNoteTypeId());
 		assertEquals(expected.getBody(), actual.getBody());
-		assertEquals(expected.getDetails(), actual.getDetails());
+		assertEquals(expected.getPayload(), actual.getPayload());
 		assertEquals(expected.getAuthor(), actual.getAuthor());
 		assertEquals(expected.getConfiguration(), actual.getConfiguration());
 		assertEquals(expected.getCreatedTime(), actual.getCreatedTime());
