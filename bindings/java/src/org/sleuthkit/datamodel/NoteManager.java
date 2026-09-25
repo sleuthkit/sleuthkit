@@ -37,6 +37,7 @@ import java.util.Set;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import org.sleuthkit.datamodel.TskData.DbType;
+import org.sleuthkit.datamodel.TskData.TSK_AUTHOR_TYPE_ENUM;
 
 /**
  * Responsible for creating, revising, deleting and retrieving Notes.
@@ -46,10 +47,10 @@ import org.sleuthkit.datamodel.TskData.DbType;
  * method quietly drops a row. The narrower reads - getCurrentNotes(),
  * getCurrentRevision(), getCurrentNoteCounts() - are opt-in.
  *
- * This manager enforces no permissions. It exposes the author kind and author
- * id so a consumer can decide who may act, and that is the whole contract. The
- * one rule here that looks like policy, reviseNote() requiring the same author,
- * is not: it holds a property of the data, that every revision in a lineage has
+ * This manager enforces no permissions. It exposes the author of each note so
+ * a consumer can decide who may act, and that is the whole contract. The one
+ * rule here that looks like policy, reviseNote() requiring the same author, is
+ * not: it holds a property of the data, that every revision in a lineage has
  * one author, so that "who wrote this" has a single answer no matter which
  * revision you are looking at.
  */
@@ -60,15 +61,15 @@ public final class NoteManager {
 	 * Internal chunking unit; callers may pass any number of requests and the
 	 * manager partitions.
 	 *
-	 * Sized to keep the tsk_notes INSERT (13 bound columns per row) under
-	 * PostgreSQL's 65,535 bind-parameter ceiling: 4000 rows = 52,000
+	 * Sized to keep the tsk_notes INSERT (11 bound columns per row) under
+	 * PostgreSQL's 65,535 bind-parameter ceiling: 4000 rows = 44,000
 	 * parameters.
 	 */
 	static final int PG_NOTES_CHUNK_SIZE = 4000;
 
 	/**
 	 * The same, for SQLite, whose bind-parameter ceiling is the lower one:
-	 * SQLITE_MAX_VARIABLE_NUMBER defaults to 32,766, so 2000 rows = 26,000
+	 * SQLITE_MAX_VARIABLE_NUMBER defaults to 32,766, so 2000 rows = 22,000
 	 * parameters leaves room to spare. A chunk sized for PostgreSQL would
 	 * exceed it.
 	 */
@@ -87,25 +88,28 @@ public final class NoteManager {
 	 */
 	private static final String NOTE_INSERT_COLUMNS
 			= "obj_id, data_source_obj_id, note_type_id, body, details, "
-			+ "author_kind, author_id, author_display, config_id, created_time, "
+			+ "author_id, configuration, created_time, "
 			+ "parent_note_id, root_note_id, analysis_result_id";
 
-	private static final String NOTE_INSERT_PLACEHOLDERS = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+	private static final String NOTE_INSERT_PLACEHOLDERS = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-	private static final int NOTE_INSERT_PARAM_COUNT = 13;
+	private static final int NOTE_INSERT_PARAM_COUNT = 11;
 
 	/**
-	 * Reads join the type table rather than caching it, so a type added by
-	 * another client of the same PostgreSQL case database is never missing.
+	 * Reads join the type and author tables rather than caching them, so a
+	 * type or author added by another client of the same PostgreSQL case
+	 * database is never missing.
 	 */
 	static final String NOTE_SELECT
 			= "SELECT notes.note_id, notes.obj_id, notes.data_source_obj_id, notes.note_type_id, "
-			+ "notes.body, notes.details, notes.author_kind, notes.author_id, notes.author_display, "
-			+ "notes.config_id, notes.created_time, notes.parent_note_id, notes.root_note_id, "
+			+ "notes.body, notes.details, notes.author_id, "
+			+ "notes.configuration, notes.created_time, notes.parent_note_id, notes.root_note_id, "
 			+ "notes.original_note_id, notes.is_current, notes.is_deleted, notes.analysis_result_id, "
-			+ "types.type_name, types.display_name, types.description "
+			+ "types.type_name, types.display_name, types.description, "
+			+ "authors.author_type, authors.author_name, authors.display_name "
 			+ "FROM tsk_notes notes "
-			+ "INNER JOIN tsk_note_types types ON notes.note_type_id = types.note_type_id ";
+			+ "INNER JOIN tsk_note_types types ON notes.note_type_id = types.note_type_id "
+			+ "INNER JOIN tsk_authors authors ON notes.author_id = authors.author_id ";
 
 	/**
 	 * Oldest first, ties broken on note id. created_time is milliseconds, but
@@ -293,7 +297,7 @@ public final class NoteManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public List<Note> addNotes(List<NoteRequest> requests, CaseDbTransaction trans) throws TskCoreException {
+	public List<Note> addNotes(List<NewNoteRequest> requests, CaseDbTransaction trans) throws TskCoreException {
 		if (requests == null) {
 			throw new TskCoreException("Illegal argument passed to addNotes: requests list is required.");
 		}
@@ -344,19 +348,23 @@ public final class NoteManager {
 	 * You revise your own note. You reply to someone else's - there is no
 	 * operation that rewrites another person's words under their name.
 	 *
-	 * @param noteId  Id of the revision being replaced. It must be the current
-	 *                revision of its lineage.
-	 * @param body    The new prose. Required.
-	 * @param details The new structured payload, may be null.
-	 * @param author  Who is revising. The author kind and id must match the
-	 *                note's, and the config id may have moved on.
-	 * @param trans   Transaction to use.
+	 * @param noteId        Id of the revision being replaced. It must be the
+	 *                      current revision of its lineage.
+	 * @param body          The new prose. Required.
+	 * @param details       The new structured payload, may be null.
+	 * @param configuration The new prompt or module configuration version, may
+	 *                      be null. May differ from the note's, since a model
+	 *                      or module can move on to a newer configuration
+	 *                      between revisions.
+	 * @param author        Who is revising. Must be the note's author.
+	 * @param trans         Transaction to use.
 	 *
 	 * @return The new current revision.
 	 *
 	 * @throws TskCoreException
 	 */
-	public Note reviseNote(long noteId, String body, String details, Note.Author author, CaseDbTransaction trans) throws TskCoreException {
+	public Note reviseNote(long noteId, String body, String details, String configuration, Author author,
+			CaseDbTransaction trans) throws TskCoreException {
 		if (body == null) {
 			throw new TskCoreException("Illegal argument passed to reviseNote: body is required.");
 		}
@@ -380,9 +388,7 @@ public final class NoteManager {
 			// bring a retracted note back. A retraction stands; write a new note instead.
 			throw new TskCoreException(String.format("Cannot revise note with id = %d, it has been deleted.", noteId));
 		}
-		// See Note.Author.isSameAuthor() for what makes two authors the same principal,
-		// and why a newer prompt version or a renamed person is still the same one.
-		if (!existing.getAuthor().isSameAuthor(author)) {
+		if (!existing.getAuthor().equals(author)) {
 			throw new TskCoreException(String.format("Cannot revise note with id = %d, it was written by a different author. "
 					+ "Reply to it instead.", noteId));
 		}
@@ -398,14 +404,14 @@ public final class NoteManager {
 			connection.executeUpdate(clear);
 
 			String insertSql = "INSERT INTO tsk_notes (" + NOTE_INSERT_COLUMNS + ", original_note_id) "
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement insert = connection.getPreparedStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
 			insert.clearParameters();
 
 			PendingNote revision = new PendingNote(existing.getObjectId(),
 					existing.getDataSourceObjectId().orElse(null), existing.getType(), body, details, author,
-					System.currentTimeMillis(), existing.getParentNoteId().orElse(null), existing.getRootNoteId(),
-					existing.getAnalysisResultId().orElse(null));
+					configuration, System.currentTimeMillis(), existing.getParentNoteId().orElse(null),
+					existing.getRootNoteId(), existing.getAnalysisResultId().orElse(null));
 			setNoteParameters(insert, revision);
 			insert.setLong(NOTE_INSERT_PARAM_COUNT + 1, existing.getOriginalNoteId());
 			connection.executeUpdate(insert);
@@ -520,7 +526,7 @@ public final class NoteManager {
 	}
 
 	/**
-	 * Get the live notes of several types, written by particular kinds of
+	 * Get the live notes of several types, written by particular types of
 	 * author, on many objects.
 	 *
 	 * The author filter is here rather than left to the caller because "never
@@ -537,7 +543,7 @@ public final class NoteManager {
 	 *                    "every type" or "no type", and silently returning
 	 *                    everything to a caller that built an empty list by
 	 *                    accident is the worse of the two.
-	 * @param authorKinds The author kinds to include, or null for every kind.
+	 * @param authorTypes The author types to include, or null for every type.
 	 *                    Must not be empty when given, for the same reason.
 	 *
 	 * @return Map of object id to its notes, oldest first. Objects with no
@@ -546,12 +552,12 @@ public final class NoteManager {
 	 * @throws TskCoreException
 	 */
 	public Map<Long, List<Note>> getCurrentNotes(Collection<Long> objIds, Collection<NoteType> types,
-			Collection<Note.AuthorKind> authorKinds) throws TskCoreException {
+			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes) throws TskCoreException {
 		requireTypes(types);
-		if (authorKinds != null) {
-			requireAuthorKinds(authorKinds);
+		if (authorTypes != null) {
+			requireAuthorTypes(authorTypes);
 		}
-		return getCurrentNotes(objIds, types, authorKinds, "Error getting current notes for %d objects");
+		return getCurrentNotes(objIds, types, authorTypes, "Error getting current notes for %d objects");
 	}
 
 	/**
@@ -565,7 +571,7 @@ public final class NoteManager {
 	 *
 	 * @param objIds      The objects.
 	 * @param types       The note types. Required and must not be empty.
-	 * @param authorKinds The author kinds to include, or null for every kind.
+	 * @param authorTypes The author types to include, or null for every type.
 	 *                    Must not be empty when given.
 	 *
 	 * @return Map of object id to a map of note type to count. Objects with no
@@ -575,12 +581,12 @@ public final class NoteManager {
 	 * @throws TskCoreException
 	 */
 	public Map<Long, Map<NoteType, Integer>> getCurrentNoteCounts(Collection<Long> objIds, Collection<NoteType> types,
-			Collection<Note.AuthorKind> authorKinds) throws TskCoreException {
+			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes) throws TskCoreException {
 		requireTypes(types);
-		if (authorKinds != null) {
-			requireAuthorKinds(authorKinds);
+		if (authorTypes != null) {
+			requireAuthorTypes(authorTypes);
 		}
-		return getCurrentNoteCounts(objIds, types, authorKinds, true);
+		return getCurrentNoteCounts(objIds, types, authorTypes, true);
 	}
 
 	/**
@@ -588,7 +594,7 @@ public final class NoteManager {
 	 *
 	 * @param objIds       The objects.
 	 * @param types        The note types, already validated.
-	 * @param authorKinds  The author kinds to include, or null for no filter.
+	 * @param authorTypes  The author types to include, or null for no filter.
 	 * @param errorMessage Format string taking the chunk size.
 	 *
 	 * @return Map of object id to its notes, oldest first.
@@ -596,14 +602,14 @@ public final class NoteManager {
 	 * @throws TskCoreException
 	 */
 	private Map<Long, List<Note>> getCurrentNotes(Collection<Long> objIds, Collection<NoteType> types,
-			Collection<Note.AuthorKind> authorKinds, String errorMessage) throws TskCoreException {
+			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes, String errorMessage) throws TskCoreException {
 		if (objIds == null) {
 			throw new TskCoreException("Illegal argument passed to getCurrentNotes: object ids are required.");
 		}
 
 		Map<Long, List<Note>> notesByObject = new HashMap<>();
 		for (List<Long> chunk : partitionIds(objIds)) {
-			List<Note> notes = getNotes(NOTE_SELECT + "WHERE " + currentNotesPredicate(chunk, types, authorKinds) + NOTE_ORDER,
+			List<Note> notes = getNotes(NOTE_SELECT + "WHERE " + currentNotesPredicate(chunk, types, authorTypes) + NOTE_ORDER,
 					String.format(errorMessage, chunk.size()));
 			for (Note note : notes) {
 				notesByObject.computeIfAbsent(note.getObjectId(), key -> new ArrayList<>()).add(note);
@@ -617,7 +623,7 @@ public final class NoteManager {
 	 *
 	 * @param objIds      The objects.
 	 * @param types       The note types, already validated.
-	 * @param authorKinds The author kinds to include, or null for no filter.
+	 * @param authorTypes The author types to include, or null for no filter.
 	 * @param currentOnly True to count only the live revision of each note.
 	 *
 	 * @return Map of object id to a map of note type to count.
@@ -625,7 +631,7 @@ public final class NoteManager {
 	 * @throws TskCoreException
 	 */
 	private Map<Long, Map<NoteType, Integer>> getCurrentNoteCounts(Collection<Long> objIds, Collection<NoteType> types,
-			Collection<Note.AuthorKind> authorKinds, boolean currentOnly) throws TskCoreException {
+			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes, boolean currentOnly) throws TskCoreException {
 		if (objIds == null) {
 			throw new TskCoreException("Illegal argument passed to getCurrentNoteCounts: object ids are required.");
 		}
@@ -644,7 +650,8 @@ public final class NoteManager {
 
 			for (List<Long> chunk : partitionIds(objIds)) {
 				String queryString = "SELECT notes.obj_id, notes.note_type_id, COUNT(*) AS count FROM tsk_notes notes "
-						+ "WHERE " + currentNotesPredicate(chunk, types, authorKinds, currentOnly)
+						+ "INNER JOIN tsk_authors authors ON notes.author_id = authors.author_id "
+						+ "WHERE " + currentNotesPredicate(chunk, types, authorTypes, currentOnly)
 						+ " GROUP BY notes.obj_id, notes.note_type_id";
 				try (ResultSet rs = connection.executeQuery(s, queryString)) {
 					while (rs.next()) {
@@ -671,13 +678,14 @@ public final class NoteManager {
 	 *
 	 * @param objIdChunk  The objects, already chunked.
 	 * @param types       The note types.
-	 * @param authorKinds The author kinds to include, or null for no filter.
+	 * @param authorTypes The author types to include, or null for no filter.
 	 *
-	 * @return The predicate, with every column qualified by the notes alias.
+	 * @return The predicate, with every column qualified by the notes or
+	 *         authors alias.
 	 */
 	private static String currentNotesPredicate(List<Long> objIdChunk, Collection<NoteType> types,
-			Collection<Note.AuthorKind> authorKinds) {
-		return currentNotesPredicate(objIdChunk, types, authorKinds, true);
+			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes) {
+		return currentNotesPredicate(objIdChunk, types, authorTypes, true);
 	}
 
 	/**
@@ -688,13 +696,14 @@ public final class NoteManager {
 	 *
 	 * @param objIdChunk  The objects, already chunked.
 	 * @param types       The note types.
-	 * @param authorKinds The author kinds to include, or null for no filter.
+	 * @param authorTypes The author types to include, or null for no filter.
 	 * @param currentOnly True to restrict to the live revision of each note.
 	 *
-	 * @return The predicate, with every column qualified by the notes alias.
+	 * @return The predicate, with every column qualified by the notes or
+	 *         authors alias.
 	 */
 	private static String currentNotesPredicate(List<Long> objIdChunk, Collection<NoteType> types,
-			Collection<Note.AuthorKind> authorKinds, boolean currentOnly) {
+			Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes, boolean currentOnly) {
 
 		List<Long> typeIds = new ArrayList<>(types.size());
 		for (NoteType type : types) {
@@ -707,12 +716,12 @@ public final class NoteManager {
 		if (currentOnly) {
 			predicate.append(" AND notes.is_current = 1");
 		}
-		if (authorKinds != null) {
-			List<Long> kindIds = new ArrayList<>(authorKinds.size());
-			for (Note.AuthorKind kind : authorKinds) {
-				kindIds.add((long) kind.getId());
+		if (authorTypes != null) {
+			List<Long> authorTypeIds = new ArrayList<>(authorTypes.size());
+			for (TSK_AUTHOR_TYPE_ENUM authorType : authorTypes) {
+				authorTypeIds.add((long) authorType.getValue());
 			}
-			predicate.append(" AND notes.author_kind IN (").append(toIdList(kindIds)).append(")");
+			predicate.append(" AND authors.author_type IN (").append(toIdList(authorTypeIds)).append(")");
 		}
 		return predicate.toString();
 	}
@@ -786,11 +795,11 @@ public final class NoteManager {
 	 *
 	 * @throws TskCoreException if any request is invalid.
 	 */
-	private List<PendingNote> prepareNotes(List<NoteRequest> requests, CaseDbConnection connection) throws TskCoreException {
+	private List<PendingNote> prepareNotes(List<NewNoteRequest> requests, CaseDbConnection connection) throws TskCoreException {
 		Set<Long> objIds = new HashSet<>();
 		Set<Long> parentNoteIds = new HashSet<>();
 		for (int i = 0; i < requests.size(); i++) {
-			NoteRequest request = requests.get(i);
+			NewNoteRequest request = requests.get(i);
 			if (request == null) {
 				throw new TskCoreException(String.format("Illegal argument passed to addNotes: request at index %d is null.", i));
 			}
@@ -804,7 +813,7 @@ public final class NoteManager {
 
 		List<PendingNote> pending = new ArrayList<>(requests.size());
 		for (int i = 0; i < requests.size(); i++) {
-			NoteRequest request = requests.get(i);
+			NewNoteRequest request = requests.get(i);
 			Long parentNoteId = request.getParentNoteId().orElse(null);
 			Long rootNoteId = null;
 
@@ -826,7 +835,8 @@ public final class NoteManager {
 
 			pending.add(new PendingNote(request.getObjectId(), dataSourceObjIds.get(request.getObjectId()),
 					request.getType(), request.getBody(), request.getDetails().orElse(null), request.getAuthor(),
-					request.getCreatedTime(), parentNoteId, rootNoteId, request.getAnalysisResultId().orElse(null)));
+					request.getConfiguration().orElse(null), request.getCreatedTime(), parentNoteId, rootNoteId,
+					request.getAnalysisResultId().orElse(null)));
 		}
 		return pending;
 	}
@@ -1081,14 +1091,12 @@ public final class NoteManager {
 		statement.setLong(offset + 3, note.type.getNoteTypeId());
 		statement.setString(offset + 4, note.body);
 		statement.setString(offset + 5, note.details);
-		statement.setInt(offset + 6, note.author.getKind().getId());
-		statement.setString(offset + 7, note.author.getId());
-		statement.setString(offset + 8, note.author.getDisplayName());
-		statement.setString(offset + 9, note.author.getConfigId().orElse(null));
-		statement.setLong(offset + 10, note.createdTime);
-		setNullableLong(statement, offset + 11, note.parentNoteId);
-		setNullableLong(statement, offset + 12, note.rootNoteId);
-		setNullableLong(statement, offset + 13, note.analysisResultId);
+		statement.setLong(offset + 6, note.author.getAuthorId());
+		statement.setString(offset + 7, note.configuration);
+		statement.setLong(offset + 8, note.createdTime);
+		setNullableLong(statement, offset + 9, note.parentNoteId);
+		setNullableLong(statement, offset + 10, note.rootNoteId);
+		setNullableLong(statement, offset + 11, note.analysisResultId);
 	}
 
 	/**
@@ -1134,13 +1142,14 @@ public final class NoteManager {
 	 */
 	static Note getNoteFromResultSet(ResultSet rs) throws SQLException {
 		NoteType type = getNoteTypeFromResultSet(rs);
-		Note.Author author = new Note.Author(Note.AuthorKind.fromID(rs.getInt("author_kind")),
-				rs.getString("author_id"), rs.getString("author_display"), rs.getString("config_id"));
+		Author author = new Author(rs.getLong("author_id"), TSK_AUTHOR_TYPE_ENUM.fromID(rs.getInt("author_type")),
+				rs.getString("author_name"), rs.getString("display_name"));
 
 		return new Note(rs.getLong("note_id"), rs.getLong("obj_id"), getNullableLong(rs, "data_source_obj_id"),
-				type, rs.getString("body"), rs.getString("details"), author, rs.getLong("created_time"),
-				getNullableLong(rs, "parent_note_id"), rs.getLong("root_note_id"), rs.getLong("original_note_id"),
-				rs.getInt("is_current") != 0, rs.getInt("is_deleted") != 0, getNullableLong(rs, "analysis_result_id"));
+				type, rs.getString("body"), rs.getString("details"), author, rs.getString("configuration"),
+				rs.getLong("created_time"), getNullableLong(rs, "parent_note_id"), rs.getLong("root_note_id"),
+				rs.getLong("original_note_id"), rs.getInt("is_current") != 0, rs.getInt("is_deleted") != 0,
+				getNullableLong(rs, "analysis_result_id"));
 	}
 
 	/**
@@ -1188,21 +1197,21 @@ public final class NoteManager {
 	}
 
 	/**
-	 * Reject a missing or empty set of author kinds. The unfiltered read is a
+	 * Reject a missing or empty set of author types. The unfiltered read is a
 	 * separate overload, so reaching here with nothing to filter on is a bug in
 	 * the caller rather than a request for everything.
 	 *
-	 * @param authorKinds The author kinds given by the caller.
+	 * @param authorTypes The author types given by the caller.
 	 *
 	 * @throws TskCoreException if the collection is null, empty, or holds a
 	 *                          null.
 	 */
-	private static void requireAuthorKinds(Collection<Note.AuthorKind> authorKinds) throws TskCoreException {
-		if (authorKinds == null || authorKinds.isEmpty()) {
-			throw new TskCoreException("Illegal argument passed to NoteManager: at least one author kind is required.");
+	private static void requireAuthorTypes(Collection<TSK_AUTHOR_TYPE_ENUM> authorTypes) throws TskCoreException {
+		if (authorTypes == null || authorTypes.isEmpty()) {
+			throw new TskCoreException("Illegal argument passed to NoteManager: at least one author type is required.");
 		}
-		if (authorKinds.contains(null)) {
-			throw new TskCoreException("Illegal argument passed to NoteManager: author kind must not be null.");
+		if (authorTypes.contains(null)) {
+			throw new TskCoreException("Illegal argument passed to NoteManager: author type must not be null.");
 		}
 	}
 
@@ -1248,20 +1257,23 @@ public final class NoteManager {
 		private final NoteType type;
 		private final String body;
 		private final String details;
-		private final Note.Author author;
+		private final Author author;
+		private final String configuration;
 		private final long createdTime;
 		private final Long parentNoteId;
 		private final Long rootNoteId;
 		private final Long analysisResultId;
 
 		PendingNote(long objId, Long dataSourceObjId, NoteType type, String body, String details,
-				Note.Author author, long createdTime, Long parentNoteId, Long rootNoteId, Long analysisResultId) {
+				Author author, String configuration, long createdTime, Long parentNoteId, Long rootNoteId,
+				Long analysisResultId) {
 			this.objId = objId;
 			this.dataSourceObjId = dataSourceObjId;
 			this.type = type;
 			this.body = body;
 			this.details = details;
 			this.author = author;
+			this.configuration = configuration;
 			this.createdTime = createdTime;
 			this.parentNoteId = parentNoteId;
 			this.rootNoteId = rootNoteId;
@@ -1289,7 +1301,7 @@ public final class NoteManager {
 		 * @return The note.
 		 */
 		Note toNote(long noteId, long originalNoteId) {
-			return new Note(noteId, objId, dataSourceObjId, type, body, details, author, createdTime,
+			return new Note(noteId, objId, dataSourceObjId, type, body, details, author, configuration, createdTime,
 					parentNoteId, rootNoteId == null ? noteId : rootNoteId, originalNoteId, true, false, analysisResultId);
 		}
 	}

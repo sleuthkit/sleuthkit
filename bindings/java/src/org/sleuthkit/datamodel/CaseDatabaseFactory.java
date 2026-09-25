@@ -348,14 +348,24 @@ class CaseDatabaseFactory {
 		// Note types are open. The Sleuth Kit seeds the built-in ones on every case
 		// open and consumers add their own by name at runtime, so adding a type does
 		// not need a schema change. The type carries no behaviour: whether a machine
-		// wrote a note is answered by tsk_notes.author_kind on the row, never here,
-		// because a type such as chat has rows from both people and models.
+		// wrote a note is answered by the author it points at, never here, because a
+		// type such as chat has rows from both people and models.
 		stmt.execute("CREATE TABLE tsk_note_types (note_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT NOT NULL UNIQUE, "	// COMMENT, AI_ENRICHMENT, REMEDIATION, AI_SUMMARY, ...
 				+ "display_name TEXT, "
 				+ "description TEXT)");
 
-		// References tsk_objects, tsk_note_types, tsk_analysis_results
+		// A principal that can author a note: a person, a model, or a module. Kept
+		// separate from tsk_notes so that one author's name is stored once no matter
+		// how many notes it wrote, and reusable by anything else that needs to
+		// attribute content to the same set of principals.
+		stmt.execute("CREATE TABLE tsk_authors (author_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
+				+ "author_type INTEGER NOT NULL, "	// USER/AI/MODULE; see TSK_AUTHOR_TYPE_ENUM
+				+ "author_name TEXT NOT NULL, "	// stable id of the principal: a user id, a model id, or a module name
+				+ "display_name TEXT NOT NULL, "	// what the UI renders
+				+ "UNIQUE(author_type, author_name))");
+
+		// References tsk_objects, tsk_note_types, tsk_authors, tsk_analysis_results
 		// Text about an object in the case that has no score and can change after it is
 		// written: comments, AI enrichment, remediation advice, summaries. Analysis
 		// results must not change, which is why this is a separate table rather than
@@ -368,10 +378,8 @@ class CaseDatabaseFactory {
 				+ "note_type_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "
 				+ "body TEXT NOT NULL, "	// the prose a person reads
 				+ "details TEXT, "	// structured payload as JSON; The Sleuth Kit never parses it
-				+ "author_kind INTEGER NOT NULL, "	// USER/AI/MODULE; the only answer to "did a machine write this"
-				+ "author_id TEXT NOT NULL, "	// stable id of the writer: a user id, a model id, or a module name
-				+ "author_display TEXT NOT NULL, "	// what the UI renders
-				+ "config_id TEXT, "	// prompt or module configuration version; null for people
+				+ "author_id " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// who wrote it, see tsk_authors
+				+ "configuration TEXT, "	// prompt or module configuration version that produced the note; null for people
 				+ "created_time " + dbQueryHelper.getBigIntType() + " NOT NULL, "	// epoch MILLIS, since comment ordering needs sub-second resolution
 				+ "parent_note_id " + dbQueryHelper.getBigIntType() + ", "	// note this one replies to; null on a thread root
 				+ "root_note_id " + dbQueryHelper.getBigIntType() + ", "	// root of the thread; own note_id on a root, set just after the insert
@@ -382,6 +390,7 @@ class CaseDatabaseFactory {
 				+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(note_type_id) REFERENCES tsk_note_types(note_type_id), "
+				+ "FOREIGN KEY(author_id) REFERENCES tsk_authors(author_id), "
 				+ "FOREIGN KEY(parent_note_id) REFERENCES tsk_notes(note_id) ON DELETE CASCADE, "
 				+ "FOREIGN KEY(root_note_id) REFERENCES tsk_notes(note_id), "
 				+ "FOREIGN KEY(original_note_id) REFERENCES tsk_notes(note_id), "

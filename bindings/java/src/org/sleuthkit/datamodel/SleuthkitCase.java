@@ -276,6 +276,7 @@ public class SleuthkitCase {
 	private PersonManager personManager;
 	private HostAddressManager hostAddressManager;
 	private NoteManager noteManager;
+	private AuthorManager authorManager;
 
 	// Object id of the row in tsk_objects that stands for the case itself, so that
 	// case level notes have something to point at. Read or created on every open.
@@ -560,6 +561,7 @@ public class SleuthkitCase {
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this);
+		authorManager = new AuthorManager(this);
 		noteManager = new NoteManager(this);
 	}
 		
@@ -840,6 +842,17 @@ public class SleuthkitCase {
 	 */
 	public NoteManager getNoteManager() throws TskCoreException {
 		return noteManager;
+	}
+
+	/**
+	 * Gets the author manager for this case.
+	 *
+	 * @return The per case AuthorManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public AuthorManager getAuthorManager() throws TskCoreException {
+		return authorManager;
 	}
 
 	/**
@@ -3398,16 +3411,20 @@ public class SleuthkitCase {
 					+ "display_name TEXT, "
 					+ "description TEXT)");
 
+			statement.execute("CREATE TABLE tsk_authors (author_id " + primaryKeyType + " PRIMARY KEY, "
+					+ "author_type INTEGER NOT NULL, "
+					+ "author_name TEXT NOT NULL, "
+					+ "display_name TEXT NOT NULL, "
+					+ "UNIQUE(author_type, author_name))");
+
 			statement.execute("CREATE TABLE tsk_notes (note_id " + primaryKeyType + " PRIMARY KEY, "
 					+ "obj_id " + bigIntDataType + " NOT NULL, "
 					+ "data_source_obj_id " + bigIntDataType + ", "
 					+ "note_type_id " + bigIntDataType + " NOT NULL, "
 					+ "body TEXT NOT NULL, "
 					+ "details TEXT, "
-					+ "author_kind INTEGER NOT NULL, "
-					+ "author_id TEXT NOT NULL, "
-					+ "author_display TEXT NOT NULL, "
-					+ "config_id TEXT, "
+					+ "author_id " + bigIntDataType + " NOT NULL, "
+					+ "configuration TEXT, "
 					+ "created_time " + bigIntDataType + " NOT NULL, "
 					+ "parent_note_id " + bigIntDataType + ", "
 					+ "root_note_id " + bigIntDataType + ", "
@@ -3418,6 +3435,7 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(note_type_id) REFERENCES tsk_note_types(note_type_id), "
+					+ "FOREIGN KEY(author_id) REFERENCES tsk_authors(author_id), "
 					+ "FOREIGN KEY(parent_note_id) REFERENCES tsk_notes(note_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(root_note_id) REFERENCES tsk_notes(note_id), "
 					+ "FOREIGN KEY(original_note_id) REFERENCES tsk_notes(note_id), "

@@ -35,170 +35,6 @@ import java.util.Optional;
  */
 public final class Note {
 
-	/**
-	 * What kind of principal wrote a note. This is the only place the question
-	 * "did a machine write this" is answered, and it is answered per row: a
-	 * chat thread is one note type whose rows have both human and model
-	 * authors, so a type-level flag cannot say.
-	 */
-	public enum AuthorKind {
-
-		USER(0), ///< A person
-		AI(1), ///< A model
-		MODULE(2); ///< Automation that is not a model, such as an ingest module
-
-		private final int id;
-
-		private AuthorKind(int id) {
-			this.id = id;
-		}
-
-		/**
-		 * Gets the id of this author kind, as stored in the author_kind column.
-		 * The id is a persistence detail; a consumer naming a kind uses the
-		 * constant, and one rendering it uses name().
-		 *
-		 * @return The id.
-		 */
-		int getId() {
-			return id;
-		}
-
-		/**
-		 * Gets the author kind with the given id, for reading a row back.
-		 *
-		 * @param id The id to look for.
-		 *
-		 * @return The author kind.
-		 *
-		 * @throws IllegalArgumentException if the id matches no author kind.
-		 */
-		static AuthorKind fromID(int id) {
-			for (AuthorKind kind : AuthorKind.values()) {
-				if (kind.id == id) {
-					return kind;
-				}
-			}
-			throw new IllegalArgumentException("No AuthorKind matching id: " + id);
-		}
-	}
-
-	/**
-	 * Who wrote a note, recorded inline on the note rather than as a key into
-	 * another table. A case database is an evidence container that gets copied,
-	 * archived and reported on, so attribution has to survive on its own, and
-	 * it is a point-in-time fact rather than a live lookup that shifts when
-	 * someone is renamed.
-	 *
-	 * The id is whatever the writing product uses to identify a principal - an
-	 * Autopsy login name, a Cyber Triage user id, a model id, a module name.
-	 * There is one writing product per case database, so the id space is not
-	 * shared and needs no namespace prefix.
-	 */
-	public static final class Author {
-
-		private final AuthorKind kind;
-		private final String id;
-		private final String displayName;
-		private final String configId;
-
-		/**
-		 * Constructs an author with no configuration version, which is the
-		 * normal case for a person.
-		 *
-		 * @param kind        The kind of principal.
-		 * @param id          Stable id of the principal. Required.
-		 * @param displayName What the UI renders for the principal. Required.
-		 */
-		public Author(AuthorKind kind, String id, String displayName) {
-			this(kind, id, displayName, null);
-		}
-
-		/**
-		 * Constructs an author.
-		 *
-		 * @param kind        The kind of principal.
-		 * @param id          Stable id of the principal. Required.
-		 * @param displayName What the UI renders for the principal. Required.
-		 * @param configId    Version of the prompt or module configuration that
-		 *                    produced the note, so a bad answer can be told
-		 *                    from an old one. May be null.
-		 */
-		public Author(AuthorKind kind, String id, String displayName, String configId) {
-			if (kind == null) {
-				throw new IllegalArgumentException("Author kind is required");
-			}
-			if (id == null || id.isEmpty()) {
-				throw new IllegalArgumentException("Author id is required");
-			}
-			if (displayName == null || displayName.isEmpty()) {
-				throw new IllegalArgumentException("Author display name is required");
-			}
-			this.kind = kind;
-			this.id = id;
-			this.displayName = displayName;
-			this.configId = configId;
-		}
-
-		/**
-		 * Gets the kind of principal that wrote the note.
-		 *
-		 * @return The author kind.
-		 */
-		public AuthorKind getKind() {
-			return kind;
-		}
-
-		/**
-		 * Gets the stable id of the principal that wrote the note. A consumer
-		 * asking whether two notes share an author uses isSameAuthor() rather
-		 * than comparing ids, so that the rule lives in one place.
-		 *
-		 * @return The author id.
-		 */
-		String getId() {
-			return id;
-		}
-
-		/**
-		 * Gets the name to render for the principal that wrote the note.
-		 *
-		 * @return The display name.
-		 */
-		public String getDisplayName() {
-			return displayName;
-		}
-
-		/**
-		 * Gets the prompt or module configuration version that produced the
-		 * note.
-		 *
-		 * @return Optional with the configuration id, empty if there is none.
-		 */
-		public Optional<String> getConfigId() {
-			return Optional.ofNullable(configId);
-		}
-
-		/**
-		 * Whether this and another author name the same principal: the kind and
-		 * the id together, since the id space is per product rather than per
-		 * kind and a user id and a model id can read the same.
-		 *
-		 * The display name and the config id are deliberately not part of it. A
-		 * person can be renamed and a model can answer under a newer prompt
-		 * version, and neither makes it someone else - which is the rule
-		 * reviseNote() enforces when it decides whether a revision is the
-		 * author's own.
-		 *
-		 * @param other The author to compare against. May be null.
-		 *
-		 * @return True if both name the same principal.
-		 */
-		public boolean isSameAuthor(Author other) {
-			return other != null && kind == other.kind && id.equals(other.id);
-		}
-	}
-
 	private final long noteId;
 	private final long objId;
 	private final Long dataSourceObjId;
@@ -206,6 +42,7 @@ public final class Note {
 	private final String body;
 	private final String details;
 	private final Author author;
+	private final String configuration;
 	private final long createdTime;
 	private final Long parentNoteId;
 	private final long rootNoteId;
@@ -226,6 +63,8 @@ public final class Note {
 	 * @param details          Structured payload as JSON, may be null. The
 	 *                         Sleuth Kit never parses it.
 	 * @param author           Who wrote it.
+	 * @param configuration    Prompt or module configuration version that
+	 *                         produced the note, may be null.
 	 * @param createdTime      Creation time, epoch milliseconds.
 	 * @param parentNoteId     Note this one replies to, null on a thread root.
 	 * @param rootNoteId       Root of the thread, own note id on a root.
@@ -237,8 +76,8 @@ public final class Note {
 	 *                         explains none.
 	 */
 	Note(long noteId, long objId, Long dataSourceObjId, NoteType type, String body, String details,
-			Author author, long createdTime, Long parentNoteId, long rootNoteId, long originalNoteId,
-			boolean isCurrent, boolean isDeleted, Long analysisResultId) {
+			Author author, String configuration, long createdTime, Long parentNoteId, long rootNoteId,
+			long originalNoteId, boolean isCurrent, boolean isDeleted, Long analysisResultId) {
 		this.noteId = noteId;
 		this.objId = objId;
 		this.dataSourceObjId = dataSourceObjId;
@@ -246,6 +85,7 @@ public final class Note {
 		this.body = body;
 		this.details = details;
 		this.author = author;
+		this.configuration = configuration;
 		this.createdTime = createdTime;
 		this.parentNoteId = parentNoteId;
 		this.rootNoteId = rootNoteId;
@@ -322,6 +162,16 @@ public final class Note {
 	 */
 	public Author getAuthor() {
 		return author;
+	}
+
+	/**
+	 * Gets the prompt or module configuration version that produced this
+	 * note.
+	 *
+	 * @return Optional with the configuration, empty if there is none.
+	 */
+	public Optional<String> getConfiguration() {
+		return Optional.ofNullable(configuration);
 	}
 
 	/**
