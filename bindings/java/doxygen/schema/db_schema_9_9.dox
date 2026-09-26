@@ -322,6 +322,14 @@ One entry is created in this table for each host address found in the data sourc
 - **address_type** - Type of address (as org.sleuthkit.datamodel.HostAddress.HostAddressType enum)
 - **address** - Address (must be unique within the scope of address_type). 
 
+## tsk_host_address_map
+Tracks which addresses were assigned to a given host, and when.  A host can have several addresses and an address can be reassigned, so the mapping is recorded with the time it was valid.
+- **id** - Id of the mapping
+- **host_id** - Id of the host the address was assigned to (references tsk_hosts)
+- **addr_obj_id** - Id of the host address
+- **source_obj_id** - Id of the object used to determine this mapping (references tsk_objects)
+- **time** - Timestamp when this mapping was valid
+
 ## tsk_host_address_dns_ip_map
 Stores data if host names and IP addresses were resolved between each other. 
 - **id** - Id of the mapping
