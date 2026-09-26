@@ -1096,7 +1096,7 @@ public class SleuthkitCase {
 		// The display names and descriptions are prose, so they are bound rather than
 		// interpolated. An apostrophe in one of them would otherwise fail every case
 		// open, and this runs on every open.
-		String query = "INTO tsk_note_types (type_name, display_name, description) VALUES (?, ?, ?)";
+		String query = "INTO tsk_note_types (type_name, note_type_display_name, description) VALUES (?, ?, ?)";
 		switch (getDatabaseType()) {
 			case POSTGRESQL:
 				query = "INSERT " + query + " ON CONFLICT DO NOTHING"; // NON-NLS
@@ -3408,13 +3408,13 @@ public class SleuthkitCase {
 			// after this upgrade, so this method creates the tables and nothing else.
 			statement.execute("CREATE TABLE tsk_note_types (note_type_id " + primaryKeyType + " PRIMARY KEY, "
 					+ "type_name TEXT NOT NULL UNIQUE, "
-					+ "display_name TEXT, "
+					+ "note_type_display_name TEXT, "
 					+ "description TEXT)");
 
 			statement.execute("CREATE TABLE tsk_authors (author_id " + primaryKeyType + " PRIMARY KEY, "
 					+ "author_type INTEGER NOT NULL, "
 					+ "author_name TEXT NOT NULL, "
-					+ "display_name TEXT NOT NULL, "
+					+ "author_display_name TEXT NOT NULL, "
 					+ "UNIQUE(author_type, author_name))");
 
 			statement.execute("CREATE TABLE tsk_notes (note_id " + primaryKeyType + " PRIMARY KEY, "

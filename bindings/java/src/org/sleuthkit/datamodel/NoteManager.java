@@ -104,8 +104,8 @@ public final class NoteManager {
 			+ "notes.body, notes.payload, notes.author_id, "
 			+ "notes.configuration, notes.created_time, notes.modified_time, notes.parent_note_id, notes.root_note_id, "
 			+ "notes.is_deleted, notes.analysis_result_id, "
-			+ "types.type_name, types.display_name, types.description, "
-			+ "authors.author_type, authors.author_name, authors.display_name "
+			+ "types.type_name, types.note_type_display_name, types.description, "
+			+ "authors.author_type, authors.author_name, authors.author_display_name "
 			+ "FROM tsk_notes notes "
 			+ "INNER JOIN tsk_note_types types ON notes.note_type_id = types.note_type_id "
 			+ "INNER JOIN tsk_authors authors ON notes.author_id = authors.author_id ";
@@ -190,7 +190,7 @@ public final class NoteManager {
 			// Insert-then-select rather than select-then-insert. On PostgreSQL two
 			// clients can open the same case at once, so a check-then-act here would
 			// race; the UNIQUE constraint on type_name settles it instead.
-			String insertSql = "INTO tsk_note_types (type_name, display_name, description) VALUES (?, ?, ?)";
+			String insertSql = "INTO tsk_note_types (type_name, note_type_display_name, description) VALUES (?, ?, ?)";
 			switch (db.getDatabaseType()) {
 				case POSTGRESQL:
 					insertSql = "INSERT " + insertSql + " ON CONFLICT DO NOTHING"; //NON-NLS
@@ -250,7 +250,7 @@ public final class NoteManager {
 	 * @throws TskCoreException
 	 */
 	private Optional<NoteType> getNoteType(String typeName, CaseDbConnection connection) throws TskCoreException {
-		String queryString = "SELECT note_type_id, type_name, display_name, description FROM tsk_note_types WHERE type_name = ?";
+		String queryString = "SELECT note_type_id, type_name, note_type_display_name, description FROM tsk_note_types WHERE type_name = ?";
 
 		db.acquireSingleUserCaseReadLock();
 		try {
@@ -1046,8 +1046,10 @@ public final class NoteManager {
 	 */
 	static Note getNoteFromResultSet(ResultSet rs) throws SQLException {
 		NoteType type = getNoteTypeFromResultSet(rs);
+		// Both display name columns are prefixed with their table's subject, so the
+		// joined row has no two columns answering to the same label.
 		Author author = new Author(rs.getLong("author_id"), TSK_AUTHOR_TYPE_ENUM.fromID(rs.getInt("author_type")),
-				rs.getString("author_name"), rs.getString("display_name"));
+				rs.getString("author_name"), rs.getString("author_display_name"));
 
 		return new Note(rs.getLong("note_id"), rs.getLong("obj_id"), getNullableLong(rs, "data_source_obj_id"),
 				type, rs.getString("body"), rs.getString("payload"), author, rs.getString("configuration"),
@@ -1066,7 +1068,7 @@ public final class NoteManager {
 	 */
 	private static NoteType getNoteTypeFromResultSet(ResultSet rs) throws SQLException {
 		return new NoteType(rs.getLong("note_type_id"), rs.getString("type_name"),
-				rs.getString("display_name"), rs.getString("description"));
+				rs.getString("note_type_display_name"), rs.getString("description"));
 	}
 
 	/**

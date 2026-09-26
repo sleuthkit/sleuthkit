@@ -66,8 +66,11 @@ public final class AuthorManager {
 			throw new TskCoreException("Illegal argument passed to getAuthor: author name is required.");
 		}
 
+		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			return getAuthor(type, name, connection);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -97,7 +100,7 @@ public final class AuthorManager {
 		db.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection connection = db.getConnection()) {
 			PreparedStatement insert = connection.getPreparedStatement(
-					"INSERT INTO tsk_authors (author_type, author_name, display_name) VALUES (?, ?, ?)",
+					"INSERT INTO tsk_authors (author_type, author_name, author_display_name) VALUES (?, ?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
 			insert.clearParameters();
 			insert.setInt(1, type.getValue());
@@ -151,7 +154,7 @@ public final class AuthorManager {
 			// Insert-then-select rather than select-then-insert. On PostgreSQL two
 			// clients can open the same case at once, so a check-then-act here would
 			// race; the UNIQUE constraint on (author_type, author_name) settles it instead.
-			String insertSql = "INTO tsk_authors (author_type, author_name, display_name) VALUES (?, ?, ?)";
+			String insertSql = "INTO tsk_authors (author_type, author_name, author_display_name) VALUES (?, ?, ?)";
 			switch (db.getDatabaseType()) {
 				case POSTGRESQL:
 					insertSql = "INSERT " + insertSql + " ON CONFLICT DO NOTHING"; //NON-NLS
@@ -192,7 +195,7 @@ public final class AuthorManager {
 	 * @throws TskCoreException
 	 */
 	private Optional<Author> getAuthor(TSK_AUTHOR_TYPE_ENUM type, String name, CaseDbConnection connection) throws TskCoreException {
-		String queryString = "SELECT author_id, author_type, author_name, display_name FROM tsk_authors "
+		String queryString = "SELECT author_id, author_type, author_name, author_display_name FROM tsk_authors "
 				+ "WHERE author_type = ? AND author_name = ?";
 
 		db.acquireSingleUserCaseReadLock();
@@ -226,6 +229,6 @@ public final class AuthorManager {
 	 */
 	private static Author getAuthorFromResultSet(ResultSet rs) throws SQLException {
 		return new Author(rs.getLong("author_id"), TSK_AUTHOR_TYPE_ENUM.fromID(rs.getInt("author_type")),
-				rs.getString("author_name"), rs.getString("display_name"));
+				rs.getString("author_name"), rs.getString("author_display_name"));
 	}
 }

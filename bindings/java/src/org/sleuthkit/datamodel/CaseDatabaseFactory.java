@@ -352,7 +352,8 @@ class CaseDatabaseFactory {
 		// type such as chat has rows from both people and models.
 		stmt.execute("CREATE TABLE tsk_note_types (note_type_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "type_name TEXT NOT NULL UNIQUE, "	// COMMENT, AI_ENRICHMENT, REMEDIATION, AI_SUMMARY, ...
-				+ "display_name TEXT, "
+				+ "note_type_display_name TEXT, "	// what the UI renders; prefixed rather than plain
+													// display_name so a join carrying several of them is unambiguous
 				+ "description TEXT)");
 
 		// A principal that can author a note: a person, a model, or a module. Kept
@@ -362,7 +363,8 @@ class CaseDatabaseFactory {
 		stmt.execute("CREATE TABLE tsk_authors (author_id " + dbQueryHelper.getPrimaryKey() + " PRIMARY KEY, "
 				+ "author_type INTEGER NOT NULL, "	// USER/AI/MODULE; see TSK_AUTHOR_TYPE_ENUM
 				+ "author_name TEXT NOT NULL, "	// stable id of the principal: a user id, a model id, or a module name
-				+ "display_name TEXT NOT NULL, "	// what the UI renders
+				+ "author_display_name TEXT NOT NULL, "	// what the UI renders; prefixed for the same reason
+															// as note_type_display_name above
 				+ "UNIQUE(author_type, author_name))");
 
 		// References tsk_objects, tsk_note_types, tsk_authors, tsk_analysis_results

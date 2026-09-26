@@ -871,6 +871,11 @@ public class NoteTest {
 		assertEquals(expected.getBody(), actual.getBody());
 		assertEquals(expected.getPayload(), actual.getPayload());
 		assertEquals(expected.getAuthor(), actual.getAuthor());
+		// equals() is on the author id alone, so the rest of the author is checked
+		// here: a read builds it from a join, and the wrong column would go unnoticed.
+		assertEquals(expected.getAuthor().getType(), actual.getAuthor().getType());
+		assertEquals(expected.getAuthor().getName(), actual.getAuthor().getName());
+		assertEquals(expected.getAuthor().getDisplayName(), actual.getAuthor().getDisplayName());
 		assertEquals(expected.getConfiguration(), actual.getConfiguration());
 		assertEquals(expected.getCreatedTime(), actual.getCreatedTime());
 		assertEquals(expected.getModifiedTime(), actual.getModifiedTime());
