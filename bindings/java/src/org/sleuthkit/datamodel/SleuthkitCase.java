@@ -276,6 +276,7 @@ public class SleuthkitCase {
 	private PersonManager personManager;
 	private HostAddressManager hostAddressManager;
 	private NoteManager noteManager;
+	private AuthorManager authorManager;
 
 	// Object id of the row in tsk_objects that stands for the case itself, so that
 	// case level notes have something to point at. Read or created on every open.
@@ -560,6 +561,7 @@ public class SleuthkitCase {
 		hostManager = new HostManager(this);
 		personManager = new PersonManager(this);
 		hostAddressManager = new HostAddressManager(this);
+		authorManager = new AuthorManager(this);
 		noteManager = new NoteManager(this);
 	}
 		
@@ -843,6 +845,17 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets the author manager for this case.
+	 *
+	 * @return The per case AuthorManager object.
+	 *
+	 * @throws TskCoreException
+	 */
+	public AuthorManager getAuthorManager() throws TskCoreException {
+		return authorManager;
+	}
+
+	/**
 	 * Gets the object id of the row in tsk_objects that stands for the case
 	 * itself. It is a root level object, a sibling of the data sources rather
 	 * than their parent, and it exists so that case level content such as a
@@ -1083,7 +1096,7 @@ public class SleuthkitCase {
 		// The display names and descriptions are prose, so they are bound rather than
 		// interpolated. An apostrophe in one of them would otherwise fail every case
 		// open, and this runs on every open.
-		String query = "INTO tsk_note_types (type_name, display_name, description) VALUES (?, ?, ?)";
+		String query = "INTO tsk_note_types (type_name, note_type_display_name, description) VALUES (?, ?, ?)";
 		switch (getDatabaseType()) {
 			case POSTGRESQL:
 				query = "INSERT " + query + " ON CONFLICT DO NOTHING"; // NON-NLS
@@ -3395,39 +3408,40 @@ public class SleuthkitCase {
 			// after this upgrade, so this method creates the tables and nothing else.
 			statement.execute("CREATE TABLE tsk_note_types (note_type_id " + primaryKeyType + " PRIMARY KEY, "
 					+ "type_name TEXT NOT NULL UNIQUE, "
-					+ "display_name TEXT, "
+					+ "note_type_display_name TEXT, "
 					+ "description TEXT)");
+
+			statement.execute("CREATE TABLE tsk_authors (author_id " + primaryKeyType + " PRIMARY KEY, "
+					+ "author_type INTEGER NOT NULL, "
+					+ "author_name TEXT NOT NULL, "
+					+ "author_display_name TEXT NOT NULL, "
+					+ "UNIQUE(author_type, author_name))");
 
 			statement.execute("CREATE TABLE tsk_notes (note_id " + primaryKeyType + " PRIMARY KEY, "
 					+ "obj_id " + bigIntDataType + " NOT NULL, "
 					+ "data_source_obj_id " + bigIntDataType + ", "
 					+ "note_type_id " + bigIntDataType + " NOT NULL, "
 					+ "body TEXT NOT NULL, "
-					+ "details TEXT, "
-					+ "author_kind INTEGER NOT NULL, "
-					+ "author_id TEXT NOT NULL, "
-					+ "author_display TEXT NOT NULL, "
-					+ "config_id TEXT, "
+					+ "payload TEXT, "
+					+ "author_id " + bigIntDataType + " NOT NULL, "
+					+ "configuration TEXT, "
 					+ "created_time " + bigIntDataType + " NOT NULL, "
+					+ "modified_time " + bigIntDataType + ", "
 					+ "parent_note_id " + bigIntDataType + ", "
 					+ "root_note_id " + bigIntDataType + ", "
-					+ "original_note_id " + bigIntDataType + ", "
-					+ "is_current INTEGER NOT NULL DEFAULT 1, "
 					+ "is_deleted INTEGER NOT NULL DEFAULT 0, "
 					+ "analysis_result_id " + bigIntDataType + ", "
 					+ "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(note_type_id) REFERENCES tsk_note_types(note_type_id), "
+					+ "FOREIGN KEY(author_id) REFERENCES tsk_authors(author_id), "
 					+ "FOREIGN KEY(parent_note_id) REFERENCES tsk_notes(note_id) ON DELETE CASCADE, "
 					+ "FOREIGN KEY(root_note_id) REFERENCES tsk_notes(note_id), "
-					+ "FOREIGN KEY(original_note_id) REFERENCES tsk_notes(note_id), "
 					+ "FOREIGN KEY(analysis_result_id) REFERENCES tsk_analysis_results(artifact_obj_id) ON DELETE SET NULL)");
 
 			statement.execute("CREATE INDEX tsk_notes_obj_id_created_index ON tsk_notes(obj_id, created_time)");
 			statement.execute("CREATE INDEX tsk_notes_datasrc_type_index ON tsk_notes(data_source_obj_id, note_type_id)");
 			statement.execute("CREATE INDEX tsk_notes_root_index ON tsk_notes(root_note_id)");
-			statement.execute("CREATE INDEX tsk_notes_original_index ON tsk_notes(original_note_id, is_current)");
-			statement.execute("CREATE UNIQUE INDEX tsk_notes_current_revision_index ON tsk_notes(original_note_id) WHERE is_current = 1");
 
 			if (this.dbType.equals(DbType.SQLITE)) {
 				statement.execute("CREATE INDEX tsk_notes_ar_index ON tsk_notes(analysis_result_id)");
@@ -15984,7 +15998,7 @@ public class SleuthkitCase {
 		/**
 		 * Saves a note that has been revised as a part of this transaction.
 		 *
-		 * @param note The new current revision.
+		 * @param note The note as revised.
 		 */
 		void registerUpdatedNote(Note note) {
 			if (note != null) {

@@ -744,6 +744,55 @@ public class TskData {
 	}
 	
 	/**
+	 * The kind of principal that authored a note or other attributed content.
+	 * This is the author_type field in the tsk_authors table.
+	 */
+	public enum TSK_AUTHOR_TYPE_ENUM {
+
+		// Unrecognized ids (e.g. an author type written by a newer schema version)
+		// resolve to UNKNOWN: fromID() never throws and never returns null.
+		UNKNOWN(-1), ///< An author type not recognized by this version
+		USER(0), ///< A person
+		AI(1), ///< A model
+		MODULE(2), ///< Automation that is not a model, such as an ingest module
+		;
+
+		private final int authorType;
+
+		private TSK_AUTHOR_TYPE_ENUM(int authorType) {
+			this.authorType = authorType;
+		}
+
+		/**
+		 * Gets an author type from its author_type column value. Resilient to
+		 * unknown ids: never throws and never returns null - any unrecognized
+		 * value maps to {@link #UNKNOWN}.
+		 *
+		 * @param authorType The value to look for.
+		 *
+		 * @return The matching author type, or UNKNOWN if the value is not
+		 *         recognized.
+		 */
+		public static TSK_AUTHOR_TYPE_ENUM fromID(int authorType) {
+			for (TSK_AUTHOR_TYPE_ENUM type : TSK_AUTHOR_TYPE_ENUM.values()) {
+				if (type.authorType == authorType) {
+					return type;
+				}
+			}
+			return UNKNOWN;
+		}
+
+		/**
+		 * Get the value stored in the author_type column for this type.
+		 *
+		 * @return the author type value
+		 */
+		public int getValue() {
+			return authorType;
+		}
+	}
+
+	/**
 	 * The type of pool in a database.
 	 * This is the pool_type field in the tsk_pool_info table.
 	 */
