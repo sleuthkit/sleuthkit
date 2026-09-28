@@ -794,15 +794,58 @@ public final class CaseDbAccessManager {
 	 */
 	@Beta
 	public CaseDbPreparedStatement prepareInsert(String tableName, String sql, CaseDbTransaction trans) throws TskCoreException {
+		return prepareInsert(tableName, sql, InsertConflict.IGNORE, trans);
+	}
+
+	/**
+	 * Who decides what happens when a prepared insert hits a duplicate key.
+	 */
+	@Beta
+	public enum InsertConflict {
+
+		/**
+		 * SQLite gets OR IGNORE, so a row that breaks a unique or NOT NULL
+		 * constraint is skipped without an error. PostgreSQL callers must
+		 * supply their own ON CONFLICT DO NOTHING clause.
+		 */
+		IGNORE,
+
+		/**
+		 * No OR clause is added, so the caller's SQL carries its own ON
+		 * CONFLICT clause and both backends behave the same way. Use this for
+		 * an upsert. SQLite still runs an ON CONFLICT ... DO UPDATE under OR
+		 * IGNORE, but it also drops, without an error, a row that breaks a
+		 * NOT NULL constraint or a unique constraint other than the conflict
+		 * target, where PostgreSQL throws.
+		 */
+		CALLER_HANDLED
+	}
+
+	/**
+	 * Creates a prepared statement object for the purposes of running an insert
+	 * statement, with the conflict handling the caller asks for. The given SQL
+	 * should not include the starting "INSERT INTO" or the name of the table.
+	 *
+	 * @param tableName The name of the table being updated.
+	 * @param sql       The insert statement without the starting "INSERT INTO (table name)" part.
+	 * @param conflict  Whether this method or the caller's SQL handles a duplicate key.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareInsert(String tableName, String sql, InsertConflict conflict, CaseDbTransaction trans) throws TskCoreException {
 		validateTableName(tableName);
 		validateSQL(sql);
-		
+
 		String insertSQL = "INSERT";
-		if (DbType.SQLITE == tskDB.getDatabaseType()) {
+		if (InsertConflict.IGNORE == conflict && DbType.SQLITE == tskDB.getDatabaseType()) {
 			insertSQL += " OR IGNORE";
 		}
 		insertSQL = insertSQL + " INTO " + tableName + " " + sql; // NON-NLS
-	
+
 		try {
 			return new CaseDbPreparedStatement(StatementType.INSERT, insertSQL, trans);
 		} catch (SQLException ex) {

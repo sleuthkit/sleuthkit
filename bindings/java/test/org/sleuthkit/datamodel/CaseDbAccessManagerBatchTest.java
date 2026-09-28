@@ -34,7 +34,8 @@ import org.junit.Test;
 
 /**
  * Tests for the batch-insert APIs on CaseDbAccessManager:
- * addToBatch, insertBatch, and getMaxBatchSize.
+ * addToBatch, insertBatch, getMaxBatchSize, and the conflict handling
+ * prepareInsert applies.
  */
 public class CaseDbAccessManagerBatchTest {
 
@@ -212,5 +213,93 @@ public class CaseDbAccessManagerBatchTest {
 			}
 		}
 		trans.rollback();
+	}
+
+	/**
+	 * A CALLER_HANDLED statement carrying ON CONFLICT DO UPDATE must update
+	 * the existing row and insert the new one in the same batch.
+	 */
+	@Test
+	public void callerHandledUpsertUpdatesExistingRow() throws Exception {
+		CaseDbAccessManager mgr = caseDB.getCaseDbAccessManager();
+		mgr.insert(TEST_TABLE, "(id, name, value) VALUES (300, 'before', 1)");
+
+		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		try (CaseDbAccessManager.CaseDbPreparedStatement stmt = mgr.prepareInsert(TEST_TABLE,
+				"(id, name, value) VALUES (?, ?, ?) ON CONFLICT (id) DO UPDATE SET name = excluded.name, value = excluded.value",
+				CaseDbAccessManager.InsertConflict.CALLER_HANDLED, trans)) {
+			stmt.setLong(1, 300);
+			stmt.setString(2, "after");
+			stmt.setLong(3, 2);
+			mgr.addToBatch(stmt);
+			stmt.setLong(1, 301);
+			stmt.setString(2, "new");
+			stmt.setLong(3, 3);
+			mgr.addToBatch(stmt);
+			mgr.insertBatch(stmt);
+		}
+		trans.commit();
+
+		assertEquals("after", readName(300));
+		assertEquals("new", readName(301));
+	}
+
+	/**
+	 * On SQLite, IGNORE drops a row that breaks NOT NULL without an error.
+	 * CALLER_HANDLED must report it instead, as PostgreSQL does.
+	 */
+	@Test
+	public void callerHandledReportsConstraintViolationThatIgnoreDrops() throws Exception {
+		CaseDbAccessManager mgr = caseDB.getCaseDbAccessManager();
+		String upsert = "(id, name, value) VALUES (?, ?, ?) ON CONFLICT (id) DO UPDATE SET name = excluded.name";
+
+		SleuthkitCase.CaseDbTransaction trans = caseDB.beginTransaction();
+		try (CaseDbAccessManager.CaseDbPreparedStatement stmt
+				= mgr.prepareInsert(TEST_TABLE, upsert, CaseDbAccessManager.InsertConflict.IGNORE, trans)) {
+			stmt.setLong(1, 400);
+			stmt.setString(2, null);
+			stmt.setLong(3, 0);
+			mgr.addToBatch(stmt);
+			mgr.insertBatch(stmt);
+		}
+		trans.commit();
+		assertEquals(null, readName(400));
+
+		trans = caseDB.beginTransaction();
+		try (CaseDbAccessManager.CaseDbPreparedStatement stmt
+				= mgr.prepareInsert(TEST_TABLE, upsert, CaseDbAccessManager.InsertConflict.CALLER_HANDLED, trans)) {
+			stmt.setLong(1, 401);
+			stmt.setString(2, null);
+			stmt.setLong(3, 0);
+			mgr.addToBatch(stmt);
+			mgr.insertBatch(stmt);
+			fail("Expected TskCoreException for a NOT NULL violation");
+		} catch (TskCoreException expected) {
+			assertTrue(expected.getCause() instanceof SQLException);
+		} finally {
+			trans.rollback();
+		}
+	}
+
+	/**
+	 * Reads the name column of one row, or null when the row does not exist.
+	 */
+	private static String readName(long id) throws TskCoreException {
+		final String[] name = new String[1];
+		caseDB.getCaseDbAccessManager().select(
+				"name FROM " + TEST_TABLE + " WHERE id = " + id,
+				new CaseDbAccessManager.CaseDbAccessQueryCallback() {
+					@Override
+					public void process(ResultSet resultSet) {
+						try {
+							if (resultSet.next()) {
+								name[0] = resultSet.getString("name");
+							}
+						} catch (SQLException ex) {
+							fail("Unexpected SQLException: " + ex.getMessage());
+						}
+					}
+				});
+		return name[0];
 	}
 }
