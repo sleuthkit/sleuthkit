@@ -15173,6 +15173,9 @@ public class SleuthkitCase {
 			config.setSynchronous(SQLiteConfig.SynchronousMode.OFF); // Reduce I/O operations, we have no OS crash recovery anyway.
 			config.setReadUncommitted(true);
 			config.enforceForeignKeys(true); // Enforce foreign key constraints.
+			// 256 MiB page cache per connection (a negative size is in KiB). With SQLite's default of about
+			// 2 MiB, a large case's file inserts keep re-reading index pages from disk.
+			config.setCacheSize(-262144);
 			if (useWAL) {
 				config.setJournalMode(SQLiteConfig.JournalMode.WAL);
 			}
