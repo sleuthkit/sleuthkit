@@ -1115,15 +1115,41 @@ public final class CaseDbAccessManager {
 		 * @throws TskCoreException
 		 */
 		private CaseDbPreparedStatement(StatementType type, String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {		
+			LockType acquiredLock;
 			if (isWriteLockRequired) {
 				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();
-				this.lockType = LockType.WRITE;
+				acquiredLock = LockType.WRITE;
 			} else {
 				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();
-				this.lockType = LockType.READ;
+				acquiredLock = LockType.READ;
 			}
-			this.connection = tskDB.getConnection();
-			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			CaseDbConnection acquiredConnection = null;
+			PreparedStatement acquiredStatement = null;
+			boolean constructed = false;
+			try {
+				acquiredConnection = tskDB.getConnection();
+				acquiredStatement = acquiredConnection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+				constructed = true;
+			} finally {
+				if (!constructed) {
+					// The caller never receives this object, so close() will not run to release the lock
+					// and connection. Getting the connection fails when the case has been closed.
+					try {
+						if (acquiredConnection != null) {
+							acquiredConnection.close();
+						}
+					} finally {
+						if (acquiredLock == LockType.WRITE) {
+							CaseDbAccessManager.this.tskDB.releaseSingleUserCaseWriteLock();
+						} else {
+							CaseDbAccessManager.this.tskDB.releaseSingleUserCaseReadLock();
+						}
+					}
+				}
+			}
+			this.lockType = acquiredLock;
+			this.connection = acquiredConnection;
+			this.preparedStatement = acquiredStatement;
 			this.originalSql = query;
 			this.type = type;
 		}
