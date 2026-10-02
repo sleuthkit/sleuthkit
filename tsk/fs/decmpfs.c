@@ -303,6 +303,11 @@ decmpfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offse
     }
 
     tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
+    if (tableDataSize < 4) {
+        error_returned
+            (" %s: tableDataSize %u is too small", __func__, tableDataSize);
+        return 0;
+    }
 
     offsetTableData = tsk_malloc(tableDataSize);
     if (offsetTableData == NULL) {
