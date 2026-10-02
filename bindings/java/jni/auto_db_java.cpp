@@ -1737,7 +1737,7 @@ TSK_RETVAL_ENUM TskAutoDbJava::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo)
     }
 
     //open the fs we have from database
-    TSK_FS_INFO* fsInfo = tsk_fs_open_img_decrypt(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType, getFileSystemPassword().data());
+    TSK_FS_INFO* fsInfo = openFsDecryptWithPasswords(dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
         tsk_error_set_errstr2("TskAutoDbJava::addFsInfoUnalloc: error opening fs at offset %" PRIdOFF, dbFsInfo.imgOffset);
         registerError();
