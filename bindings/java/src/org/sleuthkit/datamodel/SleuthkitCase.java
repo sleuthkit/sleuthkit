@@ -14916,10 +14916,15 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
+		// The POSTGRESQL_RESERVE_*_IDS statements resolve each sequence once per call rather than once per
+		// reserved id, since that catalog lookup costs more than the nextval. OFFSET 0 keeps the subquery from being inlined.
 		POSTGRESQL_RESERVE_ARTIFACT_IDS(
-				"SELECT nextval(pg_get_serial_sequence('tsk_objects', 'obj_id'))               AS obj_id, " //NON-NLS
-				+ "       nextval(pg_get_serial_sequence('blackboard_artifacts', 'artifact_id')) AS artifact_id " //NON-NLS
-				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
+				"SELECT nextval(seq.obj_id)      AS obj_id, " //NON-NLS
+				+ "       nextval(seq.artifact_id) AS artifact_id " //NON-NLS
+				+ "FROM   (SELECT pg_get_serial_sequence('tsk_objects', 'obj_id')::regclass               AS obj_id, " //NON-NLS
+				+ "               pg_get_serial_sequence('blackboard_artifacts', 'artifact_id')::regclass AS artifact_id " //NON-NLS
+				+ "        OFFSET 0) AS seq " //NON-NLS
+				+ "CROSS JOIN generate_series(1, ?) AS ord " //NON-NLS
 				+ "ORDER BY ord"), //NON-NLS
 		POSTGRESQL_INSERT_OBJECT_WITH_ID("INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)"), //NON-NLS
 		// Race-safe UPSERT for tsk_aggregate_score, used by the batched analysis-result insert path.
@@ -14943,12 +14948,14 @@ public class SleuthkitCase {
 		DELETE_BB_ARTIFACTS_BY_IDS(
 				"DELETE FROM blackboard_artifacts WHERE artifact_obj_id = ANY(?::bigint[])"), //NON-NLS
 		POSTGRESQL_RESERVE_FILE_IDS(
-				"SELECT nextval(pg_get_serial_sequence('tsk_objects', 'obj_id')) AS obj_id " //NON-NLS
-				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
+				"SELECT nextval(seq.obj_id) AS obj_id " //NON-NLS
+				+ "FROM   (SELECT pg_get_serial_sequence('tsk_objects', 'obj_id')::regclass AS obj_id OFFSET 0) AS seq " //NON-NLS
+				+ "CROSS JOIN generate_series(1, ?) AS ord " //NON-NLS
 				+ "ORDER BY ord"), //NON-NLS
 		POSTGRESQL_RESERVE_FILE_ATTRIBUTE_IDS(
-				"SELECT nextval(pg_get_serial_sequence('tsk_file_attributes', 'id')) AS attr_id " //NON-NLS
-				+ "FROM   generate_series(1, ?) AS ord " //NON-NLS
+				"SELECT nextval(seq.attr_id) AS attr_id " //NON-NLS
+				+ "FROM   (SELECT pg_get_serial_sequence('tsk_file_attributes', 'id')::regclass AS attr_id OFFSET 0) AS seq " //NON-NLS
+				+ "CROSS JOIN generate_series(1, ?) AS ord " //NON-NLS
 				+ "ORDER BY ord"), //NON-NLS
 		POSTGRESQL_INSERT_FILE_ATTRIBUTE_WITH_ID(
 				"INSERT INTO tsk_file_attributes (id, obj_id, attribute_type_id, value_type, " //NON-NLS
