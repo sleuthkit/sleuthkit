@@ -619,13 +619,13 @@ public class NoteTest {
 	}
 
 	/**
-	 * Opening a 9.8 case must add the note tables and the case object and leave
-	 * a database that behaves like a new one. The 9.8 database is made by taking
-	 * a new case back apart, including what later versions added, which is as
-	 * close as this test can get without a build of the older schema.
+	 * Opening a 9.6 case, the 4.15.0 release's schema, must add everything 9.7
+	 * has and the case object, and leave a database that behaves like a new one.
+	 * The 9.6 database is made by taking a new case back apart, which is as close
+	 * as this test can get without a build of the older schema.
 	 */
 	@Test
-	public void upgradeFromSchema9dot8Test() throws Exception {
+	public void upgradeFromSchema9dot6Test() throws Exception {
 		String upgradeDbPath = newDbPath("NoteApiUpgradeTest.db");
 
 		SleuthkitCase newCase = SleuthkitCase.newCase(upgradeDbPath);
@@ -634,14 +634,22 @@ public class NoteTest {
 		try (java.sql.Connection connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + upgradeDbPath);
 				Statement s = connection.createStatement()) {
 
+			// Part 1
+			s.executeUpdate("DROP INDEX tsk_files_os_account_obj_id_index");
+			s.executeUpdate("DROP INDEX tsk_data_artifacts_os_account_obj_id_index");
+			s.executeUpdate("DROP INDEX tsk_files_datasrc_name_size_index");
+			// Part 2
+			s.executeUpdate("DROP TABLE tsk_os_account_names");
+			// Part 3
 			s.executeUpdate("DROP TABLE tsk_notes");
 			s.executeUpdate("DROP TABLE tsk_note_types");
 			s.executeUpdate("DROP TABLE tsk_authors");
 			s.executeUpdate("DELETE FROM tsk_db_info_extended WHERE name = 'CASE_OBJECT_ID'");
 			s.executeUpdate("DELETE FROM tsk_objects WHERE type = " + TskData.ObjectType.CASE.getObjectType());
-			s.executeUpdate("DROP INDEX tsk_os_account_attributes_os_account_obj_id_idx"); // 9.10
-			s.executeUpdate("UPDATE tsk_db_info SET schema_minor_ver = 8");
-			s.executeUpdate("UPDATE tsk_db_info_extended SET value = '8' WHERE name = 'SCHEMA_MINOR_VERSION'");
+			// Part 4
+			s.executeUpdate("DROP INDEX tsk_os_account_attributes_os_account_obj_id_idx");
+			s.executeUpdate("UPDATE tsk_db_info SET schema_minor_ver = 6");
+			s.executeUpdate("UPDATE tsk_db_info_extended SET value = '6' WHERE name = 'SCHEMA_MINOR_VERSION'");
 		}
 
 		SleuthkitCase upgradedCase = SleuthkitCase.openCase(upgradeDbPath);
@@ -650,10 +658,26 @@ public class NoteTest {
 					Statement s = connection.createStatement();
 					ResultSet rs = s.executeQuery("SELECT schema_ver, schema_minor_ver FROM tsk_db_info")) {
 				rs.next();
-				assertEquals(SleuthkitCase.CURRENT_DB_SCHEMA_VERSION.getMajor(), rs.getInt("schema_ver"));
-				assertEquals(SleuthkitCase.CURRENT_DB_SCHEMA_VERSION.getMinor(), rs.getInt("schema_minor_ver"));
+				assertEquals(9, rs.getInt("schema_ver"));
+				assertEquals(7, rs.getInt("schema_minor_ver"));
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error reading the schema version", ex);
+			}
+
+			// Every part of the upgrade is back.
+			try (SleuthkitCase.CaseDbConnection connection = upgradedCase.getConnection();
+					Statement s = connection.createStatement();
+					ResultSet rs = s.executeQuery("SELECT name FROM sqlite_master WHERE name IN ("
+							+ "'tsk_files_os_account_obj_id_index', 'tsk_data_artifacts_os_account_obj_id_index', "
+							+ "'tsk_files_datasrc_name_size_index', 'tsk_os_account_names', 'tsk_os_account_names_name_idx', "
+							+ "'tsk_notes', 'tsk_note_types', 'tsk_authors', 'tsk_os_account_attributes_os_account_obj_id_idx')")) {
+				int found = 0;
+				while (rs.next()) {
+					found++;
+				}
+				assertEquals(9, found);
+			} catch (SQLException ex) {
+				throw new TskCoreException("Error reading the upgraded schema", ex);
 			}
 
 			// The upgraded case has the note tables, the seeded types and a case object,
