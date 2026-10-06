@@ -1519,4 +1519,23 @@ public class OsAccountTest {
 		accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getLoginName().isPresent() && p.getLoginName().get().equals(loginName)).collect(Collectors.toList());
 		assertEquals(accounts.size() == 1, true);
 	}
+
+	/**
+	 * A new case has the index that serves an account's attribute reads.
+	 */
+	@Test
+	public void attributeIndexOnNewCaseTest() throws Exception {
+		String path = Paths.get(System.getProperty("java.io.tmpdir"), "OsAccountAttributeIndexTest.db").toString();
+		new java.io.File(path).delete();
+
+		SleuthkitCase newCase = SleuthkitCase.newCase(path);
+		newCase.close();
+
+		try (java.sql.Connection connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + path);
+				java.sql.Statement s = connection.createStatement();
+				java.sql.ResultSet rs = s.executeQuery("SELECT 1 FROM sqlite_master WHERE type = 'index'"
+						+ " AND name = 'tsk_os_account_attributes_os_account_obj_id_idx'")) {
+			assertTrue("a new case has the index", rs.next());
+		}
+	}
 }

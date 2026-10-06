@@ -113,7 +113,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 9);
+			= new CaseDbSchemaVersionNumber(9, 7);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1125,7 +1125,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Get the object id of the case object, creating it if this is the first
-	 * open since the case was created or upgraded to 9.9.
+	 * open since the case was created or upgraded to 9.7.
 	 *
 	 * This runs on every open rather than only at creation because it has to.
 	 * On PostgreSQL two clients can open the same case at the same time and
@@ -1438,8 +1438,6 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot4toSchema9dot5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot5toSchema9dot6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot6toSchema9dot7(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema9dot7toSchema9dot8(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema9dot8toSchema9dot9(dbSchemaVersion, connection);
 
 
 				statement = connection.createStatement();
@@ -3289,6 +3287,10 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * 9.6 is the schema of the 4.15.0 release; everything added since is in this
+	 * one step, in four parts.
+	 */
 	private CaseDbSchemaVersionNumber updateFromSchema9dot6toSchema9dot7(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 9) {
 			return schemaVersion;
@@ -3298,7 +3300,14 @@ public class SleuthkitCase {
 			return schemaVersion;
 		}
 
-		// Add indexes on os_account_obj_id for tsk_files and tsk_data_artifacts. The OS-account merge
+		String bigIntDataType = "BIGINT";
+		String primaryKeyType = "BIGSERIAL";
+		if (this.dbType.equals(DbType.SQLITE)) {
+			bigIntDataType = "INTEGER";
+			primaryKeyType = "INTEGER";
+		}
+
+		// Part 1 - Add indexes on os_account_obj_id for tsk_files and tsk_data_artifacts. The OS-account merge
 		// (mergeOsAccounts) rewrites this column via "WHERE os_account_obj_id = ?"; without an index those
 		// UPDATEs force sequential scans of these large tables.
 		String filesIndexSQL;
@@ -3331,34 +3340,7 @@ public class SleuthkitCase {
 			statement.execute(dataArtifactsIndexSQL);
 			statement.execute(nameSizeIndexSQL);
 
-			return new CaseDbSchemaVersionNumber(9, 7);
-
-		} finally {
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	private CaseDbSchemaVersionNumber updateFromSchema9dot7toSchema9dot8(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
-		if (schemaVersion.getMajor() != 9) {
-			return schemaVersion;
-		}
-
-		if (schemaVersion.getMinor() != 7) {
-			return schemaVersion;
-		}
-
-		String bigIntDataType = "BIGINT";
-		String primaryKeyType = "BIGSERIAL";
-		if (this.dbType.equals(DbType.SQLITE)) {
-			bigIntDataType = "INTEGER";
-			primaryKeyType = "INTEGER";
-		}
-
-		Statement statement = connection.createStatement();
-		acquireSingleUserCaseWriteLock();
-		try {
-			// Alternate/secondary names for an OS account (UPN, down-level SAM name, object id, ...),
+			// Part 2 - Alternate/secondary names for an OS account (UPN, down-level SAM name, object id, ...),
 			// beyond the single login_name/addr on tsk_os_accounts, so an account can be resolved by any
 			// observed name form. See OsAccount.OsAccountNameType.
 			statement.execute("CREATE TABLE tsk_os_account_names (id " + primaryKeyType + " PRIMARY KEY, "
@@ -3372,33 +3354,7 @@ public class SleuthkitCase {
 
 			statement.execute("CREATE INDEX tsk_os_account_names_name_idx ON tsk_os_account_names(name, host_id)");
 
-			return new CaseDbSchemaVersionNumber(9, 8);
-		} finally {
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-	private CaseDbSchemaVersionNumber updateFromSchema9dot8toSchema9dot9(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
-		if (schemaVersion.getMajor() != 9) {
-			return schemaVersion;
-		}
-
-		if (schemaVersion.getMinor() != 8) {
-			return schemaVersion;
-		}
-
-		String bigIntDataType = "BIGINT";
-		String primaryKeyType = "BIGSERIAL";
-		if (this.dbType.equals(DbType.SQLITE)) {
-			bigIntDataType = "INTEGER";
-			primaryKeyType = "INTEGER";
-		}
-
-		Statement statement = connection.createStatement();
-		acquireSingleUserCaseWriteLock();
-		try {
-			// Notes: text about an object in the case that has no score and can change after
+			// Part 3 - Notes: text about an object in the case that has no score and can change after
 			// it is written. See CaseDatabaseFactory.createNoteTables() for the same DDL with
 			// the full column commentary, and NoteManager for the API over it.
 			//
@@ -3449,7 +3405,11 @@ public class SleuthkitCase {
 				statement.execute("CREATE INDEX tsk_notes_ar_partial_index ON tsk_notes(analysis_result_id) WHERE analysis_result_id IS NOT NULL");
 			}
 
-			return new CaseDbSchemaVersionNumber(9, 9);
+			// Part 4 - An account's attributes are read by account, once or twice for every account
+			// added; without this index each read scans the table, which holds every host's accounts.
+			statement.execute("CREATE INDEX tsk_os_account_attributes_os_account_obj_id_idx ON tsk_os_account_attributes(os_account_obj_id)");
+
+			return new CaseDbSchemaVersionNumber(9, 7);
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();

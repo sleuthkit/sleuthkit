@@ -471,6 +471,7 @@ class CaseDatabaseFactory {
 			stmt.execute("CREATE INDEX tsk_os_accounts_login_name_idx  ON tsk_os_accounts(login_name, db_status, realm_id)");
 			stmt.execute("CREATE INDEX tsk_os_accounts_addr_idx  ON tsk_os_accounts(addr, db_status, realm_id)");
 			stmt.execute("CREATE INDEX tsk_os_account_names_name_idx  ON tsk_os_account_names(name, host_id)");
+			stmt.execute("CREATE INDEX tsk_os_account_attributes_os_account_obj_id_idx ON tsk_os_account_attributes(os_account_obj_id)");
 
 			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_name_idx  ON tsk_os_account_realms(realm_name)");
 			stmt.execute("CREATE INDEX tsk_os_account_realms_realm_addr_idx  ON tsk_os_account_realms(realm_addr)");

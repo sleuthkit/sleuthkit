@@ -1,10 +1,10 @@
-/*! \page db_schema_9_9_page TSK & Autopsy Database Schema (Schema version 9.9)
+/*! \page db_schema_9_7_page TSK & Autopsy Database Schema (Schema version 9.7)
 
 [TOC]
 
 # Introduction
 
-This page outlines version 9.9 the database that is used by The Sleuth Kit and Autopsy. The goal of this page is to provide short descriptions for each table and column and not focus on foreign key requirements, etc. If you want that level of detail, then refer to the actual schema in addition to this. 
+This page outlines version 9.7 the database that is used by The Sleuth Kit and Autopsy. The goal of this page is to provide short descriptions for each table and column and not focus on foreign key requirements, etc. If you want that level of detail, then refer to the actual schema in addition to this. 
 
 Each Autopsy release is associated with a schema version with a major and minor version number. If a case with an older schema version is opened in a new version of Autopsy, the case will automatically be updated to the current schema. Going the other direction (opening a case that was created with a newer version of Autopsy), two things may happen:
 - If the case database has the same major number as the version of Autopsy being used, the case should generally be able to be opened and used.
@@ -26,9 +26,9 @@ Some general notes on this schema:
 # Schema Information
 
 Changes since schema version 9.4:
-- 9.8 added the `tsk_os_account_names` table, which stores alternate names for an OS account beyond the single login name on `tsk_os_accounts`.
-- 9.9 added the `tsk_notes`, `tsk_note_types` and `tsk_authors` tables, which store text about an object that can change after it is written.  See the Notes section below.
-- The remaining versions added indexes only and did not change any table or column.
+- 9.7 added the `tsk_os_account_names` table, which stores alternate names for an OS account beyond the single login name on `tsk_os_accounts`.
+- 9.7 added the `tsk_notes`, `tsk_note_types` and `tsk_authors` tables, which store text about an object that can change after it is written.  See the Notes section below.
+- 9.7 also added indexes, and 9.5 and 9.6 added indexes only; none of them changed any table or column.
 
 
 # General Information Tables 
