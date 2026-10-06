@@ -149,7 +149,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TATOI	_wtoi
 #define TFPRINTF fwprintf
 #define TSNPRINTF _snwprintf
-#define TPUTENV	_wputenv
+#define TSETENV(name, value) _wputenv_s(name, value)
 #define TZSET	_tzset
 #define TZNAME _tzname
 #if defined(_MSC_VER)
@@ -200,7 +200,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TATOI	atoi
 #define TFPRINTF fprintf
 #define TSNPRINTF snprintf
-#define TPUTENV	putenv
+#define TSETENV(name, value) setenv(name, value, 1)
 #define TZSET	tzset
 #define TZNAME	tzname
 

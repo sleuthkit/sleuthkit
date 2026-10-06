@@ -224,9 +224,7 @@ main(int argc, char **argv1)
             exit(0);
         case 'z':
             {
-                TSK_TCHAR envstr[32];
-                TSNPRINTF(envstr, 32, _TSK_T("TZ=%s"), OPTARG);
-                if (0 != TPUTENV(envstr)) {
+                if (0 != TSETENV(_TSK_T("TZ"), OPTARG)) {
                     tsk_fprintf(stderr, "error setting environment");
                     exit(1);
                 }
