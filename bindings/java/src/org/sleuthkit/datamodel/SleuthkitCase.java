@@ -113,7 +113,7 @@ public class SleuthkitCase {
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 
 	static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(9, 9);
+			= new CaseDbSchemaVersionNumber(9, 10);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1440,6 +1440,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema9dot6toSchema9dot7(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot7toSchema9dot8(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema9dot8toSchema9dot9(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema9dot9toSchema9dot10(dbSchemaVersion, connection);
 
 
 				statement = connection.createStatement();
@@ -3450,6 +3451,30 @@ public class SleuthkitCase {
 			}
 
 			return new CaseDbSchemaVersionNumber(9, 9);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	private CaseDbSchemaVersionNumber updateFromSchema9dot9toSchema9dot10(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 9) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 9) {
+			return schemaVersion;
+		}
+
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// An account's attributes are read by account, once or twice per account as it is added.
+			// Without this index each read scans the table, which holds every account of every host
+			// in the case, so adding accounts slows down as the case grows.
+			statement.execute("CREATE INDEX tsk_os_account_attributes_os_account_obj_id_idx ON tsk_os_account_attributes(os_account_obj_id)");
+
+			return new CaseDbSchemaVersionNumber(9, 10);
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();

@@ -1519,4 +1519,46 @@ public class OsAccountTest {
 		accounts = caseDB.getOsAccountManager().getOsAccounts().stream().filter(p -> p.getLoginName().isPresent() && p.getLoginName().get().equals(loginName)).collect(Collectors.toList());
 		assertEquals(accounts.size() == 1, true);
 	}
+
+	/**
+	 * A new case has the index that serves an account's attribute reads, and
+	 * opening a 9.9 case adds it. The 9.9 database is made by dropping the index
+	 * from a new case.
+	 */
+	@Test
+	public void attributeIndexOnNewAndUpgradedCaseTest() throws Exception {
+		String path = Paths.get(System.getProperty("java.io.tmpdir"), "OsAccountAttributeIndexTest.db").toString();
+		new java.io.File(path).delete();
+
+		SleuthkitCase newCase = SleuthkitCase.newCase(path);
+		newCase.close();
+		assertTrue("a new case has the index", hasAttributeIndex(path));
+
+		try (java.sql.Connection connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + path);
+				java.sql.Statement s = connection.createStatement()) {
+			s.executeUpdate("DROP INDEX tsk_os_account_attributes_os_account_obj_id_idx");
+			s.executeUpdate("UPDATE tsk_db_info SET schema_minor_ver = 9");
+			s.executeUpdate("UPDATE tsk_db_info_extended SET value = '9' WHERE name = 'SCHEMA_MINOR_VERSION'");
+		}
+
+		SleuthkitCase upgradedCase = SleuthkitCase.openCase(path);
+		upgradedCase.close();
+		assertTrue("the upgrade adds the index", hasAttributeIndex(path));
+		try (java.sql.Connection connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + path);
+				java.sql.Statement s = connection.createStatement();
+				java.sql.ResultSet rs = s.executeQuery("SELECT schema_ver, schema_minor_ver FROM tsk_db_info")) {
+			rs.next();
+			assertEquals(9, rs.getInt("schema_ver"));
+			assertEquals(10, rs.getInt("schema_minor_ver"));
+		}
+	}
+
+	private static boolean hasAttributeIndex(String path) throws java.sql.SQLException {
+		try (java.sql.Connection connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + path);
+				java.sql.Statement s = connection.createStatement();
+				java.sql.ResultSet rs = s.executeQuery("SELECT 1 FROM sqlite_master WHERE type = 'index'"
+						+ " AND name = 'tsk_os_account_attributes_os_account_obj_id_idx'")) {
+			return rs.next();
+		}
+	}
 }

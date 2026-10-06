@@ -620,9 +620,9 @@ public class NoteTest {
 
 	/**
 	 * Opening a 9.8 case must add the note tables and the case object and leave
-	 * a database that behaves like one created at 9.9. The 9.8 database is made
-	 * by taking a new case back apart, which is as close as this test can get
-	 * without a build of the older schema.
+	 * a database that behaves like a new one. The 9.8 database is made by taking
+	 * a new case back apart, including what later versions added, which is as
+	 * close as this test can get without a build of the older schema.
 	 */
 	@Test
 	public void upgradeFromSchema9dot8Test() throws Exception {
@@ -639,6 +639,7 @@ public class NoteTest {
 			s.executeUpdate("DROP TABLE tsk_authors");
 			s.executeUpdate("DELETE FROM tsk_db_info_extended WHERE name = 'CASE_OBJECT_ID'");
 			s.executeUpdate("DELETE FROM tsk_objects WHERE type = " + TskData.ObjectType.CASE.getObjectType());
+			s.executeUpdate("DROP INDEX tsk_os_account_attributes_os_account_obj_id_idx"); // 9.10
 			s.executeUpdate("UPDATE tsk_db_info SET schema_minor_ver = 8");
 			s.executeUpdate("UPDATE tsk_db_info_extended SET value = '8' WHERE name = 'SCHEMA_MINOR_VERSION'");
 		}
@@ -649,8 +650,8 @@ public class NoteTest {
 					Statement s = connection.createStatement();
 					ResultSet rs = s.executeQuery("SELECT schema_ver, schema_minor_ver FROM tsk_db_info")) {
 				rs.next();
-				assertEquals(9, rs.getInt("schema_ver"));
-				assertEquals(9, rs.getInt("schema_minor_ver"));
+				assertEquals(SleuthkitCase.CURRENT_DB_SCHEMA_VERSION.getMajor(), rs.getInt("schema_ver"));
+				assertEquals(SleuthkitCase.CURRENT_DB_SCHEMA_VERSION.getMinor(), rs.getInt("schema_minor_ver"));
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error reading the schema version", ex);
 			}
