@@ -974,7 +974,7 @@ public final class OsAccountManager {
 		// Try loading it here and re-adding to the cache.
 		String whereClause = " tsk_os_account_instances.os_account_obj_id = " + osAccountId
 						   + " AND tsk_os_account_instances.data_source_obj_id = " + dataSourceObjId;
-		List<OsAccountInstance> instances = getOsAccountInstances(whereClause);
+		List<OsAccountInstance> instances = getOsAccountInstances(whereClause, connection);
 		if (instances.isEmpty()) {
 			throw new TskCoreException(String.format("Could not get autogen key after row insert or reload instance for OS account instance. OS account object id = %d, data source object id = %d", osAccountId, dataSourceObjId));
 		}
@@ -1694,12 +1694,15 @@ public final class OsAccountManager {
 				+ " ON attributes.host_id = hosts.id "
 				+ " WHERE os_account_obj_id = " + account.getId();
 
+		List<OsAccountAttribute> attributes = new ArrayList<>();
+		List<Host> hosts = new ArrayList<>();
+		List<Long> sourceObjIds = new ArrayList<>();
+		List<Integer> attributeTypeIds = new ArrayList<>();
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = this.db.getConnection();
 				Statement s = connection.createStatement();
 				ResultSet rs = connection.executeQuery(s, queryString)) {
 
-			List<OsAccountAttribute> attributes = new ArrayList<>();
 			while (rs.next()) {
 
 				Host host = null;
@@ -1707,25 +1710,32 @@ public final class OsAccountManager {
 				if (!rs.wasNull()) {
 					host = new Host(hostId, rs.getString("host_name"), Host.HostDbStatus.fromID(rs.getInt("host_status")));
 				}
+				hosts.add(host);
 
-				Content sourceContent = null;
 				long sourceObjId = rs.getLong("source_obj_id");
-				if (!rs.wasNull()) {
-					sourceContent = this.db.getContentById(sourceObjId);
-				}
-				BlackboardAttribute.Type attributeType = db.getBlackboard().getAttributeType(rs.getInt("attribute_type_id"));
-				OsAccountAttribute attribute = account.new OsAccountAttribute(attributeType, rs.getInt("value_int32"), rs.getLong("value_int64"),
+				sourceObjIds.add(rs.wasNull() ? null : sourceObjId);
+				attributeTypeIds.add(rs.getInt("attribute_type_id"));
+				// null attribute type and source are placeholders, replaced below after the connection is released
+				OsAccountAttribute attribute = account.new OsAccountAttribute(null, rs.getInt("value_int32"), rs.getLong("value_int64"),
 						rs.getDouble("value_double"), rs.getString("value_text"), rs.getBytes("value_byte"),
-						db, account, host, sourceContent);
+						db, account, host, null);
 
 				attributes.add(attribute);
 			}
-			return attributes;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting OS account attributes for account obj id = %d", account.getId()), ex);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
+		for (int i = 0; i < attributes.size(); i++) {
+			OsAccountAttribute attribute = attributes.get(i);
+			Content sourceContent = sourceObjIds.get(i) != null ? this.db.getContentById(sourceObjIds.get(i)) : null;
+			BlackboardAttribute.Type attributeType = db.getBlackboard().getAttributeType(attributeTypeIds.get(i));
+			attributes.set(i, account.new OsAccountAttribute(attributeType, attribute.getValueInt(), attribute.getValueLong(),
+					attribute.getValueDouble(), attribute.getValueString(), attribute.getValueBytes(),
+					db, account, hosts.get(i), sourceContent));
+		}
+		return attributes;
 	}
 
 	/**
@@ -1789,6 +1799,30 @@ public final class OsAccountManager {
 	 *                          database.
 	 */
 	private List<OsAccountInstance> getOsAccountInstances(String whereClause) throws TskCoreException {
+		db.acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = db.getConnection()) {
+			return getOsAccountInstances(whereClause, connection);
+		} finally {
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Gets the OS account instances that satisfy the given SQL WHERE clause.
+	 * Uses the given database connection.
+	 *
+	 * Note: this query returns only the most significant instance type (least
+	 * ordinal) for each instance, that matches the specified WHERE clause.
+	 *
+	 * @param whereClause The SQL WHERE clause.
+	 * @param connection  Database connection to use.
+	 *
+	 * @return The OS account instances.
+	 *
+	 * @throws TskCoreException Thrown if there is an error querying the case
+	 *                          database.
+	 */
+	private List<OsAccountInstance> getOsAccountInstances(String whereClause, CaseDbConnection connection) throws TskCoreException {
 		List<OsAccountInstance> osAcctInstances = new ArrayList<>();
 
 		String querySQL
@@ -1802,8 +1836,7 @@ public final class OsAccountManager {
 				+ " WHERE " + whereClause;
 
 		db.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection connection = db.getConnection();
-				PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
+		try (PreparedStatement preparedStatement = connection.getPreparedStatement(querySQL, Statement.NO_GENERATED_KEYS);
 				ResultSet results = connection.executeQuery(preparedStatement)) {
 
 			osAcctInstances = getOsAccountInstancesFromResultSet(results);
