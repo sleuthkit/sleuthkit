@@ -4299,7 +4299,7 @@ public class SleuthkitCase {
 					+ "ON ds.obj_id = img.obj_id"); //NON-NLS
 
 			List<DataSource> dataSourceList = new ArrayList<DataSource>();
-			Map<Long, List<String>> imagePathsMap = getImagePaths();
+			Map<Long, List<String>> imagePathsMap = getImagePaths(connection);
 
 			while (resultSet.next()) {
 				DataSource dataSource;
@@ -7003,6 +7003,7 @@ public class SleuthkitCase {
 	 */
 	public BlackboardArtifact getArtifactById(long id) throws TskCoreException {
 
+		int artifactTypeId;
 		CaseDbConnection connection = null;
 		ResultSet rs = null;
 		acquireSingleUserCaseReadLock();
@@ -7018,17 +7019,7 @@ public class SleuthkitCase {
 			if (!rs.next()) {
 				throw new TskCoreException("Error getting artifacttype for artifact with artifact_obj_id = " + id);
 			}
-
-			// based on the artifact type category, get the analysis result or the data artifact
-			BlackboardArtifact.Type artifactType = blackboard.getArtifactType(rs.getInt("artifact_type_id"));
-			switch (artifactType.getCategory()) {
-				case ANALYSIS_RESULT:
-					return blackboard.getAnalysisResultById(id);
-				case DATA_ARTIFACT:
-					return blackboard.getDataArtifactById(id);
-				default:
-					throw new TskCoreException(String.format("Unknown artifact category for artifact with artifact_obj_id = %d, and artifact type = %s", id, artifactType.getTypeName()));
-			}
+			artifactTypeId = rs.getInt("artifact_type_id");
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifacts by artifact_obj_id, artifact_obj_id = " + id, ex);
@@ -7036,6 +7027,18 @@ public class SleuthkitCase {
 			closeResultSet(rs);
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
+		}
+
+		// based on the artifact type category, get the analysis result or the data artifact.
+		// Done after the connection is returned: each getter checks out its own.
+		BlackboardArtifact.Type artifactType = blackboard.getArtifactType(artifactTypeId);
+		switch (artifactType.getCategory()) {
+			case ANALYSIS_RESULT:
+				return blackboard.getAnalysisResultById(id);
+			case DATA_ARTIFACT:
+				return blackboard.getDataArtifactById(id);
+			default:
+				throw new TskCoreException(String.format("Unknown artifact category for artifact with artifact_obj_id = %d, and artifact type = %s", id, artifactType.getTypeName()));
 		}
 	}
 
@@ -11600,12 +11603,30 @@ public class SleuthkitCase {
 	 *                          core
 	 */
 	public Map<Long, List<String>> getImagePaths() throws TskCoreException {
-		CaseDbConnection connection = null;
+		acquireSingleUserCaseReadLock();
+		try (CaseDbConnection connection = connections.getConnection()) {
+			return getImagePaths(connection);
+		} finally {
+			releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
+	 * Returns a map of image object IDs to a list of fully qualified file paths
+	 * for that image. Uses the given database connection.
+	 *
+	 * @param connection Database connection to use.
+	 *
+	 * @return map of image object IDs to file paths
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	private Map<Long, List<String>> getImagePaths(CaseDbConnection connection) throws TskCoreException {
 		Statement s1 = null;
 		ResultSet rs1 = null;
 		acquireSingleUserCaseReadLock();
 		try {
-			connection = connections.getConnection();
 			s1 = connection.createStatement();
 			rs1 = connection.executeQuery(s1, "SELECT tsk_image_info.obj_id, tsk_image_names.name FROM tsk_image_info "
 					+ "LEFT JOIN tsk_image_names ON tsk_image_info.obj_id = tsk_image_names.obj_id"); //NON-NLS
@@ -11632,7 +11653,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs1);
 			closeStatement(s1);
-			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -13418,6 +13438,9 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public void deleteContentTag(ContentTag tag) throws TskCoreException {
+		Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null
+				? tag.getContent().getDataSource().getId()
+				: null;
 		CaseDbTransaction trans = beginTransaction();
 		try {
 			// DELETE FROM content_tags WHERE tag_id = ?
@@ -13428,9 +13451,6 @@ public class SleuthkitCase {
 
 			// update the aggregate score for the content
 			Long contentId = tag.getContent() != null ? tag.getContent().getId() : null;
-			Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null
-					? tag.getContent().getDataSource().getId()
-					: null;
 
 			this.getScoringManager().updateAggregateScoreAfterDeletion(contentId, dataSourceId, trans);
 
@@ -13589,6 +13609,13 @@ public class SleuthkitCase {
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
 		ContentTag tag = null;
+		TagName tagName = null;
+		long tagId = 0;
+		long objId = 0;
+		String comment = null;
+		long beginByteOffset = 0;
+		long endByteOffset = 0;
+		String loginName = null;
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
@@ -13604,11 +13631,15 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 
 			while (resultSet.next()) {
-				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
-				tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName,
-						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name"));
+				tagId = resultSet.getLong("tag_id");
+				objId = resultSet.getLong("obj_id");
+				comment = resultSet.getString("comment");
+				beginByteOffset = resultSet.getLong("begin_byte_offset");
+				endByteOffset = resultSet.getLong("end_byte_offset");
+				loginName = resultSet.getString("login_name");
 			}
 			resultSet.close();
 
@@ -13618,6 +13649,9 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
+		}
+		if (tagName != null) {
+			tag = new ContentTag(tagId, getContentById(objId), tagName, comment, beginByteOffset, endByteOffset, loginName);
 		}
 		return tag;
 	}
@@ -13686,10 +13720,12 @@ public class SleuthkitCase {
 
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
+		ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
+		List<Long> objIds = new ArrayList<>();
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
-			
+
 			// NOTE: Getting all content tags by tag name for a given data source includes
 			// looking up all Content objects that have entries in tsk_files, as well as
 			// all OsAccounts. OsAccounts do not have corresponding entries in tsk_files so we 
@@ -13719,14 +13755,14 @@ public class SleuthkitCase {
 			statement.setLong(3, tagName.getId());
 			statement.setLong(4, dsObjId);
 			resultSet = connection.executeQuery(statement);
-			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
-				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")),
+				// null content is a placeholder, replaced below after the connection is released
+				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), null,
 						tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"), resultSet.getString("login_name"));  //NON-NLS
 				tags.add(tag);
+				objIds.add(resultSet.getLong("obj_id"));
 			}
 			resultSet.close();
-			return tags;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to get content_tags row count for  tag_name_id = " + tagName.getId() + " data source objID : " + dsObjId, ex);
 		} finally {
@@ -13734,6 +13770,12 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
+		for (int i = 0; i < tags.size(); i++) {
+			ContentTag tag = tags.get(i);
+			tags.set(i, new ContentTag(tag.getId(), getContentById(objIds.get(i)),
+					tag.getName(), tag.getComment(), tag.getBeginByteOffset(), tag.getEndByteOffset(), tag.getUserName()));
+		}
+		return tags;
 	}
 
 	/**
@@ -13807,6 +13849,9 @@ public class SleuthkitCase {
 	 * representing the row to delete. @throws TskCoreException
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
+		Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null
+				? tag.getContent().getDataSource().getId()
+				: null;
 		CaseDbTransaction trans = beginTransaction();
 		try {
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
@@ -13817,9 +13862,6 @@ public class SleuthkitCase {
 
 			// update the aggregate score for the artifact
 			Long artifactObjId = tag.getArtifact().getId();
-			Long dataSourceId = tag.getContent() != null && tag.getContent().getDataSource() != null
-					? tag.getContent().getDataSource().getId()
-					: null;
 
 			this.getScoringManager().updateAggregateScoreAfterDeletion(artifactObjId, dataSourceId, trans);
 
@@ -14033,6 +14075,8 @@ public class SleuthkitCase {
 
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
+		ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+		List<Long> artifactIds = new ArrayList<>();
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
@@ -14048,15 +14092,13 @@ public class SleuthkitCase {
 			statement.setLong(1, tagName.getId());
 			statement.setLong(2, dsObjId);
 			resultSet = connection.executeQuery(statement);
-			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
 			while (resultSet.next()) {
-				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
-				Content content = getContentById(artifact.getObjectID());
+				// null artifact and content are placeholders, replaced below after the connection is released
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
-						artifact, content, tagName, resultSet.getString("comment"), resultSet.getString("login_name"));  //NON-NLS
+						null, null, tagName, resultSet.getString("comment"), resultSet.getString("login_name"));  //NON-NLS
 				tags.add(tag);
+				artifactIds.add(resultSet.getLong("artifact_id"));
 			}
-			return tags;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to get blackboard_artifact_tags row count for  tag_name_id = " + tagName.getId() + "data source objID : " + dsObjId, ex);
 		} finally {
@@ -14064,6 +14106,14 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
+		for (int i = 0; i < tags.size(); i++) {
+			BlackboardArtifactTag tag = tags.get(i);
+			BlackboardArtifact artifact = getBlackboardArtifact(artifactIds.get(i)); //NON-NLS
+			Content content = getContentById(artifact.getObjectID());
+			tags.set(i, new BlackboardArtifactTag(tag.getId(),
+					artifact, content, tag.getName(), tag.getComment(), tag.getUserName()));
+		}
+		return tags;
 
 	}
 
@@ -14083,6 +14133,11 @@ public class SleuthkitCase {
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
 		BlackboardArtifactTag tag = null;
+		TagName tagName = null;
+		long tagId = 0;
+		long artifactId = 0;
+		String comment = null;
+		String loginName = null;
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
@@ -14098,13 +14153,13 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 
 			while (resultSet.next()) {
-				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+				tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));
-				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
-				Content content = getContentById(artifact.getObjectID());
-				tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
-						artifact, content, tagName, resultSet.getString("comment"), resultSet.getString("login_name"));
+				tagId = resultSet.getLong("tag_id");
+				artifactId = resultSet.getLong("artifact_id");
+				comment = resultSet.getString("comment");
+				loginName = resultSet.getString("login_name");
 			}
 			resultSet.close();
 
@@ -14114,6 +14169,11 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
+		}
+		if (tagName != null) {
+			BlackboardArtifact artifact = getBlackboardArtifact(artifactId); //NON-NLS
+			Content content = getContentById(artifact.getObjectID());
+			tag = new BlackboardArtifactTag(tagId, artifact, content, tagName, comment, loginName);
 		}
 		return tag;
 	}
@@ -14133,6 +14193,7 @@ public class SleuthkitCase {
 	public List<BlackboardArtifactTag> getBlackboardArtifactTagsByArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		CaseDbConnection connection = null;
 		ResultSet resultSet = null;
+		ArrayList<BlackboardArtifactTag> tags = new ArrayList<>();
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
@@ -14146,17 +14207,15 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
 			resultSet = connection.executeQuery(statement);
-			ArrayList<BlackboardArtifactTag> tags = new ArrayList<>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
 						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.TagType.valueOf(resultSet.getByte("knownStatus")), resultSet.getLong("tag_set_id"), resultSet.getInt("rank"));  //NON-NLS
-				Content content = getContentById(artifact.getObjectID());
+				// null content is a placeholder, replaced below after the connection is released
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
-						artifact, content, tagName, resultSet.getString("comment"), resultSet.getString("login_name"));  //NON-NLS
+						artifact, null, tagName, resultSet.getString("comment"), resultSet.getString("login_name"));  //NON-NLS
 				tags.add(tag);
 			}
-			return tags;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
 		} finally {
@@ -14164,6 +14223,13 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
+		for (int i = 0; i < tags.size(); i++) {
+			BlackboardArtifactTag tag = tags.get(i);
+			Content content = getContentById(artifact.getObjectID());
+			tags.set(i, new BlackboardArtifactTag(tag.getId(),
+					artifact, content, tag.getName(), tag.getComment(), tag.getUserName()));
+		}
+		return tags;
 	}
 
 	/**
@@ -14365,6 +14431,12 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		ResultSet parentResultSet = null;
 		Report report = null;
+		long objId;
+		String path;
+		long crtime;
+		String srcModuleName;
+		String reportName;
+		Long parentId = null;
 		acquireSingleUserCaseReadLock();
 		try {
 			connection = connections.getConnection();
@@ -14378,20 +14450,17 @@ public class SleuthkitCase {
 
 			if (resultSet.next()) {
 				// get the report parent
-				Content parent = null;
 				String parentQuery = String.format("SELECT * FROM tsk_objects WHERE obj_id = %s;", id);
 				parentResultSet = parentStatement.executeQuery(parentQuery);
 				if (parentResultSet.next()) {
-					long parentId = parentResultSet.getLong("par_obj_id"); // NON-NLS
-					parent = this.getContentById(parentId);
+					parentId = parentResultSet.getLong("par_obj_id"); // NON-NLS
 				}
 
-				report = new Report(this, resultSet.getLong("obj_id"), //NON-NLS
-						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
-						resultSet.getLong("crtime"), //NON-NLS
-						resultSet.getString("src_module_name"), //NON-NLS
-						resultSet.getString("report_name"),
-						parent);  //NON-NLS
+				objId = resultSet.getLong("obj_id"); //NON-NLS
+				path = Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(); //NON-NLS
+				crtime = resultSet.getLong("crtime"); //NON-NLS
+				srcModuleName = resultSet.getString("src_module_name"); //NON-NLS
+				reportName = resultSet.getString("report_name");
 			} else {
 				throw new TskCoreException("No report found for id: " + id);
 			}
@@ -14405,6 +14474,12 @@ public class SleuthkitCase {
 			closeConnection(connection);
 			releaseSingleUserCaseReadLock();
 		}
+
+		Content parent = null;
+		if (parentId != null) {
+			parent = this.getContentById(parentId);
+		}
+		report = new Report(this, objId, path, crtime, srcModuleName, reportName, parent);
 
 		return report;
 	}
