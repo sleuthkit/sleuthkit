@@ -42,6 +42,12 @@ public:
     void printResults();
     
 private:
+    // One entry per volume that could not be opened because of a BitLocker error
+    struct BitlockerFailure {
+        TSK_OFF_T offset;   ///< Byte offset of the volume
+        std::string desc;   ///< The BitLocker error message for the volume
+    };
+
     bool m_wasDataFound;
     bool m_wasEncryptionFound;
     bool m_wasPossibleEncryptionFound;
@@ -52,4 +58,6 @@ private:
     char m_possibleEncryptionDesc[TSK_ERROR_STRING_MAX_LENGTH + 1];
     char m_unsupportedDesc[TSK_ERROR_STRING_MAX_LENGTH + 1];
     char m_bitlockerDesc[TSK_ERROR_STRING_MAX_LENGTH + 1];
+    TSK_OFF_T m_curVolOffset;
+    std::vector<BitlockerFailure> m_bitlockerFailures;
 };
