@@ -131,6 +131,40 @@ static TSK_RETVAL_ENUM qnx6_dir_open_meta(TSK_FS_INFO *fs,
     return TSK_OK;
 }
 
+static uint8_t qnx6_inode_walk(TSK_FS_INFO *fs, TSK_INUM_T start,
+                               TSK_INUM_T end, TSK_FS_META_FLAG_ENUM flags,
+                               TSK_FS_META_WALK_CB callback, void *opaque) {
+    TSK_INUM_T inum;
+    TSK_FS_FILE *file;
+    if (!fs || !callback || start < fs->first_inum ||
+        end > fs->last_inum || start > end) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("qnx6_inode_walk: invalid inode range");
+        return 1;
+    }
+    file = tsk_fs_file_alloc(fs);
+    if (!file) return 1;
+    for (inum = start; ; ++inum) {
+        TSK_WALK_RET_ENUM result;
+        if (qnx6_file_add_meta(fs, file, inum)) {
+            tsk_error_reset();
+        } else if (file->meta && file->meta->type != TSK_FS_META_TYPE_UNDEF &&
+                   (!(flags & TSK_FS_META_FLAG_UNALLOC) ||
+                    (flags & TSK_FS_META_FLAG_ALLOC))) {
+            result = callback(file, opaque);
+            if (result == TSK_WALK_STOP) break;
+            if (result == TSK_WALK_ERROR) {
+                tsk_fs_file_close(file);
+                return 1;
+            }
+        }
+        if (inum == end) break;
+    }
+    tsk_fs_file_close(file);
+    return 0;
+}
+
 static uint8_t qnx6_load_attrs(TSK_FS_FILE *file) {
     TSK_FS_META *meta;
     QNX6_FS_INFO *qfs;
@@ -347,7 +381,7 @@ TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *img, TSK_OFF_T offset,
     fs->fsstat = qnx6_fsstat;
     fs->block_walk = qnx6_block_walk;
     fs->block_getflags = qnx6_block_getflags;
-    fs->inode_walk = tsk_fs_nofs_inode_walk;
+    fs->inode_walk = qnx6_inode_walk;
     fs->file_add_meta = qnx6_file_add_meta;
     fs->istat = tsk_fs_nofs_istat;
     fs->get_default_attr_type = tsk_fs_nofs_get_default_attr_type;
