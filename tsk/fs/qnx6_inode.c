@@ -37,6 +37,7 @@ int tsk_qnx6_read_inode(const TSK_QNX6_PROBE_INFO *sb,
 }
 int tsk_qnx6_walk_directory(const TSK_QNX6_PROBE_INFO *sb,
                             const TSK_QNX6_INODE *directory,
+                            const TSK_QNX6_ROOT *longfile,
                             TSK_QNX6_READ_BLOCK read_block, void *read_context,
                             TSK_QNX6_DIRENT_CB callback, void *callback_context) {
     uint8_t *buf;
@@ -61,8 +62,29 @@ int tsk_qnx6_walk_directory(const TSK_QNX6_PROBE_INFO *sb,
             uint32_t inode=le32(buf+pos);
             uint8_t len=buf[pos+4];
             if (!inode || !len || inode>sb->inode_count) continue;
-            /* 0xff denotes a long-name reference, handled separately later. */
-            if (len==255 || len>27) continue;
+            if (len==255) {
+                uint32_t longblock=le32(buf+pos+8);
+                uint64_t phys;
+                uint8_t *nameblock;
+                uint16_t longlen;
+                if (!longfile || !tsk_qnx6_map_block(sb,longfile,longblock,
+                            read_block,read_context,&phys)) {free(buf);return 0;}
+                nameblock=(uint8_t *)malloc(sb->block_size);
+                if (!nameblock) {free(buf);return 0;}
+                if (!read_block(read_context,phys,nameblock,sb->block_size)) {
+                    free(nameblock);free(buf);return 0;
+                }
+                longlen=le16(nameblock);
+                if (!longlen || longlen>510 || longlen+2>sb->block_size) {
+                    free(nameblock);free(buf);return 0;
+                }
+                if (!callback(callback_context,inode,(const char *)nameblock+2,longlen)) {
+                    free(nameblock);free(buf);return 0;
+                }
+                free(nameblock);
+                continue;
+            }
+            if (len>27) continue;
             name_len=len;
             if ((name_len==1 && buf[pos+5]=='.') ||
                 (name_len==2 && buf[pos+5]=='.' && buf[pos+6]=='.')) continue;
