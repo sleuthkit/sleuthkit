@@ -6,7 +6,12 @@ extern "C" {
 #endif
 typedef struct {
     uint64_t size;
+    uint32_t ftime;
     uint32_t mtime;
+    uint32_t atime;
+    uint32_t ctime;
+    uint32_t uid;
+    uint32_t gid;
     uint16_t mode;
     TSK_QNX6_ROOT data;
 } TSK_QNX6_INODE;
