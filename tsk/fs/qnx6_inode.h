@@ -25,6 +25,7 @@ int tsk_qnx6_read_file(const TSK_QNX6_PROBE_INFO *sb,
                        size_t *bytes_read);
 int tsk_qnx6_walk_directory(const TSK_QNX6_PROBE_INFO *sb,
                             const TSK_QNX6_INODE *directory,
+                            const TSK_QNX6_ROOT *longfile,
                             TSK_QNX6_READ_BLOCK read_block, void *read_context,
                             TSK_QNX6_DIRENT_CB callback, void *callback_context);
 #ifdef __cplusplus
