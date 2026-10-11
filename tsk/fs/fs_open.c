@@ -142,6 +142,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "EXT2/3/4", ext2fs_open,  TSK_FS_TYPE_EXT_DETECT     },
         { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
         { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
+        { "QNX6",     qnx6_open,    TSK_FS_TYPE_QNX6          },
 #if TSK_USE_HFS
         { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
