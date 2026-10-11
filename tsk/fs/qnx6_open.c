@@ -73,6 +73,12 @@ static uint8_t qnx6_file_add_meta(TSK_FS_INFO *fs, TSK_FS_FILE *file,
     meta->mode=(TSK_FS_META_MODE_ENUM)(inode.mode & 07777);
     meta->size=(TSK_OFF_T)inode.size;
     meta->mtime=(time_t)inode.mtime;
+    meta->atime=(time_t)inode.atime;
+    meta->ctime=(time_t)inode.ctime;
+    /* di_ftime is a QNX6-specific file timestamp; its precise semantics
+     * are not established as a creation time, so do not map to crtime. */
+    meta->uid=inode.uid;
+    meta->gid=inode.gid;
     meta->nlink=1;
     return 0;
 }
