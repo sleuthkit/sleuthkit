@@ -28,7 +28,14 @@ int tsk_qnx6_read_inode(const TSK_QNX6_PROBE_INFO *sb,
     raw=buf+off;
     memset(out,0,sizeof(*out));
     out->size=le64(raw);
+    /* QNX6 on-disk inode: uid +8, gid +12, ftime +16, mtime +20,
+     * atime +24, ctime +28. All timestamps are 32-bit Unix seconds. */
+    out->uid=le32(raw+8);
+    out->gid=le32(raw+12);
+    out->ftime=le32(raw+16);
     out->mtime=le32(raw+20);
+    out->atime=le32(raw+24);
+    out->ctime=le32(raw+28);
     out->mode=le16(raw+32);
     for(i=0;i<16;i++) out->data.ptr[i]=le32(raw+36+i*4);
     out->data.levels=raw[100];
