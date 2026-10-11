@@ -87,7 +87,7 @@ static int qnx6_add_dirent(void *opaque, uint32_t inum,
     QNX6_DIRENT_CONTEXT *ctx=(QNX6_DIRENT_CONTEXT *)opaque;
     TSK_FS_NAME *entry;
     int result;
-    if (!ctx || !name || !length || length>27) return 0;
+    if (!ctx || !name || !length || length>510) return 0;
     entry=tsk_fs_name_alloc(length+1,0);
     if (!entry) return 0;
     memcpy(entry->name,name,length);
@@ -314,6 +314,12 @@ TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *img, TSK_OFF_T offset,
     TSK_FS_INFO *fs;
     QNX6_FS_INFO *qfs;
     TSK_OFF_T sb_offset;
+    TSK_OFF_T second_offset;
+    uint8_t second_sb[512];
+    TSK_QNX6_PROBE_INFO second_probe;
+    uint64_t serial_first, serial_second;
+    uint64_t data_bytes;
+    unsigned int i;
     TSK_QNX6_ROOT inode_tree;
     TSK_QNX6_ROOT bitmap_tree;
     TSK_QNX6_ROOT longfile_tree;
@@ -335,6 +341,31 @@ TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *img, TSK_OFF_T offset,
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("qnx6_open: no valid QNX6 superblock at 0x2000");
         return NULL;
+    }
+    /* QNX6 has two committed superblocks. The copy after the data area
+     * can be newer than the copy at 0x2000 (NFI fixture: serials 1 and 2).
+     * Match QNXProbe's selection of the highest valid generation. */
+    serial_first=0;
+    for (i=0;i<8;i++) serial_first |= ((uint64_t)sb[8+i]) << (8*i);
+    data_bytes=(uint64_t)probe.block_count*(uint64_t)probe.block_size;
+    if (probe.block_size && data_bytes <= (uint64_t)INT64_MAX-0x3000U &&
+        (uint64_t)offset <= (uint64_t)INT64_MAX-0x3000U-data_bytes) {
+        second_offset=offset+(TSK_OFF_T)(0x3000U+data_bytes);
+        if (second_offset>=offset &&
+            second_offset<=img->size &&
+            img->size-second_offset>=(TSK_OFF_T)sizeof(second_sb) &&
+            tsk_img_read(img,second_offset,(char *)second_sb,sizeof(second_sb))==
+                (ssize_t)sizeof(second_sb) &&
+            tsk_qnx6_probe_superblock(second_sb,sizeof(second_sb),&second_probe) &&
+            second_probe.block_size==probe.block_size &&
+            second_probe.block_count==probe.block_count) {
+            serial_second=0;
+            for (i=0;i<8;i++) serial_second |= ((uint64_t)second_sb[8+i]) << (8*i);
+            if (serial_second>serial_first) {
+                memcpy(sb,second_sb,sizeof(sb));
+                probe=second_probe;
+            }
+        }
     }
     /* Validate the inode tree and root directory before accepting the image.
      * This is still not a complete TSK inode/dir driver. */
