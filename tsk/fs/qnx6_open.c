@@ -232,8 +232,17 @@ static TSK_FS_BLOCK_FLAG_ENUM qnx6_block_getflags(TSK_FS_INFO *fs,
                                                     TSK_DADDR_T addr) {
     QNX6_FS_INFO *qfs=(QNX6_FS_INFO *)fs;
     int bit;
-    if (!fs || addr<qfs->data_base ||
-        (uint64_t)addr-qfs->data_base>=qfs->io.probe.block_count) {
+    if (!fs || addr>fs->last_block) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
+        tsk_error_set_errstr("qnx6_block_getflags: block outside filesystem");
+        return TSK_FS_BLOCK_FLAG_UNUSED;
+    }
+    /* Boot area and superblock precede the bitmap-managed data region.
+     * They are reserved, never unallocated recoverable data. */
+    if (addr<qfs->data_base)
+        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_ALLOC|TSK_FS_BLOCK_FLAG_CONT);
+    if ((uint64_t)addr-qfs->data_base>=qfs->io.probe.block_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
         tsk_error_set_errstr("qnx6_block_getflags: block outside QNX6 data region");
@@ -261,11 +270,16 @@ static uint8_t qnx6_block_walk(TSK_FS_INFO *fs, TSK_DADDR_T start,
     QNX6_FS_INFO *qfs=(QNX6_FS_INFO *)fs;
     TSK_FS_BLOCK *block;
     TSK_DADDR_T addr;
-    if (!fs || !callback || start<qfs->data_base ||
-        end>fs->last_block || start>end || qfs->free_bit<0) {
+    if (!fs || !callback || end>fs->last_block || start>end) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("qnx6_block_walk: invalid range or unvalidated bitmap");
+        return 1;
+    }
+    if (qfs->free_bit<0 && end>=qfs->data_base) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_READ);
+        tsk_error_set_errstr("qnx6_block_walk: allocation bitmap could not be validated");
         return 1;
     }
     block=tsk_fs_block_alloc(fs);
