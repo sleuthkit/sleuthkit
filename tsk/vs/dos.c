@@ -423,12 +423,9 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN, "BootStar Dummy (0xb0)");
         break;
     case 0xb1:
-        snprintf(str, DESC_LEN,
-            "HP Volume Expansion (SpeedStor Variant) (0xb1)");
-        break;
+    case 0xb2:
     case 0xb3:
-        snprintf(str, DESC_LEN,
-            "HP Volume Expansion (SpeedStor Variant) (0xb3)");
+        snprintf(str, DESC_LEN, "QNX6 Power-Safe (0x%.2x)", ptype);
         break;
     case 0xb4:
         snprintf(str, DESC_LEN,
