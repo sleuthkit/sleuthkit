@@ -36,6 +36,7 @@ typedef struct {
     QNX6_READ_CONTEXT io;
     TSK_QNX6_ROOT inode_tree;
     TSK_QNX6_ROOT bitmap_tree;
+    TSK_QNX6_ROOT longfile_tree;
     int free_bit;
     uint64_t data_base;
 } QNX6_FS_INFO;
@@ -119,7 +120,7 @@ static TSK_RETVAL_ENUM qnx6_dir_open_meta(TSK_FS_INFO *fs,
     if (!dir) return TSK_ERR;
     ctx.dir=dir;
     ctx.fs=fs;
-    if (!tsk_qnx6_walk_directory(&qfs->io.probe,&inode,qnx6_read_block,
+    if (!tsk_qnx6_walk_directory(&qfs->io.probe,&inode,&qfs->longfile_tree,qnx6_read_block,
                                  &qfs->io,qnx6_add_dirent,&ctx)) {
         tsk_fs_dir_close(dir);
         tsk_error_reset();
@@ -315,6 +316,7 @@ TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *img, TSK_OFF_T offset,
     TSK_OFF_T sb_offset;
     TSK_QNX6_ROOT inode_tree;
     TSK_QNX6_ROOT bitmap_tree;
+    TSK_QNX6_ROOT longfile_tree;
     TSK_QNX6_INODE root_inode;
     QNX6_READ_CONTEXT ctx;
     (void)password;
@@ -337,7 +339,8 @@ TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *img, TSK_OFF_T offset,
     /* Validate the inode tree and root directory before accepting the image.
      * This is still not a complete TSK inode/dir driver. */
     if (!tsk_qnx6_parse_root(sb,sizeof(sb),72,&inode_tree) ||
-        !tsk_qnx6_parse_root(sb,sizeof(sb),152,&bitmap_tree)) {
+        !tsk_qnx6_parse_root(sb,sizeof(sb),152,&bitmap_tree) ||
+        !tsk_qnx6_parse_root(sb,sizeof(sb),232,&longfile_tree)) {
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("qnx6_open: invalid inode-tree root");
         return NULL;
@@ -359,6 +362,7 @@ TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *img, TSK_OFF_T offset,
     qfs->io=ctx;
     qfs->inode_tree=inode_tree;
     qfs->bitmap_tree=bitmap_tree;
+    qfs->longfile_tree=longfile_tree;
     qfs->data_base=(0x2000U/probe.block_size)+(0x1000U/probe.block_size);
     qfs->free_bit=-1;
     if (!tsk_qnx6_bitmap_free_bit(&probe,&bitmap_tree,qnx6_read_block,
