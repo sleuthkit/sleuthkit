@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop-4.1x
+      - feature/efs
     paths:
       - '.github/workflows/qnxprobe-windows-jar.yml'
       - 'bindings/**'
