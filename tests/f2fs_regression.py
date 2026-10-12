@@ -23,7 +23,7 @@ def main():
     ap.add_argument('--reference', type=pathlib.Path, required=True)
     opt = ap.parse_args()
     fixtures = opt.reference / 'tests/fixtures'
-    tools = {name: opt.tools / name for name in ('fls', 'icat', 'fsstat', 'blkls')}
+    tools = {name: opt.tools / name for name in ('fls', 'icat', 'fsstat', 'blkls', 'ils')}
     total = 0
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
@@ -36,6 +36,9 @@ def main():
             with gzip.open(fixtures / (fixture + '.img.gz'), 'rb') as src, image.open('wb') as dst:
                 shutil.copyfileobj(src, dst)
             assert b'File System Type: F2FS' in run(tools['fsstat'], image)
+            # Reserved node/meta NIDs must not interrupt inode enumeration.
+            inode_listing = run(tools['ils'], '-a', image).decode()
+            assert '\n3|a|' in inode_listing
             listing = run(tools['fls'], '-r', '-p', image).decode()
             names = {}
             for line in listing.splitlines():

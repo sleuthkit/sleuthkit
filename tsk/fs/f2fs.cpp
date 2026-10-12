@@ -132,7 +132,8 @@ extern "C" TSK_FS_INFO *f2fs_open(TSK_IMG_INFO *img,TSK_OFF_T offset,TSK_FS_TYPE
         fs->img_info=img;fs->offset=offset;fs->ftype=TSK_FS_TYPE_F2FS;fs->duname="Block";fs->tag=TSK_FS_INFO_TAG;
         fs->endian=TSK_LIT_ENDIAN;fs->block_size=v.bs;fs->dev_bsize=img->sector_size;fs->block_count=v.blocks;
         fs->first_block=0;fs->last_block=fs->last_block_act=v.blocks-1;
-        fs->root_inum=v.root;fs->first_inum=1;fs->last_inum=v.max_nid;fs->inum_count=v.max_nid;
+        // NIDs 1 and 2 identify reserved node/meta bookkeeping, not files.
+        fs->root_inum=v.root;fs->first_inum=v.root;fs->last_inum=v.max_nid;fs->inum_count=v.max_nid-v.root+1;
         fs->close=close_fs;fs->fsstat=fsstat;fs->file_add_meta=meta;fs->load_attrs=attrs;fs->dir_open_meta=directory;
         fs->inode_walk=inode_walk;fs->block_walk=block_walk;fs->block_getflags=block_flags;
         fs->istat=istat;fs->get_default_attr_type=tsk_fs_nofs_get_default_attr_type;fs->name_cmp=tsk_fs_nofs_name_cmp;
