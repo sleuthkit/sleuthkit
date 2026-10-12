@@ -48,6 +48,8 @@ static FS_TYPES fs_type_table[] = {
 #endif
     {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
     {"qnx4", TSK_FS_TYPE_QNX4, "QNX4"},
+    {"os9", TSK_FS_TYPE_OS9, "Microware OS-9 RBF"},
+    {"os9-rbf", TSK_FS_TYPE_OS9, "Microware OS-9 RBF"},
     {"qnx6", TSK_FS_TYPE_QNX6, "QNX6 (experimental: metadata not yet available)"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
 	{"logical", TSK_FS_TYPE_LOGICAL, "Logical Directory"},

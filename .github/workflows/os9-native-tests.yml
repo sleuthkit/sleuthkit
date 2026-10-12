@@ -1,0 +1,47 @@
+name: OS-9 RBF native reader and TSK integration
+on:
+  push:
+    branches: [os-9]
+  pull_request:
+    paths: ['tsk/**', 'tests/os9*', '.github/workflows/os9-native-tests.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: e7bf24aef2ee90a1583b9479d3e16c05346d4f4c
+          path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: nitros9project/toolshed
+          ref: 9b8ac74f3c3f4afa039c1dbf94fd64e3a76c2928
+          path: reference-toolshed
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libsqlite3-dev libssl-dev zlib1g-dev
+      - name: Build TSK
+        run: |
+          autoreconf -fi
+          ./configure --disable-java --without-afflib --without-libewf
+          make -j2 -C tsk
+          make -j2 -C tools/fstools
+          make -j2 -C tools/vstools
+      - name: File hashes, extent chains, allocation and malformed inputs
+        run: python3 tests/os9_regression.py --tools tools/fstools --reference reference-qnxprobe --real-image reference-toolshed/c3/prep19/ghcprep.dsk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: os9-linux-cli
+          path: |
+            tools/fstools/.libs/fls
+            tools/fstools/.libs/icat
+            tools/fstools/.libs/fsstat
+            tools/fstools/.libs/blkls
+            tools/fstools/.libs/ils
+            tools/fstools/.libs/istat
+            tools/vstools/.libs/mmls
+            tsk/.libs/libtsk.so*
