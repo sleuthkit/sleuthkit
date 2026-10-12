@@ -198,6 +198,7 @@ extern "C" {
         TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *qnx4_open(TSK_IMG_INFO *, TSK_OFF_T, TSK_FS_TYPE_ENUM, const char *, uint8_t);
     extern TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, const char *, uint8_t);
     extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *, TSK_OFF_T);
