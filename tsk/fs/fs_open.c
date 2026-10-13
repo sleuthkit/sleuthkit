@@ -150,7 +150,8 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
-        { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }
+        { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT },
+        { "QNX EFS", efs_open, TSK_FS_TYPE_EFS_DETECT }
     };
     if (a_img_info == NULL) {
         tsk_error_reset();
@@ -192,6 +193,11 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         char errorStrToPreserve[TSK_ERROR_STRING_MAX_LENGTH + 1];
 
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
+            /* EFS is a whole-flash container scan, not a sector-local probe.
+             * Do not scan an already identified conventional filesystem for
+             * embedded flash partitions. Explicit -f efs remains available. */
+            if ((fs_first != NULL || haveErrorToPreserve) && FS_OPENERS[i].type == TSK_FS_TYPE_EFS)
+                continue;
             if ((fs_info = FS_OPENERS[i].open(
                     a_img_info, a_offset, FS_OPENERS[i].type, a_pass, 1)) != NULL) {
                 // fs opens as type i
@@ -306,6 +312,9 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (a_ftype == TSK_FS_TYPE_OS9) {
         return os9_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_EFS) {
+        return efs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (a_ftype == TSK_FS_TYPE_QNX6) {
         return qnx6_open(a_img_info, a_offset, a_ftype, a_pass, 0);

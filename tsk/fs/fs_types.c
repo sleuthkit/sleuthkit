@@ -51,6 +51,7 @@ static FS_TYPES fs_type_table[] = {
     {"f2fs", TSK_FS_TYPE_F2FS, "F2FS"},
     {"os9", TSK_FS_TYPE_OS9, "Microware OS-9 RBF"},
     {"os9-rbf", TSK_FS_TYPE_OS9, "Microware OS-9 RBF"},
+    {"efs", TSK_FS_TYPE_EFS, "QNX EFS (F3S)"},
     {"qnx6", TSK_FS_TYPE_QNX6, "QNX6 (experimental: metadata not yet available)"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
 	{"logical", TSK_FS_TYPE_LOGICAL, "Logical Directory"},

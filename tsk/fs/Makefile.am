@@ -1,11 +1,11 @@
 AM_CPPFLAGS = $(OPENSSL_INCLUDES) -I../.. -I$(srcdir)/../..
-EXTRA_DIST = .indent.pro qnx4_LICENSE.txt f2fs_LICENSE.txt os9_LICENSE.txt
+EXTRA_DIST = .indent.pro qnx4_LICENSE.txt f2fs_LICENSE.txt os9_LICENSE.txt efs_LICENSE.txt
 
 noinst_LTLIBRARIES = libtskfs.la
 # Note that the .h files are in the top-level Makefile
 libtskfs_la_SOURCES  = tsk_fs_i.h fs_inode.c fs_io.c fs_block.c fs_open.c \
     fs_name.c fs_dir.c fs_types.c fs_attr.c fs_attrlist.c fs_load.c \
-    fs_parse.c fs_file.c qnx4.cpp qnx4_reader.h f2fs.cpp f2fs_reader.h os9.cpp os9_reader.h qnx6_probe.c qnx6_probe.h qnx6_map.c qnx6_bitmap.c qnx6_bitmap.h qnx6_map.h qnx6_inode.c qnx6_inode.h qnx6_file.c qnx6_open.c \
+    fs_parse.c fs_file.c qnx4.cpp qnx4_reader.h f2fs.cpp f2fs_reader.h os9.cpp os9_reader.h efs.cpp efs_reader.h qnx6_probe.c qnx6_probe.h qnx6_map.c qnx6_bitmap.c qnx6_bitmap.h qnx6_map.h qnx6_inode.c qnx6_inode.h qnx6_file.c qnx6_open.c \
     unix_misc.c nofs_misc.c \
     ffs.c ffs_dent.c ext2fs.c ext2fs_dent.c ext2fs_journal.c \
     fatfs.c fatfs_meta.c fatfs_dent.cpp \
