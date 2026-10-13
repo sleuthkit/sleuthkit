@@ -78,7 +78,10 @@ namespace Rejistry {
         ValueData::VALUE_TYPES getValueType() const;
 
         /**
-         * @returns The length of the value data.
+         * Do not use this to size reads of the value data: it is the length
+         * declared in the record, which can exceed the data actually stored.
+         * Use the size of the data returned by getValue() instead.
+         * @returns The declared length of the value data.
          */
         uint32_t getDataLength() const;
 

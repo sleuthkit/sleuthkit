@@ -94,7 +94,10 @@ namespace Rejistry {
 
         /**
          * Get the raw binary data from this value.
-         * @returns Pointer to a buffer containing the data.
+         * The size of the returned data is the authoritative length. It can
+         * be smaller than RegistryValue::getValueLength() when the hive is
+         * corrupt, so size any reads by it rather than the declared length.
+         * @returns A copy of the data bytes.
          */
         ByteBuffer::ByteArray getAsRawData() const;
 
