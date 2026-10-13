@@ -41,7 +41,26 @@
 namespace Rejistry {
 
     std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
-    
+
+    namespace {
+        /**
+         * Build a string from the UTF-16LE characters starting at data[pos],
+         * stopping at the first null character or the end of data, whichever
+         * comes first. getStringList() finds terminators by looking for two zero
+         * bytes, which need not fall on a character boundary, so constructing
+         * the string from a bare pointer could read past the end of data.
+         */
+        std::wstring boundedWString(const ByteBuffer::ByteArray& data, uint32_t pos) {
+            const wchar_t* chars = reinterpret_cast<const wchar_t*>(&data[pos]);
+            size_t maxChars = (data.size() - pos) / sizeof(wchar_t);
+            size_t len = 0;
+            while (len < maxChars && chars[len] != L'\0') {
+                len++;
+            }
+            return std::wstring(chars, len);
+        }
+    }
+
     // Take ownership of the passed in buffer
     RegistryByteBuffer::RegistryByteBuffer(std::unique_ptr<ByteBuffer> buffer) {
         if (buffer == nullptr) {
@@ -179,7 +198,7 @@ namespace Rejistry {
 
         while (i + 1 < data.size()) {
             if (data[i] == '\0' && data[++i] == '\0') {
-                stringList.push_back(std::wstring((wchar_t*)&data[pos]));
+                stringList.push_back(boundedWString(data, pos));
                 pos = i;
                 while (i < data.size() && data[i] == '\0') {
                     pos++; i++;
