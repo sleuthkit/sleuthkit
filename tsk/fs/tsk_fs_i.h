@@ -201,6 +201,7 @@ extern "C" {
     extern TSK_FS_INFO *qnx4_open(TSK_IMG_INFO *, TSK_OFF_T, TSK_FS_TYPE_ENUM, const char *, uint8_t);
     extern TSK_FS_INFO *f2fs_open(TSK_IMG_INFO *, TSK_OFF_T, TSK_FS_TYPE_ENUM, const char *, uint8_t);
     extern TSK_FS_INFO *os9_open(TSK_IMG_INFO *, TSK_OFF_T, TSK_FS_TYPE_ENUM, const char *, uint8_t);
+    extern TSK_FS_INFO *ubi_open(TSK_IMG_INFO *, TSK_OFF_T, TSK_FS_TYPE_ENUM, const char *, uint8_t);
     extern TSK_FS_INFO *efs_open(TSK_IMG_INFO *, TSK_OFF_T, TSK_FS_TYPE_ENUM, const char *, uint8_t);
     extern TSK_FS_INFO *qnx6_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, const char *, uint8_t);

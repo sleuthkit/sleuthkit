@@ -476,7 +476,9 @@ public class TskData {
         TSK_FS_TYPE_F2FS_DETECT(0x00080000, "F2FS auto detection"),
         TSK_FS_TYPE_OS9(0x00400000, "Microware OS-9 RBF"),
         TSK_FS_TYPE_OS9_DETECT(0x00400000, "OS-9 RBF auto detection"),
-		TSK_FS_TYPE_EFS(0x00200000, "QNX EFS (F3S)"),
+		TSK_FS_TYPE_UBI(0x00800000, "UBI / UBIFS"),
+        TSK_FS_TYPE_UBI_DETECT(0x00800000, "UBI / UBIFS auto detection"),
+        TSK_FS_TYPE_EFS(0x00200000, "QNX EFS (F3S)"),
         TSK_FS_TYPE_EFS_DETECT(0x00200000, "QNX EFS auto detection"),
         TSK_FS_TYPE_QNX6(0x00040000, "QNX6 (experimental)"),
 		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
