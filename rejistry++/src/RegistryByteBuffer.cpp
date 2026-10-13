@@ -145,6 +145,12 @@ namespace Rejistry {
 	* @param length: Number of bytes to read
 	*/
     ByteBuffer::ByteArray RegistryByteBuffer::getData(const uint32_t offset, const uint32_t length) const {
+        // Check bounds before allocating, so a corrupt length from the hive
+        // can't force a huge allocation.
+        if (offset > _byteBuffer->limit() || length > _byteBuffer->limit() - offset) {
+            throw RegistryParseException("Requested data extends past the end of the buffer.");
+        }
+
         uint32_t savedPosition = _byteBuffer->position();
         _byteBuffer->position(offset);
         ByteBuffer::ByteArray data;

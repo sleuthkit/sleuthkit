@@ -97,7 +97,8 @@ namespace Rejistry {
                 throw RegistryParseException("Length is greater than available space in destination buffer.");
             }
 
-            if ((_position + length) > _limit) {
+            // _position <= _limit always holds, so this can't overflow.
+            if (length > _limit - _position) {
                 throw RegistryParseException("Number of requested bytes exceeds buffer size.");
             }
 
