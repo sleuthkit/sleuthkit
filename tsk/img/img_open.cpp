@@ -17,6 +17,7 @@
 #include "tsk_img_i.h"
 
 #include "raw.h"
+#include "ftl100.h"
 #include "logical_img.h"
 
 #if HAVE_LIBAFFLIB
@@ -218,6 +219,13 @@ tsk_img_open(int num_img,
             break;
         }
 
+        // Translate a recognized FTL100 NOR dump before filesystem discovery.
+        int ftl_matched = 0;
+        img_info = ftl100_open(num_img, images, a_ssize, &ftl_matched);
+        if (img_info != NULL) break;
+        if (ftl_matched) return NULL; // malformed recognized FTL is not plain raw
+        tsk_error_reset();
+
         // otherwise, try raw
         if ((img_info = raw_open(num_img, images, a_ssize)) != NULL) {
             break;
@@ -230,6 +238,10 @@ tsk_img_open(int num_img,
         tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
         return NULL;
     }
+
+    case TSK_IMG_TYPE_FTL100:
+        img_info = ftl100_open(num_img, images, a_ssize, NULL);
+        break;
 
     case TSK_IMG_TYPE_RAW:
         img_info = raw_open(num_img, images, a_ssize);

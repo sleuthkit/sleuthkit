@@ -381,6 +381,9 @@
     <ClCompile Include="..\..\tsk\img\ewf.cpp">
       <Filter>img</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\img\ftl100.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\img\img_open.cpp">
       <Filter>img</Filter>
     </ClCompile>
