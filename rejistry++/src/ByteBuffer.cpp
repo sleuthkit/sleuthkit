@@ -45,11 +45,16 @@ namespace Rejistry {
         }
 
         /**
-        * Makes a copy of the passed in buffer.
-        * @throws RegistryParseException if memory can't be allocated
+        * Makes a copy of the first length bytes of the passed in buffer.
+        * @throws RegistryParseException if buf holds fewer than length bytes
+        * or if memory can't be allocated
         */
         ByteBuffer::ByteBuffer(const ByteArray& buf, const uint32_t length) : Buffer(length) {
-            if (buf.size() > 0) {
+            if (buf.size() < length) {
+                throw RegistryParseException("Length is greater than source buffer size.");
+            }
+
+            if (length > 0) {
                 initializeBuffer(&buf[0], length);
             }
         }

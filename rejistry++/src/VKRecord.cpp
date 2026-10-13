@@ -35,6 +35,20 @@
 
 namespace Rejistry {
 
+    namespace {
+        /**
+         * Wrap a value's data bytes. A malformed hive can declare a data length
+         * larger than the cell(s) that hold the data, so return only the bytes
+         * that are actually present, never more than the declared length.
+         * Callers can detect truncation by comparing the returned data size
+         * with VKRecord::getDataLength().
+         */
+        std::unique_ptr<RegistryByteBuffer> makeDataBuffer(const ByteBuffer::ByteArray& bytes, uint32_t declaredLength) {
+            uint32_t safeLength = std::min(declaredLength, static_cast<uint32_t>(bytes.size()));
+            return std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(bytes, safeLength));
+        }
+    }
+
     const std::string VKRecord::MAGIC = "vk";
     const std::wstring VKRecord::DEFAULT_VALUE_NAME = L"(Default)";
 
@@ -129,17 +143,18 @@ namespace Rejistry {
             }
             else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
                 auto c = std::make_unique< Cell >(_buf, offset);
+                DBRecord::DBRecordPtr db;
                 try {
-                    auto db = c->getDBRecord();
-                    data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(db->getData(length), length));
+                    db = c->getDBRecord();
                 }
                 catch (RegistryParseException& ) {
-                    data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
+                    // No "db" record: the data is stored directly in this cell.
                 }
+                data = makeDataBuffer(db ? db->getData(length) : c->getData(), length);
             }
             else {
                 auto c = std::make_unique< Cell >(_buf, offset);
-                data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
+                data = makeDataBuffer(c->getData(), length);
             }
             break;
         case ValueData::VALTYPE_DWORD:
@@ -158,10 +173,7 @@ namespace Rejistry {
                 }
                 else {
                     auto c = std::make_unique<Cell>(_buf, offset);
-                    ByteBuffer::ByteArray cellData = c->getData();
-                    uint32_t safeLength = std::min(length, static_cast<uint32_t>(cellData.size()));
-                    data = std::make_unique<RegistryByteBuffer>(
-                        std::make_unique<ByteBuffer>(cellData, safeLength));
+                    data = makeDataBuffer(c->getData(), length);
                 }
             }
             break;
