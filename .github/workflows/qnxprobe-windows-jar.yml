@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop-4.1x
+      - os-9
       - feature/qnx4
       - feature/f2fs
     paths:

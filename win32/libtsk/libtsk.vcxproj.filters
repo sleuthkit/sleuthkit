@@ -30,6 +30,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tsk\fs\os9.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\fs\qnx4.cpp">
       <Filter>fs</Filter>
     </ClCompile>
