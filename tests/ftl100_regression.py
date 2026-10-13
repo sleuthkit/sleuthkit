@@ -48,7 +48,12 @@ def main():
                 assert b'Selected data units: 2' in stat and b'Transfer units: 1' in stat
                 assert b'FAT12' in run('fsstat', '-i', 'ftl100', image)
                 listing = run('fls', '-i', 'ftl100', '-p', image).decode()
-                found = {name: int(ino) for ino, name in re.findall(r'(\d+):\t([^\n]+)', listing)}
+                def entries(text):
+                    return {name: int(ino) for line in text.splitlines()
+                            for ino, name in re.findall(r'(\d+):\t(.+)', line)}
+                found = entries(listing)
+                assert entries(listing.replace('\r\n', '\n').replace('\n', '\r\n')) == found
+                assert 'HELLO.BIN' in found and 'EMPTY.TXT' in found, repr(listing)
                 assert run('icat', '-i', 'ftl100', image, found['HELLO.BIN']) == payload
                 assert run('icat', '-i', 'ftl100', image, found['EMPTY.TXT']) == b''
                 assert b'FTL-FREE-MARKER!' in run('blkls', '-i', 'ftl100', image)
