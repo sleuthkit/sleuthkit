@@ -472,6 +472,8 @@ public class TskData {
 		TSK_FS_TYPE_LOGICAL(0x00020000, "Logical"),
 		TSK_FS_TYPE_QNX4(0x00100000, "QNX4"),
         TSK_FS_TYPE_QNX4_DETECT(0x00100000, "QNX4 auto detection"),
+		TSK_FS_TYPE_F2FS(0x00080000, "F2FS"),
+        TSK_FS_TYPE_F2FS_DETECT(0x00080000, "F2FS auto detection"),
         TSK_FS_TYPE_QNX6(0x00040000, "QNX6 (experimental)"),
 		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 

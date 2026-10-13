@@ -143,6 +143,7 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
         { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
         { "QNX4", qnx4_open, TSK_FS_TYPE_QNX4_DETECT },
+        { "F2FS", f2fs_open, TSK_FS_TYPE_F2FS_DETECT },
         { "QNX6",     qnx6_open,    TSK_FS_TYPE_QNX6          },
 #if TSK_USE_HFS
         { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
@@ -298,6 +299,9 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (a_ftype == TSK_FS_TYPE_QNX4) {
         return qnx4_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_F2FS) {
+        return f2fs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (a_ftype == TSK_FS_TYPE_QNX6) {
         return qnx6_open(a_img_info, a_offset, a_ftype, a_pass, 0);

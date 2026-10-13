@@ -1,7 +1,7 @@
 name: QNX4 native reader and TSK integration
 on:
   push:
-    branches: [feature/qnx4]
+    branches: [feature/qnx4, develop-4.1x]
   pull_request:
     paths: ['tsk/**', 'tests/qnx4*', '.github/workflows/qnx4-native-tests.yml']
   workflow_dispatch:

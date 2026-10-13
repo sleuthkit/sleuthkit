@@ -461,6 +461,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\qnx6_file.c" />
     <ClCompile Include="..\..\tsk\fs\qnx6_bitmap.c" />
     <ClCompile Include="..\..\tsk\fs\qnx4.cpp" />
+    <ClCompile Include="..\..\tsk\fs\f2fs.cpp" />
     <ClCompile Include="..\..\tsk\fs\qnx6_open.c" />
     <ClCompile Include="..\..\tsk\fs\fs_parse.c" />
     <ClCompile Include="..\..\tsk\fs\fs_types.c" />

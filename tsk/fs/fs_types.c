@@ -48,6 +48,7 @@ static FS_TYPES fs_type_table[] = {
 #endif
     {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
     {"qnx4", TSK_FS_TYPE_QNX4, "QNX4"},
+    {"f2fs", TSK_FS_TYPE_F2FS, "F2FS"},
     {"qnx6", TSK_FS_TYPE_QNX6, "QNX6 (experimental: metadata not yet available)"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
 	{"logical", TSK_FS_TYPE_LOGICAL, "Logical Directory"},

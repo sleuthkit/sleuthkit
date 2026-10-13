@@ -33,6 +33,9 @@
     <ClCompile Include="..\..\tsk\fs\qnx4.cpp">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\f2fs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\vs\bsd.c">
       <Filter>vs</Filter>
     </ClCompile>

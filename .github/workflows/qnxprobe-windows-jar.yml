@@ -5,6 +5,7 @@ on:
     branches:
       - develop-4.1x
       - feature/qnx4
+      - feature/f2fs
     paths:
       - '.github/workflows/qnxprobe-windows-jar.yml'
       - 'bindings/**'
