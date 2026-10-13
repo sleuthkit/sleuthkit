@@ -197,6 +197,9 @@ namespace Rejistry {
             {
                 std::vector<std::wstring> stringList = data->getAsStringList();
 
+                if (stringList.empty()) {
+                    std::wcout << std::endl;
+                }
                 for (uint32_t i = 0; i < stringList.size(); ++i) {
                     if (i != 0) {
                         std::wcout << prefix << "               ";
