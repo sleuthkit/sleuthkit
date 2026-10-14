@@ -35,6 +35,52 @@
 
 namespace Rejistry {
 
+    namespace {
+        /**
+         * Wrap a value's data bytes. A malformed hive can declare a data length
+         * larger than the cell(s) that hold the data, so return only the bytes
+         * that are actually present, never more than the declared length.
+         * Callers can detect truncation by comparing the returned data size
+         * with VKRecord::getDataLength().
+         */
+        std::unique_ptr<RegistryByteBuffer> makeDataBuffer(const ByteBuffer::ByteArray& bytes, uint32_t declaredLength) {
+            uint32_t safeLength = std::min(declaredLength, static_cast<uint32_t>(bytes.size()));
+            return std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(bytes, safeLength));
+        }
+
+        // Size of a cell holding a "db" (big data) record: the 12-byte record from
+        // the REGF spec (signature, segment count, segment list offset, padding)
+        // plus the cell's 4-byte size field.
+        const uint32_t DB_RECORD_CELL_SIZE = 16;
+
+        /**
+         * True if the cell holding a value's data is a "db" (big data) record: it
+         * has the "db" signature, it is exactly DB_RECORD_CELL_SIZE bytes, and the
+         * value's declared length is larger than the cell.
+         *
+         * Hive format 1.3 and earlier have no db records: a value larger than
+         * DB_DATA_SIZE is stored whole in a single cell, and its data can happen to
+         * start with the bytes 'd' 'b'. Checking the cell size as well keeps such
+         * values from being misread as db records. Only a corrupt 1.3 value whose
+         * cell is exactly DB_RECORD_CELL_SIZE bytes and starts with "db" is still
+         * taken for a db record; following its bogus segment list is
+         * bounds-checked and normally throws RegistryParseException.
+         */
+        bool isDBRecordCell(const Cell& cell, uint32_t declaredLength) {
+            try {
+                if (cell.getDataSignature() != "db") {
+                    return false;
+                }
+                uint32_t cellSize = cell.getLength();
+                return cellSize == DB_RECORD_CELL_SIZE && declaredLength > cellSize;
+            }
+            catch (RegistryParseException& ) {
+                // Unreadable signature or cell length: not a usable db record.
+                return false;
+            }
+        }
+    }
+
     const std::string VKRecord::MAGIC = "vk";
     const std::wstring VKRecord::DEFAULT_VALUE_NAME = L"(Default)";
 
@@ -82,11 +128,8 @@ namespace Rejistry {
     }
 
     uint32_t VKRecord::getDataLength() const {
-        uint32_t size = getDWord(DATA_LENGTH_OFFSET);
-        if (size >= LARGE_DATA_SIZE){
-            size -= LARGE_DATA_SIZE;
-        }
-        return size;
+        // Clear the DATA_STORED_INLINE flag, if set; the rest is the length.
+        return getDWord(DATA_LENGTH_OFFSET) & ~DATA_STORED_INLINE;
     }
 
     uint32_t VKRecord::getRawDataLength() const {
@@ -94,7 +137,9 @@ namespace Rejistry {
     }
 
     uint32_t VKRecord::getDataOffset() const {
-        if (getRawDataLength() < SMALL_DATA_SIZE || getRawDataLength() >= LARGE_DATA_SIZE) {
+        uint32_t rawLength = getRawDataLength();
+        if ((rawLength & DATA_STORED_INLINE) != 0 || rawLength < SMALL_DATA_SIZE) {
+            // The data is in the record's own data offset field.
             return _offset + DATA_OFFSET_OFFSET;
         } else {
             return REGFHeader::FIRST_HBIN_OFFSET + getDWord(DATA_OFFSET_OFFSET);
@@ -103,10 +148,14 @@ namespace Rejistry {
     }
 
     ValueData::ValueDataUniqPtr VKRecord::getValue() const {
+        // The raw data length field: the DATA_STORED_INLINE flag plus the length.
+        // When the flag is clear, as in every branch below except the inline
+        // ones, it is just the length.
         uint32_t length = getRawDataLength();
         uint32_t offset = getDataOffset();
+        bool storedInline = (length & DATA_STORED_INLINE) != 0;
 
-        if (length > (LARGE_DATA_SIZE + DB_DATA_SIZE)) {
+        if (storedInline && (length & ~DATA_STORED_INLINE) > DB_DATA_SIZE) {
             throw RegistryParseException("Value size too large.");
         }
 
@@ -123,23 +172,27 @@ namespace Rejistry {
         case ValueData::VALTYPE_FULL_RESOURCE_DESCRIPTOR:
         case ValueData::VALTYPE_RESOURCE_REQUIREMENTS_LIST:
 
-            if (length >= LARGE_DATA_SIZE) {
-                uint32_t bufSize = length - LARGE_DATA_SIZE;
+            if (storedInline) {
+                // Stored inline: the data is in the record's data offset field.
+                uint32_t bufSize = length & ~DATA_STORED_INLINE;
                 data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, bufSize), bufSize));
             }
-            else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
+            else if (length > DB_DATA_SIZE) {
+                // Larger values are stored either as a "db" record pointing to a
+                // list of data segments (format 1.4 and later) or whole in a single
+                // cell (1.3 and earlier); see isDBRecordCell().
                 auto c = std::make_unique< Cell >(_buf, offset);
-                try {
-                    auto db = c->getDBRecord();
-                    data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(db->getData(length), length));
+                if (isDBRecordCell(*c, length)) {
+                    data = makeDataBuffer(c->getDBRecord()->getData(length), length);
                 }
-                catch (RegistryParseException& ) {
-                    data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
+                else {
+                    data = makeDataBuffer(c->getData(), length);
                 }
             }
             else {
+                // Up to DB_DATA_SIZE bytes: the data is in a single cell.
                 auto c = std::make_unique< Cell >(_buf, offset);
-                data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(c->getData(), length));
+                data = makeDataBuffer(c->getData(), length);
             }
             break;
         case ValueData::VALTYPE_DWORD:
@@ -150,7 +203,7 @@ namespace Rejistry {
         case ValueData::VALTYPE_FILETIME:
             {
                 uint32_t dataLen = getDataLength();
-                if (length >= LARGE_DATA_SIZE) {
+                if (storedInline) {
                     // Data is stored inline in the VK record (≤4 bytes).
                     // Malformed QWORD/FILETIME — getAsNumber() will return 0.
                     data = std::make_unique<RegistryByteBuffer>(
@@ -158,10 +211,7 @@ namespace Rejistry {
                 }
                 else {
                     auto c = std::make_unique<Cell>(_buf, offset);
-                    ByteBuffer::ByteArray cellData = c->getData();
-                    uint32_t safeLength = std::min(length, static_cast<uint32_t>(cellData.size()));
-                    data = std::make_unique<RegistryByteBuffer>(
-                        std::make_unique<ByteBuffer>(cellData, safeLength));
+                    data = makeDataBuffer(c->getData(), length);
                 }
             }
             break;

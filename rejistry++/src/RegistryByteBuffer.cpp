@@ -41,7 +41,7 @@
 namespace Rejistry {
 
     std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
-    
+
     // Take ownership of the passed in buffer
     RegistryByteBuffer::RegistryByteBuffer(std::unique_ptr<ByteBuffer> buffer) {
         if (buffer == nullptr) {
@@ -145,6 +145,12 @@ namespace Rejistry {
 	* @param length: Number of bytes to read
 	*/
     ByteBuffer::ByteArray RegistryByteBuffer::getData(const uint32_t offset, const uint32_t length) const {
+        // Check bounds before allocating, so a corrupt length from the hive
+        // can't force a huge allocation.
+        if (offset > _byteBuffer->limit() || length > _byteBuffer->limit() - offset) {
+            throw RegistryParseException("Requested data extends past the end of the buffer.");
+        }
+
         uint32_t savedPosition = _byteBuffer->position();
         _byteBuffer->position(offset);
         ByteBuffer::ByteArray data;
@@ -159,7 +165,17 @@ namespace Rejistry {
     }
 
 	/**
-	* Reads data from the registry based off of the given offset and length of data to read.
+	* Reads REG_MULTI_SZ data: UTF-16LE strings, each ending in a null
+	* character, with an extra null character ending the list.
+	*
+	* Splits only at null characters on a 2-byte character boundary. Empty
+	* strings between other strings are kept: Windows treats the first empty
+	* string as the end of the list, but anything after it is still part of the
+	* value. Null characters at the end of the data are the list terminator and
+	* are dropped. A last string with no terminator ends at the end of the data,
+	* and an odd trailing byte becomes the low byte of a final character, as in
+	* getUTF16String(). Unpaired surrogates are replaced with U+FFFD, also as in
+	* getUTF16String().
 	*
 	* @param offset: Offset where data begins
 	* @param length: Number of bytes to read
@@ -168,34 +184,36 @@ namespace Rejistry {
         std::vector<std::wstring> stringList;
         ByteBuffer::ByteArray data = getData(offset, length);
 
-        uint32_t i = 0;
-        uint32_t pos = 0;
-
-        while (i + 1 < data.size()) {
-            if (data[i] == '\0' && data[++i] == '\0') {
-                stringList.push_back(std::wstring((wchar_t*)&data[pos]));
-                pos = i;
-                while (i < data.size() && data[i] == '\0') {
-                    pos++; i++;
-                }
-            }
-            else {
-                i++;
-            }
+        if (data.size() % 2 != 0) {
+            data.push_back('\0');
         }
 
-        // Handle unterminated trailing string data.
-        if (pos < data.size()) {
-            uint32_t remaining = (uint32_t)(data.size() - pos);
-            // Ensure we have an even number of bytes for wchar_t alignment
-            if (remaining % 2 != 0) {
-                data.push_back('\0');
-                remaining++;
+        size_t numChars = data.size() / sizeof(wchar_t);
+
+        // Replace unpaired surrogates (invalid UTF-16) with U+FFFD, as
+        // getUTF16String() does (CT-4851); otherwise callers converting an
+        // entry to UTF-8 can fail and lose the whole entry. The replacement is
+        // in place and one unit for one unit, on this function's own copy of
+        // the data, so sizes and the null characters used for splitting below
+        // are unchanged.
+        tsk_cleanupUTF16(TSK_LIT_ENDIAN, reinterpret_cast<wchar_t*>(data.data()), numChars, L'\uFFFD');
+
+        const wchar_t* chars = reinterpret_cast<const wchar_t*>(data.data());
+
+        // Trailing null characters are the list terminator.
+        while (numChars > 0 && chars[numChars - 1] == L'\0') {
+            numChars--;
+        }
+
+        size_t start = 0;
+        for (size_t i = 0; i < numChars; i++) {
+            if (chars[i] == L'\0') {
+                stringList.push_back(std::wstring(chars + start, i - start));
+                start = i + 1;
             }
-            // Append a null wchar_t terminator
-            data.push_back('\0');
-            data.push_back('\0');
-            stringList.push_back(std::wstring((wchar_t*)&data[pos]));
+        }
+        if (numChars > 0) {
+            stringList.push_back(std::wstring(chars + start, numChars - start));
         }
 
         return stringList;

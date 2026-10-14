@@ -52,6 +52,34 @@ namespace Rejistry {
         return (b ? L"True" : L"False");
     }
 
+    /**
+     * Returns s, with "  [invalid UTF-16]" appended if it contains an unpaired
+     * surrogate (a high surrogate not followed by a low one, or a lone low one).
+     *
+     * Such strings can't be converted to UTF-8, so callers like the CyberTriage
+     * collector lose them; Rejistry++ replaces unpaired surrogates with U+FFFD
+     * (CT-4851). The output can't show this by itself: writing it as UTF-8 also
+     * turns an unpaired surrogate into U+FFFD, so check before printing. The
+     * marker should never appear; if it does, some code path is returning
+     * unsanitized UTF-16.
+     */
+    std::wstring markInvalidUTF16(const std::wstring& s) {
+        for (size_t i = 0; i < s.size(); i++) {
+            wchar_t c = s[i];
+            if (c >= 0xD800 && c <= 0xDBFF) {
+                if (i + 1 < s.size() && s[i + 1] >= 0xDC00 && s[i + 1] <= 0xDFFF) {
+                    i++;            // valid pair
+                    continue;
+                }
+                return s + L"  [invalid UTF-16]";
+            }
+            if (c >= 0xDC00 && c <= 0xDFFF) {
+                return s + L"  [invalid UTF-16]";
+            }
+        }
+        return s;
+    }
+
     void printDatetimeString(const uint64_t& dateTime) {
         SYSTEMTIME systemTime;
         FileTimeToSystemTime((LPFILETIME)&dateTime, &systemTime);
@@ -177,7 +205,7 @@ namespace Rejistry {
 
     void printVKRecord(const VKRecord* vkRecord, const std::wstring& prefix) {
         try {
-            std::wcout << prefix << "vkrecord name: " << vkRecord->getName() << std::endl;
+            std::wcout << prefix << "vkrecord name: " << markInvalidUTF16(vkRecord->getName()) << std::endl;
             std::wcout << prefix << "vkrecord has name: " << getBooleanString(vkRecord->hasName()) << std::endl;
             std::wcout << prefix << "vkrecord has ascii name: " << getBooleanString(vkRecord->hasAsciiName()) << std::endl;
             std::wcout << prefix << "vkrecord value type: " << ValueData::getValueType(vkRecord->getValueType()) << std::endl;
@@ -191,17 +219,20 @@ namespace Rejistry {
             switch (data->getValueType()) {
             case ValueData::VALTYPE_SZ:
             case ValueData::VALTYPE_EXPAND_SZ:
-                std::wcout << data->getAsString() << std::endl;
+                std::wcout << markInvalidUTF16(data->getAsString()) << std::endl;
                 break;
             case ValueData::VALTYPE_MULTI_SZ:
             {
                 std::vector<std::wstring> stringList = data->getAsStringList();
 
+                if (stringList.empty()) {
+                    std::wcout << std::endl;
+                }
                 for (uint32_t i = 0; i < stringList.size(); ++i) {
                     if (i != 0) {
                         std::wcout << prefix << "               ";
                     }
-                    std::wcout << stringList[i] << std::endl;
+                    std::wcout << markInvalidUTF16(stringList[i]) << std::endl;
                 }
             }
             break;
@@ -228,16 +259,16 @@ namespace Rejistry {
     void printNKRecord(const NKRecord* nkRecord, const std::wstring& prefix) {
         try {
             std::wcout << prefix << "nkrecord has classname: " << getBooleanString(nkRecord->hasClassname()) << std::endl;
-            std::wcout << prefix << "nkrecord classname: " << nkRecord->getClassName() << std::endl;
+            std::wcout << prefix << "nkrecord classname: " << markInvalidUTF16(nkRecord->getClassName()) << std::endl;
             std::wcout << prefix << "nkrecord timestamp: "; printDatetimeString(nkRecord->getTimestamp()); std::wcout << std::endl;
             std::wcout << prefix << "nkrecord is root: " << getBooleanString(nkRecord->isRootKey()) << std::endl;
-            std::wcout << prefix << "nkrecord name: " << nkRecord->getName() << std::endl;
+            std::wcout << prefix << "nkrecord name: " << markInvalidUTF16(nkRecord->getName()) << std::endl;
             std::wcout << prefix << "nkrecord has ascii name: " << getBooleanString(nkRecord->hasAsciiName()) << std::endl;
             std::wcout << prefix << "nkrecord has parent: " << getBooleanString(nkRecord->hasParentRecord()) << std::endl;
             if (nkRecord->hasParentRecord()) {
                 try {
                     auto parent = nkRecord->getParentRecord();
-                    std::wcout << prefix << "nkrecord parent name: " << parent->getName() << std::endl;
+                    std::wcout << prefix << "nkrecord parent name: " << markInvalidUTF16(parent->getName()) << std::endl;
                 }
                 catch (std::exception& ex) {
                     std::wcout << prefix << "nkrecord parent name: exception (" << ex.what() << ")" << std::endl;
@@ -358,7 +389,7 @@ namespace Rejistry {
                 g_stats.maxValuesForKey = static_cast<uint32_t>(vkRecords.size());
             }
             for (auto& vkRecord : vkRecords) {
-                std::wcout << prefix << "  value: " << vkRecord->getName() << std::endl;
+                std::wcout << prefix << "  value: " << markInvalidUTF16(vkRecord->getName()) << std::endl;
                 printVKRecord(vkRecord.get(), L"    " + prefix);
                 try {
                     g_stats.valueTypeCounts[ValueData::getValueType(vkRecord->getValueType())]++;
@@ -535,16 +566,16 @@ namespace Rejistry {
         // --- Recurse into subkeys (paired low-level + high-level) ---
         size_t count = std::min(nkSubkeys.size(), rkSubkeys.size());
         for (size_t i = 0; i < count; ++i) {
-            std::wcout << prefix << "  key: " << nkSubkeys[i]->getName() << std::endl;
+            std::wcout << prefix << "  key: " << markInvalidUTF16(nkSubkeys[i]->getName()) << std::endl;
             recurseAll(nkSubkeys[i].get(), *rkSubkeys[i], L"    " + prefix, depth + 1);
         }
 
         // If sizes differ, still print remaining NKRecord subkeys
         for (size_t i = count; i < nkSubkeys.size(); ++i) {
-            std::wcout << prefix << "  key (nk only): " << nkSubkeys[i]->getName() << std::endl;
+            std::wcout << prefix << "  key (nk only): " << markInvalidUTF16(nkSubkeys[i]->getName()) << std::endl;
         }
         for (size_t i = count; i < rkSubkeys.size(); ++i) {
-            std::wcout << prefix << "  key (rk only): " << rkSubkeys[i]->getName() << std::endl;
+            std::wcout << prefix << "  key (rk only): " << markInvalidUTF16(rkSubkeys[i]->getName()) << std::endl;
         }
     }
 
@@ -565,7 +596,7 @@ namespace Rejistry {
 
         try {
             auto header = hive.getHeader();
-            std::wcout << "hive name: " << header->getHiveName() << std::endl;
+            std::wcout << "hive name: " << markInvalidUTF16(header->getHiveName()) << std::endl;
             std::wcout << "major version: " << header->getMajorVersion() << std::endl;
             std::wcout << "minor version: " << header->getMinorVersion() << std::endl;
             std::wcout << "hive sync: " << (header->isSynchronized() ? "Yes" : "No") << std::endl;
