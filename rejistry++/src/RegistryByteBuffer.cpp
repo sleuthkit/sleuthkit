@@ -174,6 +174,7 @@ namespace Rejistry {
 	* value. Null characters at the end of the data are the list terminator and
 	* are dropped. A last string with no terminator ends at the end of the data,
 	* and an odd trailing byte becomes the low byte of a final character, as in
+	* getUTF16String(). Unpaired surrogates are replaced with U+FFFD, also as in
 	* getUTF16String().
 	*
 	* @param offset: Offset where data begins
@@ -187,8 +188,17 @@ namespace Rejistry {
             data.push_back('\0');
         }
 
-        const wchar_t* chars = reinterpret_cast<const wchar_t*>(data.data());
         size_t numChars = data.size() / sizeof(wchar_t);
+
+        // Replace unpaired surrogates (invalid UTF-16) with U+FFFD, as
+        // getUTF16String() does (CT-4851); otherwise callers converting an
+        // entry to UTF-8 can fail and lose the whole entry. The replacement is
+        // in place and one unit for one unit, on this function's own copy of
+        // the data, so sizes and the null characters used for splitting below
+        // are unchanged.
+        tsk_cleanupUTF16(TSK_LIT_ENDIAN, reinterpret_cast<wchar_t*>(data.data()), numChars, L'\uFFFD');
+
+        const wchar_t* chars = reinterpret_cast<const wchar_t*>(data.data());
 
         // Trailing null characters are the list terminator.
         while (numChars > 0 && chars[numChars - 1] == L'\0') {
