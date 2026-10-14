@@ -646,15 +646,20 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
 
   fs_file->meta->attr_state = TSK_FS_META_ATTR_EMPTY;
 
+  auto inode_ptr = static_cast<APFSJObject*>(fs_file->meta->content_ptr);
+
+  // Construct first. If obj(addr) throws, no object exists and reset_content
+  // is still NULL, so neither tsk_fs_meta_reset nor tsk_fs_meta_close will
+  // run a destructor over non-constructed storage.
+  new (inode_ptr) APFSJObject(obj(addr));
+
+  // Only now arm the destructor callback: the object is live.
   fs_file->meta->reset_content = [](void* content_ptr) {
-    // Destruct the APFSJObject
     static_cast<APFSJObject*>(content_ptr)->~APFSJObject();
   };
 
-  auto inode_ptr = static_cast<APFSJObject*>(fs_file->meta->content_ptr);
-
-  new (inode_ptr) APFSJObject(obj(addr));
   if (!inode_ptr->valid()) {
+    fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
     tsk_error_set_errstr(
@@ -709,6 +714,14 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
 
   return 0;
 } catch (const std::exception& e) {
+  if (fs_file->meta != nullptr) {
+    fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
+  }
+  if (tsk_verbose) {
+    tsk_fprintf(stderr,
+                "APFS file_add_meta: skipping inode %" PRIuINUM ": %s\n",
+                addr, e.what());
+  }
   tsk_error_reset();
   tsk_error_set_errno(TSK_ERR_FS_GENFS);
   tsk_error_set_errstr("%s", e.what());
