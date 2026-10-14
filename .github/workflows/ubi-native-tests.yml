@@ -17,6 +17,11 @@ jobs:
           repository: abrignoni/qnxprobe
           ref: de0e352b466e2e165cf5dd38652b11515ccf58f4
           path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: dfa12f2231ef5900ade8fb61aefd6166357ebdcc
+          path: reference-kommbox
       - name: Dependencies
         run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libsqlite3-dev libssl-dev zlib1g-dev
       - name: Build native TSK
@@ -28,6 +33,8 @@ jobs:
           g++ -std=c++17 -I . tests/ubi_read_probe.cpp -L tsk/.libs -Wl,-rpath,"$PWD/tsk/.libs" -ltsk -o ubi-read-probe
       - name: Native regressions
         run: python3 tests/ubi_regression.py --tools tools/fstools --reference reference-qnxprobe --read-probe "$PWD/ubi-read-probe"
+      - name: NAND ECC and device-profile preprocessing
+        run: python3 tests/flash_preprocess_regression.py --reference reference-kommbox --tools tools/fstools
       - uses: actions/upload-artifact@v4
         with:
           name: ubi-ubifs-linux-cli
@@ -51,6 +58,11 @@ jobs:
           repository: abrignoni/qnxprobe
           ref: de0e352b466e2e165cf5dd38652b11515ccf58f4
           path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: dfa12f2231ef5900ade8fb61aefd6166357ebdcc
+          path: reference-kommbox
       - name: Build native Windows including JNI
         shell: pwsh
         run: |
@@ -68,6 +80,8 @@ jobs:
           $env:PATH = "$PWD/release/ubi-windows;" + $env:PATH
           python tests/ubi_regression.py --tools release/ubi-windows --reference reference-qnxprobe
           if ($LASTEXITCODE -ne 0) { throw 'UBI regressions failed' }
+          python tests/flash_preprocess_regression.py --reference reference-kommbox --tools release/ubi-windows
+          if ($LASTEXITCODE -ne 0) { throw 'Flash preprocessing regressions failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: ubi-ubifs-windows-cli

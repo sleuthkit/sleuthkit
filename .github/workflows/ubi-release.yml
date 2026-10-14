@@ -26,6 +26,11 @@ jobs:
           repository: abrignoni/qnxprobe
           ref: de0e352b466e2e165cf5dd38652b11515ccf58f4
           path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: dfa12f2231ef5900ade8fb61aefd6166357ebdcc
+          path: reference-kommbox
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -44,6 +49,7 @@ jobs:
         run: |
           g++ -std=c++17 -I . tests/ubi_read_probe.cpp -L tsk/.libs -Wl,-rpath,"$PWD/tsk/.libs" -ltsk -o ubi-read-probe
           python3 tests/ubi_regression.py --tools tools/fstools --reference reference-qnxprobe --read-probe "$PWD/ubi-read-probe"
+          python3 tests/flash_preprocess_regression.py --reference reference-kommbox --tools tools/fstools
       - name: Package binaries and Java bindings
         shell: bash
         run: |
@@ -56,6 +62,10 @@ jobs:
           echo 'Java artifacts:'
           find release/java -name '*.jar' -print
           test -n "$(find release/linux-x64/bin -type f -print -quit)"
+          mkdir -p release/linux-x64/flash_preprocessor/profiles
+          cp tools/flash/*.py tools/flash/LICENSE.txt docs/UBI_PREPROCESSOR.md release/linux-x64/flash_preprocessor/
+          cp config/flash_devices/*.json config/flash_devices/README.md release/linux-x64/flash_preprocessor/profiles/
+          python3 release/linux-x64/flash_preprocessor/preprocess_ubi.py --list-profiles
           tar -czf sleuthkit-linux-x64.tar.gz -C release linux-x64
           (cd release/java && zip -r ../../sleuthkit-java.zip .)
       - uses: actions/upload-artifact@v4
@@ -74,6 +84,11 @@ jobs:
           repository: abrignoni/qnxprobe
           ref: de0e352b466e2e165cf5dd38652b11515ccf58f4
           path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: dfa12f2231ef5900ade8fb61aefd6166357ebdcc
+          path: reference-kommbox
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -162,6 +177,13 @@ jobs:
           }
           python tests/ubi_regression.py --tools $out --reference reference-qnxprobe
           if ($LASTEXITCODE -ne 0) { throw 'UBI / UBIFS regression suite failed for packaged Windows tools' }
+          python tests/flash_preprocess_regression.py --reference reference-kommbox --tools $out
+          if ($LASTEXITCODE -ne 0) { throw 'Flash preprocessing regressions failed' }
+          New-Item -ItemType Directory -Force "$out/flash_preprocessor/profiles" | Out-Null
+          Copy-Item tools/flash/*.py,tools/flash/LICENSE.txt,docs/UBI_PREPROCESSOR.md "$out/flash_preprocessor/" -Force
+          Copy-Item config/flash_devices/*.json,config/flash_devices/README.md "$out/flash_preprocessor/profiles/" -Force
+          python "$out/flash_preprocessor/preprocess_ubi.py" --list-profiles
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged preprocessor profile discovery failed' }
           Copy-Item bindings/java/dist/sleuthkit-4.15.0.jar $out/ -Force
           Compress-Archive -Path "$out/*" -DestinationPath sleuthkit-windows-x64.zip -Force
       - uses: actions/upload-artifact@v4
@@ -224,6 +246,13 @@ jobs:
             buffered reads, mapping-copy fallback, offsets, CRC failures,
             journal deletion and incomplete-final-group exclusion.
 
+            Includes a Python NAND preprocessor and JSON device profiles. The first
+            profile is the observed Qualcomm Kommbox 4352 -> 4096 layout with
+            MSB-first BCH m=13, t=8, polynomial 0x201B. Uncorrectable blocks fail
+            by default; reports record hashes, correction counts and unprotected
+            bytes. The final 484 bytes per page have no decoded BCH coverage.
+            Requires Python 3.10+; not automatically invoked by Autopsy/JNI.
+
             Limits: Zstd, fscrypt/authentication and deleted-file carving are not
             implemented. Physical allocation is conservative: blkls exposes free
             or superseded UBI PEB payloads, not UBIFS LPT free-space accounting.
@@ -237,3 +266,4 @@ jobs:
 
             Prerelease for forensic validation; branch feature/ubi-ubifs.
           generate_release_notes: false
+

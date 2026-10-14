@@ -1,5 +1,8 @@
 # Native UBI / UBIFS reader
 
+Raw NAND cleanup is available separately through `tools/flash/preprocess_ubi.py`;
+see [UBI_PREPROCESSOR.md](UBI_PREPROCESSOR.md) and `config/flash_devices/`.
+
 Branch: `feature/ubi-ubifs`, based on `develop-4.1x` at cac76b4.
 
 Input is a raw, page-data-only UBI image: no OOB, ECC, interleaving or stuff
