@@ -47,6 +47,38 @@ namespace Rejistry {
             uint32_t safeLength = std::min(declaredLength, static_cast<uint32_t>(bytes.size()));
             return std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(bytes, safeLength));
         }
+
+        // Size of a cell holding a "db" (big data) record: the 12-byte record from
+        // the REGF spec (signature, segment count, segment list offset, padding)
+        // plus the cell's 4-byte size field.
+        const uint32_t DB_RECORD_CELL_SIZE = 16;
+
+        /**
+         * True if the cell holding a value's data is a "db" (big data) record: it
+         * has the "db" signature, it is exactly DB_RECORD_CELL_SIZE bytes, and the
+         * value's declared length is larger than the cell.
+         *
+         * Hive format 1.3 and earlier have no db records: a value larger than
+         * DB_DATA_SIZE is stored whole in a single cell, and its data can happen to
+         * start with the bytes 'd' 'b'. Checking the cell size as well keeps such
+         * values from being misread as db records. Only a corrupt 1.3 value whose
+         * cell is exactly DB_RECORD_CELL_SIZE bytes and starts with "db" is still
+         * taken for a db record; following its bogus segment list is
+         * bounds-checked and normally throws RegistryParseException.
+         */
+        bool isDBRecordCell(const Cell& cell, uint32_t declaredLength) {
+            try {
+                if (cell.getDataSignature() != "db") {
+                    return false;
+                }
+                uint32_t cellSize = cell.getLength();
+                return cellSize == DB_RECORD_CELL_SIZE && declaredLength > cellSize;
+            }
+            catch (RegistryParseException& ) {
+                // Unreadable signature or cell length: not a usable db record.
+                return false;
+            }
+        }
     }
 
     const std::string VKRecord::MAGIC = "vk";
@@ -146,43 +178,12 @@ namespace Rejistry {
                 data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, bufSize), bufSize));
             }
             else if (length > DB_DATA_SIZE) {
-                // Data larger than DB_DATA_SIZE is stored one of two ways, depending
-                // on the hive format version:
-                //   - 1.3 and earlier: the whole value in a single data cell.
-                //   - 1.4 and later: a small "db" record pointing to a list of data
-                //     segments (see DBRecord and DBIndirectRecord).
-                // The hive version isn't checked here, so the cell itself decides.
-                // The "db" signature alone isn't enough: in a 1.3 hive, a value whose
-                // data happens to start with the bytes 'd' 'b' (0x64 0x62) would be
-                // misread as a db record and fail to parse. A real db record's cell
-                // is tiny, while a single-cell value holds at least the declared
-                // length, so a "db" cell that big is the value data itself.
+                // Larger values are stored either as a "db" record pointing to a
+                // list of data segments (format 1.4 and later) or whole in a single
+                // cell (1.3 and earlier); see isDBRecordCell().
                 auto c = std::make_unique< Cell >(_buf, offset);
-                DBRecord::DBRecordPtr db;
-                try {
-                    db = c->getDBRecord();
-                }
-                catch (RegistryParseException& ) {
-                    // No "db" signature: the data is stored directly in this cell.
-                }
-
-                if (db) {
-                    ByteBuffer::ByteArray cellData;
-                    try {
-                        cellData = c->getData();
-                    }
-                    catch (RegistryParseException& ) {
-                        // The cell's length field is unusable, so it can't be a
-                        // single-cell value; treat it as a db record.
-                    }
-
-                    if (cellData.size() >= length) {
-                        // Single-cell (format 1.3) value whose data starts with "db".
-                        data = makeDataBuffer(cellData, length);
-                    }
-                    else {
-                        data = makeDataBuffer(db->getData(length), length);
-                    }
+                if (isDBRecordCell(*c, length)) {
+                    data = makeDataBuffer(c->getDBRecord()->getData(length), length);
                 }
                 else {
                     data = makeDataBuffer(c->getData(), length);
