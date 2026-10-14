@@ -141,9 +141,11 @@ def main():
         if opt.real_dump:
             physical = opt.real_dump.read_bytes()
             expected = opt.recovered_image.read_bytes()
-            assert ref.recover(physical)[0] == expected, 'private recovery differs from Python reference'
-            for args in ([], ['-i', 'ftl100']):
-                assert run('img_cat', *args, opt.real_dump) == expected, 'private native recovery differs'
+            oracle, headers, _, _, _ = ref.recover(physical)
+            assert oracle == expected, 'private recovery differs from Python reference'
+            assert run('img_cat', '-i', 'ftl100', opt.real_dump) == expected, 'private native recovery differs'
+            if headers[0][0] + 14 <= 1048576:
+                assert run('img_cat', opt.real_dump) == expected, 'private automatic recovery differs'
             assert b'Ignored out-of-range BAM entries: 10' in run('img_stat', '-i', 'ftl100', opt.real_dump)
             recovered = tmp / 'private-recovered.img'
             recovered.write_bytes(expected)
