@@ -142,15 +142,47 @@ namespace Rejistry {
                 data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, bufSize), bufSize));
             }
             else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
+                // Data larger than DB_DATA_SIZE is stored one of two ways, depending
+                // on the hive format version:
+                //   - 1.3 and earlier: the whole value in a single data cell.
+                //   - 1.4 and later: a small "db" record pointing to a list of data
+                //     segments (see DBRecord and DBIndirectRecord).
+                // The hive version isn't checked here, so the cell itself decides.
+                // The "db" signature alone isn't enough: in a 1.3 hive, a value whose
+                // data happens to start with the bytes 'd' 'b' (0x64 0x62) would be
+                // misread as a db record and fail to parse. A real db record's cell
+                // is tiny, while a single-cell value holds at least the declared
+                // length, so a "db" cell that big is the value data itself.
                 auto c = std::make_unique< Cell >(_buf, offset);
                 DBRecord::DBRecordPtr db;
                 try {
                     db = c->getDBRecord();
                 }
                 catch (RegistryParseException& ) {
-                    // No "db" record: the data is stored directly in this cell.
+                    // No "db" signature: the data is stored directly in this cell.
                 }
-                data = makeDataBuffer(db ? db->getData(length) : c->getData(), length);
+
+                if (db) {
+                    ByteBuffer::ByteArray cellData;
+                    try {
+                        cellData = c->getData();
+                    }
+                    catch (RegistryParseException& ) {
+                        // The cell's length field is unusable, so it can't be a
+                        // single-cell value; treat it as a db record.
+                    }
+
+                    if (cellData.size() >= length) {
+                        // Single-cell (format 1.3) value whose data starts with "db".
+                        data = makeDataBuffer(cellData, length);
+                    }
+                    else {
+                        data = makeDataBuffer(db->getData(length), length);
+                    }
+                }
+                else {
+                    data = makeDataBuffer(c->getData(), length);
+                }
             }
             else {
                 auto c = std::make_unique< Cell >(_buf, offset);
