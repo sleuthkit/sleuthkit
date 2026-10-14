@@ -5,6 +5,8 @@ on:
       - feature/ftl100
     paths:
       - '.github/workflows/ftl100-release.yml'
+      - 'tsk/img/ftl100*'
+      - 'tests/ftl100*'
   workflow_dispatch:
     inputs:
       release_tag:
@@ -234,3 +236,4 @@ jobs:
 
             Prerelease for forensic validation; input is a raw FTL100 NOR dump.
           generate_release_notes: false
+

@@ -16,7 +16,11 @@ def main():
     ap.add_argument('--img-tools', type=pathlib.Path)
     ap.add_argument('--reference', type=pathlib.Path, required=True)
     ap.add_argument('--read-probe', type=pathlib.Path)
+    ap.add_argument('--real-dump', type=pathlib.Path, help='optional private ASK-II dump, never included in CI')
+    ap.add_argument('--recovered-image', type=pathlib.Path, help='existing Python-recovered image to compare with the private dump')
     opt = ap.parse_args()
+    if bool(opt.real_dump) != bool(opt.recovered_image):
+        ap.error('--real-dump and --recovered-image must be provided together')
     spec = importlib.util.spec_from_file_location('ftl_reference', opt.reference / 'ftl100.py')
     ref = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ref)
@@ -95,6 +99,14 @@ def main():
         image.write_bytes(duplicate)
         assert run('img_cat', image) == ref.recover(duplicate)[0]
         assert b'Duplicate logical sectors: 1' in run('img_stat', image)
+        # Out-of-range BLOCK_DATA addresses are excluded, like Linux ftl.c
+        # and the Python recovery, rather than invalidating all valid mappings.
+        for entry in ((999 << 9) | 0x40, 0xffffec40, 0xfffffe40):
+            outside = bytearray(raw)
+            struct.pack_into('<I', outside, 512+8, entry)
+            image.write_bytes(outside)
+            assert run('img_cat', image) == ref.recover(outside)[0]
+            assert b'Ignored out-of-range BAM entries: 1' in run('img_stat', image)
         # Ordinary MBR parsing occurs on the reconstructed logical image.
         disk = bytearray(256*512)
         disk[510:512] = b'\x55\xaa'
@@ -112,7 +124,7 @@ def main():
         # Malformed geometry/map must fail, including autodetection after a signature.
         variants = [raw[:65500]]
         for at, data in ((22, b'\x20'), (23, b'\x3f'), (48, struct.pack('<I', 65535)),
-                         (28, struct.pack('<I', 0xffffffff)), (512+8, struct.pack('<I', (999 << 9) | 0x40)),
+                         (28, struct.pack('<I', 0xffffffff)),
                          (512, struct.pack('<I', 0x40))):
             bad = bytearray(raw)
             bad[at:at+len(data)] = data
@@ -126,6 +138,20 @@ def main():
         image.write_bytes(logical)
         assert b'FAT12' in run('fsstat', image)
         assert run('img_cat', image) == logical
+        if opt.real_dump:
+            physical = opt.real_dump.read_bytes()
+            expected = opt.recovered_image.read_bytes()
+            assert ref.recover(physical)[0] == expected, 'private recovery differs from Python reference'
+            for args in ([], ['-i', 'ftl100']):
+                assert run('img_cat', *args, opt.real_dump) == expected, 'private native recovery differs'
+            assert b'Ignored out-of-range BAM entries: 10' in run('img_stat', '-i', 'ftl100', opt.real_dump)
+            recovered = tmp / 'private-recovered.img'
+            recovered.write_bytes(expected)
+            assert b'FAT12' in run('fsstat', '-i', 'ftl100', opt.real_dump)
+            native = run('fls', '-i', 'ftl100', '-r', '-p', opt.real_dump).decode().replace('\r\n', '\n')
+            comparison = run('fls', '-i', 'raw', '-r', '-p', recovered).decode().replace('\r\n', '\n')
+            assert native == comparison, 'private FAT12 enumeration differs'
+            print('Private ASK-II: native recovery byte-exact, FAT12 and recursive listing match existing recovery; ten out-of-range entries ignored', flush=True)
         print(f'{count} FTL100 full-image oracle comparisons passed; FAT12 contents, free-space marker, duplicates, holes, split dumps and malformed cases passed', flush=True)
 
 

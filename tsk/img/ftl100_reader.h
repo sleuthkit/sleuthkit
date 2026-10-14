@@ -25,7 +25,7 @@ class Reader{
     Bytes fetch(uint64_t p,size_t n)const{if(p>physical_size||n>physical_size-p)throw std::runtime_error("read outside physical dump");Bytes b=io(p,n);if(b.size()!=n)throw std::runtime_error("short physical read");return b;}
 public:
     uint64_t physical_size=0,logical_size=0,erase_size=0;
-    uint32_t block_size=512,bam_offset=0,headers=0,transfer_units=0,duplicate_units=0,duplicate_sectors=0,ignored_headers=0;
+    uint32_t block_size=512,bam_offset=0,headers=0,transfer_units=0,duplicate_units=0,duplicate_sectors=0,ignored_headers=0,ignored_bam_sectors=0;
     uint16_t first_unit=0,total_units=0,data_units=0;
     std::map<uint16_t,Unit> units;
     std::map<uint32_t,uint64_t> sectors;
@@ -60,7 +60,12 @@ public:
         for(uint16_t id:order){const Unit&u=units.at(id);Bytes bam=fetch(u.physical+bam_offset,size_t(bam_bytes));
             for(uint32_t k=0;k<erase_size/block_size;k++){uint32_t ent=le(bam,size_t(k)*4,4);if((ent&0x7f)!=0x40)continue;
                 uint32_t sector=ent>>9;uint64_t relative=uint64_t(k)*block_size;
-                if(uint64_t(sector)*block_size>=logical_size)throw std::runtime_error("BAM sector outside logical image");
+                // Linux ftl.c builds VirtualBlockMap only for BLOCK_NUMBER <
+                // FormattedSize / block_size. The BMW ASK-II also has high
+                // BAM addresses (0xffffec40..0xfffffe40) outside that range.
+                // Like the reference recovery, ignore them without reading
+                // their payload or extending the formatted logical image.
+                if(uint64_t(sector)*block_size>=logical_size){ignored_bam_sectors++;continue;}
                 if(relative<68||(relative<bam_offset+bam_bytes&&relative+block_size>bam_offset))throw std::runtime_error("BAM data points into translation metadata");
                 if(sectors.count(sector))duplicate_sectors++;sectors[sector]=u.physical+relative;
             }
