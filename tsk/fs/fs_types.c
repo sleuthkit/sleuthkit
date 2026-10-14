@@ -53,6 +53,8 @@ static FS_TYPES fs_type_table[] = {
     {"os9-rbf", TSK_FS_TYPE_OS9, "Microware OS-9 RBF"},
     {"ubi", TSK_FS_TYPE_UBI, "UBI / UBIFS"},
     {"ubifs", TSK_FS_TYPE_UBI, "UBIFS"},
+    {"reliance", TSK_FS_TYPE_RELIANCE, "Reliance Nitro / FlashFX"},
+    {"flashfx", TSK_FS_TYPE_RELIANCE, "FlashFX + Reliance Nitro"},
     {"efs", TSK_FS_TYPE_EFS, "QNX EFS (F3S)"},
     {"qnx6", TSK_FS_TYPE_QNX6, "QNX6 (experimental: metadata not yet available)"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
