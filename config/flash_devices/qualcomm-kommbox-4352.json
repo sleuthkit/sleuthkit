@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "id": "qualcomm-kommbox-4352",
+  "description": "Observed Qualcomm Kommbox NAND profile from Gerd1986/qnxprobe ftl branch",
+  "notes": [
+    "Not a universal Qualcomm layout. Raw page geometry must match the observed device.",
+    "Only the first seven codewords have decoded BCH parity. The final 484 emitted bytes per page are unprotected by this configuration.",
+    "All-FF data/parity is treated as erased and is not syndrome-verified."
+  ],
+  "physical_page_bytes": 4352,
+  "logical_page_bytes": 4096,
+  "ecc": {
+    "algorithm": "bch",
+    "m": 13,
+    "t": 8,
+    "primitive_polynomial": "0x201B",
+    "bit_order": "msb-first"
+  },
+  "operations": [
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          0,
+          372
+        ],
+        [
+          373,
+          144
+        ]
+      ],
+      "ecc_range": [
+        517,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          532,
+          372
+        ],
+        [
+          905,
+          144
+        ]
+      ],
+      "ecc_range": [
+        1049,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          1064,
+          372
+        ],
+        [
+          1437,
+          144
+        ]
+      ],
+      "ecc_range": [
+        1581,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          1596,
+          372
+        ],
+        [
+          1969,
+          144
+        ]
+      ],
+      "ecc_range": [
+        2113,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          2128,
+          372
+        ],
+        [
+          2501,
+          144
+        ]
+      ],
+      "ecc_range": [
+        2645,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          2660,
+          372
+        ],
+        [
+          3033,
+          144
+        ]
+      ],
+      "ecc_range": [
+        3177,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          3192,
+          372
+        ],
+        [
+          3565,
+          144
+        ]
+      ],
+      "ecc_range": [
+        3709,
+        13
+      ]
+    },
+    {
+      "kind": "copy",
+      "data_ranges": [
+        [
+          3724,
+          372
+        ],
+        [
+          4097,
+          112
+        ]
+      ]
+    }
+  ]
+}
