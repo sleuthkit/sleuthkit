@@ -476,6 +476,8 @@ public class TskData {
         TSK_FS_TYPE_F2FS_DETECT(0x00080000, "F2FS auto detection"),
         TSK_FS_TYPE_OS9(0x00400000, "Microware OS-9 RBF"),
         TSK_FS_TYPE_OS9_DETECT(0x00400000, "OS-9 RBF auto detection"),
+		TSK_FS_TYPE_UBI(0x00800000, "UBI / UBIFS"),
+        TSK_FS_TYPE_UBI_DETECT(0x00800000, "UBI / UBIFS auto detection"),
 		TSK_FS_TYPE_RELIANCE(0x01000000, "Reliance Nitro / FlashFX"),
         TSK_FS_TYPE_RELIANCE_DETECT(0x01000000, "Reliance Nitro auto detection"),
         TSK_FS_TYPE_EFS(0x00200000, "QNX EFS (F3S)"),

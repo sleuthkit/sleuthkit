@@ -1,0 +1,88 @@
+name: UBI UBIFS native reader integration
+on:
+  push:
+    branches: [feature/ubi-ubifs]
+  pull_request:
+    paths: ['tsk/**', 'tests/ubi*', '.github/workflows/ubi-native-tests.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: abrignoni/qnxprobe
+          ref: de0e352b466e2e165cf5dd38652b11515ccf58f4
+          path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: dfa12f2231ef5900ade8fb61aefd6166357ebdcc
+          path: reference-kommbox
+      - name: Dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libsqlite3-dev libssl-dev zlib1g-dev
+      - name: Build native TSK
+        run: |
+          autoreconf -fi
+          ./configure --disable-java --without-afflib --without-libewf
+          make -j2 -C tsk
+          make -j2 -C tools/fstools
+          g++ -std=c++17 -I . tests/ubi_read_probe.cpp -L tsk/.libs -Wl,-rpath,"$PWD/tsk/.libs" -ltsk -o ubi-read-probe
+      - name: Native regressions
+        run: python3 tests/ubi_regression.py --tools tools/fstools --reference reference-qnxprobe --read-probe "$PWD/ubi-read-probe"
+      - name: NAND ECC and device-profile preprocessing
+        run: python3 tests/flash_preprocess_regression.py --reference reference-kommbox --tools tools/fstools
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubi-ubifs-linux-cli
+          path: |
+            tools/fstools/.libs/*
+            tsk/.libs/libtsk.so*
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: actions/checkout@v4
+        with:
+          repository: abrignoni/qnxprobe
+          ref: de0e352b466e2e165cf5dd38652b11515ccf58f4
+          path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: dfa12f2231ef5900ade8fb61aefd6166357ebdcc
+          path: reference-kommbox
+      - name: Build native Windows including JNI
+        shell: pwsh
+        run: |
+          $env:TSK_HOME = (Get-Location).Path
+          $env:JDK_HOME = $env:JAVA_HOME
+          $env:INCLUDE = "$env:INCLUDE;$env:JAVA_HOME/include;$env:JAVA_HOME/include/win32"
+          python win32/updateAndBuildAll.py -m
+          if ($LASTEXITCODE -ne 0) { throw 'Native build failed' }
+      - name: Package CLI and test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force 'release/ubi-windows' | Out-Null
+          Get-ChildItem win32 -Recurse -File | Where-Object { $_.FullName -match '[\\/](Release_NoLibs|Release)[\\/]' -and $_.Extension -in '.exe','.dll' } | Copy-Item -Destination 'release/ubi-windows' -Force
+          $env:PATH = "$PWD/release/ubi-windows;" + $env:PATH
+          python tests/ubi_regression.py --tools release/ubi-windows --reference reference-qnxprobe
+          if ($LASTEXITCODE -ne 0) { throw 'UBI regressions failed' }
+          python tests/flash_preprocess_regression.py --reference reference-kommbox --tools release/ubi-windows
+          if ($LASTEXITCODE -ne 0) { throw 'Flash preprocessing regressions failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubi-ubifs-windows-cli
+          path: release/ubi-windows
