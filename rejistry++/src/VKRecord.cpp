@@ -96,11 +96,8 @@ namespace Rejistry {
     }
 
     uint32_t VKRecord::getDataLength() const {
-        uint32_t size = getDWord(DATA_LENGTH_OFFSET);
-        if (size >= LARGE_DATA_SIZE){
-            size -= LARGE_DATA_SIZE;
-        }
-        return size;
+        // Clear the DATA_STORED_INLINE flag, if set; the rest is the length.
+        return getDWord(DATA_LENGTH_OFFSET) & ~DATA_STORED_INLINE;
     }
 
     uint32_t VKRecord::getRawDataLength() const {
@@ -108,7 +105,9 @@ namespace Rejistry {
     }
 
     uint32_t VKRecord::getDataOffset() const {
-        if (getRawDataLength() < SMALL_DATA_SIZE || getRawDataLength() >= LARGE_DATA_SIZE) {
+        uint32_t rawLength = getRawDataLength();
+        if ((rawLength & DATA_STORED_INLINE) != 0 || rawLength < SMALL_DATA_SIZE) {
+            // The data is in the record's own data offset field.
             return _offset + DATA_OFFSET_OFFSET;
         } else {
             return REGFHeader::FIRST_HBIN_OFFSET + getDWord(DATA_OFFSET_OFFSET);
@@ -117,10 +116,14 @@ namespace Rejistry {
     }
 
     ValueData::ValueDataUniqPtr VKRecord::getValue() const {
+        // The raw data length field: the DATA_STORED_INLINE flag plus the length.
+        // When the flag is clear, as in every branch below except the inline
+        // ones, it is just the length.
         uint32_t length = getRawDataLength();
         uint32_t offset = getDataOffset();
+        bool storedInline = (length & DATA_STORED_INLINE) != 0;
 
-        if (length > (LARGE_DATA_SIZE + DB_DATA_SIZE)) {
+        if (storedInline && (length & ~DATA_STORED_INLINE) > DB_DATA_SIZE) {
             throw RegistryParseException("Value size too large.");
         }
 
@@ -137,11 +140,12 @@ namespace Rejistry {
         case ValueData::VALTYPE_FULL_RESOURCE_DESCRIPTOR:
         case ValueData::VALTYPE_RESOURCE_REQUIREMENTS_LIST:
 
-            if (length >= LARGE_DATA_SIZE) {
-                uint32_t bufSize = length - LARGE_DATA_SIZE;
+            if (storedInline) {
+                // Stored inline: the data is in the record's data offset field.
+                uint32_t bufSize = length & ~DATA_STORED_INLINE;
                 data = std::make_unique<RegistryByteBuffer>(std::make_unique<ByteBuffer>(getData(DATA_OFFSET_OFFSET, bufSize), bufSize));
             }
-            else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
+            else if (length > DB_DATA_SIZE) {
                 // Data larger than DB_DATA_SIZE is stored one of two ways, depending
                 // on the hive format version:
                 //   - 1.3 and earlier: the whole value in a single data cell.
@@ -185,6 +189,7 @@ namespace Rejistry {
                 }
             }
             else {
+                // Up to DB_DATA_SIZE bytes: the data is in a single cell.
                 auto c = std::make_unique< Cell >(_buf, offset);
                 data = makeDataBuffer(c->getData(), length);
             }
@@ -197,7 +202,7 @@ namespace Rejistry {
         case ValueData::VALTYPE_FILETIME:
             {
                 uint32_t dataLen = getDataLength();
-                if (length >= LARGE_DATA_SIZE) {
+                if (storedInline) {
                     // Data is stored inline in the VK record (≤4 bytes).
                     // Malformed QWORD/FILETIME — getAsNumber() will return 0.
                     data = std::make_unique<RegistryByteBuffer>(
