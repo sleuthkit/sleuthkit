@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/ftl100
+      - feature/ftl100-autodetect
     paths:
       - '.github/workflows/ftl100-release.yml'
       - 'tsk/img/ftl100*'
