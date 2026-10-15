@@ -622,6 +622,7 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
      * An entry with offset of 0 is for a sparse run
      */
     while ((runlist_offset < runlist_size) && NTFS_RUNL_LENSZ(run) != 0) {
+        uint64_t uaddr_offset = 0;
         int64_t addr_offset = 0;
 
         /* allocate a new tsk_fs_attr_run */
@@ -699,23 +700,27 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
             *a_data_run_head = NULL;
             return TSK_COR;
         }
+        /* Collect the bytes in an unsigned value, because shifting a
+         * byte into the sign bit of an int64_t is undefined behavior.
+         */
         for (i = 0, data_run->addr = 0; i < NTFS_RUNL_OFFSZ(run); i++) {
             //data_run->addr |= (run->buf[idx++] << (i * 8));
-            addr_offset |= ((int64_t)(run->buf[idx++]) << (i * 8));
+            uaddr_offset |= ((uint64_t)(run->buf[idx++]) << (i * 8));
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_make_data_run: Off idx: %i cur: %"
                     PRIu8 " (%" PRIx8 ") tot: %" PRIuDADDR
                     " (%" PRIxDADDR ")\n", i,
-                    run->buf[idx - 1], run->buf[idx - 1], addr_offset,
-                    addr_offset);
+                    run->buf[idx - 1], run->buf[idx - 1], uaddr_offset,
+                    uaddr_offset);
         }
 
         /* addr_offset value is signed so extend it to 64-bits */
         if ((int8_t) run->buf[idx - 1] < 0) {
-            for (; i < sizeof(addr_offset); i++)
-                addr_offset |= (int64_t) ((int64_t) 0xff << (i * 8));
+            for (; i < sizeof(uaddr_offset); i++)
+                uaddr_offset |= ((uint64_t) 0xff << (i * 8));
         }
+        addr_offset = (int64_t) uaddr_offset;
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
