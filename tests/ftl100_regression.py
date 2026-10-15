@@ -45,6 +45,7 @@ def main():
                 assert oracle == logical
                 assert run('img_cat', '-i', 'ftl100', image) == oracle
                 assert run('img_cat', image) == oracle
+                assert b'FTL100 NOR logical view' in run('img_stat', image)
                 stat = run('img_stat', '-i', 'ftl100', image)
                 assert b'FTL100 NOR logical view' in stat
                 assert b'Selected data units: 2' in stat and b'Transfer units: 1' in stat
