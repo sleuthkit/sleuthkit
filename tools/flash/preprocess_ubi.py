@@ -8,6 +8,8 @@ from pathlib import Path
 import sys
 import tempfile
 from collections import Counter
+from functools import lru_cache
+from nand_lba import Mapping, reconstruct
 from bch import BCH
 
 
@@ -28,7 +30,7 @@ class Profile:
         raw = self.path.read_bytes()
         self.sha256 = hashlib.sha256(raw).hexdigest()
         obj = json.loads(raw)
-        allowed = {'schema_version', 'id', 'description', 'notes', 'physical_page_bytes', 'logical_page_bytes', 'ecc', 'operations'}
+        allowed = {'schema_version', 'id', 'description', 'notes', 'physical_page_bytes', 'logical_page_bytes', 'ecc', 'operations', 'mapping'}
         if not isinstance(obj, dict) or set(obj)-allowed or type(obj.get('schema_version')) is not int or obj.get('schema_version') != 1:
             raise ValueError('unknown profile fields or unsupported schema version')
         if not isinstance(obj.get('id'), str) or not obj['id']:
@@ -83,6 +85,21 @@ class Profile:
             self.operations.append((ranges, parity))
         if total != self.logical:
             raise ValueError('operation output lengths do not equal logical_page_bytes')
+        self.mapping = Mapping(obj['mapping'], self.logical) if 'mapping' in obj else None
+        # Mapping metadata must be included in BCH-protected operation output.
+        if self.mapping:
+            protected_offsets, offset = set(), 0
+            for ranges, parity in self.operations:
+                length = sum(n for _, n in ranges)
+                if parity:
+                    protected_offsets.update(range(offset, offset+length))
+                offset += length
+            for at, n in self.mapping.metadata_ranges:
+                if not set(range(at, at+n)) <= protected_offsets:
+                    raise ValueError('mapping metadata must be BCH protected')
+        # Repeated NAND codewords (e.g. zero-filled free clusters) are common.
+        # Cache complete payload+parity keys, preserving correction counts per use.
+        self.correct = lru_cache(maxsize=256)(self.decoder.correct)
         self.protected_bytes = protected
         self.unprotected_bytes = total-protected
         # Everything neither emitted nor used as parity is intentionally discarded.
@@ -105,7 +122,7 @@ class Profile:
                 if payload == b'\xff'*len(payload) and ecc == b'\xff'*len(ecc):
                     counts['erased_codewords'] += 1
                 else:
-                    fixed, bits, status = self.decoder.correct(payload, ecc)
+                    fixed, bits, status = self.correct(payload, bytes(ecc))
                     counts[status+'_codewords'] += 1
                     counts['corrected_bits'] += bits
                     if status == 'uncorrectable':
@@ -129,6 +146,9 @@ def preprocess(source, destination, profile, *, ecc=True, uncorrectable='fail', 
     if not size or size % profile.physical:
         raise ValueError('input must contain complete physical pages')
     destination.parent.mkdir(parents=True, exist_ok=True)
+    if profile.mapping:
+        return reconstruct(source, destination, profile, ecc=ecc, uncorrectable=uncorrectable,
+                           force=force, progress=progress)
     report = {'schema_version': 1, 'profile': profile.id, 'profile_sha256': profile.sha256,
               'input': str(source), 'output': str(destination), 'physical_page_bytes': profile.physical,
               'logical_page_bytes': profile.logical, 'ecc_enabled': ecc, 'uncorrectable_policy': uncorrectable,
