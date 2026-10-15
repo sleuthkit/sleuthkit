@@ -19,6 +19,19 @@ inline bool signature(const Bytes&b,size_t p){
     const uint8_t a[]={0x13,0x03,'C','I','S'},c[]={'F','T','L','1','0','0'};
     return p<=b.size()&&14<=b.size()-p&&std::equal(a,a+5,b.begin()+p)&&std::equal(c,c+6,b.begin()+p+8);
 }
+// Search every byte, including signatures crossing a read boundary. Keep
+// memory bounded independently of dump size; stop at the first candidate.
+inline bool probe(const std::function<Bytes(uint64_t,size_t)>& io,uint64_t size){
+    for(uint64_t p=0;p<size;){
+        size_t n=size_t(std::min<uint64_t>(1048576,size-p));
+        Bytes b=io(p,n);
+        if(b.size()!=n)throw std::runtime_error("short physical probe read");
+        for(size_t k=0;k+14<=b.size();k++)if(signature(b,k))return true;
+        if(p+n==size)break;
+        p+=n-13;
+    }
+    return false;
+}
 struct Unit{uint64_t physical=0;uint32_t count=0;};
 class Reader{
     std::function<Bytes(uint64_t,size_t)> io;

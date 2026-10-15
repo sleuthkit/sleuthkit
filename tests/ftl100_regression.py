@@ -38,15 +38,13 @@ def main():
         image = tmp / 'nor.img'
         count = 0
         for absolute in (False, True):
-            for prefix in (0, 137, 1048570):
+            for prefix in (0, 137, 1048570, 0xf40000):
                 raw = encode(logical, absolute, prefix)
                 image.write_bytes(raw)
                 oracle, headers, units, transfers, vmap = ref.recover(raw)
                 assert oracle == logical
                 assert run('img_cat', '-i', 'ftl100', image) == oracle
-                # Detection intentionally searches only the first MiB for a signature.
-                if prefix < 1048562:
-                    assert run('img_cat', image) == oracle
+                assert run('img_cat', image) == oracle
                 stat = run('img_stat', '-i', 'ftl100', image)
                 assert b'FTL100 NOR logical view' in stat
                 assert b'Selected data units: 2' in stat and b'Transfer units: 1' in stat
@@ -144,8 +142,7 @@ def main():
             oracle, headers, _, _, _ = ref.recover(physical)
             assert oracle == expected, 'private recovery differs from Python reference'
             assert run('img_cat', '-i', 'ftl100', opt.real_dump) == expected, 'private native recovery differs'
-            if headers[0][0] + 14 <= 1048576:
-                assert run('img_cat', opt.real_dump) == expected, 'private automatic recovery differs'
+            assert run('img_cat', opt.real_dump) == expected, 'private automatic recovery differs'
             assert b'Ignored out-of-range BAM entries: 10' in run('img_stat', '-i', 'ftl100', opt.real_dump)
             recovered = tmp / 'private-recovered.img'
             recovered.write_bytes(expected)

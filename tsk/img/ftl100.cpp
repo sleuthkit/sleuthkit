@@ -21,7 +21,7 @@ TSK_IMG_INFO*ftl100_open(int count,const TSK_TCHAR * const paths[],unsigned int 
     try{
         if(ssize&&ssize!=512)throw std::runtime_error("FTL100 logical sector size must be 512");
         auto io=[&](uint64_t at,size_t length){Bytes b(length);ssize_t got=tsk_img_read(physical.get(),TSK_OFF_T(at),reinterpret_cast<char*>(b.data()),length);if(got<0)throw std::runtime_error("physical dump read failed");b.resize(size_t(got));return b;};
-        if(matched){Bytes b=io(0,size_t(std::min<TSK_OFF_T>(physical->size,1048576)));bool found=false;for(size_t k=0;k+14<=b.size();k++)if(signature(b,k)){found=true;break;}if(!found){tsk_error_reset();return nullptr;}*matched=1;}
+        if(matched){if(!probe(io,uint64_t(physical->size))){tsk_error_reset();return nullptr;}*matched=1;}
         // Reader keeps a backend pointer, not the local owning smart pointer.
         TSK_IMG_INFO*backend=physical.get();auto read_backend=[backend](uint64_t at,size_t length){Bytes b(length);ssize_t got=tsk_img_read(backend,TSK_OFF_T(at),reinterpret_cast<char*>(b.data()),length);if(got<0)throw std::runtime_error("physical dump read failed");b.resize(size_t(got));return b;};
         std::unique_ptr<Reader> reader(new Reader(read_backend,uint64_t(physical->size)));
