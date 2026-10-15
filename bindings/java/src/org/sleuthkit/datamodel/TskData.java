@@ -547,6 +547,7 @@ public class TskData {
 		TSK_IMG_TYPE_EWF_EWF(64, "E01"), // Expert Witness format (encase) NON-NLS
 		TSK_IMG_TYPE_VMDK_VMDK(128, "VMDK"), // VMware Virtual Disk (VMDK) NON-NLS
 		TSK_IMG_TYPE_VHD_VHD(256, "VHD"), // Virtual Hard Disk (VHD) image format NON-NLS
+		TSK_IMG_TYPE_FTL100(512, "FTL100 NOR logical view"),
 		TSK_IMG_TYPE_POOL_POOL(16384, "POOL"), // Pool (internal use) NON-NLS
 		TSK_IMG_TYPE_LOGICAL(32768, "Logical"),   /// Logical directory
 		TSK_IMG_TYPE_UNSUPP(65535, bundle.getString("TskData.tskImgTypeEnum.unknown"));   // Unsupported Image Type

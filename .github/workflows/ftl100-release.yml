@@ -2,9 +2,11 @@ name: Sleuthkit FTL100 release
 on:
   push:
     branches:
-      - develop-4.1x
+      - feature/ftl100
     paths:
       - '.github/workflows/ftl100-release.yml'
+      - 'tsk/img/ftl100*'
+      - 'tests/ftl100*'
   workflow_dispatch:
     inputs:
       release_tag:
@@ -21,8 +23,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ff941e43269ec39de5d5b62d53fda6f6d1469352
       - uses: actions/checkout@v4
         with:
           repository: Gerd1986/qnxprobe
@@ -70,8 +70,6 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ff941e43269ec39de5d5b62d53fda6f6d1469352
       - uses: microsoft/setup-msbuild@v2
       - uses: actions/checkout@v4
         with:
@@ -211,7 +209,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          target_commitish: ff941e43269ec39de5d5b62d53fda6f6d1469352
+          target_commitish: ${{ github.sha }}
           prerelease: true
           files: artifacts/*
           name: Sleuthkit ${{ steps.version.outputs.tag }} — native FTL100 support
@@ -228,7 +226,7 @@ jobs:
             Recovery policy: higher erase-count duplicate EUN, deterministic BAM
             selection, zero-filled unmapped recovery holes. Filesystem offsets and
             Unallocated output refer to logical space; -i raw preserves the physical dump.
-            Local C++ probe and Reader recovery match the private BMW reference image byte-for-byte.\n            End-to-end CLI regression uses synthetic images, including a header at 0xF40000.
+            The original BMW dump has not been retested in this branch.
 
             Assets:
             - sleuthkit-windows-x64.zip: CLI tools, native DLLs and Windows JNI JAR.

@@ -9,6 +9,8 @@ on:
       - feature/f2fs
       - feature/efs
       - feature/ubi-ubifs
+      - feature/ftl100
+      - feature/ftl100-autodetect
       - feature/datalight-reliance
     paths:
       - '.github/workflows/qnxprobe-windows-jar.yml'
