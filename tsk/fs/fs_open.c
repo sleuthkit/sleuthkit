@@ -151,6 +151,8 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 #endif
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
         { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT },
+        { "UBI / UBIFS", ubi_open, TSK_FS_TYPE_UBI_DETECT },
+        { "Reliance Nitro", reliance_open, TSK_FS_TYPE_RELIANCE_DETECT },
         { "QNX EFS", efs_open, TSK_FS_TYPE_EFS_DETECT }
     };
     if (a_img_info == NULL) {
@@ -312,6 +314,12 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (a_ftype == TSK_FS_TYPE_OS9) {
         return os9_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_UBI) {
+        return ubi_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_RELIANCE) {
+        return reliance_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (a_ftype == TSK_FS_TYPE_EFS) {
         return efs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
