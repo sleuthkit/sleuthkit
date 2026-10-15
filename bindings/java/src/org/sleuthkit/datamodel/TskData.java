@@ -470,6 +470,19 @@ public class TskData {
 		TSK_FS_TYPE_APFS(0x00010000, "APFS"), ///< APFS file system
 		TSK_FS_TYPE_APFS_DETECT(0x00010000, bundle.getString("TskData.tskFsTypeEnum.APFSautoDetect")), ///< APFS auto detection
 		TSK_FS_TYPE_LOGICAL(0x00020000, "Logical"),
+		TSK_FS_TYPE_QNX4(0x00100000, "QNX4"),
+        TSK_FS_TYPE_QNX4_DETECT(0x00100000, "QNX4 auto detection"),
+		TSK_FS_TYPE_F2FS(0x00080000, "F2FS"),
+        TSK_FS_TYPE_F2FS_DETECT(0x00080000, "F2FS auto detection"),
+        TSK_FS_TYPE_OS9(0x00400000, "Microware OS-9 RBF"),
+        TSK_FS_TYPE_OS9_DETECT(0x00400000, "OS-9 RBF auto detection"),
+		TSK_FS_TYPE_UBI(0x00800000, "UBI / UBIFS"),
+        TSK_FS_TYPE_UBI_DETECT(0x00800000, "UBI / UBIFS auto detection"),
+		TSK_FS_TYPE_RELIANCE(0x01000000, "Reliance Nitro / FlashFX"),
+        TSK_FS_TYPE_RELIANCE_DETECT(0x01000000, "Reliance Nitro auto detection"),
+        TSK_FS_TYPE_EFS(0x00200000, "QNX EFS (F3S)"),
+        TSK_FS_TYPE_EFS_DETECT(0x00200000, "QNX EFS auto detection"),
+        TSK_FS_TYPE_QNX6(0x00040000, "QNX6 (experimental)"),
 		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 
 		private int value;
@@ -534,6 +547,7 @@ public class TskData {
 		TSK_IMG_TYPE_EWF_EWF(64, "E01"), // Expert Witness format (encase) NON-NLS
 		TSK_IMG_TYPE_VMDK_VMDK(128, "VMDK"), // VMware Virtual Disk (VMDK) NON-NLS
 		TSK_IMG_TYPE_VHD_VHD(256, "VHD"), // Virtual Hard Disk (VHD) image format NON-NLS
+		TSK_IMG_TYPE_FTL100(512, "FTL100 NOR logical view"),
 		TSK_IMG_TYPE_POOL_POOL(16384, "POOL"), // Pool (internal use) NON-NLS
 		TSK_IMG_TYPE_LOGICAL(32768, "Logical"),   /// Logical directory
 		TSK_IMG_TYPE_UNSUPP(65535, bundle.getString("TskData.tskImgTypeEnum.unknown"));   // Unsupported Image Type

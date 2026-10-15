@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_NoLibs|Win32">
@@ -455,6 +455,18 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\fs_load.c" />
     <ClCompile Include="..\..\tsk\fs\fs_name.c" />
     <ClCompile Include="..\..\tsk\fs\fs_open.c" />
+    <ClCompile Include="..\..\tsk\fs\qnx6_probe.c" />
+    <ClCompile Include="..\..\tsk\fs\qnx6_map.c" />
+    <ClCompile Include="..\..\tsk\fs\qnx6_inode.c" />
+    <ClCompile Include="..\..\tsk\fs\qnx6_file.c" />
+    <ClCompile Include="..\..\tsk\fs\qnx6_bitmap.c" />
+    <ClCompile Include="..\..\tsk\fs\os9.cpp" />
+    <ClCompile Include="..\..\tsk\fs\qnx4.cpp" />
+    <ClCompile Include="..\..\tsk\fs\f2fs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\ubi.cpp" />
+    <ClCompile Include="..\..\tsk\fs\reliance.cpp" />
+    <ClCompile Include="..\..\tsk\fs\efs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\qnx6_open.c" />
     <ClCompile Include="..\..\tsk\fs\fs_parse.c" />
     <ClCompile Include="..\..\tsk\fs\fs_types.c" />
     <ClCompile Include="..\..\tsk\fs\hfs.c" />
@@ -609,4 +621,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <Error Condition="!Exists('..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\openssl-vc142.1.1.0\build\native\openssl-vc142.targets'))" />
     <Error Condition="!Exists('..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\mbedtls-v143-static.3.5.0\build\native\mbedtls-v143-static.targets'))" />
   </Target>
+  <ItemGroup>
+    <ClCompile Include="..\..\tsk\img\ftl100.cpp" />
+  </ItemGroup>
 </Project>

@@ -423,12 +423,9 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN, "BootStar Dummy (0xb0)");
         break;
     case 0xb1:
-        snprintf(str, DESC_LEN,
-            "HP Volume Expansion (SpeedStor Variant) (0xb1)");
-        break;
+    case 0xb2:
     case 0xb3:
-        snprintf(str, DESC_LEN,
-            "HP Volume Expansion (SpeedStor Variant) (0xb3)");
+        snprintf(str, DESC_LEN, "QNX6 Power-Safe (0x%.2x)", ptype);
         break;
     case 0xb4:
         snprintf(str, DESC_LEN,
@@ -907,6 +904,29 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
                 PRIuDADDR ")", taddr);
         free(sect_buf);
         return 1;
+    }
+
+    /* QNX4 boot code can also end in 55AA and resemble MBR entries.
+     * As in qnxprobe, a valid-looking root inode in the next 512-byte
+     * block identifies a filesystem boot block during autodetection.
+     * Explicit DOS selection remains available for manual examination. */
+    if (test && vs->img_info->size >= 0 &&
+        vs->offset <= (TSK_DADDR_T)vs->img_info->size &&
+        (TSK_DADDR_T)vs->img_info->size - vs->offset >= 512 + 64) {
+        uint8_t root[64];
+        if (tsk_img_read(vs->img_info, vs->offset + 512,
+                         (char *)root, sizeof(root)) == sizeof(root) &&
+            root[0] == '/' && root[1] == 0 && (root[63] & 1) &&
+            (tsk_getu16(TSK_LIT_ENDIAN, root + 50) & 0170000) == 0040000 &&
+            tsk_getu32(TSK_LIT_ENDIAN, root + 20) >= 3 &&
+            tsk_getu32(TSK_LIT_ENDIAN, root + 24) > 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+            tsk_error_set_errstr("dos_load_prim_table: QNX4 filesystem boot block");
+            free(sect_buf);
+            return 1;
+        }
+        tsk_error_reset();
     }
 
     /* Because FAT and NTFS use the same magic - check for a

@@ -142,11 +142,18 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         { "EXT2/3/4", ext2fs_open,  TSK_FS_TYPE_EXT_DETECT     },
         { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
         { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
+        { "QNX4", qnx4_open, TSK_FS_TYPE_QNX4_DETECT },
+        { "F2FS", f2fs_open, TSK_FS_TYPE_F2FS_DETECT },
+        { "OS-9 RBF", os9_open, TSK_FS_TYPE_OS9_DETECT },
+        { "QNX6",     qnx6_open,    TSK_FS_TYPE_QNX6          },
 #if TSK_USE_HFS
         { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT },
-        { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT }
+        { "APFS",     apfs_open_auto_detect,    TSK_FS_TYPE_APFS_DETECT },
+        { "UBI / UBIFS", ubi_open, TSK_FS_TYPE_UBI_DETECT },
+        { "Reliance Nitro", reliance_open, TSK_FS_TYPE_RELIANCE_DETECT },
+        { "QNX EFS", efs_open, TSK_FS_TYPE_EFS_DETECT }
     };
     if (a_img_info == NULL) {
         tsk_error_reset();
@@ -188,6 +195,11 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         char errorStrToPreserve[TSK_ERROR_STRING_MAX_LENGTH + 1];
 
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
+            /* EFS is a whole-flash container scan, not a sector-local probe.
+             * Do not scan an already identified conventional filesystem for
+             * embedded flash partitions. Explicit -f efs remains available. */
+            if ((fs_first != NULL || haveErrorToPreserve) && FS_OPENERS[i].type == TSK_FS_TYPE_EFS)
+                continue;
             if ((fs_info = FS_OPENERS[i].open(
                     a_img_info, a_offset, FS_OPENERS[i].type, a_pass, 1)) != NULL) {
                 // fs opens as type i
@@ -293,6 +305,27 @@ tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     }
     else if (TSK_FS_TYPE_ISISO9660(a_ftype)) {
         return iso9660_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_QNX4) {
+        return qnx4_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_F2FS) {
+        return f2fs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_OS9) {
+        return os9_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_UBI) {
+        return ubi_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_RELIANCE) {
+        return reliance_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_EFS) {
+        return efs_open(a_img_info, a_offset, a_ftype, a_pass, 0);
+    }
+    else if (a_ftype == TSK_FS_TYPE_QNX6) {
+        return qnx6_open(a_img_info, a_offset, a_ftype, a_pass, 0);
     }
     else if (TSK_FS_TYPE_ISRAW(a_ftype)) {
         return rawfs_open(a_img_info, a_offset);
