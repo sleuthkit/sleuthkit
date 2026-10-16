@@ -75,10 +75,17 @@ public class LibraryUtils {
 	public static boolean loadSleuthkitJNI() {
 		boolean loaded = LibraryUtils.loadNativeLibFromTskJar(Lib.TSK_JNI);
 		if (!loaded) {
-			System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName()); //NON-NLS
-		} else {
-			// We want minimal console output for command line use case
-			//System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName()); //NON-NLS
+			// Fallback: try loading from system library path.
+			// This is needed when the class is loaded by a module classloader
+			// (e.g. NetBeans RCP) that doesn't expose jar resources via
+			// Class.getResource(), or when the native library is installed
+			// system-wide via sleuthkit-java package.
+			try {
+				System.loadLibrary(Lib.TSK_JNI.getUnixName());
+				loaded = true;
+			} catch (UnsatisfiedLinkError e) {
+				System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName()); //NON-NLS
+			}
 		}
 		return loaded;
 	}
