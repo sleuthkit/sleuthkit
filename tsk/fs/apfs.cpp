@@ -242,7 +242,9 @@ const std::vector<apfs_block_num> APFSSuperblock::volume_blocks() const {
   const auto root = omap().root<APFSObjectBtreeNode>();
 
   for (const auto& e : root.entries()) {
-    vec.emplace_back(e.value->paddr);
+    if (e.value != nullptr) {
+      vec.emplace_back(e.value->paddr);
+    }
   }
 
   return vec;
