@@ -31,11 +31,17 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
+#include <set>
+#include <string>
+#include <vector>
+#include <exception>
 #define NOMINMAX
 #include <Windows.h>
 #include <io.h>
 #include <fcntl.h>
 #include <malloc.h>  // _resetstkoflw
+#include <share.h>   // _SH_DENYNO
+#include <csignal>
 
 #include "RegistryHiveFile.h"
 #include "RegistryHiveBuffer.h"
@@ -79,6 +85,96 @@ namespace Rejistry {
         }
         return s;
     }
+
+    /**
+     * Absolute buffer offset of a record. BinaryBlock::_offset is protected and
+     * the library has no accessor; a pointer to member formed through a derived
+     * class reads it without changing the library. The driver uses it to tell
+     * whether a named lookup returned the record that enumeration listed, and
+     * to tell when the tree walk reaches a key or subkey list it has already
+     * seen (see WalkState). Offsets are never printed, so the output does not
+     * depend on where the generator happened to place cells.
+     */
+    struct RecordOffset : NKRecord {
+        static uint32_t of(const BinaryBlock& r) { return r.*(&RecordOffset::_offset); }
+    };
+
+    std::wstring widen(const char* s) {
+        std::wstring wide;
+        for (; *s != '\0'; ++s) {
+            wide.push_back(static_cast<unsigned char>(*s));
+        }
+        return wide;
+    }
+
+    /**
+     * getName() as displayed (markInvalidUTF16), or a marker if it throws, so
+     * one unreadable name does not end the rest of the dump.
+     */
+    template <class R> std::wstring displayName(const R& r) {
+        try {
+            return markInvalidUTF16(r.getName());
+        }
+        catch (std::exception& ex) {
+            return L"<unreadable name: " + widen(ex.what()) + L">";
+        }
+    }
+
+    /** getName() unmarked, for the lines that print it raw, or the same marker. */
+    template <class R> std::wstring rawName(const R& r) {
+        try {
+            return r.getName();
+        }
+        catch (std::exception& ex) {
+            return L"<unreadable name: " + widen(ex.what()) + L">";
+        }
+    }
+
+    /**
+     * The form in which SubkeyListRecord::getSubkey() and
+     * ValueListRecord::getValue() compare names: they use _wcsicmp on
+     * c_str(), so only the part before the first NUL counts, and in the C
+     * locale _wcsicmp folds ASCII letters only. Two siblings with the same
+     * key can make a lookup return the wrong one.
+     */
+    std::wstring lookupKey(const std::wstring& name) {
+        std::wstring key(name.c_str());
+        for (auto& c : key) {
+            if (c >= L'a' && c <= L'z') {
+                c = c - L'a' + L'A';
+            }
+        }
+        return key;
+    }
+
+    // Keys are not followed below this depth. Windows allows 512 levels;
+    // this only stops crafted chains from exhausting the stack.
+    static const uint32_t MAX_TREE_DEPTH = 1024;
+
+    /**
+     * What recurseAll needs to know about the walk so far. In a sound hive
+     * every key is listed once, by the key its parent field names, in a
+     * subkey list of its own. A damaged or crafted hive can list a key twice,
+     * list it under two keys, or give two keys the same list. Following every
+     * listing then walks the same keys again and again (exponentially, or
+     * until memory runs out), so the walk follows each key and each list
+     * once and says why it skips the rest.
+     */
+    struct WalkState {
+        std::vector<uint32_t> ancestors;             // offsets of the keys on the current path
+        std::set<uint32_t> walked;                   // offsets of the keys walked so far
+        std::map<uint32_t, std::pair<uint32_t, std::wstring>> listOwners;  // subkey list offset -> first key (offset, name) that listed it
+    };
+
+    /**
+     * Restores std::wcout's format flags on scope exit. The driver's other
+     * lines rely on whatever base (hex/dec) earlier lines left set, so the
+     * lines that print only on anomalies put it back as they found it.
+     */
+    struct StreamStateGuard {
+        std::ios_base::fmtflags flags = std::wcout.flags();
+        ~StreamStateGuard() { std::wcout.flags(flags); }
+    };
 
     void printDatetimeString(const uint64_t& dateTime) {
         SYSTEMTIME systemTime;
@@ -205,7 +301,7 @@ namespace Rejistry {
 
     void printVKRecord(const VKRecord* vkRecord, const std::wstring& prefix) {
         try {
-            std::wcout << prefix << "vkrecord name: " << markInvalidUTF16(vkRecord->getName()) << std::endl;
+            std::wcout << prefix << "vkrecord name: " << displayName(*vkRecord) << std::endl;
             std::wcout << prefix << "vkrecord has name: " << getBooleanString(vkRecord->hasName()) << std::endl;
             std::wcout << prefix << "vkrecord has ascii name: " << getBooleanString(vkRecord->hasAsciiName()) << std::endl;
             std::wcout << prefix << "vkrecord value type: " << ValueData::getValueType(vkRecord->getValueType()) << std::endl;
@@ -242,6 +338,18 @@ namespace Rejistry {
             case ValueData::VALTYPE_FILETIME:
                 std::wcout << std::hex << "0x" << data->getAsNumber() << std::endl;
                 break;
+            case ValueData::VALTYPE_LINK:
+                // The collector reads REG_LINK with getAsString(), so print
+                // what it returns. If it throws, say so on this line and
+                // still dump the raw bytes below, as for the binary types.
+                try {
+                    std::wcout << markInvalidUTF16(data->getAsString()) << std::endl;
+                    break;
+                }
+                catch (std::exception& ex) {
+                    std::wcout << "getAsString exception: " << ex.what();
+                }
+                // fall through to the raw dump
             default:
             {
                 std::wcout << std::endl << prefix << "               ";
@@ -259,10 +367,21 @@ namespace Rejistry {
     void printNKRecord(const NKRecord* nkRecord, const std::wstring& prefix) {
         try {
             std::wcout << prefix << "nkrecord has classname: " << getBooleanString(nkRecord->hasClassname()) << std::endl;
-            std::wcout << prefix << "nkrecord classname: " << markInvalidUTF16(nkRecord->getClassName()) << std::endl;
+            {
+                // A class name that can't be read must not hide the key's
+                // other lines.
+                std::wstring className;
+                try {
+                    className = markInvalidUTF16(nkRecord->getClassName());
+                }
+                catch (std::exception& ex) {
+                    className = L"<unreadable class name: " + widen(ex.what()) + L">";
+                }
+                std::wcout << prefix << "nkrecord classname: " << className << std::endl;
+            }
             std::wcout << prefix << "nkrecord timestamp: "; printDatetimeString(nkRecord->getTimestamp()); std::wcout << std::endl;
             std::wcout << prefix << "nkrecord is root: " << getBooleanString(nkRecord->isRootKey()) << std::endl;
-            std::wcout << prefix << "nkrecord name: " << markInvalidUTF16(nkRecord->getName()) << std::endl;
+            std::wcout << prefix << "nkrecord name: " << displayName(*nkRecord) << std::endl;
             std::wcout << prefix << "nkrecord has ascii name: " << getBooleanString(nkRecord->hasAsciiName()) << std::endl;
             std::wcout << prefix << "nkrecord has parent: " << getBooleanString(nkRecord->hasParentRecord()) << std::endl;
             if (nkRecord->hasParentRecord()) {
@@ -306,8 +425,8 @@ namespace Rejistry {
                 const RegistryValue& rv = *rvList[i];
 
                 // RegistryValue::getName() vs VKRecord::getName()
-                std::wstring vkName = vk->getName();
-                std::wstring rvName = rv.getName();
+                std::wstring vkName = rawName(*vk);
+                std::wstring rvName = rawName(rv);
                 if (vkName != rvName) {
                     std::wcout << prefix << "MISMATCH regval name: vk=\"" << vkName
                         << "\" rv=\"" << rvName << "\"" << std::endl;
@@ -359,7 +478,11 @@ namespace Rejistry {
     // -----------------------------------------------------------------------
     // Single-pass recursive traversal: low-level + high-level + cross-checks
     // -----------------------------------------------------------------------
-    void recurseAll(NKRecord* nkRecord, const RegistryKey& regKey, const std::wstring& prefix, uint32_t depth = 0) {
+    // walk.ancestors holds the offsets of nkRecord and the keys above it, so a
+    // subkey list that leads back into one of them is reported instead of
+    // followed; see WalkState for the rest.
+    void recurseAll(NKRecord* nkRecord, const RegistryKey& regKey, const std::wstring& prefix,
+                    WalkState& walk, uint32_t depth = 0) {
 
         // --- Stats: count this key, track depth ---
         g_stats.keyCount++;
@@ -378,7 +501,7 @@ namespace Rejistry {
             std::wcout << prefix << "nkrecord value list size: " << std::dec << valueListSize << std::endl;
             uint32_t reportedValues = nkRecord->getNumberOfValues();
             if (valueListSize != reportedValues) {
-                std::wcout << prefix << "MISMATCH [" << nkRecord->getName()
+                std::wcout << prefix << "MISMATCH [" << rawName(*nkRecord)
                     << "] getNumberOfValues()=" << reportedValues
                     << " != getValuesSize()=" << valueListSize << std::endl;
             }
@@ -389,7 +512,7 @@ namespace Rejistry {
                 g_stats.maxValuesForKey = static_cast<uint32_t>(vkRecords.size());
             }
             for (auto& vkRecord : vkRecords) {
-                std::wcout << prefix << "  value: " << markInvalidUTF16(vkRecord->getName()) << std::endl;
+                std::wcout << prefix << "  value: " << displayName(*vkRecord) << std::endl;
                 printVKRecord(vkRecord.get(), L"    " + prefix);
                 try {
                     g_stats.valueTypeCounts[ValueData::getValueType(vkRecord->getValueType())]++;
@@ -405,9 +528,11 @@ namespace Rejistry {
 
         // --- SubkeyListRecord metadata ---
         NKRecord::NKRecordUniqPtrList nkSubkeys;
+        uint32_t listOffset = 0;    // 0 for a key without subkeys (EmptySubkeyList)
         try {
             uint32_t subkeyCount = nkRecord->getSubkeyCount();
             auto subkeyListRecord = nkRecord->getSubkeyList();
+            listOffset = RecordOffset::of(*subkeyListRecord);
 
             std::string magic = subkeyListRecord->getMagic();
             std::wcout << prefix << "nkrecord subkey list magic: " << magic.c_str() << std::endl;
@@ -425,7 +550,7 @@ namespace Rejistry {
                 if (magic != "ri") {
                     // LF/LH/LI records: getListLength() should equal
                     // getSubkeyCount(). A mismatch indicates corruption.
-                    std::wcout << prefix << "MISMATCH [" << nkRecord->getName()
+                    std::wcout << prefix << "MISMATCH [" << rawName(*nkRecord)
                         << "] getSubkeyCount()=" << subkeyCount
                         << " != getListLength()=" << listLength << std::endl;
                 }
@@ -441,8 +566,8 @@ namespace Rejistry {
         RegistryKey::RegistryKeyPtrList rkSubkeys;
         try {
             // RegistryKey::getName() vs NKRecord::getName()
-            std::wstring nkName = nkRecord->getName();
-            std::wstring rkName = regKey.getName();
+            std::wstring nkName = rawName(*nkRecord);
+            std::wstring rkName = rawName(regKey);
             if (nkName != rkName) {
                 std::wcout << prefix << "MISMATCH regkey name: nk=\"" << nkName
                     << "\" rk=\"" << rkName << "\"" << std::endl;
@@ -522,60 +647,263 @@ namespace Rejistry {
         }
 
         // --- Named lookups (unique to high-level API, always printed) ---
-        // Cap at MAX_NAMED_LOOKUPS to avoid O(n^2) on large subkey lists
-        // (e.g. RI records with 600+ subkeys where each getSubkey() call
-        // materializes the entire subkey list).
+        // Each probe looks a name up through RegistryKey (the collector's
+        // path), then checks that the list lookup returned the record that
+        // enumeration listed under that name. Only failures and wrong records
+        // are printed. Cap at MAX_NAMED_LOOKUPS to avoid O(n^2) on large
+        // subkey lists (a lookup reads the list up to the name it finds, so
+        // probing every name of an n-entry list reads ~n^2/2 entries). Past the
+        // cap, only names that compare equal (see lookupKey) to an earlier
+        // sibling that is a different record are probed, since only those
+        // can resolve to the wrong record (a list that names the same record
+        // again cannot), up to MAX_COLLIDING_LOOKUPS of them, plus names that
+        // can't be read.
         static const size_t MAX_NAMED_LOOKUPS = 10;
+        static const size_t MAX_COLLIDING_LOOKUPS = 50;
 
         {
-            size_t lookupCount = std::min(nkSubkeys.size(), MAX_NAMED_LOOKUPS);
-            for (size_t idx = 0; idx < lookupCount; ++idx) {
-                std::wstring name = nkSubkeys[idx]->getName();
+            std::vector<uint32_t> offsets;
+            std::vector<std::wstring> names(nkSubkeys.size());
+            std::vector<std::string> nameErrors(nkSubkeys.size());
+            std::vector<bool> nameOk(nkSubkeys.size(), false);
+            for (size_t i = 0; i < nkSubkeys.size(); ++i) {
+                offsets.push_back(RecordOffset::of(*nkSubkeys[i]));
+                try {
+                    names[i] = nkSubkeys[i]->getName();
+                    nameOk[i] = true;
+                }
+                catch (std::exception& ex) {
+                    nameErrors[i] = ex.what();
+                }
+            }
+
+            auto probe = [&](size_t idx) {
+                StreamStateGuard guard;
+                if (!nameOk[idx]) {
+                    std::wcout << prefix << "  subkey lookup #" << std::dec << idx
+                        << ": skipped, name unreadable (" << nameErrors[idx].c_str() << ")" << std::endl;
+                    return;
+                }
+                const std::wstring& name = names[idx];
                 try {
                     auto looked = regKey.getSubkey(name);
+                    auto found = nkRecord->getSubkeyList()->getSubkey(name);
+                    uint32_t foundOffset = RecordOffset::of(*found);
+                    if (foundOffset != offsets[idx]) {
+                        std::wcout << prefix << "  subkey lookup \"" << name
+                            << "\": MISMATCH returned a different key (enumerated #" << std::dec << idx
+                            << ", lookup returned ";
+                        auto at = std::find(offsets.begin(), offsets.end(), foundOffset);
+                        if (at != offsets.end()) {
+                            std::wcout << "#" << (at - offsets.begin()) << " ";
+                        }
+                        else {
+                            std::wcout << "a key that is not enumerated ";
+                        }
+                        std::wcout << "\"" << rawName(*found) << "\")" << std::endl;
+                    }
                 }
                 catch (std::exception& ex) {
                     std::wcout << prefix << "  subkey lookup \"" << name << "\": FAILED. exception ("
                         << ex.what() << ")" << std::endl;
                 }
+            };
+
+            size_t lookupCount = std::min(nkSubkeys.size(), MAX_NAMED_LOOKUPS);
+            for (size_t idx = 0; idx < lookupCount; ++idx) {
+                probe(idx);
             }
             if (nkSubkeys.size() > MAX_NAMED_LOOKUPS) {
                 std::wcout << prefix << "  subkey lookup: " << (nkSubkeys.size() - MAX_NAMED_LOOKUPS)
                     << " more skipped (threshold=" << MAX_NAMED_LOOKUPS << ")" << std::endl;
+
+                std::map<std::wstring, size_t> firstWithKey;
+                size_t collidingProbed = 0;
+                size_t collidingSkipped = 0;
+                for (size_t idx = 0; idx < nkSubkeys.size(); ++idx) {
+                    if (!nameOk[idx]) {
+                        if (idx >= MAX_NAMED_LOOKUPS) {
+                            probe(idx);
+                        }
+                        continue;
+                    }
+                    auto first = firstWithKey.emplace(lookupKey(names[idx]), idx);
+                    bool collides = !first.second && offsets[first.first->second] != offsets[idx];
+                    if (collides && idx >= MAX_NAMED_LOOKUPS) {
+                        if (collidingProbed < MAX_COLLIDING_LOOKUPS) {
+                            probe(idx);
+                            collidingProbed++;
+                        }
+                        else {
+                            collidingSkipped++;
+                        }
+                    }
+                }
+                if (collidingSkipped > 0) {
+                    StreamStateGuard guard;
+                    std::wcout << prefix << "  subkey lookup: " << std::dec << collidingSkipped
+                        << " more names equal to an earlier sibling's not probed (threshold="
+                        << MAX_COLLIDING_LOOKUPS << ")" << std::endl;
+                }
             }
         }
 
         {
-            size_t lookupCount = std::min(vkRecords.size(), MAX_NAMED_LOOKUPS);
-            for (size_t idx = 0; idx < lookupCount; ++idx) {
-                std::wstring name = vkRecords[idx]->getName();
+            std::vector<uint32_t> offsets;
+            std::vector<std::wstring> names(vkRecords.size());
+            std::vector<std::string> nameErrors(vkRecords.size());
+            std::vector<bool> nameOk(vkRecords.size(), false);
+            for (size_t i = 0; i < vkRecords.size(); ++i) {
+                offsets.push_back(RecordOffset::of(*vkRecords[i]));
+                try {
+                    names[i] = vkRecords[i]->getName();
+                    nameOk[i] = true;
+                }
+                catch (std::exception& ex) {
+                    nameErrors[i] = ex.what();
+                }
+            }
+
+            auto probe = [&](size_t idx) {
+                StreamStateGuard guard;
+                if (!nameOk[idx]) {
+                    std::wcout << prefix << "  value lookup #" << std::dec << idx
+                        << ": skipped, name unreadable (" << nameErrors[idx].c_str() << ")" << std::endl;
+                    return;
+                }
+                const std::wstring& name = names[idx];
                 try {
                     auto looked = regKey.getValue(name);
+                    auto found = nkRecord->getValueList()->getValue(name);
+                    uint32_t foundOffset = RecordOffset::of(*found);
+                    if (foundOffset != offsets[idx]) {
+                        std::wcout << prefix << "  value lookup \"" << name
+                            << "\": MISMATCH returned a different value (enumerated #" << std::dec << idx
+                            << ", lookup returned ";
+                        auto at = std::find(offsets.begin(), offsets.end(), foundOffset);
+                        if (at != offsets.end()) {
+                            std::wcout << "#" << (at - offsets.begin()) << " ";
+                        }
+                        else {
+                            std::wcout << "a value that is not enumerated ";
+                        }
+                        std::wcout << "\"" << rawName(*found) << "\")" << std::endl;
+                    }
                 }
                 catch (std::exception& ex) {
                     std::wcout << prefix << "  value lookup \"" << name << "\": FAILED. exception ("
                         << ex.what() << ")" << std::endl;
                 }
+            };
+
+            size_t lookupCount = std::min(vkRecords.size(), MAX_NAMED_LOOKUPS);
+            for (size_t idx = 0; idx < lookupCount; ++idx) {
+                probe(idx);
             }
             if (vkRecords.size() > MAX_NAMED_LOOKUPS) {
                 std::wcout << prefix << "  value lookup: " << (vkRecords.size() - MAX_NAMED_LOOKUPS)
                     << " more skipped (threshold=" << MAX_NAMED_LOOKUPS << ")" << std::endl;
+
+                std::map<std::wstring, size_t> firstWithKey;
+                size_t collidingProbed = 0;
+                size_t collidingSkipped = 0;
+                for (size_t idx = 0; idx < vkRecords.size(); ++idx) {
+                    if (!nameOk[idx]) {
+                        if (idx >= MAX_NAMED_LOOKUPS) {
+                            probe(idx);
+                        }
+                        continue;
+                    }
+                    // An unnamed value's getName() is "(Default)", which is
+                    // also how getValue() matches it, so it shares that key.
+                    auto first = firstWithKey.emplace(lookupKey(names[idx]), idx);
+                    bool collides = !first.second && offsets[first.first->second] != offsets[idx];
+                    if (collides && idx >= MAX_NAMED_LOOKUPS) {
+                        if (collidingProbed < MAX_COLLIDING_LOOKUPS) {
+                            probe(idx);
+                            collidingProbed++;
+                        }
+                        else {
+                            collidingSkipped++;
+                        }
+                    }
+                }
+                if (collidingSkipped > 0) {
+                    StreamStateGuard guard;
+                    std::wcout << prefix << "  value lookup: " << std::dec << collidingSkipped
+                        << " more names equal to an earlier sibling's not probed (threshold="
+                        << MAX_COLLIDING_LOOKUPS << ")" << std::endl;
+                }
             }
         }
 
         // --- Recurse into subkeys (paired low-level + high-level) ---
+        uint32_t ownOffset = RecordOffset::of(*nkRecord);
+
+        // A subkey list belongs to one key. If another key's walk already
+        // listed this one, its keys were reported there.
+        if (listOffset != 0) {
+            auto owner = walk.listOwners.emplace(listOffset, std::make_pair(ownOffset, displayName(*nkRecord)));
+            if (!owner.second && owner.first->second.first != ownOffset) {
+                std::wcout << prefix << "  shared subkey list: same list as key \"" << owner.first->second.second
+                    << "\", not listed again" << std::endl;
+                return;
+            }
+        }
+
+        // Every listing that is not followed says why: a cycle back into the
+        // path, the depth limit, the key named earlier in this same list, or
+        // the key already walked from another listing. A key whose parent
+        // field names some other key is reported, since that is how one key
+        // comes to be listed under two; it is still walked the first time.
+        std::map<uint32_t, size_t> firstListing;    // child offset -> index of its first listing here
         size_t count = std::min(nkSubkeys.size(), rkSubkeys.size());
         for (size_t i = 0; i < count; ++i) {
-            std::wcout << prefix << "  key: " << markInvalidUTF16(nkSubkeys[i]->getName()) << std::endl;
-            recurseAll(nkSubkeys[i].get(), *rkSubkeys[i], L"    " + prefix, depth + 1);
+            std::wcout << prefix << "  key: " << displayName(*nkSubkeys[i]) << std::endl;
+            uint32_t childOffset = RecordOffset::of(*nkSubkeys[i]);
+            auto listing = firstListing.emplace(childOffset, i);
+            if (std::find(walk.ancestors.begin(), walk.ancestors.end(), childOffset) != walk.ancestors.end()) {
+                std::wcout << prefix << "    cycle: subkey list points back to an ancestor key, not followed" << std::endl;
+                continue;
+            }
+            if (depth + 1 > MAX_TREE_DEPTH) {
+                StreamStateGuard guard;
+                std::wcout << prefix << "    depth limit reached (" << std::dec << MAX_TREE_DEPTH
+                    << " levels), not followed" << std::endl;
+                continue;
+            }
+            if (!listing.second) {
+                StreamStateGuard guard;
+                std::wcout << prefix << "    duplicate: this subkey list already named this key at entry #"
+                    << std::dec << listing.first->second << ", not followed" << std::endl;
+                continue;
+            }
+            try {
+                auto parent = nkSubkeys[i]->getParentRecord();
+                if (RecordOffset::of(*parent) != ownOffset) {
+                    std::wcout << prefix << "    parent mismatch: this key's parent field names \""
+                        << displayName(*parent) << "\", not the listing key" << std::endl;
+                }
+            }
+            catch (std::exception& ex) {
+                std::wcout << prefix << "    parent mismatch: this key's parent field does not name a key ("
+                    << ex.what() << ")" << std::endl;
+            }
+            if (!walk.walked.insert(childOffset).second) {
+                std::wcout << prefix << "    already walked: reached earlier through another key, not followed" << std::endl;
+                continue;
+            }
+            walk.ancestors.push_back(childOffset);
+            recurseAll(nkSubkeys[i].get(), *rkSubkeys[i], L"    " + prefix, walk, depth + 1);
+            walk.ancestors.pop_back();
         }
 
         // If sizes differ, still print remaining NKRecord subkeys
         for (size_t i = count; i < nkSubkeys.size(); ++i) {
-            std::wcout << prefix << "  key (nk only): " << markInvalidUTF16(nkSubkeys[i]->getName()) << std::endl;
+            std::wcout << prefix << "  key (nk only): " << displayName(*nkSubkeys[i]) << std::endl;
         }
         for (size_t i = count; i < rkSubkeys.size(); ++i) {
-            std::wcout << prefix << "  key (rk only): " << markInvalidUTF16(rkSubkeys[i]->getName()) << std::endl;
+            std::wcout << prefix << "  key (rk only): " << displayName(*rkSubkeys[i]) << std::endl;
         }
     }
 
@@ -594,8 +922,9 @@ namespace Rejistry {
         wchar_t savedFill = std::wcout.fill(L' ');
         std::wcout << std::dec;
 
+        std::unique_ptr<REGFHeader> header;
         try {
-            auto header = hive.getHeader();
+            header = hive.getHeader();
             std::wcout << "hive name: " << markInvalidUTF16(header->getHiveName()) << std::endl;
             std::wcout << "major version: " << header->getMajorVersion() << std::endl;
             std::wcout << "minor version: " << header->getMinorVersion() << std::endl;
@@ -623,8 +952,18 @@ namespace Rejistry {
                     << ", offset next: " << hbin->getRelativeOffsetNextHBIN()
                     << std::endl;
 
+                // A cell size the walk can't step over ends this hbin's
+                // listing only; the other hbins and the key tree still print.
+                Cell::CellUniqPtrList cells;
+                try {
+                    cells = hbin->getCells();
+                }
+                catch (std::exception& ex) {
+                    std::wcout << "  getCells exception: " << ex.what() << std::endl;
+                }
+
                 int j = 0;
-                for (auto& cell : hbin->getCells()) {
+                for (auto& cell : cells) {
                     bool active = cell->isActive();
 
                     g_stats.cellTotal++;
@@ -667,14 +1006,26 @@ namespace Rejistry {
 
                 i++;
             }
-
-            // Single-pass tree traversal with both API layers
-            auto nkRoot = header->getRootNKRecord();
-            auto rkRoot = hive.getRoot();
-            recurseAll(nkRoot.get(), *rkRoot, L"");
         }
         catch (std::exception& ex) {
             std::wcout << "processRegistryHive exception: " << ex.what() << std::endl;
+        }
+
+        // Single-pass tree traversal with both API layers. It has its own try
+        // so that a failure in the hbin/cell survey above does not also hide
+        // the key tree. A hive whose header can't be read has no tree.
+        if (header) {
+            try {
+                auto nkRoot = header->getRootNKRecord();
+                auto rkRoot = hive.getRoot();
+                WalkState walk;
+                walk.ancestors.push_back(RecordOffset::of(*nkRoot));
+                walk.walked.insert(RecordOffset::of(*nkRoot));
+                recurseAll(nkRoot.get(), *rkRoot, L"", walk);
+            }
+            catch (std::exception& ex) {
+                std::wcout << "processRegistryHive exception: " << ex.what() << std::endl;
+            }
         }
 
         // Print summary statistics
@@ -722,6 +1073,140 @@ static const wchar_t* sehCodeToString(DWORD code) {
     }
 }
 
+// -----------------------------------------------------------------------
+// Output file writer. Writes the bytes stdout in _O_U8TEXT text mode wrote
+// (LF -> CRLF, UTF-16 -> UTF-8, no BOM) without the CRT's per-character
+// locking and its flush at every std::endl, which were most of the driver's
+// run time. U+FFFF is dropped: it is WEOF, which the stdout filebuf took as
+// a flush request rather than a character, so it never reached the file.
+// One difference: the CRT converted in 852-unit slices and wrote a surrogate
+// pair that straddled a slice as two U+FFFD; this writes the pair intact.
+//
+// Output is written in 64K-character chunks, and flushed at exit and from
+// the crash handlers. A process that ends without reaching them (a fast-fail
+// such as a /GS or heap-corruption stop, or being killed) loses the last
+// chunk. --flush-each-line writes every line as it is printed, as the CRT
+// did, so the file ends exactly where the run stopped, at about twice the
+// buffered run time.
+// -----------------------------------------------------------------------
+class Utf8CrlfFileBuf : public std::wstreambuf {
+public:
+    Utf8CrlfFileBuf(FILE* file, bool flushEachLine) : _file(file), _flushEachLine(flushEachLine) {
+        // Sized so that flushing from a crash handler normally needs no
+        // allocation (the heap may be damaged by then).
+        _pending.reserve(CHUNK_CHARS * 2);
+        _wide.reserve(CHUNK_CHARS * 4);
+        _utf8.reserve(CHUNK_CHARS * 6);
+    }
+
+    // Write out everything buffered so far.
+    void flushAll() {
+        convert(_pending.size());
+        if (fflush(_file) != 0) {
+            _writeFailed = true;
+        }
+    }
+
+    bool writeFailed() const { return _writeFailed; }
+
+protected:
+    int_type overflow(int_type c) override {
+        if (c != traits_type::eof()) {
+            _pending.push_back(static_cast<wchar_t>(c));
+            maybeConvert();
+        }
+        return traits_type::not_eof(c);
+    }
+
+    std::streamsize xsputn(const wchar_t* s, std::streamsize n) override {
+        // Taken a chunk at a time, so printing a very large value does not
+        // need several more copies of it.
+        const wchar_t* end = s + n;
+        while (s < end) {
+            const wchar_t* sliceEnd = s + std::min(end - s, static_cast<std::ptrdiff_t>(CHUNK_CHARS));
+            while (s < sliceEnd) {
+                const wchar_t* weof = std::find(s, sliceEnd, static_cast<wchar_t>(0xFFFF));
+                _pending.append(s, weof);
+                s = (weof == sliceEnd) ? sliceEnd : weof + 1;
+            }
+            maybeConvert();
+        }
+        return n;
+    }
+
+    // std::endl calls this.
+    int sync() override {
+        if (_flushEachLine) {
+            flushAll();
+        }
+        return 0;
+    }
+
+private:
+    static const size_t CHUNK_CHARS = 1 << 16;
+
+    void maybeConvert() {
+        if (_pending.size() >= CHUNK_CHARS) {
+            size_t n = _pending.size();
+            if (_pending[n - 1] >= 0xD800 && _pending[n - 1] <= 0xDBFF) {
+                n--;    // keep a surrogate pair together
+            }
+            convert(n);
+        }
+    }
+
+    void convert(size_t n) {
+        if (n == 0) {
+            return;
+        }
+        _wide.clear();
+        for (size_t i = 0; i < n; i++) {
+            wchar_t c = _pending[i];
+            if (c == L'\n') {
+                _wide.push_back(L'\r');
+            }
+            _wide.push_back(c);
+        }
+        int len = WideCharToMultiByte(CP_UTF8, 0, _wide.data(), static_cast<int>(_wide.size()), NULL, 0, NULL, NULL);
+        if (len <= 0) {
+            _writeFailed = true;
+            _pending.erase(0, n);
+            return;
+        }
+        _utf8.resize(static_cast<size_t>(len));
+        WideCharToMultiByte(CP_UTF8, 0, _wide.data(), static_cast<int>(_wide.size()), &_utf8[0], len, NULL, NULL);
+        if (fwrite(_utf8.data(), 1, _utf8.size(), _file) != _utf8.size()) {
+            _writeFailed = true;
+        }
+        _pending.erase(0, n);
+    }
+
+    FILE* _file;
+    bool _flushEachLine;
+    bool _writeFailed = false;
+    std::wstring _pending;
+    std::wstring _wide;
+    std::string _utf8;
+};
+
+static Utf8CrlfFileBuf* g_outputBuf = nullptr;
+
+static void flushOutput() {
+    if (g_outputBuf != nullptr) {
+        g_outputBuf->flushAll();
+    }
+}
+
+// Flush from a crash handler. A fault while flushing loses the buffered
+// output but must not end the process before the handler finishes.
+static void flushOutputGuarded() {
+    __try {
+        flushOutput();
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+}
+
 static int sehRunProcessRegistryFile(wchar_t* regFilePath) {
     __try {
         Rejistry::processRegistryFile(regFilePath);
@@ -740,6 +1225,7 @@ static int sehRunProcessRegistryFile(wchar_t* regFilePath) {
         std::wcerr << std::endl
             << L"FATAL: Structured Exception (SEH) 0x" << std::hex << code
             << L" (" << sehCodeToString(code) << L")" << std::endl;
+        flushOutputGuarded();
         return 1;
     }
 }
@@ -747,18 +1233,38 @@ static int sehRunProcessRegistryFile(wchar_t* regFilePath) {
 int wmain(int argc, wchar_t *argv[], wchar_t *envp[])
 {
     if (argc < 2) {
-        std::wcout << L"Usage: " << argv[0] << L" <path to registry file> [output file]" << std::endl;
+        std::wcout << L"Usage: " << argv[0] << L" <path to registry file> [output file [--flush-each-line]]" << std::endl;
         exit(1);
     }
 
     if (argc >= 3) {
-        // Redirect stdout to the output file at the OS level, then set UTF-8
-        // text mode. This is more reliable than imbuing with codecvt facets.
-        if (_wfreopen(argv[2], L"w", stdout) == nullptr) {
+        bool flushEachLine = false;
+        if (argc >= 4) {
+            if (wcscmp(argv[3], L"--flush-each-line") != 0 || argc > 4) {
+                std::wcerr << L"Usage: " << argv[0] << L" <path to registry file> [output file [--flush-each-line]]" << std::endl;
+                exit(1);
+            }
+            flushEachLine = true;
+        }
+
+        // Write the output file through Utf8CrlfFileBuf: UTF-8 with CRLF line
+        // ends, the bytes the CRT's _O_U8TEXT mode produced (see the class).
+        FILE* outputFile = _wfsopen(argv[2], L"wb", _SH_DENYNO);
+        if (outputFile == nullptr) {
             std::wcerr << L"Failed to open output file: " << argv[2] << std::endl;
             exit(1);
         }
-        _setmode(_fileno(stdout), _O_U8TEXT);
+        g_outputBuf = new Utf8CrlfFileBuf(outputFile, flushEachLine);
+        std::wcout.rdbuf(g_outputBuf);
+        // Keep what is buffered if the process is ended by an unhandled
+        // C++ exception or abort() (a pure virtual call, a Debug assert).
+        std::set_terminate([]() {
+            flushOutputGuarded();
+            abort();
+        });
+        signal(SIGABRT, [](int) {
+            flushOutputGuarded();
+        });
     }
     else {
         // No output file — write UTF-16 directly to the console
@@ -777,5 +1283,12 @@ int wmain(int argc, wchar_t *argv[], wchar_t *envp[])
     std::wcout << std::endl << L"=== Completed in " << std::dec
         << h << L" h : " << m << L" m : " << s << L" s ===" << std::endl;
 
+    flushOutput();
+    // A streambuf exception (e.g. bad_alloc) only sets badbit on wcout, after
+    // which every later line was dropped.
+    if (g_outputBuf != nullptr && (g_outputBuf->writeFailed() || std::wcout.bad())) {
+        std::wcerr << L"Failed writing output file: " << argv[2] << std::endl;
+        return 1;
+    }
     return result;
 }
