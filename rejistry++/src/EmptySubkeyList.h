@@ -49,10 +49,10 @@ namespace Rejistry {
         uint16_t getListLength() const override { return 0; }
 
         /**
-         * Shadows Record::getMagic(). EmptySubkeyList has no valid record
-         * header, so reading the buffer would return garbage bytes.
+         * EmptySubkeyList has no record header (it is built at buffer offset
+         * 0), so reading the buffer would return the "re" of the hive's "regf".
          */
-        std::string getMagic() const { return ""; }
+        std::string getMagic() const override { return ""; }
 
         virtual NKRecord::NKRecordUniqPtrList getSubkeys() const {
             return NKRecord::NKRecordUniqPtrList();

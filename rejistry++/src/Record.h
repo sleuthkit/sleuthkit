@@ -49,7 +49,7 @@ namespace Rejistry {
          * @returns A 2 character string that is the magic record header.
          * @throws RegistryParseException.
          */
-        std::string getMagic() const;
+        virtual std::string getMagic() const;
 
     private:
         static const uint8_t MAGIC_OFFSET = 0x0;
