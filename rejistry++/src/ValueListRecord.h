@@ -55,8 +55,11 @@ namespace Rejistry {
 
         /**
          * Fetch the value with the given name from the value list.
+         * Values are read in list order and the first match is returned;
+         * the values after it are not read.
          * @param name The name of the value to fetch.
          * @returns The matching value record.
+         * @throws NoSuchElementException if no value matches.
          */
         VKRecord::VKRecordUniqPtr getValue(const std::wstring& name) const;
 
@@ -69,6 +72,8 @@ namespace Rejistry {
         static const uint16_t VALUE_LIST_OFFSET = 0x00;
 
         uint32_t _numValues = 0;
+
+        VKRecord::VKRecordUniqPtr getValueAt(uint32_t index) const;
 
     protected:
         ValueListRecord() {};

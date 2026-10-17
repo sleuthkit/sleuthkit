@@ -46,13 +46,48 @@ namespace Rejistry {
 
         uint16_t listLength = getListLength();
         for (uint16_t index = 0; index < listLength; ++index) {
-            uint32_t offset = getDWord(LIST_START_OFFSET + (index * LIST_ENTRY_SIZE));
-            uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
-            auto c = std::make_unique< Cell >(_buf, parentOffset);
-            subkeyList.push_back(c->getSubkeyList());
+            subkeyList.push_back(getSubkeyListAt(index));
         }
 
         return subkeyList;
+    }
+
+    SubkeyListRecord::SubkeyListRecordPtr RIRecord::getSubkeyListAt(uint16_t index) const {
+        auto c = std::make_unique< Cell >(_buf, getSubkeyListCellOffset(index));
+        return c->getSubkeyList();
+    }
+
+    uint32_t RIRecord::getSubkeyListCellOffset(uint16_t index) const {
+        uint32_t offset = getDWord(LIST_START_OFFSET + (index * LIST_ENTRY_SIZE));
+        return REGFHeader::FIRST_HBIN_OFFSET + offset;
+    }
+
+    NKRecord::NKRecordUniqPtr RIRecord::findSubkey(const std::wstring& name) const {
+        std::set<uint32_t> searchedLists;
+        return findSubkeyInLookup(name, searchedLists);
+    }
+
+    // Search the sub-lists in order, reading each only until a match. The
+    // reads have no side effects, so a sub-list this lookup already searched
+    // (or is still searching further up, when an ri list leads back into
+    // itself) cannot give a different answer and is skipped. That keeps one
+    // lookup to one pass over each distinct sub-list, and stops a
+    // self-referencing ri list from recursing until the stack overflows.
+    NKRecord::NKRecordUniqPtr RIRecord::findSubkeyInLookup(const std::wstring& name, std::set<uint32_t>& searchedLists) const {
+        uint16_t listLength = getListLength();
+        for (uint16_t index = 0; index < listLength; ++index) {
+            uint32_t cellOffset = getSubkeyListCellOffset(index);
+            if (!searchedLists.insert(cellOffset).second) {
+                continue;
+            }
+            auto c = std::make_unique< Cell >(_buf, cellOffset);
+            NKRecord::NKRecordUniqPtr nk = c->getSubkeyList()->findSubkeyInLookup(name, searchedLists);
+            if (nk) {
+                return nk;
+            }
+        }
+
+        return nullptr;
     }
 
     NKRecord::NKRecordUniqPtrList RIRecord::getSubkeys() const {

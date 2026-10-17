@@ -38,13 +38,28 @@ namespace Rejistry {
     }
 
     NKRecord::NKRecordUniqPtr SubkeyListRecord::getSubkey(const std::wstring& name) const {
+        NKRecord::NKRecordUniqPtr nk = findSubkey(name);
+        if (!nk) {
+            throw NoSuchElementException("Failed to find subkey.");
+        }
+        return nk;
+    }
+
+    NKRecord::NKRecordUniqPtr SubkeyListRecord::findSubkey(const std::wstring& name) const {
         for (auto& nk : getSubkeys()) {
-            if (_wcsicmp(name.c_str(), nk->getName().c_str()) == 0) {
+            if (nameMatches(*nk, name)) {
                 return std::move(nk);
             }
         }
+        return nullptr;
+    }
 
-        throw NoSuchElementException("Failed to find subkey.");
+    NKRecord::NKRecordUniqPtr SubkeyListRecord::findSubkeyInLookup(const std::wstring& name, std::set<uint32_t>&) const {
+        return findSubkey(name);
+    }
+
+    bool SubkeyListRecord::nameMatches(const NKRecord& nk, const std::wstring& name) {
+        return _wcsicmp(name.c_str(), nk.getName().c_str()) == 0;
     }
 
 };

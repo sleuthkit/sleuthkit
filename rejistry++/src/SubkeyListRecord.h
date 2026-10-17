@@ -32,6 +32,7 @@
 #include <memory>
 #include <string>
 #include <list>
+#include <set>
 
 // Local includes
 #include "Record.h"
@@ -65,15 +66,38 @@ namespace Rejistry {
 
         /**
          * Fetch the subkey with the given name from the subkey list.
+         * Entries are read in list order and the first one whose name
+         * matches (case-insensitively) is returned; the entries after it
+         * are not read.
          * @param name The name of the subkey to fetch.
          * @returns The matching subkey record.
+         * @throws NoSuchElementException if no entry matches.
          */
         std::unique_ptr<NKRecord> getSubkey(const std::wstring& name) const;
+
+        /**
+         * Like getSubkey(), but returns nullptr when no entry matches. Lists
+         * override it to read one entry at a time; the default goes through
+         * getSubkeys().
+         */
+        virtual std::unique_ptr<NKRecord> findSubkey(const std::wstring& name) const;
+
+        /**
+         * findSubkey() as one step of a lookup that may pass through nested
+         * ri lists. searchedLists holds the cells of the sub-lists the lookup
+         * has already entered; only RIRecord uses it.
+         */
+        virtual std::unique_ptr<NKRecord> findSubkeyInLookup(const std::wstring& name, std::set<uint32_t>& searchedLists) const;
 
     private:
         static const uint16_t LIST_LENGTH_OFFSET = 0x02;
 
     protected:
+        /**
+         * The name comparison getSubkey() uses.
+         */
+        static bool nameMatches(const NKRecord& nk, const std::wstring& name);
+
         SubkeyListRecord();
         SubkeyListRecord(const SubkeyListRecord &) = delete;
         SubkeyListRecord& operator=(const SubkeyListRecord &) = delete;

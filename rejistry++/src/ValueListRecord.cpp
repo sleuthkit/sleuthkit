@@ -42,24 +42,29 @@ namespace Rejistry {
         VKRecord::VKRecordUniqPtrList valueList;
 
         for (uint32_t index = 0; index < _numValues; ++index) {
-            uint32_t offset = getDWord(VALUE_LIST_OFFSET + (0x4 * index));
-            offset += REGFHeader::FIRST_HBIN_OFFSET;
-
-            auto c = std::make_unique< Cell >(_buf, offset);
-            valueList.push_back(c->getVKRecord());
+            valueList.push_back(getValueAt(index));
         }
 
         return valueList;
     }
 
     VKRecord::VKRecordUniqPtr ValueListRecord::getValue(const std::wstring& name) const {
-        for (auto& valueRecord : getValues()) {
+        for (uint32_t index = 0; index < _numValues; ++index) {
+            VKRecord::VKRecordUniqPtr valueRecord = getValueAt(index);
             if ((!valueRecord->hasName() && name == VKRecord::DEFAULT_VALUE_NAME) ||
                 (_wcsicmp(name.c_str(), valueRecord->getName().c_str()) == 0)) {
-                return std::move(valueRecord);
+                return valueRecord;
             }
         }
 
         throw NoSuchElementException("Failed to find value.");
+    }
+
+    VKRecord::VKRecordUniqPtr ValueListRecord::getValueAt(uint32_t index) const {
+        uint32_t offset = getDWord(VALUE_LIST_OFFSET + (0x4 * index));
+        offset += REGFHeader::FIRST_HBIN_OFFSET;
+
+        auto c = std::make_unique< Cell >(_buf, offset);
+        return c->getVKRecord();
     }
 };

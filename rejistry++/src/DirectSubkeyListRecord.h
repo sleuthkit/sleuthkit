@@ -50,10 +50,14 @@ namespace Rejistry {
     
         virtual std::vector<std::unique_ptr<NKRecord>> getSubkeys() const;
 
+        virtual std::unique_ptr<NKRecord> findSubkey(const std::wstring& name) const override;
+
     private:
         static const uint16_t LIST_START_OFFSET = 0x04;
 
         uint32_t _itemSize = 0;
+
+        std::unique_ptr<NKRecord> getSubkeyAt(uint16_t index) const;
 
     protected:
         DirectSubkeyListRecord() {};
