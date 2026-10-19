@@ -36,3 +36,6 @@ autotools output; add intentional profile files with `git add -f config/flash_de
 For a new device, document how geometry, ECC orientation and coverage were
 verified, and supply an independent parity/corruption fixture. Do not apply a
 similar-looking profile merely because the SoC vendor matches.
+
+Optional page-to-LBA reconstruction is documented in `docs/NAND_LBA_MAPPING.md`.
+`synthetic-lba-bch-fat32.json` is a synthetic fixture profile only, not a real-device preset.

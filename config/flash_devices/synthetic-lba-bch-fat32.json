@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "id": "synthetic-lba-bch-fat32",
+  "description": "Synthetic test only: 4 KiB data + protected LBA/sequence, BCH-8 and 8 stuff bytes",
+  "notes": [
+    "Not a Qualcomm, Rusolut, Continental or universal FTL profile.",
+    "Mapping offsets refer to the concatenated ECC-corrected operation output.",
+    "No bad-block markers, sequence wraparound, banks or log-block merging are emulated."
+  ],
+  "physical_page_bytes": 4224,
+  "logical_page_bytes": 4112,
+  "ecc": {
+    "algorithm": "bch",
+    "m": 13,
+    "t": 8,
+    "primitive_polynomial": "0x201B",
+    "bit_order": "msb-first"
+  },
+  "operations": [
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          0,
+          512
+        ]
+      ],
+      "ecc_range": [
+        513,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          526,
+          512
+        ]
+      ],
+      "ecc_range": [
+        1039,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          1052,
+          512
+        ]
+      ],
+      "ecc_range": [
+        1565,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          1578,
+          512
+        ]
+      ],
+      "ecc_range": [
+        2091,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          2104,
+          512
+        ]
+      ],
+      "ecc_range": [
+        2617,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          2630,
+          512
+        ]
+      ],
+      "ecc_range": [
+        3143,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          3156,
+          512
+        ]
+      ],
+      "ecc_range": [
+        3669,
+        13
+      ]
+    },
+    {
+      "kind": "bch",
+      "data_ranges": [
+        [
+          3682,
+          528
+        ]
+      ],
+      "ecc_range": [
+        4211,
+        13
+      ]
+    }
+  ],
+  "mapping": {
+    "sector_bytes": 512,
+    "logical_sectors": 69632,
+    "payload_range": [
+      0,
+      4096
+    ],
+    "lba_field": {
+      "range": [
+        4096,
+        4
+      ],
+      "byte_order": "little"
+    },
+    "sequence_field": {
+      "range": [
+        4100,
+        4
+      ],
+      "byte_order": "little"
+    },
+    "signature": {
+      "range": [
+        4104,
+        4
+      ],
+      "hex": "4c424131"
+    },
+    "duplicates": "highest_sequence",
+    "holes": "fail",
+    "fill_byte": 0
+  }
+}
