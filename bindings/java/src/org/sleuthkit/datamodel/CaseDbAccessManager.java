@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.annotations.Beta;
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,8 +28,13 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.sql.Date;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
@@ -60,6 +66,8 @@ public final class CaseDbAccessManager {
 
 
 	private static final Logger logger = Logger.getLogger(CaseDbAccessManager.class.getName());
+
+	private static final Pattern PLAIN_IDENTIFIER = Pattern.compile("[a-z_][a-z0-9_]*");
 
 	private final SleuthkitCase tskDB;
 
@@ -326,6 +334,117 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException(String.format("Error altering table  %s with SQL = %s", tableName, sql), ex);
 		} finally {
 			closeStatement(statement);
+		}
+	}
+
+	/**
+	 * Fixes the number of distinct values the PostgreSQL query planner assumes
+	 * for a column, in place of the estimate ANALYZE draws from its sample. For
+	 * columns so skewed that the sampled estimate comes out far too low, which
+	 * steers the planner to scan whole tables where an index probe would do.
+	 *
+	 * A negative value is a fraction of the table's rows (-0.2: a fifth of the
+	 * rows hold distinct values), so it follows the table as it grows; a value
+	 * of 1 or more is a fixed count; 0 removes the setting. The setting takes
+	 * effect at the table's next ANALYZE.
+	 *
+	 * Allowed on core tables: it changes neither the schema nor the data.
+	 * Idempotent: when the column already holds this value nothing is written
+	 * and no lock is taken. A change takes a lock that readers and writers do
+	 * not wait on; it waits only for a VACUUM, ANALYZE or schema change on the
+	 * same table, and gives up after 10 seconds.
+	 *
+	 * SQLite has no such setting; there this does nothing and returns false.
+	 *
+	 * @param tableName  Name of the table, unquoted and lower case.
+	 * @param columnName Name of the column, unquoted and lower case.
+	 * @param nDistinct  The number of distinct values, as described above.
+	 *
+	 * @return True if the setting was changed.
+	 *
+	 * @throws TskCoreException If a name or the value is invalid, the column
+	 *                          does not exist, or the table stayed locked past
+	 *                          the timeout.
+	 */
+	@Beta
+	public boolean setColumnDistinctEstimate(String tableName, String columnName, double nDistinct) throws TskCoreException {
+		validateIdentifier(tableName);
+		validateIdentifier(columnName);
+		if (Double.isNaN(nDistinct) || Double.isInfinite(nDistinct) || nDistinct < -1 || (nDistinct > 0 && nDistinct < 1)) {
+			throw new TskCoreException("Distinct estimate must be between -1 and 0, or at least 1: " + nDistinct);
+		}
+		if (tskDB.getDatabaseType() != DbType.POSTGRESQL) {
+			return false;
+		}
+
+		Double current = getColumnDistinctEstimate(tableName, columnName);
+		if (current == null ? nDistinct == 0 : current == nDistinct) {
+			return false;
+		}
+
+		String option = nDistinct == 0
+				? "RESET (n_distinct)"
+				: "SET (n_distinct = " + BigDecimal.valueOf(nDistinct).toPlainString() + ")";
+		String sql = "ALTER TABLE " + tableName + " ALTER COLUMN " + columnName + " " + option;
+		CaseDbTransaction transaction = tskDB.beginTransaction();
+		try {
+			try (Statement statement = transaction.getConnection().createStatement()) {
+				statement.execute("SET LOCAL lock_timeout = '10s'");
+				statement.execute(sql);
+			}
+			transaction.commit();
+			transaction = null;
+			return true;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error running " + sql, ex);
+		} finally {
+			if (transaction != null) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Gets a PostgreSQL column's n_distinct setting.
+	 *
+	 * @return The setting, or null when the column has none.
+	 *
+	 * @throws TskCoreException If the column does not exist.
+	 */
+	private Double getColumnDistinctEstimate(String tableName, String columnName) throws TskCoreException {
+		String sql = "SELECT (SELECT split_part(opt, '=', 2) FROM unnest(a.attoptions) AS opt"
+				+ " WHERE split_part(opt, '=', 1) = 'n_distinct')"
+				+ " FROM pg_attribute a"
+				+ " WHERE a.attrelid = to_regclass(?) AND a.attname = ? AND a.attnum > 0 AND NOT a.attisdropped";
+		try (CaseDbConnection connection = tskDB.getConnection();
+				PreparedStatement query = connection.prepareStatement(sql, Statement.NO_GENERATED_KEYS)) {
+			query.setString(1, tableName);
+			query.setString(2, columnName);
+			try (ResultSet resultSet = query.executeQuery()) {
+				if (!resultSet.next()) {
+					throw new TskCoreException(String.format("No column %s in table %s", columnName, tableName));
+				}
+				String value = resultSet.getString(1);
+				return value == null ? null : Double.valueOf(value);
+			}
+		} catch (SQLException | NumberFormatException ex) {
+			throw new TskCoreException(String.format("Error reading the n_distinct setting of %s.%s", tableName, columnName), ex);
+		}
+	}
+
+	/**
+	 * Checks that a table or column name is a plain identifier, safe to put in
+	 * SQL as is.
+	 *
+	 * @throws TskCoreException If it is not.
+	 */
+	private static void validateIdentifier(String name) throws TskCoreException {
+		if (name == null || !PLAIN_IDENTIFIER.matcher(name).matches()) {
+			throw new TskCoreException("Not an unquoted lower-case SQL name: " + name);
 		}
 	}
 	
@@ -748,13 +867,47 @@ public final class CaseDbAccessManager {
 	 */
 	@Beta
 	public void refreshQueryPlannerStats() throws TskCoreException {
+		runAnalyze(Collections.singletonList("ANALYZE"));
+	}
+
+	/**
+	 * Refreshes the query-planner statistics of the named tables only, as
+	 * refreshQueryPlannerStats() does for the whole database.
+	 *
+	 * @param tableNames Names of the tables, unquoted and lower case.
+	 *
+	 * @throws TskCoreException If a name is invalid or a table does not exist.
+	 */
+	@Beta
+	public void refreshQueryPlannerStats(Collection<String> tableNames) throws TskCoreException {
+		for (String tableName : tableNames) {
+			validateIdentifier(tableName);
+		}
+		if (tableNames.isEmpty()) {
+			return;
+		}
+		// SQLite's ANALYZE takes one name; PostgreSQL's takes a list.
+		List<String> statements = new ArrayList<>();
+		if (tskDB.getDatabaseType() == DbType.SQLITE) {
+			for (String tableName : tableNames) {
+				statements.add("ANALYZE " + tableName);
+			}
+		} else {
+			statements.add("ANALYZE " + String.join(", ", tableNames));
+		}
+		runAnalyze(statements);
+	}
+
+	private void runAnalyze(List<String> analyzeStatements) throws TskCoreException {
 		if (tskDB.getDatabaseType() == DbType.SQLITE) {
 			tskDB.acquireSingleUserCaseWriteLock();
 			try {
 				try (CaseDbConnection connection = tskDB.getConnection();
 						Statement statement = connection.createStatement()) {
 					statement.execute("PRAGMA analysis_limit=600");
-					statement.executeUpdate("ANALYZE");
+					for (String analyze : analyzeStatements) {
+						statement.executeUpdate(analyze);
+					}
 				} catch (SQLException ex) {
 					throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
 				}
@@ -770,7 +923,9 @@ public final class CaseDbAccessManager {
 			// commits itself, matching the SQLite branch above.
 			try (CaseDbConnection connection = tskDB.getConnection();
 					Statement statement = connection.createStatement()) {
-				statement.executeUpdate("ANALYZE");
+				for (String analyze : analyzeStatements) {
+					statement.executeUpdate(analyze);
+				}
 			} catch (SQLException ex) {
 				throw new TskCoreException("An error occurred while attempting to run ANALYZE", ex);
 			}
@@ -794,15 +949,58 @@ public final class CaseDbAccessManager {
 	 */
 	@Beta
 	public CaseDbPreparedStatement prepareInsert(String tableName, String sql, CaseDbTransaction trans) throws TskCoreException {
+		return prepareInsert(tableName, sql, InsertConflict.IGNORE, trans);
+	}
+
+	/**
+	 * Who decides what happens when a prepared insert hits a duplicate key.
+	 */
+	@Beta
+	public enum InsertConflict {
+
+		/**
+		 * SQLite gets OR IGNORE, so a row that breaks a unique or NOT NULL
+		 * constraint is skipped without an error. PostgreSQL callers must
+		 * supply their own ON CONFLICT DO NOTHING clause.
+		 */
+		IGNORE,
+
+		/**
+		 * No OR clause is added, so the caller's SQL carries its own ON
+		 * CONFLICT clause and both backends behave the same way. Use this for
+		 * an upsert. SQLite still runs an ON CONFLICT ... DO UPDATE under OR
+		 * IGNORE, but it also drops, without an error, a row that breaks a
+		 * NOT NULL constraint or a unique constraint other than the conflict
+		 * target, where PostgreSQL throws.
+		 */
+		CALLER_HANDLED
+	}
+
+	/**
+	 * Creates a prepared statement object for the purposes of running an insert
+	 * statement, with the conflict handling the caller asks for. The given SQL
+	 * should not include the starting "INSERT INTO" or the name of the table.
+	 *
+	 * @param tableName The name of the table being updated.
+	 * @param sql       The insert statement without the starting "INSERT INTO (table name)" part.
+	 * @param conflict  Whether this method or the caller's SQL handles a duplicate key.
+	 * @param trans     The open transaction.
+	 *
+	 * @return The prepared statement object.
+	 *
+	 * @throws TskCoreException
+	 */
+	@Beta
+	public CaseDbPreparedStatement prepareInsert(String tableName, String sql, InsertConflict conflict, CaseDbTransaction trans) throws TskCoreException {
 		validateTableName(tableName);
 		validateSQL(sql);
-		
+
 		String insertSQL = "INSERT";
-		if (DbType.SQLITE == tskDB.getDatabaseType()) {
+		if (InsertConflict.IGNORE == conflict && DbType.SQLITE == tskDB.getDatabaseType()) {
 			insertSQL += " OR IGNORE";
 		}
 		insertSQL = insertSQL + " INTO " + tableName + " " + sql; // NON-NLS
-	
+
 		try {
 			return new CaseDbPreparedStatement(StatementType.INSERT, insertSQL, trans);
 		} catch (SQLException ex) {
@@ -1072,15 +1270,41 @@ public final class CaseDbAccessManager {
 		 * @throws TskCoreException
 		 */
 		private CaseDbPreparedStatement(StatementType type, String query, boolean isWriteLockRequired) throws SQLException, TskCoreException {		
+			LockType acquiredLock;
 			if (isWriteLockRequired) {
 				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseWriteLock();
-				this.lockType = LockType.WRITE;
+				acquiredLock = LockType.WRITE;
 			} else {
 				CaseDbAccessManager.this.tskDB.acquireSingleUserCaseReadLock();
-				this.lockType = LockType.READ;
+				acquiredLock = LockType.READ;
 			}
-			this.connection = tskDB.getConnection();
-			this.preparedStatement = connection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+			CaseDbConnection acquiredConnection = null;
+			PreparedStatement acquiredStatement = null;
+			boolean constructed = false;
+			try {
+				acquiredConnection = tskDB.getConnection();
+				acquiredStatement = acquiredConnection.getPreparedStatement(query, Statement.NO_GENERATED_KEYS);
+				constructed = true;
+			} finally {
+				if (!constructed) {
+					// The caller never receives this object, so close() will not run to release the lock
+					// and connection. Getting the connection fails when the case has been closed.
+					try {
+						if (acquiredConnection != null) {
+							acquiredConnection.close();
+						}
+					} finally {
+						if (acquiredLock == LockType.WRITE) {
+							CaseDbAccessManager.this.tskDB.releaseSingleUserCaseWriteLock();
+						} else {
+							CaseDbAccessManager.this.tskDB.releaseSingleUserCaseReadLock();
+						}
+					}
+				}
+			}
+			this.lockType = acquiredLock;
+			this.connection = acquiredConnection;
+			this.preparedStatement = acquiredStatement;
 			this.originalSql = query;
 			this.type = type;
 		}

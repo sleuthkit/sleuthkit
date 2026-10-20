@@ -53,7 +53,10 @@ namespace Rejistry {
 
             std::vector<uint8_t> cellData = c->getData();
             if (cellData.size() < size) {
-                throw RegistryParseException("DB indirect cell too small for requested data.");
+                // Malformed hive: this segment holds less than expected. Keep what
+                // it has and stop, since later segments would land at the wrong offsets.
+                data.insert(data.end(), cellData.begin(), cellData.end());
+                break;
             }
             data.insert(data.end(), cellData.begin(), cellData.begin() + size);
 

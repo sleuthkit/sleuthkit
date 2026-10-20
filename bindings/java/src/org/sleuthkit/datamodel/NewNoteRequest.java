@@ -24,16 +24,17 @@ import java.util.Optional;
  * Per-note request data for NoteManager.addNotes().
  *
  * This carries only what a caller supplies. The derived columns -
- * data_source_obj_id, root_note_id and original_note_id - are computed by
- * NoteManager and are deliberately not settable here.
+ * data_source_obj_id and root_note_id - are computed by NoteManager and are
+ * deliberately not settable here.
  */
-public final class NoteRequest {
+public final class NewNoteRequest {
 
 	private final long objId;
 	private final NoteType type;
 	private final String body;
-	private final String details;
-	private final Note.Author author;
+	private final String payload;
+	private final Author author;
+	private final String configuration;
 	private final Long parentNoteId;
 	private final Long analysisResultId;
 	private final long createdTime;
@@ -48,8 +49,8 @@ public final class NoteRequest {
 	 * @param body   The prose a person reads. Required.
 	 * @param author Who wrote it. Required.
 	 */
-	public NoteRequest(long objId, NoteType type, String body, Note.Author author) {
-		this(objId, type, body, null, author, null, null, null);
+	public NewNoteRequest(long objId, NoteType type, String body, Author author) {
+		this(objId, type, body, null, author, null, null, null, null);
 	}
 
 	/**
@@ -60,9 +61,11 @@ public final class NoteRequest {
 	 *                         thread cannot span objects.
 	 * @param type             Note type. Required.
 	 * @param body             The prose a person reads. Required.
-	 * @param details          Structured payload as JSON, may be null. The
+	 * @param payload          Structured payload as JSON, may be null. The
 	 *                         Sleuth Kit stores it and never parses it.
 	 * @param author           Who wrote it. Required.
+	 * @param configuration    Prompt or module configuration version that
+	 *                         produced the note, may be null.
 	 * @param parentNoteId     Note this one replies to, null to start a thread.
 	 * @param analysisResultId The scored finding whose reasoning this note
 	 *                         holds, null if it explains none. Pass the
@@ -70,8 +73,8 @@ public final class NoteRequest {
 	 * @param createdTime      Creation time in epoch milliseconds, null for
 	 *                         now.
 	 */
-	public NoteRequest(long objId, NoteType type, String body, String details, Note.Author author,
-			Long parentNoteId, Long analysisResultId, Long createdTime) {
+	public NewNoteRequest(long objId, NoteType type, String body, String payload, Author author,
+			String configuration, Long parentNoteId, Long analysisResultId, Long createdTime) {
 		if (type == null) {
 			throw new IllegalArgumentException("Note type is required");
 		}
@@ -84,8 +87,9 @@ public final class NoteRequest {
 		this.objId = objId;
 		this.type = type;
 		this.body = body;
-		this.details = details;
+		this.payload = payload;
 		this.author = author;
+		this.configuration = configuration;
 		this.parentNoteId = parentNoteId;
 		this.analysisResultId = analysisResultId;
 		this.createdTime = (createdTime == null) ? System.currentTimeMillis() : createdTime;
@@ -121,10 +125,10 @@ public final class NoteRequest {
 	/**
 	 * Gets the structured payload that goes with the prose.
 	 *
-	 * @return Optional with the details, empty if there are none.
+	 * @return Optional with the payload, empty if there is none.
 	 */
-	public Optional<String> getDetails() {
-		return Optional.ofNullable(details);
+	public Optional<String> getPayload() {
+		return Optional.ofNullable(payload);
 	}
 
 	/**
@@ -132,8 +136,17 @@ public final class NoteRequest {
 	 *
 	 * @return The author.
 	 */
-	public Note.Author getAuthor() {
+	public Author getAuthor() {
 		return author;
+	}
+
+	/**
+	 * Gets the prompt or module configuration version that produced the note.
+	 *
+	 * @return Optional with the configuration, empty if there is none.
+	 */
+	public Optional<String> getConfiguration() {
+		return Optional.ofNullable(configuration);
 	}
 
 	/**
