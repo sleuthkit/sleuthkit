@@ -18,6 +18,7 @@
  *  Call findFilesInImg
  *  Call isImageSupported - if this returns true then the image is supported. If false or
  *                            if there was an error along the way, the image is not supported
+ *  Or call getResultJson for the outcome of every volume, e.g. which BitLocker volumes stayed locked
  */
 
 
@@ -36,12 +37,38 @@ public:
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t handleError();
     std::string getMessageForIsImageSupportedNat();
+    std::string getResultJson();
     bool isImageSupported();
     bool isImageEncrypted();
     std::string getSingleLineErrorMessage();
     void printResults();
-    
+
+    /**
+     * What happened when one volume (or, with no volume system, the whole image) was opened.
+     * status is one of: opened, bitlocker_needs_key, bitlocker_wrong_key,
+     * bitlocker_unsupported_protector, bitlocker_error, encrypted, possibly_encrypted,
+     * no_file_system, multiple_file_systems, error, not_tried.
+     */
+    struct VolumeResult {
+        int64_t addr;               // Partition address in the volume system, -1 if there is none
+        TSK_OFF_T offset;           // Byte offset of the volume in the image
+        TSK_OFF_T length;           // In bytes
+        std::string description;    // Partition type
+        std::string status;
+        std::string fileSystem;     // Set when opened
+        std::string encryption;     // Set when opened and encrypted, e.g. "BitLocker AES-XTS 128 bit, unlocked using password"
+        int keyIndex;               // Which of the '\n'-separated keys unlocked it, -1 for none
+        std::string recoveryKeyId;  // BitLocker recovery key identifier from the error, if any
+        std::string message;        // TSK error text when not opened
+    };
+    const std::vector<VolumeResult>& getVolumeResults() const { return m_volumes; }
+
 private:
+    VolumeResult* getCurrentVolume(TSK_OFF_T a_offset);
+    std::vector<VolumeResult> m_volumes;
+    int m_currentVolume;            // Index into m_volumes, -1 when outside a volume
+    bool m_sawVolumeSystem;         // filterVol() was called, so there is no whole-image file system
+
     bool m_wasDataFound;
     bool m_wasEncryptionFound;
     bool m_wasPossibleEncryptionFound;

@@ -21,11 +21,15 @@
  */
 
 #include "tsk_is_image_supported.h"
+#include "tsk/fs/encryptionHelper.h"
 #include <sstream>
 #include <algorithm>
+#include <regex>
 
 TskIsImageSupported::TskIsImageSupported()
 {
+    m_currentVolume = -1;
+    m_sawVolumeSystem = false;
     m_wasDataFound = false;
     m_wasEncryptionFound = false;
     m_wasPossibleEncryptionFound = false;
@@ -185,8 +189,137 @@ uint8_t TskIsImageSupported::handleError()
             m_wasUnsupported = true;
         }
 
+        // A file system error belongs to the volume being opened; record why it did not open
+        VolumeResult* volPtr = ((errCode & ~TSK_ERR_MASK) == TSK_ERR_FS) ? getCurrentVolume(0) : nullptr;
+        if (volPtr != nullptr) {
+            VolumeResult& vol = *volPtr;
+            if (vol.status != "opened") {
+                std::string msg(lastError->errstr);
+                if (errCode == TSK_ERR_FS_BITLOCKER_ERROR) {
+                    if (msg.rfind(TSK_BITLOCKER_MSG_WRONG_PASSWORD, 0) == 0) {
+                        vol.status = "bitlocker_wrong_key";
+                    }
+                    else if (msg.rfind(TSK_BITLOCKER_MSG_NEED_PASSWORD, 0) == 0) {
+                        vol.status = "bitlocker_needs_key";
+                    }
+                    else if (msg.rfind(TSK_BITLOCKER_MSG_UNSUPPORTED_PROTECTION, 0) == 0) {
+                        vol.status = "bitlocker_unsupported_protector";
+                    }
+                    else {
+                        vol.status = "bitlocker_error";
+                    }
+                    std::smatch match;
+                    if (std::regex_search(msg, match, std::regex("Recovery key identifier: ([0-9A-Fa-f-]+)"))) {
+                        vol.recoveryKeyId = match[1].str();
+                    }
+                }
+                else if (errCode == TSK_ERR_FS_ENCRYPTED) {
+                    vol.status = "encrypted";
+                }
+                else if (errCode == TSK_ERR_FS_POSSIBLY_ENCRYPTED) {
+                    vol.status = "possibly_encrypted";
+                }
+                else if (errCode == TSK_ERR_FS_UNKTYPE) {
+                    vol.status = "no_file_system";
+                }
+                else if (errCode == TSK_ERR_FS_MULTTYPE) {
+                    vol.status = "multiple_file_systems";
+                }
+                else {
+                    vol.status = "error";
+                }
+                vol.message = msg;
+            }
+        }
     }
     return 0;
+}
+
+/**
+* The volume being processed, adding an entry for the whole image when there is no
+* volume system (TskAuto then opens a file system at the start of the image).
+*
+* @param a_offset Byte offset of the file system, used only for that whole-image entry
+*
+* @return The volume, or nullptr inside a volume system but outside an allocated partition
+*/
+TskIsImageSupported::VolumeResult* TskIsImageSupported::getCurrentVolume(TSK_OFF_T a_offset) {
+    if (m_currentVolume < 0) {
+        if (m_sawVolumeSystem) {
+            return nullptr;
+        }
+        VolumeResult vol;
+        vol.addr = -1;
+        vol.offset = a_offset;
+        vol.length = (m_img_info != nullptr) ? m_img_info->size - a_offset : 0;
+        vol.description = "No volume system";
+        vol.status = "not_tried";
+        vol.keyIndex = -1;
+        m_volumes.push_back(vol);
+        m_currentVolume = (int)m_volumes.size() - 1;
+    }
+    return &m_volumes[m_currentVolume];
+}
+
+static std::string jsonEscape(const std::string& a_str) {
+    std::ostringstream out;
+    for (unsigned char c : a_str) {
+        switch (c) {
+        case '"':  out << "\\\""; break;
+        case '\\': out << "\\\\"; break;
+        case '\n': out << "\\n"; break;
+        case '\r': out << "\\r"; break;
+        case '\t': out << "\\t"; break;
+        default:
+            if (c < 0x20) {
+                char buf[8];
+                snprintf(buf, sizeof(buf), "\\u%04x", c);
+                out << buf;
+            }
+            else {
+                out << c;
+            }
+        }
+    }
+    return out.str();
+}
+
+/**
+* The outcome for the image and each of its volumes, as JSON:
+*
+*   {"message": "<getMessageForIsImageSupportedNat()>",
+*    "fileSystemFound": true,
+*    "volumes": [{"addr": 2, "offset": 16777216, "length": 67108864, "description": "Basic data partition",
+*                 "status": "opened", "fileSystem": "ntfs", "encryption": "BitLocker ...", "keyIndex": 0,
+*                 "recoveryKeyId": "", "message": ""}, ...]}
+*
+* "message" keeps the old all-or-nothing verdict: empty only if no volume hit a BitLocker error.
+* "fileSystemFound" is true if any file system opened, so a caller can still use an image
+* where some BitLocker volumes stay locked. Only allocated partitions are listed.
+*/
+std::string TskIsImageSupported::getResultJson() {
+    std::ostringstream out;
+    out << "{\"message\":\"" << jsonEscape(getMessageForIsImageSupportedNat()) << "\""
+        << ",\"fileSystemFound\":" << (m_wasFileSystemFound ? "true" : "false")
+        << ",\"volumes\":[";
+    for (size_t i = 0; i < m_volumes.size(); i++) {
+        const VolumeResult& vol = m_volumes[i];
+        if (i > 0) {
+            out << ",";
+        }
+        out << "{\"addr\":" << vol.addr
+            << ",\"offset\":" << vol.offset
+            << ",\"length\":" << vol.length
+            << ",\"description\":\"" << jsonEscape(vol.description) << "\""
+            << ",\"status\":\"" << jsonEscape(vol.status) << "\""
+            << ",\"fileSystem\":\"" << jsonEscape(vol.fileSystem) << "\""
+            << ",\"encryption\":\"" << jsonEscape(vol.encryption) << "\""
+            << ",\"keyIndex\":" << vol.keyIndex
+            << ",\"recoveryKeyId\":\"" << jsonEscape(vol.recoveryKeyId) << "\""
+            << ",\"message\":\"" << jsonEscape(vol.message) << "\"}";
+    }
+    out << "]}";
+    return out.str();
 }
 
 /**
@@ -254,10 +387,24 @@ TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterFs(TSK_FS_INFO * /*fs_info*/)
+TskIsImageSupported::filterFs(TSK_FS_INFO * fs_info)
 {
     m_wasDataFound = true;
     m_wasFileSystemFound = true;
+
+    VolumeResult* vol = (fs_info != nullptr) ? getCurrentVolume(fs_info->offset) : nullptr;
+    if (vol != nullptr) {
+        vol->status = "opened";
+        vol->message.clear();
+        vol->recoveryKeyId.clear();
+        vol->fileSystem = tsk_fs_type_toname(fs_info->ftype);
+        if (fs_info->encryption_type != TSK_FS_ENCRYPTION_TYPE_NONE) {
+            char desc[256];
+            tsk_fs_get_encryption_description(fs_info, desc, sizeof(desc));
+            vol->encryption = desc;
+            vol->keyIndex = tsk_fs_get_encryption_key_index(fs_info);
+        }
+    }
     return TSK_FILTER_SKIP;
 }
 
@@ -278,8 +425,23 @@ TskIsImageSupported::filterPoolVol(const TSK_POOL_VOLUME_INFO * pool_vol)
 }
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)
+TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_wasDataFound = true;
+    m_sawVolumeSystem = true;
+    m_currentVolume = -1;
+
+    // Only allocated partitions get a file system attempt whose failure is reported
+    if (vs_part != nullptr && (vs_part->flags & TSK_VS_PART_FLAG_ALLOC)) {
+        VolumeResult vol;
+        vol.addr = vs_part->addr;
+        vol.offset = (TSK_OFF_T)(vs_part->start * vs_part->vs->block_size) + vs_part->vs->offset;
+        vol.length = (TSK_OFF_T)(vs_part->len * vs_part->vs->block_size);
+        vol.description = (vs_part->desc != nullptr) ? vs_part->desc : "";
+        vol.status = "not_tried";
+        vol.keyIndex = -1;
+        m_volumes.push_back(vol);
+        m_currentVolume = (int)m_volumes.size() - 1;
+    }
     return TSK_FILTER_CONT;
 }
