@@ -154,6 +154,9 @@ main(int argc, char **argv1)
     int32_t sec_skew = 0;
 	bool do_hash = false;
     const char* password = "";
+#ifdef TSK_WIN32
+    std::string passwordUtf8;    // -k converted from the wide command line
+#endif
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -213,7 +216,12 @@ main(int argc, char **argv1)
             break;
 
         case _TSK_T('k'):
+#ifdef TSK_WIN32
+            passwordUtf8 = tsk_tool_arg_to_utf8(OPTARG);
+            password = passwordUtf8.c_str();
+#else
             password = argv1[OPTIND - 1];
+#endif
             break;
 
         case _TSK_T('v'):
