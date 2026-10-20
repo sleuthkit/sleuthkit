@@ -444,6 +444,7 @@ public class TaggingManager {
 		List<ContentTag> removedTags = new ArrayList<>();
 		List<String> removedTagIds = new ArrayList<>();
 		Examiner currentExaminer = skCase.getCurrentExaminer();
+		Long dataSourceId = content.getDataSource() != null ? content.getDataSource().getId() : null;
 		CaseDbTransaction trans = skCase.beginTransaction();
 		CaseDbConnection connection = trans.getConnection();
 
@@ -512,7 +513,6 @@ public class TaggingManager {
 				}
 			}
 
-			Long dataSourceId = content.getDataSource() != null ? content.getDataSource().getId() : null;
 			skCase.getScoringManager().updateAggregateScoreAfterAddition(
 					content.getId(), dataSourceId, getTagScore(tagName.getTagType()), trans);
 

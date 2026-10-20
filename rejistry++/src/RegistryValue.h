@@ -71,8 +71,16 @@ namespace Rejistry {
         ValueData::ValueDataUniqPtr getValue() const;
 
         /**
-         * Get the length of the value in bytes.
-         * @returns The length of the value in bytes.
+         * Get the length of the value in bytes, as declared by the value's
+         * record in the hive.
+         *
+         * Do not use this to size reads of the value data. In a corrupt or
+         * crafted hive the declared length can be larger than the data that
+         * is actually stored, and getValue() returns only the bytes present.
+         * Use the size of the returned data (e.g. getAsRawData().size())
+         * instead. If the two differ, the value data is truncated.
+         *
+         * @returns The declared length of the value in bytes.
          */
         uint32_t getValueLength() const;
 

@@ -320,19 +320,21 @@ public class HostAddressManager {
 	 */
 	public HostAddress newHostAddress(HostAddress.HostAddressType type, String address) throws TskCoreException {
 		db.acquireSingleUserCaseWriteLock();
-		CaseDbConnection connection = this.db.getConnection();
-		try {
-			return HostAddressManager.this.newHostAddress(type, address, connection);
-		} catch (TskCoreException ex) {
-			// The insert may have failed because the HostAddress already exists, so
-			// try loading it from the database.
-			Optional<HostAddress> hostAddress = HostAddressManager.this.getHostAddress(type, address, connection);
-			if (hostAddress.isPresent()) {
-				return hostAddress.get();
+		// getConnection() fails when the case is closed, so it has to be inside the try
+		// that releases the lock; otherwise the lock is never released.
+		try (CaseDbConnection connection = this.db.getConnection()) {
+			try {
+				return HostAddressManager.this.newHostAddress(type, address, connection);
+			} catch (TskCoreException ex) {
+				// The insert may have failed because the HostAddress already exists, so
+				// try loading it from the database.
+				Optional<HostAddress> hostAddress = HostAddressManager.this.getHostAddress(type, address, connection);
+				if (hostAddress.isPresent()) {
+					return hostAddress.get();
+				}
+				throw ex;
 			}
-			throw ex;
 		} finally {
-			connection.close(); 
 			db.releaseSingleUserCaseWriteLock();
 		}
 	}

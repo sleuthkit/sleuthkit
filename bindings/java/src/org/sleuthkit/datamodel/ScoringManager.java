@@ -579,27 +579,34 @@ public class ScoringManager {
 	 * @throws TskCoreException if there is an error getting the contents.
 	 */
 	public List<Content> getContent(long dataSourceObjectId, Score.Significance significance) throws TskCoreException {
+		List<Long> objIds;
 		db.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection connection = db.getConnection()) {
-			return getContent(dataSourceObjectId, significance, connection);
+			objIds = getContentIds(dataSourceObjectId, significance, connection);
 		} finally {
 			db.releaseSingleUserCaseReadLock();
 		}
+
+		List<Content> items = new ArrayList<>();
+		for (long objId : objIds) {
+			items.add(db.getContentById(objId));
+		}
+		return items;
 	}
 
 	/**
-	 * Gets the contents with the specified score. Uses the specified
-	 * database connection.
+	 * Gets the object ids of the contents with the specified score. Uses the
+	 * specified database connection.
 	 *
 	 * @param dataSourceObjectId Data source object id.
 	 * @param significance       Significance to look for.
 	 * @param connection         Connection to use for the query.
 	 *
-	 * @return List of contents with given score.
+	 * @return List of object ids of contents with given score.
 	 *
 	 * @throws TskCoreException
 	 */
-	private List<Content> getContent(long dataSourceObjectId, Score.Significance significance, CaseDbConnection connection) throws TskCoreException {
+	private List<Long> getContentIds(long dataSourceObjectId, Score.Significance significance, CaseDbConnection connection) throws TskCoreException {
 		String queryString = "SELECT obj_id FROM tsk_aggregate_score"
 				+ " WHERE data_source_obj_id = " + dataSourceObjectId 
 				+ " AND significance = " + significance.getId();
@@ -607,10 +614,10 @@ public class ScoringManager {
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
 
-			List<Content> items = new ArrayList<>();
+			List<Long> items = new ArrayList<>();
 			while (resultSet.next()) {
 				long objId = resultSet.getLong("obj_id");
-				items.add(db.getContentById(objId));
+				items.add(objId);
 			}
 			return items;
 		} catch (SQLException ex) {

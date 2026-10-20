@@ -78,7 +78,10 @@ namespace Rejistry {
         ValueData::VALUE_TYPES getValueType() const;
 
         /**
-         * @returns The length of the value data.
+         * Do not use this to size reads of the value data: it is the length
+         * declared in the record, which can exceed the data actually stored.
+         * Use the size of the data returned by getValue() instead.
+         * @returns The declared length of the value data.
          */
         uint32_t getDataLength() const;
 
@@ -111,9 +114,17 @@ namespace Rejistry {
         static const uint8_t NAME_FLAGS_OFFSET = 0x10;
         static const uint8_t NAME_OFFSET_OFFSET = 0x14;
 
+        // Values whose data length is below this (or that are stored inline)
+        // keep their data in the record's data offset field.
         static const uint8_t SMALL_DATA_SIZE = 0x05;
+        // Most data one cell holds (16344 bytes). Larger values are stored as a
+        // "db" record pointing to data segments in hive format 1.4 and later, or
+        // whole in a single cell in 1.3 and earlier.
         static const uint16_t DB_DATA_SIZE = 0x3FD8;
-        static const uint32_t LARGE_DATA_SIZE = 0x80000000;
+        // Flag in the top bit of the data length field: set when the data (at
+        // most 4 bytes) is stored inline, in the record's data offset field,
+        // instead of in a separate data cell. The remaining bits are the length.
+        static const uint32_t DATA_STORED_INLINE = 0x80000000;
 
         static const uint16_t MAX_NAME_LENGTH = 16383; //# of characters
 

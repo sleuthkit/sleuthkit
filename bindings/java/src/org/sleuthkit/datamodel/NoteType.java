@@ -30,8 +30,8 @@ import java.util.Optional;
  *
  * The type carries no behaviour. Anything that changes how a note is treated
  * belongs on the note itself: in particular "did a machine write this" is
- * answered by Note.AuthorKind on the row, never by the type, because a type
- * such as chat has rows from both people and models.
+ * answered by the note's author (see Author, AuthorManager) never by the
+ * type, because a type such as chat has rows from both people and models.
  */
 public final class NoteType {
 

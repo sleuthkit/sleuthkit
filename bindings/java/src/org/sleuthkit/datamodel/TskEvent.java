@@ -268,15 +268,14 @@ public interface TskEvent {
 
 	/**
 	 * An event published when one or more notes are revised. The notes carried
-	 * are the new current revisions, since revising a note appends a row rather
-	 * than rewriting one.
+	 * are as they read immediately after the edit.
 	 */
 	public final static class NotesUpdatedTskEvent extends NotesTskEvent {
 
 		/**
 		 * Constructs an event published when one or more notes are revised.
 		 *
-		 * @param notes The new current revisions.
+		 * @param notes The notes as revised.
 		 */
 		NotesUpdatedTskEvent(List<Note> notes) {
 			super(notes);
@@ -297,10 +296,9 @@ public interface TskEvent {
 		/**
 		 * Constructs an event published when one or more notes are deleted.
 		 *
-		 * @param notes The live revisions of the notes the caller asked to
-		 *              delete, read before they were removed. A hard delete also
-		 *              removes the other revisions of those notes and their
-		 *              replies, which are not listed here.
+		 * @param notes The notes the caller asked to delete, read before they
+		 *              were removed. A hard delete also removes their replies,
+		 *              which are not listed here.
 		 */
 		NotesDeletedTskEvent(List<Note> notes) {
 			super(notes);
