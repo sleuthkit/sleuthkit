@@ -1042,13 +1042,21 @@ decmpfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
  * @param dstBuf destination buffer
  * @param dstSize size of destination buffer
  * @param dstBufFree true iff the caller must free the destination buffer
- * @return 1
+ * @return 1 on success, 0 on error
  */
 static int decmpfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
             "%s:  Loading the default DATA attribute.", __func__, rawBuf[0], __func__);
+
+    // The data is used in place, so it must all be in the attribute
+    if (uncSize > rawSize - 1) {
+        error_detected(TSK_ERR_FS_READ,
+            "%s: uncompressed size %" PRIu64 " is larger than the %" PRIu32
+            " bytes of data in the attribute", __func__, uncSize, rawSize - 1);
+        return 0;
+    }
 
     *dstBuf = rawBuf + 1;  // + 1 indicator byte
     *dstSize = uncSize;
