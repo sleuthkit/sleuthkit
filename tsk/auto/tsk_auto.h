@@ -103,12 +103,31 @@ class TskAuto {
 	void setExternalFileSystemList(const std::list<TSK_FS_INFO *>& exteralFsInfoList);
 
     /**
-    * Set a password that will be used when trying to open each file system
+    * Set a password that will be used when trying to open each file system. It may hold
+    * several keys separated by '\n' (see tsk_fs_open_img_decrypt()); each encrypted volume
+    * opens with whichever key fits.
     */
     void setFileSystemPassword(std::string fileSystemPassword) { m_fileSystemPassword = fileSystemPassword; }
 
     /**
-     * @returns A password that will be used when trying to open each file system or empty.
+    * Set several keys to try on each encrypted file system, for an image whose volumes do
+    * not all share one key. Empty keys are skipped.
+    */
+    void setFileSystemPasswords(const std::vector<std::string>& fileSystemPasswords) {
+        m_fileSystemPassword.clear();
+        for (const std::string& password : fileSystemPasswords) {
+            if (password.empty()) {
+                continue;
+            }
+            if (!m_fileSystemPassword.empty()) {
+                m_fileSystemPassword += '\n';
+            }
+            m_fileSystemPassword += password;
+        }
+    }
+
+    /**
+     * @returns The password(s) that will be used when trying to open each file system, separated by '\n', or empty.
      */
     std::string getFileSystemPassword() const { return m_fileSystemPassword; }
 

@@ -62,7 +62,7 @@ tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
  *
  * @param a_part_info Open volume to read from and analyze
  * @param a_ftype Type of file system (or autodetect)
- * @param a_pass Password to decrypt filesystem
+ * @param a_pass Password to decrypt filesystem, or several separated by '\n' (see tsk_fs_open_img_decrypt())
  *
  * @return NULL on error
  */
@@ -119,7 +119,10 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
  * @param a_img_info Disk image to analyze
  * @param a_offset Byte offset to start analyzing from
  * @param a_ftype Type of file system (or autodetect)
- * @param a_pass Password to decrypt filesystem. Currently only used if type is specified.
+ * @param a_pass Password to decrypt filesystem (BitLocker password or recovery password, or APFS password).
+ *     May hold several keys separated by '\n', for an image whose encrypted volumes do not all share one key:
+ *     each is tried and the volume opens with whichever fits. A trailing '\r' on a key is ignored. NULL or
+ *     empty means no password.
  *
  * @return NULL on error
  */
