@@ -13,7 +13,7 @@
 #include "BitlockerParser.h"
 
 #include <regex>
-#include <codecvt>
+#include <algorithm>
 #include <sstream>
 
 #include "MetadataUtils.h"
@@ -491,7 +491,12 @@ BITLOCKER_STATUS BitlockerParser::readFveMetadataEntries(uint64_t currentOffset,
 *         UNSUPPORTED_KEY_PROTECTION_TYPE if we found a VMK entry with a key protected by an unsupported method
 */
 BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
-    m_decryptedVmkEntry = nullptr;
+    // An earlier FVE metadata copy may have decrypted a VMK and then failed at a later step
+    if (m_decryptedVmkEntry != nullptr) {
+        delete m_decryptedVmkEntry;
+        m_decryptedVmkEntry = nullptr;
+    }
+    m_unlockingKeyIndex = -1;
 
     // Get VMK entries
     list<MetadataEntry*> vmkEntries;
@@ -515,9 +520,13 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
     // in a second pass over the password-protected entries, so it doesn't cost a key stretch per
     // password entry before reaching the recovery password entry it almost certainly belongs to.
     bool haveRecoveryFormatKey = false;
+    bool havePlainPasswordKey = false;
     for (auto it = m_keys.begin(); it != m_keys.end(); ++it) {
         if (it->havePasswordHash && it->haveRecoveryPasswordHash) {
             haveRecoveryFormatKey = true;
+        }
+        else if (it->havePasswordHash) {
+            havePlainPasswordKey = true;
         }
     }
 
@@ -534,11 +543,16 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
         m_tryRecoveryFormatKeysAsPasswords = (pass == 1);
 
         for (auto it = vmkEntries.begin(); it != vmkEntries.end(); ++it) {
-            if (pass == 1) {
-                MetadataValueVolumeMasterKey* v = dynamic_cast<MetadataValueVolumeMasterKey*>((*it)->getValue());
-                if (v == nullptr || v->getProtectionType() != BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD) {
-                    continue;
-                }
+            MetadataValueVolumeMasterKey* v = dynamic_cast<MetadataValueVolumeMasterKey*>((*it)->getValue());
+            bool isPasswordEntry = (v != nullptr && v->getProtectionType() == BITLOCKER_KEY_PROTECTION_TYPE::PASSWORD);
+            if (pass == 1 && !isPasswordEntry) {
+                continue;
+            }
+            if (pass == 0 && isPasswordEntry && haveRecoveryFormatKey && !havePlainPasswordKey) {
+                // Every key that could open this entry is in the recovery password format, so the
+                // second pass is where it is tried; counting it as missing a password here would
+                // change the error reported if that fails.
+                continue;
             }
 
             // Note that vmk will be only be allocated on SUCCESS - we don't need to free it on error conditions.
@@ -571,7 +585,7 @@ BITLOCKER_STATUS BitlockerParser::getVolumeMasterKey() {
             return BITLOCKER_STATUS::WRONG_PASSWORD;
         }
         else if (possibleMissingPassword) {
-            if (!m_keys.empty()) {
+            if (haveRecoveryFormatKey || havePlainPasswordKey) {
                 // This is specifically the case where the user supplied a bad recovery password
                 // (i.e. it wasn't the expected length, a value wasn't divisible by 11, etc.)
                 // and there is no password-protected VMK. It comes back as a missing password because
@@ -1212,27 +1226,22 @@ BITLOCKER_STATUS BitlockerParser::handlePassword(const string& password, int lis
     key.listIndex = listIndex;
 
     // Create the password hash first
-    try {
-        writeDebug("BitlockerParser::handlePassword: Processing as a normal password");
-
-        // Convert to UTF16
-        wstring utf16password(L"");
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        utf16password = converter.from_bytes(password);
-
+    writeDebug("BitlockerParser::handlePassword: Processing as a normal password");
+    vector<uint8_t> utf16password;
+    if (convertUtf8ToUtf16Le(password, utf16password)) {
         // Hash twice
         uint8_t hashOutput[SHA256_DIGEST_LENGTH];
-        mbedtls_sha256((uint8_t*)utf16password.c_str(), utf16password.length() * 2, hashOutput, 0);
+        mbedtls_sha256(utf16password.data(), utf16password.size(), hashOutput, 0);
         mbedtls_sha256(hashOutput, SHA256_DIGEST_LENGTH, key.passwordHash, 0);
         memset(hashOutput, 0, SHA256_DIGEST_LENGTH);
-        std::fill(utf16password.begin(), utf16password.end(), L'\0');
         key.havePasswordHash = true;
 
         writeDebug("BitlockerParser::handlePassword: Password hash: " + convertByteArrayToString(key.passwordHash, SHA256_DIGEST_LENGTH));
     }
-    catch (...) {
+    else {
         writeError("BitlockerParser::handlePassword: Error converting password to UTF16");
     }
+    std::fill(utf16password.begin(), utf16password.end(), (uint8_t)0);
 
     // Try to parse the password as a recovery password. We don't really want to add another password field to TSK
     // so we'll just use any supplied password as a normal password and potentially as a recovery password (if it has the right format).
