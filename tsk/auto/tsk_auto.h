@@ -111,8 +111,8 @@ class TskAuto {
 
     /**
     * Set several keys to try on each encrypted file system, for an image whose volumes do
-    * not all share one key. Empty keys, and keys containing a line break (which would split
-    * into two), are skipped but keep their place, so the index tsk_fs_get_encryption_key_index()
+    * not all share one key. Empty keys, and keys containing '\n' (which would split into
+    * two), are skipped but keep their place, so the index tsk_fs_get_encryption_key_index()
     * reports for a volume is the key's index in this vector.
     */
     void setFileSystemPasswords(const std::vector<std::string>& fileSystemPasswords) {
@@ -122,7 +122,7 @@ class TskAuto {
                 m_fileSystemPassword += '\n';
             }
             const std::string& password = fileSystemPasswords[i];
-            if (password.find_first_of("\r\n") == std::string::npos) {
+            if (password.find('\n') == std::string::npos) {
                 m_fileSystemPassword += password;
             }
         }

@@ -2203,8 +2203,8 @@ public class SleuthkitJNI {
 	 *
 	 * @param imagePath Path to the image (will just be the first for .e01, .001, etc).
 	 * @param passwords Passwords or recovery passwords to try. Null, empty entries,
-	 *                  and entries containing a line break are ignored, but keep
-	 *                  their place: a volume's getKeyIndex() is an index into this list.
+	 *                  and entries containing '\n' are ignored, but keep their
+	 *                  place: a volume's getKeyIndex() is an index into this list.
 	 *
 	 * @return TestOpenImageResult. wasSuccessful() and getMessage() keep the meaning of
 	 *         testOpenImage(String, String); wasFileSystemFound() and getVolumes() report
@@ -2214,8 +2214,8 @@ public class SleuthkitJNI {
 		List<String> keys = new ArrayList<>();
 		if (passwords != null) {
 			for (String password : passwords) {
-				// A line break would split one key into two; an ignored key is left empty to keep the indexes
-				boolean usable = password != null && password.indexOf('\n') < 0 && password.indexOf('\r') < 0;
+				// A '\n' would split one key into two; an ignored key is left empty to keep the indexes
+				boolean usable = password != null && password.indexOf('\n') < 0;
 				keys.add(usable ? password : "");
 			}
 		}

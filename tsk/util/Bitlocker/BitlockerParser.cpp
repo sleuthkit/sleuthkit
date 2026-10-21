@@ -34,7 +34,7 @@
 * @param a_volumeOffset The offset of the current volume in the image
 * @param a_password     The key(s) to use for decryption: one, or several separated by '\n'. Each can be a
 *                       normal password or a recovery password, and each is tried against the volume.
-*                       One trailing '\r' per key is ignored and empty keys are skipped.
+*                       Empty keys are skipped.
 *
 * @return SUCCESS if we complete initialization
 *         NOT_BITLOCKER if the BitLocker signature was not found
@@ -67,11 +67,7 @@ BITLOCKER_STATUS BitlockerParser::initialize(TSK_IMG_INFO* a_img_info, uint64_t 
         if (end == string::npos) {
             end = passwordStr.size();
         }
-        string key = passwordStr.substr(start, end - start);
-        if (!key.empty() && key.back() == '\r') {
-            key.pop_back();
-        }
-        keys.push_back(key);
+        keys.push_back(passwordStr.substr(start, end - start));
         start = end + 1;
     }
 

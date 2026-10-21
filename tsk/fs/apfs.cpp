@@ -400,10 +400,7 @@ APFSFileSystem::APFSFileSystem(const APFSPool& pool,
       if (end == std::string::npos) {
         end = password.size();
       }
-      std::string key = password.substr(start, end - start);
-      if (!key.empty() && key.back() == '\r') {
-        key.pop_back();
-      }
+      const std::string key = password.substr(start, end - start);
       if ((!key.empty() || password.empty()) && unlock(key)) {
         break;
       }

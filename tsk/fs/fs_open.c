@@ -121,8 +121,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
  * @param a_ftype Type of file system (or autodetect)
  * @param a_pass Password to decrypt filesystem (BitLocker password or recovery password, or APFS password).
  *     May hold several keys separated by '\n', for an image whose encrypted volumes do not all share one key:
- *     each is tried and the volume opens with whichever fits. A trailing '\r' on a key is ignored. NULL or
- *     empty means no password.
+ *     each is tried and the volume opens with whichever fits. NULL or empty means no password.
  *
  * @return NULL on error
  */

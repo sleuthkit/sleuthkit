@@ -127,8 +127,8 @@ char* isImageSupported(const char* path, const char* password) {
 * different passwords or recovery passwords can be checked in one call.
 *
 * @param path     Path to the image (UTF-8)
-* @param keys     Passwords or recovery passwords (UTF-8). Null or empty entries, and entries containing a
-*                 line break, are skipped; a volume's "keyIndex" is still an index into this array.
+* @param keys     Passwords or recovery passwords (UTF-8). Null or empty entries, and entries containing
+*                 '\n', are skipped; a volume's "keyIndex" is still an index into this array.
 *                 May be null when numKeys is 0.
 * @param numKeys  Number of entries in keys
 *
