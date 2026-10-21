@@ -12,6 +12,7 @@ on:
       - feature/ftl100
       - feature/ftl100-autodetect
       - feature/datalight-reliance
+      - feature/etfs
     paths:
       - '.github/workflows/qnxprobe-windows-jar.yml'
       - 'bindings/**'

@@ -45,6 +45,9 @@
     <ClCompile Include="..\..\tsk\fs\reliance.cpp">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\etfs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\fs\efs.cpp">
       <Filter>fs</Filter>
     </ClCompile>

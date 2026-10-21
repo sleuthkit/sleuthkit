@@ -56,6 +56,7 @@ static FS_TYPES fs_type_table[] = {
     {"reliance", TSK_FS_TYPE_RELIANCE, "Reliance Nitro / FlashFX"},
     {"flashfx", TSK_FS_TYPE_RELIANCE, "FlashFX + Reliance Nitro"},
     {"efs", TSK_FS_TYPE_EFS, "QNX EFS (F3S)"},
+    {"etfs", TSK_FS_TYPE_ETFS, "QNX ETFS"},
     {"qnx6", TSK_FS_TYPE_QNX6, "QNX6 (experimental: metadata not yet available)"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
 	{"logical", TSK_FS_TYPE_LOGICAL, "Logical Directory"},

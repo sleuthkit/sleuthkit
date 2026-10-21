@@ -1,0 +1,49 @@
+name: ETFS native reader and TSK integration
+on:
+  push:
+    branches: [feature/etfs, develop-4.1x]
+    paths: ['tsk/**', 'tests/etfs*', '.github/workflows/etfs-native-tests.yml', 'bindings/**', 'win32/**']
+  pull_request:
+    paths: ['tsk/**', 'tests/etfs*', '.github/workflows/etfs-native-tests.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: e7bf24aef2ee90a1583b9479d3e16c05346d4f4c
+          path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: NetherlandsForensicInstitute/qnxmount
+          ref: 11c8a7f9ee9b945d584263743f6ea8524e8776d2
+          path: reference-nfi
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libsqlite3-dev libssl-dev zlib1g-dev
+      - name: Build TSK and native ETFS probes
+        run: |
+          autoreconf -fi
+          ./configure --disable-java --without-afflib --without-libewf
+          make -j2 -C tsk
+          make -j2 -C tools/fstools
+          g++ -std=c++17 -Wall -Wextra -Werror -I . tests/etfs_reader_probe.cpp -o etfs-reader-probe
+          g++ -std=c++17 -I . tests/etfs_read_probe.cpp -L tsk/.libs -Wl,-rpath,"$PWD/tsk/.libs" -ltsk -o etfs-read-probe
+      - name: Real QNX images, transactions, geometry, metadata, offsets and content APIs
+        run: python3 tests/etfs_regression.py --tools tools/fstools --reader-probe "$PWD/etfs-reader-probe" --read-probe "$PWD/etfs-read-probe" --reference reference-qnxprobe --nfi reference-nfi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etfs-linux-cli
+          path: |
+            tools/fstools/.libs/fls
+            tools/fstools/.libs/icat
+            tools/fstools/.libs/fsstat
+            tools/fstools/.libs/blkls
+            tools/fstools/.libs/ils
+            tools/fstools/.libs/istat
+            tsk/.libs/libtsk.so*

@@ -466,6 +466,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\ubi.cpp" />
     <ClCompile Include="..\..\tsk\fs\reliance.cpp" />
     <ClCompile Include="..\..\tsk\fs\efs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\etfs.cpp" />
     <ClCompile Include="..\..\tsk\fs\qnx6_open.c" />
     <ClCompile Include="..\..\tsk\fs\fs_parse.c" />
     <ClCompile Include="..\..\tsk\fs\fs_types.c" />
