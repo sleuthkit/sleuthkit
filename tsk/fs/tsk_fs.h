@@ -821,7 +821,22 @@ extern "C" {
         TSK_FS_TYPE_HFS_LEGACY= 0x00008000,   ///< HFS file system
         TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
         TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
-		TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+		TSK_FS_TYPE_QNX4 = 0x00100000, ///< QNX4 read-only
+        TSK_FS_TYPE_QNX4_DETECT = 0x00100000, ///< QNX4 auto detection
+		TSK_FS_TYPE_F2FS = 0x00080000, ///< F2FS read-only
+        TSK_FS_TYPE_F2FS_DETECT = 0x00080000, ///< F2FS auto detection
+        TSK_FS_TYPE_OS9 = 0x00400000, ///< Microware OS-9 RBF
+        TSK_FS_TYPE_OS9_DETECT = 0x00400000, ///< OS-9 RBF auto detection
+		TSK_FS_TYPE_UBI = 0x00800000, ///< UBI / UBIFS read-only
+        TSK_FS_TYPE_UBI_DETECT = 0x00800000, ///< UBI / UBIFS detection
+		TSK_FS_TYPE_RELIANCE = 0x01000000, ///< Observed Reliance Nitro / FlashFX
+        TSK_FS_TYPE_RELIANCE_DETECT = 0x01000000, ///< Reliance Nitro detection
+        TSK_FS_TYPE_ETFS = 0x02000000, ///< QNX ETFS read-only transaction filesystem
+        TSK_FS_TYPE_ETFS_DETECT = 0x02000000, ///< QNX ETFS auto detection
+        TSK_FS_TYPE_EFS = 0x00200000, ///< QNX EFS/F3S read-only container
+        TSK_FS_TYPE_EFS_DETECT = 0x00200000, ///< QNX EFS auto detection
+        TSK_FS_TYPE_QNX6 = 0x00040000, ///< Experimental QNX6 reader (explicit selection only)
+        TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java

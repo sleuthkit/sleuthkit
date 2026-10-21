@@ -1,0 +1,38 @@
+name: NAND LBA mapping ECC and FAT32
+on:
+  push:
+    branches: [feature/nand-lba-mapping]
+  pull_request:
+    paths: ['tools/flash/**', 'config/flash_devices/**', 'tests/nand_lba*', 'tests/flash_preprocess*', '.github/workflows/nand-lba-tests.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Existing ECC and cleanup regressions
+        run: python tests/flash_preprocess_regression.py
+      - name: Native FAT32 test tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y sleuthkit
+      - name: Generate and validate synthetic NAND mapping
+        if: runner.os == 'Linux'
+        run: python tests/nand_lba_regression.py --fixture synthetic-nand --tools /usr/bin
+      - name: Validate Windows preprocessing and mapping
+        if: runner.os == 'Windows'
+        run: python tests/nand_lba_regression.py --fixture synthetic-nand
+      - name: Package validated fixture
+        run: python tests/nand_lba_package.py synthetic-nand NAND_LBA_ECC_FAT32_Testpaket.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nand-lba-fat32-${{ runner.os }}
+          path: NAND_LBA_ECC_FAT32_Testpaket.zip
+          if-no-files-found: error
