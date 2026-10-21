@@ -16,4 +16,5 @@
 #endif
 
 extern "C" ISIMAGESUPPORTEDLIB_API char* isImageSupported(const char* path, const char* password);
+extern "C" ISIMAGESUPPORTEDLIB_API char* isImageSupportedWithKeys(const char* path, const char* const* keys, int numKeys);
 extern "C" ISIMAGESUPPORTEDLIB_API void freeString(char* str);

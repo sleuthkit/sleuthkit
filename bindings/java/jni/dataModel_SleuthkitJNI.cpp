@@ -2432,6 +2432,46 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSuppo
 }
 
 /*
+ * Test whether an image is supported and report the outcome of every volume
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param imagePathJ the image path
+ * @param passwordsJ the keys to try on each encrypted file system, separated by '\n'. May be null.
+ * @return JSON from TskIsImageSupported::getResultJson(), or
+ *         {"message":"Error opening image","fileSystemFound":false,"volumes":[]} if the image did not open
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedJsonNat
+  (JNIEnv * env, jclass obj, jstring imagePathJ, jstring passwordsJ) {
+
+    TskIsImageSupported tskIsImage;
+    TSK_TCHAR imagePathT[1024];
+    toTCHAR(env, imagePathT, 1024, imagePathJ);
+
+    jboolean isCopy;
+    if (passwordsJ != NULL) {
+        const char* passwords = (const char*)env->GetStringUTFChars(passwordsJ, &isCopy);
+        tskIsImage.setFileSystemPassword(string(passwords));
+        env->ReleaseStringUTFChars(passwordsJ, passwords);
+    }
+
+    string result;
+    TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
+    imagePaths[0] = imagePathT;
+    if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
+        result = "{\"message\":\"Error opening image\",\"fileSystemFound\":false,\"volumes\":[]}";
+    } else {
+        tskIsImage.findFilesInImg();
+        result = tskIsImage.getResultJson();
+    }
+
+    // Cleanup
+    tskIsImage.closeImage();
+    free(imagePaths);
+
+    return env->NewStringUTF(result.c_str());
+}
+
+/*
 * Returns the current Sleuthkit version as a long
 * @return the current version
 */

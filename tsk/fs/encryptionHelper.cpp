@@ -25,8 +25,8 @@
 * 
 * @param a_fs_info  The TSK_FS_INFO object. Should have the img_info and volume offset set but can otherwise be uninitialized.
 *                      Will be updated if we find an successfully initialize BitLocker.
-* @param a_pass     The password or recovery password to use for decryption. May be empty. If the password is not needed
-*                      (for example if we have clear key) it will be ignored.
+* @param a_pass     The password or recovery password to use for decryption, or several separated by '\n' (each is
+*                      tried). May be empty. If no password is needed (for example if we have clear key) it will be ignored.
 * 
 * @return 0 if:
 * - We didn't find the Bitlocker signature
@@ -50,24 +50,24 @@ int handleBitlocker(TSK_FS_INFO* a_fs_info, const char* a_pass) {
 		if (status == BITLOCKER_STATUS::WRONG_PASSWORD) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
-			string errStr = "Incorrect password entered " + bitlockerParser->getRecoveryKeyIdStr();
-			tsk_error_set_errstr(errStr.c_str());
+			string errStr = string(TSK_BITLOCKER_MSG_WRONG_PASSWORD) + " " + bitlockerParser->getRecoveryKeyIdStr();
+			tsk_error_set_errstr("%s", errStr.c_str());
 			delete bitlockerParser;
 			return -1;
 
 		} else if (status == BITLOCKER_STATUS::NEED_PASSWORD) {
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
-			string errStr = "Password required to decrypt volume " + bitlockerParser->getRecoveryKeyIdStr();
-			tsk_error_set_errstr(errStr.c_str());
+			string errStr = string(TSK_BITLOCKER_MSG_NEED_PASSWORD) + " " + bitlockerParser->getRecoveryKeyIdStr();
+			tsk_error_set_errstr("%s", errStr.c_str());
 			delete bitlockerParser;
 			return -1;
 		}
 		else if (status == BITLOCKER_STATUS::UNSUPPORTED_KEY_PROTECTION_TYPE) {
-			string message = "Unsupported key protection type(s): " + bitlockerParser->getUnsupportedProtectionTypes();
+			string message = string(TSK_BITLOCKER_MSG_UNSUPPORTED_PROTECTION) + ": " + bitlockerParser->getUnsupportedProtectionTypes();
 			tsk_error_reset();
 			tsk_error_set_errno(TSK_ERR_FS_BITLOCKER_ERROR);
-			tsk_error_set_errstr(message.c_str());
+			tsk_error_set_errstr("%s", message.c_str());
 			delete bitlockerParser;
 			return -1;
 		}
@@ -161,6 +161,27 @@ void tsk_fs_get_encryption_description(TSK_FS_INFO* a_fs_info, char* a_desc, siz
 		strncpy(a_desc, descStr.c_str(), a_descLen - 1);
 	}
 #endif
+}
+
+/**
+* Report which of the supplied keys unlocked the volume.
+*
+* @param a_fs_info  TSK_FS_INFO object
+*
+* @return Position of the key in the '\n'-separated list the file system was opened with, or -1 if the
+*         volume is not encrypted or was unlocked without one of the supplied keys (for example a clear key)
+*/
+int tsk_fs_get_encryption_key_index(TSK_FS_INFO* a_fs_info) {
+#ifdef HAVE_LIBMBEDTLS
+	if (a_fs_info != NULL
+		&& a_fs_info->encryption_type == TSK_FS_ENCRYPTION_TYPE_ENUM::TSK_FS_ENCRYPTION_TYPE_BITLOCKER
+		&& a_fs_info->encryption_data != NULL) {
+
+		BitlockerParser* parser = (BitlockerParser*)a_fs_info->encryption_data;
+		return parser->getUnlockingKeyIndex();
+	}
+#endif
+	return -1;
 }
 
 /**

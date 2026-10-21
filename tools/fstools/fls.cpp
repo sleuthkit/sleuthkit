@@ -84,6 +84,9 @@ main(int argc, char **argv1)
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
     const char *password = "";
+#ifdef TSK_WIN32
+    std::string passwordUtf8;    // -k converted from the wide command line
+#endif
 
 
     TSK_INUM_T inode;
@@ -218,7 +221,12 @@ main(int argc, char **argv1)
             fls_flags |= TSK_FS_FLS_FULL;
             break;
         case _TSK_T('k'):
-            password = argv1[OPTIND - 1];
+#ifdef TSK_WIN32
+            passwordUtf8 = tsk_tool_arg_to_utf8(OPTARG);
+            password = passwordUtf8.c_str();
+#else
+            password = OPTARG;    // handles both -k pass and -kpass
+#endif
             break;
         case _TSK_T('r'):
             name_flags |= TSK_FS_DIR_WALK_FLAG_RECURSE;
