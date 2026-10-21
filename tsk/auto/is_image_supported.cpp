@@ -261,25 +261,79 @@ TskIsImageSupported::VolumeResult* TskIsImageSupported::getCurrentVolume(TSK_OFF
     return &m_volumes[m_currentVolume];
 }
 
+/**
+* Escape a string for a JSON string literal. Everything outside printable ASCII is written as a
+* \uXXXX escape (a surrogate pair above U+FFFF), so any JSON parser reads back the same characters,
+* while the output itself is plain ASCII: valid for NewStringUTF's modified UTF-8 and for callers that
+* require UTF-8. Bytes that are not valid UTF-8, such as a raw on-disk partition name, become U+FFFD.
+*/
 static std::string jsonEscape(const std::string& a_str) {
     std::ostringstream out;
-    for (unsigned char c : a_str) {
-        switch (c) {
-        case '"':  out << "\\\""; break;
-        case '\\': out << "\\\\"; break;
-        case '\n': out << "\\n"; break;
-        case '\r': out << "\\r"; break;
-        case '\t': out << "\\t"; break;
-        default:
-            if (c < 0x20) {
-                char buf[8];
-                snprintf(buf, sizeof(buf), "\\u%04x", c);
-                out << buf;
+    char buf[16];
+    size_t i = 0;
+    while (i < a_str.size()) {
+        unsigned char c = (unsigned char)a_str[i];
+        if (c < 0x80) {
+            switch (c) {
+            case '"':  out << "\\\""; break;
+            case '\\': out << "\\\\"; break;
+            case '\n': out << "\\n"; break;
+            case '\r': out << "\\r"; break;
+            case '\t': out << "\\t"; break;
+            default:
+                if (c < 0x20 || c == 0x7f) {
+                    snprintf(buf, sizeof(buf), "\\u%04x", c);
+                    out << buf;
+                }
+                else {
+                    out << (char)c;
+                }
             }
-            else {
-                out << c;
-            }
+            i++;
+            continue;
         }
+
+        // Decode one UTF-8 sequence
+        size_t len = 0;
+        uint32_t codePoint = 0;
+        if (c >= 0xC2 && c <= 0xDF) {
+            len = 2;
+            codePoint = c & 0x1F;
+        }
+        else if (c >= 0xE0 && c <= 0xEF) {
+            len = 3;
+            codePoint = c & 0x0F;
+        }
+        else if (c >= 0xF0 && c <= 0xF4) {
+            len = 4;
+            codePoint = c & 0x07;
+        }
+        bool valid = (len > 0 && i + len <= a_str.size());
+        for (size_t k = 1; valid && k < len; k++) {
+            unsigned char cont = (unsigned char)a_str[i + k];
+            if ((cont & 0xC0) != 0x80) {
+                valid = false;
+            }
+            codePoint = (codePoint << 6) | (cont & 0x3F);
+        }
+        if (valid && ((len == 3 && codePoint < 0x800) || (len == 4 && (codePoint < 0x10000 || codePoint > 0x10FFFF))
+                || (codePoint >= 0xD800 && codePoint <= 0xDFFF))) {
+            valid = false;  // overlong, out of range, or a surrogate
+        }
+        if (!valid) {
+            codePoint = 0xFFFD;
+            len = 1;  // resynchronize at the next byte
+        }
+
+        if (codePoint >= 0x10000) {
+            uint32_t v = codePoint - 0x10000;
+            snprintf(buf, sizeof(buf), "\\u%04x\\u%04x", (unsigned)(0xD800 + (v >> 10)), (unsigned)(0xDC00 + (v & 0x3FF)));
+        }
+        else {
+            snprintf(buf, sizeof(buf), "\\u%04x", (unsigned)codePoint);
+        }
+        out << buf;
+        i += len;
     }
     return out.str();
 }

@@ -127,7 +127,8 @@ char* isImageSupported(const char* path, const char* password) {
 * different passwords or recovery passwords can be checked in one call.
 *
 * @param path     Path to the image (UTF-8)
-* @param keys     Passwords or recovery passwords (UTF-8). Null or empty entries are skipped.
+* @param keys     Passwords or recovery passwords (UTF-8). Null or empty entries, and entries containing a
+*                 line break, are skipped; a volume's "keyIndex" is still an index into this array.
 *                 May be null when numKeys is 0.
 * @param numKeys  Number of entries in keys
 *
@@ -142,11 +143,11 @@ char* isImageSupportedWithKeys(const char* path, const char* const* keys, int nu
         return nullptr;
     }
 
+    // A null key is kept as an empty one, so every key keeps its index ("keyIndex" in the result)
     std::vector<std::string> keyList;
+    keyList.reserve((size_t)numKeys);
     for (int i = 0; i < numKeys; i++) {
-        if (keys[i] != nullptr && keys[i][0] != '\0') {
-            keyList.push_back(keys[i]);
-        }
+        keyList.push_back(keys[i] != nullptr ? keys[i] : "");
     }
     TskIsImageSupported tskIsImage;
     tskIsImage.setFileSystemPasswords(keyList);

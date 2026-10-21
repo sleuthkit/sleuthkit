@@ -2027,8 +2027,11 @@ public class SleuthkitJNI {
 		}
 
 		/**
-		 * @return True if at least one file system opened, even if some BitLocker
-		 *         volumes stayed locked. Only set by testOpenImageWithKeys().
+		 * @return From testOpenImageWithKeys(): true if at least one file system
+		 *         opened, even if some BitLocker volumes stayed locked. That includes
+		 *         small unencrypted ones such as an EFI system partition, so check
+		 *         getLockedBitLockerVolumes() too. From testOpenImage(): the same as
+		 *         wasSuccessful().
 		 */
 		public boolean wasFileSystemFound() {
 			return fileSystemFound;
@@ -2193,30 +2196,31 @@ public class SleuthkitJNI {
 	}
 
 	/**
-	 * Tries opening the image, trying every key on every encrypted volume, and
+	 * Tries opening the image, trying every key on every BitLocker volume, and
 	 * reports what happened to each volume. Use this for an image whose
 	 * BitLocker volumes do not all share one password or recovery password.
+	 * (Volumes inside an APFS container are not tried with the keys.)
 	 *
 	 * @param imagePath Path to the image (will just be the first for .e01, .001, etc).
 	 * @param passwords Passwords or recovery passwords to try. Null, empty entries,
-	 *                  and entries containing a line break are ignored.
+	 *                  and entries containing a line break are ignored, but keep
+	 *                  their place: a volume's getKeyIndex() is an index into this list.
 	 *
 	 * @return TestOpenImageResult. wasSuccessful() and getMessage() keep the meaning of
 	 *         testOpenImage(String, String); wasFileSystemFound() and getVolumes() report
 	 *         a usable image where some BitLocker volumes stayed locked.
 	 */
 	public static TestOpenImageResult testOpenImageWithKeys(String imagePath, List<String> passwords) {
-		List<String> usable = new ArrayList<>();
+		List<String> keys = new ArrayList<>();
 		if (passwords != null) {
 			for (String password : passwords) {
-				// A line break would split one key into two
-				if (password != null && !password.isEmpty() && password.indexOf('\n') < 0 && password.indexOf('\r') < 0) {
-					usable.add(password);
-				}
+				// A line break would split one key into two; an ignored key is left empty to keep the indexes
+				boolean usable = password != null && password.indexOf('\n') < 0 && password.indexOf('\r') < 0;
+				keys.add(usable ? password : "");
 			}
 		}
 
-		String json = isImageSupportedJsonNat(imagePath, String.join("\n", usable));
+		String json = isImageSupportedJsonNat(imagePath, String.join("\n", keys));
 		try {
 			JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 			String message = jsonString(root, "message");
