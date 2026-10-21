@@ -39,11 +39,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: etfs-linux-cli
+          if-no-files-found: error
           path: |
-            tools/fstools/.libs/fls
-            tools/fstools/.libs/icat
-            tools/fstools/.libs/fsstat
-            tools/fstools/.libs/blkls
-            tools/fstools/.libs/ils
-            tools/fstools/.libs/istat
-            tsk/.libs/libtsk.so*
+            tools/fstools/fls
+            tools/fstools/icat
+            tools/fstools/fsstat
+            tools/fstools/blkls
+            tools/fstools/ils
+            tools/fstools/istat
