@@ -4604,8 +4604,22 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         nameListBegin = map + nameListOffset;
     }
 
+    if (typeListOffset + 2 > mapLength) {
+        error_returned
+            ("- hfs_parse_resource_fork: typeListOffset out of bounds");
+        free(map);
+        return NULL;
+    }
+
     typeList = (hfs_resource_type_list *) (map + typeListOffset);
     numTypes = tsk_getu16(fs_info->endian, typeList->typeCount) + 1;
+
+    if (typeListOffset + 2 + (uint32_t)numTypes * sizeof(hfs_resource_type_list_item) > mapLength) {
+        error_returned
+            ("- hfs_parse_resource_fork: type list extends past map buffer");
+        free(map);
+        return NULL;
+    }
 
     for (mindx = 0; mindx < numTypes; ++mindx) {
         uint16_t numRes;
@@ -4618,6 +4632,18 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         numRes = tsk_getu16(fs_info->endian, tlItem->count) + 1;
         refOff = tsk_getu16(fs_info->endian, tlItem->offset);
 
+        {
+            uint8_t *refBase = (uint8_t *)typeList + refOff;
+            uint8_t *mapEnd = (uint8_t *)map + mapLength;
+            if (refBase < (uint8_t *)map || refBase >= mapEnd ||
+                refBase + (uint32_t)numRes * sizeof(hfs_resource_refListItem) > mapEnd) {
+                error_returned
+                    ("- hfs_parse_resource_fork: refList offset out of bounds");
+                free_res_descriptor(result);
+                free(map);
+                return NULL;
+            }
+        }
 
         for (pindx = 0; pindx < numRes; ++pindx) {
             int16_t nameOffset;
@@ -4633,13 +4659,29 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
             nameBuffer = NULL;
 
             if (hasNameList && nameOffset != -1) {
+                uint32_t nameAbsOff = (uint32_t)nameListOffset + (uint16_t)nameOffset;
+                if (nameAbsOff >= mapLength) {
+                    error_returned
+                        ("hfs_parse_resource_fork: resource name offset out of bounds");
+                    free_res_descriptor(result);
+                    free(map);
+                    return NULL;
+                }
                 char *name = nameListBegin + nameOffset;
                 uint8_t nameLen = (uint8_t) name[0];
+                if (nameAbsOff + 1 + (uint32_t)nameLen > mapLength) {
+                    error_returned
+                        ("hfs_parse_resource_fork: resource name extends past map buffer");
+                    free_res_descriptor(result);
+                    free(map);
+                    return NULL;
+                }
                 nameBuffer = (char*) tsk_malloc(nameLen + 1);
                 if (nameBuffer == NULL) {
                     error_returned
                         ("hfs_parse_resource_fork: allocating space for the name of a resource");
                     free_res_descriptor(result);
+                    free(map);
                     return NULL;
                 }
                 memcpy(nameBuffer, name + 1, nameLen);
