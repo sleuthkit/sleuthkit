@@ -1060,7 +1060,7 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
         return 1;
     }
     /* EFS uses byte-addressed flash extents; its callbacks batch exact runs. */
-    if ((a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_EFS || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_UBI || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_RELIANCE) && a_fs_attr->w)
+    if ((a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_ETFS || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_EFS || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_UBI || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_RELIANCE) && a_fs_attr->w)
         return a_fs_attr->w(a_fs_attr, a_flags, a_action, a_ptr);
 
     if (a_fs_attr->flags & TSK_FS_ATTR_COMP) {
@@ -1126,7 +1126,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
     /* for compressed data, call the specialized function */
     /* EFS uses byte-addressed flash extents; its callbacks batch exact runs. */
-    if ((a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_EFS || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_UBI || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_RELIANCE) && a_fs_attr->r)
+    if ((a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_ETFS || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_EFS || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_UBI || a_fs_attr->fs_file->fs_info->ftype == TSK_FS_TYPE_RELIANCE) && a_fs_attr->r)
         return a_fs_attr->r(a_fs_attr, a_offset, a_buf, a_len);
 
     if (a_fs_attr->flags & TSK_FS_ATTR_COMP) {
