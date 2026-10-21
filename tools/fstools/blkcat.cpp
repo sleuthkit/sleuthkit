@@ -204,7 +204,7 @@ main(int argc, char **argv1)
             passwordUtf8 = tsk_tool_arg_to_utf8(OPTARG);
             password = passwordUtf8.c_str();
 #else
-            password = argv1[OPTIND - 1];
+            password = OPTARG;    // handles both -k pass and -kpass
 #endif
             break;
         case _TSK_T('?'):
