@@ -3,8 +3,16 @@
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 int main(int argc,char **argv) {
     if(argc<3)return 2;
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
     try {
         std::ifstream image(argv[1],std::ios::binary);
         if(!image) return 2;
