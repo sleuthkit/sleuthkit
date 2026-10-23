@@ -1343,6 +1343,8 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 		sqlite3_free(zSQL);
 		return 1;
 	}
+	sqlite3_free(zSQL);
+	zSQL = NULL;
 
     if (!TSK_FS_ISDOT(name))
     {
