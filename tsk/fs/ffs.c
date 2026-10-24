@@ -72,6 +72,10 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
     if (ffs->grp_addr != addr) {
         ffs_cgd *cg;
         ssize_t cnt;
+        /* Invalidate the cached group key first: if the read or the
+         * sanity check below fails, grp_buf holds partial or rejected
+         * data and must not be matched by a later call. */
+        ffs->grp_addr = (TSK_DADDR_T) -1;
         cnt = tsk_fs_read_block(fs, addr, ffs->grp_buf, ffs->ffsbsize_b);
         if (cnt != (ssize_t) ffs->ffsbsize_b) {
             if (cnt >= 0) {
@@ -82,7 +86,6 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
                 " at %" PRIuDADDR, grp_num, addr);
             return 1;
         }
-        ffs->grp_addr = addr;
 
         /* Perform a sanity check on the data to make sure offsets are in range */
         cg = (ffs_cgd *) ffs->grp_buf;
@@ -97,6 +100,7 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
                 addr);
             return 1;
         }
+        ffs->grp_addr = addr;
     }
 
     ffs->grp_num = grp_num;
@@ -1837,6 +1841,8 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                         break;
                     if ((uintptr_t) ea + offsetof(ffs_extattr, name) + ea->nlen > end)
                         break;
+                    if (reclen < offsetof(ffs_extattr, name) + ea->nlen)
+                        break;
                     memcpy(name, ea->name, ea->nlen);
                     name[ea->nlen] = '\0';
                     tsk_fprintf(hFile, "%s\n", name);
@@ -1884,6 +1890,8 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                     if (reclen == 0)
                         break;
                     if ((uintptr_t) ea + offsetof(ffs_extattr, name) + ea->nlen > end)
+                        break;
+                    if (reclen < offsetof(ffs_extattr, name) + ea->nlen)
                         break;
                     memcpy(name, ea->name, ea->nlen);
                     name[ea->nlen] = '\0';

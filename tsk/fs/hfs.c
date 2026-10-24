@@ -4631,6 +4631,15 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         return NULL;
     }
 
+    // The map header itself comes from disk: make sure the whole fixed
+    // header is inside the map before reading its fields.
+    if (mapLength < sizeof(hfs_resource_fork_map_header)) {
+        error_returned
+            ("- hfs_parse_resource_fork: map too small for its header");
+        free(map);
+        return NULL;
+    }
+
     mapHdr = (hfs_resource_fork_map_header *) map;
 
     typeListOffset = tsk_getu16(fs_info->endian, mapHdr->typeListOffset);
@@ -4679,11 +4688,11 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         // refOff is relative to the type list and comes from disk: the whole
         // reference list it points at must lie inside the map.
         {
-            uint8_t *refBase = (uint8_t *) typeList + refOff;
-            uint8_t *mapEnd = (uint8_t *) map + mapLength;
-            if (refBase >= mapEnd ||
+            // bytes available from the start of the type list to the map end
+            uint32_t typeListAvail = mapLength - (uint32_t) typeListOffset;
+            if ((uint32_t) refOff >= typeListAvail ||
                 (uint32_t) numRes * sizeof(hfs_resource_refListItem) >
-                (uint32_t) (mapEnd - refBase)) {
+                typeListAvail - (uint32_t) refOff) {
                 error_returned
                     ("- hfs_parse_resource_fork: refList offset out of bounds");
                 free_res_descriptor(result);
