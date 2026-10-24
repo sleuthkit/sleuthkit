@@ -29,6 +29,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_ffs.h"
+#include <stddef.h>
 
 
 
@@ -85,7 +86,9 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
 
         /* Perform a sanity check on the data to make sure offsets are in range */
         cg = (ffs_cgd *) ffs->grp_buf;
-        if ((tsk_gets32(fs->endian, cg->cg_iusedoff) > (int)ffs->ffsbsize_b)
+        if ((tsk_gets32(fs->endian, cg->cg_iusedoff) < 0)
+            || (tsk_gets32(fs->endian, cg->cg_iusedoff) > (int)ffs->ffsbsize_b)
+            || (tsk_gets32(fs->endian, cg->cg_freeoff) < 0)
             || (tsk_gets32(fs->endian, cg->cg_freeoff) > (int)ffs->ffsbsize_b)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
@@ -1822,13 +1825,22 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                     size = 0;
                 }
 
-                for (; (uintptr_t) ea < end;
-                    ea =
-                    (ffs_extattr *) ((uintptr_t) ea +
-                        tsk_getu32(fs->endian, ea->reclen))) {
+                while ((uintptr_t) ea < end) {
+                    uint32_t reclen;
+                    /* reclen and nlen come from disk: make sure the fixed
+                     * header and the name both lie inside the block before
+                     * reading them, and never advance by zero. */
+                    if ((uintptr_t) ea + sizeof(ffs_extattr) > end)
+                        break;
+                    reclen = tsk_getu32(fs->endian, ea->reclen);
+                    if (reclen == 0)
+                        break;
+                    if ((uintptr_t) ea + offsetof(ffs_extattr, name) + ea->nlen > end)
+                        break;
                     memcpy(name, ea->name, ea->nlen);
                     name[ea->nlen] = '\0';
                     tsk_fprintf(hFile, "%s\n", name);
+                    ea = (ffs_extattr *) ((uintptr_t) ea + reclen);
                 }
             }
             if ((tsk_getu64(fs->endian, in->di_extb[1]) >= fs->first_block)
@@ -1861,13 +1873,22 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 else
                     end = (uintptr_t) ea + size;
 
-                for (; (uintptr_t) ea < end;
-                    ea =
-                    (ffs_extattr *) ((uintptr_t) ea +
-                        tsk_getu32(fs->endian, ea->reclen))) {
+                while ((uintptr_t) ea < end) {
+                    uint32_t reclen;
+                    /* reclen and nlen come from disk: make sure the fixed
+                     * header and the name both lie inside the block before
+                     * reading them, and never advance by zero. */
+                    if ((uintptr_t) ea + sizeof(ffs_extattr) > end)
+                        break;
+                    reclen = tsk_getu32(fs->endian, ea->reclen);
+                    if (reclen == 0)
+                        break;
+                    if ((uintptr_t) ea + offsetof(ffs_extattr, name) + ea->nlen > end)
+                        break;
                     memcpy(name, ea->name, ea->nlen);
                     name[ea->nlen] = '\0';
                     tsk_fprintf(hFile, "%s\n", name);
+                    ea = (ffs_extattr *) ((uintptr_t) ea + reclen);
                 }
             }
             free(blk_buf);

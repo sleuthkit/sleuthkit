@@ -1050,6 +1050,16 @@ static int decmpfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize,
             "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
             "%s:  Loading the default DATA attribute.", __func__, rawBuf[0], __func__);
 
+    // uncSize comes from the on-disk decmpfs header; the caller later copies
+    // uncSize bytes out of dstBuf, so it must fit in the attribute data that
+    // follows the indicator byte.
+    if (rawSize < 1 || uncSize > (uint64_t)(rawSize - 1)) {
+        error_detected(TSK_ERR_FS_CORRUPT,
+            " %s: uncompressed size (%" PRIu64 ") exceeds attribute data (%" PRIu32 ")",
+            __func__, uncSize, rawSize);
+        return 0;
+    }
+
     *dstBuf = rawBuf + 1;  // + 1 indicator byte
     *dstSize = uncSize;
     *dstBufFree = FALSE;
