@@ -24,6 +24,7 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -134,16 +135,7 @@ public class CaseDbAccessManagerCancelTest {
 		Future<Long> running = executor.submit(() -> countTo(statement));
 
 		Thread.sleep(300);
-		statement.cancel();
-
-		try {
-			running.get(10, TimeUnit.SECONDS);
-			fail("the select ran to completion");
-		} catch (TimeoutException ex) {
-			fail("the select was not stopped within 10 seconds of the cancel");
-		} catch (java.util.concurrent.ExecutionException expected) {
-			assertTrue(String.valueOf(expected.getCause()), expected.getCause() instanceof TskCoreException);
-		}
+		cancelUntilStopped(statement, running);
 		statement.close();
 
 		assertWriteLockAvailable();
@@ -185,13 +177,7 @@ public class CaseDbAccessManagerCancelTest {
 					statement.setLong(1, FOREVER);
 					Future<Long> running = executor.submit(() -> countTo(statement));
 					Thread.sleep(20);
-					statement.cancel();
-					try {
-						running.get(10, TimeUnit.SECONDS);
-						fail("the select ran to completion");
-					} catch (java.util.concurrent.ExecutionException expected) {
-						// stopped by the cancel
-					}
+					cancelUntilStopped(statement, running);
 				} finally {
 					statement.close();
 				}
@@ -201,6 +187,11 @@ public class CaseDbAccessManagerCancelTest {
 				round.get(15, TimeUnit.SECONDS);
 			} catch (TimeoutException ex) {
 				fail("cancel round " + i + " did not finish: a connection is not back in the pool");
+			} catch (ExecutionException ex) {
+				if (ex.getCause() instanceof AssertionError) {
+					throw (AssertionError) ex.getCause();
+				}
+				throw ex;
 			}
 		}
 		assertEquals(1000L, select(1000));
@@ -251,6 +242,27 @@ public class CaseDbAccessManagerCancelTest {
 			}
 		});
 		return result.get();
+	}
+
+	/**
+	 * Cancels until the select stops, as a cancel landing just before the query
+	 * starts on PostgreSQL is lost. Fails if it has not stopped within 10 seconds.
+	 */
+	private static void cancelUntilStopped(CaseDbPreparedStatement statement, Future<Long> running) throws Exception {
+		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+		while (!running.isDone()) {
+			if (System.nanoTime() - deadline > 0) {
+				fail("the select was not stopped within 10 seconds of the first cancel");
+			}
+			statement.cancel();
+			Thread.sleep(20);
+		}
+		try {
+			running.get();
+			fail("the select ran to completion");
+		} catch (ExecutionException expected) {
+			assertTrue(String.valueOf(expected.getCause()), expected.getCause() instanceof TskCoreException);
+		}
 	}
 
 	/** PostgreSQL backends, other than this one, still running a COUNT_TO statement. */
