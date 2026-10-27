@@ -39,6 +39,8 @@ import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import org.sleuthkit.datamodel.TskData.DbType;
+import org.sqlite.ProgressHandler;
+import org.sqlite.SQLiteConnection;
 
 /**
  * This class provides modules with access to the case database 
@@ -841,8 +843,13 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("CaseDbPreparedStatement has incorrect type for select operation");
 		}
 		
-		try (ResultSet resultSet = preparedStatement.getStatement().executeQuery()) {
-			queryCallback.process(resultSet);
+		try {
+			preparedStatement.startSelect();
+			try (ResultSet resultSet = preparedStatement.getStatement().executeQuery()) {
+				queryCallback.process(resultSet);
+			} finally {
+				preparedStatement.endSelect();
+			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(MessageFormat.format("Error running SELECT query:\n{0}", preparedStatement.getOriginalSql()), ex);
 		}
@@ -1247,7 +1254,16 @@ public final class CaseDbAccessManager {
 		private final String originalSql;
 		private final LockType lockType;
 		private final StatementType type;
-		
+
+		/**
+		 * Orders cancel() against select() and close(): afterwards the pooled
+		 * connection may run another caller's query, which a cancel must not stop.
+		 */
+		private final Object cancelLock = new Object();
+		private volatile boolean cancelRequested = false;
+		private boolean selecting = false;
+		private boolean closed = false;
+
 		/**
 		 * Construct a prepared statement. This should not be used if a transaction
 		 * is already open.
@@ -1529,9 +1545,77 @@ public final class CaseDbAccessManager {
 			}
 		}
 
+		/**
+		 * Stops this statement's select from another thread: a running select()
+		 * fails with a TskCoreException, and so does any later one. Close the
+		 * statement as usual to release its connection and case lock.
+		 *
+		 * Only this statement is stopped, never another query on its pooled
+		 * connection. Does nothing once the statement is closed.
+		 *
+		 * @throws TskCoreException If the cancel could not be sent to
+		 *                          PostgreSQL.
+		 */
+		@Beta
+		public void cancel() throws TskCoreException {
+			synchronized (cancelLock) {
+				if (closed) {
+					return;
+				}
+				cancelRequested = true;
+				if (selecting && tskDB.getDatabaseType() == DbType.POSTGRESQL) {
+					try {
+						preparedStatement.cancel();
+					} catch (SQLException ex) {
+						throw new TskCoreException("Error cancelling statement:\n" + originalSql, ex);
+					}
+				}
+			}
+		}
+
+		/**
+		 * Marks the start of a select, so that cancel() can stop it.
+		 *
+		 * @throws TskCoreException If the statement was already cancelled.
+		 */
+		private void startSelect() throws SQLException, TskCoreException {
+			synchronized (cancelLock) {
+				if (cancelRequested) {
+					throw new TskCoreException("The statement was cancelled:\n" + originalSql);
+				}
+				if (tskDB.getDatabaseType() == DbType.SQLITE) {
+					// Checked every 1000 virtual machine instructions; a non-zero return aborts the
+					// running statement with SQLITE_INTERRUPT.
+					ProgressHandler.setHandler(connection.getConnection().unwrap(SQLiteConnection.class), 1000, new ProgressHandler() {
+						@Override
+						protected int progress() {
+							return cancelRequested ? 1 : 0;
+						}
+					});
+				}
+				selecting = true;
+			}
+		}
+
+		/**
+		 * Marks the end of a select: a cancel no longer reaches the connection.
+		 */
+		private void endSelect() throws SQLException {
+			synchronized (cancelLock) {
+				selecting = false;
+				if (tskDB.getDatabaseType() == DbType.SQLITE) {
+					ProgressHandler.clearHandler(connection.getConnection().unwrap(SQLiteConnection.class));
+				}
+			}
+		}
+
 		@Override
 		public void close() throws SQLException {
-			
+			// Wait out a cancel in progress, and stop later ones, before the connection can be reused
+			synchronized (cancelLock) {
+				closed = true;
+			}
+
 			// Don't close the statement/connection or release a lock if we were supplied a transaction.
 			// Everything will be handled when the transaction is closed.
 			if (lockType.equals(LockType.NONE)) {
