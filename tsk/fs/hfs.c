@@ -4631,6 +4631,13 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         return NULL;
     }
 
+    if (mapLength < sizeof(hfs_resource_fork_map_header)) {
+        error_detected(TSK_ERR_FS_CORRUPT,
+            "hfs_parse_resource_fork: resource map is too small");
+        free(map);
+        return NULL;
+    }
+
     mapHdr = (hfs_resource_fork_map_header *) map;
 
     typeListOffset = tsk_getu16(fs_info->endian, mapHdr->typeListOffset);
@@ -4645,8 +4652,23 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         nameListBegin = map + nameListOffset;
     }
 
+    if ((uint32_t) typeListOffset + 2 > mapLength) {
+        error_detected(TSK_ERR_FS_CORRUPT,
+            "hfs_parse_resource_fork: type list offset out of bounds");
+        free(map);
+        return NULL;
+    }
+
     typeList = (hfs_resource_type_list *) (map + typeListOffset);
     numTypes = tsk_getu16(fs_info->endian, typeList->typeCount) + 1;
+
+    if ((uint32_t) typeListOffset + 2 +
+        (uint32_t) numTypes * sizeof(hfs_resource_type_list_item) > mapLength) {
+        error_detected(TSK_ERR_FS_CORRUPT,
+            "hfs_parse_resource_fork: type list extends past end of map");
+        free(map);
+        return NULL;
+    }
 
     for (mindx = 0; mindx < numTypes; ++mindx) {
         uint16_t numRes;
@@ -4659,6 +4681,14 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         numRes = tsk_getu16(fs_info->endian, tlItem->count) + 1;
         refOff = tsk_getu16(fs_info->endian, tlItem->offset);
 
+        if ((uint32_t) typeListOffset + refOff +
+            (uint32_t) numRes * sizeof(hfs_resource_refListItem) > mapLength) {
+            error_detected(TSK_ERR_FS_CORRUPT,
+                "hfs_parse_resource_fork: reference list extends past end of map");
+            free_res_descriptor(result);
+            free(map);
+            return NULL;
+        }
 
         for (pindx = 0; pindx < numRes; ++pindx) {
             int16_t nameOffset;
