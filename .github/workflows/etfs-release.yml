@@ -1,0 +1,270 @@
+name: Sleuthkit ETFS release
+on:
+  push:
+    branches:
+      - feature/etfs
+    paths:
+      - '.github/workflows/etfs-release.yml'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g. v4.15.0-etfs.1)'
+        required: false
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: etfs-release
+  cancel-in-progress: false
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: e7bf24aef2ee90a1583b9479d3e16c05346d4f4c
+          path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: NetherlandsForensicInstitute/qnxmount
+          ref: 11c8a7f9ee9b945d584263743f6ea8524e8776d2
+          path: reference-nfi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config build-essential ant ivy libsqlite3-dev libssl-dev zlib1g-dev libafflib-dev libewf-dev
+      - name: Configure and build
+        run: |
+          autoreconf -fi
+          ./configure --prefix="$PWD/_install"
+          make -j2
+          make install
+      - name: Validate release ETFS readers
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -I . tests/etfs_reader_probe.cpp -o etfs-reader-probe
+          g++ -std=c++17 -I . tests/etfs_read_probe.cpp -L tsk/.libs -Wl,-rpath,"$PWD/tsk/.libs" -ltsk -o etfs-read-probe
+          python3 tests/etfs_regression.py --tools tools/fstools --reader-probe "$PWD/etfs-reader-probe" --read-probe "$PWD/etfs-read-probe" --reference reference-qnxprobe --nfi reference-nfi
+      - name: Package binaries and Java bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/linux-x64/bin release/linux-x64/lib release/java
+          find _install/bin -maxdepth 1 -type f -exec cp {} release/linux-x64/bin/ \;
+          find _install/lib -maxdepth 1 -type f -name '*.so*' -exec cp -L {} release/linux-x64/lib/ \;
+          find bindings/java -type f -name '*.jar' ! -name '*sources*' ! -name '*javadoc*' -exec cp {} release/java/ \;
+          test -n "$(find release/java -name '*.jar' -print -quit)"
+          echo 'Java artifacts:'
+          find release/java -name '*.jar' -print
+          test -n "$(find release/linux-x64/bin -type f -print -quit)"
+          mkdir -p release/linux-x64/flash_preprocessor/profiles
+          cp tools/flash/*.py tools/flash/LICENSE.txt docs/UBI_PREPROCESSOR.md docs/ETFS.md release/linux-x64/flash_preprocessor/
+          cp config/flash_devices/*.json config/flash_devices/README.md release/linux-x64/flash_preprocessor/profiles/
+          python3 release/linux-x64/flash_preprocessor/preprocess_ubi.py --list-profiles
+          tar -czf sleuthkit-linux-x64.tar.gz -C release linux-x64
+          (cd release/java && zip -r ../../sleuthkit-java.zip .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-java
+          path: |
+            sleuthkit-linux-x64.tar.gz
+            sleuthkit-java.zip
+  windows:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: actions/checkout@v4
+        with:
+          repository: Gerd1986/qnxprobe
+          ref: e7bf24aef2ee90a1583b9479d3e16c05346d4f4c
+          path: reference-qnxprobe
+      - uses: actions/checkout@v4
+        with:
+          repository: NetherlandsForensicInstitute/qnxmount
+          ref: 11c8a7f9ee9b945d584263743f6ea8524e8776d2
+          path: reference-nfi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Windows build tools
+        shell: pwsh
+        run: |
+          choco install nuget.commandline -y
+          choco install ant -y --ignore-dependencies
+      - name: Build native Windows x64 and JNI
+        shell: pwsh
+        run: |
+          $env:TSK_HOME = (Get-Location).Path
+          $env:JDK_HOME = $env:JAVA_HOME
+          $env:INCLUDE = "$env:INCLUDE;$env:JAVA_HOME/include;$env:JAVA_HOME/include/win32"
+          if (-not (Test-Path "$env:JAVA_HOME/include/jni.h")) { throw "Missing JDK JNI header" }
+          Write-Host "JNI header found: $env:JAVA_HOME/include/jni.h"
+          python win32/updateAndBuildAll.py -m
+          if ($LASTEXITCODE -ne 0) { throw 'Native build failed' }
+      - name: Build Windows JNI JAR
+        shell: pwsh
+        working-directory: bindings/java
+        run: |
+          ant clean
+          if ($LASTEXITCODE -ne 0) { throw 'Ant clean failed' }
+          ant dist
+          if ($LASTEXITCODE -ne 0) { throw 'Ant dist failed' }
+          $entries = & jar tf dist/sleuthkit-4.15.0.jar
+          if ($LASTEXITCODE -ne 0 -or -not ($entries -contains 'NATIVELIBS/amd64/win/libtsk_jni.dll')) { throw 'Windows JNI missing from JAR' }
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Build independent ETFS reader probe
+        shell: pwsh
+        run: |
+          cl /nologo /std:c++17 /EHsc /I . tests/etfs_reader_probe.cpp /Fe:etfs-reader-probe.exe
+          if ($LASTEXITCODE -ne 0) { throw 'ETFS probe compilation failed' }
+      - name: Package and smoke-test Windows executables and JNI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = 'release/windows-x64'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $bins = @(Get-ChildItem win32 -Recurse -File | Where-Object {
+            $_.FullName -match '[\\/]x64[\\/](Release_NoLibs|Release)[\\/]' -and
+            $_.Extension -in '.exe','.dll'
+          })
+          $exes = @($bins | Where-Object Extension -eq '.exe')
+          $jni = @($bins | Where-Object Name -eq 'libtsk_jni.dll')
+          if ($exes.Count -eq 0) { throw 'No native Windows executables produced' }
+          if ($jni.Count -eq 0) { throw 'libtsk_jni.dll missing from native build' }
+          $exes | Copy-Item -Destination $out -Force
+          $jni | Select-Object -First 1 | Copy-Item -Destination $out -Force
+          # Copy locally built native dependencies when present.
+          $otherDlls = @($bins | Where-Object { $_.Extension -eq '.dll' -and $_.Name -ne 'libtsk_jni.dll' })
+          $otherDlls | Copy-Item -Destination $out -Force
+          # Fail if any shipped binary imports a DLL that is neither packaged
+          # nor part of Windows / the documented VC++ runtime.
+          $dumpbin = Get-Command dumpbin.exe -ErrorAction SilentlyContinue
+          if ($dumpbin) {
+            $dumpbinPath = $dumpbin.Source
+          } else {
+            $vswhere = "${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\Installer\\vswhere.exe"
+            if (-not (Test-Path $vswhere)) { throw 'vswhere.exe missing; cannot locate Visual Studio tools' }
+            $vsPath = (& $vswhere -latest -products '*' -property installationPath).Trim()
+            if (-not $vsPath) { throw 'Visual Studio installation not found' }
+            $candidates = @(Get-ChildItem (Join-Path $vsPath 'VC/Tools/MSVC') -Recurse -File -Filter dumpbin.exe |
+              Where-Object { $_.FullName -match '[\\/]Hostx64[\\/]x64[\\/]dumpbin.exe$' } |
+              Sort-Object FullName -Descending)
+            if ($candidates.Count -eq 0) { throw 'dumpbin.exe not found in Visual Studio x64 toolchain' }
+            $dumpbinPath = $candidates[0].FullName
+          }
+          Write-Host "Using dumpbin: $dumpbinPath"
+          $systemDlls = @(Get-ChildItem "$env:WINDIR/System32" -Filter '*.dll' -File | ForEach-Object Name)
+          $systemDlls += @(Get-ChildItem "$env:WINDIR/SysWOW64" -Filter '*.dll' -File | ForEach-Object Name)
+          $systemDlls += @('api-ms-win-*.dll','ext-ms-win-*.dll')
+          $shipped = @(Get-ChildItem $out -File | ForEach-Object Name)
+          $missing = @()
+          foreach ($binary in @(Get-ChildItem $out -File | Where-Object { $_.Extension -in '.exe','.dll' })) {
+            $imports = & $dumpbinPath /dependents $binary.FullName 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "dumpbin failed: $($binary.Name)" }
+            foreach ($line in $imports) {
+              if ($line -match '^\s*([A-Za-z0-9_.-]+\.dll)\s*$') {
+                $dep = $Matches[1]
+                if ($dep -in $shipped -or $dep -in $systemDlls -or $dep -like 'api-ms-win-*.dll' -or $dep -like 'ext-ms-win-*.dll') { continue }
+                $missing += "$($binary.Name) -> $dep"
+              }
+            }
+          }
+          if ($missing.Count -gt 0) { throw ("Unpackaged DLL dependencies:`n" + ($missing -join "`n")) }
+          # Use -V where supported; a nonzero exit code is not necessarily
+          # a load failure, so check specifically for Windows loader errors.
+          foreach ($exe in @(Get-ChildItem $out -Filter '*.exe')) {
+            $proc = Start-Process -FilePath $exe.FullName -ArgumentList '-V' -WorkingDirectory (Resolve-Path $out).Path -PassThru -Wait -NoNewWindow -RedirectStandardOutput "$env:RUNNER_TEMP/$($exe.BaseName).stdout" -RedirectStandardError "$env:RUNNER_TEMP/$($exe.BaseName).stderr"
+            if ($proc.ExitCode -in @(-1073741515,-1073741701)) { throw "Windows loader failure for $($exe.Name): $($proc.ExitCode)" }
+            Write-Host "$($exe.Name): exit $($proc.ExitCode)"
+          }
+          python tests/etfs_regression.py --tools $out --reader-probe "$PWD/etfs-reader-probe.exe" --reference reference-qnxprobe --nfi reference-nfi
+          if ($LASTEXITCODE -ne 0) { throw 'ETFS regressions failed for packaged Windows binaries' }
+          New-Item -ItemType Directory -Force "$out/flash_preprocessor/profiles" | Out-Null
+          Copy-Item tools/flash/*.py,tools/flash/LICENSE.txt,docs/UBI_PREPROCESSOR.md,docs/ETFS.md "$out/flash_preprocessor/" -Force
+          Copy-Item config/flash_devices/*.json,config/flash_devices/README.md "$out/flash_preprocessor/profiles/" -Force
+          python "$out/flash_preprocessor/preprocess_ubi.py" --list-profiles
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged preprocessor profile discovery failed' }
+          Copy-Item bindings/java/dist/sleuthkit-4.15.0.jar $out/ -Force
+          Compress-Archive -Path "$out/*" -DestinationPath sleuthkit-windows-x64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: sleuthkit-windows-x64.zip
+  publish:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [linux, windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Resolve and validate release tag
+        id: version
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "push" && "$REF_NAME" == v*-etfs.* ]]; then
+            tag="$REF_NAME"
+          elif [[ -n "$REQUESTED_TAG" ]]; then
+            tag="$REQUESTED_TAG"
+          else
+            tag="v4.15.0-etfs.$RUN_NUMBER"
+          fi
+          if [[ ! "$tag" =~ ^v[0-9]+[.][0-9]+[.][0-9]+-etfs[.][0-9]+$ ]]; then
+            echo "Invalid release tag: $tag" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Publishing release $tag"
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum sleuthkit-* > SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: artifacts/*
+          name: Sleuthkit ${{ steps.version.outputs.tag }} — QNX ETFS support
+          body: |
+            Native read-only QNX ETFS support on feature/etfs, based on develop-4.1x.
+
+            Automatic detection or -f etfs; transaction replay, long filenames,
+            metadata, symlinks, orphan recovery and physical unallocated access.
+            Release tests compare all six page geometries and both real NFI
+            QNX images against their QNX-produced TAR exports and QNXProbe.
+            Packaged Windows tools and Linux buffered reads are tested.
+
+            Input: 512/1024/2048/4096/8192/16384 data bytes followed by a
+            16-byte ETFS transaction. Extra device OOB/ECC/stuffing must be
+            preprocessed while preserving the ETFS transaction.
+            Missing file pages are 0xff placeholders, not recovered evidence.
+            The reader does not perform NAND ECC correction or deleted-name carving.
+
+            Assets:
+            - sleuthkit-windows-x64.zip: CLI tools, DLLs and Windows JNI JAR.
+            - sleuthkit-linux-x64.tar.gz: Linux CLI tools and libraries.
+            - sleuthkit-java.zip: Linux Java/JNI bindings.
+            - SHA256SUMS.txt: package checksums.
+
+            Prerelease for forensic validation. See bundled ETFS.md for format details.
+          generate_release_notes: false

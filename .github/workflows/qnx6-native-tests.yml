@@ -1,0 +1,44 @@
+name: QNX6 native unit tests
+on:
+  push:
+    branches: [feature/qnxprobe-filesystems]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  qnx6:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -I tsk/fs tests/qnx6_probe_smoke.c tsk/fs/qnx6_probe.c -o qnx6_probe_test
+          ./qnx6_probe_test
+          cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer tests/qnx6_file_smoke.c tsk/fs/qnx6_file.c tsk/fs/qnx6_map.c -o qnx6_file_test
+          ./qnx6_file_test
+          cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer tests/qnx6_inode_smoke.c tsk/fs/qnx6_inode.c tsk/fs/qnx6_map.c -o qnx6_inode_test
+          ./qnx6_inode_test
+          cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer tests/qnx6_bitmap_smoke.c tsk/fs/qnx6_bitmap.c tsk/fs/qnx6_map.c -o qnx6_bitmap_test
+          ./qnx6_bitmap_test
+          cc -std=c11 -Wall -Wextra -Werror -c tsk/fs/qnx6_map.c -o qnx6_map.o
+          cc -std=c11 -Wall -Wextra -Werror -c tsk/fs/qnx6_inode.c -o qnx6_inode.o
+          cc -std=c11 -Wall -Wextra -Werror -c tsk/fs/qnx6_file.c -o qnx6_file.o
+          cc -std=c11 -Wall -Wextra -Werror -c tsk/fs/qnx6_bitmap.c -o qnx6_bitmap.o
+      - name: Build and test (Windows MSVC)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cl /nologo /W4 /I tsk\fs tests\qnx6_probe_smoke.c tsk\fs\qnx6_probe.c /Fe:qnx6_probe_test.exe
+          qnx6_probe_test.exe
+          cl /nologo /W4 /I tsk\fs tests\qnx6_file_smoke.c tsk\fs\qnx6_file.c tsk\fs\qnx6_map.c /Fe:qnx6_file_test.exe
+          qnx6_file_test.exe
+          cl /nologo /W4 /I tsk\fs tests\qnx6_inode_smoke.c tsk\fs\qnx6_inode.c tsk\fs\qnx6_map.c /Fe:qnx6_inode_test.exe
+          qnx6_inode_test.exe
+          cl /nologo /W4 /I tsk\fs tests\qnx6_bitmap_smoke.c tsk\fs\qnx6_bitmap.c tsk\fs\qnx6_map.c /Fe:qnx6_bitmap_test.exe
+          qnx6_bitmap_test.exe
+          cl /nologo /W4 /c tsk\fs\qnx6_map.c tsk\fs\qnx6_inode.c tsk\fs\qnx6_file.c tsk\fs\qnx6_bitmap.c
