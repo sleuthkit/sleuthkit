@@ -1983,7 +1983,7 @@ static uint8_t
     }
 
     if (type == YAFFS_TYPE_SOFTLINK) {
-        a_fs_file->meta->link = (char*)tsk_malloc(YAFFS_HEADER_ALIAS_LENGTH);
+        a_fs_file->meta->link = (char*)tsk_malloc(YAFFS_HEADER_ALIAS_LENGTH + 1);
         if (a_fs_file->meta->link == NULL) {
             free(header);
             free(spare);
@@ -1991,6 +1991,7 @@ static uint8_t
         }
 
         memcpy(a_fs_file->meta->link, header->alias, YAFFS_HEADER_ALIAS_LENGTH);
+        a_fs_file->meta->link[YAFFS_HEADER_ALIAS_LENGTH] = '\0';
     }
 
     free(header);
