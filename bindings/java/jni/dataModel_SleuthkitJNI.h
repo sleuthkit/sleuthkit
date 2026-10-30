@@ -481,6 +481,14 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSuppo
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    isImageSupportedJsonNat
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedJsonNat
+(JNIEnv*, jclass, jstring, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    getSleuthkitVersionNat
  * Signature: ()J
  */

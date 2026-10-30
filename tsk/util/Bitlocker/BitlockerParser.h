@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <set>
+#include <vector>
 #include "tsk/base/tsk_base_i.h"
 #include "tsk/img/tsk_img_i.h"
 
@@ -26,6 +27,7 @@
 #include "MetadataValue.h"
 #include "MetadataUtils.h"
 #include "MetadataValueKey.h"
+#include "MetadataValueStretchKey.h"
 #include "MetadataValueVolumeMasterKey.h"
 #include "BitlockerUtils.h"
 
@@ -100,8 +102,6 @@ class BitlockerParser {
 public:
 	BitlockerParser() {
         memset(m_bitlockerRecoveryKeyId, 0, 16);
-        memset(m_passwordHash, 0, SHA256_DIGEST_LENGTH);
-        memset(m_recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
         mbedtls_aes_init(&m_aesFvekEncryptionContext);
         mbedtls_aes_init(&m_aesFvekDecryptionContext);
         mbedtls_aes_init(&m_aesTweakEncryptionContext);
@@ -117,6 +117,13 @@ public:
     string getDescription();
     string getUnsupportedProtectionTypes();
     string getRecoveryKeyIdStr();
+
+    /**
+    * @returns The position, in the newline-separated list given to initialize(), of the key
+    *          that unlocked the volume, or -1 if no supplied key was used (for example a clear key
+    *          unlocked it, or it is not unlocked).
+    */
+    int getUnlockingKeyIndex() const { return m_unlockingKeyIndex; }
 
     uint16_t getSectorSize() {
         return m_sectorSize;
@@ -145,7 +152,7 @@ public:
 private:
     bool hasBitlockerSignature(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset);
     BITLOCKER_STATUS initializeInternal(TSK_IMG_INFO* a_img_info, uint64_t a_volumeOffset);
-    BITLOCKER_STATUS handlePassword(string password);
+    BITLOCKER_STATUS handlePassword(const string& password, int listIndex);
     BITLOCKER_STATUS readFveMetadataBlockHeader(uint64_t& currentOffset);
     BITLOCKER_STATUS readFveMetadataHeader(uint64_t& currentOffset, uint32_t& metadataEntriesSize);
     BITLOCKER_STATUS readFveMetadataEntries(uint64_t currentOffset, uint32_t metadataEntriesSize);
@@ -153,6 +160,7 @@ private:
     BITLOCKER_STATUS parseVMKEntry(MetadataEntry* entry, MetadataEntry** vmkEntry);
     BITLOCKER_STATUS parsePasswordProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry);
     BITLOCKER_STATUS parseClearKeyProtectedVMK(MetadataValueVolumeMasterKey* vmkValue, MetadataEntry** vmkEntry);
+    BITLOCKER_STATUS getStretchedKey(MetadataValueStretchKey* stretchKey, const uint8_t* keyHash, uint8_t* stretchedKey);
     BITLOCKER_STATUS getFullVolumeEncryptionKey();
     BITLOCKER_STATUS getKeyData(MetadataEntry* entry, uint8_t** keyDataPtr, size_t& keyLen);
     BITLOCKER_STATUS parseVolumeHeader();
@@ -168,8 +176,14 @@ private:
 
     void clearIntermediateData() {
         clearFveMetadataEntries();
-        memset(m_passwordHash, 0, SHA256_DIGEST_LENGTH);
-        memset(m_recoveryPasswordHash, 0, SHA256_DIGEST_LENGTH);
+        for (auto it = m_keys.begin(); it != m_keys.end(); ++it) {
+            memset(&(*it), 0, sizeof(KeyCandidate));
+        }
+        m_keys.clear();
+        for (auto it = m_stretchedKeyCache.begin(); it != m_stretchedKeyCache.end(); ++it) {
+            memset(&(*it), 0, sizeof(StretchedKeyCacheEntry));
+        }
+        m_stretchedKeyCache.clear();
         if (m_decryptedVmkEntry != nullptr) {
             delete m_decryptedVmkEntry;
             m_decryptedVmkEntry = nullptr;
@@ -215,11 +229,27 @@ private:
     bool m_haveRecoveryKeyId = false;
     uint8_t m_bitlockerRecoveryKeyId[16];
 
-    bool m_havePassword = false;
-    uint8_t m_passwordHash[SHA256_DIGEST_LENGTH];
+    // One supplied key, hashed each way it could be used. Any key is tried as a password;
+    // one in the recovery password format is also tried as a recovery password.
+    struct KeyCandidate {
+        int listIndex;          // Position in the list given to initialize()
+        bool havePasswordHash;
+        uint8_t passwordHash[SHA256_DIGEST_LENGTH];
+        bool haveRecoveryPasswordHash;
+        uint8_t recoveryPasswordHash[SHA256_DIGEST_LENGTH];
+    };
+    vector<KeyCandidate> m_keys;
+    int m_unlockingKeyIndex = -1;
+    bool m_tryRecoveryFormatKeysAsPasswords = false;  // See getVolumeMasterKey()
 
-    bool m_haveRecoveryPassword = false;
-    uint8_t m_recoveryPasswordHash[SHA256_DIGEST_LENGTH];
+    // Stretching a key costs about a million SHA-256 rounds, and the three FVE metadata copies
+    // carry the same salts, so remember each result for the life of the parser.
+    struct StretchedKeyCacheEntry {
+        uint8_t salt[BITLOCKER_STRETCH_KEY_SALT_LEN];
+        uint8_t keyHash[SHA256_DIGEST_LENGTH];
+        uint8_t stretchedKey[BITLOCKER_STRETCH_KEY_SHA256_LEN];
+    };
+    vector<StretchedKeyCacheEntry> m_stretchedKeyCache;
 
     // Offset and size of the original volume header
     uint64_t m_volumeHeaderOffset = 0;
