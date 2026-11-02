@@ -288,6 +288,12 @@
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\tffs_nand.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\tffs_nor.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\fs\logical_fs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
@@ -519,6 +525,9 @@
       <Filter>fs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_tffs_nand.h">
       <Filter>fs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\fs\tsk_logical_fs.h">

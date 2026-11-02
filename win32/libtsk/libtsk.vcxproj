@@ -475,6 +475,8 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClCompile Include="..\..\tsk\fs\unix_misc.c" />
     <ClCompile Include="..\..\tsk\fs\walk_cpp.cpp" />
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
+    <ClCompile Include="..\..\tsk\fs\tffs_nand.cpp" />
+    <ClCompile Include="..\..\tsk\fs\tffs_nor.cpp" />
     <ClCompile Include="..\..\tsk\fs\logical_fs.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto.cpp" />
     <ClCompile Include="..\..\tsk\auto\auto_db.cpp" />
@@ -570,6 +572,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\MSVC\$(VCToolsRedistVersion)\$(PlatformTarge
     <ClInclude Include="..\..\tsk\fs\tsk_iso9660.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_ntfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_tffs_nand.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_logical_fs.h" />
     <ClInclude Include="..\..\tsk\auto\sqlite3.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_auto.h" />

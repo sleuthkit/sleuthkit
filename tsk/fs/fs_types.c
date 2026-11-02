@@ -46,6 +46,7 @@ static FS_TYPES fs_type_table[] = {
 #if TSK_USE_HFS
     {"hfs", TSK_FS_TYPE_HFS_DETECT, "HFS+ (Auto Detection)"},
 #endif
+    {"tffs", TSK_FS_TYPE_TFFS, "TFFS"},
     {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
     {"apfs", TSK_FS_TYPE_APFS, "APFS"},
 	{"logical", TSK_FS_TYPE_LOGICAL, "Logical Directory"},

@@ -206,6 +206,10 @@ extern "C" {
         TSK_FS_TYPE_ENUM, const char*, uint8_t);
     extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *tffs_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
+    extern TSK_FS_INFO *tffs_nor_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, const char*, uint8_t);
 	extern TSK_FS_INFO *logicalfs_open(TSK_IMG_INFO *);
 
     /* Specific pool file system routines */

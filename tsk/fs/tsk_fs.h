@@ -822,6 +822,8 @@ extern "C" {
         TSK_FS_TYPE_APFS = 0x00010000, ///< APFS file system
         TSK_FS_TYPE_APFS_DETECT = 0x00010000, ///< APFS auto detection
 		TSK_FS_TYPE_LOGICAL = 0x00020000, ///< Logical directory (aut detection not supported)
+        TSK_FS_TYPE_TFFS = 0x00080000,        ///< TFFS file system
+        TSK_FS_TYPE_TFFS_DETECT = 0x00080000, ///< TFFS auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
@@ -883,11 +885,18 @@ extern "C" {
     * is for a YAFFS2 file system. */
 #define TSK_FS_TYPE_ISYAFFS2(ftype) \
     (((ftype) & TSK_FS_TYPE_YAFFS2_DETECT)?1:0)
-
+    
     /**
     * \ingroup fslib
     * Macro that takes a file system type and returns 1 if the type
-    * is for a YAFFS2 file system. */
+    * is for a TFFS file system. */
+#define TSK_FS_TYPE_ISTFFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_TFFS_DETECT)?1:0)
+    
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
+    * is for a APFS file system. */
 #define TSK_FS_TYPE_ISAPFS(ftype) \
     (((ftype) & TSK_FS_TYPE_APFS_DETECT)?1:0)
 
