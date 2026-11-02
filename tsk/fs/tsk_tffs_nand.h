@@ -1,3 +1,33 @@
+/*
+** The Sleuth Kit
+**
+** Brian Carrier [carrier <at> sleuthkit [dot] org]
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
+**
+** TASK
+** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
+** Corporation and others. All Rights Reserved.
+*/
+
+/**
+*\file tsk_tffs_nand.cpp
+* Contains the internal TSK TFFS NAND file system functions.
+*/
+
+/* TCT
+* LICENSE
+*	This software is distributed under the Common Public License version 1.0
+* AUTHOR(S)
+*	David Langsam
+*	Hochschule Albstadt-Sigmaringen
+*	Poststraße 6
+*   72458 Albstadt
+*   Deutschland
+--*/
+
 #ifndef _TSK_TFFS_H
 #define _TSK_TFFS_H
 
