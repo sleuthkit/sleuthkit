@@ -912,41 +912,50 @@ tffsfsBuildVersionIndex(TSK_FS_INFO *a_fs, TFFS_NAND_STATE *a_state)
 }
 
 /* Classify a block as metadata/content and allocated/unallocated/unused. */
-static TSK_FS_BLOCK_FLAG_ENUM
-tffsfsBlockGetFlags(TSK_FS_INFO *a_fs, TSK_DADDR_T a_addr)
+static uint8_t
+tffsfsReadBlockFlags(TSK_FS_INFO *a_fs, TSK_DADDR_T a_addr,
+    TSK_FS_BLOCK_FLAG_ENUM *a_flags)
 {
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "tffsfsBlockGetFlags: called\n");
-
-    if (a_fs == NULL || a_addr >= a_fs->block_count) {
-        return TSK_FS_BLOCK_FLAG_UNUSED;
+    if (a_fs == NULL || a_flags == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("tffsfsReadBlockFlags: invalid argument");
+        return 1;
+    }
+    if (a_addr >= a_fs->block_count) {
+        *a_flags = TSK_FS_BLOCK_FLAG_UNUSED;
+        return 0;
     }
     if (a_addr % TFFS_PAGES_PER_BLOCK == 0) {
-        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_META |
+        *a_flags = (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_META |
             TSK_FS_BLOCK_FLAG_ALLOC);
+        return 0;
     }
 
     TSK_OFF_T byteOffset = (TSK_OFF_T)a_addr * a_fs->block_size;
     TFFS_HEADER header;
     if (readHeader(a_fs, byteOffset, &header) != 0) {
-        tsk_error_set_errstr("tffsfsBlockGetFlags: block %" PRIuDADDR, a_addr);
-        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
-            TSK_FS_BLOCK_FLAG_UNALLOC);
+        tsk_error_set_errstr2("tffsfsReadBlockFlags: block %" PRIuDADDR,
+            a_addr);
+        return 1;
     }
 
     if (header.file_id == 0 || header.file_id == UINT32_MAX) {
-        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
+        *a_flags = (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
             TSK_FS_BLOCK_FLAG_UNALLOC);
+        return 0;
     }
     if (header.file_id == TFFS_NAME_DIRECTORY_ID) {
-        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_META |
+        *a_flags = (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_META |
             TSK_FS_BLOCK_FLAG_ALLOC);
+        return 0;
     }
 
     TFFS_NAND_STATE *state = (TFFS_NAND_STATE *)a_fs->impl;
     if (state == NULL) {
-        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
+        *a_flags = (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
             TSK_FS_BLOCK_FLAG_UNALLOC);
+        return 0;
     }
     std::map<uint32_t, uint32_t>::const_iterator latest =
         state->m_latestVersionByFileId.find(header.file_id);
@@ -954,7 +963,21 @@ tffsfsBlockGetFlags(TSK_FS_INFO *a_fs, TSK_DADDR_T a_addr)
         latest != state->m_latestVersionByFileId.end() &&
             latest->second == header.version
         ? TSK_FS_BLOCK_FLAG_ALLOC : TSK_FS_BLOCK_FLAG_UNALLOC;
-    return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT | allocationFlag);
+    *a_flags = (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT | allocationFlag);
+    return 0;
+}
+
+static TSK_FS_BLOCK_FLAG_ENUM
+tffsfsBlockGetFlags(TSK_FS_INFO *a_fs, TSK_DADDR_T a_addr)
+{
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "tffsfsBlockGetFlags: called\n");
+
+    TSK_FS_BLOCK_FLAG_ENUM flags;
+    if (tffsfsReadBlockFlags(a_fs, a_addr, &flags) != 0)
+        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
+            TSK_FS_BLOCK_FLAG_UNALLOC);
+    return flags;
 }
 
 /* Validate the requested block range, apply the requested filters, read each
@@ -1008,7 +1031,10 @@ tffsfsBlockWalk(TSK_FS_INFO *a_fs, TSK_DADDR_T a_start_blk,
         int retval;
         TSK_FS_BLOCK_FLAG_ENUM myflags;
 
-        myflags = tffsfsBlockGetFlags(a_fs, addr);
+        if (tffsfsReadBlockFlags(a_fs, addr, &myflags) != 0) {
+            tsk_fs_block_free(fsBlock);
+            return 1;
+        }
 
         // test if we should call the callback with this one
         if ((myflags & TSK_FS_BLOCK_FLAG_META)
@@ -1323,7 +1349,16 @@ tffs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
     fs->block_size = pageSize;
     fs->dev_bsize = a_img_info->sector_size;
 
-    if (tffsfsBuildVersionIndex(fs, state) != 0) {
+    try {
+        if (tffsfsBuildVersionIndex(fs, state) != 0) {
+            tffsfsClose(fs);
+            return NULL;
+        }
+    }
+    catch (const std::bad_alloc &) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
+        tsk_error_set_errstr("tffs_open: out of memory building version index");
         tffsfsClose(fs);
         return NULL;
     }

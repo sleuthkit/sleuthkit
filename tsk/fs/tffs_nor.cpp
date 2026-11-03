@@ -39,6 +39,7 @@
 
 static const size_t TFFS_NOR_SCAN_BUFFER_SIZE = 64 * 1024;
 static const size_t TFFS_NOR_MAX_ZERO_LENGTH_DELETED_RUN = 64;
+static const size_t TFFS_NOR_MAX_ENTRY_COUNT = 1024 * 1024;
 
 struct TFFS_NOR_ENTRY {
     TSK_OFF_T m_offset;
@@ -465,6 +466,9 @@ tffs_nor_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
     }
 
     const TSK_OFF_T imageBytes = a_img_info->size - a_offset;
+    const size_t maxEntryCount = (size_t)std::min<TSK_OFF_T>(
+        imageBytes / TFFS_NOR_ENTRY_HEADER_SIZE,
+        (TSK_OFF_T)TFFS_NOR_MAX_ENTRY_COUNT);
     std::vector<uint8_t> scanBuffer(TFFS_NOR_SCAN_BUFFER_SIZE);
     TSK_OFF_T scanBufferOffset = -1;
     size_t scanBufferBytes = 0;
@@ -480,10 +484,11 @@ tffs_nor_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
             ssize_t bytesRead = tsk_img_read(a_img_info,
                 a_offset + scanBufferOffset, (char *)scanBuffer.data(),
                 scanBufferBytes);
-            if (bytesRead != (ssize_t)scanBufferBytes) {
+            if (bytesRead < (ssize_t)TFFS_NOR_ENTRY_HEADER_SIZE) {
                 tffsNorError(TSK_ERR_FS_READ, "could not read entry scan buffer");
                 goto onError;
             }
+            scanBufferBytes = (size_t)bytesRead;
         }
 
         const uint8_t *header = scanBuffer.data() +
@@ -519,6 +524,11 @@ tffs_nor_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
             ~((TSK_OFF_T)TFFS_NOR_ENTRY_ALIGNMENT - 1);
         if (paddedEnd > imageBytes) {
             tffsNorError(TSK_ERR_FS_CORRUPT, "invalid NOR entry padding");
+            goto onError;
+        }
+        if (state->m_entries.size() >= maxEntryCount) {
+            tffsNorError(TSK_ERR_FS_CORRUPT,
+                "excessive number of NOR entries");
             goto onError;
         }
         TFFS_NOR_ENTRY entry = { entryOffset, dataOffset, paddedEnd,
