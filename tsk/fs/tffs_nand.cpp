@@ -36,8 +36,13 @@
 #include <string.h>
 #include <algorithm>
 #include <map>
+#include <new>
 #include <string>
 #include <vector>
+
+struct TFFS_NAND_STATE {
+    std::map<uint32_t, uint32_t> m_latestVersionByFileId;
+};
 
 static uint8_t readHeader(TSK_FS_INFO *a_fs, TSK_OFF_T a_offset,
     TFFS_HEADER *a_head);
@@ -46,6 +51,8 @@ static TSK_RETVAL_ENUM
     const std::vector<TFFS_HEADER> &a_pageHeaders,
     const std::vector<uint8_t> &a_pageValid,
     std::map<uint32_t, std::string> &a_namesByFileId);
+    static uint8_t tffsfsBuildVersionIndex(TSK_FS_INFO *a_fs,
+        TFFS_NAND_STATE *a_state);
 
 static uint8_t
 tffsfsDetectGeometry(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
@@ -877,6 +884,33 @@ tffsfsReadNameMap(TSK_FS_INFO *a_fs,
     return TSK_OK;
 }
 
+static uint8_t
+tffsfsBuildVersionIndex(TSK_FS_INFO *a_fs, TFFS_NAND_STATE *a_state)
+{
+    for (TSK_DADDR_T page = 0; page < a_fs->block_count; ++page) {
+        if (page % TFFS_PAGES_PER_BLOCK == 0)
+            continue;
+
+        TFFS_HEADER header;
+        if (readHeader(a_fs, (TSK_OFF_T)page * a_fs->block_size, &header) != 0) {
+            tsk_error_set_errstr2("tffsfsBuildVersionIndex: page %" PRIuDADDR,
+                page);
+            return 1;
+        }
+        if (header.file_id == 0 || header.file_id == UINT32_MAX ||
+            header.file_id == TFFS_NAME_DIRECTORY_ID || header.part != 0)
+            continue;
+
+        std::map<uint32_t, uint32_t>::iterator latest =
+            a_state->m_latestVersionByFileId.find(header.file_id);
+        if (latest == a_state->m_latestVersionByFileId.end() ||
+            header.version > latest->second) {
+            a_state->m_latestVersionByFileId[header.file_id] = header.version;
+        }
+    }
+    return 0;
+}
+
 /* Classify a block as metadata/content and allocated/unallocated/unused. */
 static TSK_FS_BLOCK_FLAG_ENUM
 tffsfsBlockGetFlags(TSK_FS_INFO *a_fs, TSK_DADDR_T a_addr)
@@ -884,35 +918,43 @@ tffsfsBlockGetFlags(TSK_FS_INFO *a_fs, TSK_DADDR_T a_addr)
     if (tsk_verbose)
         tsk_fprintf(stderr, "tffsfsBlockGetFlags: called\n");
 
-    if (a_fs == NULL) {
+    if (a_fs == NULL || a_addr >= a_fs->block_count) {
         return TSK_FS_BLOCK_FLAG_UNUSED;
     }
+    if (a_addr % TFFS_PAGES_PER_BLOCK == 0) {
+        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_META |
+            TSK_FS_BLOCK_FLAG_ALLOC);
+    }
+
     TSK_OFF_T byteOffset = (TSK_OFF_T)a_addr * a_fs->block_size;
-    TFFS_HEADER *head;
-    TSK_FS_BLOCK_FLAG_ENUM flags;
-
-    if ((head = (TFFS_HEADER*) tsk_malloc(sizeof(TFFS_HEADER))) == NULL) {
-        return TSK_FS_BLOCK_FLAG_UNUSED;
-    }
-
-    if (readHeader(a_fs, byteOffset, head) != 0) {
+    TFFS_HEADER header;
+    if (readHeader(a_fs, byteOffset, &header) != 0) {
         tsk_error_set_errstr("tffsfsBlockGetFlags: block %" PRIuDADDR, a_addr);
-        free(head);
-        return TSK_FS_BLOCK_FLAG_UNALLOC;
+        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
+            TSK_FS_BLOCK_FLAG_UNALLOC);
     }
 
-    if (head->file_id == 0) {
-        flags = TSK_FS_BLOCK_FLAG_UNUSED;
+    if (header.file_id == 0 || header.file_id == UINT32_MAX) {
+        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
+            TSK_FS_BLOCK_FLAG_UNALLOC);
     }
-    else if (head->file_id == TFFS_NAME_DIRECTORY_ID) {
-        flags = (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_ALLOC);
-    }
-    else {
-        flags = (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC);
+    if (header.file_id == TFFS_NAME_DIRECTORY_ID) {
+        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_META |
+            TSK_FS_BLOCK_FLAG_ALLOC);
     }
 
-    free(head);
-    return flags;
+    TFFS_NAND_STATE *state = (TFFS_NAND_STATE *)a_fs->impl;
+    if (state == NULL) {
+        return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT |
+            TSK_FS_BLOCK_FLAG_UNALLOC);
+    }
+    std::map<uint32_t, uint32_t>::const_iterator latest =
+        state->m_latestVersionByFileId.find(header.file_id);
+    TSK_FS_BLOCK_FLAG_ENUM allocationFlag =
+        latest != state->m_latestVersionByFileId.end() &&
+            latest->second == header.version
+        ? TSK_FS_BLOCK_FLAG_ALLOC : TSK_FS_BLOCK_FLAG_UNALLOC;
+    return (TSK_FS_BLOCK_FLAG_ENUM)(TSK_FS_BLOCK_FLAG_CONT | allocationFlag);
 }
 
 /* Validate the requested block range, apply the requested filters, read each
@@ -1188,6 +1230,8 @@ tffsfsClose(TSK_FS_INFO *a_fs)
     if (tsk_verbose)
         tsk_fprintf(stderr, "tffsfsClose: called\n");
     if (a_fs != NULL) {
+        delete (TFFS_NAND_STATE *)a_fs->impl;
+        a_fs->impl = NULL;
         a_fs->tag = 0;
         tsk_fs_free(a_fs);
     }
@@ -1249,6 +1293,12 @@ tffs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
     if (fs == NULL)
         return NULL;
 
+    TFFS_NAND_STATE *state = new (std::nothrow) TFFS_NAND_STATE();
+    if (state == NULL) {
+        tsk_fs_free(fs);
+        return NULL;
+    }
+
     fs->tag = TSK_FS_INFO_TAG;
     fs->ftype = a_ftype;
     fs->duname = "Page";
@@ -1256,6 +1306,7 @@ tffs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
     fs->img_info = a_img_info;
     fs->offset = a_offset;
     fs->endian = TSK_BIG_ENDIAN;
+    fs->impl = state;
 
     /* Format geometry and inode bounds are supplied by the TFFS parser. */
     /* meta data */
@@ -1271,6 +1322,11 @@ tffs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
 
     fs->block_size = pageSize;
     fs->dev_bsize = a_img_info->sector_size;
+
+    if (tffsfsBuildVersionIndex(fs, state) != 0) {
+        tffsfsClose(fs);
+        return NULL;
+    }
 
     fs->block_walk = tffsfsBlockWalk; // Done
     fs->block_getflags = tffsfsBlockGetFlags; // Done

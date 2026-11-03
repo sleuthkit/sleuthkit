@@ -37,6 +37,9 @@
 #include <string>
 #include <vector>
 
+static const size_t TFFS_NOR_SCAN_BUFFER_SIZE = 64 * 1024;
+static const size_t TFFS_NOR_MAX_ZERO_LENGTH_DELETED_RUN = 64;
+
 struct TFFS_NOR_ENTRY {
     TSK_OFF_T m_offset;
     TSK_OFF_T m_dataOffset;
@@ -462,15 +465,29 @@ tffs_nor_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
     }
 
     const TSK_OFF_T imageBytes = a_img_info->size - a_offset;
+    std::vector<uint8_t> scanBuffer(TFFS_NOR_SCAN_BUFFER_SIZE);
+    TSK_OFF_T scanBufferOffset = -1;
+    size_t scanBufferBytes = 0;
+    size_t zeroLengthDeletedRun = 0;
     TSK_OFF_T entryOffset = 0;
-    while (entryOffset + TFFS_NOR_ENTRY_HEADER_SIZE <= imageBytes) {
-        uint8_t header[TFFS_NOR_ENTRY_HEADER_SIZE];
-        ssize_t bytesRead = tsk_img_read(a_img_info, a_offset + entryOffset,
-            (char *)header, sizeof(header));
-        if (bytesRead != (ssize_t)sizeof(header)) {
-            tffsNorError(TSK_ERR_FS_READ, "could not read entry header");
-            goto onError;
+    while (entryOffset <= imageBytes - TFFS_NOR_ENTRY_HEADER_SIZE) {
+        if (scanBufferOffset < 0 || entryOffset < scanBufferOffset ||
+            entryOffset - scanBufferOffset + TFFS_NOR_ENTRY_HEADER_SIZE >
+                (TSK_OFF_T)scanBufferBytes) {
+            scanBufferOffset = entryOffset;
+            scanBufferBytes = (size_t)std::min<TSK_OFF_T>(
+                TFFS_NOR_SCAN_BUFFER_SIZE, imageBytes - entryOffset);
+            ssize_t bytesRead = tsk_img_read(a_img_info,
+                a_offset + scanBufferOffset, (char *)scanBuffer.data(),
+                scanBufferBytes);
+            if (bytesRead != (ssize_t)scanBufferBytes) {
+                tffsNorError(TSK_ERR_FS_READ, "could not read entry scan buffer");
+                goto onError;
+            }
         }
+
+        const uint8_t *header = scanBuffer.data() +
+            (size_t)(entryOffset - scanBufferOffset);
         uint16_t fileId = ((uint16_t)header[0] << 8) | header[1];
         uint16_t dataSize = ((uint16_t)header[2] << 8) | header[3];
         if (fileId == TFFS_NOR_ERASED_VALUE &&
@@ -478,10 +495,22 @@ tffs_nor_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
             state->m_usedBytes = entryOffset;
             break;
         }
-        if (fileId == TFFS_NOR_ERASED_VALUE ||
-            entryOffset + TFFS_NOR_ENTRY_HEADER_SIZE + dataSize > imageBytes) {
+        if (fileId == TFFS_NOR_ERASED_VALUE || dataSize >
+            imageBytes - entryOffset - TFFS_NOR_ENTRY_HEADER_SIZE) {
             tffsNorError(TSK_ERR_FS_CORRUPT, "invalid NOR entry bounds");
             goto onError;
+        }
+
+        if (fileId == TFFS_NOR_DELETED_ID && dataSize == 0) {
+            if (++zeroLengthDeletedRun >
+                TFFS_NOR_MAX_ZERO_LENGTH_DELETED_RUN) {
+                tffsNorError(TSK_ERR_FS_CORRUPT,
+                    "excessive run of zero-length deleted entries");
+                goto onError;
+            }
+        }
+        else {
+            zeroLengthDeletedRun = 0;
         }
 
         TSK_OFF_T dataOffset = entryOffset + TFFS_NOR_ENTRY_HEADER_SIZE;

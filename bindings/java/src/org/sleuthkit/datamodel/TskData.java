@@ -470,6 +470,8 @@ public class TskData {
 		TSK_FS_TYPE_APFS(0x00010000, "APFS"), ///< APFS file system
 		TSK_FS_TYPE_APFS_DETECT(0x00010000, bundle.getString("TskData.tskFsTypeEnum.APFSautoDetect")), ///< APFS auto detection
 		TSK_FS_TYPE_LOGICAL(0x00020000, "Logical"),
+		TSK_FS_TYPE_TFFS(0x00080000, "TFFS"), ///< TFFS file system
+		TSK_FS_TYPE_TFFS_DETECT(0x00080000, bundle.getString("TskData.tskFsTypeEnum.TFFSautoDetect")), ///< TFFS auto detection
 		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 
 		private int value;
