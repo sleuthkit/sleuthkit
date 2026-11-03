@@ -339,8 +339,6 @@ tffsNorDirOpenMeta(TSK_FS_INFO *a_fs, TSK_FS_DIR **a_fs_dir,
 
     for (size_t index = 0; index < state->m_entries.size(); ++index) {
         const TFFS_NOR_ENTRY &entry = state->m_entries[index];
-        if (entry.m_fileId == TFFS_NOR_NAME_TABLE_ID)
-            continue;
         std::string name = tffsNorEntryName(state, entry, index);
         TSK_FS_NAME *fsName = tsk_fs_name_alloc(name.size() + 1, 0);
         if (fsName == NULL)

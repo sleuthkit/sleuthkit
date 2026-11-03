@@ -343,7 +343,6 @@ tffsfsFsstat(TSK_FS_INFO *a_fs, FILE *a_hfile)
     tsk_fprintf(a_hfile, "FILE SYSTEM INFORMATION\n");
     tsk_fprintf(a_hfile, "--------------------------------------------\n");
     tsk_fprintf(a_hfile, "File System Type: TFFS\n");
-    tsk_fprintf(a_hfile, "Magic: %s\n", TFFS_MAGIC);
     tsk_fprintf(a_hfile, "Image Offset: %" PRIdOFF " bytes\n", a_fs->offset);
     tsk_fprintf(a_hfile, "Byte Order: Big-endian\n");
     tsk_fprintf(a_hfile, "Page Size: %u bytes\n", a_fs->block_size);
@@ -411,8 +410,7 @@ tffsfsFileAddMeta(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     TSK_OFF_T firstOffset = (TSK_OFF_T)a_addr * a_fs->block_size;
     if (readHeader(a_fs, firstOffset, &first) != 0)
         return 1;
-    if (first.file_id == 0 || first.file_id == UINT32_MAX ||
-        first.file_id == TFFS_NAME_DIRECTORY_ID || first.part != 0 ||
+    if (first.file_id == 0 || first.file_id == UINT32_MAX || first.part != 0 ||
         first.size > a_fs->block_size - sizeof(TFFS_HEADER)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
@@ -596,8 +594,7 @@ tffsfsDirOpenMeta(TSK_FS_INFO *a_fs, TSK_FS_DIR **a_fs_dir,
     for (TSK_DADDR_T page = 0; page < pageCount; ++page) {
         const TFFS_HEADER &first = pageHeaders[page];
         if (!pageValid[page] || first.file_id == 0 ||
-            first.file_id == UINT32_MAX ||
-            first.file_id == TFFS_NAME_DIRECTORY_ID || first.part != 0)
+            first.file_id == UINT32_MAX || first.part != 0)
             continue;
 
         TSK_OFF_T totalSize = first.size;
@@ -638,12 +635,15 @@ tffsfsDirOpenMeta(TSK_FS_INFO *a_fs, TSK_FS_DIR **a_fs_dir,
         std::string fileName;
         std::map<uint32_t, std::string>::const_iterator name =
             namesByFileId.find(first.file_id);
-        if (name == namesByFileId.end())
+        if (first.file_id == TFFS_NAME_DIRECTORY_ID)
+            fileName = "$TFFS_NameTable";
+        else if (name == namesByFileId.end())
             fileName = "file_" + std::to_string(first.file_id);
         else
             fileName = name->second;
 
-        bool allocated = latestVersionByFileId[first.file_id] == first.version;
+        bool allocated = first.file_id == TFFS_NAME_DIRECTORY_ID ||
+            latestVersionByFileId[first.file_id] == first.version;
         if (!allocated) {
             fileName += "#" + std::to_string(first.file_id) + "," +
                 std::to_string(first.version);
@@ -754,8 +754,7 @@ tffsfsLoadAttrs(TSK_FS_FILE *a_file)
         if (partsRead == 0) {
             file_id = header.file_id;
             version = header.version;
-            if (header.part != 0 || file_id == 0 || file_id == UINT32_MAX ||
-                file_id == TFFS_NAME_DIRECTORY_ID) {
+            if (header.part != 0 || file_id == 0 || file_id == UINT32_MAX) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
                 tsk_error_set_errstr("tffsfsLoadAttrs: invalid first page");
