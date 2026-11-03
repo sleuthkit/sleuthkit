@@ -377,6 +377,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                             TSK_FS_DIR_WALK_FLAG_RECURSE),
                             fatfs_find_parent_act,
                             (void *) &a_fs_dir->fs_file->meta->addr, recursion_depth)) {
+                                tsk_fs_name_free(fs_name);
                                 return TSK_OK;
                         }
 
@@ -401,8 +402,10 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                 * info for '..' entries */
                 if (fs_name->type == TSK_FS_NAME_TYPE_DIR) {
                     if (fatfs_dir_buf_add(fatfs,
-                        a_fs_dir->fs_file->meta->addr, fs_name->meta_addr))
+                        a_fs_dir->fs_file->meta->addr, fs_name->meta_addr)) {
+                        tsk_fs_name_free(fs_name);
                         return TSK_ERR;
+                    }
                 }
             }
 
