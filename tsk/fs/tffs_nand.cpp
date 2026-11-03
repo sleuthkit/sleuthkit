@@ -91,6 +91,30 @@ tffsfsDetectGeometry(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
                 firstMagicFound = true;
             }
             else if (nextMagicOffset == 0) {
+                if (magicOffset % TFFS_PAGES_PER_BLOCK != 0 ||
+                    magicOffset / TFFS_PAGES_PER_BLOCK <
+                        (TSK_OFF_T)sizeof(TFFS_HEADER))
+                    continue;
+
+                if (magicOffset <=
+                    (imageBytes - (TSK_OFF_T)TFFS_MAGIC_LEN) / 2) {
+                    uint8_t nextBlockMagic[TFFS_MAGIC_LEN];
+                    TSK_OFF_T nextBlockOffset = magicOffset * 2;
+                    ssize_t candidateBytes = tsk_img_read(a_img_info,
+                        a_offset + nextBlockOffset,
+                        (char *)nextBlockMagic, sizeof(nextBlockMagic));
+                    if (candidateBytes != (ssize_t)sizeof(nextBlockMagic)) {
+                        tsk_error_reset();
+                        tsk_error_set_errno(TSK_ERR_FS_READ);
+                        tsk_error_set_errstr(
+                            "tffs_open: could not validate erase-block boundary");
+                        return 1;
+                    }
+                    if (memcmp(nextBlockMagic, TFFS_MAGIC,
+                        TFFS_MAGIC_LEN) != 0)
+                        continue;
+                }
+
                 nextMagicOffset = magicOffset;
                 lastMagicOffset = magicOffset;
             }
@@ -1310,8 +1334,17 @@ tffs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
     if (memcmp(magicBuf, TFFS_MAGIC, sizeof(magicBuf)) != 0)
         return tffs_nor_open(a_img_info, a_offset, a_ftype, a_pass, a_test);
 
-    if (tffsfsDetectGeometry(a_img_info, a_offset, &pageSize,
-            &pageCount) != 0) {
+    try {
+        if (tffsfsDetectGeometry(a_img_info, a_offset, &pageSize,
+                &pageCount) != 0) {
+            return NULL;
+        }
+    }
+    catch (const std::bad_alloc &) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
+        tsk_error_set_errstr(
+            "tffs_open: out of memory scanning image for TFFS magic");
         return NULL;
     }
 

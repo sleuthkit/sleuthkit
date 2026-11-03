@@ -465,6 +465,7 @@ tffs_nor_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
         return NULL;
     }
 
+    try {
     const TSK_OFF_T imageBytes = a_img_info->size - a_offset;
     const size_t maxEntryCount = (size_t)std::min<TSK_OFF_T>(
         imageBytes / TFFS_NOR_ENTRY_HEADER_SIZE,
@@ -580,6 +581,10 @@ tffs_nor_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset,
     fs->name_cmp = tsk_fs_unix_name_cmp;
     fs->close = tffsNorClose;
     return fs;
+    }
+    catch (const std::bad_alloc &) {
+        tffsNorError(TSK_ERR_AUX_MALLOC, "out of memory opening NOR TFFS");
+    }
 
 onError:
     delete state;
