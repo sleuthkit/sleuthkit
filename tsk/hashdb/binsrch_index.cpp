@@ -45,6 +45,7 @@ TSK_HDB_BINSRCH_INFO *hdb_binsrch_open(FILE *hDb, const TSK_TCHAR *db_path)
 
     // Do basic initialization of hdb_binsrch_info
     if (hdb_info_base_open((TSK_HDB_INFO*)hdb_binsrch_info, db_path)) {
+        free(hdb_binsrch_info);
         return NULL;
     }
 
@@ -344,8 +345,21 @@ static uint8_t
                     hdb_binsrch_info->idx_fname);
                 return 1;
         }
-        hdb_binsrch_info->hIdx =
-            _fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "r");
+        // Convert in two steps so a failure in either one can release
+        // the handle; a leaked handle keeps the index file locked.
+        hdb_binsrch_info->hIdx = NULL;
+        int fdIdx = _open_osfhandle((intptr_t) hWin, _O_RDONLY);
+        if (fdIdx == -1) {
+            // The handle is not owned by a descriptor yet.
+            CloseHandle(hWin);
+        }
+        else {
+            hdb_binsrch_info->hIdx = _fdopen(fdIdx, "r");
+            if (hdb_binsrch_info->hIdx == NULL) {
+                // The descriptor owns the handle; closing it closes both.
+                _close(fdIdx);
+            }
+        }
         if (hdb_binsrch_info->hIdx == NULL) {
             tsk_release_lock(&hdb_binsrch_info->base.lock);
             tsk_error_reset();
