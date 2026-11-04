@@ -28,6 +28,10 @@ static FILE *
     int fd = 0;
     if (_wsopen_s(&fd, file_path, _O_RDONLY | _O_BINARY, _SH_DENYNO, 0) == 0) {
         file = _wfdopen(fd, L"rb");
+        if (NULL == file) {
+            // Don't leak the descriptor; it would keep the file locked.
+            _close(fd);
+        }
     }
 #else
     file = fopen(file_path, "rb");
@@ -179,6 +183,7 @@ TSK_HDB_INFO *
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
                 tsk_error_set_errstr("%s: error determining hash database type of %" PRIttocTSK, func_name, db_path);
+                fclose(hDb);
                 free(db_path);
                 return NULL;
             }
@@ -230,6 +235,7 @@ TSK_HDB_INFO *
     case TSK_HDB_DBTYPE_SQLITE_ID: 
         if (NULL != hDb) {
             fclose(hDb);
+            hDb = NULL;
         }
         hdb_info = sqlite_hdb_open(db_path);
         break;
@@ -237,6 +243,13 @@ TSK_HDB_INFO *
         // included to prevent compiler warnings that it is not used
     case TSK_HDB_DBTYPE_INVALID_ID:
         break;
+    }
+
+    // The text-format open functions take ownership of hDb only on success.
+    // On failure, close it here so the file is not left open (and, on
+    // Windows, locked against deletion).
+    if ((NULL == hdb_info) && (NULL != hDb)) {
+        fclose(hDb);
     }
 
     free(db_path);
