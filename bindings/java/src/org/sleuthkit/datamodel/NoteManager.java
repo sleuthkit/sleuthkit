@@ -160,7 +160,7 @@ public final class NoteManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	NoteType getOrAddNoteType(String typeName, String displayName) throws TskCoreException {
+	public NoteType getOrAddNoteType(String typeName, String displayName) throws TskCoreException {
 		return getOrAddNoteType(typeName, displayName, null);
 	}
 
@@ -180,7 +180,7 @@ public final class NoteManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	NoteType getOrAddNoteType(String typeName, String displayName, String description) throws TskCoreException {
+	public NoteType getOrAddNoteType(String typeName, String displayName, String description) throws TskCoreException {
 		if (typeName == null || typeName.isEmpty()) {
 			throw new TskCoreException("Illegal argument passed to getOrAddNoteType: type name is required.");
 		}
