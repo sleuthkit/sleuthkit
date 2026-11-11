@@ -1758,7 +1758,24 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
     }
 
     indices = (ext2fs_extent_idx *) (header + 1);
-    for (i = 0; i < tsk_getu16(fs_info->endian, header->eh_entries); i++) {
+    uint16_t num_entries = tsk_getu16(fs_info->endian, header->eh_entries);
+    /* Headers below the root live in a block-sized buffer (buf above), so
+     * eh_entries must not claim more index entries than fit in that block.
+     * The depth-0 header is the inode's i_block array and is bounded by
+     * its caller. */
+    if (recursion_depth > 0) {
+        uint16_t max_entries =
+            (fs_blocksize - sizeof(ext2fs_extent_header)) / sizeof(ext2fs_extent_idx);
+        if (num_entries > max_entries) {
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+                ("ext2fs_extent_tree_index_count: eh_entries %" PRIu16
+                " exceeds block capacity %" PRIu16, num_entries, max_entries);
+            free(buf);
+            return -1;
+        }
+    }
+    for (i = 0; i < num_entries; i++) {
         ext2fs_extent_idx *index = &indices[i];
         TSK_DADDR_T block =
             (((uint32_t) tsk_getu16(fs_info->endian,
