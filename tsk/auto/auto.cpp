@@ -541,10 +541,64 @@ TskAuto::findFilesInPool(TSK_OFF_T start, TSK_POOL_TYPE_ENUM ptype)
 
 
 /**
+ * Opens the file system at the given offset, trying each candidate password
+ * set with setCandidatePasswords(). If no candidate list was set, the single
+ * password from setFileSystemPassword() is used (empty by default), making a
+ * single attempt as before. Stops early if an attempt fails with anything
+ * other than a BitLocker error, since a different password cannot change that
+ * outcome. If all attempts fail, the last BitLocker error (which contains the
+ * recovery key identifier) is restored so it reaches the caller.
+ *
+ * @param a_start Byte offset of the file system.
+ * @param a_ftype File system type.
+ * @returns Open file system, or NULL if all attempts failed (error state will be set).
+ */
+TSK_FS_INFO *
+    TskAuto::openFsDecryptWithPasswords(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
+{
+    std::vector<std::string> candidates = m_candidatePasswords;
+    if (candidates.empty()) {
+        candidates.push_back(m_fileSystemPassword);
+    }
+
+    int haveBitlockerError = 0;
+    uint32_t bitlockerErrno = 0;
+    std::string bitlockerErrstr;
+
+    for (size_t i = 0; i < candidates.size(); i++) {
+        tsk_error_reset();
+        TSK_FS_INFO *fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start,
+            a_ftype, candidates[i].c_str());
+        if (fs_info != NULL) {
+            tsk_error_reset();
+            return fs_info;
+        }
+
+        if (tsk_error_get_errno() == TSK_ERR_FS_BITLOCKER_ERROR) {
+            haveBitlockerError = 1;
+            bitlockerErrno = tsk_error_get_errno();
+            bitlockerErrstr = tsk_error_get_errstr();
+        }
+        else {
+            // Only a BitLocker failure can be fixed by another password
+            break;
+        }
+    }
+
+    if (haveBitlockerError
+        && tsk_error_get_errno() != TSK_ERR_FS_BITLOCKER_ERROR) {
+        tsk_error_reset();
+        tsk_error_set_errno(bitlockerErrno);
+        tsk_error_set_errstr("%s", bitlockerErrstr.c_str());
+    }
+    return NULL;
+}
+
+/**
  * Starts in a specified byte offset of the opened disk images and looks for a
  * file system. Will call processFile() on each file
  * that is found.  Same as findFilesInFs, but gives more detailed return values.
- * @param a_start Byte offset to start analyzing from. 
+ * @param a_start Byte offset to start analyzing from.
  * @param a_ftype File system type.
  * @returns Error (messages will have been registered), OK, or STOP.
  */
@@ -572,7 +626,7 @@ TSK_RETVAL_ENUM
 	}
 
     TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
+    if ((fs_info = openFsDecryptWithPasswords(a_start, a_ftype)) == NULL) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();
@@ -671,7 +725,7 @@ uint8_t
 	}
 
     TSK_FS_INFO *fs_info;
-    if ((fs_info = tsk_fs_open_img_decrypt(m_img_info, a_start, a_ftype, m_fileSystemPassword.c_str())) == NULL) {
+    if ((fs_info = openFsDecryptWithPasswords(a_start, a_ftype)) == NULL) {
         if (isCurVsValid() == false) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIdOFF, a_start/512);
             registerError();

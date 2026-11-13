@@ -113,6 +113,18 @@ class TskAuto {
     std::string getFileSystemPassword() const { return m_fileSystemPassword; }
 
     /**
+    * Set a list of candidate passwords that will each be tried, in order, when
+    * trying to open an encrypted file system. A non-empty list takes precedence
+    * over the single password set with setFileSystemPassword().
+    */
+    void setCandidatePasswords(const std::vector<std::string>& candidatePasswords) { m_candidatePasswords = candidatePasswords; }
+
+    /**
+     * @returns The list of candidate passwords that will be tried when opening each encrypted file system.
+     */
+    std::vector<std::string> getCandidatePasswords() const { return m_candidatePasswords; }
+
+    /**
      * TskAuto calls this method before it processes the volume system that is found in an 
      * image. You can use this to learn about the volume system before it is processed
      * and you can force TskAuto to skip this volume system. 
@@ -252,6 +264,7 @@ class TskAuto {
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
     std::string m_fileSystemPassword;
+    std::vector<std::string> m_candidatePasswords;
     
     std::vector<error_record> m_errors;
 
@@ -293,6 +306,9 @@ class TskAuto {
     TSK_TCHAR * m_imageWriterPath;
 
     
+    TSK_FS_INFO * openFsDecryptWithPasswords(TSK_OFF_T a_start,
+        TSK_FS_TYPE_ENUM a_ftype);
+
     TSK_RETVAL_ENUM processAttributes(TSK_FS_FILE * fs_file,
         const char *path);
 

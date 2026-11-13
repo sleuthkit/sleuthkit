@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import static org.sleuthkit.datamodel.SleuthkitCase.IMAGE_PASSWORD_KEY;
+import static org.sleuthkit.datamodel.SleuthkitCase.IMAGE_PASSWORDS_KEY;
 
 /**
  * Represents a file system object stored in tsk_fs_info table FileSystem has a
@@ -120,36 +122,65 @@ public class FileSystem extends AbstractContent {
 						}
 						filesystemHandle = SleuthkitJNI.openFsPool(image.getImageHandle(), imgOffset, pool.getPoolHandle(), poolVolume.getStart(), getSleuthkitCase());
 					} else {
-						String password = getImagePasswordFromSettings(image.getAcquisitionToolSettings());
-						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, password, getSleuthkitCase());
+						List<String> passwords = getImagePasswordsFromSettings(image.getAcquisitionToolSettings());
+						TskCoreException lastException = null;
+						for (String password : passwords) {
+							try {
+								filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset, password, getSleuthkitCase());
+								lastException = null;
+								break;
+							} catch (TskCoreException ex) {
+								lastException = ex;
+							}
+						}
+						if (lastException != null) {
+							throw lastException;
+						}
 					}
 				}
 			}
 		}
 		return this.filesystemHandle;
 	}
-	
+
 	/**
-	 * Attempt to read the image password from the settings string 
-	 * 
+	 * Attempt to read the candidate image passwords from the settings string.
+	 * Reads the password list if present, otherwise falls back to the legacy
+	 * single-password key.
+	 *
 	 * @param settingsStr
-	 * 
-	 * @return the password if found, empty string otherwise
+	 *
+	 * @return the candidate passwords if found, a list containing only the
+	 *         empty string otherwise
 	 */
 	@SuppressWarnings("unchecked")
-	private String getImagePasswordFromSettings(String settingsStr) {
-		
+	private List<String> getImagePasswordsFromSettings(String settingsStr) {
+
+		List<String> passwords = new ArrayList<>();
 		if(StringUtils.isBlank(settingsStr)){
-			return "";
+			passwords.add("");
+			return passwords;
 		}
 
 		try {
 			Map<String, Object> settingsMap = (new Gson()).fromJson(settingsStr, Map.class);
-			return (String)settingsMap.getOrDefault(IMAGE_PASSWORD_KEY, "");
+			Object passwordsObj = settingsMap.get(IMAGE_PASSWORDS_KEY);
+			if (passwordsObj instanceof List) {
+				for (Object passwordObj : (List<?>) passwordsObj) {
+					if (passwordObj instanceof String) {
+						passwords.add((String) passwordObj);
+					}
+				}
+			}
+			if (passwords.isEmpty()) {
+				passwords.add((String)settingsMap.getOrDefault(IMAGE_PASSWORD_KEY, ""));
+			}
 		} catch (JsonSyntaxException ex) {
 			// There's no guarantee that acquisition settings will contain a valid JSON string
-			return "";
+			passwords.clear();
+			passwords.add("");
 		}
+		return passwords;
 	}
 
 	public Directory getRootDirectory() throws TskCoreException {

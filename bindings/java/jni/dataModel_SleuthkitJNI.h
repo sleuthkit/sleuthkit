@@ -185,6 +185,14 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddI
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    initializeAddImgCandidatesNat
+ * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZZ[Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgCandidatesNat
+  (JNIEnv *, jclass, jobject, jstring, jboolean, jboolean, jboolean, jobjectArray);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initAddImgNat
  * Signature: (Lorg/sleuthkit/datamodel/TskCaseDbBridge;Ljava/lang/String;ZZ)J
  */
@@ -478,6 +486,14 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
  */
 JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedStringNat
 (JNIEnv*, jclass, jstring, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    isImageSupportedListNat
+ * Signature: (Ljava/lang/String;[Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedListNat
+(JNIEnv*, jclass, jstring, jobjectArray);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
