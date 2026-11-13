@@ -74,6 +74,7 @@ noinst_PROGRAMS = \
 	fls_hfs_fuzzer \
 	fls_iso9660_fuzzer \
 	fls_ntfs_fuzzer \
+	img_vs_fuzzer \
 	mmls_dos_fuzzer \
 	mmls_gpt_fuzzer \
 	mmls_mac_fuzzer \
@@ -192,6 +193,16 @@ mmls_sun_fuzzer_CPPFLAGS = \
 	-I$(top_srcdir) -I$(top_srcdir)/tsk
 
 mmls_sun_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+img_vs_fuzzer_SOURCES = \
+	ossfuzz/img_vs_fuzzer.cc
+
+img_vs_fuzzer_CPPFLAGS = \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+img_vs_fuzzer_LDADD = \
 	@LIB_FUZZING_ENGINE@ \
 	tsk/libtsk.la
 endif # HAVE_LIB_FUZZING_ENGINE
