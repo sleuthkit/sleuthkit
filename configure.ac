@@ -366,6 +366,10 @@ AC_CONFIG_FILES([
     unit_tests/Makefile
     unit_tests/base/Makefile])
 
+dnl Dependencies for OSS-Fuzz
+AM_CONDITIONAL(HAVE_LIB_FUZZING_ENGINE, [test "x${LIB_FUZZING_ENGINE}" != x])
+AC_SUBST([LIB_FUZZING_ENGINE], ["${LIB_FUZZING_ENGINE}"])
+
 AC_OUTPUT
 
 dnl Print a summary
