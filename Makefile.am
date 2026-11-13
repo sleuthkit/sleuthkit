@@ -68,6 +68,7 @@ man-html:
 
 if HAVE_LIB_FUZZING_ENGINE
 noinst_PROGRAMS = \
+	auto_support_fuzzer \
 	fls_apfs_fuzzer \
 	fls_ext_fuzzer \
 	fls_fat_fuzzer \
@@ -192,6 +193,16 @@ mmls_sun_fuzzer_CPPFLAGS = \
 	-I$(top_srcdir) -I$(top_srcdir)/tsk
 
 mmls_sun_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+auto_support_fuzzer_SOURCES = \
+	ossfuzz/auto_support_fuzzer.cc
+
+auto_support_fuzzer_CPPFLAGS = \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+auto_support_fuzzer_LDADD = \
 	@LIB_FUZZING_ENGINE@ \
 	tsk/libtsk.la
 endif # HAVE_LIB_FUZZING_ENGINE
