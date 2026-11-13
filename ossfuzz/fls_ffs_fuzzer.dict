@@ -1,0 +1,9 @@
+# Magic values for the UFS (FFS) fuzz targets; see tsk/fs/tsk_ffs.h
+header_ufs1_le="\x54\x19\x01\x00"
+header_ufs1_be="\x00\x01\x19\x54"
+header_ufs2_le="\x19\x01\x54\x19"
+header_ufs2_be="\x19\x54\x01\x19"
+cg_magic_le="\x55\x02\x09\x00"
+cg_magic_be="\x00\x09\x02\x55"
+dt_dir="\x04"
+dt_reg="\x08"

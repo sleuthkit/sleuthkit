@@ -74,6 +74,8 @@ noinst_PROGRAMS = \
 	fls_hfs_fuzzer \
 	fls_iso9660_fuzzer \
 	fls_ntfs_fuzzer \
+	fls_ffs_fuzzer \
+	fls_yaffs_fuzzer \
 	mmls_dos_fuzzer \
 	mmls_gpt_fuzzer \
 	mmls_mac_fuzzer \
@@ -192,6 +194,32 @@ mmls_sun_fuzzer_CPPFLAGS = \
 	-I$(top_srcdir) -I$(top_srcdir)/tsk
 
 mmls_sun_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_ffs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ffs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_FFS_DETECT \
+	-DFLS_MIN_IMAGE_BYTES=8192 \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_ffs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_yaffs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_yaffs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_YAFFS2 \
+	-DFLS_MIN_IMAGE_BYTES=135168 \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_yaffs_fuzzer_LDADD = \
 	@LIB_FUZZING_ENGINE@ \
 	tsk/libtsk.la
 endif # HAVE_LIB_FUZZING_ENGINE
