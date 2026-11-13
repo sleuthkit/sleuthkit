@@ -51,7 +51,8 @@ static ssize_t mem_read(TSK_IMG_INFO *img_info, TSK_OFF_T offset, char *buf,
 
 static void mem_close(TSK_IMG_INFO *img_info) {
   IMG_MEM_INFO *mem_info = reinterpret_cast<IMG_MEM_INFO *>(img_info);
-  tsk_deinit_lock(&(img_info->cache_lock));
+  /* cache_lock teardown belongs to tsk_img_close(), which has already
+   * destroyed the lock by the time this close callback runs. */
   free(mem_info);
 }
 

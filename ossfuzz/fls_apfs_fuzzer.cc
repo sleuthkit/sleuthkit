@@ -39,20 +39,24 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     return 0;
   }
 
-  // Pool start block is APFS container specific and is hard coded for now
-  std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
-      pool->get_img_info(pool.get(), (TSK_DADDR_T)106), tsk_img_close};
-  if (!pool_img) {
-    return 0;
-  }
+  // Walk every volume the pool reports; a hard-coded start block only
+  // matched one crafted container layout.
+  for (TSK_POOL_VOLUME_INFO *vol = pool->vol_list; vol; vol = vol->next) {
+    std::unique_ptr<TSK_IMG_INFO, decltype(&tsk_img_close)> pool_img{
+        pool->get_img_info(pool.get(), static_cast<TSK_DADDR_T>(vol->block)),
+        tsk_img_close};
+    if (!pool_img) {
+      continue;
+    }
 
-  std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
-      tsk_fs_open_img_decrypt(pool_img.get(), 0, TSK_FS_TYPE_APFS_DETECT, ""),
-      tsk_fs_close};
+    std::unique_ptr<TSK_FS_INFO, decltype(&tsk_fs_close)> fs{
+        tsk_fs_open_img_decrypt(pool_img.get(), 0, TSK_FS_TYPE_APFS_DETECT, ""),
+        tsk_fs_close};
 
-  if (fs) {
-    tsk_fs_fls(fs.get(), TSK_FS_FLS_FULL, fs->root_inum,
-               TSK_FS_DIR_WALK_FLAG_RECURSE, nullptr, 0);
+    if (fs) {
+      tsk_fs_fls(fs.get(), TSK_FS_FLS_FULL, fs->root_inum,
+                 TSK_FS_DIR_WALK_FLAG_RECURSE, nullptr, 0);
+    }
   }
 
   return 0;

@@ -54,7 +54,7 @@ for type in ${!FLS_TEST_FILES[@]}; do
     filename=$( echo ${url} | sed 's/?[^?]*$//' )
     filename=$( basename ${filename} )
 
-    curl -L -o "test_data/${fuzz_target}/${filename}" "${url}"
+    curl -L --fail -o "test_data/${fuzz_target}/${filename}" "${url}"
   done
 
   (cd "test_data/${fuzz_target}" && zip ${OUT}/${fuzz_target}_seed_corpus.zip *)
@@ -70,7 +70,7 @@ for type in ${!MMLS_TEST_FILES[@]}; do
     filename=$( echo ${url} | sed 's/?[^?]*$//' )
     filename=$( basename ${filename} )
 
-    curl -L -o "test_data/${fuzz_target}/${filename}" "${url}"
+    curl -L --fail -o "test_data/${fuzz_target}/${filename}" "${url}"
   done
 
   (cd "test_data/${fuzz_target}" && zip ${OUT}/${fuzz_target}_seed_corpus.zip *)
