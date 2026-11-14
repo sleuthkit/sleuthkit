@@ -183,13 +183,13 @@ tffsfsFsstatBlockHeaders(TSK_FS_INFO *a_fs, FILE *a_hfile)
 
     tsk_fprintf(a_hfile, "\nERASE BLOCK HEADERS\n");
     tsk_fprintf(a_hfile,
-        "+------+-------+------------+----------+------------+------------+----------+--------+----------+-------+\n");
+        "+------+------------+----------+------------+------------+----------+--------+----------+-------+\n");
     tsk_fprintf(a_hfile,
-        "| %-4s | %-5s | %-10s | %-8s | %-10s | %-10s | %-8s | %-6s | %-8s | %-5s |\n",
-        "Blk", "Page", "Image Off", "Magic", "TFFS Ver", "Header Ver",
+        "| %-4s | %-10s | %-8s | %-10s | %-10s | %-8s | %-6s | %-8s | %-5s |\n",
+        "Blk", "Image Off", "Magic", "TFFS Ver", "Header Ver",
         "Logical", "Erase", "Sec/Page", "Bad");
     tsk_fprintf(a_hfile,
-        "+------+-------+------------+----------+------------+------------+----------+--------+----------+-------+\n");
+        "+------+------------+----------+------------+------------+----------+--------+----------+-------+\n");
     for (TSK_DADDR_T block = 0; block < eraseBlockCount; ++block) {
         TSK_DADDR_T page = block * TFFS_PAGES_PER_BLOCK;
         TSK_OFF_T pageOffset = (TSK_OFF_T)page * a_fs->block_size;
@@ -207,10 +207,10 @@ tffsfsFsstatBlockHeaders(TSK_FS_INFO *a_fs, FILE *a_hfile)
         bool magicValid = memcmp(header, TFFS_MAGIC, TFFS_MAGIC_LEN) == 0;
 
         tsk_fprintf(a_hfile,
-            "| %-4" PRIuDADDR " | %-5" PRIuDADDR " | %-10" PRIdOFF
+            "| %-4" PRIuDADDR " | %-10" PRIdOFF
             " | %-8s | 0x%08" PRIx32 " | 0x%08" PRIx32 " | %-8" PRIu32
             " | %-6" PRIu32 " | %-8" PRIu32 " | %-5" PRIu32 " |\n",
-            block, page, imageOffset, magicValid ? TFFS_MAGIC : "INVALID",
+            block, imageOffset, magicValid ? TFFS_MAGIC : "INVALID",
             tsk_getu32(a_fs->endian, &header[0x08]),
             tsk_getu32(a_fs->endian, &header[0x0C]),
             tsk_getu32(a_fs->endian, &header[0x10]),
@@ -366,7 +366,7 @@ tffsfsFsstat(TSK_FS_INFO *a_fs, FILE *a_hfile)
     tsk_fprintf(a_hfile, "\nFILE INFORMATION\n");
     tsk_fprintf(a_hfile, "--------------------------------------------\n");
     tsk_fprintf(a_hfile, "Files: %" PRIuSIZE "\n", latestVersionByFileId.size());
-    tsk_fprintf(a_hfile, "Deleted Files: %" PRIuDADDR "\n", obsoleteVersions);
+    tsk_fprintf(a_hfile, "Outdated Files: %" PRIuDADDR "\n", obsoleteVersions);
 
     if (tffsfsFsstatBlockHeaders(a_fs, a_hfile))
         return 1;
