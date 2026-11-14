@@ -19,6 +19,10 @@
 package org.sleuthkit.datamodel;
 
 import com.google.common.annotations.Beta;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -26,6 +30,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1995,30 +2000,191 @@ public class SleuthkitJNI {
 	public static class TestOpenImageResult {
 		boolean testSuccess;
 		String message;
-		
+		boolean fileSystemFound;
+		List<VolumeOpenResult> volumes;
+
 		TestOpenImageResult(boolean testSuccess, String message) {
+			this(testSuccess, message, testSuccess, Collections.emptyList());
+		}
+
+		TestOpenImageResult(boolean testSuccess, String message, boolean fileSystemFound, List<VolumeOpenResult> volumes) {
 			this.testSuccess = testSuccess;
 			this.message = message;
+			this.fileSystemFound = fileSystemFound;
+			this.volumes = Collections.unmodifiableList(new ArrayList<>(volumes));
 		}
-	
+
 		// True if we were able to open at least one file system in the given image
+		// and no BitLocker volume stayed locked
 		public boolean wasSuccessful() {
 			return testSuccess;
 		}
-		
-		// Contains a user-friendly status message. On success, will contain "Image opened successfully". 
+
+		// Contains a user-friendly status message. On success, will contain "Image opened successfully".
 		// Otherwise it will give our best effort to explain why we were unsuccessful.
 		public String getMessage() {
 			return message;
 		}
+
+		/**
+		 * @return From testOpenImageWithKeys(): true if at least one file system
+		 *         opened, even if some BitLocker volumes stayed locked. That includes
+		 *         small unencrypted ones such as an EFI system partition, so check
+		 *         getLockedBitLockerVolumes() too. From testOpenImage(): the same as
+		 *         wasSuccessful().
+		 */
+		public boolean wasFileSystemFound() {
+			return fileSystemFound;
+		}
+
+		/**
+		 * @return What happened to each allocated volume (or to the whole image when it
+		 *         has no volume system). Empty unless from testOpenImageWithKeys().
+		 */
+		public List<VolumeOpenResult> getVolumes() {
+			return volumes;
+		}
+
+		/**
+		 * @return The BitLocker volumes that none of the keys unlocked.
+		 */
+		public List<VolumeOpenResult> getLockedBitLockerVolumes() {
+			List<VolumeOpenResult> locked = new ArrayList<>();
+			for (VolumeOpenResult volume : volumes) {
+				if (volume.getStatus().isLockedBitLocker()) {
+					locked.add(volume);
+				}
+			}
+			return locked;
+		}
 	}
-	
+
+	/**
+	 * Why a volume did or did not open in testOpenImageWithKeys().
+	 */
+	public enum VolumeOpenStatus {
+		OPENED("opened"),
+		BITLOCKER_NEEDS_KEY("bitlocker_needs_key"),
+		BITLOCKER_WRONG_KEY("bitlocker_wrong_key"),
+		BITLOCKER_UNSUPPORTED_PROTECTOR("bitlocker_unsupported_protector"),
+		BITLOCKER_ERROR("bitlocker_error"),
+		ENCRYPTED("encrypted"),
+		POSSIBLY_ENCRYPTED("possibly_encrypted"),
+		NO_FILE_SYSTEM("no_file_system"),
+		MULTIPLE_FILE_SYSTEMS("multiple_file_systems"),
+		ERROR("error"),
+		NOT_TRIED("not_tried"),
+		UNKNOWN("");
+
+		private final String name;
+
+		VolumeOpenStatus(String name) {
+			this.name = name;
+		}
+
+		static VolumeOpenStatus fromName(String name) {
+			for (VolumeOpenStatus status : values()) {
+				if (status != UNKNOWN && status.name.equals(name)) {
+					return status;
+				}
+			}
+			return UNKNOWN;
+		}
+
+		/**
+		 * @return True for a BitLocker volume that stayed locked.
+		 */
+		public boolean isLockedBitLocker() {
+			return this == BITLOCKER_NEEDS_KEY || this == BITLOCKER_WRONG_KEY
+					|| this == BITLOCKER_UNSUPPORTED_PROTECTOR || this == BITLOCKER_ERROR;
+		}
+	}
+
+	/**
+	 * The outcome of opening one volume in testOpenImageWithKeys().
+	 */
+	public static class VolumeOpenResult {
+		private final long addr;
+		private final long offset;
+		private final long length;
+		private final String description;
+		private final VolumeOpenStatus status;
+		private final String fileSystem;
+		private final String encryption;
+		private final int keyIndex;
+		private final String recoveryKeyId;
+		private final String message;
+
+		VolumeOpenResult(long addr, long offset, long length, String description, VolumeOpenStatus status,
+				String fileSystem, String encryption, int keyIndex, String recoveryKeyId, String message) {
+			this.addr = addr;
+			this.offset = offset;
+			this.length = length;
+			this.description = description;
+			this.status = status;
+			this.fileSystem = fileSystem;
+			this.encryption = encryption;
+			this.keyIndex = keyIndex;
+			this.recoveryKeyId = recoveryKeyId;
+			this.message = message;
+		}
+
+		/** @return Partition address in the volume system, or -1 if the image has none. */
+		public long getAddr() {
+			return addr;
+		}
+
+		/** @return Byte offset of the volume in the image. */
+		public long getOffset() {
+			return offset;
+		}
+
+		/** @return Size of the volume in bytes. */
+		public long getLength() {
+			return length;
+		}
+
+		/** @return Partition type description. */
+		public String getDescription() {
+			return description;
+		}
+
+		public VolumeOpenStatus getStatus() {
+			return status;
+		}
+
+		/** @return File system type when opened, otherwise empty. */
+		public String getFileSystem() {
+			return fileSystem;
+		}
+
+		/** @return Encryption summary when opened and encrypted, otherwise empty. */
+		public String getEncryption() {
+			return encryption;
+		}
+
+		/** @return Index, in the list given to testOpenImageWithKeys, of the key that unlocked it; -1 if none. */
+		public int getKeyIndex() {
+			return keyIndex;
+		}
+
+		/** @return BitLocker recovery key identifier reported for a locked volume, otherwise empty. */
+		public String getRecoveryKeyId() {
+			return recoveryKeyId;
+		}
+
+		/** @return TSK's error text when the volume did not open, otherwise empty. */
+		public String getMessage() {
+			return message;
+		}
+	}
+
 	/**
 	 * Tries opening the image with the optional password.
 	 *
 	 * @param imagePath  Path to the image (will just be the first for .e01, .001, etc).
 	 * @param password   Password to use when trying to decrypt the volumes. Leave blank for no password.
-	 * 
+	 *
 	 * @return TestOpenImageResult that will contain whether we were able to open a file system and a user-friendly message
 	 */
 	public static TestOpenImageResult testOpenImage(String imagePath, String password) {
@@ -2027,6 +2193,68 @@ public class SleuthkitJNI {
 			return new TestOpenImageResult(true, "Image opened successfully");
 		}
 		return new TestOpenImageResult(false, resultStr);
+	}
+
+	/**
+	 * Tries opening the image, trying every key on every BitLocker volume, and
+	 * reports what happened to each volume. Use this for an image whose
+	 * BitLocker volumes do not all share one password or recovery password.
+	 * (Volumes inside an APFS container are not tried with the keys.)
+	 *
+	 * @param imagePath Path to the image (will just be the first for .e01, .001, etc).
+	 * @param passwords Passwords or recovery passwords to try. Null, empty entries,
+	 *                  and entries containing '\n' are ignored, but keep their
+	 *                  place: a volume's getKeyIndex() is an index into this list.
+	 *
+	 * @return TestOpenImageResult. wasSuccessful() and getMessage() keep the meaning of
+	 *         testOpenImage(String, String); wasFileSystemFound() and getVolumes() report
+	 *         a usable image where some BitLocker volumes stayed locked.
+	 */
+	public static TestOpenImageResult testOpenImageWithKeys(String imagePath, List<String> passwords) {
+		List<String> keys = new ArrayList<>();
+		if (passwords != null) {
+			for (String password : passwords) {
+				// A '\n' would split one key into two; an ignored key is left empty to keep the indexes
+				boolean usable = password != null && password.indexOf('\n') < 0;
+				keys.add(usable ? password : "");
+			}
+		}
+
+		String json = isImageSupportedJsonNat(imagePath, String.join("\n", keys));
+		try {
+			JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+			String message = jsonString(root, "message");
+			boolean fileSystemFound = root.has("fileSystemFound") && root.get("fileSystemFound").getAsBoolean();
+			List<VolumeOpenResult> volumes = new ArrayList<>();
+			JsonArray volumesJson = root.has("volumes") ? root.getAsJsonArray("volumes") : new JsonArray();
+			for (JsonElement element : volumesJson) {
+				JsonObject vol = element.getAsJsonObject();
+				volumes.add(new VolumeOpenResult(
+						vol.get("addr").getAsLong(),
+						vol.get("offset").getAsLong(),
+						vol.get("length").getAsLong(),
+						jsonString(vol, "description"),
+						VolumeOpenStatus.fromName(jsonString(vol, "status")),
+						jsonString(vol, "fileSystem"),
+						jsonString(vol, "encryption"),
+						vol.get("keyIndex").getAsInt(),
+						jsonString(vol, "recoveryKeyId"),
+						jsonString(vol, "message")));
+			}
+			if (message.isBlank()) {
+				return new TestOpenImageResult(true, "Image opened successfully", fileSystemFound, volumes);
+			}
+			return new TestOpenImageResult(false, message, fileSystemFound, volumes);
+		} catch (RuntimeException ex) {
+			// JsonParseException, IllegalStateException, ClassCastException, NullPointerException
+			logger.log(Level.SEVERE, "Unexpected image test result", ex);
+			return new TestOpenImageResult(false, "Error reading the image test result");
+		}
+	}
+
+	private static String jsonString(JsonObject obj, String member) {
+		JsonElement element = obj.get(member);
+		return (element == null || element.isJsonNull()) ? "" : element.getAsString();
 	}
 	
 	/** Get the version of the Sleuthkit code in number form.
@@ -2301,6 +2529,8 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 
 	private static native String isImageSupportedStringNat(String imagePath, String password);
+
+	private static native String isImageSupportedJsonNat(String imagePath, String passwords);
 	
 	private static native long getSleuthkitVersionNat();
 

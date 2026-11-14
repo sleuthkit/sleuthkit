@@ -23,6 +23,9 @@ public:
 
 	BITLOCKER_STATUS parseStretchKeyUsingPassword(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* stretchKey, size_t stretchKeyLen);
 
+	// The BITLOCKER_STRETCH_KEY_SALT_LEN byte salt the stretched key is derived with
+	const uint8_t* getSalt() const { return m_salt; }
+
 	~MetadataValueStretchKey();
 private:
 	BITLOCKER_STATUS generateStretchedKey(uint8_t* passwordHash, size_t passwordHashLen, uint8_t* salt, size_t saltLen, uint8_t* result, size_t resultLen);

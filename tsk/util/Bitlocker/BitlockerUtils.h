@@ -13,12 +13,16 @@
 #ifdef HAVE_LIBMBEDTLS
 
 #include <string>
+#include <vector>
+#include <cstdint>
 
 using namespace std;
 
 void writeError(string errMes);
 void writeWarning(string errMes);
 void writeDebug(string msg);
+
+bool convertUtf8ToUtf16Le(const string& utf8, vector<uint8_t>& utf16le);
 
 string convertUint64ToString(uint64_t val);
 string convertUint32ToString(uint32_t val);

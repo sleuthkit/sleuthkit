@@ -22,4 +22,33 @@
 #include "tsk/auto/tsk_auto.h"
 #include "tsk/pool/tsk_pool.h"
 
+#if defined(__cplusplus) && defined(TSK_WIN32)
+#include <string>
+
+/**
+ * Convert a command line argument to UTF-8, e.g. a -k password. On Windows the tools parse
+ * options from the wide command line, while the narrow argv that main() receives is in the
+ * ANSI code page and cannot carry characters outside it.
+ *
+ * @param a_arg Wide argument (OPTARG)
+ * @returns The argument as UTF-8, or an empty string if it could not be converted
+ */
+static inline std::string tsk_tool_arg_to_utf8(const TSK_TCHAR * a_arg)
+{
+    if (a_arg == NULL || a_arg[0] == L'\0') {
+        return std::string();
+    }
+    int len = WideCharToMultiByte(CP_UTF8, 0, a_arg, -1, NULL, 0, NULL, NULL);
+    if (len <= 0) {
+        return std::string();
+    }
+    std::string utf8((size_t)len, '\0');
+    if (WideCharToMultiByte(CP_UTF8, 0, a_arg, -1, &utf8[0], len, NULL, NULL) <= 0) {
+        return std::string();
+    }
+    utf8.resize((size_t)len - 1);    // drop the terminator WideCharToMultiByte counted
+    return utf8;
+}
+#endif
+
 #endif

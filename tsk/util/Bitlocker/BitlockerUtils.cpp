@@ -17,6 +17,44 @@
 
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
+
+/**
+* Convert UTF-8 text to UTF-16 little-endian bytes, the form in which BitLocker hashes a password.
+* This does not go through wchar_t, which is 2 bytes on Windows but 4 on Linux and macOS, so a
+* password produces the same bytes on every platform.
+*
+* @param utf8     The text
+* @param utf16le  Will hold two bytes per UTF-16 code unit (a character outside the BMP takes two units)
+*
+* @return true on success, false if utf8 is not valid UTF-8
+*/
+bool convertUtf8ToUtf16Le(const string& utf8, vector<uint8_t>& utf16le) {
+    utf16le.clear();
+    if (utf8.empty()) {
+        return true;
+    }
+
+    // No UTF-8 byte produces more than one UTF-16 code unit
+    vector<UTF16> units(utf8.size());
+    const UTF8* source = (const UTF8*)utf8.data();
+    UTF16* target = units.data();
+    TSKConversionResult result = tsk_UTF8toUTF16(&source, source + utf8.size(), &target, target + units.size(),
+        TSKstrictConversion);
+    if (result != TSKconversionOK) {
+        std::fill(units.begin(), units.end(), (UTF16)0);
+        return false;
+    }
+
+    size_t numUnits = (size_t)(target - units.data());
+    utf16le.reserve(numUnits * 2);
+    for (size_t i = 0; i < numUnits; i++) {
+        utf16le.push_back((uint8_t)(units[i] & 0xff));
+        utf16le.push_back((uint8_t)((units[i] >> 8) & 0xff));
+    }
+    std::fill(units.begin(), units.end(), (UTF16)0);
+    return true;
+}
 
 /**
 * Record an error message.

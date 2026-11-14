@@ -392,7 +392,20 @@ APFSFileSystem::APFSFileSystem(const APFSPool& pool,
                                const std::string& password)
     : APFSFileSystem(pool, block_num) {
   if (encrypted()) {
-    unlock(password);
+    // password may hold several keys separated by '\n' (see tsk_fs_open_img_decrypt());
+    // try each until one unlocks the volume
+    size_t start = 0;
+    while (start <= password.size()) {
+      size_t end = password.find('\n', start);
+      if (end == std::string::npos) {
+        end = password.size();
+      }
+      const std::string key = password.substr(start, end - start);
+      if ((!key.empty() || password.empty()) && unlock(key)) {
+        break;
+      }
+      start = end + 1;
+    }
   }
 }
 

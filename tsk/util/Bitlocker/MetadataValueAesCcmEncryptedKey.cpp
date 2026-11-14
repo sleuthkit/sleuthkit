@@ -50,7 +50,7 @@ MetadataValueAesCcmEncryptedKey::MetadataValueAesCcmEncryptedKey(BITLOCKER_METAD
 BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t keyLen, MetadataEntry** keyEntry) {
 
     // The expectation is that we'll have a 16-byte MAC and then an FVE key entry of variable length
-    if (keyLen < BITLOCKER_KEY_MAC_LEN + 8) { // Key entry header is 8 bytes
+    if (m_encryptedData == nullptr || m_encryptedDataLen < BITLOCKER_KEY_MAC_LEN + 8) { // Key entry header is 8 bytes
         writeError("MetadataValueAesCcmEncryptedKey::decrypt: Encrypted data is not long enough to contain MAC and MetadataEntry");
         return BITLOCKER_STATUS::GENERAL_ERROR;
     }
@@ -71,7 +71,8 @@ BITLOCKER_STATUS MetadataValueAesCcmEncryptedKey::decrypt(uint8_t* key, size_t k
     }
 
     // Try to create the key entry
-    *keyEntry = MetadataEntry::createMetadataEntry(&(decryptedData[BITLOCKER_KEY_MAC_LEN]), m_encryptedDataLen);
+    // The key entry follows the MAC, so it can only be as long as what remains after it
+    *keyEntry = MetadataEntry::createMetadataEntry(&(decryptedData[BITLOCKER_KEY_MAC_LEN]), m_encryptedDataLen - BITLOCKER_KEY_MAC_LEN);
     std::fill_n<volatile uint8_t*>(decryptedData, m_encryptedDataLen, 0);
     free(decryptedData);
     decryptedData = nullptr;

@@ -71,6 +71,9 @@ main(int argc, char **argv1)
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
     const char * password = "";
+#ifdef TSK_WIN32
+    std::string passwordUtf8;    // -k converted from the wide command line
+#endif
 
     TSK_POOL_TYPE_ENUM pooltype = TSK_POOL_TYPE_DETECT;
     TSK_OFF_T pvol_block = 0;
@@ -148,7 +151,12 @@ main(int argc, char **argv1)
             }
             break;
         case _TSK_T('k'):
-            password = argv1[OPTIND - 1];
+#ifdef TSK_WIN32
+            passwordUtf8 = tsk_tool_arg_to_utf8(OPTARG);
+            password = passwordUtf8.c_str();
+#else
+            password = OPTARG;    // handles both -k pass and -kpass
+#endif
             break;
         case _TSK_T('o'):
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
