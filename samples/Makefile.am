@@ -2,7 +2,7 @@ AM_CPPFLAGS = -I.. -I$(srcdir)/..
 AM_CXXFLAGS += -Wno-unused-command-line-argument
 LDADD = ../tsk/libtsk.la
 AM_LDFLAGS = -static
-EXTRA_DIST = .indent.pro 
+EXTRA_DIST = .indent.pro tffs_nand.bin tffs_nor.bin
 
 noinst_PROGRAMS = posix_style callback_style posix_cpp_style callback_cpp_style
 posix_style_SOURCES = posix-style.cpp
