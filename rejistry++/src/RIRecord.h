@@ -49,15 +49,23 @@ namespace Rejistry {
 
         virtual std::vector<std::unique_ptr<NKRecord>> getSubkeys() const;
 
+        virtual std::unique_ptr<NKRecord> findSubkey(const std::wstring& name) const override;
+
+        virtual std::unique_ptr<NKRecord> findSubkeyInLookup(const std::wstring& name, std::set<uint32_t>& searchedLists) const override;
+
     private:
         static const uint16_t LIST_START_OFFSET = 0x04;
         static const uint16_t LIST_ENTRY_SIZE = 0x04;
-        
+
         RIRecord();
         RIRecord(const RIRecord &);
         RIRecord& operator=(const RIRecord &);
 
         SubkeyListRecordPtrList getSubkeyLists() const;
+
+        SubkeyListRecordPtr getSubkeyListAt(uint16_t index) const;
+
+        uint32_t getSubkeyListCellOffset(uint16_t index) const;
     };
 };
 

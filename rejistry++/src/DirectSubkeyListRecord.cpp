@@ -38,14 +38,31 @@ namespace Rejistry {
         uint16_t listLength = getListLength();
 
         for (uint16_t index = 0; index < listLength; ++index) {
-            uint32_t relativeOffset = LIST_START_OFFSET + (index * _itemSize);
-            uint32_t offset = getDWord(relativeOffset);
-            uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
-            auto c = std::make_unique< Cell >(_buf, parentOffset);
-            subkeyList.push_back(c->getNKRecord());
+            subkeyList.push_back(getSubkeyAt(index));
         }
 
         return subkeyList;
+    }
+
+    NKRecord::NKRecordUniqPtr DirectSubkeyListRecord::findSubkey(const std::wstring& name) const {
+        uint16_t listLength = getListLength();
+
+        for (uint16_t index = 0; index < listLength; ++index) {
+            NKRecord::NKRecordUniqPtr nk = getSubkeyAt(index);
+            if (nameMatches(*nk, name)) {
+                return nk;
+            }
+        }
+
+        return nullptr;
+    }
+
+    NKRecord::NKRecordUniqPtr DirectSubkeyListRecord::getSubkeyAt(uint16_t index) const {
+        uint32_t relativeOffset = LIST_START_OFFSET + (index * _itemSize);
+        uint32_t offset = getDWord(relativeOffset);
+        uint32_t parentOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
+        auto c = std::make_unique< Cell >(_buf, parentOffset);
+        return c->getNKRecord();
     }
 
 };
