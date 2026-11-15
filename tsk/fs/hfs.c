@@ -4631,6 +4631,15 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         return NULL;
     }
 
+    // The map header itself comes from disk: make sure the whole fixed
+    // header is inside the map before reading its fields.
+    if (mapLength < sizeof(hfs_resource_fork_map_header)) {
+        error_returned
+            ("- hfs_parse_resource_fork: map too small for its header");
+        free(map);
+        return NULL;
+    }
+
     mapHdr = (hfs_resource_fork_map_header *) map;
 
     typeListOffset = tsk_getu16(fs_info->endian, mapHdr->typeListOffset);
@@ -4645,8 +4654,25 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         nameListBegin = map + nameListOffset;
     }
 
+    // typeListOffset comes from the on-disk map header: the 2-byte count
+    // and the type list items it announces must all lie inside the map.
+    if ((uint32_t) typeListOffset + sizeof(hfs_resource_type_list) > mapLength) {
+        error_returned
+            ("- hfs_parse_resource_fork: typeListOffset out of bounds");
+        free(map);
+        return NULL;
+    }
+
     typeList = (hfs_resource_type_list *) (map + typeListOffset);
     numTypes = tsk_getu16(fs_info->endian, typeList->typeCount) + 1;
+
+    if ((uint32_t) typeListOffset + sizeof(hfs_resource_type_list) +
+        (uint32_t) numTypes * sizeof(hfs_resource_type_list_item) > mapLength) {
+        error_returned
+            ("- hfs_parse_resource_fork: type list extends past map buffer");
+        free(map);
+        return NULL;
+    }
 
     for (mindx = 0; mindx < numTypes; ++mindx) {
         uint16_t numRes;
@@ -4659,6 +4685,21 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         numRes = tsk_getu16(fs_info->endian, tlItem->count) + 1;
         refOff = tsk_getu16(fs_info->endian, tlItem->offset);
 
+        // refOff is relative to the type list and comes from disk: the whole
+        // reference list it points at must lie inside the map.
+        {
+            // bytes available from the start of the type list to the map end
+            uint32_t typeListAvail = mapLength - (uint32_t) typeListOffset;
+            if ((uint32_t) refOff >= typeListAvail ||
+                (uint32_t) numRes * sizeof(hfs_resource_refListItem) >
+                typeListAvail - (uint32_t) refOff) {
+                error_returned
+                    ("- hfs_parse_resource_fork: refList offset out of bounds");
+                free_res_descriptor(result);
+                free(map);
+                return NULL;
+            }
+        }
 
         for (pindx = 0; pindx < numRes; ++pindx) {
             int16_t nameOffset;
