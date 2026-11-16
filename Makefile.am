@@ -61,3 +61,165 @@ api-docs:
 
 man-html:
 	cd man;build-html
+
+#
+# OSSFuzz fuzz targets fuzz targets
+#
+
+if HAVE_LIB_FUZZING_ENGINE
+noinst_PROGRAMS = \
+	fls_apfs_fuzzer \
+	fls_ext_fuzzer \
+	fls_fat_fuzzer \
+	fls_hfs_fuzzer \
+	fls_iso9660_fuzzer \
+	fls_ntfs_fuzzer \
+	fls_ffs_fuzzer \
+	fls_yaffs_fuzzer \
+	mmls_dos_fuzzer \
+	mmls_gpt_fuzzer \
+	mmls_mac_fuzzer \
+	mmls_sun_fuzzer
+
+fls_apfs_fuzzer_SOURCES = \
+	ossfuzz/fls_apfs_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_apfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_ext_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ext_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_EXT_DETECT \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_ext_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_fat_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_fat_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_FAT_DETECT \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_fat_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_hfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_hfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_HFS \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_hfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_iso9660_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_iso9660_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_ISO9660 \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_iso9660_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_ntfs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ntfs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_NTFS \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_ntfs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+mmls_dos_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_dos_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_DOS \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+mmls_dos_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+mmls_gpt_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_gpt_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_GPT \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+mmls_gpt_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+mmls_mac_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_mac_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_MAC \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+mmls_mac_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+mmls_sun_fuzzer_SOURCES = \
+	ossfuzz/mem_img.h \
+	ossfuzz/mmls_fuzzer.cc
+
+mmls_sun_fuzzer_CPPFLAGS = \
+	-DVSTYPE=TSK_VS_TYPE_SUN \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+mmls_sun_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_ffs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_ffs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_FFS_DETECT \
+	-DFLS_MIN_IMAGE_BYTES=8192 \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_ffs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+
+fls_yaffs_fuzzer_SOURCES = \
+	ossfuzz/fls_fuzzer.cc \
+	ossfuzz/mem_img.h
+
+fls_yaffs_fuzzer_CPPFLAGS = \
+	-DFSTYPE=TSK_FS_TYPE_YAFFS2 \
+	-DFLS_MIN_IMAGE_BYTES=135168 \
+	-I$(top_srcdir) -I$(top_srcdir)/tsk
+
+fls_yaffs_fuzzer_LDADD = \
+	@LIB_FUZZING_ENGINE@ \
+	tsk/libtsk.la
+endif # HAVE_LIB_FUZZING_ENGINE

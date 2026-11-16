@@ -1,0 +1,8 @@
+# Tag-field patterns for the YAFFS2 fuzz target; see tsk/fs/tsk_yaffs.h
+is_header_flag="\x00\x00\x00\x80"
+obj_type_file="\x01\x00\x00\x00"
+obj_type_dir="\x02\x00\x00\x00"
+type_nibble_file="\x10\x00\x00\x00"
+type_nibble_dir="\x20\x00\x00\x00"
+seq_lowest="\x00\x10\x00\x00"
+parent_self="\x01\x00\x00\x00"
