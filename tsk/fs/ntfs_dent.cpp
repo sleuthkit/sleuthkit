@@ -682,7 +682,8 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
     }
 
     uint16_t upd_off = tsk_getu16(fs->endian, idxrec->upd_off);
-    if (upd_off > len || sizeof(ntfs_upd) > (len - upd_off)) {
+    uint16_t upd_cnt = tsk_getu16(fs->endian, idxrec->upd_cnt);
+    if (upd_off > len || (2 * (uint32_t)upd_cnt) > (len - upd_off)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr

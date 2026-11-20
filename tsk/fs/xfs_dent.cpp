@@ -404,12 +404,14 @@ xfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     }
 
     // We only read in and process a single block at a time
-    if ((dirbuf = (char*)tsk_malloc((size_t)a_fs->block_size)) == NULL) {
+    size_t content_len = (size_t)XFS_CONTENT_LEN_V5(xfs);
+    size_t alloc_len = (content_len > (size_t)a_fs->block_size) ? content_len : (size_t)a_fs->block_size;
+    if ((dirbuf = (char*)tsk_malloc(alloc_len)) == NULL) {
         fprintf(stderr, "[i] xfs_load_attr_block: xfs.cpp: %d - failed to malloc\n", __LINE__);
         return TSK_ERR;
     }
 
-    memcpy(dirbuf, fs_dir->fs_file->meta->content_ptr, XFS_CONTENT_LEN_V5(xfs));
+    memcpy(dirbuf, fs_dir->fs_file->meta->content_ptr, content_len);
 
     retval_tmp =
         xfs_dent_parse(xfs, fs_dir, (fs_dir->fs_file->meta->

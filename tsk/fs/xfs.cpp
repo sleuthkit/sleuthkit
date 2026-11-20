@@ -719,6 +719,19 @@ xfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
+    if(xfs->inode_size > fs->block_size){
+        fs->tag = 0;
+        free(xfs->fs);
+        tsk_fs_free((TSK_FS_INFO *)xfs);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+        tsk_error_set_errstr("Not an XFS file system (inode size larger than block size)");
+        if(tsk_verbose)
+            fprintf(stderr, "xfs_open : inode size (%d) exceeds block size (%d)\n",
+                xfs->inode_size, fs->block_size);
+        return NULL;
+    }
+
     if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
         fs->block_count)
         fs->last_block_act =

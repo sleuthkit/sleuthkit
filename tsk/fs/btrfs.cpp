@@ -421,6 +421,8 @@ btrfs_superblock_rawparse(const uint8_t * a_raw, BTRFS_SUPERBLOCK * a_sb)
     a_sb->leafsize              = tsk_getu32(BTRFS_ENDIAN, a_raw + 0x98);
     a_sb->stripesize            = tsk_getu32(BTRFS_ENDIAN, a_raw + 0x9C);
     a_sb->n                     = tsk_getu32(BTRFS_ENDIAN, a_raw + 0xA0);
+    if (a_sb->n > sizeof(a_sb->system_chunks))
+        a_sb->n = sizeof(a_sb->system_chunks);
     a_sb->chunk_root_generation = tsk_getu64(BTRFS_ENDIAN, a_raw + 0xA4);
     a_sb->compat_flags          = tsk_getu64(BTRFS_ENDIAN, a_raw + 0xAC);
     a_sb->compat_ro_flags       = tsk_getu64(BTRFS_ENDIAN, a_raw + 0xB4);
@@ -1015,12 +1017,18 @@ btrfs_chunks_from_superblock(BTRFS_INFO * a_btrfs)
 
     // iterate over all system chunks embedded into superblock
     btrfs_debug("Parsing superblock system chunks...\n");
-    for (uint8_t *p = a_btrfs->sb->system_chunks; p < a_btrfs->sb->system_chunks + a_btrfs->sb->n;) {
+    uint8_t *end = a_btrfs->sb->system_chunks + a_btrfs->sb->n;
+    for (uint8_t *p = a_btrfs->sb->system_chunks; p + BTRFS_KEY_RAWLEN <= end;) {
         btrfs_key_rawparse(p, &key);
         p += BTRFS_KEY_RAWLEN;
 
+        if (p >= end)
+            break;
+        size_t item_len = btrfs_chunk_item_rawlen(p);
+        if (p + item_len > end)
+            break;
         btrfs_chunks_process_chunk_item(a_btrfs, chunks, key.offset, p);
-        p += btrfs_chunk_item_rawlen(p);
+        p += item_len;
     }
     return chunks;
 }

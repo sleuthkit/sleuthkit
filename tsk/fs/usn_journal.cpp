@@ -88,12 +88,16 @@ parse_record_header(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
 static uint8_t
 parse_v2_record(
   const unsigned char *buf,
-  [[maybe_unused]] TSK_USN_RECORD_HEADER *header,
+  TSK_USN_RECORD_HEADER *header,
   TSK_USN_RECORD_V2 *record,
   TSK_ENDIAN_ENUM endian)
 {
     uint64_t timestamp = 0;
     uint16_t name_offset = 0, name_length = 0;
+
+    if (header->length < 60) {
+        return 1;
+    }
 
     record->refnum = tsk_getu48(endian, &buf[8]);
     record->refnum_seq = tsk_getu16(endian, &buf[14]);
@@ -114,6 +118,11 @@ parse_v2_record(
     /* Extract file name */
     name_length = tsk_getu16(endian, &buf[56]);
     name_offset = tsk_getu16(endian, &buf[58]);
+
+    if (name_offset > header->length ||
+        name_length > header->length - name_offset) {
+        return 1;
+    }
 
     return parse_fname(&buf[name_offset], name_length, record, endian);
 }
@@ -182,10 +191,13 @@ parse_buffer(const unsigned char *buf, ssize_t bufsize,
     TSK_USN_RECORD_HEADER header;
 
     while ((offset = search_record(buf, offset, bufsize)) < bufsize) {
+        if (offset + 8 > bufsize)
+            return bufsize - offset;
+
         parse_record_header(&buf[offset], &header, endian);
 
         /* The buffer does not contain the entire record */
-        if (offset + header.length > bufsize)
+        if (header.length < 8 || offset + header.length > bufsize)
             return bufsize - offset;
 
         ret = parse_record(&buf[offset], &header, endian, action, ptr);

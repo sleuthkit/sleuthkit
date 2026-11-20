@@ -1035,7 +1035,7 @@ decmpfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
  */
 static int decmpfs_decompress_noncompressed_attr(
   char* rawBuf,
-  [[maybe_unused]] uint32_t rawSize,
+  uint32_t rawSize,
   uint64_t uncSize,
   char** dstBuf,
   uint64_t* dstSize)
@@ -1044,6 +1044,13 @@ static int decmpfs_decompress_noncompressed_attr(
         tsk_fprintf(stderr,
             "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
             "%s:  Loading the default DATA attribute.", __func__, rawBuf[0], __func__);
+
+    if (rawSize < 1 || uncSize > (uint64_t)(rawSize - 1)) {
+        error_detected(TSK_ERR_FS_CORRUPT,
+            " %s: uncompressed size (%" PRIu64 ") exceeds attribute data (%u)",
+            __func__, uncSize, rawSize);
+        return 0;
+    }
 
     *dstBuf = rawBuf + 1;  // + 1 indicator byte
     *dstSize = uncSize;
