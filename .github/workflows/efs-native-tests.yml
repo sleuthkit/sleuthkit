@@ -1,0 +1,43 @@
+name: EFS native reader and TSK integration
+on:
+  push:
+    branches: [feature/efs, develop-4.1x]
+  pull_request:
+    paths: ['tsk/**', 'tests/efs*', '.github/workflows/efs-native-tests.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: abrignoni/qnxprobe
+          ref: de0e352b466e2e165cf5dd38652b11515ccf58f4
+          path: reference-qnxprobe
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libsqlite3-dev libssl-dev zlib1g-dev
+      - name: Build TSK
+        run: |
+          autoreconf -fi
+          ./configure --disable-java --without-afflib --without-libewf
+          make -j2 -C tsk
+          make -j2 -C tools/fstools
+
+      - name: Multipart folders, exact contents, history carving and buffered reads
+        run: |
+          g++ -std=c++17 -I . tests/efs_read_probe.cpp -L tsk/.libs -Wl,-rpath,"$PWD/tsk/.libs" -ltsk -o efs-read-probe
+          python3 tests/efs_regression.py --tools tools/fstools --reference reference-qnxprobe --read-probe "$PWD/efs-read-probe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: efs-linux-cli
+          path: |
+            tools/fstools/.libs/fls
+            tools/fstools/.libs/icat
+            tools/fstools/.libs/fsstat
+            tools/fstools/.libs/blkls
+            tools/fstools/.libs/ils
+            tools/fstools/.libs/istat
+            tsk/.libs/libtsk.so*

@@ -1,0 +1,96 @@
+name: Windows JNI JAR (QNXProbe)
+
+on:
+  push:
+    branches:
+      - develop-4.1x
+      - os-9
+      - feature/qnx4
+      - feature/f2fs
+      - feature/efs
+      - feature/ubi-ubifs
+      - feature/ftl100
+      - feature/ftl100-autodetect
+      - feature/datalight-reliance
+      - feature/etfs
+    paths:
+      - '.github/workflows/qnxprobe-windows-jar.yml'
+      - 'bindings/**'
+      - 'win32/**'
+      - 'tsk/**'
+  workflow_dispatch:
+
+env:
+  TSK_HOME: ${{ github.workspace }}
+
+permissions:
+  contents: read
+
+jobs:
+  windows-jar:
+    runs-on: windows-2025
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Configure JNI build environment
+        shell: pwsh
+        run: |
+          "JDK_HOME=$env:JAVA_HOME" >> $env:GITHUB_ENV
+          "TSK_HOME=$env:GITHUB_WORKSPACE" >> $env:GITHUB_ENV
+          if (-not (Test-Path "$env:JAVA_HOME/include/jni.h")) { throw "Missing JNI headers" }
+      - name: Install build dependencies
+        shell: pwsh
+        run: |
+          choco install nuget.commandline -y
+          choco install ant -y --ignore-dependencies
+      - name: Build native Sleuth Kit and JNI
+        shell: pwsh
+        run: |
+          python win32/updateAndBuildAll.py -m
+          if ($LASTEXITCODE -ne 0) { throw "Native build failed" }
+          $dll = "win32/x64/Release/libtsk_jni.dll"
+          if (-not (Test-Path $dll)) { throw "Missing Windows x64 JNI DLL: $dll" }
+      - name: Build JAR with Windows JNI
+        shell: pwsh
+        working-directory: bindings/java
+        run: |
+          ant clean
+          if ($LASTEXITCODE -ne 0) { throw "Ant clean failed" }
+          ant dist
+          if ($LASTEXITCODE -ne 0) { throw "Ant dist failed" }
+      - name: Verify Windows JAR and package
+        shell: pwsh
+        run: |
+          $jars = @(Get-ChildItem bindings/java/dist -File -Filter 'sleuthkit-*.jar')
+          if ($jars.Count -ne 1) { throw "Expected one JAR; found $($jars.Count)" }
+          $jarPath = $jars[0].FullName
+          $entries = & jar tf $jarPath
+          if ($LASTEXITCODE -ne 0) { throw "Cannot inspect JAR" }
+          if (-not ($entries -contains 'NATIVELIBS/amd64/win/libtsk_jni.dll')) { throw "Windows x64 JNI missing inside JAR" }
+          $temp = Join-Path $env:RUNNER_TEMP 'jar-native-check'
+          New-Item -ItemType Directory -Force $temp | Out-Null
+          Push-Location $temp
+          try {
+            & jar xf $jarPath NATIVELIBS/amd64/win/libtsk_jni.dll
+            if ($LASTEXITCODE -ne 0) { throw "JAR extraction failed" }
+            $embedded = Join-Path $temp 'NATIVELIBS/amd64/win/libtsk_jni.dll'
+            $original = Join-Path $env:GITHUB_WORKSPACE 'win32/x64/Release/libtsk_jni.dll'
+            if ((Get-FileHash $embedded -Algorithm SHA256).Hash -ne (Get-FileHash $original -Algorithm SHA256).Hash) { throw "Embedded JNI differs from freshly built DLL" }
+          } finally { Pop-Location }
+          New-Item -ItemType Directory -Force output | Out-Null
+          Copy-Item $jarPath output/
+          Copy-Item win32/x64/Release/libtsk_jni.dll output/
+          Compress-Archive -Path output/* -DestinationPath sleuthkit-java-windows.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sleuthkit-java-windows-qnxprobe
+          path: sleuthkit-java-windows.zip
+          if-no-files-found: error

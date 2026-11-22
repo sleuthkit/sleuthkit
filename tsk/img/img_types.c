@@ -29,6 +29,7 @@ typedef struct {
  * - in order of expected usage
  */
 static IMG_TYPES img_open_table[] = {
+    {"ftl100", TSK_IMG_TYPE_FTL100, "FTL100 NOR logical sector view"},
     {"raw", TSK_IMG_TYPE_RAW, "Single or split raw file (dd)"},
 #if HAVE_LIBAFFLIB
     {"aff", TSK_IMG_TYPE_AFF_AFF, "Advanced Forensic Format"},
