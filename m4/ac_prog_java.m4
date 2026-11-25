@@ -52,7 +52,8 @@ dnl
 dnl This is a sample configure.in Process this file with autoconf to
 dnl produce a configure script.
 dnl
-dnl    AC_INIT(UnTag.java)
+dnl    AC_INIT
+dnl    AC_CONFIG_SRCDIR([UnTag.java])
 dnl
 dnl    dnl Checks for programs.
 dnl    AC_CHECK_CLASSPATH
@@ -63,7 +64,8 @@ dnl    dnl Checks for classes
 dnl    AC_CHECK_RQRD_CLASS(org.xml.sax.Parser)
 dnl    AC_CHECK_RQRD_CLASS(com.jclark.xml.sax.Driver)
 dnl
-dnl    AC_OUTPUT(Makefile)
+dnl    AC_CONFIG_FILES([Makefile])
+dnl    AC_OUTPUT
 dnl
 dnl @category Java
 dnl @author Stephane Bortzmeyer <bortzmeyer@pasteur.fr>
